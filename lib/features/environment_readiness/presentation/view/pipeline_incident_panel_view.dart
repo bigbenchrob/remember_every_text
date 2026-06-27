@@ -13,9 +13,6 @@ import '../../../../essentials/onboarding/application/onboarding_gate_provider.d
 import '../../../../essentials/onboarding/domain/onboarding_status.dart';
 import '../../application/pipeline_incident_actions_provider.dart';
 
-const _kIncidentError = Color(0xFFFF3B30);
-const _kIncidentWarning = Color(0xFFFF9500);
-
 class PipelineIncidentPanelView extends ConsumerWidget {
   const PipelineIncidentPanelView({super.key});
 
@@ -84,7 +81,7 @@ class _PipelineIncidentBody extends ConsumerWidget {
               color: colors.surfaces.surfaceRaised,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: _kIncidentError.withValues(alpha: 0.35),
+                color: colors.status.error.withValues(alpha: 0.35),
                 width: 1,
               ),
             ),
@@ -94,12 +91,12 @@ class _PipelineIncidentBody extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _kIncidentError.withValues(alpha: 0.12),
+                    color: colors.status.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.error_outline_rounded,
-                    color: _kIncidentError,
+                    color: colors.status.error,
                     size: 28,
                   ),
                 ),
@@ -316,8 +313,8 @@ class _IncidentEntryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = switch (entry.severity) {
-      PipelineIncidentSeverity.blocking => _kIncidentError,
-      PipelineIncidentSeverity.warning => _kIncidentWarning,
+      PipelineIncidentSeverity.blocking => colors.status.error,
+      PipelineIncidentSeverity.warning => colors.status.warning,
       PipelineIncidentSeverity.context => colors.accents.primary,
     };
 

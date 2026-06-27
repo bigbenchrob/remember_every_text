@@ -3848,6 +3848,9 @@ criteria.
 - Replaced the URL preview icon-fallback gradient literals with a resolved
   gradient derived from message-panel surface tokens, keeping link preview
   chrome governed by the shared theme.
+- Added shared `status.success`, `status.warning`, and `status.error` theme
+  tokens and moved environment-readiness / pipeline-incident status colors off
+  feature-local literals.
 
 ### Vocabulary Note
 

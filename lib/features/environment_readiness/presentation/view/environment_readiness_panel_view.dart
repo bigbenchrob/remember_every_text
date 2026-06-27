@@ -14,9 +14,6 @@ import '../../application/environment_readiness_actions_provider.dart';
 import '../../application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import '../../domain/entities/environment_readiness_surface_view_model.dart';
 
-const _kReadinessWarning = Color(0xFFFF9500);
-const _kReadinessSuccess = Color(0xFF34C759);
-
 class EnvironmentReadinessPanelView extends ConsumerStatefulWidget {
   const EnvironmentReadinessPanelView({super.key});
 
@@ -221,15 +218,14 @@ class _StepTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final background = switch (step.status) {
-      EnvironmentReadinessStepStatus.success => _kReadinessSuccess.withValues(
-        alpha: 0.12,
-      ),
+      EnvironmentReadinessStepStatus.success =>
+        colors.status.success.withValues(alpha: 0.12),
       EnvironmentReadinessStepStatus.active =>
         colors.accents.primary.withValues(alpha: 0.14),
       EnvironmentReadinessStepStatus.pending => colors.surfaces.control,
     };
     final foreground = switch (step.status) {
-      EnvironmentReadinessStepStatus.success => _kReadinessSuccess,
+      EnvironmentReadinessStepStatus.success => colors.status.success,
       EnvironmentReadinessStepStatus.active => colors.accents.primary,
       EnvironmentReadinessStepStatus.pending => colors.content.textTertiary,
     };
@@ -738,7 +734,7 @@ Color _accentColorFor(
 }) {
   return switch (tone) {
     EnvironmentReadinessTone.primary => colors.accents.primary,
-    EnvironmentReadinessTone.warning => _kReadinessWarning,
-    EnvironmentReadinessTone.success => _kReadinessSuccess,
+    EnvironmentReadinessTone.warning => colors.status.warning,
+    EnvironmentReadinessTone.success => colors.status.success,
   };
 }

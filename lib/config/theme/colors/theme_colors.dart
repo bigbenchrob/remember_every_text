@@ -422,6 +422,20 @@ class ButtonColors {
   ).withValues(alpha: 0.30);
 }
 
+/// Semantic status tokens for system health, readiness, and incident surfaces.
+class StatusColors {
+  const StatusColors(this._t);
+  final ThemeColors _t;
+
+  Color _r(ColorPair p) => _t.resolvePair(p);
+
+  Color get success =>
+      _r(const ColorPair(Color(0xFF34C759), Color(0xFF30D158)));
+  Color get warning =>
+      _r(const ColorPair(Color(0xFFFF9500), Color(0xFFFF9F0A)));
+  Color get error => _r(const ColorPair(Color(0xFFFF3B30), Color(0xFFFF453A)));
+}
+
 /// Interactive hint tokens for subtle hover/focus affordances.
 ///
 /// Use these for "text-as-control" patterns where the primary content
@@ -768,6 +782,7 @@ class ThemeColors extends _$ThemeColors {
   Overlays get overlays => Overlays(this);
   MessagePanels get messagePanels => MessagePanels(this);
   ButtonColors get buttons => ButtonColors(this);
+  StatusColors get status => StatusColors(this);
   InteractiveHints get interactiveHints => InteractiveHints(this);
   ContactBadge get contactBadge => ContactBadge(this);
 
