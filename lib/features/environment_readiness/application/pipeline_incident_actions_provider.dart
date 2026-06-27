@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/logging/application/pipeline_incident_tracker_provider.dart';
+import '../../../essentials/logging/feature_level_providers.dart'
+    show pipelineIncidentTrackerProvider;
 import '../../../essentials/onboarding/application/onboarding_gate_provider.dart';
 
 part 'pipeline_incident_actions_provider.g.dart';

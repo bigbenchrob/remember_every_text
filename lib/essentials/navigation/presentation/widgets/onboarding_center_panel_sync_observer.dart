@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../logging/application/pipeline_incident_tracker_provider.dart';
+import '../../../logging/feature_level_providers.dart'
+    show activeBlockingPipelineIncidentProvider;
 import '../../../onboarding/application/onboarding_gate_provider.dart';
 import '../../application/onboarding_center_panel_sync_controller.dart';
 import '../../application/panel_widget_providers.dart';

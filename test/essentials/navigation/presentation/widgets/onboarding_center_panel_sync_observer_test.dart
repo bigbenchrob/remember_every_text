@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:remember_this_text/essentials/logging/application/pipeline_incident_tracker_provider.dart';
 import 'package:remember_this_text/essentials/logging/domain/pipeline_incident_report.dart';
+import 'package:remember_this_text/essentials/logging/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
 import 'package:remember_this_text/essentials/navigation/application/sidebar_mode_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';

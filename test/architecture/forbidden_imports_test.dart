@@ -4786,6 +4786,22 @@ void main() {
       );
     });
 
+    test('Pipeline incident tracker access uses logging seam', () async {
+      final offenders =
+          await _findPipelineIncidentTrackerProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Pipeline incident state is logging-owned. Consumers outside '
+            'logging should import it through '
+            'essentials/logging/feature_level_providers.dart instead of the '
+            'pipeline_incident_tracker_provider.dart implementation file.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Historical pipeline migration stage stays historical', () async {
       final offenders =
           await _findPipelineIncidentHistoricalMigrationStageOffenders();
@@ -10273,6 +10289,36 @@ Future<List<String>> _findPipelineIncidentTrackerStorageOffenders() async {
       uncommented.contains('writeOverlaySetting')) {
     offenders.add('$filePath handles overlay storage directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findPipelineIncidentTrackerProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path.startsWith('lib/essentials/logging/') ||
+        path.startsWith('test/essentials/logging/')) {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.any((importTarget) {
+      return importTarget.endsWith(
+        'logging/application/pipeline_incident_tracker_provider.dart',
+      );
+    })) {
+      offenders.add(filePath);
+    }
+  }
+
   return offenders..sort();
 }
 
