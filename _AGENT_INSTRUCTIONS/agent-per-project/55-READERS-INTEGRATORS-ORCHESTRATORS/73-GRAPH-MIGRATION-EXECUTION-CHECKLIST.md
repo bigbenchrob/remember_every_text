@@ -3798,6 +3798,9 @@ criteria.
   the attachment archive snapshot boundary. Ordinary import, graph, feature,
   and presentation code must consume semantic ports or repository providers
   instead of reaching for the physical DB provider directly.
+- Updated the canonical database-access guide to document the same concrete
+  import-ledger provider exception list, keeping the written architecture
+  aligned with the active tripwire.
 
 ### Vocabulary Note
 

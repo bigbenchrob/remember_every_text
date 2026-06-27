@@ -83,6 +83,24 @@ macOS AddressBook (db-address-book)
 - `db-working`: no central app provider remains; retired transitional cleanup file only.
 - `db-overlay`: `overlayDatabaseProvider` (generated from `overlayDatabase`) for user intent and archive-source metadata.
 
+## Concrete Import-Ledger Provider Access
+
+`sourceScopedImportDatabaseProvider` is a physical DB provider, not a general
+feature dependency. Direct access is limited to:
+
+- the central DB seam that constructs it;
+- the semantic `sourceScopedImportLedgerProvider` bridge;
+- reset, health, and status diagnostics;
+- graph projection repository composition, where import-ledger rows are joined
+  into the graph projection;
+- archive attachment snapshot boundaries that need current source-scoped
+  attachment facts.
+
+Ordinary import services, graph readers, feature providers, widgets, and
+presentation code should consume semantic ports, repository providers, or
+`sourceScopedImportLedgerProvider` instead of reaching for the concrete
+physical provider.
+
 ## Persistent vs One-Off Database Access
 
 - Persistent DB instances: import ledger, conversation graph, overlay, and any
