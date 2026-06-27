@@ -528,15 +528,17 @@ class _HeatmapErrorCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(themeTypographyProvider);
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             CupertinoIcons.exclamationmark_triangle,
-            color: CupertinoColors.systemRed,
+            color: colors.status.error,
             size: 18,
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -546,7 +548,7 @@ class _HeatmapErrorCard extends ConsumerWidget {
               children: [
                 Text(
                   message,
-                  style: t.caption.copyWith(color: CupertinoColors.systemRed),
+                  style: t.caption.copyWith(color: colors.status.error),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 PushButton(

@@ -3859,6 +3859,9 @@ criteria.
   scale, and two explicitly documented transparent sentinels.
 - Replaced the contact-name edit dialog's validation `Colors.red` with
   `status.error`, keeping contact identity editing on shared status tokens.
+- Replaced the messages heatmap error state's `CupertinoColors.systemRed`
+  usage with `status.error`, keeping sidebar error affordances on the shared
+  status-token vocabulary.
 
 ### Vocabulary Note
 
