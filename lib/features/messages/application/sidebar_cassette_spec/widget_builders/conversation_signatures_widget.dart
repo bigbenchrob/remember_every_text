@@ -7,7 +7,8 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
-import '../../../../../essentials/conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart';
+import '../../../../../essentials/conversation_graph/feature_level_providers.dart'
+    show conversationFavouritesControllerProvider;
 import '../../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
 import '../../../../../essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
 import '../../../../../essentials/sidebar/application/sidebar_flow_state_provider.dart';

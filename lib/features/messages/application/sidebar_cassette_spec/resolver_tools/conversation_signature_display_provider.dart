@@ -4,7 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature.dart';
-import '../../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature_provider.dart';
+import '../../../../../essentials/conversation_graph/feature_level_providers.dart'
+    show conversationSignatureReaderProvider, conversationSignaturesProvider;
 import '../../../../contacts/feature_level_providers.dart'
     show ConversationDisplayIdentity, displayIdentityResolverProvider;
 

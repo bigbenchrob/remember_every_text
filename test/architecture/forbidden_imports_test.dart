@@ -1506,6 +1506,23 @@ void main() {
       },
     );
 
+    test('Feature graph read provider access uses graph seam', () async {
+      final offenders =
+          await _findFeatureConversationGraphReadProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Feature code may consume graph read models, but graph read '
+            'provider access should flow through '
+            'essentials/conversation_graph/feature_level_providers.dart. '
+            'Direct imports of concrete graph read provider files make graph '
+            'authority harder to audit.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Internal code does not import its own feature provider barrel',
       () async {
@@ -7523,6 +7540,38 @@ _findBroadConversationGraphApplicationProviderImportOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findFeatureConversationGraphReadProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/');
+  });
+  final offenders = <String>[];
+  const graphReadProviderFiles = <String>{
+    'conversation_graph/application/chat_summaries/chat_summary_provider.dart',
+    'conversation_graph/application/contacts/contact_graph_provider.dart',
+    'conversation_graph/application/conversations/conversation_reader_provider.dart',
+    'conversation_graph/application/messages/message_graph_reader_provider.dart',
+    'conversation_graph/application/conversation_signatures/conversation_signature_provider.dart',
+    'conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart',
+  };
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (graphReadProviderFiles.any(importTarget.endsWith)) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findSelfFeatureLevelProviderImportOffenders() async {

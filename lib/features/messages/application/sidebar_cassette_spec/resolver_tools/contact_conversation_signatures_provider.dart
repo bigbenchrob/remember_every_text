@@ -1,7 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
+import '../../../../../essentials/conversation_graph/feature_level_providers.dart'
+    show contactPageGraphSnapshotProvider;
 import 'conversation_signature_display_provider.dart';
 
 part 'contact_conversation_signatures_provider.g.dart';

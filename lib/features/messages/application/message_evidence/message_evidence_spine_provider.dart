@@ -3,11 +3,19 @@ import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/conversation_graph/application/chat_summaries/chat_summary_provider.dart';
-import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
-import '../../../../essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
-import '../../../../essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
+import '../../../../essentials/conversation_graph/feature_level_providers.dart'
+    show
+        contactPageGraphHandleMessageByIdProvider,
+        contactPageGraphHandleMessagesProvider,
+        contactPageGraphHandleMessageTimelineProvider,
+        contactPageGraphMessageByIdProvider,
+        contactPageGraphMessageIdsMatchingTextProvider,
+        contactPageGraphMessagesProvider,
+        contactPageGraphMessageTimelineProvider,
+        conversationReaderProvider,
+        messageAttachmentsProvider,
+        messageGraphReaderProvider;
 import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../essentials/search/application/graph_message_search.dart';
 import '../../../../essentials/search/application/search_service.dart';

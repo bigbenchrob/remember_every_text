@@ -1,7 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
+import '../../../../essentials/conversation_graph/feature_level_providers.dart'
+    show contactPageGraphSnapshotProvider;
 import '../../../contacts/feature_level_providers.dart'
     show displayIdentityResolverProvider, handlesForContactProvider;
 

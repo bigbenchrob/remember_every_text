@@ -1,7 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/conversation_graph/application/conversations/conversation.dart';
-import '../../../../../essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
+import '../../../../../essentials/conversation_graph/feature_level_providers.dart'
+    show messageGraphReaderProvider;
 import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 
