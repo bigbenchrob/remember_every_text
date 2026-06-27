@@ -3877,6 +3877,8 @@ criteria.
 - Added an architecture tripwire preventing presentation widgets from storing
   `WidgetRef`/`Ref` fields; provider authority may be used at consumer
   boundaries, not carried as render payload.
+- Changed `SearchService` to depend on an explicit graph-search repository
+  reader instead of storing broad `Ref` authority inside the service.
 
 ### Vocabulary Note
 

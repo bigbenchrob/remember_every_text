@@ -1,14 +1,11 @@
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-
 import 'graph_message_search.dart';
-import 'graph_search_repository_provider.dart';
 
 enum SearchMode { allTerms, anyTerm }
 
 class SearchService {
-  SearchService({required this.ref});
+  SearchService({required this.readRepository});
 
-  final Ref ref;
+  final Future<GraphSearchRepository> Function() readRepository;
 
   /// Search graph messages, returning canonical source-scoped message IDs.
   Future<List<int>> searchGraphMessageIds({
@@ -22,7 +19,7 @@ class SearchService {
       return const [];
     }
 
-    final repository = await ref.read(graphSearchRepositoryProvider.future);
+    final repository = await readRepository();
     return repository.searchMessageIds(
       scope: scope,
       query: trimmed,
