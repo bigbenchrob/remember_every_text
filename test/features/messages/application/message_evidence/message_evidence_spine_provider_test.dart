@@ -9,17 +9,18 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_repository.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/message_data_version_provider.dart';
 import 'package:remember_this_text/essentials/search/application/graph_message_search.dart';
-import 'package:remember_this_text/essentials/search/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/search/application/graph_search_repository_provider.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+import 'package:remember_this_text/features/messages/application/message_evidence/recovered_message_evidence_provider.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/recovered_message_evidence.dart';
-import 'package:remember_this_text/features/messages/feature_level_providers.dart';
 
 Override _displayIdentityResolverOverride() {
   return displayIdentityResolverProvider.overrideWith((ref) async {
