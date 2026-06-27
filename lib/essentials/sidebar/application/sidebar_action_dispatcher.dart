@@ -8,9 +8,7 @@ import '../../../features/contacts/feature_level_providers.dart'
     show contactAccessActionsProvider;
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/feature_level_providers.dart'
-    show
-        handleReviewActionsProvider,
-        strayHandleModeSettingProvider;
+    show handleReviewActionsProvider, strayHandleModeSettingProvider;
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../features/settings/feature_level_providers.dart'
     show
@@ -19,7 +17,7 @@ import '../../../features/settings/feature_level_providers.dart'
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
-import '../../logging/application/diagnostic_report_provider.dart'
+import '../../logging/feature_level_providers.dart'
     show diagnosticLogDirectoryPathProvider, diagnosticReportExporterProvider;
 import '../../navigation/domain/sidebar_mode.dart';
 import '../../onboarding/application/message_data_reset_service.dart';
