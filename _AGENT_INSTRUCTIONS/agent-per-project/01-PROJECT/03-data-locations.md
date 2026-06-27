@@ -32,7 +32,7 @@ Current app-owned files/directories include:
 
 | Data | Path | Owner |
 | --- | --- | --- |
-| Source-scoped import ledger | `macos_import_ss.db` | `sourceScopedImportDatabaseProvider` in `essentials/db`; semantic import code usually consumes `sourceScopedImportLedgerProvider` |
+| Source-scoped import ledger | `macos_import_ss.db` | Physical construction: `sourceScopedImportDatabaseProvider` in `essentials/db`; ordinary import semantics: `sourceScopedImportLedgerProvider` |
 | Conversation graph projection | `working_ss.db` | `driftConversationGraphDatabaseProvider`, graph projection/readers |
 | Retired import cleanup file | `macos_import.db` | Transitional cleanup file only; no central app provider |
 | Retired working cleanup file | `working.db` | Transitional cleanup file only; no central app provider |

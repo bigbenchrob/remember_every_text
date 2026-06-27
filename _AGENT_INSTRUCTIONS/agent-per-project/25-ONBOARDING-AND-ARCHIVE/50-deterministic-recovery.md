@@ -29,7 +29,8 @@ Layer 1: Historical snapshot DB (user-provided)
   ├─ Source of: attachment.guid, message.guid, message↔attachment joins
   └─ Provides authoritative relationships from the era of the backup
 
-Layer 2: Current source-scoped import DB (via sourceScopedImportDatabaseProvider)
+Layer 2: Current source-scoped import DB (via approved source-scoped import
+         ledger provider/diagnostic boundary)
   ├─ Source of: attachments.guid → attachment ss_id bridge
   ├─ Preserves Apple's attachment.guid plus source_id/source_rowid
   └─ Must be populated from at least one source-scoped graph build

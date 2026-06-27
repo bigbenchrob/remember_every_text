@@ -37,7 +37,7 @@ It does **not** create retired database files as a side effect. It uses
 provider-managed instances for active graph/overlay/source-scoped databases
 and read-only file inspection for retired cleanup/diagnostic databases:
 
-- `sourceScopedImportDatabaseProvider` from `essentials/db`
+- provider-managed source-scoped import ledger access from `essentials/db`
 - `driftConversationGraphDatabaseProvider`
 - `overlayDatabaseProvider`
 - read-only file inspection for retired `macos_import.db`

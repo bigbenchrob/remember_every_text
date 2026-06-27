@@ -144,9 +144,9 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
   data sources and repository implementations behind named provider or
   application boundaries.
 - Use the current provider names from code and database docs. Ordinary graph
-  reads use `driftConversationGraphDatabaseProvider`; source-scoped import
-  database access is physically constructed by `sourceScopedImportDatabaseProvider`
-  in `essentials/db`; source import semantics normally consume
+  reads use `driftConversationGraphDatabaseProvider`; source-scoped import DB
+  construction lives behind `sourceScopedImportDatabaseProvider` in
+  `essentials/db`, while ordinary source import semantics normally consume
   `sourceScopedImportLedgerProvider`; overlay user intent and archive-source
   metadata use `overlayDatabaseProvider`.
   Retired `macos_import.db` and `working.db` are transitional cleanup file concerns

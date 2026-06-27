@@ -3806,6 +3806,12 @@ criteria.
   now points ordinary source import code at `sourceScopedImportLedgerProvider`
   and limits direct physical-provider use to the approved composition,
   diagnostic, projection, and attachment snapshot boundaries.
+- Updated first-entry agent and architecture docs so they describe
+  `sourceScopedImportDatabaseProvider` as physical import-ledger construction,
+  not a general source-import dependency. AGENTS, Copilot instructions, project
+  overview/data-location docs, deterministic recovery, and database-health
+  guidance now point ordinary import semantics toward
+  `sourceScopedImportLedgerProvider` or approved diagnostic boundaries.
 
 ### Vocabulary Note
 
