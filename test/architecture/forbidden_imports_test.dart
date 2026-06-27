@@ -13341,6 +13341,10 @@ Future<List<String>> _collectProjectInstructionFiles() async {
   if (agentsFile.existsSync()) {
     files.add(agentsFile.path);
   }
+  final copilotInstructionsFile = File('.github/copilot-instructions.md');
+  if (copilotInstructionsFile.existsSync()) {
+    files.add(copilotInstructionsFile.path);
+  }
 
   final root = Directory('_AGENT_INSTRUCTIONS/agent-per-project');
   if (root.existsSync()) {
