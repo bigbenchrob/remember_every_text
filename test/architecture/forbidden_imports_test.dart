@@ -1066,10 +1066,10 @@ void main() {
         offenders,
         orderedEquals(_nativeDriftExecutorAllowedFiles.toList()..sort()),
         reason:
-            'Production NativeDatabase construction should stay at the central '
-            'database provider boundary. Feature code should consume injected '
-            'Drift databases, repositories, or typed stores instead of opening '
-            'its own executor island.\n'
+            'Production NativeDatabase construction should stay at the '
+            'database provider implementation boundary. Feature code should '
+            'consume injected Drift databases, repositories, or typed stores '
+            'instead of opening its own executor island.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -1100,11 +1100,12 @@ void main() {
           _physicalDatabaseConstructionAllowedFiles.toList()..sort(),
         ),
         reason:
-            'Persistent app database construction must stay at the central '
-            'database provider boundary. Infrastructure repositories may open '
-            'source/probe SQLite databases for one-off reads, but they must not '
-            'construct ImportDatabase, OverlayDatabase, ConversationGraphDatabase, '
-            'or native Drift executors as provider islands.\n'
+            'Persistent app database construction must stay at the database '
+            'provider implementation boundary. Infrastructure repositories may '
+            'open source/probe SQLite databases for one-off reads, but they '
+            'must not construct ImportDatabase, OverlayDatabase, '
+            'ConversationGraphDatabase, or native Drift executors as provider '
+            'islands.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -1132,7 +1133,7 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'The central database provider seam may compose the app logger, '
+            'The database provider implementation may compose the app logger, '
             'but it should import only appLoggerProvider from the logging '
             'feature seam. A broad logging feature import widens authority at '
             'the database construction boundary.\n'
@@ -1449,8 +1450,8 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'Except for essentials/db, feature_level_providers.dart files are '
-            'outward-facing public seams. Every non-comment line should be an '
+            'feature_level_providers.dart files are outward-facing public '
+            'seams. Every non-comment line should be an '
             'export of a named provider, repository, action, type, or '
             'presentation boundary. They should not import dependencies, '
             'declare constants/classes/providers, or include generated parts.\n'
@@ -1466,8 +1467,8 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'Except for essentials/db, feature_level_providers.dart files are '
-            'export-only public seams and should not have generated '
+            'feature_level_providers.dart files are export-only public seams '
+            'and should not have generated '
             'feature_level_providers.g.dart siblings. Provider state belongs in '
             'named application/provider files, not in the public seam.\n'
             'Actual offenders:\n${offenders.join('\n')}',

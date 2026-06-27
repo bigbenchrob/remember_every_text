@@ -3819,6 +3819,10 @@ criteria.
   lives in `database_health_audit_service_provider.dart`, and the public
   `essentials/db/feature_level_providers.dart` seam exports both without
   owning implementation code.
+- Tightened provider-seam architecture-test language after the DB split so
+  failures now describe `feature_level_providers.dart` as universally
+  export-only and refer to the named database provider implementation boundary
+  for physical DB construction.
 
 ### Vocabulary Note
 
