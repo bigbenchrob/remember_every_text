@@ -3885,6 +3885,10 @@ criteria.
 - Widened the stored-ref tripwire from presentation widgets to all active
   `lib/` code: `Ref`/`WidgetRef` may be used at provider/consumer boundaries
   but not stored as object state.
+- Reduced graph-build refresh authority: `ConversationGraphBuildController`
+  now signals completed graph changes through `messageDataVersionProvider`
+  instead of also imperatively invalidating readiness/populated providers that
+  already derive from that version signal.
 
 ### Vocabulary Note
 

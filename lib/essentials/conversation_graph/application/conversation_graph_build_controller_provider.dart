@@ -1,6 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../db/feature_level_providers/message_data_version_provider.dart';
 import 'conversation_graph_build_report.dart';
 import 'conversation_graph_build_service_provider.dart';
@@ -49,8 +48,6 @@ class ConversationGraphBuildController
         conversationGraphBuildServiceProvider.future,
       );
       final report = await service.runOnce();
-      ref.invalidate(conversationGraphReadinessProvider);
-      ref.invalidate(conversationGraphPopulatedProvider);
       ref.read(messageDataVersionProvider.notifier).bump();
       state = ConversationGraphBuildState(
         status: ConversationGraphBuildStatus.succeeded,
