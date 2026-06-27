@@ -2,9 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_preference_store.dart';
+import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_preference_store_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
-import 'package:remember_this_text/essentials/sidebar/feature_level_providers.dart'
-    as sidebar;
 import 'package:remember_this_text/features/chats/application/actions/chat_selection_actions_provider.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 
@@ -15,7 +14,7 @@ void main() {
     setUp(() {
       container = ProviderContainer(
         overrides: [
-          sidebar.sidebarFlowPreferenceStoreProvider.overrideWith((ref) async {
+          sidebarFlowPreferenceStoreProvider.overrideWith((ref) async {
             return _InMemorySidebarFlowPreferenceStore();
           }),
         ],
