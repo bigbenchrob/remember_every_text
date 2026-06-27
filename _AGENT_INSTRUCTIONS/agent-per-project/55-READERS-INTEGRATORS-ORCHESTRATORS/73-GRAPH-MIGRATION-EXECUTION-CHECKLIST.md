@@ -3839,6 +3839,9 @@ criteria.
 - Replaced the handle-lens create-contact error label's hard-coded red with
   the shared `buttons.destructiveForeground` theme token, keeping message
   evidence and handle triage surfaces visually governed by the app theme.
+- Replaced the heatmap legend's low-count dot label literal gray with
+  `content.textTertiary`, keeping supporting text governed by theme tokens
+  while leaving the canonical heatmap activity color scale untouched.
 
 ### Vocabulary Note
 

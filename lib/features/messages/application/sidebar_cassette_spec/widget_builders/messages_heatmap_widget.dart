@@ -405,21 +405,42 @@ class MessageHeatmapLegend extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Wrap(
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    return Wrap(
       spacing: AppSpacing.md,
       runSpacing: AppSpacing.xs,
       children: [
-        _LegendItem(label: '1-3', swatch: _DotLegendSwatch()),
-        _LegendItem(label: '4-10', intensity: MonthIntensity.lightGray),
-        _LegendItem(label: '11-30', intensity: MonthIntensity.mediumGray),
-        _LegendItem(label: '31-50', intensity: MonthIntensity.darkGray),
-        _LegendItem(label: '51-75', intensity: MonthIntensity.paleYellow),
-        _LegendItem(label: '76-100', intensity: MonthIntensity.lightYellow),
-        _LegendItem(label: '101-150', intensity: MonthIntensity.mediumYellow),
-        _LegendItem(label: '151-200', intensity: MonthIntensity.darkYellow),
-        _LegendItem(label: '201-500', intensity: MonthIntensity.lightGreen),
-        _LegendItem(label: '501-1K', intensity: MonthIntensity.mediumGreen),
-        _LegendItem(label: '1K-2K', intensity: MonthIntensity.darkGreen),
+        _LegendItem(
+          label: '1-3',
+          swatch: _DotLegendSwatch(color: colors.content.textTertiary),
+        ),
+        const _LegendItem(label: '4-10', intensity: MonthIntensity.lightGray),
+        const _LegendItem(label: '11-30', intensity: MonthIntensity.mediumGray),
+        const _LegendItem(label: '31-50', intensity: MonthIntensity.darkGray),
+        const _LegendItem(label: '51-75', intensity: MonthIntensity.paleYellow),
+        const _LegendItem(
+          label: '76-100',
+          intensity: MonthIntensity.lightYellow,
+        ),
+        const _LegendItem(
+          label: '101-150',
+          intensity: MonthIntensity.mediumYellow,
+        ),
+        const _LegendItem(
+          label: '151-200',
+          intensity: MonthIntensity.darkYellow,
+        ),
+        const _LegendItem(
+          label: '201-500',
+          intensity: MonthIntensity.lightGreen,
+        ),
+        const _LegendItem(
+          label: '501-1K',
+          intensity: MonthIntensity.mediumGreen,
+        ),
+        const _LegendItem(label: '1K-2K', intensity: MonthIntensity.darkGreen),
       ],
     );
   }
@@ -465,17 +486,19 @@ class _ColorLegendSwatch extends StatelessWidget {
 }
 
 class _DotLegendSwatch extends StatelessWidget {
-  const _DotLegendSwatch();
+  const _DotLegendSwatch({required this.color});
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       width: 10,
       height: 10,
       child: Center(
         child: Text(
           '...',
-          style: TextStyle(fontSize: 8, height: 1, color: Color(0xFF999999)),
+          style: TextStyle(fontSize: 8, height: 1, color: color),
         ),
       ),
     );
