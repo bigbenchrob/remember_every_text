@@ -19,7 +19,7 @@ Do not modify data before understanding the failure.
 - Most bugs are invariant violations.
 - Symptoms are not root causes.
 - Data is evidence, not something to "fix".
-- Retained legacy compatibility paths are not ordinary app authority.
+- Retired cleanup/diagnostic compatibility paths are not ordinary app authority.
 
 ---
 
@@ -269,7 +269,7 @@ Agents MUST NOT:
 - weaken validators.
 - introduce new data paths.
 - rely on "seems to work" behavior.
-- treat retained historical DBs as the ordinary app source.
+- treat retired cleanup/diagnostic DB files as the ordinary app source.
 - create source-specific message renderers.
 
 ---

@@ -6,8 +6,29 @@ part of 'feature_level_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
+String _$sourceScopedImportDatabaseHash() =>
+    r'7631fed00f517ce895584158cc03ae71013940a0';
+
+/// Provides access to the source-scoped import ledger database.
+///
+/// Copied from [sourceScopedImportDatabase].
+@ProviderFor(sourceScopedImportDatabase)
+final sourceScopedImportDatabaseProvider =
+    FutureProvider<ImportDatabase>.internal(
+      sourceScopedImportDatabase,
+      name: r'sourceScopedImportDatabaseProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$sourceScopedImportDatabaseHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef SourceScopedImportDatabaseRef = FutureProviderRef<ImportDatabase>;
 String _$driftConversationGraphDatabaseHash() =>
-    r'6b5758ced4eddacc44e4c709b6363adf0603ed2d';
+    r'2b4677b6c0727a557452bb10f1c12e0156caf0f2';
 
 /// Provides access to the source-scoped conversation graph projection database.
 ///
@@ -28,7 +49,7 @@ final driftConversationGraphDatabaseProvider =
 // ignore: unused_element
 typedef DriftConversationGraphDatabaseRef =
     FutureProviderRef<ConversationGraphDatabase>;
-String _$overlayDatabaseHash() => r'9ebaf6ae0ce04b419b092445b7076a0d81819857';
+String _$overlayDatabaseHash() => r'd190fb7e00474a396c98687a85b3028ea93a6fcb';
 
 /// Provides access to the overlay database for user preferences and customizations.
 ///
@@ -71,7 +92,7 @@ final attachmentArchiveDirectoryProvider = Provider<String>.internal(
 // ignore: unused_element
 typedef AttachmentArchiveDirectoryRef = ProviderRef<String>;
 String _$databaseHealthAuditServiceHash() =>
-    r'97ad55246c6bebf8fb8974aab9effd24ba8d9fc8';
+    r'a7f1fe16e14f16f95f24e5f975d694f12a471ff8';
 
 /// See also [databaseHealthAuditService].
 @ProviderFor(databaseHealthAuditService)

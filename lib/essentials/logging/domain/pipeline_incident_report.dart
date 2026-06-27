@@ -4,7 +4,7 @@ enum PipelineIncidentSeverity { context, warning, blocking }
 ///
 /// Do not rename [PipelineIncidentStage.migration]. Older overlay incident
 /// rows may still store that enum name even though the user-facing label now
-/// describes its retired historical-projection role.
+/// describes its retired import/migration role.
 enum PipelineIncidentStage { import, graphProjection, migration }
 
 extension PipelineIncidentStageDisplay on PipelineIncidentStage {
@@ -12,7 +12,7 @@ extension PipelineIncidentStageDisplay on PipelineIncidentStage {
     return switch (this) {
       PipelineIncidentStage.import => 'Import',
       PipelineIncidentStage.graphProjection => 'Graph projection',
-      PipelineIncidentStage.migration => 'Retired historical projection',
+      PipelineIncidentStage.migration => 'Retired import/migration',
     };
   }
 }

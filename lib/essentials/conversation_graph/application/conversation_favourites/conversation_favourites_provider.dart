@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../logging/feature_level_providers.dart';
-import '../../feature_level_providers.dart';
+import '../../../logging/feature_level_providers.dart' show appLoggerProvider;
+import 'conversation_favourites_store_provider.dart';
 
 part 'conversation_favourites_provider.g.dart';
 

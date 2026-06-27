@@ -3,11 +3,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart';
-import '../../logging/feature_level_providers.dart';
+import '../../db/app_database_files.dart';
+import '../../db/feature_level_providers.dart'
+    show
+        conversationGraphPopulatedProvider,
+        conversationGraphReadinessProvider,
+        dbMaintenanceLockProvider,
+        driftConversationGraphDatabaseProvider,
+        messageDataVersionProvider,
+        sourceScopedImportDatabaseProvider;
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/application/app_navigator_key.dart';
-import '../../source_scoped_import/feature_level_providers.dart';
-import '../feature_level_providers.dart';
+import 'derived_message_data_file_store_provider.dart';
 import 'onboarding_environment_report_provider.dart';
 import 'onboarding_gate_provider.dart';
 
@@ -15,20 +22,27 @@ part 'message_data_reset_service.g.dart';
 
 const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
 
-const retiredHistoricalDatabaseCleanupBaseNames = <String>[
-  retiredMacosImportDatabaseFileName,
-  retiredWorkingDatabaseFileName,
+const retiredDatabaseCleanupFiles = <AppDatabaseFile>[
+  AppDatabaseFile.retiredMacosImport,
+  AppDatabaseFile.retiredWorking,
 ];
 
-const activeGraphDerivedDatabaseBaseNames = <String>[
-  sourceScopedImportDatabaseFileName,
-  conversationGraphDatabaseFileName,
+const activeGraphDerivedDatabaseFiles = <AppDatabaseFile>[
+  AppDatabaseFile.sourceScopedImport,
+  AppDatabaseFile.conversationGraph,
 ];
 
-const messageDataResetPostCleanupCheckBaseNames = <String>[
-  ...activeGraphDerivedDatabaseBaseNames,
-  ...retiredHistoricalDatabaseCleanupBaseNames,
-];
+List<String> get retiredDatabaseCleanupBaseNames =>
+    appDatabaseFileNames(retiredDatabaseCleanupFiles);
+
+List<String> get activeGraphDerivedDatabaseBaseNames =>
+    appDatabaseFileNames(activeGraphDerivedDatabaseFiles);
+
+List<String> get messageDataResetPostCleanupCheckBaseNames =>
+    appDatabaseFileNames(<AppDatabaseFile>[
+      ...activeGraphDerivedDatabaseFiles,
+      ...retiredDatabaseCleanupFiles,
+    ]);
 
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
@@ -74,9 +88,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         },
       );
       final deletedRetiredCleanupFilePaths = await fileStore
-          .deleteDatabaseBaseFiles(retiredHistoricalDatabaseCleanupBaseNames);
+          .deleteDatabaseBaseFiles(retiredDatabaseCleanupBaseNames);
       logger.info(
-        'Deleted retired historical database cleanup files',
+        'Deleted retired database cleanup files',
         source: 'MessageDataResetService',
         context: {
           'deletedCount': deletedRetiredCleanupFilePaths.length,
@@ -99,13 +113,21 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         source: 'MessageDataResetService',
         context: {
           'retiredMacosImportDbExistsAfterReset':
-              databaseExistsAfterReset[retiredMacosImportDatabaseFileName],
+              databaseExistsAfterReset[appDatabaseFileName(
+                AppDatabaseFile.retiredMacosImport,
+              )],
           'retiredWorkingDbExistsAfterReset':
-              databaseExistsAfterReset[retiredWorkingDatabaseFileName],
+              databaseExistsAfterReset[appDatabaseFileName(
+                AppDatabaseFile.retiredWorking,
+              )],
           'sourceScopedImportDbExistsAfterReset':
-              databaseExistsAfterReset[sourceScopedImportDatabaseFileName],
+              databaseExistsAfterReset[appDatabaseFileName(
+                AppDatabaseFile.sourceScopedImport,
+              )],
           'conversationGraphDbExistsAfterReset':
-              databaseExistsAfterReset[conversationGraphDatabaseFileName],
+              databaseExistsAfterReset[appDatabaseFileName(
+                AppDatabaseFile.conversationGraph,
+              )],
         },
       );
 
@@ -230,7 +252,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
   Future<void> _closeSourceScopedImportDatabase() async {
     final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
-    if (!fileStore.databaseBaseFileExists(sourceScopedImportDatabaseFileName)) {
+    if (!fileStore.databaseBaseFileExists(
+      appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
+    )) {
       return;
     }
     try {
@@ -249,7 +273,9 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
   Future<void> _closeConversationGraphDatabase() async {
     final fileStore = _ref.read(derivedMessageDataFileStoreProvider);
-    if (!fileStore.databaseBaseFileExists(conversationGraphDatabaseFileName)) {
+    if (!fileStore.databaseBaseFileExists(
+      appDatabaseFileName(AppDatabaseFile.conversationGraph),
+    )) {
       return;
     }
     try {

@@ -77,5 +77,5 @@ The source-scoped import pipeline copies this data into contact and channel fact
 
 - `06-addressbook-path-resolution.md` — Full provider chain and testing guidance.
 - `00-all-databases-accessed.md` — Current source-scoped import and graph database entry points.
-- `10-group-import-working.md` — Historical retained identity contract; do not use it for new graph-era contact work.
+- `10-group-import-working.md` — Historical retired identity contract; do not use it for new graph-era contact work.
 - `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Ledger table definitions referencing AddressBook data.

@@ -279,7 +279,7 @@ becomes ordinary app authority again.
 
 ### Detection
 
-- ordinary app surface opens retained historical DBs.
+- ordinary app surface opens retired cleanup/diagnostic DB files.
 - documents describe retired projection/storage as a current app path.
 - tests depend on legacy row IDs for graph-era evidence.
 

@@ -111,8 +111,8 @@ A participant may represent:
 - multiple canonical handles for the same person or organization
 - an AddressBook-derived person or organization with zero currently linked handles
 
-Historical retained-file detail: old `working.participants.id` rows preserved
-AddressBook `Z_PK`. That may help interpret old retained files, but it is not
+Retired-file detail: old `working.participants.id` rows preserved
+AddressBook `Z_PK`. That may help interpret old retired files, but it is not
 the production identity authority for graph-era app behavior.
 
 Canonical handles remain first-class endpoint identities. Unlinked handles may exist without a contact identity. UI and feature code must route identity through display identity read models when operating on people, and through canonical handles only when the workflow is explicitly handle-focused.
@@ -123,7 +123,7 @@ This distinction is non-negotiable.
 
 Contacts are external metadata from AddressBook.
 
-Graph contacts/display identities are internal app identity units used by MessageLens surfaces. Retained participant terminology exists for legacy compatibility and overlay bridges.
+Graph contacts/display identities are internal app identity units used by MessageLens surfaces. Retired participant terminology exists for legacy compatibility and overlay bridges.
 
 Contacts can provide:
 
@@ -155,10 +155,10 @@ A contact may:
 
 Rule: contacts do not define identity by themselves. Graph display identity resolves what the user should see.
 
-In current code, AddressBook contacts seed graph contacts. Older retained
+In current code, AddressBook contacts seed graph contacts. Older retired
 `working.db` files may still contain historical participant rows, but they are
 not the current app-facing identity authority. Overlay virtual participants
-extend display identity without writing to `working_ss.db` or retained
+extend display identity without writing to `working_ss.db` or retired
 `working.db`.
 
 ## 5. Overlay Model (User Control Layer)
@@ -178,7 +178,7 @@ Identity-related overlay tables:
 
 `participant_overrides.display_name_override` is a presentation override. It does not rewrite the working `participants.display_name` column.
 
-Overlay modifies presentation and grouping at provider merge time. It must not be copied into import, graph, or retained working tables during projection/migration.
+Overlay modifies presentation and grouping at provider merge time. It must not be copied into import, graph, or retired working tables during projection/migration.
 
 ## 6. Virtual Participants
 
@@ -197,12 +197,12 @@ Current storage:
 - fields include `display_name`, schema-compatible `short_name`, optional `notes`, and audit timestamps
 - manual links from canonical handles use `handle_to_participant_overrides.virtual_participant_id`
 
-Virtual participants are not written to `working_ss.db` or retained
+Virtual participants are not written to `working_ss.db` or retired
 `working.db`. They still map into app UI through provider merge logic and
 feature resolvers.
 
 Do not treat virtual participants as AddressBook contacts. Do not expect them
-in graph contact tables or old retained `working.participants` rows.
+in graph contact tables or old retired `working.participants` rows.
 
 `virtual_participants.short_name` is not an app-facing identity field. It may remain physically present for schema compatibility, but display resolution must use `display_name` only.
 
@@ -255,7 +255,7 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 | Stale or incorrect AddressBook entry | The participant may inherit stale source names, but overlay `participant_overrides` can change presentation. Source contact data remains traceable. |
 | Orphaned handles | Unlinked canonical handles remain visible to handle-focused flows unless hidden/dismissed by overlay state. |
 | User override conflicts with contact data | Overlay wins at provider merge/read time. The working graph remains source-derived and unchanged by user intent. |
-| Virtual participant linked to handles | UI can show the virtual identity after overlay merge; graph contact tables and old retained `working.participants` rows will not contain that row. |
+| Virtual participant linked to handles | UI can show the virtual identity after overlay merge; graph contact tables and old retired `working.participants` rows will not contain that row. |
 | Display names collide | Collision is allowed. Display names are labels, not identity keys. |
 
 ## 9. Non-Negotiable Rules
@@ -275,7 +275,7 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 
 Known current-state caveats:
 
-- Old retained `working.participants` rows are AddressBook-derived and preserve
+- Old retired `working.participants` rows are AddressBook-derived and preserve
   `Z_PK`; virtual participants live only in overlay and appear through provider
   merge logic.
 - Some older feature docs still use stale table names such as `working.handles`, `import_handles`, or `handle_overrides`. Current names are `handles_canonical`, `handles_canonical_to_alias`, `handles`, and `handle_to_participant_overrides`.
@@ -286,9 +286,9 @@ When these caveats matter, prefer current schema/code and the `10-DATABASES` doc
 
 ## References
 
-- `./10-group-import-working.md` - retained import-to-working identity and ID preservation contract.
+- `./10-group-import-working.md` - retired import-to-working identity and ID preservation contract.
 - `./11-contact-to-chat-linking.md` - contact-to-handle-to-chat walkthrough.
 - `./05-db-overlay.md` - overlay identity and presentation tables.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - retained import and working table names.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` - retired import and working table names.
 - `../40-FEATURES/contact-names/VIRTUAL_PARTICIPANTS.md` - virtual participant behavior.
 - `../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/00-overview.md` - spec pipeline and rendering boundaries.

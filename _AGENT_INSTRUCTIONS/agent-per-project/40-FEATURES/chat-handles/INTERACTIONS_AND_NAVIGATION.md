@@ -31,7 +31,7 @@ last_updated: 2026-06-06
 ## Cross-Feature Touchpoints
 - Conversation and contact surfaces resolve display identity after overlay changes.
 - Messages feature resolves sender/contact labels through the shared display identity resolver.
-- Search/evidence scopes observe graph identity plus overlay intent rather than rebuilding retained historical indexes.
+- Search/evidence scopes observe graph identity plus overlay intent rather than rebuilding retired working indexes.
 
 ## Navigation Guardrails
 - Entry points should flow through current ViewSpec/sidebar spec coordinators.

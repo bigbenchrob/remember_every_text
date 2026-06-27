@@ -2,9 +2,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../db/feature_level_providers/message_data_version_provider.dart';
-import '../../feature_level_providers.dart';
 import 'conversation.dart';
 import 'conversation_reader.dart';
+import 'conversation_repository_provider.dart';
 
 part 'conversation_reader_provider.g.dart';
 

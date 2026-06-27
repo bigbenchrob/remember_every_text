@@ -42,13 +42,13 @@ Current `lib/essentials/` top-level areas include:
 | --- | --- |
 | `navigation/` | App shell, active sidebar mode, center/right panel stacks, `ViewSpec` routing, sidebar parking, panel host widgets. |
 | `sidebar/` | `CassetteSpec`, stable cassette rack projection, ephemeral cassette projection, topology dispatch, cassette payload resolution, shared sidebar rendering. |
-| `search/` | Shared graph message search service, evidence selection, and retained search bridge handling where explicitly documented. |
+| `search/` | Shared graph message search service, evidence selection, and retired search bridge handling where explicitly documented. |
 | `onboarding/` | Full Disk Access, graph readiness/build gate state, onboarding overlay lifecycle, environment reports, reset/recovery behavior. |
-| `db/` | Centralized database access providers and database infrastructure. |
-| `source_scoped_import/` | Production source-scoped import ledger and importers for `macos_import_ss.db`. |
-| `conversation_graph/` | Production graph projection/build/read layer for `working_ss.db`. |
-| Retired `db_importers/` | Removed. Source-scoped importers live in `source_scoped_import/`; live `chat.db` monitoring and graph lifecycle work live in `conversation_graph/`; retained DB diagnostics live in `db/`. |
-| Retired `db_migrate/` | Historical retained projection cleanup context only; no active app provider or service. |
+| `db/` | Centralized physical database providers, app database filename registry, and database infrastructure. |
+| `source_scoped_import/` | Production source-scoped import semantics, ledger schema, and importers for `macos_import_ss.db`; physical DB provider construction remains in `db/`. |
+| `conversation_graph/` | Production graph projection/build/read semantics for `working_ss.db`; physical graph DB provider construction remains in `db/`. |
+| Retired `db_importers/` | Removed. Source-scoped importers live in `source_scoped_import/`; live `chat.db` monitoring and graph lifecycle work live in `conversation_graph/`; retired-file diagnostics live in `db/`. |
+| Retired `db_migrate/` | Retired projection cleanup context only; no active app provider or service. |
 | `logging/` | Application logging and diagnostic export support. |
 | `window_state/` | Window persistence and platform window-management services. |
 | `config/`, `debug/`, `services/`, `tooltips/`, `contacts/` | Shared app infrastructure and smaller cross-cutting systems. |

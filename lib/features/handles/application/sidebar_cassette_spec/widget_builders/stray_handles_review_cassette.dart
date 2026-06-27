@@ -5,10 +5,11 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
-import '../../../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../../../essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
-import '../../../feature_level_providers.dart';
+import '../../read_models/stray_handle_summary.dart';
+import '../../read_models/stray_handles_provider.dart';
 import '../resolver_tools/stray_handle_sidebar_actions_provider.dart';
 
 /// Sidebar cassette that displays a scrollable list of stray handles,

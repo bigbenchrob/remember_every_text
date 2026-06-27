@@ -4,7 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/environment_readiness/domain/spec_classes/environment_readiness_view_spec.dart';
 import '../../logging/domain/pipeline_incident_report.dart';
-import '../../logging/feature_level_providers.dart';
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../onboarding/domain/onboarding_status.dart';
 import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';

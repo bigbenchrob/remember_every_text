@@ -5,14 +5,15 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
 import '../../application/message_evidence/current_visible_month_provider.dart';
+import '../../application/message_evidence/recovered_message_evidence_provider.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/recovered_message_navigation_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart';
 import '../../application/view_spec/resolver_tools/recovered_messages_heatmap_data.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
-import '../../feature_level_providers.dart';
 
 class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
   const RecoveredMessagesHeatmapSidebar({

@@ -8,10 +8,10 @@ import 'package:remember_this_text/essentials/logging/domain/pipeline_incident_r
 import 'package:remember_this_text/essentials/logging/feature_level_providers.dart';
 
 void main() {
-  test('migration enum renders as retired historical projection', () {
+  test('migration enum renders as retired import/migration', () {
     expect(
       PipelineIncidentStage.migration.displayLabel,
-      equals('Retired historical projection'),
+      equals('Retired import/migration'),
     );
   });
 

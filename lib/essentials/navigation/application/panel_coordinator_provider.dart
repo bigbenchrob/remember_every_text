@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/environment_readiness/feature_level_providers.dart'
-    as environment_readiness_feature;
+    as environment_readiness_feature show viewSpecCoordinatorProvider;
 import '../../../features/messages/feature_level_providers.dart'
-    as messages_feature;
+    as messages_feature show viewSpecCoordinatorProvider;
 import '../../../features/settings/feature_level_providers.dart'
-    as settings_feature;
+    as settings_feature show viewSpecCoordinatorProvider;
 import '../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../onboarding/presentation/onboarding_dev_panel.dart';
 import '../domain/entities/panel_stack.dart';

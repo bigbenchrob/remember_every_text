@@ -2,7 +2,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../providers.dart';
-import '../../feature_level_providers.dart';
+import '../source_database_opener_provider.dart';
+import '../source_scoped_import_ledger_provider.dart';
 import 'attachment_importer.dart';
 
 part 'attachment_importer_provider.g.dart';

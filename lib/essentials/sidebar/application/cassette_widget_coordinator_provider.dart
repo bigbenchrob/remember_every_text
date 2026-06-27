@@ -1,21 +1,37 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import '../../../features/contacts/feature_level_providers.dart'
-    as contacts_feature;
+    as contacts_feature
+    show
+        contactChooserCassetteStateProvider,
+        contactsCassetteCoordinatorProvider,
+        contactsInfoCassetteCoordinatorProvider;
+import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/feature_level_providers.dart'
     as handles_feature;
 import '../../../features/messages/feature_level_providers.dart'
-    as messages_feature;
+    as messages_feature
+    show
+        messagesCassetteCoordinatorProvider,
+        messagesInfoCassetteCoordinatorProvider;
+import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../features/settings/feature_level_providers.dart'
-    as settings_feature;
+    as settings_feature
+    show
+        historicalArchivesSidebarKnownSourcesProvider,
+        settingsCassetteCoordinatorProvider;
+import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../../features/sidebar_utilities/feature_level_providers.dart'
-    as sidebar_utilities;
+    as sidebar_utilities
+    show sidebarUtilitiesCassetteCoordinatorProvider;
 import '../../navigation/domain/sidebar_mode.dart';
-import '../feature_level_providers.dart';
+import '../domain/entities/cassette_spec.dart';
 import '../presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'renderable_sidebar_cassette_specs_provider.dart';
 import 'sidebar_cassette_sectioning.dart';
+import 'sidebar_flow_state_provider.dart';
 
 part 'cassette_widget_coordinator_provider.g.dart';
 
@@ -181,8 +197,8 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
       return coordinator.buildViewModel(infoSpec, cassetteIndex: cassetteIndex);
     },
     handles: (handlesSpec) async {
-      handlesSpec.maybeMap(
-        strayHandlesReview: (_) {
+      handlesSpec.when(
+        strayHandlesReview: (_, __) {
           ref.watch(handles_feature.strayHandleModeSettingProvider);
           return null;
         },
@@ -190,7 +206,7 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
           ref.watch(handles_feature.strayHandleModeSettingProvider);
           return null;
         },
-        orElse: () {
+        strayHandlesTypeSwitcher: (_) {
           return null;
         },
       );

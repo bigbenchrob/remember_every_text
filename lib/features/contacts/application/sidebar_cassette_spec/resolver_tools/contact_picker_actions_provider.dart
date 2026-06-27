@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/logging/feature_level_providers.dart';
+import '../../../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../messages/feature_level_providers.dart' as messages_feature;
-import '../../../feature_level_providers.dart';
+import '../../read_models/contact_profile_provider.dart';
 
 part 'contact_picker_actions_provider.g.dart';
 

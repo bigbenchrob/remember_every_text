@@ -58,7 +58,7 @@ Providers/read models that merge overlay and graph/working data must request the
 | `archived_attachments` | Attachment archive metadata keyed by message GUID + import attachment ID. |
 | `overlay_settings` | Overlay-scoped key/value settings. |
 
-Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`. The graph and retained import/working schema references do not own overlay semantics; overlay details are owned here and in the code schema.
+Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`. The graph and retired import/working schema references do not own overlay semantics; overlay details are owned here and in the code schema.
 
 ## Usage Rules
 

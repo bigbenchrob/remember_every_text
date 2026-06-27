@@ -32,13 +32,13 @@ Current app-owned files/directories include:
 
 | Data | Path | Owner |
 | --- | --- | --- |
-| Source-scoped import ledger | `macos_import_ss.db` | `importDatabaseProvider`, source-scoped import pipeline |
+| Source-scoped import ledger | `macos_import_ss.db` | `sourceScopedImportDatabaseProvider` in `essentials/db`; semantic import code usually consumes `sourceScopedImportLedgerProvider` |
 | Conversation graph projection | `working_ss.db` | `driftConversationGraphDatabaseProvider`, graph projection/readers |
 | Retired import cleanup file | `macos_import.db` | Transitional cleanup file only; no central app provider |
 | Retired working cleanup file | `working.db` | Transitional cleanup file only; no central app provider |
 | Overlay database | `user_overlays.db` | `overlayDatabaseProvider`, user-intent and archive-source metadata services |
 | Attachment archive | `attachment_archive/` | Attachment archive service |
-| Historical import/projection audit logs | `import_log`, `migrate_log` | Historical retained diagnostics; source-scoped graph status is reported through graph lifecycle/health surfaces |
+| Historical import/projection audit logs | `import_log`, `migrate_log` | Historical retired diagnostics; source-scoped graph status is reported through graph lifecycle/health surfaces |
 
 The repository folder may still be named `remember_every_text`; do not confuse
 the repo path with runtime storage paths.
@@ -72,7 +72,9 @@ deployment automation in this repository owns that behavior.
 
 ## Schema References
 
-- Source-scoped import DB: `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`
+- Physical app database filenames: `lib/essentials/db/app_database_files.dart`
+- Source-scoped import DB provider: `lib/essentials/db/feature_level_providers.dart`
+- Source-scoped import DB implementation: `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`
 - Conversation graph DB: `lib/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart`
 - Retired import/working DBs: no live providers or schemas remain; existing
   `macos_import.db` and `working.db` files are transitional cleanup storage only

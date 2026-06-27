@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
-import '../../../../essentials/external_links/feature_level_providers.dart';
+import '../../../../essentials/external_links/feature_level_providers.dart'
+    show externalLinkActionsProvider, linkPreviewMetadataProvider;
 import '../../../../essentials/services/native_link_preview_service.dart';
 import '../view_model/shared/display_widgets/message_display_metrics.dart';
 

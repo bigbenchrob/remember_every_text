@@ -16,7 +16,7 @@ tests: []
 
 ## 🚨 INVIOLABLE ARCHITECTURAL PRINCIPLE 🚨
 
-**`db-overlay` (`user_overlays.db`) is completely independent from graph projection (`working_ss.db`) and from retained historical files (`macos_import.db` / `working.db`).**
+**`db-overlay` (`user_overlays.db`) is completely independent from graph projection (`working_ss.db`) and from retired cleanup/diagnostic files (`macos_import.db` / `working.db`).**
 
 1. **No synchronization** — The databases never copy data to each other.
 2. **No cross-writing** — Code that writes to overlay never writes to working, and vice versa. **No dual-writes.**
@@ -36,12 +36,12 @@ Breaking these rules jeopardizes user data persistence and invalidates the sourc
 | **Import source data** | Source-scoped import ledger only | Source DBs only | Rebuilt or extended by import flows |
 | **Graph projection data** | Working graph DB only | Source-scoped import ledger only | Rebuilt or incrementally updated by graph projection |
 | **Archive metadata and archive-source metadata** | Overlay DB only | Source/archive metadata only | Persistent user/app archive state |
-| **Retired historical projection inventory** | — | Retired `working.db` file only | Read-only diagnostics/recovery reference |
+| **Retired cleanup/diagnostic inventory** | — | Retired `working.db` file only | Cleanup and diagnostic inventory only |
 | **User intent** (overlay) | Overlay DB only | — | Always persists |
 | **Providers/read models** (read path) | — | Graph-derived data ∪ Overlay, overlay wins | N/A |
 
 Source-scoped import is a **pure function** of macOS source databases → `macos_import_ss.db`. Graph projection is a **pure function** of `macos_import_ss.db` → `working_ss.db`. Archive metadata and archive-source metadata live in overlay storage. Import/projection paths do not read overlay.
-User actions are **pure writes** to overlay. They never write to graph tables or retained files.
+User actions are **pure writes** to overlay. They never write to graph tables or retired files.
 Providers/read models are the **sole merge point** where projection data and overlay data are read and combined.
 
 ## Architectural Model
@@ -196,7 +196,7 @@ in providers via `overlayDb.getAllHandleVisibilities()`.
 
 ## Responsibilities by Database
 
-| Concern | `db-graph-working` / retained files | `db-overlay` |
+| Concern | `db-graph-working` / retired files | `db-overlay` |
 | --- | --- | --- |
 | Ownership | Source-scoped graph projection; retired files only for recovery/reference diagnostics | User-facing services, archive metadata, and archive-source metadata |
 | Lifecycle | Graph projection is disposable/rebuildable; retired files are transitional cleanup storage | Persistent |

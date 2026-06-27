@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../feature_level_providers.dart';
+import '../../favorites/favorite_contacts_repository_provider.dart';
 import '../../read_models/contact_summary_identity.dart';
 
 part 'contact_is_favorite_provider.g.dart';

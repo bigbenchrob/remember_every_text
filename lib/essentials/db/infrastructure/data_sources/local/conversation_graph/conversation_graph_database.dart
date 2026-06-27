@@ -2,8 +2,6 @@ import 'package:drift/drift.dart';
 
 part 'conversation_graph_database.g.dart';
 
-const String conversationGraphDatabaseFileName = 'working_ss.db';
-
 /// Drift-backed source-scoped conversation graph projection database.
 @DriftDatabase(tables: [])
 class ConversationGraphDatabase extends _$ConversationGraphDatabase {

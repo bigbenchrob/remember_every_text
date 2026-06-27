@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_models.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_report_writer.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_service.dart';
+import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_database_keys.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_query_layer.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_runtime_environment.dart';
 
@@ -29,12 +30,12 @@ void main() {
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
-              databaseKey: 'source_scoped_import',
-              role: 'source_scoped_import_ledger',
+              databaseKey: databaseHealthKeySourceScopedImport,
+              role: databaseHealthRoleSourceScopedImportLedger,
             ),
             _FakeHealthQueryLayer(
-              databaseKey: 'conversation_graph',
-              role: 'application_primary_source_scoped_graph',
+              databaseKey: databaseHealthKeyConversationGraph,
+              role: databaseHealthRoleConversationGraph,
             ),
           ],
         );
@@ -48,7 +49,7 @@ void main() {
                 .having(
                   (entry) => entry.databaseKey,
                   'databaseKey',
-                  'source_scoped_import',
+                  databaseHealthKeySourceScopedImport,
                 )
                 .having((entry) => entry.tableName, 'tableName', 'messages'),
           ),
@@ -60,7 +61,7 @@ void main() {
                 .having(
                   (entry) => entry.databaseKey,
                   'databaseKey',
-                  'conversation_graph',
+                  databaseHealthKeyConversationGraph,
                 )
                 .having(
                   (entry) => entry.tableName,
@@ -88,15 +89,18 @@ void main() {
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
-              databaseKey: 'retired_macos_import',
-              role: 'retired_macos_import_cleanup',
+              databaseKey: databaseHealthKeyRetiredMacosImport,
+              role: databaseHealthRoleRetiredMacosImportCleanup,
             ),
           ],
         );
 
         final report = await service.buildPhase1Report();
         final retiredCleanupTables = report.tableInventory
-            .where((entry) => entry.databaseKey == 'retired_macos_import')
+            .where(
+              (entry) =>
+                  entry.databaseKey == databaseHealthKeyRetiredMacosImport,
+            )
             .map((entry) => entry.tableName)
             .toSet();
 
@@ -113,7 +117,7 @@ void main() {
           report.tableInventory
               .singleWhere(
                 (entry) =>
-                    entry.databaseKey == 'retired_macos_import' &&
+                    entry.databaseKey == databaseHealthKeyRetiredMacosImport &&
                     entry.tableName == 'historical_archive_sources',
               )
               .notes,
@@ -123,7 +127,10 @@ void main() {
         );
         expect(
           report.relationshipChecks
-              .where((check) => check.databaseKey == 'retired_macos_import')
+              .where(
+                (check) =>
+                    check.databaseKey == databaseHealthKeyRetiredMacosImport,
+              )
               .map((check) => check.checkKey),
           isEmpty,
         );
@@ -147,15 +154,17 @@ void main() {
         hasFullDiskAccess: true,
         queryLayers: <DatabaseHealthQueryLayer>[
           _FakeHealthQueryLayer(
-            databaseKey: 'retired_working',
-            role: 'retired_working_cleanup',
+            databaseKey: databaseHealthKeyRetiredWorking,
+            role: databaseHealthRoleRetiredWorkingCleanup,
           ),
         ],
       );
 
       final report = await service.buildPhase1Report();
       final retiredWorkingTables = report.tableInventory
-          .where((entry) => entry.databaseKey == 'retired_working')
+          .where(
+            (entry) => entry.databaseKey == databaseHealthKeyRetiredWorking,
+          )
           .map((entry) => entry.tableName)
           .toSet();
 
@@ -175,23 +184,27 @@ void main() {
         report.tableInventory
             .singleWhere(
               (entry) =>
-                  entry.databaseKey == 'retired_working' &&
+                  entry.databaseKey == databaseHealthKeyRetiredWorking &&
                   entry.tableName == 'projection_state',
             )
             .notes,
         contains(
-          'Retired historical projection-state metadata only; not an app-facing readiness source.',
+          'Retired projection-state cleanup metadata only; not an app-facing readiness source.',
         ),
       );
       expect(
         report.relationshipChecks
-            .where((check) => check.databaseKey == 'retired_working')
+            .where(
+              (check) => check.databaseKey == databaseHealthKeyRetiredWorking,
+            )
             .map((check) => check.checkKey),
         contains('recovered_unlinked_attachments_to_messages_by_guid'),
       );
       expect(report.summary.tableCount, 0);
       final retiredRecoveredRelationship = report.relationshipChecks
-          .where((check) => check.databaseKey == 'retired_working')
+          .where(
+            (check) => check.databaseKey == databaseHealthKeyRetiredWorking,
+          )
           .singleWhere(
             (check) =>
                 check.checkKey ==
@@ -205,7 +218,9 @@ void main() {
       );
       expect(
         report.relationshipChecks
-            .where((check) => check.databaseKey == 'retired_working')
+            .where(
+              (check) => check.databaseKey == databaseHealthKeyRetiredWorking,
+            )
             .map((check) => check.checkKey),
         isNot(contains('messages_to_chats')),
       );
@@ -239,8 +254,8 @@ void main() {
           hasFullDiskAccess: true,
           queryLayers: <DatabaseHealthQueryLayer>[
             _FakeHealthQueryLayer(
-              databaseKey: 'retired_working',
-              role: 'retired_working_cleanup',
+              databaseKey: databaseHealthKeyRetiredWorking,
+              role: databaseHealthRoleRetiredWorkingCleanup,
               fileExists: false,
             ),
           ],
@@ -248,7 +263,10 @@ void main() {
 
         final report = await service.buildPhase1Report();
 
-        expect(report.databases.single.databaseKey, 'retired_working');
+        expect(
+          report.databases.single.databaseKey,
+          databaseHealthKeyRetiredWorking,
+        );
         expect(report.databases.single.accessible, isFalse);
         expect(report.databases.single.readOnlyOpenSucceeded, isFalse);
         expect(report.tableInventory, isEmpty);
@@ -371,17 +389,17 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
 
   List<String> _tablesFor(String key) {
     return switch (key) {
-      'retired_macos_import' => const <String>[
+      databaseHealthKeyRetiredMacosImport => const <String>[
         'schema_migrations',
         'historical_archive_sources',
       ],
-      'retired_working' => const <String>[
+      databaseHealthKeyRetiredWorking => const <String>[
         'schema_migrations',
         'projection_state',
         'recovered_unlinked_messages',
         'recovered_unlinked_attachments',
       ],
-      'source_scoped_import' => const <String>[
+      databaseHealthKeySourceScopedImport => const <String>[
         'source_registry',
         'import_batches',
         'messages',
@@ -394,7 +412,7 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
         'attachments',
         'message_to_attachment',
       ],
-      'conversation_graph' => const <String>[
+      databaseHealthKeyConversationGraph => const <String>[
         'messages',
         'handles',
         'canonical_handles',

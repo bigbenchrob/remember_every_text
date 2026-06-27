@@ -1,8 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../feature_level_providers.dart';
+import '../../favorites/favorite_contacts_repository_provider.dart';
+import '../../read_models/contact_summary.dart';
 import '../../read_models/contact_summary_identity.dart';
+import '../../read_models/contacts_list_repository_provider.dart';
 
 part 'favorite_contacts_provider.freezed.dart';
 part 'favorite_contacts_provider.g.dart';

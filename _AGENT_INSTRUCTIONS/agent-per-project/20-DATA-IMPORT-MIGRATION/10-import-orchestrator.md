@@ -99,7 +99,7 @@ Current live import/build code is source-scoped and graph-backed.
   - `validatePrereqs(ctx)` - must not mutate data; catches duplicate IDs, broken foreign keys, invalid enums, missing sources.
   - `copy(ctx)` - importer-owned deterministic SQL. Skipped automatically when `ImportContext.dryRun` is true.
   - `postValidate(ctx)` - confirms row counts, FK integrity, and any importer-specific invariants.
-4. **Progress events** - `_runPhase()` publishes `TableImportProgressEvent`s (`started`, `succeeded`, `failed`) with human-friendly names via `BaseTableImporter.displayName`. Retained diagnostic UI view models may surface these updates in the import control panel.
+4. **Progress events** - `_runPhase()` publishes `TableImportProgressEvent`s (`started`, `succeeded`, `failed`) with human-friendly names via `BaseTableImporter.displayName`. Retired diagnostic UI view models may surface these updates in the import control panel.
 5. **Structured logging** - Every phase prints a timestamped banner (`=== [ISO8601] importer :: phase ===`) through `ImportContext.info()`, giving a chronological trace in console logs and batch notes.
 6. **Filesystem audit report** - At the end of each run the orchestrated service writes `import_log` in the MessageLens app-support directory, capturing source counts, ledger counts, rich-text extraction stats, and source-vs-destination deltas.
 7. **Dry-run support** - Validation and post-validation still execute while copy is skipped, enabling "check everything" workflows on user machines without mutating the ledger.
@@ -111,8 +111,8 @@ Current live import/build code is source-scoped and graph-backed.
 - Detects truncated or incomplete imported baselines and can force a full reimport by clearing previous max-row cursors before importer execution.
 
 ## Importer Responsibilities
-- Own one logical retained ledger table (or tight cluster) and copy rows from macOS sources into `macos_import.db` without altering source primary keys.
-- Enrich rows with derived columns when needed, but do not invent cross-table relationships; retained historical relationship projection happens during migration, while production graph topology is built in the source-scoped graph lifecycle.
+- Own one logical retired ledger table (or tight cluster) and copy rows from macOS sources into `macos_import.db` without altering source primary keys.
+- Enrich rows with derived columns when needed, but do not invent cross-table relationships; retired import/migration relationship projection happened during migration, while production graph topology is built in the source-scoped graph lifecycle.
 - Use `BaseTableImporter` helpers (`count`, `expectTrueOrThrow`, `expectZeroOrThrow`) to keep validation consistent.
 - Emit progress names that help the UI explain which portion of the pipeline is running.
 
@@ -138,4 +138,4 @@ Do not add legacy importers for ordinary app behavior. New source
 facts should usually be modeled in `macos_import_ss.db` and projected into
 `working_ss.db`. If old `macos_import.db` contents matter for archive/recovery,
 treat them as cleanup/audit evidence to migrate, export, or intentionally
-discard. Do not recreate the retained importer/orchestrator framework.
+discard. Do not recreate the retired importer/orchestrator framework.

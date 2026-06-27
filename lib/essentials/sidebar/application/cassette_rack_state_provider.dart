@@ -1,9 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
+import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
-import '../feature_level_providers.dart';
+import '../domain/entities/cassette_spec.dart';
 import './sidebar_flow_state_provider.dart';
 
 part 'cassette_rack_state_provider.freezed.dart';

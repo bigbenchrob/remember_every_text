@@ -2,35 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as path;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../../db/feature_level_providers.dart';
 import '../domain/known_sources.dart';
 import '../domain/ports/import_ledger_port.dart';
-
-part 'import_database_provider.g.dart';
-
-const String importDatabaseFileName = 'macos_import_ss.db';
-
-@Riverpod(keepAlive: true)
-Future<ImportDatabase> importDatabase(ImportDatabaseRef ref) async {
-  final directory = Directory(databaseDirectoryPath);
-  if (!directory.existsSync()) {
-    await directory.create(recursive: true);
-  }
-
-  final database = await ImportDatabase.open(
-    databaseDirectory: databaseDirectoryPath,
-    databaseName: importDatabaseFileName,
-  );
-
-  ref.onDispose(() async {
-    await database.close();
-  });
-
-  return database;
-}
 
 class ImportDatabase implements ImportLedger {
   ImportDatabase._(this.database);
@@ -39,7 +14,7 @@ class ImportDatabase implements ImportLedger {
 
   static Future<ImportDatabase> open({
     required String databaseDirectory,
-    String databaseName = importDatabaseFileName,
+    required String databaseName,
   }) async {
     final directory = Directory(databaseDirectory);
     if (!directory.existsSync()) {

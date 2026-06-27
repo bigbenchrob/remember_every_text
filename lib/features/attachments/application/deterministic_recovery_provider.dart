@@ -1,7 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/logging/feature_level_providers.dart';
-import '../feature_level_providers.dart';
+import '../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
+import 'deterministic_recovery_runtime_providers.dart'
+    show
+        crossSnapshotMapperProvider,
+        historicalSnapshotReaderFactoryProvider,
+        recoveredAttachmentArchiveWriterProvider;
 
 part 'deterministic_recovery_provider.g.dart';
 

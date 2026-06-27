@@ -116,7 +116,7 @@ MessageLens cannot.
    mode displays from the MessageLens archive and uses live files as ingestion
    sources; live-only mode can display directly from Messages paths
 4. **Stores archive metadata in the overlay database** — graph projection is a
-   derived source-data view, and retained historical cleanup files are
+   derived source-data view, and retired cleanup/diagnostic files are
    transitional compatibility inputs only; neither owns durable archive metadata
 
 Archive storage uses SHA-256 content addressing:
@@ -146,7 +146,7 @@ broken:
 
 - Sent-attachment directory conventions (`at_0_` GUID prefix) change between
   historical and current `chat.db`, breaking path-tail matching
-- `sha256_hex` is frequently NULL in retained historical working projections,
+- `sha256_hex` is frequently NULL in retired working projection rows,
   disabling hash-based matching in historical reference tables
 - Common filenames (e.g. `IMG_1234.jpeg`) create false-positive ambiguity
 - Real-world success rate: ~40%

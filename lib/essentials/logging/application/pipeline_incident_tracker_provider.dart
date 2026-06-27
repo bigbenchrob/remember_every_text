@@ -2,9 +2,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../domain/pipeline_incident_report.dart';
-import '../feature_level_providers.dart';
 import 'app_logger.dart';
 import 'pipeline_incident_log_writer.dart';
+import 'pipeline_incident_storage_provider.dart';
 import 'pipeline_incident_store.dart';
 
 part 'pipeline_incident_tracker_provider.g.dart';

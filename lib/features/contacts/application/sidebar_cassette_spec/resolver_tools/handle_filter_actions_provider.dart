@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/logging/feature_level_providers.dart';
+import '../../../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../services/manual_handle_link_service.dart';
 
 part 'handle_filter_actions_provider.g.dart';

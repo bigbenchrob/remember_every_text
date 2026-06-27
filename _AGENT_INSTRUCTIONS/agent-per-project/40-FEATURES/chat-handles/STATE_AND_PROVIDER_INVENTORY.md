@@ -35,4 +35,4 @@ last_updated: 2026-06-14
 
 ## Open Stewardship Items
 - Keep active provider names documented here when handle review or linking surfaces change.
-- Retire retained historical handle terminology from docs as remaining recovery/archive bridges are removed.
+- Retire old handle terminology from docs as remaining recovery/archive bridges are removed.

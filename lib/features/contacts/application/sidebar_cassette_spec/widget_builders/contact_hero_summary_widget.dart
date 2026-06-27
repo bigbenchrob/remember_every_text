@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
-import '../../../feature_level_providers.dart';
 import '../../../presentation/dialogs/contact_name_edit_dialog.dart';
 import '../../../presentation/widgets/contact_cassette_error.dart';
 import '../../../presentation/widgets/contact_highlight_row.dart';
+import '../../read_models/contact_summary.dart';
 import '../../read_models/contact_summary_identity.dart';
+import '../../read_models/contacts_list_repository_provider.dart';
 import '../resolver_tools/contact_display_name_override_actions_provider.dart';
 import '../resolver_tools/contact_favorite_actions_provider.dart';
 import '../resolver_tools/contact_is_favorite_provider.dart';

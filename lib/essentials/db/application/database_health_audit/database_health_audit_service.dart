@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../../../services/startup_flags_service.dart';
 import 'database_health_audit_models.dart';
 import 'database_health_audit_report_writer.dart';
+import 'database_health_database_keys.dart';
 import 'database_health_query_layer.dart';
 import 'database_health_runtime_environment.dart';
 
@@ -532,8 +533,8 @@ Future<int> _countQuery(DatabaseHealthQueryLayer layer, String sql) async {
 }
 
 bool _isRetiredCleanupDatabaseKey(String databaseKey) {
-  return databaseKey == 'retired_macos_import' ||
-      databaseKey == 'retired_working';
+  return databaseKey == databaseHealthKeyRetiredMacosImport ||
+      databaseKey == databaseHealthKeyRetiredWorking;
 }
 
 DatabaseHealthStatus _statusFromRelationshipCounts({
@@ -646,7 +647,7 @@ String _quoted(String value) {
 
 const Map<String, List<AuditTableSpec>>
 _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
-  'retired_macos_import': <AuditTableSpec>[
+  databaseHealthKeyRetiredMacosImport: <AuditTableSpec>[
     AuditTableSpec(tableName: 'schema_migrations'),
     AuditTableSpec(
       tableName: 'historical_archive_sources',
@@ -671,7 +672,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
       ],
     ),
   ],
-  'retired_working': <AuditTableSpec>[
+  databaseHealthKeyRetiredWorking: <AuditTableSpec>[
     AuditTableSpec(
       tableName: 'schema_migrations',
       notes: <String>[
@@ -681,7 +682,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
     AuditTableSpec(
       tableName: 'projection_state',
       notes: <String>[
-        'Retired historical projection-state metadata only; not an app-facing readiness source.',
+        'Retired projection-state cleanup metadata only; not an app-facing readiness source.',
       ],
     ),
     AuditTableSpec(
@@ -710,7 +711,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
       notes: <String>['Retired recovered-message attachment cleanup rows.'],
     ),
   ],
-  'source_scoped_import': <AuditTableSpec>[
+  databaseHealthKeySourceScopedImport: <AuditTableSpec>[
     AuditTableSpec(tableName: 'source_registry'),
     AuditTableSpec(tableName: 'import_batches'),
     AuditTableSpec(
@@ -798,7 +799,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
     ),
     AuditTableSpec(tableName: 'message_to_attachment'),
   ],
-  'conversation_graph': <AuditTableSpec>[
+  databaseHealthKeyConversationGraph: <AuditTableSpec>[
     AuditTableSpec(
       tableName: 'messages',
       importantColumns: <AuditImportantColumnSpec>[
@@ -872,7 +873,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
     ),
     AuditTableSpec(tableName: 'message_to_attachment'),
   ],
-  'overlay': <AuditTableSpec>[
+  databaseHealthKeyOverlay: <AuditTableSpec>[
     AuditTableSpec(tableName: 'participant_overrides'),
     AuditTableSpec(tableName: 'chat_overrides'),
     AuditTableSpec(
@@ -916,7 +917,7 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
 
 const Map<String, List<_RelationshipCheckSpec>>
 _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
-  'retired_working': <_RelationshipCheckSpec>[
+  databaseHealthKeyRetiredWorking: <_RelationshipCheckSpec>[
     _RelationshipCheckSpec(
       checkKey: 'recovered_unlinked_attachments_to_messages_by_guid',
       relationshipType: DatabaseHealthRelationshipType.existenceCheck,
@@ -931,7 +932,7 @@ _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
       ],
     ),
   ],
-  'source_scoped_import': <_RelationshipCheckSpec>[
+  databaseHealthKeySourceScopedImport: <_RelationshipCheckSpec>[
     _RelationshipCheckSpec(
       checkKey: 'chat_to_message_to_chats_by_ss_id',
       relationshipType: DatabaseHealthRelationshipType.existenceCheck,
@@ -990,7 +991,7 @@ _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
           'message_to_attachment.attachment_ss_id = attachments.ss_id',
     ),
   ],
-  'conversation_graph': <_RelationshipCheckSpec>[
+  databaseHealthKeyConversationGraph: <_RelationshipCheckSpec>[
     _RelationshipCheckSpec(
       checkKey: 'chat_to_message_to_chats_by_ss_id',
       relationshipType: DatabaseHealthRelationshipType.existenceCheck,
@@ -1073,7 +1074,7 @@ _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
 
 const Map<String, List<_InvariantCheckSpec>>
 _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
-  'retired_working': <_InvariantCheckSpec>[
+  databaseHealthKeyRetiredWorking: <_InvariantCheckSpec>[
     _InvariantCheckSpec(
       checkKey: 'retired_projection_state_cleanup_snapshot_if_present',
       severity: DatabaseHealthSeverity.low,
@@ -1093,7 +1094,7 @@ _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
       ],
     ),
   ],
-  'source_scoped_import': <_InvariantCheckSpec>[
+  databaseHealthKeySourceScopedImport: <_InvariantCheckSpec>[
     _InvariantCheckSpec(
       checkKey: 'source_scoped_attachment_edges_should_reference_rows',
       severity: DatabaseHealthSeverity.high,
@@ -1114,7 +1115,7 @@ _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
           ''',
     ),
   ],
-  'conversation_graph': <_InvariantCheckSpec>[
+  databaseHealthKeyConversationGraph: <_InvariantCheckSpec>[
     _InvariantCheckSpec(
       checkKey: 'graph_message_attachment_edges_should_reference_rows',
       severity: DatabaseHealthSeverity.high,
@@ -1169,7 +1170,7 @@ _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
           ''',
     ),
   ],
-  'overlay': <_InvariantCheckSpec>[
+  databaseHealthKeyOverlay: <_InvariantCheckSpec>[
     _InvariantCheckSpec(
       checkKey: 'overlay_cross_database_relationship_checks_deferred',
       severity: DatabaseHealthSeverity.low,

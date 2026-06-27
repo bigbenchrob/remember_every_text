@@ -1,38 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 
 void main() {
   test(
     'derived message data reset separates retired cleanup and active graph files',
     () {
       expect(
-        retiredHistoricalDatabaseCleanupBaseNames.toSet(),
+        retiredDatabaseCleanupBaseNames.toSet(),
         equals(<String>{
-          retiredMacosImportDatabaseFileName,
-          retiredWorkingDatabaseFileName,
+          appDatabaseFileName(AppDatabaseFile.retiredMacosImport),
+          appDatabaseFileName(AppDatabaseFile.retiredWorking),
         }),
       );
       expect(
         activeGraphDerivedDatabaseBaseNames.toSet(),
         equals(<String>{
-          sourceScopedImportDatabaseFileName,
-          conversationGraphDatabaseFileName,
+          appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
+          appDatabaseFileName(AppDatabaseFile.conversationGraph),
         }),
       );
       expect(
         messageDataResetPostCleanupCheckBaseNames.toSet(),
         equals(<String>{
-          retiredMacosImportDatabaseFileName,
-          retiredWorkingDatabaseFileName,
-          sourceScopedImportDatabaseFileName,
-          conversationGraphDatabaseFileName,
+          appDatabaseFileName(AppDatabaseFile.retiredMacosImport),
+          appDatabaseFileName(AppDatabaseFile.retiredWorking),
+          appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
+          appDatabaseFileName(AppDatabaseFile.conversationGraph),
         }),
       );
       expect(
         activeGraphDerivedDatabaseBaseNames.toSet().intersection(
-          retiredHistoricalDatabaseCleanupBaseNames.toSet(),
+          retiredDatabaseCleanupBaseNames.toSet(),
         ),
         isEmpty,
         reason:

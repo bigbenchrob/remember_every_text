@@ -78,7 +78,7 @@ Agents MUST NOT:
 ### 2.4 UI Layer
 
 - Reads through typed graph/evidence/overlay providers.
-- Must never read directly from `chat.db`, `macos_import_ss.db`, retained
+- Must never read directly from `chat.db`, `macos_import_ss.db`, retired
   import/working DBs, or raw SQLite connections.
 - Must not decide graph semantics, reconstruct topology imperatively, or repair
   data.
@@ -178,7 +178,7 @@ Restored app data folders may contain:
 
 - stale `working_ss.db` graph projections.
 - incomplete `macos_import_ss.db` relative to live `chat.db`.
-- retained historical cleanup DBs that do not match current graph state.
+- retired cleanup/diagnostic DB files that do not match current graph state.
 - overlay archive/user-intent data that must be preserved.
 
 System MUST:
@@ -186,7 +186,7 @@ System MUST:
 - detect stale source-scoped graph state.
 - rebuild/reconcile graph projection when needed.
 - preserve overlay user intent and archive metadata.
-- keep retained historical cleanup paths explicitly named.
+- keep retired cleanup/diagnostic paths explicitly named.
 
 Agents MUST NOT:
 
@@ -260,7 +260,7 @@ System is healthy when:
 - graph relationships use canonical `ss_id` endpoints.
 - overlay user intent is preserved and merged at read time.
 - message evidence surfaces use the shared evidence spine.
-- retired historical databases are unused by ordinary app reads and
+- retired cleanup/diagnostic databases are unused by ordinary app reads and
   explicitly classified as retired-file audit or diagnostic reference evidence.
 - no hidden inconsistencies exist.
 

@@ -65,4 +65,4 @@ When graph projection completes:
 
 Joining `contacts -> contact_to_handle -> chat_to_handle -> chats` yields conversations associated with that contact. Message evidence then scopes through the graph topology and `ss_id` endpoints.
 
-Historical legacy `participants -> handle_to_participant -> chat_to_handle -> chats` chains may help interpret retired storage files only. Archive/recovery code should use graph contact/handle topology plus explicit overlay compatibility keys, not retained participant chains, and ordinary app surfaces must never use the legacy chain as their model.
+Historical legacy `participants -> handle_to_participant -> chat_to_handle -> chats` chains may help interpret retired storage files only. Archive/recovery code should use graph contact/handle topology plus explicit overlay compatibility keys, not retired participant chains, and ordinary app surfaces must never use the legacy chain as their model.

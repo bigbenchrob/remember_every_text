@@ -1,9 +1,10 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../contacts/feature_level_providers.dart';
-import '../../../feature_level_providers.dart';
+import '../../../../contacts/feature_level_providers.dart'
+    show manualHandleLinkServiceProvider, virtualParticipantsProvider;
 import 'manual_linking_read_repository.dart';
+import 'manual_linking_read_repository_provider.dart';
 
 export 'manual_linking_read_repository.dart';
 

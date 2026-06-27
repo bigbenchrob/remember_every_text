@@ -1,11 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/logging/application/diagnostic_report_actions.dart';
 import 'package:remember_this_text/essentials/logging/application/diagnostic_report_exporter.dart';
 import 'package:remember_this_text/essentials/logging/domain/diagnostic_report_presentation_result.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 
 void main() {
   test('exportDiagnosticReport delegates through exporter boundary', () async {
@@ -42,14 +41,14 @@ void main() {
         readable: true,
         rowCount: 10,
       ),
-      sourceScopedImportDatabase: const OnboardingDatabaseProbe(
-        path: sourceScopedImportDatabaseFileName,
+      sourceScopedImportDatabase: OnboardingDatabaseProbe(
+        path: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
         exists: true,
         readable: true,
         rowCount: 123,
       ),
-      conversationGraph: const OnboardingDatabaseProbe(
-        path: conversationGraphDatabaseFileName,
+      conversationGraph: OnboardingDatabaseProbe(
+        path: appDatabaseFileName(AppDatabaseFile.conversationGraph),
         exists: true,
         readable: true,
         rowCount: 0,
@@ -80,13 +79,13 @@ void main() {
     expect(
       headerLines,
       contains(
-        'Source-scoped import ledger: path=$sourceScopedImportDatabaseFileName; exists=true; readable=true; rows=123',
+        'Source-scoped import ledger: path=${appDatabaseFileName(AppDatabaseFile.sourceScopedImport)}; exists=true; readable=true; rows=123',
       ),
     );
     expect(
       headerLines,
       contains(
-        'Conversation graph: path=$conversationGraphDatabaseFileName; exists=true; readable=true; rows=0',
+        'Conversation graph: path=${appDatabaseFileName(AppDatabaseFile.conversationGraph)}; exists=true; readable=true; rows=0',
       ),
     );
   });

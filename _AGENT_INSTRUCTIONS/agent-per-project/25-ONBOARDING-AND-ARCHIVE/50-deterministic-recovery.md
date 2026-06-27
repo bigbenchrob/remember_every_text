@@ -12,13 +12,13 @@ SHA-256 hash — was proven fundamentally broken by forensic analysis:
 | Failure mode | Impact |
 |-------------|--------|
 | Sent-attachment directory conventions change (`at_0_` GUID prefix) | Path-tail matching breaks |
-| `sha256_hex` frequently NULL in retained historical working projections | Hash matching disabled there |
+| `sha256_hex` frequently NULL in retired working projection rows | Hash matching disabled there |
 | Common filenames (`IMG_1234.jpeg`) | False-positive ambiguity |
 | **Observed success rate** | **~40%** |
 
 The heuristic system was replaced with a deterministic three-layer mapping flow.
 The current implementation maps through source-scoped graph identity first.
-Retained `macos_import.db` / `working.db` identity is historical cleanup
+Retired `macos_import.db` / `working.db` identity is historical cleanup
 context only, not the ordinary recovery direction.
 
 ## Three-Layer Read Topology
@@ -29,7 +29,7 @@ Layer 1: Historical snapshot DB (user-provided)
   ├─ Source of: attachment.guid, message.guid, message↔attachment joins
   └─ Provides authoritative relationships from the era of the backup
 
-Layer 2: Current source-scoped import DB (via importDatabaseProvider)
+Layer 2: Current source-scoped import DB (via sourceScopedImportDatabaseProvider)
   ├─ Source of: attachments.guid → attachment ss_id bridge
   ├─ Preserves Apple's attachment.guid plus source_id/source_rowid
   └─ Must be populated from at least one source-scoped graph build
@@ -194,7 +194,7 @@ DeterministicRecoveryResult:
 
 1. Historical snapshot is opened `SQLITE_OPEN_READONLY` — never mutated.
 2. Historical ROWIDs are join-traversal-only — they never escape into overlay or runtime identity.
-3. Conversation graph projection and retained working files are never written
+3. Conversation graph projection and retired working files are never written
    to by recovery.
 4. Overlay receives archive metadata only — no structural schema changes.
 5. No heuristic fallback exists.

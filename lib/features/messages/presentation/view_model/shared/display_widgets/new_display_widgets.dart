@@ -7,10 +7,16 @@ import 'package:video_player/video_player.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../essentials/debug/application/developer_mode_provider.dart';
-import '../../../../../../essentials/external_links/feature_level_providers.dart';
+import '../../../../../../essentials/external_links/feature_level_providers.dart'
+    show externalLinkActionsProvider;
 import '../../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
-import '../../../../../attachments/feature_level_providers.dart';
+import '../../../../../attachments/feature_level_providers.dart'
+    show
+        AttachmentFileAccess,
+        attachmentFileAccessProvider,
+        attachmentRecoveryActionsProvider,
+        videoThumbnailCacheProvider;
 import '../../../../application/actions/message_media_diagnostics_provider.dart';
 import '../../../widgets/message_evidence/media_tile_attachment.dart';
 import 'message_display_metrics.dart';

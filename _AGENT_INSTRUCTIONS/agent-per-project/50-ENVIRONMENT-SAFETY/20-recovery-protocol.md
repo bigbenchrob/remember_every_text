@@ -43,7 +43,7 @@ After relaunch:
 - app starts normally
 - source-scoped graph message counts are plausible
 - overlay intent such as favourites and contact display-name overrides is present
-- retired historical cleanup files are present if they existed in the snapshot
+- retired cleanup/diagnostic files are present if they existed in the snapshot
 - no graph build, retired-file diagnostic, or overlay recovery errors are
   shown
 - UI behaves correctly

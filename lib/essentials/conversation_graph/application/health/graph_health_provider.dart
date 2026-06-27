@@ -1,9 +1,9 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../feature_level_providers.dart';
 import 'graph_health_reader.dart';
 import 'graph_health_report.dart';
+import 'graph_health_repository_provider.dart';
 
 part 'graph_health_provider.g.dart';
 

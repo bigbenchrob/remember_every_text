@@ -10,7 +10,6 @@ import '../../application/panel_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../domain/entities/view_spec.dart';
 import '../../domain/sidebar_mode.dart';
-import '../../feature_level_providers.dart';
 
 /// Overlay displayed in the sidebar when the center panel is showing
 /// content that operates independently of the cassette rack (e.g.

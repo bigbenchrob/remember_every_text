@@ -25,7 +25,7 @@ last_updated: 2026-06-14
 | --- | --- | --- | --- | --- |
 | `conversationOverviewsProvider` | @riverpod future | optional limit | Reads conversation summaries from `working_ss.db` topology through the conversation graph repository. | Conversation sidebar, diagnostic conversation browser. |
 | `conversationSignaturesProvider` / related signature providers | @riverpod future/notifier | filter/sort/search preferences | Produces sidebar conversation signature rows and persists presentation preferences in overlay storage. | Conversations sidebar. |
-| `recentChatsProvider` | @riverpod future | optional limit | Graph-backed compatibility/read-model adapter for the retained diagnostic conversation browser. | Diagnostic/reference conversation browser. |
+| `recentChatsProvider` | @riverpod future | optional limit | Graph-backed compatibility/read-model adapter for the retired diagnostic conversation browser. | Diagnostic/reference conversation browser. |
 | `chatsViewModelProvider` | @riverpod controller | selected graph chat id | Routes selected conversations into sidebar flow state; it does not own chat data. | Diagnostic/reference conversation browser and graph status samples. |
 | `conversationFavouritesProvider` | @riverpod notifier/read model | graph conversation id | Persists global conversation favourite intent in overlay storage. | Conversation signature rows and contact-derived conversation lists. |
 

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
+
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
-import '../../db/feature_level_providers.dart' show databaseDirectoryPath;
+import '../../db/database_directory.dart';
 import 'log_file_writer.dart';
 
 class SupportBundleExportResult {
@@ -168,15 +170,15 @@ class SupportBundleExportService {
         files: [
           (
             'Retired Historical Import Audit Log',
-            File('$databaseDirectoryPath/import_log'),
+            File(path.join(databaseDirectoryPath, 'import_log')),
           ),
           (
             'Retired Historical Projection Audit Log',
-            File('$databaseDirectoryPath/migrate_log'),
+            File(path.join(databaseDirectoryPath, 'migrate_log')),
           ),
           (
             'Pipeline Incident Log',
-            File('$databaseDirectoryPath/pipeline_incident_log'),
+            File(path.join(databaseDirectoryPath, 'pipeline_incident_log')),
           ),
         ],
       );

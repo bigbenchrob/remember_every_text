@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../feature_level_providers.dart'
-    show conversationGraphStatusLogWriterProvider;
 import '../chat_summaries/chat_summary_provider.dart';
 import '../conversation_graph_build_controller_provider.dart';
 import '../health/graph_health_provider.dart';
+import 'conversation_graph_status_log_writer_provider.dart';
 import 'conversation_graph_status_provider.dart';
 
 part 'conversation_graph_status_sheet_actions_provider.g.dart';

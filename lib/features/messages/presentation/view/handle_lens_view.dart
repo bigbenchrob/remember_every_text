@@ -6,8 +6,10 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/buttons/buttons.dart';
-import '../../../contacts/feature_level_providers.dart';
-import '../../../handles/feature_level_providers.dart';
+import '../../../contacts/feature_level_providers.dart'
+    show ContactPickerDialog;
+import '../../../handles/feature_level_providers.dart'
+    show handleDisplayNameProvider, strayHandlesProvider;
 import '../../application/handle_lens/handle_lens_actions_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';

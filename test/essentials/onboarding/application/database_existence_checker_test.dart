@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/database_existence_checker.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_database_probe_reader.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 
 void main() {
   group('DatabaseExistenceChecker', () {
@@ -17,7 +17,7 @@ void main() {
           probes: {
             path.join(
               databaseDirectory,
-              sourceScopedImportDatabaseFileName,
+              appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
             ): const OnboardingDatabaseProbe(
               path: 'import',
               exists: true,
@@ -46,7 +46,7 @@ void main() {
             probes: {
               path.join(
                 databaseDirectory,
-                retiredMacosImportDatabaseFileName,
+                appDatabaseFileName(AppDatabaseFile.retiredMacosImport),
               ): const OnboardingDatabaseProbe(
                 path: 'retired macos import',
                 exists: true,
@@ -55,7 +55,7 @@ void main() {
               ),
               path.join(
                 databaseDirectory,
-                retiredWorkingDatabaseFileName,
+                appDatabaseFileName(AppDatabaseFile.retiredWorking),
               ): const OnboardingDatabaseProbe(
                 path: 'retired working',
                 exists: true,

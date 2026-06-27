@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../feature_level_providers.dart';
+import '../../favorites/favorite_contacts_repository_provider.dart';
 import '../../read_models/contact_summary_identity.dart';
 import 'contact_is_favorite_provider.dart';
 import 'favorite_contacts_provider.dart';

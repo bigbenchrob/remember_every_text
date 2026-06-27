@@ -44,6 +44,15 @@ deletion, or feature drift while completing the graph migration.
 8. Pagination is not timeline navigation.
 9. Lifecycle work must be centralized through database/readiness/orchestration
    providers, not widget-triggered repair logic.
+10. `feature_level_providers.dart` is a public seam for external consumers.
+    Internal code inside the same feature or essential must import exact
+    sibling providers/files, not its own public barrel. Remaining self-barrel
+    imports are transitional provider-definition relocation debt tracked by an
+    architecture tripwire and must only shrink.
+11. Non-DB `feature_level_providers.dart` seams are export-only and must not
+    have generated `.g.dart` siblings. Provider state belongs in named
+    application/provider files; `essentials/db` is the central database
+    exception.
 
 ## Status Legend
 
@@ -1467,13 +1476,13 @@ criteria.
   sole owner that constructs the retained `macos_import.db` archive metadata
   adapter; settings/archive callers use the semantic store boundary rather than
   importing the concrete database wrapper.
-- Retired database filenames are now centralized in the DB dependency entry
-  point as `retiredMacosImportDatabaseFileName` and
-  `retiredWorkingDatabaseFileName`. Reset and database-health
-  code no longer hard-code `macos_import.db` / `working.db` outside that
-  retired cleanup boundary.
-- Retired filename tests now assert against the central constants instead of
-  repeating raw database names. Active archive-source metadata now lives in
+- Retired database filenames are now private to the central DB file-identity
+  helper (`AppDatabaseFile` / `appDatabaseFileName`). Reset and
+  database-health code use that typed lifecycle/diagnostic boundary instead
+  of hard-coding `macos_import.db` / `working.db` or importing filename
+  constants.
+- Retired filename tests now assert against the central DB file helper instead
+  of repeating raw database names. Active archive-source metadata now lives in
   overlay, while old database files remain transitional cleanup targets.
 - A production/test scan for raw `macos_import.db` / `working.db` strings now
   resolves only to the central retained filename constants.
@@ -1583,8 +1592,9 @@ criteria.
   filename access limited to central DB constants, reset cleanup, and database
   health inspection. Ordinary code should not add retained working-file access.
 - Added a retained database filename-literal tripwire so `macos_import.db` and
-  `working.db` code literals stay centralized in `feature_level_providers.dart`.
-  Other code must use the named retained filename constants.
+  `working.db` code literals stay centralized in the DB-layer
+  `AppDatabaseFile` registry. Other code must use the typed app-database file
+  helpers through approved lifecycle, cleanup, or diagnostic boundaries.
 - Added an architecture tripwire that forbids retired retained import/migration
   execution symbols and package paths from returning to `lib/`. Ordinary
   import/projection must remain source-scoped graph lifecycle work.
@@ -1592,21 +1602,22 @@ criteria.
   `RetainedArchiveMetadataDatabase` remains quarantined behind the central DB
   provider instead of spreading into ordinary feature code. Historical Archives
   uses the typed retained metadata store boundary.
-- Centralized the overlay database filename as `overlayDatabaseFileName` on the
-  overlay Drift database. The graph health and database health paths now use
-  the shared constant instead of hard-coded `user_overlays.db` literals.
+- Centralized the overlay database filename in the DB-layer `AppDatabaseFile`
+  registry. The graph health and database health paths now use the shared file
+  helper instead of hard-coded `user_overlays.db` literals.
 - Added an architecture tripwire that keeps the `user_overlays.db` filename
   literal centralized on the overlay database type.
 - Added an architecture tripwire that keeps app database construction behind
   database classes and provider boundaries. Feature code should consume named
   providers rather than constructing import, graph, overlay, or retained
   database instances directly.
-- Conversation graph readiness and maintenance-lock diagnostics now interpolate
-  `conversationGraphDatabaseFileName` instead of hard-coding `working_ss.db`
-  inside production code.
+- Conversation graph readiness and maintenance-lock diagnostics now resolve the
+  graph filename through the DB-layer `AppDatabaseFile` helper instead of
+  hard-coding `working_ss.db` inside production code.
 - Added an architecture tripwire that keeps source-scoped database filename
-  literals centralized on `importDatabaseFileName` and
-  `conversationGraphDatabaseFileName`.
+  literals centralized at physical database ownership boundaries. The import
+  ledger filename is private to `essentials/db` and exposed to approved
+  lifecycle/diagnostic code only through `AppDatabaseFile` helpers.
 - Added an architecture tripwire that keeps active-code `legacy` terminology
   quarantined inside explicit old-overlay/key compatibility bridges. New
   production code should use graph, retired cleanup, compatibility-key, or
@@ -1726,16 +1737,17 @@ criteria.
   `feature_level_providers.dart` boundary. Added an architecture tripwire so
   source-scoped import application code cannot import feature infrastructure
   files directly.
-- Added `sourceScopedImportDatabaseProvider` as the public source-scoped import
-  feature boundary for graph projection/status provider composition that still
-  needs concrete import-DB access. Conversation graph provider files now watch
-  that feature-level provider instead of importing the import database
-  infrastructure provider directly, with a tripwire to prevent regression.
+- Moved concrete source-scoped import DB provider construction to the central
+  database boundary (`essentials/db`). Conversation graph provider files
+  obtain concrete import-DB access from that database boundary only where
+  projection or status composition still requires it, while source-scoped
+  import exposes semantic import providers such as
+  `sourceScopedImportLedgerProvider`.
 - Onboarding existence checks, environment report path construction, and
-  derived-data reset now use `sourceScopedImportDatabaseFileName` /
-  `sourceScopedImportDatabaseProvider` from the source-scoped import
-  feature-level boundary instead of importing the import database
-  infrastructure provider directly.
+  derived-data reset now use `AppDatabaseFile` helpers /
+  `sourceScopedImportDatabaseProvider` from the central database boundary
+  instead of importing the import database infrastructure provider directly or
+  depending on a public source-scoped import filename constant.
 - Archive graph removal now depends on the `ImportLedger` port for source-key
   lookup and source-fact deletion instead of importing concrete
   `ImportDatabase`. The conversation graph application tripwire now covers the
@@ -1754,9 +1766,9 @@ criteria.
   recovery now obtains source-scoped import DB access through the public
   `sourceScopedImportDatabaseProvider` boundary.
 - Database health audit service composition now obtains source-scoped import DB
-  access and filename metadata through the public source-scoped import feature
-  boundary. The concrete source-scoped import database type remains only in the
-  database health query adapter for now, pending a later infrastructure split.
+  access and filename metadata through the central database boundary. The
+  concrete source-scoped import database type remains only in the database
+  health query adapter for now, pending a later infrastructure split.
 - Moved the database health audit query layer out of application and into
   `essentials/db/infrastructure/repositories/`. The application service still
   owns report composition; infrastructure now owns concrete SQL/DB query
@@ -2551,11 +2563,10 @@ criteria.
     Existing retained files may still be deleted by reset or inspected by
     read-only diagnostic/file-query paths, but there is no active retained
     metadata database abstraction left in `lib/`.
-  - Renamed the retained database filename constants to
-    `retiredMacosImportDatabaseFileName` and
-    `retiredWorkingDatabaseFileName`. Reset and diagnostics still know how to
-    delete/inspect existing files, but active code no longer names them as
-    metadata stores or historical working databases.
+  - Moved retained database filename literals behind the private central
+    `AppDatabaseFile` helper. Reset and diagnostics still know how to
+    delete/inspect existing files through that typed lifecycle boundary, but
+    active code no longer imports public retained filename constants.
   - Renamed graph-health archive readiness internals from "working attachment"
     to "graph attachment" so attachment reachability is described as
     graph/source-scoped identity plus overlay archive records, not retained
@@ -3030,10 +3041,11 @@ criteria.
   archive mapping now exposes current source identity language while
   `ArchiveCompatibilityKey` remains responsible for translating that value to
   the retained overlay archive tuple.
-- Cleaned onboarding/reset tests so they reference the source-scoped import
-  database filename through the public feature-level boundary instead of
-  reaching into `source_scoped_import/infrastructure/import_database_provider`
-  solely for constants.
+- Cleaned onboarding/reset tests so they reference source-scoped import
+  database file identity through the typed central `AppDatabaseFile` helper
+  instead of reaching into
+  `source_scoped_import/infrastructure/import_database_provider` solely for
+  constants.
 - Added an architecture tripwire preventing onboarding application tests from
   importing source-scoped import infrastructure solely for filename constants.
   They must use the public source-scoped feature-level API, preserving the same
@@ -3481,6 +3493,289 @@ criteria.
 - Renamed the ambiguous old-system comment tripwire label/comment to
   retired-system wording so the guardrail's own output models the current
   retention vocabulary.
+- Centralized physical source-scoped import database construction under
+  `essentials/db/feature_level_providers.dart`, with database file identity
+  behind the typed `AppDatabaseFile` helper. Source-scoped import now exposes
+  semantic ledger providers while physical DB provider construction remains in
+  the database essential.
+- Tightened database-access docs and tripwires around the persistent-vs-one-off
+  distinction: persistent app DB instances must be constructed only in
+  `essentials/db`, while source/probe repositories may do named read-only
+  open/query/close operations. AddressBook candidate probing now closes its
+  read-only handle after each viability/read operation.
+- Added an architecture tripwire preventing persistent app DB construction
+  (`ImportDatabase.open`, native Drift executor construction, graph DB, overlay
+  DB) from spreading outside the central database provider boundary and the
+  Drift database class declarations themselves.
+- Tightened physical database file identity further: source-scoped import,
+  conversation graph, overlay, and retained cleanup filenames now all resolve
+  through the private central `AppDatabaseFile` helper in `essentials/db`.
+  Drift database classes own schemas only; they no longer export physical
+  filename constants. Added/updated tripwires so production imports of the
+  central DB provider barrel must be explicit and app DB filename literals stay
+  centralized in `app_database_files.dart`.
+- Added a companion tripwire for the physical Application Support database
+  directory path. `databaseDirectoryPath` is now explicitly limited to central
+  DB construction, onboarding readiness/reset file checks, and logging/support
+  bundle infrastructure; ordinary features should consume semantic providers or
+  repositories rather than the raw app database directory.
+- Narrowed production imports of the source-scoped import feature boundary to
+  explicit `show` lists and added a tripwire preventing broad imports of
+  `source_scoped_import/feature_level_providers.dart`. This keeps graph,
+  attachment, and archive code dependent on named semantic import providers
+  rather than accidentally acquiring broader import authority.
+- Narrowed source-scoped import application provider imports to explicit
+  feature-boundary provider symbols and added a tripwire preventing broad
+  self-barrel imports from importer/enricher provider files. Import pipeline
+  providers now advertise exactly which source/ledger/extractor authority they
+  compose.
+- Narrowed simple conversation graph application provider imports to explicit
+  graph feature-boundary provider symbols and added a tripwire with a small
+  lifecycle/orchestration exception list. Graph readers/projectors now declare
+  the exact repository provider authority they compose; broad graph
+  feature-barrel imports cannot grow unnoticed.
+- Reduced the broad conversation graph application provider import exception
+  list again: archive graph removal and conversation favourites now use
+  explicit graph provider imports, leaving the chat-db monitor as the only
+  broad lifecycle/orchestration exception.
+- Removed the final broad conversation graph application provider import from
+  the chat-db monitor. The graph application provider import tripwire now has
+  an empty allowlist: graph application code must import explicit
+  feature-boundary provider symbols rather than the whole graph provider barrel.
+- Narrowed the messages feature-level dependency on the contacts feature
+  boundary to the two public providers it actually composes: display identity
+  resolution and handles-for-contact lookup.
+- Narrowed the message-evidence spine and header-context dependencies on
+  contacts, attachments, search, and messages feature/provider barrels. These
+  files now name the exact public providers/types they compose instead of
+  importing broad feature authority.
+- Narrowed handle-lens message view/action dependencies so unfamiliar-handle
+  evidence reads and actions import only the contact picker/manual-link service,
+  handle display/read providers, handle review actions, and logger they use.
+- Narrowed handles feature-level contact dependency to display identity and
+  virtual participant providers. Narrowed attachment application dependencies
+  on logging and attachment feature-level composition to explicit provider/type
+  imports, making archive compatibility-key usage direct instead of barrel-
+  hidden.
+- Codified the self-barrel import rule: same-feature/same-essential internals
+  must not import their own `feature_level_providers.dart`. Added an
+  architecture tripwire with the current self-barrel imports listed as explicit
+  transitional provider-definition relocation debt.
+- Began shrinking the self-barrel relocation debt. Source-scoped import
+  provider definitions for source DB opening, import-ledger access,
+  attributed-body extraction, and historical archive folder resolution now live
+  in named application provider files; internal importers/enrichers consume
+  those exact files instead of their own public barrel. Debug developer-mode
+  store construction was likewise moved out of the debug public barrel. The
+  self-barrel tripwire allowlist now blocks these cases from returning.
+- Continued shrinking self-barrel relocation debt in navigation/sidebar code.
+  Panel action/widget providers and sidebar rack state now import exact
+  provider/type files instead of their own public barrels; the surfaced
+  `MessagesSpec` dependency was made explicit. Provider composition that owns
+  overlay-backed user intent, such as contact favourites and conversation
+  signature preferences, remains tracked as boundary-owned relocation debt
+  rather than being moved to satisfy the import rule mechanically.
+- Moved graph search repository provider composition into a named search
+  application provider file. `SearchService` now imports that exact provider
+  instead of its own public barrel, while external consumers still receive the
+  public provider through `essentials/search/feature_level_providers.dart`.
+- Split graph read repository providers for conversations, message graph
+  reads, and chat summaries into named application provider files. Internal
+  graph readers now import exact repository-provider files instead of the graph
+  public barrel; the public graph barrel re-exports those providers for
+  external consumers.
+- Split contact graph and graph health repository providers into named
+  application provider files. Internal readers now consume exact provider
+  files, while the graph public barrel re-exports them. The graph status
+  snapshot provider intentionally remains in the graph feature boundary because
+  it owns approved root path and database filename helper access; moving it
+  would broaden stronger lifecycle/diagnostic tripwires.
+- Split chat, handle, and message projection repository providers into named
+  application provider files. Internal projectors now import exact
+  repository-provider files instead of the graph public barrel, while external
+  consumers still receive those providers through the public graph barrel.
+- Split chat/message and chat/handle topology projection repository providers
+  into named application provider files. The topology projectors now depend on
+  exact provider files rather than the graph public barrel, shrinking the
+  self-barrel relocation allowlist again.
+- Split attachment, contact, and message/attachment projection repository
+  providers into named application provider files. Their projectors now depend
+  on exact provider files, and the public graph barrel only re-exports those
+  projection repository providers for external consumers.
+- Split graph projection resetter, conversation favourites store, and chat-db
+  monitor probe/runtime providers into named application provider files.
+  Archive graph removal, favourites, and chat-db monitoring now consume exact
+  provider files instead of the graph public barrel. Graph status log-writer
+  and archived-file opener composition intentionally remain in the graph
+  feature boundary because existing architecture tripwires assign those
+  filesystem/launcher provider seams there.
+- Split sidebar flow preference-store provider composition into a named
+  sidebar application provider file. Sidebar flow state and cassette
+  coordination now import exact sidebar provider/spec files instead of the
+  sidebar public barrel, making previously hidden cassette-spec dependencies
+  explicit.
+- Split contacts list and favourite-contact repository provider composition
+  into named contacts application provider files. Contact picker, favourite,
+  grouping, and hero-summary internals now import those exact providers instead
+  of the contacts public barrel; the public contacts seam still re-exports the
+  providers for external consumers and tests.
+- Split contact display-name override store composition into a named contacts
+  application provider file. The display-name override action now imports the
+  override store and contacts-list providers directly instead of reaching
+  through the contacts public barrel.
+- Split contact picker filter-mode store composition into a named contacts
+  application provider file. The picker filter state provider now imports the
+  exact persistence provider instead of the contacts public barrel.
+- Split recent-contact reader/provider composition into a named contacts
+  read-model provider file. Unified picker sections and recent-contact sidebar
+  rendering now import that exact provider instead of the contacts public
+  barrel.
+- Split contact handle-list, virtual-participant, and manual-link store
+  provider composition into named contacts application provider files. Handle
+  filters and manual-link actions now import exact contacts providers rather
+  than the contacts public barrel.
+- Split handles spam-management visibility-store and spam-read repository
+  composition into named handles settings provider files. Spam management now
+  imports exact handles providers instead of the handles public barrel.
+- Split handles manual-linking read repository composition into a named handles
+  settings provider file. Manual linking still uses the contacts public seam
+  for contact-owned actions, but no longer imports the handles public barrel.
+- Split stray-handle read repository/list providers into a named handles
+  read-model provider file. The stray-handle review cassette now imports
+  exact list providers instead of the handles public barrel.
+- Split attachment archive runtime providers into a named attachments
+  application provider file. Archive settings now imports exact archive
+  runtime providers instead of the attachments public barrel, while external
+  consumers still receive the providers through the public attachments seam.
+- Split attachment archive store providers, graph/archive lookup providers,
+  and deterministic recovery runtime providers into named attachments
+  application provider files. Archive service, attachment resolver, and
+  deterministic recovery now import exact local provider files instead of the
+  attachments public barrel.
+- Split conversation-signature preferences store composition into a named
+  messages resolver-tool provider file. The preferences controller now imports
+  the exact store provider instead of the messages public barrel.
+- Split recovered-message evidence repository/list providers into a named
+  messages message-evidence provider file. The message evidence spine and
+  recovered heatmap now import exact recovered providers instead of the
+  messages public barrel.
+- Split graph status snapshot, status-log writer, and archived-file opener
+  providers into named conversation-graph status provider files. The graph
+  public barrel is now export-only for those status seams, and graph status
+  application/presentation code imports exact local provider files instead of
+  the graph public barrel.
+- Split database directory initialization into a named DB-layer file. The
+  conversation-graph readiness provider now imports the exact database
+  directory boundary instead of the DB public barrel while central DB provider
+  construction remains in essentials/db.
+- Split pipeline incident store/log-writer provider composition into a named
+  logging application provider file. The incident tracker now imports exact
+  logging providers instead of the logging public barrel.
+- Split onboarding full-disk-access, database-probe, failure-storage, and
+  derived-data file-store provider composition into named onboarding
+  application provider files. Onboarding gate, environment report, and reset
+  service now import exact onboarding providers instead of the onboarding
+  public barrel.
+- Split settings archive-source inspection, historical-archive source metadata,
+  folder chooser, and message-history coverage provider composition into named
+  settings application provider files. Historical archive workflow, sidebar
+  known-source summaries, and coverage resolver now import exact settings
+  providers instead of the settings public barrel.
+- Split external-link URI opener, link-preview metadata, and external-link
+  action provider composition into named external-links application provider
+  files. The external-links public seam is now export-only, and the
+  architecture tripwire tracks the action provider as the launch authority.
+- Split the graph-backed `SearchService` provider into a named search
+  application provider file. The search public seam is now export-only for
+  search service and graph repository providers while search consumers keep
+  using the public search API.
+- Split diagnostic report exporter and diagnostic log-directory providers into
+  a named logging application provider file. The logging public seam is now
+  export-only for app logger, diagnostic report, and pipeline incident storage
+  providers.
+- Split window-state storage, manager, and service provider composition into a
+  named window-state application provider file. The window-state public seam is
+  now export-only while persistent window state still reads overlay storage
+  through the centralized DB provider.
+- Split attachment video-thumbnail cache provider composition into a named
+  attachments application provider file. The attachments public seam is now
+  export-only for thumbnail cache and the previously split archive/recovery
+  provider boundaries.
+- Split message overlay repository/action provider composition into a named
+  messages user-metadata provider file. The messages public seam now exports
+  overlay state while graph/overlay composition and source-scoped message-id
+  canonicalization stay behind the exact provider boundary.
+- Split handle display-name and handle-review provider composition into named
+  handles application provider files. The handles public seam now exports
+  display-name and review providers while graph/overlay composition and
+  review invalidation stay behind explicit local ownership files.
+- Split AddressBook folder discovery/repository provider composition into a
+  named address-book-folders application provider file. The feature public seam
+  remains the external API, while root path-helper access and unreadable-folder
+  logging stay behind the exact provider boundary that owns folder discovery.
+- Split contacts display-identity and contact-access provider composition into
+  named contacts application provider files. The contacts public seam now
+  exports identity/access providers while graph/overlay repository composition
+  and recent-contact invalidation stay behind explicit ownership files.
+- Added an architecture tripwire requiring public `feature_level_providers.dart`
+  seams to remain export-only, except for the central `essentials/db` database
+  boundary. Public seams can no longer regain imports, generated parts,
+  Riverpod declarations, or manual provider construction without an explicit
+  architecture-test failure.
+- Updated high-level architecture/data-location guidance to make the current
+  split explicit: `essentials/db` owns physical app database providers and the
+  `AppDatabaseFile` filename registry, while `source_scoped_import` and
+  `conversation_graph` own import/projection semantics and schema behavior.
+- Removed `address_book_folders` infrastructure exports from its public
+  feature seam and added an architecture tripwire preventing public
+  `feature_level_providers.dart` seams from exporting infrastructure
+  implementation files. Public seams now expose application/domain contracts
+  while infrastructure stays behind named provider or repository boundaries.
+- Tightened the public-seam export-only tripwire so non-DB
+  `feature_level_providers.dart` files may contain only export directives
+  rather than merely avoiding imports/provider declarations. The tripwire
+  understands wrapped export directives with `show`/`hide` clauses.
+- Updated current project/database/pipeline invariant docs to use retired
+  cleanup/diagnostic terminology for `macos_import.db` / `working.db` instead
+  of wording that could imply a durable retired-file reference tier.
+- Renamed the active reset-service retired-file cleanup constants from
+  `retiredHistoricalDatabaseCleanup...` to `retiredDatabaseCleanup...` and
+  updated the reset log label. Reset behavior is unchanged: active graph files
+  and retired cleanup files remain separate reset categories.
+- Reworded the persisted pipeline incident `migration` display label to
+  "Retired import/migration". The stored enum value remains unchanged for old
+  overlay incident rows; only active display terminology changed.
+- Reworded active database-health, database-reference, onboarding/archive, and
+  chat-handle docs away from retired-file reference-tier phrasing. Current docs
+  now describe old `macos_import.db` / `working.db` material as retired
+  cleanup/diagnostic or retired reference data unless a schema-reference doc is
+  explicitly explaining historical tables.
+- Added an architecture tripwire requiring current architecture/reference docs
+  to use retired cleanup/diagnostic terminology for old `macos_import.db` /
+  `working.db` material. Historical planning docs can preserve old language,
+  but active guidance now fails tests if it implies legacy database authority.
+- Cleaned additional current reference docs so old import/projection files and
+  old participant/projection concepts are described as retired cleanup,
+  diagnostic, or reference material. Legitimate retained archive metadata and
+  compatibility-key language remains intentionally separate.
+- Reworded remaining active database/import/migration references so old
+  `macos_import.db` / `working.db`, old ordinal indexes, and old full-scan
+  helper paths are retired-file or compatibility concepts rather than
+  "retained" app authorities.
+- Added an architecture tripwire preventing non-DB
+  `feature_level_providers.dart` seams from regaining generated
+  `feature_level_providers.g.dart` siblings. Provider state must live in named
+  application/provider files; only the central database seam may keep generated
+  provider construction.
+
+### Vocabulary Note
+
+Older progress entries in this checklist may preserve migration-era terms such
+as "retained legacy" or "retained import" to record the sequence of decisions.
+They are historical notes, not current guidance. Current architecture/reference
+docs and active code should describe old `macos_import.db` / `working.db`
+material as retired cleanup, diagnostic, audit, or retired-file reference
+inventory unless a legacy schema reference is being described explicitly.
 
 ### Exit Criteria
 

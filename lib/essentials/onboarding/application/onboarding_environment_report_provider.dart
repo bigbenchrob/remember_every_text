@@ -1,20 +1,21 @@
 import 'package:dartz/dartz.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import '../../../features/address_book_folders/domain/failures/folder_retrieval_failure.dart';
-import '../../../features/address_book_folders/feature_level_providers.dart';
-import '../../db/feature_level_providers.dart'
-    show databaseDirectoryPath, dbMaintenanceLockProvider;
+import '../../../features/address_book_folders/feature_level_providers.dart'
+    show futureGetFolderAggregateProvider;
+import '../../db/app_database_files.dart';
+import '../../db/database_directory.dart';
+import '../../db/feature_level_providers.dart' show dbMaintenanceLockProvider;
 import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart'
-    show ConversationGraphReadiness, conversationGraphDatabaseFileName;
-import '../../source_scoped_import/feature_level_providers.dart'
-    show sourceScopedImportDatabaseFileName;
+    show ConversationGraphReadiness;
 import '../domain/onboarding_environment_report.dart';
-import '../feature_level_providers.dart';
+import 'full_disk_access_provider.dart';
 import 'onboarding_database_probe_reader.dart';
+import 'onboarding_database_probe_reader_provider.dart';
+import 'onboarding_failure_storage_provider.dart';
 
 part 'onboarding_environment_report_provider.g.dart';
 
@@ -199,13 +200,13 @@ class _OnboardingEnvironmentEvaluator {
           );
 
     final databaseDirPath = ref.watch(onboardingDatabaseDirectoryPathProvider);
-    final sourceScopedImportDbPath = p.join(
-      databaseDirPath,
-      sourceScopedImportDatabaseFileName,
+    final sourceScopedImportDbPath = appDatabasePath(
+      AppDatabaseFile.sourceScopedImport,
+      databaseDirectory: databaseDirPath,
     );
-    final graphDbPath = p.join(
-      databaseDirPath,
-      conversationGraphDatabaseFileName,
+    final graphDbPath = appDatabasePath(
+      AppDatabaseFile.conversationGraph,
+      databaseDirectory: databaseDirPath,
     );
     final isMaintenanceLocked = ref.watch(dbMaintenanceLockProvider);
 

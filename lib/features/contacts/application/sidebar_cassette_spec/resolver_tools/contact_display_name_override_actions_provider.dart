@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../feature_level_providers.dart';
 import '../../display_name_overrides/contact_display_name_override_controller.dart';
+import '../../display_name_overrides/contact_display_name_override_store_provider.dart';
+import '../../read_models/contacts_list_repository_provider.dart';
 import 'unified_picker_sections_provider.dart';
 
 part 'contact_display_name_override_actions_provider.g.dart';

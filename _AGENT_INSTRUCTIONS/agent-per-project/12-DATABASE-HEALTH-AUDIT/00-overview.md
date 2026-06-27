@@ -35,16 +35,16 @@ The current implementation audits these app-owned databases:
 
 It does **not** create retired database files as a side effect. It uses
 provider-managed instances for active graph/overlay/source-scoped databases
-and read-only file inspection for retired historical cleanup databases:
+and read-only file inspection for retired cleanup/diagnostic databases:
 
-- `importDatabaseProvider` from source-scoped import
+- `sourceScopedImportDatabaseProvider` from `essentials/db`
 - `driftConversationGraphDatabaseProvider`
 - `overlayDatabaseProvider`
 - read-only file inspection for retired `macos_import.db`
 - read-only file inspection for retired `working.db`
 
 This preserves the project rule against competing writable connections while
-also preventing diagnostics from recreating retired historical storage.
+also preventing diagnostics from recreating retired cleanup storage.
 
 ## Service Entry Point
 
@@ -210,7 +210,7 @@ This appears as an invariant with:
 - check key: `overlay_cross_database_relationship_checks_deferred`
 - status: `not_applicable`
 
-That limitation is intentional. Phase 1 inventories overlay tables, but does not perform overlay-to-graph or overlay-to-retained-working cross-database relationship diagnostics.
+That limitation is intentional. Phase 1 inventories overlay tables, but does not perform overlay-to-graph or overlay-to-retired-working cross-database relationship diagnostics.
 
 ## Privacy and Safety Model
 

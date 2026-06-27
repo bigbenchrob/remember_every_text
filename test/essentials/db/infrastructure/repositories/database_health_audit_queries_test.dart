@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_database_keys.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/repositories/database_health_audit_queries.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
@@ -18,8 +19,8 @@ void main() {
 
       final missingPath = '${tempDir.path}/retired_working.db';
       final layer = RetiredCleanupSqliteFileHealthQueryLayer(
-        databaseKey: 'retired_working',
-        role: 'retired_working_cleanup',
+        databaseKey: databaseHealthKeyRetiredWorking,
+        role: databaseHealthRoleRetiredWorkingCleanup,
         databasePath: missingPath,
       );
 
@@ -55,8 +56,8 @@ void main() {
       final lastModifiedBefore = File(databasePath).lastModifiedSync();
 
       final layer = RetiredCleanupSqliteFileHealthQueryLayer(
-        databaseKey: 'retired_macos_import',
-        role: 'retired_macos_import_cleanup',
+        databaseKey: databaseHealthKeyRetiredMacosImport,
+        role: databaseHealthRoleRetiredMacosImportCleanup,
         databasePath: databasePath,
       );
 

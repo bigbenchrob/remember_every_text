@@ -27,7 +27,7 @@ or removed.
 Document retired files as cleanup/diagnostic inventory. Do
 not delete them blindly.
 
-`macos_import.db` and `working.db` are retired historical cleanup inventory,
+`macos_import.db` and `working.db` are retired cleanup/diagnostic inventory,
 not permanent system-of-record storage. Existing user data folders may keep
 them during the transition for recovery, audit, comparison, and support
 diagnostics. They no longer provide ordinary-app rollback safety.
@@ -87,11 +87,11 @@ justified, tested, and prevented from becoming ordinary app authority again.
 **Current status**
 
 Historical archive workflows no longer import older Messages folders through
-the retired historical ledger/projection path. Forward import uses
+the retired import/projection ledger path. Forward import uses
 `SourceScopedArchiveGraphImportService`; removal uses
 `SourceScopedArchiveGraphRemovalService`.
 
-This bucket remains listed because retired historical database files may still
+This bucket remains listed because retired database files may still
 exist for storage-retirement cleanup, but it is no longer the Historical
 Archives execution path. The standalone import-control panel and
 `ViewSpec.import` route have been retired.
@@ -176,7 +176,7 @@ The old `RetainedArchiveMetadataDatabase` wrapper and
 source. Existing retired files can still be removed by reset or inspected by
 read-only file-query diagnostics, but there is no old metadata database
 abstraction left for app code to depend on.
-Obsolete public helpers for retained import execution, spam filtering, and
+Obsolete public helpers for retired import execution, spam filtering, and
 row-existence maintenance should remain absent.
 The old retained batch-ledger deletion API has been removed; Historical
 Archives removal now deletes source-scoped archive rows through the graph
@@ -392,7 +392,7 @@ uses it. The risky losses are:
   shape.
 - degraded support diagnostics while users still have transitional data
   folders.
-- inability to compare graph storage against retired historical inventory during
+- inability to compare graph storage against retired cleanup inventory during
   final retirement.
 
 ## Retention Reduction Register

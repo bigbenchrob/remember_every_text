@@ -49,10 +49,10 @@ These rules are **absolute constraints**. They apply to every agent, every sessi
 
 2. **Projection pipeline**: If a row exists in source-scoped import, it MUST appear in graph projection or a documented recovery/orphan graph path (subject only to documented, intentional JOIN semantics). A projector may add metadata columns to describe anomalies — but it MUST NOT filter the row out.
 
-3. **Retired historical files**: Old retired `macos_import.db` / `working.db`
+3. **Retired cleanup/diagnostic files**: Old retired `macos_import.db` / `working.db`
    pairs must remain interpretable for recovery, audit, and diagnostic tooling.
-   Do not silently discard rows when writing explicit retained-file inspection
-   or recovery utilities. Do not reintroduce retained projection as an ordinary
+   Do not silently discard rows when writing explicit retired-file inspection
+   or recovery utilities. Do not reintroduce retired projection as an ordinary
    app path.
 
 4. **UI / Presentation layer**: If a record exists in graph projection and falls within the user's current query scope, it MUST be rendered visibly. The widget may render it with a fallback appearance (e.g., a muted "no text content" indicator) — but it MUST NOT return `SizedBox.shrink()`, an empty container, zero-height box, or any construct that makes the record invisible.
@@ -96,7 +96,10 @@ The correct response is **always investigation, never concealment**:
 
 ## Rule 3: Database Access Via Centralized Providers Only
 
-- **Source-scoped import ledger**: `ref.watch(importDatabaseProvider.future)`
+- **Source-scoped import ledger**: physical database access is
+  `ref.watch(sourceScopedImportDatabaseProvider.future)` from
+  `essentials/db`; source import semantics should usually consume
+  `ref.watch(sourceScopedImportLedgerProvider.future)`
 - **Working graph DB**: `ref.watch(driftConversationGraphDatabaseProvider.future)`
 - **Archive-source metadata**: `ref.watch(overlayDatabaseProvider.future)` via
   named overlay-owned services
@@ -105,6 +108,11 @@ The correct response is **always investigation, never concealment**:
   deliberately required
 - **Overlay DB**: `ref.watch(overlayDatabaseProvider.future)`
 - ❌ NEVER instantiate database classes directly
+- ✅ Infrastructure repositories may open source/probe SQLite files directly
+  only for named one-off read-only queries, and must close/dispose the handle
+  before returning
+- ❌ NEVER turn a one-off source/probe open into a cached DB handle, hidden
+  provider, or feature-level database shortcut
 - **Reason**: Multiple connections to the same SQLite file cause locking failures
 
 ---

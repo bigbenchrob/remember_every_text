@@ -52,7 +52,8 @@ This README contains the canonical index to all project documentation including:
 ### Imports & Dependencies
 
 - ✅ **Always use**: `hooks_riverpod` (never `flutter_riverpod`)
-- ✅ **Database access**: Use centralized providers only. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses `importDatabaseProvider` from `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`; overlay intent and archive-source metadata use `overlayDatabaseProvider`. Retired `macos_import.db` and `working.db` have no central app providers and should be treated as cleanup/diagnostic files only.
+- ✅ **Database access**: Use centralized providers only. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import DB access is physically constructed by `sourceScopedImportDatabaseProvider` in `lib/essentials/db/feature_level_providers.dart`; source import semantics should usually consume `sourceScopedImportLedgerProvider`; overlay intent and archive-source metadata use `overlayDatabaseProvider`. Retired `macos_import.db` and `working.db` have no central app providers and should be treated as cleanup/diagnostic files only. Physical database filenames and Application Support paths live in `app_database_files.dart` / `database_directory.dart` and must not be re-exported through the provider seam.
+- ✅ **Public provider seams**: `feature_level_providers.dart` is for external consumers. Internal code inside the same feature or essential module must import exact sibling provider/repository/action/model files instead of its own public barrel.
 - ❌ **Never**: Create direct database instances (causes SQLite locking)
 
 ### 🔥 INVIOLABLE: Overlay / Working DB Separation
@@ -63,7 +64,7 @@ This README contains the canonical index to all project documentation including:
 - ❌ **NEVER** dual-write to both overlay AND graph/working projection DBs
 - ❌ **NEVER** have import/projection read or consult overlay DB
 - ❌ **NEVER** snapshot overlay before projection then restore into graph/working projection (the old "Restore Overrides" anti-pattern)
-- ❌ **NEVER** store user-intent flags (`is_blacklisted`, `is_visible`, manual links) on projection tables rebuilt by graph projection or retained migration
+- ❌ **NEVER** store user-intent flags (`is_blacklisted`, `is_visible`, manual links) on projection tables rebuilt by graph projection or inside retired cleanup files
 - 📖 See [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/07-overlay-database-independence.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/07-overlay-database-independence.md)
 
 ### 🔥 INVIOLABLE: Record-Level Data Fidelity — No Suppression of Anomalous Records
@@ -152,7 +153,7 @@ See the comprehensive documentation in [`_AGENT_INSTRUCTIONS/`](_AGENT_INSTRUCTI
 
 - Detailed architecture and DDD boundaries
 - Complete code standards and linting rules
-- Database schema, source import, graph projection, and retained compatibility patterns
+- Database schema, source import, graph projection, and retired cleanup/diagnostic storage patterns
 - Navigation system implementation
 - Testing strategies
 - Rust FFI integration

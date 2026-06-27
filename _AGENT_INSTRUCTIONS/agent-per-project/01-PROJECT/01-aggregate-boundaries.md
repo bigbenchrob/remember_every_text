@@ -120,9 +120,10 @@ Current data spans:
 
 The attachment feature owns archive service, resolution, and deterministic
 recovery. Source-scoped import and graph projection own source-derived
-attachment facts. Retained legacy attachment projection remains only where
-archive/recovery compatibility still requires it. MessageLens never writes
-recovered or archived files back into Apple's Messages Attachments folder.
+attachment facts. Retired attachment projection data remains only as cleanup or
+diagnostic reference where archive/recovery compatibility still requires it.
+MessageLens never writes recovered or archived files back into Apple's Messages
+Attachments folder.
 
 ## Cross-Surface Boundary
 

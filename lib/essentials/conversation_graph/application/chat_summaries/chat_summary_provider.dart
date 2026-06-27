@@ -2,9 +2,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../db/feature_level_providers/message_data_version_provider.dart';
-import '../../feature_level_providers.dart';
 import 'chat_summary.dart';
 import 'chat_summary_reader.dart';
+import 'chat_summary_repository_provider.dart';
 
 part 'chat_summary_provider.g.dart';
 
@@ -13,9 +13,7 @@ Future<List<ChatSummary>> chatSummaries(Ref ref) async {
   ref.watch(messageDataVersionProvider);
 
   final repository = await ref.watch(chatSummaryRepositoryProvider.future);
-  return ChatSummaryReader(
-    repository: repository,
-  ).readSummaries(limit: null);
+  return ChatSummaryReader(repository: repository).readSummaries(limit: null);
 }
 
 @riverpod

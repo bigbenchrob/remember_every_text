@@ -6,15 +6,17 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../logging/feature_level_providers.dart';
+import '../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../onboarding/application/onboarding_environment_report_provider.dart';
-import '../source_scoped_import/feature_level_providers.dart';
+import '../source_scoped_import/infrastructure/import_database_provider.dart';
 
+import 'app_database_files.dart';
 import 'application/database_health_audit/database_health_audit_service.dart';
+import 'application/database_health_audit/database_health_database_keys.dart';
 import 'application/database_health_audit/database_health_query_layer.dart';
+import 'database_directory.dart';
 import 'feature_level_providers/db_maintenance_lock_provider.dart';
 import 'infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'infrastructure/data_sources/local/overlay/overlay_database.dart';
@@ -28,33 +30,30 @@ export 'feature_level_providers/message_data_version_provider.dart';
 
 part 'feature_level_providers.g.dart';
 
-/// The directory where all application databases are stored.
-///
-/// Initialized once at app startup via [initDatabaseDirectoryPath].
-/// Exposed for use by the onboarding existence checker.
-/// All DB providers below also use this path.
-/// FOR DEVELOPER'S REFERENCE ONLY: path is ~/Library/Application Support/com.bigbenchsoftware.MessageLens/ on macOS.
-late final String databaseDirectoryPath;
-
-/// Retired import filename kept only so reset/health diagnostics can identify
-/// retired files in an existing data folder. This is not a database provider.
-const retiredMacosImportDatabaseFileName = 'macos_import.db';
-
-/// Retired working filename kept only so reset/health diagnostics can identify
-/// retired files in an existing data folder. This is not a database provider.
-const retiredWorkingDatabaseFileName = 'working.db';
-
-/// Must be called once in `main()` after `WidgetsFlutterBinding.ensureInitialized()`.
-Future<void> initDatabaseDirectoryPath() async {
-  final appSupportDir = await getApplicationSupportDirectory();
-  databaseDirectoryPath = appSupportDir.path;
-}
-
 Future<void> _ensureDatabaseDirectoryExists() async {
   final directory = Directory(databaseDirectoryPath);
   if (!directory.existsSync()) {
     await directory.create(recursive: true);
   }
+}
+
+/// Provides access to the source-scoped import ledger database.
+@Riverpod(keepAlive: true)
+Future<ImportDatabase> sourceScopedImportDatabase(
+  SourceScopedImportDatabaseRef ref,
+) async {
+  await _ensureDatabaseDirectoryExists();
+
+  final database = await ImportDatabase.open(
+    databaseDirectory: databaseDirectoryPath,
+    databaseName: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
+  );
+
+  ref.onDispose(() async {
+    await database.close();
+  });
+
+  return database;
 }
 
 /// Provides access to the source-scoped conversation graph projection database.
@@ -64,14 +63,14 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
 ) async {
   if (ref.watch(dbMaintenanceLockProvider)) {
     throw StateError(
-      '$conversationGraphDatabaseFileName is unavailable during database maintenance',
+      '${appDatabaseFileName(AppDatabaseFile.conversationGraph)} is unavailable during database maintenance',
     );
   }
 
   await _ensureDatabaseDirectoryExists();
-  final dbPath = path.join(
-    databaseDirectoryPath,
-    conversationGraphDatabaseFileName,
+  final dbPath = appDatabasePath(
+    AppDatabaseFile.conversationGraph,
+    databaseDirectory: databaseDirectoryPath,
   );
 
   final database = ConversationGraphDatabase(
@@ -98,7 +97,10 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
 @Riverpod(keepAlive: true)
 Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
   await _ensureDatabaseDirectoryExists();
-  final dbPath = path.join(databaseDirectoryPath, overlayDatabaseFileName);
+  final dbPath = appDatabasePath(
+    AppDatabaseFile.overlay,
+    databaseDirectory: databaseDirectoryPath,
+  );
 
   final database = OverlayDatabase(
     NativeDatabase.createInBackground(File(dbPath)),
@@ -147,38 +149,41 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(
     reportWriter: const FilesystemDatabaseHealthAuditReportWriter(),
     queryLayers: <DatabaseHealthQueryLayer>[
       RetiredCleanupSqliteFileHealthQueryLayer(
-        databaseKey: 'retired_macos_import',
-        role: 'retired_macos_import_cleanup',
-        databasePath: path.join(
-          databaseDirectoryPath,
-          retiredMacosImportDatabaseFileName,
+        databaseKey: databaseHealthKeyRetiredMacosImport,
+        role: databaseHealthRoleRetiredMacosImportCleanup,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.retiredMacosImport,
+          databaseDirectory: databaseDirectoryPath,
         ),
       ),
       RetiredCleanupSqliteFileHealthQueryLayer(
-        databaseKey: 'retired_working',
-        role: 'retired_working_cleanup',
-        databasePath: path.join(
-          databaseDirectoryPath,
-          retiredWorkingDatabaseFileName,
+        databaseKey: databaseHealthKeyRetiredWorking,
+        role: databaseHealthRoleRetiredWorkingCleanup,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.retiredWorking,
+          databaseDirectory: databaseDirectoryPath,
         ),
       ),
       SourceScopedImportDatabaseHealthQueryLayer(
         database: sourceScopedImportDb,
-        databasePath: path.join(
-          databaseDirectoryPath,
-          sourceScopedImportDatabaseFileName,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.sourceScopedImport,
+          databaseDirectory: databaseDirectoryPath,
         ),
       ),
       ConversationGraphDatabaseHealthQueryLayer(
         database: conversationGraphDb,
-        databasePath: path.join(
-          databaseDirectoryPath,
-          conversationGraphDatabaseFileName,
+        databasePath: appDatabasePath(
+          AppDatabaseFile.conversationGraph,
+          databaseDirectory: databaseDirectoryPath,
         ),
       ),
       OverlayDatabaseHealthQueryLayer(
         database: overlayDb,
-        databasePath: path.join(databaseDirectoryPath, overlayDatabaseFileName),
+        databasePath: appDatabasePath(
+          AppDatabaseFile.overlay,
+          databaseDirectory: databaseDirectoryPath,
+        ),
       ),
     ],
   );

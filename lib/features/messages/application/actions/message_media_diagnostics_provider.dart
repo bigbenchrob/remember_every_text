@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/logging/feature_level_providers.dart';
+import '../../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
 
 part 'message_media_diagnostics_provider.g.dart';
 

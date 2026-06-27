@@ -5,7 +5,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature.dart';
 import '../../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature_provider.dart';
-import '../../../../contacts/feature_level_providers.dart';
+import '../../../../contacts/feature_level_providers.dart'
+    show ConversationDisplayIdentity, displayIdentityResolverProvider;
 
 part 'conversation_signature_display_provider.g.dart';
 

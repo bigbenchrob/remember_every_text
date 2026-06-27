@@ -8,7 +8,8 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors_annotated.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../features/chats/feature_level_providers.dart';
+import '../../../../features/chats/feature_level_providers.dart'
+    show chatSelectionActionsProvider;
 import '../../application/chat_summaries/chat_summary.dart';
 import '../../application/chat_summaries/chat_summary_provider.dart';
 import '../../application/conversation_graph_build_controller_provider.dart';
@@ -16,10 +17,9 @@ import '../../application/conversation_graph_build_state.dart';
 import '../../application/health/graph_health_provider.dart';
 import '../../application/health/graph_health_report.dart';
 import '../../application/monitor/chat_db_change_monitor_provider.dart';
+import '../../application/status/archived_attachment_file_opener_provider.dart';
 import '../../application/status/conversation_graph_status_provider.dart';
 import '../../application/status/conversation_graph_status_sheet_actions_provider.dart';
-import '../../feature_level_providers.dart'
-    show archivedAttachmentFileOpenerProvider;
 
 enum _StatusSheetTab { status, graphHealth, groupProfiles, messages }
 

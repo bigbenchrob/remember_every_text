@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 import '../../../archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../../db/app_database_files.dart';
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/health/graph_health_report.dart';
@@ -541,7 +542,12 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       return const _ExternalArchiveKeys.unavailable();
     }
 
-    final overlayFile = File('$dataFolderPath/$overlayDatabaseFileName');
+    final overlayFile = File(
+      appDatabasePath(
+        AppDatabaseFile.overlay,
+        databaseDirectory: dataFolderPath,
+      ),
+    );
     final archiveDirectory = Directory('$dataFolderPath/attachment_archive');
     if (!overlayFile.existsSync() || !archiveDirectory.existsSync()) {
       return const _ExternalArchiveKeys.unavailable();

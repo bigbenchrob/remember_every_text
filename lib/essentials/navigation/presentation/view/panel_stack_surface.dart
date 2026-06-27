@@ -3,10 +3,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../application/panel_actions_provider.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/entities/panel_stack.dart';
 import '../../domain/navigation_constants.dart';
-import '../../feature_level_providers.dart';
 
 typedef PanelViewBuilder = Widget Function(PanelPage page);
 

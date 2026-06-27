@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
-import '../../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
 import '../resolver_tools/stray_handle_sidebar_actions_provider.dart';
 

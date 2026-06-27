@@ -1,10 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 import 'package:remember_this_text/features/environment_readiness/application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import 'package:remember_this_text/features/environment_readiness/domain/entities/environment_readiness_surface_view_model.dart';
 
@@ -128,14 +127,14 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 10,
     ),
-    sourceScopedImportDatabase: const OnboardingDatabaseProbe(
-      path: sourceScopedImportDatabaseFileName,
+    sourceScopedImportDatabase: OnboardingDatabaseProbe(
+      path: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
       exists: true,
       readable: true,
       rowCount: 100,
     ),
-    conversationGraph: const OnboardingDatabaseProbe(
-      path: conversationGraphDatabaseFileName,
+    conversationGraph: OnboardingDatabaseProbe(
+      path: appDatabaseFileName(AppDatabaseFile.conversationGraph),
       exists: true,
       readable: true,
       rowCount: 100,

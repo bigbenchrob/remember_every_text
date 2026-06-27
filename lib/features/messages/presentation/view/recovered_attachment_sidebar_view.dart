@@ -8,11 +8,13 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/navigation/feature_level_providers.dart';
+import '../../../../essentials/navigation/feature_level_providers.dart'
+    show panelActionsProvider;
 import '../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../attachments/domain/constants/resolved_attachment_availability.dart';
 import '../../../attachments/domain/entities/resolved_attachment.dart';
-import '../../../attachments/feature_level_providers.dart';
+import '../../../attachments/feature_level_providers.dart'
+    show attachmentFileAccessProvider, attachmentResolverProvider;
 import '../../domain/entities/attachment_info.dart';
 
 class RecoveredAttachmentSidebarView extends ConsumerWidget {

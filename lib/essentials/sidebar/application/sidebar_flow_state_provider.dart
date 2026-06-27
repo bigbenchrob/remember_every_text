@@ -5,15 +5,19 @@ import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
+import '../../../features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
-import '../../../features/sidebar_utilities/feature_level_providers.dart';
-import '../../logging/feature_level_providers.dart';
+import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/sidebar_mode.dart';
-import '../feature_level_providers.dart';
+import '../domain/entities/cassette_spec.dart';
+import 'cassette_rack_state_provider.dart';
 import 'sidebar_flow_preference_store.dart';
+import 'sidebar_flow_preference_store_provider.dart';
 
 part 'sidebar_flow_state_provider.freezed.dart';
 part 'sidebar_flow_state_provider.g.dart';

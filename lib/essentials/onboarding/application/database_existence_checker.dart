@@ -1,7 +1,4 @@
-import 'package:path/path.dart' as path;
-
-import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart';
-import '../../source_scoped_import/feature_level_providers.dart';
+import '../../db/app_database_files.dart';
 import 'onboarding_database_probe_reader.dart';
 
 /// Pure check: do the source-scoped import ledger and conversation graph exist?
@@ -19,11 +16,14 @@ class DatabaseExistenceChecker {
   /// Returns `true` if both import and graph databases exist and are populated.
   bool hasPopulatedDatabases(String databaseDirectory) {
     final importProbe = databaseProbeReader.probeFile(
-      path.join(databaseDirectory, sourceScopedImportDatabaseFileName),
+      appDatabasePath(
+        AppDatabaseFile.sourceScopedImport,
+        databaseDirectory: databaseDirectory,
+      ),
     );
-    final graphPath = path.join(
-      databaseDirectory,
-      conversationGraphDatabaseFileName,
+    final graphPath = appDatabasePath(
+      AppDatabaseFile.conversationGraph,
+      databaseDirectory: databaseDirectory,
     );
 
     if (!importProbe.exists || !importProbe.readable) {

@@ -1,9 +1,15 @@
 import 'package:dartz/dartz.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../handles/feature_level_providers.dart';
-import '../../feature_level_providers.dart';
+import '../../../handles/feature_level_providers.dart'
+    show
+        handleDisplayNameProvider,
+        handleIdentityKeyVariants,
+        strayHandlesProvider;
 import '../read_models/contact_summary_identity.dart';
+import '../read_models/handles_for_contact_provider.dart';
+import '../read_models/virtual_participants_provider.dart';
+import 'manual_handle_link_store_provider.dart';
 
 part 'manual_handle_link_service.g.dart';
 

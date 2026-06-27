@@ -17,7 +17,7 @@ links:
 - Decode stored `attributed_body_blob` values during source-scoped rich-text
   enrichment without rescanning all of `chat.db` for each live update.
 - Keep the standalone native binary (`extract_messages_limited`) available for
-  retained full-scan/diagnostic paths that still need a helper process.
+  full-scan/diagnostic compatibility paths that still need a helper process.
 - Without the Rust decoder many messages land with empty bodies, weakening
   search and UI rendering.
 
@@ -82,7 +82,7 @@ Future<Map<int, String>> extractMessageTextsFromBlobs(
 - `limit` (optional) caps how many rows the extractor processes (Flutter default: `rustExtractionLimit = 200000`).
 - `chat.db path` points to the Messages database copy to scan; defaults to the working directory when omitted.
 - Exit code `0` -> success with JSON on stdout. Any non-zero exit code is treated as failure and the pipeline falls back to empty text.
-- This interface is retained for full-scan/diagnostic compatibility. It is not
+- This interface remains for full-scan/diagnostic compatibility. It is not
   the live-update enrichment path.
 
 ## Building & Packaging
@@ -126,7 +126,7 @@ Future<Map<int, String>> extractMessageTextsFromBlobs(
 - Missing binary or unreadable helper affects only callers using the helper
   binary full-scan interface.
 - Non-zero helper exit codes bubble up as exceptions in
-  `extractAllMessageTexts`; callers of that retained interface must record the
+  `extractAllMessageTexts`; callers of that compatibility interface must record the
   failure and continue without rich text.
 - In graph live sync, watch the Conversation Graph status panel stage timings and text-enrichment counts.
 

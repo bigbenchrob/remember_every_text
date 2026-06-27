@@ -25,4 +25,9 @@ class AddressBookDbHelperMultiInstance {
     }
     return db;
   }
+
+  Future<void> close() async {
+    await _db?.close();
+    _db = null;
+  }
 }

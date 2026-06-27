@@ -16,12 +16,14 @@ import './providers.dart';
 import 'config/theme/colors/theme_colors.dart';
 import 'config/theme/theme_typography.dart';
 import 'essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart';
-import 'essentials/db/feature_level_providers.dart';
+import 'essentials/db/database_directory.dart';
 import 'essentials/logging/application/diagnostic_report_actions.dart';
-import 'essentials/logging/feature_level_providers.dart';
+import 'essentials/logging/application/diagnostic_report_provider.dart'
+    show diagnosticReportExporterProvider;
+import 'essentials/logging/feature_level_providers.dart' show appLoggerProvider;
 import 'essentials/navigation/application/router.dart';
 import 'essentials/services/startup_flags_service.dart';
-import 'essentials/window_state/feature_level_providers.dart';
+import 'essentials/window_state/application/window_state_providers.dart';
 import 'frb_generated.dart';
 
 /// This method initializes macos_window_utils and styles the window.

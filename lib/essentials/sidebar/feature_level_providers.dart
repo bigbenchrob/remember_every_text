@@ -1,11 +1,3 @@
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-import '../db/feature_level_providers.dart';
-import '../logging/feature_level_providers.dart';
-import 'application/sidebar_flow_preference_store.dart';
-import 'infrastructure/persistence/overlay_sidebar_flow_preference_store.dart';
-
 export '../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 export '../../features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
 export '../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
@@ -19,42 +11,9 @@ export './application/ephemeral_cassette_projection_provider.dart';
 export './application/renderable_sidebar_cassette_specs_provider.dart';
 export './application/sidebar_action_dispatcher.dart';
 export './application/sidebar_cassette_render_router.dart';
+export './application/sidebar_flow_preference_store_provider.dart';
 export './application/sidebar_flow_state_provider.dart';
 export './domain/entities/cassette_spec.dart';
 export './presentation/view/sidebar_cassette_card.dart';
 export './presentation/view/sidebar_navigation_card.dart';
 export './presentation/view_model/sidebar_cassette_card_view_model.dart';
-
-part 'feature_level_providers.g.dart';
-
-@riverpod
-Future<SidebarFlowPreferenceStore> sidebarFlowPreferenceStore(Ref ref) async {
-  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  final logger = ref.read(appLoggerProvider.notifier);
-  return OverlaySidebarFlowPreferenceStore(
-    overlayDatabase: overlayDatabase,
-    onReadFailure: (settingKey, error, stackTrace) {
-      logger.warn(
-        'SidebarFlowPreferenceStore: ignored unreadable persisted sidebar preference',
-        source: 'OverlaySidebarFlowPreferenceStore',
-        context: <String, Object?>{
-          'settingKey': settingKey,
-          'error': error.toString(),
-          'stackTrace': stackTrace.toString(),
-        },
-      );
-    },
-    onWriteFailure: (settingKey, settingValue, error, stackTrace) {
-      logger.warn(
-        'SidebarFlowPreferenceStore: failed to persist sidebar preference',
-        source: 'OverlaySidebarFlowPreferenceStore',
-        context: <String, Object?>{
-          'settingKey': settingKey,
-          'settingValue': settingValue,
-          'error': error.toString(),
-          'stackTrace': stackTrace.toString(),
-        },
-      );
-    },
-  );
-}

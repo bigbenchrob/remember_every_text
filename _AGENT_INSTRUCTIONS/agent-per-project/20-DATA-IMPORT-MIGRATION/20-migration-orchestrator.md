@@ -12,10 +12,10 @@ links:
   - ../10-DATABASES/02-db-working.md
 ---
 
-# Retained Legacy Migration Orchestrator
+# Retired Migration Orchestrator
 
 > Current conformance note (2026-06-08): this document describes the historical
-> retained `db_migrate` projection path from `macos_import.db` to legacy
+> retired `db_migrate` projection path from `macos_import.db` to legacy
 > `working.db`. The old implementation has been removed from active app code.
 > Ordinary app reads and live sync now use the source-scoped conversation graph.
 > Do not treat this orchestrator as the production data spine for new feature
@@ -26,7 +26,7 @@ links:
   logs and old `working.db` files.
 - Document the ID-preservation rules that shaped old retired storage.
 - Make clear that recovered/orphan evidence now belongs to the source-scoped
-  graph path rather than a live retained projection.
+  graph path rather than a live retired projection.
 
 ## Entry Points
 - Retired orchestrator: `lib/essentials/db_migrate/application/orchestrator/migration_orchestrator.dart`
@@ -35,7 +35,7 @@ links:
 - Retired migrator contract: `lib/essentials/db_migrate/domain/i_migrators.dart/table_migrator.dart`
 - Retired progress events: `lib/essentials/db_migrate/domain/states/table_migration_progress.dart`
 
-These retained paths are intentionally not present in the current source tree.
+These retired paths are intentionally not present in the current source tree.
 Current projection code is source-scoped and graph-backed.
 
 ## Historical Execution Model
@@ -47,7 +47,7 @@ Current projection code is source-scoped and graph-backed.
   - `copy(ctx)` - deterministic projection SQL from the ledger into `working.db`. Skipped automatically in dry-run mode.
   - `postValidate(ctx)` - verify row counts, FK integrity, and canonical-map expectations.
 5. **Health checks** - `ctx.ensureImportReady()` and `ctx.ensureImportClean()` guard each phase to catch lingering `ATTACH` statements or locked sqlite handles.
-6. **Progress reporting** - `TableMigrationProgressEvent`s surfaced clear phase names to retained diagnostic/compatibility surfaces.
+6. **Progress reporting** - `TableMigrationProgressEvent`s surfaced clear phase names to retired diagnostic/compatibility surfaces.
 7. **Post-orchestrator synthetic steps** - `HandlesMigrationService` rebuilt working message indexes, recreated message-index triggers, then called `searchIndexOrchestrator.rebuildAll()`.
 
 ## Historical Migrator Responsibilities
@@ -69,8 +69,8 @@ Current projection code is source-scoped and graph-backed.
 
 ## When Adding Migrators
 
-Do not add retained migrators for ordinary app behavior. New ordinary
+Do not add retired migrators for ordinary app behavior. New ordinary
 projection belongs in the source-scoped graph import/projector path. If old
 `working.db` contents matter for archive/recovery, treat them as
 cleanup/audit evidence to migrate, export, or intentionally discard. Do not
-recreate the retained migrator/orchestrator framework.
+recreate the retired migrator/orchestrator framework.

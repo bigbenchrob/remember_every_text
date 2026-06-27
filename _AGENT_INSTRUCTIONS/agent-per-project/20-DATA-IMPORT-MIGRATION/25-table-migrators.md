@@ -13,15 +13,15 @@ links:
   - lib/essentials/conversation_graph/
 ---
 
-# Retained Historical Table Migrators Guide
+# Retired Table Migrators Guide
 
-Historical reference for the deleted retained projection migrator
+Historical reference for the deleted retired projection migrator
 framework that moved data from `macos_import.db` into `working.db`. Use this
 only to interpret old logs, old docs, or old user data folders.
 
 > Current conformance note (2026-06-08): new ordinary projection work must
 > target the source-scoped conversation graph (`working_ss.db`) through graph
-> projectors/repositories. The retained `MigrationOrchestrator`,
+> projectors/repositories. The retired `MigrationOrchestrator`,
 > `HandlesMigrationService`, `MigrationContext`, and `TableMigrator` framework
 > are not present in the current source tree.
 
@@ -41,8 +41,8 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
 ## MigrationContext Summary
 
 `MigrationContext` (see `migration_context_sqlite.dart`) includes:
-- `importDb`: `SqfliteImportDatabase` handle for retained `macos_import.db`.
-- `workingDb`: Drift `WorkingDatabase` for retained `working.db` operations.
+- `importDb`: `SqfliteImportDatabase` handle for retired `macos_import.db`.
+- `workingDb`: Drift `WorkingDatabase` for retired `working.db` operations.
 - `log`: Optional logger used by `ctx.log(...)` to emit orchestrator transcripts.
 - `dryRun`: When true, preparation and validation run but copy steps skip writes.
 - `incrementalMode`: When true, orchestrator preparation skips table truncation and migrators must preserve existing projection rows.
@@ -62,7 +62,7 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
    - Confirm the ledger contains rows for required tables.
    - Verify canonical ID maps have entries for the relationships this migrator expects.
 2. **copy**
-   - Perform deterministic SQL from the retained ledger into `working.db`.
+   - Perform deterministic SQL from the retired ledger into `working.db`.
    - Use full-mode or incremental-mode insert/update semantics appropriate for the table.
    - Respect `ctx.dryRun`; always log planned work when skipping writes.
    - Do not restore or replay user overrides into `working.db`. User intent lives in `user_overlays.db` and is merged at read time by providers/read models.
@@ -88,16 +88,16 @@ Migrators receive a shared `MigrationContext` instance from `HandlesMigrationSer
 
 ## Adding or Modifying Migrators
 
-Do not add retained migrators for ordinary app behavior. New ordinary
+Do not add retired migrators for ordinary app behavior. New ordinary
 projection belongs in the source-scoped graph projectors and graph read models.
 If old `working.db` contents matter for archive/recovery, treat them as
 cleanup/audit evidence to migrate, export, or intentionally discard. Do not
-recreate the retained migrator framework.
+recreate the retired migrator framework.
 
 ## Related References
 
 - `./20-migration-orchestrator.md` for orchestrator flow and phase details.
 - `./10-import-orchestrator.md` to compare importer responsibilities with projection work.
-- `../10-DATABASES/02-db-working.md` for retained working database schema highlights.
-- Historical retained `db_migrate` paths are no longer present in the current
+- `../10-DATABASES/02-db-working.md` for retired working database schema highlights.
+- Historical retired `db_migrate` paths are no longer present in the current
   source tree and must not be used as templates for new graph projection work.

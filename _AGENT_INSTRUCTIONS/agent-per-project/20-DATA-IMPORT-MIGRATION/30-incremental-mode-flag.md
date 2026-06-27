@@ -20,7 +20,7 @@ for ordinary app data, archive import, or recovery.
 
 ## TL;DR
 
-- `incrementalMode: true` meant the retired historical projection preserved existing `working.db` rows and skipped the orchestrator table-truncation step.
+- `incrementalMode: true` meant the retired import/migration projection preserved existing `working.db` rows and skipped the orchestrator table-truncation step.
 - `incrementalMode: false` meant full retired projection rebuild: migrator target tables were cleared, then rebuilt from `macos_import.db`.
 - `ChatDbChangeMonitor` no longer runs retired migration for live sync. It runs the source-scoped graph build lifecycle.
 - Retired incremental projection must not be restored as an active app path.
@@ -99,7 +99,7 @@ data-version signals carry refresh.
 2. recreate message-index triggers
 3. call `searchIndexOrchestrator.rebuildAll()`
 
-This describes retired historical service behavior. Ordinary graph search now
+This describes retired service behavior. Ordinary graph search now
 selects graph `message_ss_id` evidence through the graph search/evidence spine,
 not retired working indexes. Do not restore retired projection/index rebuilds
 without a reviewed architecture decision.

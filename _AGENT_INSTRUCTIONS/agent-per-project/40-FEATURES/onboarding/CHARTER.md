@@ -2,7 +2,7 @@
 
 > Legacy note (2026-04-21, updated 2026-06-03): this folder is V1 planning material. Current onboarding architecture lives primarily in `lib/essentials/onboarding`; readiness panel UI lives in `lib/features/environment_readiness`; canonical docs are under `../25-ONBOARDING-AND-ARCHIVE/`. Several V1 assumptions below are no longer current, including deferred FDA handling, happy-path-only failure handling, the absence of ViewSpec participation for onboarding dev/readiness panels, and any use of `DbImportControlProvider.runImportAndMigration()`.
 >
-> Current rule: onboarding and settings reimport are graph-lifecycle flows. They use `MessageDataResetService` for derived-data reset/cleanup and `ConversationGraphBuildController` for source-scoped graph build/rebuild. The retained historical import-control panel is diagnostic/import-only and must not be used as the onboarding orchestrator.
+> Current rule: onboarding and settings reimport are graph-lifecycle flows. They use `MessageDataResetService` for derived-data reset/cleanup and `ConversationGraphBuildController` for source-scoped graph build/rebuild. The retired import-control panel is diagnostic/import-only and must not be used as the onboarding orchestrator.
 
 ## Mission
 
@@ -12,7 +12,7 @@ Present a full-window blocking overlay on first launch that detects absent/empty
 
 1. **Zero orchestrator changes for cosmetic purposes.** Onboarding delegates lifecycle work to application services. Current app-facing setup/reimport resets derived data through `MessageDataResetService` and builds the source-scoped graph through `ConversationGraphBuildController`; it does not route through presentation controllers.
 2. **No user_overlays.db involvement.** Even if present from a prior run, the overlay DB is never read, written, or consulted during onboarding. The overlay merging at read time continues to work as normal once the app is running — onboarding simply doesn't touch it.
-3. **Graph lifecycle is authoritative.** The user-facing setup sequence should describe source-scoped graph readiness/build state. Legacy import/migration progress surfaces are retained diagnostic/archive compatibility only.
+3. **Graph lifecycle is authoritative.** The user-facing setup sequence should describe source-scoped graph readiness/build state. Legacy import/migration progress surfaces are retired diagnostic/archive compatibility only.
 4. **Failure and early-dismiss are deferred.** V1 assumes success. Error handling, retry, partial progress, and mid-onboarding dismissal are future work.
 5. **Graph readiness, not legacy working readiness.** Current setup gates should use source-scoped import/graph readiness and explicit failure state. `working.db` is no longer the ordinary app readiness signal.
 

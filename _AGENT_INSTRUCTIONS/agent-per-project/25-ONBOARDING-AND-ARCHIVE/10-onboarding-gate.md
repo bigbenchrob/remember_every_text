@@ -160,7 +160,7 @@ Import and graph-projection failures are persisted as JSON in the overlay databa
 | `application/fda_checker.dart` | Full Disk Access probe |
 | `domain/onboarding_status.dart` | Status enum (10 states) |
 | `domain/onboarding_environment_report.dart` | Typed environment snapshot |
-| `domain/import_spec.dart` | Retained import-control route tagging for diagnostics/compatibility |
+| `domain/import_spec.dart` | Retired import-control route tagging for diagnostics/compatibility |
 | `domain/spec_classes/onboarding_view_spec.dart` | Onboarding panel spec for dev/debug surfaces |
 | `infrastructure/overlay_onboarding_failure_storage.dart` | Failure persistence |
 | `presentation/onboarding_overlay.dart` | Full-window blocking overlay |

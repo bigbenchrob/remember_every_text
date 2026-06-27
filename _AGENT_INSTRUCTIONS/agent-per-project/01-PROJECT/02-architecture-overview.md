@@ -55,7 +55,7 @@ Essentials owns app-level orchestration:
 - panel stack ownership and `ViewSpec` routing
 - onboarding gate state and overlay lifecycle
 - shared search service and graph search/evidence selection
-- database providers, source-scoped import, graph build, and retained
+- database providers, source-scoped import, graph build, and retired-file
   compatibility orchestration
 - logging, window state, app shell, and cross-cutting services
 
@@ -131,20 +131,34 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
 ## Naming And Provider Conventions
 
 - Riverpod providers should use project-standard generated-provider patterns.
+- `feature_level_providers.dart` files are public seams for external consumers,
+  not convenience barrels for code inside the same feature or essential module.
+  Internal code must import the exact sibling provider, repository, action,
+  model, or type file it depends on. Except for the central `essentials/db`
+  database boundary, public provider seams should remain export-only.
+- Except for the central `essentials/db` database boundary, public provider
+  seams must not have generated `feature_level_providers.g.dart` siblings.
+  Generated provider state belongs in named application/provider files.
+- Public provider seams should not export infrastructure implementation files.
+  Expose application/domain contracts, providers, and render-edge types; keep
+  data sources and repository implementations behind named provider or
+  application boundaries.
 - Use the current provider names from code and database docs. Ordinary graph
-  reads use `driftConversationGraphDatabaseProvider`; source-scoped import uses
-  `importDatabaseProvider` from `source_scoped_import`; overlay user intent and
-  archive-source metadata use `overlayDatabaseProvider`.
+  reads use `driftConversationGraphDatabaseProvider`; source-scoped import
+  database access is physically constructed by `sourceScopedImportDatabaseProvider`
+  in `essentials/db`; source import semantics normally consume
+  `sourceScopedImportLedgerProvider`; overlay user intent and archive-source
+  metadata use `overlayDatabaseProvider`.
   Retired `macos_import.db` and `working.db` are transitional cleanup file concerns
   and no longer have central app providers.
-- Do not invent generic provider names such as `workingDatabaseProvider` or
-  `importDatabaseProvider` unless code first introduces them.
+- Do not invent generic provider names such as `workingDatabaseProvider`; use
+  the current centralized provider names.
 - Keep generated files untouched unless running the approved generator.
 
 ## Historical Note
 
 Older project docs used generic feature scaffolds such as `_import_and_dbs` and
 example files like `import_db.dart`. Those examples are superseded by the
-current essentials-owned database, source import, graph build, and retained
+current essentials-owned database, source import, graph build, and retired-file
 compatibility structure. Use this document and the linked subsystem docs for
 current placement decisions.

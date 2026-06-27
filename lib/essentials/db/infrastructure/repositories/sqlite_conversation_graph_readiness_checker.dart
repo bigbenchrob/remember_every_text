@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../app_database_files.dart';
 import '../../application/conversation_graph_readiness.dart';
-import '../data_sources/local/conversation_graph/conversation_graph_database.dart';
 
 final class SqliteConversationGraphReadinessChecker
     implements ConversationGraphReadinessChecker {
@@ -11,11 +11,12 @@ final class SqliteConversationGraphReadinessChecker
 
   @override
   ConversationGraphReadiness checkPath(String dbPath) {
+    final databaseName = appDatabaseFileName(AppDatabaseFile.conversationGraph);
     final file = File(dbPath);
     if (!file.existsSync()) {
-      return const ConversationGraphReadiness(
+      return ConversationGraphReadiness(
         isReady: false,
-        reason: '$conversationGraphDatabaseFileName is missing',
+        reason: '$databaseName is missing',
         messageCount: 0,
         chatCount: 0,
         chatToMessageEdgeCount: 0,
@@ -23,9 +24,9 @@ final class SqliteConversationGraphReadinessChecker
     }
 
     if (file.lengthSync() == 0) {
-      return const ConversationGraphReadiness(
+      return ConversationGraphReadiness(
         isReady: false,
-        reason: '$conversationGraphDatabaseFileName is empty',
+        reason: '$databaseName is empty',
         messageCount: 0,
         chatCount: 0,
         chatToMessageEdgeCount: 0,
@@ -43,7 +44,7 @@ final class SqliteConversationGraphReadinessChecker
           return ConversationGraphReadiness(
             isReady: false,
             reason:
-                '$conversationGraphDatabaseFileName is missing graph tables: '
+                '$databaseName is missing graph tables: '
                 '${missingTables.join(', ')}',
             messageCount: 0,
             chatCount: 0,
@@ -58,7 +59,7 @@ final class SqliteConversationGraphReadinessChecker
         if (messageCount == 0) {
           return ConversationGraphReadiness(
             isReady: false,
-            reason: '$conversationGraphDatabaseFileName has no messages',
+            reason: '$databaseName has no messages',
             messageCount: messageCount,
             chatCount: chatCount,
             chatToMessageEdgeCount: chatToMessageEdgeCount,
@@ -67,7 +68,7 @@ final class SqliteConversationGraphReadinessChecker
         if (chatCount == 0) {
           return ConversationGraphReadiness(
             isReady: false,
-            reason: '$conversationGraphDatabaseFileName has no chats',
+            reason: '$databaseName has no chats',
             messageCount: messageCount,
             chatCount: chatCount,
             chatToMessageEdgeCount: chatToMessageEdgeCount,
@@ -76,8 +77,7 @@ final class SqliteConversationGraphReadinessChecker
         if (chatToMessageEdgeCount == 0) {
           return ConversationGraphReadiness(
             isReady: false,
-            reason:
-                '$conversationGraphDatabaseFileName has no chat/message topology',
+            reason: '$databaseName has no chat/message topology',
             messageCount: messageCount,
             chatCount: chatCount,
             chatToMessageEdgeCount: chatToMessageEdgeCount,

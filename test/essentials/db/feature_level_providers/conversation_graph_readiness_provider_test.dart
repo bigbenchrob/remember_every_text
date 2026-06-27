@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -22,15 +22,21 @@ void main() {
     });
 
     test('reports missing graph database', () {
+      final graphDatabaseFileName = appDatabaseFileName(
+        AppDatabaseFile.conversationGraph,
+      );
       final readiness = const SqliteConversationGraphReadinessChecker()
-          .checkPath('${tempDir.path}/$conversationGraphDatabaseFileName');
+          .checkPath('${tempDir.path}/$graphDatabaseFileName');
 
       expect(readiness.isReady, isFalse);
-      expect(readiness.reason, '$conversationGraphDatabaseFileName is missing');
+      expect(readiness.reason, '$graphDatabaseFileName is missing');
     });
 
     test('reports missing required graph tables', () {
-      final dbPath = '${tempDir.path}/$conversationGraphDatabaseFileName';
+      final dbPath = appDatabasePath(
+        AppDatabaseFile.conversationGraph,
+        databaseDirectory: tempDir.path,
+      );
       final db = sqlite3.open(dbPath);
       db
         ..execute('CREATE TABLE messages (ss_id INTEGER PRIMARY KEY)')
@@ -45,22 +51,28 @@ void main() {
     });
 
     test('reports empty graph core as not ready', () {
-      final dbPath = '${tempDir.path}/$conversationGraphDatabaseFileName';
+      final graphDatabaseFileName = appDatabaseFileName(
+        AppDatabaseFile.conversationGraph,
+      );
+      final dbPath = appDatabasePath(
+        AppDatabaseFile.conversationGraph,
+        databaseDirectory: tempDir.path,
+      );
       _createRequiredGraphTables(dbPath);
 
       final readiness = const SqliteConversationGraphReadinessChecker()
           .checkPath(dbPath);
 
       expect(readiness.isReady, isFalse);
-      expect(
-        readiness.reason,
-        '$conversationGraphDatabaseFileName has no messages',
-      );
+      expect(readiness.reason, '$graphDatabaseFileName has no messages');
       expect(readiness.messageCount, 0);
     });
 
     test('reports graph with messages chats and topology as ready', () {
-      final dbPath = '${tempDir.path}/$conversationGraphDatabaseFileName';
+      final dbPath = appDatabasePath(
+        AppDatabaseFile.conversationGraph,
+        databaseDirectory: tempDir.path,
+      );
       final db = _createRequiredGraphTables(dbPath);
       db
         ..execute('INSERT INTO messages (ss_id) VALUES (1)')

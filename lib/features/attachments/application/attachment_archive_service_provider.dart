@@ -3,14 +3,27 @@ import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/logging/feature_level_providers.dart';
+import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
 import '../domain/entities/attachment_recovery_metadata.dart';
-import '../feature_level_providers.dart';
 import 'archive_settings_provider.dart';
 import 'attachment_archive_file_store.dart';
+import 'attachment_archive_runtime_providers.dart'
+    show
+        attachmentArchiveDirectoryPathProvider,
+        attachmentArchiveSettingsStoreProvider;
 import 'attachment_archive_settings_store.dart';
+import 'attachment_archive_store_providers.dart'
+    show
+        attachmentArchiveFileStoreProvider,
+        attachmentArchiveWriteStoreProvider;
 import 'attachment_archive_write_store.dart';
 import 'graph_attachment_archive_candidate_reader.dart';
+import 'graph_attachment_archive_providers.dart'
+    show
+        currentMessagesAttachmentPathLookupProvider,
+        graphAttachmentArchiveCandidateReaderProvider;
 
 part 'attachment_archive_service_provider.g.dart';
 

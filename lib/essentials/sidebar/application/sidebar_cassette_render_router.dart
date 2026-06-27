@@ -1,15 +1,39 @@
 import 'package:flutter/widgets.dart';
 
 import '../../../features/contacts/feature_level_providers.dart'
-    as contacts_feature;
+    as contacts_feature
+    show
+        ContactChooserCassettePayload,
+        ContactHeroSummaryCassettePayload,
+        ContactMessageScopeToggleCassettePayload,
+        ContactSelectionControlCassettePayload,
+        HandleFilterCassettePayload,
+        buildPlacementGovernedCassetteBody;
 import '../../../features/handles/feature_level_providers.dart'
     as handles_feature;
 import '../../../features/messages/feature_level_providers.dart'
-    as messages_feature;
+    as messages_feature
+    show
+        ConversationSignaturesCassettePayload,
+        MessagesHeatmapCassettePayload,
+        RecoveredNoHandleFromMeNavigatorCassettePayload,
+        RecoveredUnlinkedNavigatorCassettePayload,
+        buildPlacementGovernedCassetteBody;
 import '../../../features/settings/feature_level_providers.dart'
-    as settings_feature;
+    as settings_feature
+    show
+        AttachmentArchiveSettingsCassettePayload,
+        HistoricalArchivesSettingsCassettePayload,
+        SettingsActionCardCassettePayload,
+        SettingsInfoActionsCassettePayload,
+        buildFeatureInfoSupplementalContent,
+        buildPlacementGovernedCassetteBody;
 import '../../../features/sidebar_utilities/feature_level_providers.dart'
-    as sidebar_utilities_feature;
+    as sidebar_utilities_feature
+    show
+        SettingsTopMenuCassettePayload,
+        TopChatMenuCassettePayload,
+        buildPlacementGovernedCassetteBody;
 import '../../navigation/domain/sidebar_mode.dart';
 import '../presentation/view/sidebar_body_model_content.dart';
 import '../presentation/view/sidebar_cassette_card.dart';

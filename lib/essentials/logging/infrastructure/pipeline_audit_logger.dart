@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../db/feature_level_providers.dart';
+import '../../db/database_directory.dart';
 
 /// Writes structured, human-readable audit logs for active graph lifecycle and
 /// diagnostic pipelines.

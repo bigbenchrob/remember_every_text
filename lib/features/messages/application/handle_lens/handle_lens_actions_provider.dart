@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/logging/feature_level_providers.dart';
-import '../../../contacts/feature_level_providers.dart';
-import '../../../handles/feature_level_providers.dart';
+import '../../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
+import '../../../contacts/feature_level_providers.dart'
+    show manualHandleLinkServiceProvider;
+import '../../../handles/feature_level_providers.dart'
+    show handleReviewActionsProvider;
 
 part 'handle_lens_actions_provider.g.dart';
 

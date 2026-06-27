@@ -17,7 +17,7 @@ tests: []
 # Source Import and Graph Build Overview
 
 This folder contains the current source-scoped graph lifecycle context plus
-historical retained import/projection references. Use it as the starting point
+retired import/projection references. Use it as the starting point
 whenever you touch source ingestion, graph projection, archive coordination, or
 the Rust helper binary.
 
@@ -63,8 +63,8 @@ is the ordinary live-sync, archive-source metadata, or user-facing read spine.
 **Result:** New messages appear in the UI within ~15-20 seconds of arrival without user action.
 
 See `10-import-orchestrator.md` for the current `ChatDbChangeMonitor`
-runbook and historical retained importer mechanics. Do not use the historical
-retained importer sections as live-sync guidance.
+runbook and retired importer mechanics. Do not use the historical retired
+importer sections as live-sync guidance.
 
 ## Retired Storage Reference Flow
 
@@ -80,7 +80,7 @@ reset cleanup / health diagnostics / explicit retired-file audit
 ```
 
 - **Source-scoped import** pulls source facts into `macos_import_ss.db`; graph projection derives canonical `ss_id` rows and topology in `working_ss.db`.
-- **Retired historical import/projection** is historical only. If old
+- **Retired import/projection** is historical reference only. If old
   `macos_import.db` or `working.db` contents matter for archive/recovery,
   migrate, export, or intentionally discard that storage evidence through an
   explicit retention task. Do not recreate the old import/projection pipeline.
@@ -98,22 +98,22 @@ reset cleanup / health diagnostics / explicit retired-file audit
 | Concern | Owner | Document |
 | --- | --- | --- |
 | Source-scoped graph build lifecycle | Conversation graph build controller/services | `../55-READERS-INTEGRATORS-ORCHESTRATORS/73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md` |
-| Historical retained table import sequencing, validation, logging | Retired `ImportOrchestrator` docs | `10-import-orchestrator.md` |
+| Retired table import sequencing, validation, logging | Retired `ImportOrchestrator` docs | `10-import-orchestrator.md` |
 | Rich text extraction for attributed bodies | Rust helper binary | `11-rust-message-extractor.md` |
-| Historical retained projection + legacy ID preservation | Retired `MigrationOrchestrator` docs | `20-migration-orchestrator.md` |
+| Retired projection + legacy ID preservation | Retired `MigrationOrchestrator` docs | `20-migration-orchestrator.md` |
 | Historical incremental-mode semantics | Retired migrator docs | `30-incremental-mode-flag.md` |
-| Retained legacy schema expectations | Historical schema inventory | `02-import-migration-schema-reference.md` |
+| Retired cleanup schema expectations | Historical schema inventory | `02-import-migration-schema-reference.md` |
 | Attachment archive + deterministic recovery | Attachments feature + onboarding/archive docs | `../25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md`, `../25-ONBOARDING-AND-ARCHIVE/50-deterministic-recovery.md` |
 
 ## Audit Logs
 
-Historical retained import/projection runs may have written filesystem
+Retired import/projection runs may have written filesystem
 audit reports alongside the runtime databases:
 
 - `~/Library/Application Support/com.bigbenchsoftware.MessageLens/import_log`
 - `~/Library/Application Support/com.bigbenchsoftware.MessageLens/migrate_log`
 
-Use these only when interpreting older retained runs. Current graph build status,
+Use these only when interpreting older retired runs. Current graph build status,
 stage timings, and graph health are surfaced through the Conversation Graph
 status panel. Historical logs may capture:
 
@@ -161,7 +161,7 @@ This is an app-side recovery heuristic, not a claim that the source database pro
   projection own derived data; overlay services own user intent.
 - **Run graph projection after source-scoped import.** Graph projection is disposable derived data; rebuilding is cheaper than debugging drift.
 - **Keep the Rust extractor available.** Without `extract_messages_limited` the majority of messages land without bodies, crippling search and UI rendering.
-- **Do not route live polling through retained historical projection.** `ChatDbChangeMonitor` owns source-scoped graph build and graph data-version invalidation.
+- **Do not route live polling through retired import/migration projection.** `ChatDbChangeMonitor` owns source-scoped graph build and graph data-version invalidation.
 - **Do not invalidate graph database connections from live polling.** The monitor bumps graph/message data-version providers; active readers should refresh through typed graph/evidence providers.
 
 ## Runbook Snapshot
@@ -173,7 +173,7 @@ This is an app-side recovery heuristic, not a claim that the source database pro
 | Headless import | No current documented supported command | Use the app control panels unless a maintained tool is added. Older references to `tool/import.dart` are legacy. |
 | Inspect latest source-scoped batch | Query `macos_import_ss.db.import_batches` | Confirms source paths, batch IDs, and row counts for the graph path. |
 | Inspect graph status | Conversation graph status panel | Shows source/import/working graph counts, stage timings, and health diagnostics. |
-| Retained archive projection rebuild | No active generic retained rebuild path | Design explicit graph-era recovery tooling if this becomes necessary. |
+| Retired archive projection rebuild | No active generic retired rebuild path | Design explicit graph-era recovery tooling if this becomes necessary. |
 
 ## Related Reading
 

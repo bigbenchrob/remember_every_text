@@ -1,8 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../feature_level_providers.dart';
 import 'message_graph_reader.dart';
+import 'message_graph_repository_provider.dart';
 
 part 'message_graph_reader_provider.g.dart';
 

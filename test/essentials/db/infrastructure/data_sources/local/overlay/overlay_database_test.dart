@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -46,7 +47,10 @@ void main() {
       final tempDir = await Directory.systemTemp.createTemp(
         'overlay_v5_migration_test_',
       );
-      final dbPath = '${tempDir.path}/$overlayDatabaseFileName';
+      final dbPath = appDatabasePath(
+        AppDatabaseFile.overlay,
+        databaseDirectory: tempDir.path,
+      );
       addTearDown(() async {
         if (tempDir.existsSync()) {
           await tempDir.delete(recursive: true);

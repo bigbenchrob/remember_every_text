@@ -5,12 +5,20 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service_provider.dart';
 import '../../../essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart';
 import '../../../essentials/conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart';
-import '../../../essentials/db/feature_level_providers.dart';
-import '../../../essentials/logging/feature_level_providers.dart';
+import '../../../essentials/db/feature_level_providers.dart'
+    show
+        conversationGraphPopulatedProvider,
+        conversationGraphReadinessProvider,
+        dbMaintenanceLockProvider,
+        messageDataVersionProvider;
+import '../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
 import '../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
-import '../feature_level_providers.dart';
 import 'archive_source_inspection.dart';
+import 'archive_source_inspector_provider.dart';
+import 'historical_archive_folder_chooser_provider.dart';
 import 'historical_archive_sources.dart';
+import 'historical_archive_sources_provider.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
 

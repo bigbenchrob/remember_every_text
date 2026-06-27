@@ -5,16 +5,18 @@ import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
-import '../../db/feature_level_providers.dart' show databaseDirectoryPath;
-import '../../logging/feature_level_providers.dart';
+import '../../db/database_directory.dart';
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/application/sidebar_mode_provider.dart';
 import '../../navigation/domain/sidebar_mode.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
-import '../feature_level_providers.dart';
 import 'database_existence_checker.dart';
+import 'full_disk_access_provider.dart';
 import 'message_data_reset_service.dart';
+import 'onboarding_database_probe_reader_provider.dart';
 import 'onboarding_environment_report_provider.dart';
+import 'onboarding_failure_storage_provider.dart';
 
 part 'onboarding_gate_provider.g.dart';
 

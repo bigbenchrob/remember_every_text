@@ -7,8 +7,9 @@ import '../../conversation_graph/application/conversation_graph_build_controller
 import '../../conversation_graph/application/conversation_graph_build_report.dart';
 import '../../conversation_graph/application/conversation_graph_build_state.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
+import '../../logging/application/diagnostic_report_provider.dart'
+    show diagnosticReportExporterProvider;
 import '../../logging/domain/diagnostic_report_presentation_result.dart';
-import '../../logging/feature_level_providers.dart';
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
 import '../application/onboarding_overlay_actions_provider.dart';

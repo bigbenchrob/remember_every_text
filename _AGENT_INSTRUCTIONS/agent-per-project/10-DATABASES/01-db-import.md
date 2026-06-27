@@ -21,7 +21,7 @@ tests: []
 ## Overview
 
 `db-import` is the retired `macos_import.db` cleanup filename. Existing user data
-folders may still contain historical legacy ledger tables or older retained
+folders may still contain historical legacy ledger tables or older retired
 archive-source metadata from earlier versions, and diagnostics/reset code must
 tolerate those files.
 
@@ -50,7 +50,7 @@ deliberately required.
 
 ## Schema
 
-`db-import` is a retired plain SQLite/Sqflite database. The old retained
+`db-import` is a retired plain SQLite/Sqflite database. The old retired
 metadata adapter has been removed from active code.
 
 Existing user folders may still contain older tables such as `messages`,
@@ -61,7 +61,7 @@ those tables.
 ## Typical Use Cases
 
 - Inspect old `macos_import.db` files read-only during diagnostics.
-- Delete the retained file during full derived-data reset.
+- Delete the retired file during full derived-data reset.
 
 Because historical user files may still contain retired ledger or metadata tables,
 diagnostics should report what exists without treating those tables as active
@@ -77,6 +77,6 @@ app truth.
 
 ## Cross-References
 
-- `10-group-import-working.md` — Historical retained import/working contract.
+- `10-group-import-working.md` — Retired import/working contract.
 - `02-db-working.md` — Retired projection cleanup-file status.
 - `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retired cleanup-inventory status.

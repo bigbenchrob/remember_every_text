@@ -10,11 +10,11 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 
+import '../../application/read_models/contact_summary.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/contact_sidebar_refresh_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
-import '../../feature_level_providers.dart' show ContactSummary;
 import 'contact_highlight_row.dart';
 import 'picker_filter_toggle.dart';
 

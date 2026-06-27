@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../domain/participant_origin.dart';
-import '../../../feature_level_providers.dart';
+import '../../read_models/contacts_list_repository_provider.dart';
 
 part 'participants_for_picker_provider.g.dart';
 

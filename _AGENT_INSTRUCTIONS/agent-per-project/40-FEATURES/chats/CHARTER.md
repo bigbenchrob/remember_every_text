@@ -57,7 +57,7 @@ last_updated: 2026-06-05
   contexts, and message evidence headers.
 
 ## Open Questions
-- Whether the retained diagnostic center-panel conversation browser should be
+- Whether the retired diagnostic center-panel conversation browser should be
   fully retired once sidebar signatures cover the remaining inspection use case.
 - Which future semantic overlays belong on conversation signatures versus in
   evidence/search result surfaces.

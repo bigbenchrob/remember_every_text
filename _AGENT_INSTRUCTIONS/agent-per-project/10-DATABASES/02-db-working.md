@@ -15,13 +15,13 @@ links:
 tests: []
 ---
 
-# `db-working` - Retired Historical Cleanup File (`working.db`)
+# `db-working` - Retired Cleanup/Diagnostic File (`working.db`)
 
 ## Overview
 
 `db-working` is the retired `working.db` cleanup filename. The Drift schema and
 migrator implementation have been retired from active app code. Existing user
-data folders may still contain a historical projection file, and reset or
+data folders may still contain a retired projection file, and reset or
 read-only diagnostics must tolerate that file.
 
 > Current conformance note (2026-06-08): ordinary Flutter UI reads now use the
@@ -52,14 +52,14 @@ There is no central app provider for retired `working.db`. Ordinary app
 reads, search, timelines, heatmaps, recovered-message evidence, and contact
 identity use the source-scoped graph and Message Evidence Spine.
 
-Reset may delete the retained file alongside other derived-data files.
-Diagnostics may inspect the retained file through explicit read-only file query
+Reset may delete the retired file alongside other derived-data files.
+Diagnostics may inspect the retired file through explicit read-only file query
 boundaries. New product or compatibility work must not reintroduce a general
 provider for this database without a reviewed storage-retirement decision.
 
-## Retained File Contents
+## Retired File Contents
 
-The retained Drift schema implementation has been retired from app code.
+The old Drift schema implementation has been retired from app code.
 Existing user data folders may still contain a historical `working.db` file
 with the old projection tables, but MessageLens no longer opens that file
 through a Drift database class.
@@ -83,32 +83,32 @@ Representative historical tables that may still appear in old files:
 ## Typical Use Cases
 
 - Reset cleanup may delete retired `working.db` files.
-- Diagnostics may inspect the retained file through read-only file query
+- Diagnostics may inspect the retired file through read-only file query
   boundaries while legacy storage remains in user data folders.
 - Historical documentation may refer to old projection tables when explaining
   migration decisions.
 
 Remember: `db-working` is retired transitional cleanup storage, not the ordinary app
-truth. Historical retained projection concepts may still appear in schema
+truth. Historical retired projection concepts may still appear in schema
 records, but ordinary MessageLens evidence, search, timelines, and heatmaps use
-the source-scoped graph. Any manual edits are unsupported and may make retained
+the source-scoped graph. Any manual edits are unsupported and may make retired
 diagnostics inconsistent.
 
 ## Related Rules & Contracts
 
-- **Source identity remains traceable in retired historical files**: Chat
+- **Source identity remains traceable in retired cleanup/diagnostic files**: Chat
   IDs/GUIDs, message IDs/GUIDs, handle IDs, and participant IDs should remain
   interpretable from old `db-import` / `db-working` pairs. See
   `10-group-import-working.md` for the historical compatibility flow.
 - **Overlay independence**: `db-working` never writes to `db-overlay`, and vice versa. Providers merge overlay data at runtime (see `07-overlay-database-independence.md`).
-- **No general provider access**: do not reintroduce a general retained
+- **No general provider access**: do not reintroduce a general retired
   `working.db` app provider. Use graph/overlay/source-scoped import providers
   for active behavior, and explicit read-only diagnostic boundaries for
-  retained file inspection.
+  retired file inspection.
 
 ## Cross-References
 
-- `10-group-import-working.md` — Historical retained pipeline rules.
+- `10-group-import-working.md` — Historical retired pipeline rules.
 - `01-db-import.md` — Retired import cleanup-file details.
 - `07-overlay-database-independence.md` — Runtime merge strategy for overlay data.
 - `../55-READERS-INTEGRATORS-ORCHESTRATORS/81-LEGACY-STORAGE-RETENTION-REGISTER.md` — Current retired cleanup-inventory status.

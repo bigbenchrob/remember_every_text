@@ -5,8 +5,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/logging/application/diagnostic_report_actions.dart';
+import '../../../../essentials/logging/application/diagnostic_report_provider.dart'
+    show diagnosticReportExporterProvider;
 import '../../../../essentials/logging/domain/diagnostic_report_presentation_result.dart';
-import '../../../../essentials/logging/feature_level_providers.dart';
 import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import '../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
 import '../../application/environment_readiness_actions_provider.dart';

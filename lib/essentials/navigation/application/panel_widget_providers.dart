@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/messages/feature_level_providers.dart'
-    as messages_feature;
+    as messages_feature show recoveredMessagesSidebarProvider;
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
-import '../../logging/feature_level_providers.dart';
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
+import '../../sidebar/application/cassette_rack_state_provider.dart';
+import '../../sidebar/application/cassette_widget_coordinator_provider.dart';
+import '../../sidebar/application/sidebar_cassette_render_router.dart';
 import '../../sidebar/application/sidebar_cassette_sectioning.dart';
-import '../../sidebar/feature_level_providers.dart';
+import '../../sidebar/application/sidebar_flow_state_provider.dart';
 import '../../sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
 import '../../sidebar/presentation/view/sidebar_primary_context_section_surface.dart';
 import '../../sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
@@ -16,11 +20,8 @@ import '../domain/entities/panel_stack.dart';
 import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';
 import '../domain/sidebar_mode.dart';
-import '../feature_level_providers.dart';
 import './panel_coordinator_provider.dart';
-
-// Import the sidebar feature barrel for rack state, cassette resolution, and
-// render helpers used to compose the left panel surface.
+import 'panels_view_state_provider.dart';
 
 part 'panel_widget_providers.g.dart';
 

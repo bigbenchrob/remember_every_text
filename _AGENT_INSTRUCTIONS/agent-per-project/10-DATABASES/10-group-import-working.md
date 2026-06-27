@@ -18,7 +18,7 @@ links:
 tests: []
 ---
 
-# `group-import-working-db` - Historical Retained Import / Working Contract
+# `group-import-working-db` - Retired Import / Working Cleanup Contract
 
 `db-import` and `db-working` were the legacy import/projection pair. The active
 orchestrator/migrator implementation has been retired from app code. This
@@ -42,10 +42,10 @@ macOS AddressBook (db-address-book)
             ↓  import orchestrator
      db-import (source-derived ledger)
             ↓  migration orchestrator
-     db-working (retained projection)
+     db-working (retired projection)
 ```
 
-The old retained import and migration orchestrator classes are no longer active
+The old retired import and migration orchestrator classes are no longer active
 runtime code. Historical files may still carry tables produced by that flow;
 diagnostics may inspect those files read-only, and reset may delete them.
 
@@ -99,8 +99,8 @@ historical contact -> chat relationship.
 - **Fresh `db-import` is metadata-owned**: Runtime features may update
   `historical_archive_sources` only through the historical archive-source
   repository. They must not rebuild old ledger tables.
-- **Retained `db-working` is file storage only**: No central app provider or
-  retained Drift schema remains. Reset may delete it; diagnostics may inspect it
+- **Retired `db-working` is file storage only**: No central app provider or
+  active Drift schema remains. Reset may delete it; diagnostics may inspect it
   read-only.
 - **Write policy**: Durable user intent never writes to `db-import` or
   `db-working`; provider-layer merges must respect the overlay independence
@@ -115,7 +115,7 @@ source-scoped graph/orphan message semantics.
 - `chat.db.message` count can exceed thread-linked graph topology
 - the orphan portion should appear in source-scoped recovered/orphan graph
   evidence
-- retired historical files may contain `db-import.recovered_unlinked_messages`
+- retired cleanup/diagnostic files may contain `db-import.recovered_unlinked_messages`
   and `db-working.recovered_unlinked_messages`
 - audit logs should distinguish thread-linked counts from recovered preserved counts
 
@@ -124,16 +124,16 @@ This is the practical implication of the current Apple data shape: source visibi
 ## 6. Debugging Checklist
 
 1. Prefer the graph status panel and source-scoped graph evidence first.
-2. For retired historical files, confirm whether the row exists in `db-import`
+2. For retired cleanup/diagnostic files, confirm whether the row exists in `db-import`
        only to interpret cleanup inventory, not to route active app behavior.
        For source orphan rows, check both `messages` and `recovered_unlinked_messages`.
 3. Verify the corresponding row in `db-working` retains the same ID.
        For recovered rows, check `recovered_unlinked_messages` and `recovered_unlinked_attachments` rather than normal chat-linked tables.
 4. Check `handle_to_participant` and `chat_to_handle` join paths using the preserved IDs.
-5. Do not attempt to re-run deleted retained orchestrators. If old retained
+5. Do not attempt to re-run deleted retired orchestrators. If old retired
    storage is required for a recovery task, design an explicit graph-era
    retired-file audit, migration, or export path.
-6. Inspect retained `import_log` and `migrate_log` only as historical
+6. Inspect retired `import_log` and `migrate_log` only as historical
    diagnostics. Graph build status lives in the Conversation Graph status panel.
 7. If IDs differ at any step, halt - someone attempted to remap during historical migration.
 

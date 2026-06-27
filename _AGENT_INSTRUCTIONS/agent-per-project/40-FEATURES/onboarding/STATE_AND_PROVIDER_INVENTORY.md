@@ -2,7 +2,7 @@
 
 > Legacy note (2026-04-21, updated 2026-06-03): current providers include `onboardingGateProvider`, `onboardingEnvironmentReportProvider`, `onboardingDevOverridesProvider`, `onboardingFullDiskAccessProvider`, `onboardingMessagesDatabasePathProvider`, and `onboardingDatabaseDirectoryPathProvider`. Current code also has `message_data_reset_service.dart`, `fda_checker.dart`, overlay failure persistence, and direct graph build/rebuild through `ConversationGraphBuildController`. Treat the "New Providers" language below as historical.
 >
-> Current rule: onboarding must not call `DbImportControlProvider` or `runImportAndMigration()`. Retained import-control presentation is diagnostic/import-only.
+> Current rule: onboarding must not call `DbImportControlProvider` or `runImportAndMigration()`. Retired import-control presentation is diagnostic/import-only.
 
 ## New Providers
 

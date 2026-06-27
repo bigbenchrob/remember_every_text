@@ -2,11 +2,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../db/feature_level_providers/message_data_version_provider.dart';
-import '../../feature_level_providers.dart';
 import '../conversations/conversation.dart';
 import '../identity/contact_page_graph_identity.dart';
 import 'contact_graph.dart';
 import 'contact_graph_reader.dart';
+import 'contact_graph_repository_provider.dart';
 
 part 'contact_graph_provider.g.dart';
 

@@ -7,7 +7,7 @@ Define the required procedure for creating a safe, restorable snapshot of Messag
 This protocol MUST be followed before:
 
 - schema changes
-- source-scoped import, graph projection, retained file cleanup storage,
+- source-scoped import, graph projection, retired file cleanup storage,
   or overlay schema changes
 - archival import experiments
 - any operation that may mutate `macos_import_ss.db`, `working_ss.db`,
@@ -37,8 +37,8 @@ Includes:
 
 - macos_import_ss.db (source-scoped import ledger)
 - working_ss.db (conversation graph projection)
-- macos_import.db (retired historical import cleanup file, if present)
-- working.db (retired historical projection cleanup file, if present)
+- macos_import.db (retired import cleanup file, if present)
+- working.db (retired cleanup/diagnostic file, if present)
 - user_overlays.db
 - any matching SQLite sidecar files (`*.db-wal`, `*.db-shm`) if present
 - logs

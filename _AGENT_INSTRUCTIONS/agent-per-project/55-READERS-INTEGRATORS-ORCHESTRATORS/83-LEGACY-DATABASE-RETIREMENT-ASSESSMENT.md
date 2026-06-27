@@ -100,13 +100,14 @@ are narrow and intentionally guarded by architecture tests.
 
 Current files:
 
-- `lib/essentials/db/feature_level_providers.dart`
+- `lib/essentials/db/app_database_files.dart`
 
 Current usage:
 
-- declares `retiredMacosImportDatabaseFileName = 'macos_import.db'`
-- declares `retiredWorkingDatabaseFileName = 'working.db'`
-- no longer constructs an old archive metadata store provider
+- owns private `macos_import.db` / `working.db` cleanup filename literals
+- exposes them only through typed `AppDatabaseFile` / `appDatabaseFileName`
+  lifecycle helpers
+- does not construct old archive metadata store providers
 
 Classification:
 
@@ -172,7 +173,7 @@ Current usage:
 
 - keeps active graph rebuild files in `activeGraphDerivedDatabaseBaseNames`
 - keeps `macos_import.db` and `working.db` in
-  `retiredHistoricalDatabaseCleanupBaseNames`
+  `retiredDatabaseCleanupBaseNames`
 - deletes both categories during reset, but logs and verifies them separately
 
 Classification:
@@ -276,7 +277,7 @@ Recommended disposition:
 
 Current role:
 
-- retired historical cleanup/diagnostic file if present in old data folders
+- retired cleanup/diagnostic file if present in old data folders
 - reset cleanup target
 - possible diagnostic/file-inventory context
 
@@ -302,7 +303,7 @@ Classification summary:
 
 Retirement blockers:
 
-1. Conservative policy previously listed `working.db` as retained historical
+1. Conservative policy previously listed `working.db` as retained
    reference material; current policy demotes it to retired cleanup/diagnostic
    inventory.
 2. Reset still deletes it as a derived data base name.
@@ -312,7 +313,7 @@ Retirement blockers:
 Recommended disposition:
 
 - treat `working.db` as the first legacy DB eligible for explicit retirement.
-- convert remaining references from "retained historical reference database" to
+- convert remaining references from "retained reference database" to
   "retired file cleanup target" as dependency scans confirm no active reader.
 - do not build new graph-era recovery logic that consults `working.db`.
 
@@ -482,7 +483,7 @@ Done means:
 
 ## Current Readiness Judgment
 
-The project is ready to move from retired historical storage toward
+The project is ready to move from retired cleanup inventory toward
 explicit retirement planning.
 
 However, it is not yet ready for blind deletion because:

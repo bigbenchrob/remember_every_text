@@ -66,12 +66,14 @@ class AddressBookFolderRepository {
   }
 
   Future<String?> _addressBookDbRejectionReason(String path) async {
+    final helper = AddressBookDbHelperMultiInstance(path);
     try {
-      final helper = AddressBookDbHelperMultiInstance(path);
       await helper.database;
       return null;
     } catch (error) {
       return '$error';
+    } finally {
+      await helper.close();
     }
   }
 
@@ -88,6 +90,8 @@ class AddressBookFolderRepository {
             'Conversion of AddressBook path to folder entity failed for '
             '$path: $error',
       );
+    } finally {
+      await helper.close();
     }
   }
 

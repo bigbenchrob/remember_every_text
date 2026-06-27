@@ -5,8 +5,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../feature_level_providers.dart';
 import '../../../presentation/widgets/contact_initial_badge.dart';
+import '../../read_models/recent_contacts_provider.dart';
 import '../resolver_tools/contact_picker_actions_provider.dart';
 
 /// Section displaying recent contacts at the top of the contact picker.

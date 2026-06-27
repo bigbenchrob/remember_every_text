@@ -1,6 +1,11 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../feature_level_providers.dart';
+import 'attachment_archive_runtime_providers.dart'
+    show
+        attachmentArchiveDirectoryPathProvider,
+        attachmentArchiveFileOperationsProvider,
+        attachmentArchiveSettingsStoreProvider,
+        attachmentArchiveStatsReaderProvider;
 import 'attachment_archive_settings_store.dart';
 
 part 'archive_settings_provider.g.dart';

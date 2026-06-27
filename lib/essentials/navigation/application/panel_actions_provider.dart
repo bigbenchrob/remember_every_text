@@ -1,10 +1,10 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../logging/feature_level_providers.dart';
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../domain/entities/panel_stack.dart';
 import '../domain/navigation_constants.dart';
 import '../domain/sidebar_mode.dart';
-import '../feature_level_providers.dart';
+import 'panels_view_state_provider.dart';
 import 'sidebar_mode_provider.dart';
 
 part 'panel_actions_provider.g.dart';

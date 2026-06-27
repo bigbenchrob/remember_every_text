@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../../db/feature_level_providers.dart';
+import '../../../db/database_directory.dart';
 import '../../application/derived_message_data_file_store.dart';
 
 final class FilesystemDerivedMessageDataFileStore

@@ -4,6 +4,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
     as source_scoped_import;
+import '../../application/database_health_audit/database_health_database_keys.dart';
 import '../../application/database_health_audit/database_health_query_layer.dart';
 import '../data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../data_sources/local/overlay/overlay_database.dart';
@@ -73,10 +74,10 @@ class SourceScopedImportDatabaseHealthQueryLayer
   }
 
   @override
-  String get databaseKey => 'source_scoped_import';
+  String get databaseKey => databaseHealthKeySourceScopedImport;
 
   @override
-  String get role => 'source_scoped_import_ledger';
+  String get role => databaseHealthRoleSourceScopedImportLedger;
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) async {
@@ -103,10 +104,10 @@ class ConversationGraphDatabaseHealthQueryLayer
   }
 
   @override
-  String get databaseKey => 'conversation_graph';
+  String get databaseKey => databaseHealthKeyConversationGraph;
 
   @override
-  String get role => 'application_primary_source_scoped_graph';
+  String get role => databaseHealthRoleConversationGraph;
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) {
@@ -131,10 +132,10 @@ class OverlayDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
   }
 
   @override
-  String get databaseKey => 'overlay';
+  String get databaseKey => databaseHealthKeyOverlay;
 
   @override
-  String get role => 'user_overlays';
+  String get role => databaseHealthRoleOverlay;
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) async {

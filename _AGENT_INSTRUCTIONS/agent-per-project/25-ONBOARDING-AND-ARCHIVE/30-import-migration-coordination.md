@@ -4,7 +4,7 @@
 
 Onboarding coordinates startup/retry lifecycle but does not own source-scoped
 import, projection, or graph query systems. This document describes the current
-graph-first setup flow and the retained cleanup-storage boundary.
+graph-first setup flow and the retired cleanup-storage boundary.
 
 ## Ownership Boundaries
 
@@ -18,7 +18,7 @@ graph-first setup flow and the retained cleanup-storage boundary.
 
 **Rule:** `OnboardingGate` delegates cleanup to `MessageDataResetService` and
 graph build/rebuild to `ConversationGraphBuildController`. It must not call
-`DbImportControlViewModel`, `runImportAndMigration()`, or retired retained
+`DbImportControlViewModel`, `runImportAndMigration()`, or retired
 legacy migration paths as the app-facing setup path.
 
 ## Pipeline Sequence
@@ -46,9 +46,9 @@ OnboardingGate.startImportAndGraphBuild()
 
 ## Progress Reporting
 
-Onboarding progress is graph-lifecycle progress. Retained database files may
+Onboarding progress is graph-lifecycle progress. Retired database files may
 still be reset or inspected by diagnostics, but onboarding does not consume
-`DbImportControlViewModel`, `runImportAndMigration()`, or retired retained
+`DbImportControlViewModel`, `runImportAndMigration()`, or retired
 projection paths.
 
 The graph build lifecycle reports enough status for onboarding to show:

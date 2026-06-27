@@ -5,12 +5,12 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
@@ -144,7 +144,7 @@ void main() {
       );
       _createProjectionDatabase(
         tempDir.path,
-        sourceScopedImportDatabaseFileName,
+        appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
       );
       _createGraphDatabase(tempDir.path);
 
@@ -194,9 +194,12 @@ void main() {
         );
         _createProjectionDatabase(
           tempDir.path,
-          retiredMacosImportDatabaseFileName,
+          appDatabaseFileName(AppDatabaseFile.retiredMacosImport),
         );
-        _createProjectionDatabase(tempDir.path, retiredWorkingDatabaseFileName);
+        _createProjectionDatabase(
+          tempDir.path,
+          appDatabaseFileName(AppDatabaseFile.retiredWorking),
+        );
 
         container = ProviderContainer(
           overrides: [
@@ -240,7 +243,7 @@ void main() {
       );
       _createProjectionDatabase(
         tempDir.path,
-        sourceScopedImportDatabaseFileName,
+        appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
       );
       _createGraphDatabase(tempDir.path, graphComplete: false);
 
@@ -281,7 +284,7 @@ void main() {
         );
         _createProjectionDatabase(
           tempDir.path,
-          sourceScopedImportDatabaseFileName,
+          appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
         );
         _createGraphDatabase(tempDir.path, graphComplete: true);
 
@@ -323,7 +326,7 @@ void main() {
         );
         _createProjectionDatabase(
           tempDir.path,
-          sourceScopedImportDatabaseFileName,
+          appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
         );
         _createGraphDatabase(tempDir.path, graphComplete: true);
 
@@ -372,7 +375,7 @@ void main() {
         );
         _createProjectionDatabase(
           tempDir.path,
-          sourceScopedImportDatabaseFileName,
+          appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
           rowCount: 120,
         );
         _createGraphDatabase(tempDir.path, rowCount: 1, graphComplete: false);
@@ -478,7 +481,10 @@ String _createGraphDatabase(
   int rowCount = 1,
   bool graphComplete = true,
 }) {
-  final filePath = '$directoryPath/$conversationGraphDatabaseFileName';
+  final filePath = appDatabasePath(
+    AppDatabaseFile.conversationGraph,
+    databaseDirectory: directoryPath,
+  );
   final db = sqlite3.open(filePath);
   try {
     db

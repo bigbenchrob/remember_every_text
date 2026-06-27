@@ -4,7 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
-import '../../../feature_level_providers.dart';
+import '../../read_models/handles_for_contact_provider.dart';
+import '../../read_models/linked_handle.dart';
 import '../resolver_tools/handle_filter_actions_provider.dart';
 
 /// Widget builder for the handle-filter cassette.

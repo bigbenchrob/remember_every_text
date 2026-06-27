@@ -11,17 +11,20 @@ import '../../../../essentials/conversation_graph/application/messages/message_g
 import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../../../essentials/search/application/graph_message_search.dart';
 import '../../../../essentials/search/application/search_service.dart';
-import '../../../../essentials/search/feature_level_providers.dart';
-import '../../../attachments/feature_level_providers.dart';
-import '../../../contacts/feature_level_providers.dart';
+import '../../../../essentials/search/feature_level_providers.dart'
+    show searchServiceProvider;
+import '../../../attachments/feature_level_providers.dart'
+    show attachmentFileAccessProvider;
+import '../../../contacts/feature_level_providers.dart'
+    show DisplayIdentityResolver, displayIdentityResolverProvider;
 import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
-import '../../feature_level_providers.dart';
 import 'message_attachment_evidence.dart';
 import 'message_evidence_identity.dart';
+import 'recovered_message_evidence_provider.dart';
 
 part 'message_evidence_spine_provider.g.dart';
 

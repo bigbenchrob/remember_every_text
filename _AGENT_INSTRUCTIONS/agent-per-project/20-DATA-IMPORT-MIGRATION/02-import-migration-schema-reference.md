@@ -28,7 +28,7 @@ features.
 > conversation graph. Active Historical Archives source metadata now lives in
 > overlay storage. Old `macos_import.db` files may contain
 > `schema_migrations`, `historical_archive_sources`, or broader historical
-> ledger tables. Retained `working.db` has no central app provider. The broader
+> ledger tables. Retired `working.db` has no central app provider. The broader
 > tables below may exist in historical user data folders only.
 
 ## Boundary Summary
@@ -77,7 +77,7 @@ Active app code no longer owns a `macos_import.db` schema provider.
 ## working.db (Retired Legacy Projection)
 
 Location: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db`
-Schema source: historical retained Drift schema, now removed from active app
+Schema source: historical retired Drift schema, now removed from active app
 code. Existing `working.db` files may still contain these tables.
 
 | Table | Purpose / Notes |
@@ -93,9 +93,9 @@ code. Existing `working.db` files may still contain these tables.
 | `chats` | Conversation metadata for presentation (last message, counts). |
 | `messages` | Fully normalised message timeline consumed by widgets. |
 | `recovered_unlinked_messages` | Projected recovered source rows kept separate from normal chat timelines. |
-| `global_message_index` | Retained legacy ordinal-index table. Ordinary global timeline navigation now uses graph evidence skeletons. |
-| `message_index` | Retained legacy per-chat ordinal-index table. Ordinary conversation timelines now use graph evidence skeletons. |
-| `contact_message_index` | Retained legacy per-contact ordinal-index table. Ordinary contact heatmaps/timelines now use graph evidence skeletons. |
+| `global_message_index` | Retired ordinal-index table. Ordinary global timeline navigation now uses graph evidence skeletons. |
+| `message_index` | Retired per-chat ordinal-index table. Ordinary conversation timelines now use graph evidence skeletons. |
+| `contact_message_index` | Retired per-contact ordinal-index table. Ordinary contact heatmaps/timelines now use graph evidence skeletons. |
 | `attachments` | Projected attachment metadata (paths, hashes, direction). |
 | `recovered_unlinked_attachments` | Projected attachment metadata for recovered unlinked messages. |
 | `reactions` | Canonicalised reactions linked to handle IDs. |

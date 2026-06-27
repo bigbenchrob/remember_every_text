@@ -1,8 +1,10 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../features/address_book_folders/feature_level_providers.dart';
-import '../../feature_level_providers.dart';
+import '../../../../features/address_book_folders/feature_level_providers.dart'
+    show addressBookFolderRepositoryProvider;
+import '../source_database_opener_provider.dart';
+import '../source_scoped_import_ledger_provider.dart';
 import 'contact_importer.dart';
 
 part 'contact_importer_provider.g.dart';

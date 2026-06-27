@@ -5,10 +5,10 @@ import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
 import '../../../../essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/contact_conversation_navigation_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/contact_conversation_signatures_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
-import '../../feature_level_providers.dart';
 import 'calendar_heatmap_timeline_widget.dart';
 
 class ContactGraphConversationSection extends ConsumerWidget {
