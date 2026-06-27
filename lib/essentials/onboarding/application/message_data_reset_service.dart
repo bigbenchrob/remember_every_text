@@ -6,8 +6,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../db/app_database_files.dart';
 import '../../db/feature_level_providers.dart'
     show
-        conversationGraphPopulatedProvider,
-        conversationGraphReadinessProvider,
         dbMaintenanceLockProvider,
         driftConversationGraphDatabaseProvider,
         messageDataVersionProvider,
@@ -437,8 +435,6 @@ MessageDataResetService messageDataResetService(Ref ref) {
       invalidateDerivedMessageDataProviders: () {
         ref.invalidate(sourceScopedImportDatabaseProvider);
         ref.invalidate(driftConversationGraphDatabaseProvider);
-        ref.invalidate(conversationGraphReadinessProvider);
-        ref.invalidate(conversationGraphPopulatedProvider);
       },
       readSourceScopedImportDatabase: () {
         return ref.read(sourceScopedImportDatabaseProvider.future);

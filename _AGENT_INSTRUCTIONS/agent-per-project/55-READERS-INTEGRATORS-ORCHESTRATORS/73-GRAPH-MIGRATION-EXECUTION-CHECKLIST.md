@@ -3892,6 +3892,9 @@ criteria.
 - Applied the same derivation rule to historical archive import/removal:
   archive graph changes bump `messageDataVersionProvider`; they no longer
   directly invalidate graph readiness/populated providers.
+- Narrowed message-data reset invalidation: reset still invalidates the
+  physical derived database providers whose files are deleted, while graph
+  readiness/populated refresh through the same message-data version signal.
 
 ### Vocabulary Note
 
