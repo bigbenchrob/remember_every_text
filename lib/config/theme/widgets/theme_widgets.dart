@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart' show ControlSize;
 
+import '../colors/theme_colors.dart';
 import '../theme_typography.dart';
 import 'buttons/buttons.dart';
 import 'menus/menus.dart';
@@ -105,9 +106,11 @@ abstract class AppThemeWidgets {
     ),
     Widget? leading,
   }) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final textStyle = typography.body.copyWith(
-      color: const Color(0xFFFFFFFF),
+      color: colors.buttons.primaryForeground,
       fontWeight: FontWeight.w600,
       fontSize: 15,
     );

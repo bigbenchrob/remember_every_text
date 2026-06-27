@@ -3842,6 +3842,9 @@ criteria.
 - Replaced the heatmap legend's low-count dot label literal gray with
   `content.textTertiary`, keeping supporting text governed by theme tokens
   while leaving the canonical heatmap activity color scale untouched.
+- Replaced the shared `AppThemeWidgets.primaryButton` foreground literal with
+  `buttons.primaryForeground`, so the reusable primary button wrapper follows
+  the centralized button color contract.
 
 ### Vocabulary Note
 
