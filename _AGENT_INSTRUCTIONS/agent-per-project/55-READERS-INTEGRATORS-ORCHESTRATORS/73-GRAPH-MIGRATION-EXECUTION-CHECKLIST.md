@@ -3827,6 +3827,10 @@ criteria.
   export-only public DB seam to `persistent_database_providers.dart`, so the
   explicit `appLoggerProvider` import rule protects the physical database
   construction implementation that actually composes logging.
+- Replaced the stray-handle review cassette's one-off spam/dismiss colors with
+  existing theme tokens (`buttons.destructiveForeground` and
+  `content.textTertiary`) so that cleanup/review UI remains app-theme governed
+  instead of carrying local palette decisions.
 
 ### Vocabulary Note
 
