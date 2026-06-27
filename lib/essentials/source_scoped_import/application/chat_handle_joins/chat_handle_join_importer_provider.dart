@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../paths/feature_level_providers.dart';
+import '../../../paths/feature_level_providers.dart' show pathsHelperProvider;
 import '../source_database_opener_provider.dart';
 import '../source_scoped_import_ledger_provider.dart';
 import 'chat_handle_join_importer.dart';

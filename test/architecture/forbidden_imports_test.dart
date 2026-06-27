@@ -1513,6 +1513,22 @@ void main() {
       },
     );
 
+    test('Source-scoped import path provider imports stay explicit', () async {
+      final offenders =
+          await _findBroadSourceScopedImportPathProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Source-scoped import application providers may need resolved '
+            'source paths, but they should import exact path boundary symbols '
+            'with a show list. Broad paths seam imports hide whether an '
+            'importer is acquiring more path authority than it uses.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Conversation graph application provider imports stay explicit',
       () async {
@@ -7594,6 +7610,34 @@ _findBroadSourceScopedImportApplicationProviderImportOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (broadImportPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findBroadSourceScopedImportPathProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/essentials/source_scoped_import/application/');
+  });
+  final offenders = <String>{};
+  final broadImportPattern = RegExp(
+    r'''import\s+['"][^'"]*paths/feature_level_providers\.dart['"]\s*;''',
+  );
+  final explicitImportPattern = RegExp(
+    r'''import\s+['"][^'"]*paths/feature_level_providers\.dart['"]\s+show\s+''',
+  );
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (broadImportPattern.hasMatch(uncommented) &&
+        !explicitImportPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
