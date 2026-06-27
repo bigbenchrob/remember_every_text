@@ -879,17 +879,17 @@ void main() {
       },
     );
 
-    test('Presentation widgets do not store provider refs', () async {
-      final offenders = await _findStoredPresentationRefOffenders();
+    test('Active code does not store provider refs', () async {
+      final offenders = await _findStoredProviderRefOffenders();
 
       expect(
         offenders,
         isEmpty,
         reason:
-            'Presentation widgets may use ConsumerWidget/ConsumerState refs in '
-            'their build/state methods, but must not store WidgetRef or Ref as '
-            'fields or pass them down as render data. Own the dependency at the '
-            'smallest consumer boundary instead.\n'
+            'Active code may use Ref/WidgetRef at provider and consumer '
+            'boundaries, but must not store Ref or WidgetRef as object state. '
+            'Pass explicit repositories, readers, actions, or typed data '
+            'instead of carrying broad provider authority.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -12545,12 +12545,12 @@ Future<List<String>> _findFrameworkPresentationColorOffenders() async {
   return offenders..sort();
 }
 
-Future<List<String>> _findStoredPresentationRefOffenders() async {
+Future<List<String>> _findStoredProviderRefOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    return path.startsWith('lib/') && path.contains('/presentation/');
+    return path.startsWith('lib/');
   });
   final storedRefPattern = RegExp(
     r'\bfinal\s+(?:WidgetRef|Ref)\s+[A-Za-z_][A-Za-z0-9_]*\s*;',

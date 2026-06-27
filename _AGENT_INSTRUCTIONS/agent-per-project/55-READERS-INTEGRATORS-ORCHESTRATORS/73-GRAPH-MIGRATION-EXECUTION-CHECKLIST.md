@@ -3882,6 +3882,9 @@ criteria.
 - Split onboarding environment report dependency gathering from evaluation:
   the provider now gathers explicit inputs, while the evaluator class performs
   classification without storing `Ref`.
+- Widened the stored-ref tripwire from presentation widgets to all active
+  `lib/` code: `Ref`/`WidgetRef` may be used at provider/consumer boundaries
+  but not stored as object state.
 
 ### Vocabulary Note
 
