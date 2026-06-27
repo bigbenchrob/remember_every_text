@@ -13,6 +13,7 @@ export 'application/health/graph_health_repository_provider.dart';
 export 'application/message_attachment_joins/message_to_attachment_projection_repository_provider.dart';
 export 'application/messages/message_graph_repository_provider.dart';
 export 'application/messages/message_projection_repository_provider.dart';
+export 'application/monitor/chat_db_change_monitor_provider.dart';
 export 'application/monitor/chat_db_monitor_runtime_environment_provider.dart';
 export 'application/monitor/chat_db_source_probe_reader_provider.dart';
 export 'application/monitor/import_ledger_probe_reader_provider.dart';
