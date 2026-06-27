@@ -1,12 +1,13 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
+    show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
-import 'package:remember_this_text/features/handles/feature_level_providers.dart';
+import 'package:remember_this_text/features/handles/application/read_models/handle_display_name_provider.dart';
 
 import '../../../essentials/conversation_graph/conversation_graph_test_database.dart';
 

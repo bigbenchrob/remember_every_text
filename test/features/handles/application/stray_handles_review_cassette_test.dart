@@ -10,9 +10,10 @@ import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_p
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/feature_level_providers.dart'
     as sidebar;
+import 'package:remember_this_text/features/handles/application/read_models/stray_handle_summary.dart';
+import 'package:remember_this_text/features/handles/application/read_models/stray_handles_provider.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_review_cassette.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
-import 'package:remember_this_text/features/handles/feature_level_providers.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 
 void main() {
