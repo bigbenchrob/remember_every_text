@@ -3778,6 +3778,14 @@ criteria.
 - Reworded reset-service retired-file diagnostic context keys so old
   `macos_import.db` / `working.db` reset checks are labeled as retired cleanup
   file checks rather than generic database reset state.
+- Tightened architecture-test wording so tripwire failures describe old
+  `working.db` assumptions as retired-file assumptions rather than
+  provider-visible app state.
+- Updated GitHub Copilot instructions to match the centralized DB-provider
+  rule: source-scoped import DB construction lives behind
+  `sourceScopedImportDatabaseProvider` in `essentials/db`, semantic import code
+  usually consumes `sourceScopedImportLedgerProvider`, and retired
+  `macos_import.db` / `working.db` have no central app providers.
 
 ### Vocabulary Note
 
