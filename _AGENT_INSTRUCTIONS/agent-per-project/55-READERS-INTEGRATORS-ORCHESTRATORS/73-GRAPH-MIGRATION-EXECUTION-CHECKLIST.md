@@ -3868,6 +3868,9 @@ criteria.
 - Replaced the graph-status sheet's selected-row and import-hover
   `CupertinoColors` usage with shared brand-highlight tokens, and removed
   the status controls' forwarded `WidgetRef` in favor of local action reads.
+- Added an architecture tripwire preventing direct `Colors.*` and
+  `CupertinoColors.*` presentation usage outside exact transparent, media, and
+  shadow exceptions, so future semantic color drift fails at test time.
 
 ### Vocabulary Note
 

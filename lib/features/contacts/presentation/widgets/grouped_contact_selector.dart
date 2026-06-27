@@ -619,9 +619,9 @@ class _GroupedSelectorError extends ConsumerWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const MacosIcon(
+        MacosIcon(
           CupertinoIcons.exclamationmark_triangle,
-          color: CupertinoColors.systemYellow,
+          color: colors.status.warning,
           size: 28,
         ),
         const SizedBox(height: 8),

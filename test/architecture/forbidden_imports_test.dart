@@ -179,6 +179,47 @@ const Set<String> _rawPresentationColorLiteralAllowedFiles = {
   'lib/features/sidebar_utilities/application/sidebar_cassette_spec/widget_builders/settings_top_menu_widget.dart',
 };
 
+const Map<String, Set<String>> _frameworkPresentationColorAllowedSymbols = {
+  // Transparent sentinels: these express "no fill" state branches rather than
+  // visible semantic colors. Keep the allowlist exact so semantic framework
+  // colors such as Colors.red still fail in these files.
+  'lib/essentials/navigation/presentation/widgets/app_mode_toggle.dart': {
+    'Colors.transparent',
+  },
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/contact_flat_list_widget.dart':
+      {'Colors.transparent'},
+  'lib/features/contacts/application/sidebar_cassette_spec/widget_builders/recent_contacts_section.dart':
+      {'Colors.transparent'},
+  'lib/features/contacts/presentation/dialogs/contact_name_edit_dialog.dart': {
+    'Colors.transparent',
+  },
+  'lib/features/contacts/presentation/widgets/contact_highlight_row.dart': {
+    'Colors.transparent',
+  },
+  'lib/features/contacts/presentation/widgets/contact_picker_dialog.dart': {
+    'Colors.transparent',
+  },
+  'lib/features/contacts/presentation/widgets/grouped_contact_selector.dart': {
+    'Colors.transparent',
+  },
+  'lib/features/messages/presentation/widgets/calendar_heatmap_timeline_widget.dart':
+      {'Colors.transparent'},
+
+  // Structural shadows and media controls intentionally use black/white
+  // optical overlays rather than app semantic chrome.
+  'lib/essentials/onboarding/presentation/onboarding_overlay.dart': {
+    'Colors.black',
+  },
+  'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart':
+      {
+        'Colors.black',
+        'Colors.black12',
+        'Colors.black45',
+        'Colors.transparent',
+        'Colors.white',
+      },
+};
+
 const Set<String> _sourceScopedSqlBitExtractionAllowedFiles = {
   'lib/essentials/source_scoped_import/domain/source_scoped_row_key.dart',
   'lib/essentials/source_scoped_import/domain/source_scoped_row_sql.dart',
@@ -816,6 +857,23 @@ void main() {
               'Raw Color(0x...) literals in active lib/ presentation code drift '
               'away from the shared theme. Add a semantic token, use an existing '
               'token, or document a narrow data-scale/transparent exception.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Framework presentation colors stay in approved optical boundaries',
+      () async {
+        final offenders = await _findFrameworkPresentationColorOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Direct Colors.* and CupertinoColors.* usage in active lib/ '
+              'presentation code bypasses the app theme. Use a semantic token, '
+              'or document a narrow transparent/media/shadow exception.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
       },
@@ -12433,6 +12491,39 @@ Future<List<String>> _findRawPresentationColorLiteralOffenders() async {
     final uncommented = _stripComments(source);
     if (colorLiteralPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findFrameworkPresentationColorOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final frameworkColorPattern = RegExp(
+    r'\b(?:Colors|CupertinoColors)\.[A-Za-z0-9_]+',
+  );
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final allowedSymbols =
+        _frameworkPresentationColorAllowedSymbols[filePath] ?? const {};
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final matches =
+        frameworkColorPattern
+            .allMatches(uncommented)
+            .map((match) => match.group(0)!)
+            .toSet()
+          ..removeAll(allowedSymbols);
+
+    if (matches.isNotEmpty) {
+      final sortedMatches = matches.toList()..sort();
+      offenders.add('$filePath: ${sortedMatches.join(', ')}');
     }
   }
 
