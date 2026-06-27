@@ -3791,6 +3791,13 @@ criteria.
   drift back toward old import-provider names or retained-database authority
   language while `AGENTS.md` and `_AGENT_INSTRUCTIONS/agent-per-project/`
   remain protected.
+- Added a global architecture tripwire for `sourceScopedImportDatabaseProvider`.
+  The concrete physical import-ledger provider is now allowlisted only for the
+  central DB seam, the semantic `sourceScopedImportLedgerProvider` bridge,
+  reset/diagnostic composition, graph projection repository composition, and
+  the attachment archive snapshot boundary. Ordinary import, graph, feature,
+  and presentation code must consume semantic ports or repository providers
+  instead of reaching for the physical DB provider directly.
 
 ### Vocabulary Note
 

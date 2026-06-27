@@ -87,6 +87,23 @@ const Set<String> _retiredCleanupHealthInspectionAllowedFiles = {
   'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
 };
 
+const Set<String> _sourceScopedImportDatabaseProviderAllowedFiles = {
+  'lib/essentials/db/feature_level_providers.dart',
+  'lib/essentials/source_scoped_import/application/source_scoped_import_ledger_provider.dart',
+  'lib/essentials/onboarding/application/message_data_reset_service.dart',
+  'lib/essentials/conversation_graph/application/attachments/attachment_projection_repository_provider.dart',
+  'lib/essentials/conversation_graph/application/chat_handle_joins/chat_to_handle_projection_repository_provider.dart',
+  'lib/essentials/conversation_graph/application/chat_message_joins/chat_to_message_projection_repository_provider.dart',
+  'lib/essentials/conversation_graph/application/chats/chat_projection_repository_provider.dart',
+  'lib/essentials/conversation_graph/application/contacts/contact_projection_repository_provider.dart',
+  'lib/essentials/conversation_graph/application/handles/handle_projection_repository_provider.dart',
+  'lib/essentials/conversation_graph/application/message_attachment_joins/message_to_attachment_projection_repository_provider.dart',
+  'lib/essentials/conversation_graph/application/messages/message_projection_repository_provider.dart',
+  'lib/essentials/conversation_graph/application/monitor/import_ledger_probe_reader_provider.dart',
+  'lib/essentials/conversation_graph/application/status/conversation_graph_status_snapshot_provider.dart',
+  'lib/features/attachments/application/graph_attachment_archive_providers.dart',
+};
+
 const Set<String> _historicalOnboardingMigrationKeyAllowedFiles = {
   'lib/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart',
 };
@@ -2204,6 +2221,28 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Concrete source-scoped import DB provider stays behind approved boundaries',
+      () async {
+        final offenders =
+            await _findSourceScopedImportDatabaseProviderOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(
+            _sourceScopedImportDatabaseProviderAllowedFiles.toList()..sort(),
+          ),
+          reason:
+              'sourceScopedImportDatabaseProvider is the concrete physical DB '
+              'provider for macos_import_ss.db. Ordinary source import, graph, '
+              'feature, and presentation code should consume semantic ports, '
+              'repository providers, or sourceScopedImportLedgerProvider '
+              'instead of reaching for the physical DB provider directly.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Retired working database file stays behind cleanup boundaries',
@@ -6101,6 +6140,26 @@ Future<List<String>> _findOnboardingSourceScopedProbeFixtureOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findSourceScopedImportDatabaseProviderOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('sourceScopedImportDatabaseProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findRetiredWorkingFileOffenders() async {
