@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/debug/application/developer_mode_provider.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_search_mode.dart';
 import 'package:remember_this_text/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart';
 
