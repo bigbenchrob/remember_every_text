@@ -6,7 +6,7 @@ import '../../../db/feature_level_providers.dart'
     show
         driftConversationGraphDatabaseProvider,
         sourceScopedImportDatabaseProvider;
-import '../../../paths/feature_level_providers.dart';
+import '../../../paths/feature_level_providers.dart' show pathsHelperProvider;
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../domain/status/conversation_graph_status.dart';
 import '../../infrastructure/repositories/conversation_graph_status_repository.dart';

@@ -1475,6 +1475,21 @@ void main() {
       );
     });
 
+    test('Production paths provider imports stay explicit', () async {
+      final offenders = await _findBroadPathsProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Production code may consume resolved path helpers through the '
+            'paths feature seam, but imports should name the exact symbols '
+            'with a show list. Broad path-provider imports hide filesystem '
+            'authority.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Production source-scoped import provider imports stay explicit',
       () async {
@@ -7624,6 +7639,33 @@ _findBroadSourceScopedImportPathProviderImportOffenders() async {
       return false;
     }
     return path.startsWith('lib/essentials/source_scoped_import/application/');
+  });
+  final offenders = <String>{};
+  final broadImportPattern = RegExp(
+    r'''import\s+['"][^'"]*paths/feature_level_providers\.dart['"]\s*;''',
+  );
+  final explicitImportPattern = RegExp(
+    r'''import\s+['"][^'"]*paths/feature_level_providers\.dart['"]\s+show\s+''',
+  );
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (broadImportPattern.hasMatch(uncommented) &&
+        !explicitImportPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findBroadPathsProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
   });
   final offenders = <String>{};
   final broadImportPattern = RegExp(

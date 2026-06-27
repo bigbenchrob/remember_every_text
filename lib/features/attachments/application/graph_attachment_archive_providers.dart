@@ -6,7 +6,8 @@ import '../../../essentials/db/feature_level_providers.dart'
         driftConversationGraphDatabaseProvider,
         overlayDatabaseProvider,
         sourceScopedImportDatabaseProvider;
-import '../../../essentials/paths/feature_level_providers.dart';
+import '../../../essentials/paths/feature_level_providers.dart'
+    show pathsHelperProvider;
 import '../../../essentials/source_scoped_import/feature_level_providers.dart'
     show sourceDatabaseOpenerProvider;
 import '../infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
