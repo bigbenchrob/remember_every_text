@@ -27,10 +27,17 @@ tests: []
 | Item | Value |
 | --- | --- |
 | Path | `~/Library/Messages/chat.db` |
-| Access pattern | Resolved via `PathsHelper.messagesDatabasePath` inside the import infrastructure |
+| Access pattern | Resolved via `pathsHelperProvider` from `lib/essentials/paths/feature_level_providers.dart`, then `PathsHelper.messagesDatabasePath`, inside the import infrastructure |
 | Permissions | Requires Full Disk Access |
 
-Feature and presentation code must not open `chat.db` directly. The import and monitoring infrastructure opens it read-only through `PathsHelper` to detect new rows and copy source data into `db-import-ss`, where graph projectors can safely project it forward. Named archive/recovery workflows may also open selected historical `chat.db` snapshots read-only; that access must remain a recovery boundary, not an ordinary feature read.
+Feature and presentation code must not open `chat.db` directly. The import and
+monitoring infrastructure opens it read-only through `pathsHelperProvider` /
+`PathsHelper` to detect new rows and copy source data into `db-import-ss`, where
+graph projectors can safely project it forward. Code that needs `PathsHelper`
+should use the narrow paths provider seam rather than importing the root
+`providers.dart` barrel. Named archive/recovery workflows may also open selected
+historical `chat.db` snapshots read-only; that access must remain a recovery
+boundary, not an ordinary feature read.
 
 ## Important Reality Check
 

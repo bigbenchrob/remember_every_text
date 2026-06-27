@@ -30,6 +30,11 @@ This is the canonical index for every SQLite database the project touches. Treat
   may open source/probe SQLite files directly only for named one-off
   read-only queries, and must close/dispose the connection before returning.
   Extra persistent connections will lock app database files.
+- **Path access uses the paths seam.** Code that needs `PathsHelper` should
+  import `pathsHelperProvider` from
+  `lib/essentials/paths/feature_level_providers.dart`, not the root
+  `providers.dart` barrel. Root provider imports are reserved for app bootstrap,
+  theme infrastructure, and explicitly reviewed shell-level boundaries.
 - **Physical file identity stays explicit.** Database file names and app
   database paths are centralized in `lib/essentials/db/app_database_files.dart`.
   The mutable Application Support directory primitive lives in
@@ -49,7 +54,7 @@ Use these aliases consistently across docs, code comments, and conversations.
 | Alias | Physical File | Primary Purpose | Provider Entry Point | Storage Location |
 | --- | --- | --- | --- | --- |
 | `db-address-book` | `AddressBook-v22.abcddb` inside the most recent `/Library/Application Support/AddressBook/Sources/<UUID>/` | macOS contact source of truth | `getFolderAggregateEitherProvider` → `AddressBookFolderAggregate.mostRecentFolderPath` | Resolved dynamically at runtime |
-| `db-chat` | `chat.db` | macOS Messages source ledger | `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
+| `db-chat` | `chat.db` | macOS Messages source ledger | `pathsHelperProvider` from `lib/essentials/paths/feature_level_providers.dart` → `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
 | `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | Public access: `sourceScopedImportDatabaseProvider` exported by `lib/essentials/db/feature_level_providers.dart`; physical construction implemented in `persistent_database_providers.dart`; ordinary import semantics: `sourceScopedImportLedgerProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
 | `db-graph-working` | `working_ss.db` | Production source-scoped conversation graph consumed by graph readers and Message Evidence Spine | `driftConversationGraphDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working_ss.db` |
 | `db-import` | `macos_import.db` | Retired import cleanup file; old files may contain historical ledger tables | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
@@ -78,7 +83,9 @@ macOS AddressBook (db-address-book)
 ## Provider Access Map
 
 - `db-address-book`: `getFolderAggregateEitherProvider` (features/address_book_folders) → `AddressBookFolderAggregate.mostRecentFolderPath`.
-- `db-chat`: retrieved via `PathsHelper` inside import/monitor infrastructure; feature and presentation code must not open it directly.
+- `db-chat`: retrieved via `pathsHelperProvider` / `PathsHelper` inside
+  import/monitor infrastructure; feature and presentation code must not open it
+  directly or import the root `providers.dart` barrel just to resolve paths.
 - `db-import-ss`: physical provider access is `sourceScopedImportDatabaseProvider` exported from `lib/essentials/db/feature_level_providers.dart`; physical construction is implemented in `lib/essentials/db/feature_level_providers/persistent_database_providers.dart`. Source-scoped import semantics should consume `sourceScopedImportLedgerProvider` unless a graph projection/repository explicitly needs the concrete import database.
 - `db-graph-working`: `driftConversationGraphDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`.
 - `db-import`: no central app provider remains; retired transitional cleanup file only.
