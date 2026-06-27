@@ -879,6 +879,21 @@ void main() {
       },
     );
 
+    test('Presentation widgets do not store provider refs', () async {
+      final offenders = await _findStoredPresentationRefOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Presentation widgets may use ConsumerWidget/ConsumerState refs in '
+            'their build/state methods, but must not store WidgetRef or Ref as '
+            'fields or pass them down as render data. Own the dependency at the '
+            'smallest consumer boundary instead.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Hand-written lib Dart files contain active code', () async {
       final offenders = await _findAllCommentLibDartFiles();
 
@@ -12528,6 +12543,26 @@ Future<List<String>> _findFrameworkPresentationColorOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findStoredPresentationRefOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') && path.contains('/presentation/');
+  });
+  final storedRefPattern = RegExp(
+    r'\bfinal\s+(?:WidgetRef|Ref)\s+[A-Za-z_][A-Za-z0-9_]*\s*;',
+  );
+
+  return [
+    for (final filePath in files)
+      if (storedRefPattern.hasMatch(
+        _stripComments(await File(filePath).readAsString()),
+      ))
+        filePath,
+  ]..sort();
 }
 
 Future<List<String>> _findManualProviderDeclarationOffenders() async {

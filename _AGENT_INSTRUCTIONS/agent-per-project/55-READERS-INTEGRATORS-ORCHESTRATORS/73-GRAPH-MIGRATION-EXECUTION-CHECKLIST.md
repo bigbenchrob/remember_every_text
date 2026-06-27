@@ -3874,6 +3874,9 @@ criteria.
 - Removed `WidgetRef` field plumbing from the calendar heatmap's private row
   widgets; the row that needs typography now owns its own `ConsumerWidget`
   dependency instead of passing provider authority through render data.
+- Added an architecture tripwire preventing presentation widgets from storing
+  `WidgetRef`/`Ref` fields; provider authority may be used at consumer
+  boundaries, not carried as render payload.
 
 ### Vocabulary Note
 
