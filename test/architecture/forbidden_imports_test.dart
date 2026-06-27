@@ -5760,6 +5760,21 @@ void main() {
       );
     });
 
+    test('Diagnostic report provider access uses logging seam', () async {
+      final offenders = await _findDiagnosticReportProviderImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Diagnostic report providers are logging-owned. Consumers outside '
+            'logging should import them through '
+            'essentials/logging/feature_level_providers.dart instead of the '
+            'diagnostic_report_provider.dart implementation file.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Diagnostic report actions use exporter boundary', () async {
       final offenders =
           await _findDiagnosticReportActionInfrastructureOffenders();
@@ -6004,6 +6019,32 @@ _findDiagnosticReportPresentationInfrastructureOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findDiagnosticReportProviderImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') &&
+        !path.startsWith('lib/essentials/logging/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    if (imports.any((importTarget) {
+      return importTarget.endsWith(
+        'logging/application/diagnostic_report_provider.dart',
+      );
+    })) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>
