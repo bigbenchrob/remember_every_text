@@ -16,9 +16,6 @@ import '../application/onboarding_overlay_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 
-/// Amber tone for FDA warning icon and alert text.
-const _kWarningAmber = Color(0xFFFF9500);
-
 /// Full-window blocking overlay shown during first-run onboarding.
 ///
 /// Renders a semi-transparent barrier over the entire app and presents
@@ -136,7 +133,11 @@ class _FdaContent extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.lock_outline_rounded, size: 56, color: _kWarningAmber),
+        Icon(
+          Icons.lock_outline_rounded,
+          size: 56,
+          color: colors.status.warning,
+        ),
         const SizedBox(height: 20),
         Text(
           'Full Disk Access Required',
@@ -619,7 +620,7 @@ class _DiagnosticRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = isGood ? const Color(0xFF4CAF50) : _kWarningAmber;
+    final statusColor = isGood ? colors.status.success : colors.status.warning;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1045,8 +1046,8 @@ class _AwaitingUserActionPresentation {
   Color iconColor(ThemeColors colors) {
     return switch (iconKind) {
       _PresentationIconKind.primary => colors.accents.primary,
-      _PresentationIconKind.warning => _kWarningAmber,
-      _PresentationIconKind.success => const Color(0xFF4CAF50),
+      _PresentationIconKind.warning => colors.status.warning,
+      _PresentationIconKind.success => colors.status.success,
     };
   }
 }
@@ -1166,10 +1167,10 @@ class _CompleteContent extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(
+        Icon(
           Icons.check_circle_rounded,
           size: 56,
-          color: Color(0xFF4CAF50),
+          color: colors.status.success,
         ),
         const SizedBox(height: 20),
         Text(

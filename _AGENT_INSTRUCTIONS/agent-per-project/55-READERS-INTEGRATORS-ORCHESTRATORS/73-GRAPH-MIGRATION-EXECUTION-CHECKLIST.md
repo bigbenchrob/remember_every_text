@@ -3851,6 +3851,9 @@ criteria.
 - Added shared `status.success`, `status.warning`, and `status.error` theme
   tokens and moved environment-readiness / pipeline-incident status colors off
   feature-local literals.
+- Moved onboarding and historical-archives status colors onto the shared
+  status theme tokens, removing the remaining feature-local success/warning
+  status literals from those setup and archive workflow surfaces.
 
 ### Vocabulary Note
 

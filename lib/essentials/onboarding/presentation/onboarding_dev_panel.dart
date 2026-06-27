@@ -14,9 +14,6 @@ import '../application/onboarding_overlay_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 
-/// Amber tone for FDA warning icon.
-const _kWarningAmber = Color(0xFFFF9500);
-
 /// Developer panel that mirrors the onboarding overlay UI in the center panel.
 ///
 /// Includes a "Reset & Re-trigger" button that deletes both databases and
@@ -474,7 +471,11 @@ class _DevFdaContent extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.lock_outline_rounded, size: 56, color: _kWarningAmber),
+        Icon(
+          Icons.lock_outline_rounded,
+          size: 56,
+          color: colors.status.warning,
+        ),
         const SizedBox(height: 20),
         Text(
           'Full Disk Access Required',
@@ -623,7 +624,7 @@ class _DevProgressContent extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             graphBuildState.lastError!,
-            style: typography.caption.copyWith(color: _kWarningAmber),
+            style: typography.caption.copyWith(color: colors.status.warning),
           ),
         ],
       ],
@@ -692,10 +693,10 @@ class _DevCompleteContent extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(
+        Icon(
           Icons.check_circle_rounded,
           size: 56,
-          color: Color(0xFF4CAF50),
+          color: colors.status.success,
         ),
         const SizedBox(height: 20),
         Text(

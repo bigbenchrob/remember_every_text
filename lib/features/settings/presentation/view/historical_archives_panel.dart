@@ -109,7 +109,10 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                         title: 'Preflight State',
                         statusLabel: panelModel.preflight.statusLabel,
                         detail: panelModel.preflight.detail,
-                        tone: _preflightTone(panelModel.preflight.status),
+                        tone: _preflightTone(
+                          panelModel.preflight.status,
+                          colors: colors,
+                        ),
                       ),
                       const SizedBox(height: 14),
                       for (final line in panelModel.preflightSummaryLines) ...[
@@ -415,7 +418,10 @@ class _ShellHeroCard extends ConsumerWidget {
                     title: 'Execution Gate',
                     statusLabel: executionGate.statusLabel,
                     detail: executionGate.detail,
-                    tone: _executionGateTone(executionGate.status),
+                    tone: _executionGateTone(
+                      executionGate.status,
+                      colors: colors,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -424,7 +430,7 @@ class _ShellHeroCard extends ConsumerWidget {
                     title: 'Preflight',
                     statusLabel: preflight.statusLabel,
                     detail: preflight.detail,
-                    tone: _preflightTone(preflight.status),
+                    tone: _preflightTone(preflight.status, colors: colors),
                   ),
                 ),
               ],
@@ -768,23 +774,27 @@ class _PhaseRow extends ConsumerWidget {
   }
 }
 
-Color _executionGateTone(HistoricalArchivesExecutionGateStatus status) {
+Color _executionGateTone(
+  HistoricalArchivesExecutionGateStatus status, {
+  required ThemeColors colors,
+}) {
   return switch (status) {
-    HistoricalArchivesExecutionGateStatus.available => const Color(0xFF1F8A52),
-    HistoricalArchivesExecutionGateStatus.busy => const Color(0xFFB36A00),
-    HistoricalArchivesExecutionGateStatus.blocked => const Color(0xFFC03A2B),
+    HistoricalArchivesExecutionGateStatus.available => colors.status.success,
+    HistoricalArchivesExecutionGateStatus.busy => colors.status.warning,
+    HistoricalArchivesExecutionGateStatus.blocked => colors.status.error,
   };
 }
 
-Color _preflightTone(HistoricalArchivesPreflightStatus status) {
+Color _preflightTone(
+  HistoricalArchivesPreflightStatus status, {
+  required ThemeColors colors,
+}) {
   return switch (status) {
-    HistoricalArchivesPreflightStatus.waitingForFolder => const Color(
-      0xFF7A7D84,
-    ),
-    HistoricalArchivesPreflightStatus.running => const Color(0xFFB36A00),
-    HistoricalArchivesPreflightStatus.completeReadyToImport => const Color(
-      0xFF1F8A52,
-    ),
-    HistoricalArchivesPreflightStatus.failed => const Color(0xFFC03A2B),
+    HistoricalArchivesPreflightStatus.waitingForFolder =>
+      colors.content.textTertiary,
+    HistoricalArchivesPreflightStatus.running => colors.status.warning,
+    HistoricalArchivesPreflightStatus.completeReadyToImport =>
+      colors.status.success,
+    HistoricalArchivesPreflightStatus.failed => colors.status.error,
   };
 }
