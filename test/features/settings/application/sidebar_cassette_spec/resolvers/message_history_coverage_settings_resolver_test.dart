@@ -6,9 +6,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import 'package:remember_this_text/features/settings/application/message_history_coverage_repository_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
-import 'package:remember_this_text/features/settings/feature_level_providers.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/message_history_coverage_repository.dart';
 import 'package:sqlite3/sqlite3.dart';
 

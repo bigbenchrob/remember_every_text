@@ -7,9 +7,8 @@ import 'package:remember_this_text/essentials/navigation/domain/entities/view_sp
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_preference_store.dart';
+import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_preference_store_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
-import 'package:remember_this_text/essentials/sidebar/feature_level_providers.dart'
-    as sidebar;
 import 'package:remember_this_text/features/handles/application/read_models/stray_handle_summary.dart';
 import 'package:remember_this_text/features/handles/application/read_models/stray_handles_provider.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_review_cassette.dart';
@@ -23,9 +22,7 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
-            sidebar.sidebarFlowPreferenceStoreProvider.overrideWith((
-              ref,
-            ) async {
+            sidebarFlowPreferenceStoreProvider.overrideWith((ref) async {
               return _InMemorySidebarFlowPreferenceStore();
             }),
             strayHandlesProvider.overrideWith((ref) async {
@@ -46,7 +43,7 @@ void main() {
           fireImmediately: true,
         );
         final preferenceSubscription = container.listen(
-          sidebar.sidebarFlowPreferenceStoreProvider,
+          sidebarFlowPreferenceStoreProvider,
           (_, __) {},
           fireImmediately: true,
         );
