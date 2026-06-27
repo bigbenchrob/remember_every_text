@@ -13412,7 +13412,7 @@ Future<List<String>> _findRootProvidersImportOffenders() async {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    return path.startsWith('lib/');
+    return path.startsWith('lib/') || path.startsWith('test/');
   });
   final offenders = <String>[];
 
