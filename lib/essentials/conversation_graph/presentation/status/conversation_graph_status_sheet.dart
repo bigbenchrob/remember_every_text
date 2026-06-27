@@ -989,14 +989,14 @@ class _GraphScopeCard extends StatelessWidget {
             Expanded(
               child: _ScopeValue(
                 label: 'Import ledger',
-                value: status.importLedgerDatabaseName,
+                value: status.importLedgerDatabaseLabel,
                 colors: colors,
               ),
             ),
             Expanded(
               child: _ScopeValue(
                 label: 'Graph DB',
-                value: status.graphDatabaseName,
+                value: status.graphDatabaseLabel,
                 colors: colors,
               ),
             ),

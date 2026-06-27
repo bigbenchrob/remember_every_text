@@ -27,10 +27,10 @@ Future<ConversationGraphStatus> conversationGraphStatusSnapshot(Ref ref) async {
     chatDbPath: pathsHelper.chatDBPath,
     importLedgerDatabase: importLedgerDatabase,
     graphDatabase: graphDatabase,
-    importLedgerDatabaseName: appDatabaseFileName(
+    importLedgerDatabaseLabel: appDatabaseFileName(
       AppDatabaseFile.sourceScopedImport,
     ),
-    graphDatabaseName: appDatabaseFileName(AppDatabaseFile.conversationGraph),
+    graphDatabaseLabel: appDatabaseFileName(AppDatabaseFile.conversationGraph),
     sourceId: liveChatDbSourceId,
   );
 }

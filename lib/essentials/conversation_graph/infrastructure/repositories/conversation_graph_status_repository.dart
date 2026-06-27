@@ -11,8 +11,8 @@ final class ConversationGraphStatusRepository {
     required String chatDbPath,
     required ImportDatabase importLedgerDatabase,
     required ConversationGraphDatabase graphDatabase,
-    required String importLedgerDatabaseName,
-    required String graphDatabaseName,
+    required String importLedgerDatabaseLabel,
+    required String graphDatabaseLabel,
     required int sourceId,
   }) async {
     final sourceSnapshot = await _readSourceSnapshot(chatDbPath);
@@ -28,8 +28,8 @@ final class ConversationGraphStatusRepository {
 
     return ConversationGraphStatus(
       chatDbPath: chatDbPath,
-      importLedgerDatabaseName: importLedgerDatabaseName,
-      graphDatabaseName: graphDatabaseName,
+      importLedgerDatabaseLabel: importLedgerDatabaseLabel,
+      graphDatabaseLabel: graphDatabaseLabel,
       sourceId: sourceId,
       sourceMessageCount: sourceSnapshot.message.count,
       sourceMaxRowId: sourceSnapshot.message.maxRowId,

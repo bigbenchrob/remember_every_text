@@ -1,8 +1,8 @@
 class ConversationGraphStatus {
   const ConversationGraphStatus({
     required this.chatDbPath,
-    required this.importLedgerDatabaseName,
-    required this.graphDatabaseName,
+    required this.importLedgerDatabaseLabel,
+    required this.graphDatabaseLabel,
     required this.sourceId,
     required this.sourceMessageCount,
     required this.sourceMaxRowId,
@@ -33,8 +33,8 @@ class ConversationGraphStatus {
   });
 
   final String chatDbPath;
-  final String importLedgerDatabaseName;
-  final String graphDatabaseName;
+  final String importLedgerDatabaseLabel;
+  final String graphDatabaseLabel;
   final int sourceId;
   final int sourceMessageCount;
   final int sourceMaxRowId;
