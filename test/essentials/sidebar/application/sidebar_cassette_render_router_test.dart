@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:remember_this_text/essentials/app_mode/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/app_mode/application/app_mode_providers.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_cassette_render_router.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_cassette_sectioning.dart';
