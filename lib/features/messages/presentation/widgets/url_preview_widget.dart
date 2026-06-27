@@ -93,6 +93,7 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
             metadata: metadata,
             aspectRatio: _previewAspectRatio,
             placeholderColor: colors.messagePanels.supportSurface,
+            iconFallbackGradient: _iconFallbackGradient(colors),
           ),
           DecoratedBox(
             decoration: BoxDecoration(gradient: _footerGradient(colors)),
@@ -314,6 +315,23 @@ class _UrlPreviewWidgetState extends ConsumerState<UrlPreviewWidget> {
     );
   }
 
+  LinearGradient _iconFallbackGradient(ThemeColors colors) {
+    final top = Color.alphaBlend(
+      colors.messagePanels.mutedTint.withValues(alpha: 0.38),
+      colors.messagePanels.supportSurface,
+    );
+    final bottom = Color.alphaBlend(
+      colors.messagePanels.accentTintSoft.withValues(alpha: 0.18),
+      colors.messagePanels.supportSurface,
+    );
+
+    return LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [top, bottom],
+    );
+  }
+
   Future<void> _launchUrl(String url) async {
     await ref.read(externalLinkActionsProvider.notifier).openString(url);
   }
@@ -324,11 +342,13 @@ class _PreviewMedia extends StatelessWidget {
     required this.metadata,
     required this.aspectRatio,
     required this.placeholderColor,
+    required this.iconFallbackGradient,
   });
 
   final NativeLinkMetadata metadata;
   final double aspectRatio;
   final Color placeholderColor;
+  final LinearGradient iconFallbackGradient;
 
   @override
   Widget build(BuildContext context) {
@@ -347,13 +367,7 @@ class _PreviewMedia extends StatelessWidget {
       aspectRatio: aspectRatio,
       child: Container(
         decoration: isIconFallback
-            ? const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFE9ECF5), Color(0xFFD5DAE8)],
-                ),
-              )
+            ? BoxDecoration(gradient: iconFallbackGradient)
             : null,
         clipBehavior: isIconFallback ? Clip.antiAlias : Clip.none,
         child: Image.memory(

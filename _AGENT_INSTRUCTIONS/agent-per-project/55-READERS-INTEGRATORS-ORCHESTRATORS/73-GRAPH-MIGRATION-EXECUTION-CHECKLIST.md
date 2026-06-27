@@ -3845,6 +3845,9 @@ criteria.
 - Replaced the shared `AppThemeWidgets.primaryButton` foreground literal with
   `buttons.primaryForeground`, so the reusable primary button wrapper follows
   the centralized button color contract.
+- Replaced the URL preview icon-fallback gradient literals with a resolved
+  gradient derived from message-panel surface tokens, keeping link preview
+  chrome governed by the shared theme.
 
 ### Vocabulary Note
 
