@@ -372,7 +372,7 @@ const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'normal app surfaces',
   'normal timeline',
   'fully wired',
-  'provider-visible working.db',
+  'working.db as provider-visible state',
   'working.db state',
 ];
 
@@ -2318,8 +2318,8 @@ void main() {
             'Active historical-archive UI copy should describe source-scoped '
             'import, graph projection, and shared message evidence surfaces. '
             'Do not restore retired wording that implies a canonical legacy '
-            'message ledger, provider-visible working.db state, or future-only '
-            'visibility wiring.\n'
+            'message ledger, retired working.db as provider-visible state, '
+            'or future-only visibility wiring.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -5010,7 +5010,7 @@ void main() {
               'Message data refresh should call '
               'messageDataVersionProvider.notifier.bump() instead of invalidating '
               'the provider. Invalidation reads like imperative repair and can '
-              'recreate provider-visible working.db refresh assumptions.\n'
+              'recreate retired working.db refresh assumptions.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
       },
