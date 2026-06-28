@@ -46,9 +46,10 @@ deletion, or feature drift while completing the graph migration.
    providers, not widget-triggered repair logic.
 10. `feature_level_providers.dart` is a public seam for external consumers.
     Internal code inside the same feature or essential must import exact
-    sibling providers/files, not its own public barrel. Remaining self-barrel
-    imports are transitional provider-definition relocation debt tracked by an
-    architecture tripwire and must only shrink.
+    sibling providers/files, not its own public barrel. The self-barrel
+    tripwire allowlist is empty; any future offender is provider-ownership
+    drift and should be repaired by moving provider state into a named sibling
+    file or importing the exact local dependency.
 11. `feature_level_providers.dart` seams are export-only and must not have
     generated `.g.dart` siblings. Provider state belongs in named
     application/provider files; `essentials/db` remains the central database
