@@ -67,9 +67,9 @@ Table: `archived_attachments` in `user_overlays.db`
 **Unique constraint:** `(message_guid, import_attachment_id)`
 
 **Why overlay, not projection:** The decision to archive is user intent, not
-source data. `working_ss.db` is a derived graph projection, and `working.db` is
-retired transitional compatibility storage. Archive metadata must survive graph
-rebuilds and must not depend on retired compatibility files.
+source data. `working_ss.db` is a derived graph projection, and retired
+`working.db` files are cleanup/diagnostic inventory only. Archive metadata
+must survive graph rebuilds and must not depend on retired files.
 
 ### Provenance Values
 

@@ -809,8 +809,8 @@ Done means:
 ### Goal
 
 Remove retired legacy execution/read systems only after their blockers close,
-and reduce retained compatibility storage only under explicit retention
-criteria.
+and reduce retired-file cleanup/diagnostic inventory only under explicit
+retention criteria.
 
 ### Current Checkpoint Evidence
 
