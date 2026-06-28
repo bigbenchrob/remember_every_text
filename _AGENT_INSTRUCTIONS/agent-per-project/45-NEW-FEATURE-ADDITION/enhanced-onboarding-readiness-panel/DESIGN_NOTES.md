@@ -5,7 +5,7 @@
 These design notes remain useful for the surface shape and coordinator /
 resolver / renderer split. Replace ordinary migration ownership references with
 source-scoped graph build/readiness ownership. Retained migration references
-should be diagnostic/compatibility-only.
+should be retired cleanup diagnostics only.
 
 ## Summary
 
@@ -39,7 +39,7 @@ import or graph-build ownership boundaries.
 - widgets do not inspect the machine or decide step ordering
 - source-scoped import remains owned by the graph import spine
 - graph build/projection remains owned by graph orchestration
-- retained import/migration systems are compatibility diagnostics only
+- retained import/migration systems are retired cleanup diagnostics only
 - existing DB access invariants remain intact
 - readiness success must derive from a fresh resolver pass, not from a button
   click side effect

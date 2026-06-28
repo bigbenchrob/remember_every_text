@@ -6,7 +6,7 @@ This proposal remains directionally current: readiness belongs in a calm,
 durable center-panel surface rather than chained failure dialogs. The checks
 should now describe graph-era setup: source readability, AddressBook readiness,
 source-scoped import, conversation graph build/readiness, overlay failure
-state, and retained compatibility diagnostics only where clearly labeled.
+state, and retired cleanup diagnostics only where clearly labeled.
 
 ## Problem
 
@@ -21,7 +21,7 @@ The app now performs materially richer environment analysis, including:
 - source-scoped import failure evidence
 - conversation graph build/projection failure evidence
 - graph-era app-owned database readiness
-- retained compatibility diagnostics when explicitly labeled
+- retired cleanup diagnostics when explicitly labeled
 
 That breadth is useful, but it no longer fits cleanly into a sequence of modal
 or overlay-style failure panels. The result is increasing UI density,

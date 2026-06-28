@@ -5,7 +5,7 @@
 These notes remain useful for the raw-evidence -> typed-report -> user-facing
 classification pattern. Replace references to import/migration readiness as
 the ordinary success path with source-scoped graph build/readiness. Retained
-legacy import/projection health may still appear as compatibility diagnostics
+legacy import/projection health may still appear as retired cleanup diagnostics
 where explicitly named.
 
 ## Summary
@@ -24,7 +24,7 @@ This design must remain aligned with the existing system:
 - onboarding remains essentials-owned
 - source-scoped import remains owned by the graph import spine
 - conversation graph build/readiness remains owned by graph orchestration
-- retained import/migration systems are compatibility diagnostics only
+- retained import/migration systems are retired cleanup diagnostics only
 - navigation remains ViewSpec-driven
 - app-level coordinators route; resolvers own meaning
 
@@ -46,7 +46,7 @@ Collect concrete facts such as:
 - latest import error summary
 - latest graph build/projection error summary
 - graph topology / integrity hints
-- retained compatibility database health only when clearly labeled diagnostic
+- retired cleanup database health only when clearly labeled diagnostic
 
 ### 2. Environment report layer
 
@@ -63,7 +63,7 @@ Suggested fields:
 - conversation graph readiness
 - source-scoped pipeline health
 - graph build/projection health
-- retained compatibility health, if relevant
+- retired cleanup health, if relevant
 - top-priority blocker
 - recommended actions
 - diagnostic notes
@@ -143,10 +143,10 @@ Suggested evidence:
 - graph projection state integrity signals
 - obvious corruption or foreign key failure signals where cheap to inspect
 - retained `macos_import.db` / `working.db` health only for explicitly labeled
-  archive/recovery compatibility diagnostics
+  retired cleanup diagnostics
 
-Existing compatibility diagnostics utilities may be reused as internal evidence
-for retained archive/recovery surfaces rather than exposed as ordinary setup
+Existing retired cleanup diagnostics utilities may be reused as internal
+evidence for archive/recovery surfaces rather than exposed as ordinary setup
 authority.
 
 ### Pipeline checks
@@ -158,7 +158,7 @@ Suggested evidence:
 - known exception summaries
 - whether source-scoped import completed but graph projection never populated
   working graph tables
-- retained import/migration summaries only as compatibility diagnostics
+- retained import/migration summaries only as retired cleanup diagnostics
 
 This should allow the UI to distinguish:
 

@@ -121,7 +121,7 @@ Expected:
 
 - source-scoped import ownership remains in existing import systems
 - graph build/projection ownership remains in graph orchestration
-- retained compatibility diagnostics do not become readiness authority
+- retired cleanup diagnostics do not become readiness authority
 - DB access invariants remain intact
 - widgets do not independently probe the machine
 - app-level routing remains ViewSpec-driven
