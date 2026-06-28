@@ -12,10 +12,8 @@ import '../../db/feature_level_providers/persistent_database_providers.dart'
     show
         driftConversationGraphDatabaseProvider,
         sourceScopedImportDatabaseProvider;
-import '../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/application/app_navigator_key.dart';
-import '../../source_scoped_import/infrastructure/import_database_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 import 'derived_message_data_file_store.dart';
@@ -258,8 +256,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       return;
     }
     try {
-      final ledgerDb = await _dependencies.readSourceScopedImportDatabase();
-      await ledgerDb.close();
+      await _dependencies.closeSourceScopedImportDatabase();
     } catch (error, stackTrace) {
       _logResetCloseWarning(
         message: 'Failed to close source-scoped import database before reset',
@@ -277,8 +274,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       return;
     }
     try {
-      final graphDb = await _dependencies.readConversationGraphDatabase();
-      await graphDb.close();
+      await _dependencies.closeConversationGraphDatabase();
     } catch (error, stackTrace) {
       _logResetCloseWarning(
         message: 'Failed to close conversation graph database before reset',
@@ -367,8 +363,8 @@ final class _MessageDataResetDependencies {
     required this.endMaintenance,
     required this.bumpMessageDataVersion,
     required this.invalidateDerivedMessageDataProviders,
-    required this.readSourceScopedImportDatabase,
-    required this.readConversationGraphDatabase,
+    required this.closeSourceScopedImportDatabase,
+    required this.closeConversationGraphDatabase,
     required this.readOnboardingStatus,
     required this.readEnvironmentReport,
     required this.refreshOnboardingEnvironment,
@@ -380,9 +376,8 @@ final class _MessageDataResetDependencies {
   final VoidCallback endMaintenance;
   final VoidCallback bumpMessageDataVersion;
   final VoidCallback invalidateDerivedMessageDataProviders;
-  final Future<ImportDatabase> Function() readSourceScopedImportDatabase;
-  final Future<ConversationGraphDatabase> Function()
-  readConversationGraphDatabase;
+  final Future<void> Function() closeSourceScopedImportDatabase;
+  final Future<void> Function() closeConversationGraphDatabase;
   final OnboardingStatus Function() readOnboardingStatus;
   final AsyncValue<OnboardingEnvironmentReport> Function()
   readEnvironmentReport;
@@ -438,11 +433,17 @@ MessageDataResetService messageDataResetService(Ref ref) {
         ref.invalidate(sourceScopedImportDatabaseProvider);
         ref.invalidate(driftConversationGraphDatabaseProvider);
       },
-      readSourceScopedImportDatabase: () {
-        return ref.read(sourceScopedImportDatabaseProvider.future);
+      closeSourceScopedImportDatabase: () async {
+        final ledgerDb = await ref.read(
+          sourceScopedImportDatabaseProvider.future,
+        );
+        await ledgerDb.close();
       },
-      readConversationGraphDatabase: () {
-        return ref.read(driftConversationGraphDatabaseProvider.future);
+      closeConversationGraphDatabase: () async {
+        final graphDb = await ref.read(
+          driftConversationGraphDatabaseProvider.future,
+        );
+        await graphDb.close();
       },
       readOnboardingStatus: () {
         return ref.read(onboardingGateProvider);
