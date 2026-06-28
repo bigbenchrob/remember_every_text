@@ -3,11 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart'
-    show
-        DisplayIdentityResolver,
-        DisplayIdentitySource,
-        ParticipantDisplayIdentity;
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
 import 'package:remember_this_text/features/messages/infrastructure/repositories/graph_recovered_message_evidence_repository.dart';
 
 void main() {

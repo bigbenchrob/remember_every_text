@@ -6,7 +6,8 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_repository.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
 
 void main() {

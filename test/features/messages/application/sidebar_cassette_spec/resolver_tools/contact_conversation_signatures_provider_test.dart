@@ -3,7 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
-import 'package:remember_this_text/features/contacts/feature_level_providers.dart';
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
+import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_conversation_signatures_provider.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
 
