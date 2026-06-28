@@ -1,7 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../domain/status/conversation_graph_status.dart';
 
 final class ConversationGraphStatusRepository {
@@ -9,22 +9,16 @@ final class ConversationGraphStatusRepository {
 
   Future<ConversationGraphStatus> readStatus({
     required String chatDbPath,
-    required ImportDatabase importLedgerDatabase,
+    required ImportLedger importLedger,
     required ConversationGraphDatabase graphDatabase,
     required String importLedgerDatabaseLabel,
     required String graphDatabaseLabel,
     required int sourceId,
   }) async {
     final sourceSnapshot = await _readSourceSnapshot(chatDbPath);
-    final ledgerSnapshot = await _readLedgerMessageSnapshot(
-      importLedgerDatabase,
-      sourceId,
-    );
+    final ledgerSnapshot = await importLedger.messageStatusForSource(sourceId);
     final graphMessageSnapshot = await _readGraphMessageSnapshot(graphDatabase);
-    final graphSnapshot = await _readGraphSnapshot(
-      importLedgerDatabase,
-      graphDatabase,
-    );
+    final graphSnapshot = await _readGraphSnapshot(importLedger, graphDatabase);
 
     return ConversationGraphStatus(
       chatDbPath: chatDbPath,
@@ -34,7 +28,7 @@ final class ConversationGraphStatusRepository {
       sourceMessageCount: sourceSnapshot.message.count,
       sourceMaxRowId: sourceSnapshot.message.maxRowId,
       ledgerMessageCount: ledgerSnapshot.count,
-      ledgerMaxSourceRowId: ledgerSnapshot.maxRowId,
+      ledgerMaxSourceRowId: ledgerSnapshot.maxSourceRowId,
       ledgerMessagesNeedingEnrichment: ledgerSnapshot.needingEnrichmentCount,
       ledgerMessagesStillWithoutText: ledgerSnapshot.withoutTextCount,
       graphMessageCount: graphMessageSnapshot.count,
@@ -105,34 +99,6 @@ final class ConversationGraphStatusRepository {
     }
   }
 
-  Future<_MessageSnapshot> _readLedgerMessageSnapshot(
-    ImportDatabase importLedgerDatabase,
-    int sourceId,
-  ) async {
-    final rows = await importLedgerDatabase.database.rawQuery(
-      '''
-      SELECT
-        COUNT(*) AS message_count,
-        COALESCE(MAX(source_rowid), 0) AS max_rowid,
-        SUM(CASE WHEN text IS NULL AND attributed_body_blob IS NOT NULL
-          THEN 1 ELSE 0 END) AS needing_enrichment_count,
-        SUM(CASE WHEN text IS NULL OR text = '' THEN 1 ELSE 0 END)
-          AS without_text_count
-      FROM messages
-      WHERE source_id = ?
-      ''',
-      <Object?>[sourceId],
-    );
-    final row = rows.single;
-
-    return _MessageSnapshot(
-      count: _readInt(row['message_count']),
-      maxRowId: _readInt(row['max_rowid']),
-      needingEnrichmentCount: _readInt(row['needing_enrichment_count']),
-      withoutTextCount: _readInt(row['without_text_count']),
-    );
-  }
-
   Future<_GraphMessageSnapshot> _readGraphMessageSnapshot(
     ConversationGraphDatabase graphDatabase,
   ) async {
@@ -152,23 +118,15 @@ final class ConversationGraphStatusRepository {
   }
 
   Future<_GraphSnapshot> _readGraphSnapshot(
-    ImportDatabase importLedgerDatabase,
+    ImportLedger importLedger,
     ConversationGraphDatabase graphDatabase,
   ) async {
-    final importChatRows = await importLedgerDatabase.database.rawQuery(
-      'SELECT COUNT(*) AS chat_count FROM chats',
-    );
+    final importSnapshot = await importLedger.projectionStatusSnapshot();
     final graphChatRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS chat_count FROM chats',
     );
-    final importHandleRows = await importLedgerDatabase.database.rawQuery(
-      'SELECT COUNT(*) AS handle_count FROM handles',
-    );
     final graphHandleRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS handle_count FROM handles',
-    );
-    final importEdgeRows = await importLedgerDatabase.database.rawQuery(
-      'SELECT COUNT(*) AS edge_count FROM chat_to_message',
     );
     final graphEdgeRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS edge_count FROM chat_to_message',
@@ -182,9 +140,6 @@ final class ConversationGraphStatusRepository {
         HAVING COUNT(*) > 1
       )
     ''');
-    final importChatToHandleRows = await importLedgerDatabase.database.rawQuery(
-      'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
-    );
     final graphChatToHandleRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
     );
@@ -197,14 +152,9 @@ final class ConversationGraphStatusRepository {
         HAVING COUNT(*) > 1
       )
     ''');
-    final importAttachmentRows = await importLedgerDatabase.database.rawQuery(
-      'SELECT COUNT(*) AS attachment_count FROM attachments',
-    );
     final graphAttachmentRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS attachment_count FROM attachments',
     );
-    final importMessageToAttachmentRows = await importLedgerDatabase.database
-        .rawQuery('SELECT COUNT(*) AS edge_count FROM message_to_attachment');
     final graphMessageToAttachmentRows = await graphDatabase.selectRows(
       'SELECT COUNT(*) AS edge_count FROM message_to_attachment',
     );
@@ -219,33 +169,28 @@ final class ConversationGraphStatusRepository {
       ''');
 
     return _GraphSnapshot(
-      importChatCount: _readInt(importChatRows.single['chat_count']),
+      importChatCount: importSnapshot.chatCount,
       graphChatCount: _readInt(graphChatRows.single['chat_count']),
-      importHandleCount: _readInt(importHandleRows.single['handle_count']),
+      importHandleCount: importSnapshot.handleCount,
       graphHandleCount: _readInt(graphHandleRows.single['handle_count']),
-      importTopologyEdgeCount: _readInt(importEdgeRows.single['edge_count']),
+      importTopologyEdgeCount: importSnapshot.chatToMessageEdgeCount,
       graphTopologyEdgeCount: _readInt(graphEdgeRows.single['edge_count']),
       duplicateGraphTopologyEdgeCount: _readInt(
         duplicateEdgeRows.single['duplicate_edge_count'],
       ),
-      importChatToHandleEdgeCount: _readInt(
-        importChatToHandleRows.single['edge_count'],
-      ),
+      importChatToHandleEdgeCount: importSnapshot.chatToHandleEdgeCount,
       graphChatToHandleEdgeCount: _readInt(
         graphChatToHandleRows.single['edge_count'],
       ),
       duplicateGraphChatToHandleEdgeCount: _readInt(
         duplicateChatToHandleRows.single['duplicate_edge_count'],
       ),
-      importAttachmentCount: _readInt(
-        importAttachmentRows.single['attachment_count'],
-      ),
+      importAttachmentCount: importSnapshot.attachmentCount,
       graphAttachmentCount: _readInt(
         graphAttachmentRows.single['attachment_count'],
       ),
-      importMessageToAttachmentEdgeCount: _readInt(
-        importMessageToAttachmentRows.single['edge_count'],
-      ),
+      importMessageToAttachmentEdgeCount:
+          importSnapshot.messageToAttachmentEdgeCount,
       graphMessageToAttachmentEdgeCount: _readInt(
         graphMessageToAttachmentRows.single['edge_count'],
       ),

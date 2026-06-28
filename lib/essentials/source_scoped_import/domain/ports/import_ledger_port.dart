@@ -22,6 +22,12 @@ abstract interface class ImportLedger {
 
   Future<int> messageCountForSource(int sourceId);
 
+  Future<ImportLedgerMessageStatusSnapshot> messageStatusForSource(
+    int sourceId,
+  );
+
+  Future<ImportLedgerProjectionStatusSnapshot> projectionStatusSnapshot();
+
   Future<int?> maxHandleSourceRowIdForSource(int sourceId);
 
   Future<int?> maxAttachmentSourceRowIdForSource(int sourceId);
@@ -67,6 +73,38 @@ final class ImportLedgerMessageTextCandidate {
   final int ssId;
   final int sourceRowId;
   final Uint8List attributedBodyBlob;
+}
+
+final class ImportLedgerMessageStatusSnapshot {
+  const ImportLedgerMessageStatusSnapshot({
+    required this.count,
+    required this.maxSourceRowId,
+    required this.needingEnrichmentCount,
+    required this.withoutTextCount,
+  });
+
+  final int count;
+  final int maxSourceRowId;
+  final int needingEnrichmentCount;
+  final int withoutTextCount;
+}
+
+final class ImportLedgerProjectionStatusSnapshot {
+  const ImportLedgerProjectionStatusSnapshot({
+    required this.chatCount,
+    required this.handleCount,
+    required this.chatToMessageEdgeCount,
+    required this.chatToHandleEdgeCount,
+    required this.attachmentCount,
+    required this.messageToAttachmentEdgeCount,
+  });
+
+  final int chatCount;
+  final int handleCount;
+  final int chatToMessageEdgeCount;
+  final int chatToHandleEdgeCount;
+  final int attachmentCount;
+  final int messageToAttachmentEdgeCount;
 }
 
 final class SourceScopedImportSourceDeletionResult {

@@ -198,6 +198,67 @@ class ImportDatabase implements ImportLedger {
   }
 
   @override
+  Future<ImportLedgerMessageStatusSnapshot> messageStatusForSource(
+    int sourceId,
+  ) async {
+    final rows = await database.rawQuery(
+      '''
+      SELECT
+        COUNT(*) AS message_count,
+        COALESCE(MAX(source_rowid), 0) AS max_source_rowid,
+        SUM(CASE WHEN text IS NULL AND attributed_body_blob IS NOT NULL
+          THEN 1 ELSE 0 END) AS needing_enrichment_count,
+        SUM(CASE WHEN text IS NULL OR text = '' THEN 1 ELSE 0 END)
+          AS without_text_count
+      FROM messages
+      WHERE source_id = ?
+      ''',
+      <Object?>[sourceId],
+    );
+    final row = rows.single;
+    return ImportLedgerMessageStatusSnapshot(
+      count: _readInt(row['message_count']),
+      maxSourceRowId: _readInt(row['max_source_rowid']),
+      needingEnrichmentCount: _readInt(row['needing_enrichment_count']),
+      withoutTextCount: _readInt(row['without_text_count']),
+    );
+  }
+
+  @override
+  Future<ImportLedgerProjectionStatusSnapshot>
+  projectionStatusSnapshot() async {
+    final chatRows = await database.rawQuery(
+      'SELECT COUNT(*) AS chat_count FROM chats',
+    );
+    final handleRows = await database.rawQuery(
+      'SELECT COUNT(*) AS handle_count FROM handles',
+    );
+    final chatToMessageRows = await database.rawQuery(
+      'SELECT COUNT(*) AS edge_count FROM chat_to_message',
+    );
+    final chatToHandleRows = await database.rawQuery(
+      'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
+    );
+    final attachmentRows = await database.rawQuery(
+      'SELECT COUNT(*) AS attachment_count FROM attachments',
+    );
+    final messageToAttachmentRows = await database.rawQuery(
+      'SELECT COUNT(*) AS edge_count FROM message_to_attachment',
+    );
+
+    return ImportLedgerProjectionStatusSnapshot(
+      chatCount: _readInt(chatRows.single['chat_count']),
+      handleCount: _readInt(handleRows.single['handle_count']),
+      chatToMessageEdgeCount: _readInt(chatToMessageRows.single['edge_count']),
+      chatToHandleEdgeCount: _readInt(chatToHandleRows.single['edge_count']),
+      attachmentCount: _readInt(attachmentRows.single['attachment_count']),
+      messageToAttachmentEdgeCount: _readInt(
+        messageToAttachmentRows.single['edge_count'],
+      ),
+    );
+  }
+
+  @override
   Future<List<ImportLedgerMessageTextCandidate>>
   findMessagesNeedingTextEnrichment({
     int? sourceId,
@@ -746,4 +807,14 @@ int _readRequiredInt(Map<String, Object?> row, String field) {
     return value.toInt();
   }
   throw StateError('messages.$field is required');
+}
+
+int _readInt(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return 0;
 }
