@@ -671,7 +671,7 @@ const List<String> _retiredMessageTimelinePathFragments = <String>[
   '/application/strategies/',
 ];
 
-const List<String> _retiredImportMigrationExecutionSymbols = <String>[
+const List<String> _retiredDatabasePipelineExecutionSymbols = <String>[
   'DbImportControl',
   'HandlesMigrationService',
   'ImportOrchestrator',
@@ -688,7 +688,7 @@ const List<String> _retiredImportMigrationExecutionSymbols = <String>[
   'retainedArchiveMetadataDatabaseProvider',
 ];
 
-const List<String> _retiredImportMigrationPathFragments = <String>[
+const List<String> _retiredDatabasePipelinePathFragments = <String>[
   '/db_importers/application/importers/',
   '/db_importers/application/orchestrator/',
   '/db_importers/application/services/retained_legacy_archive_pipeline',
@@ -2644,7 +2644,7 @@ void main() {
         orderedEquals(_retiredMacosImportCleanupBoundaryFiles.toList()..sort()),
         reason:
             'Retired macos_import.db is cleanup/diagnostic inventory only. '
-            'Ordinary code must not add new retired import file access or '
+            'Ordinary code must not add new retired macos_import.db file access or '
             'workflow authority.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
@@ -3142,21 +3142,21 @@ void main() {
       );
     });
 
-    test('Retired import/migration execution paths do not return', () async {
-      final offenders = await _findRetiredImportMigrationExecutionOffenders();
+    test('Retired database pipeline execution paths do not return', () async {
+      final offenders = await _findRetiredDatabasePipelineExecutionOffenders();
 
       expect(
         offenders,
         isEmpty,
         reason:
-            'Retired import/migration execution symbols or paths were found. '
+            'Retired database pipeline execution symbols or paths were found. '
             'Ordinary import/projection must use source-scoped graph lifecycle; '
             'do not reintroduce retired execution paths.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
 
-    test('Retired import/projection folders do not return', () {
+    test('Retired database pipeline folders do not return', () {
       final retiredPaths = <String>[
         'lib/essentials/db_importers',
         'lib/essentials/db_migrate',
@@ -5882,7 +5882,7 @@ void main() {
             'Conversation graph projection/status repositories should name '
             'the source-scoped import database as an import ledger. Generic '
             'importDatabase identifiers blur active source-scoped ledger '
-            'ownership with retired import database-file naming.\n'
+            'ownership with retired macos_import.db file naming.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -7954,7 +7954,7 @@ Future<List<String>> _findSourceScopedSqlBitExtractionOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findRetiredImportMigrationExecutionOffenders() async {
+Future<List<String>> _findRetiredDatabasePipelineExecutionOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart')) {
       return false;
@@ -7963,7 +7963,7 @@ Future<List<String>> _findRetiredImportMigrationExecutionOffenders() async {
   });
   final offenders = <String>{};
   final symbolPattern = RegExp(
-    '\\b(${_retiredImportMigrationExecutionSymbols.map(RegExp.escape).join('|')})\\b',
+    '\\b(${_retiredDatabasePipelineExecutionSymbols.map(RegExp.escape).join('|')})\\b',
   );
 
   for (final filePath in files) {
@@ -7971,7 +7971,7 @@ Future<List<String>> _findRetiredImportMigrationExecutionOffenders() async {
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
     final hasRetiredImport = imports.any((importTarget) {
-      return _retiredImportMigrationPathFragments.any(importTarget.contains);
+      return _retiredDatabasePipelinePathFragments.any(importTarget.contains);
     });
 
     if (hasRetiredImport || symbolPattern.hasMatch(uncommented)) {
