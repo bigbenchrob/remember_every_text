@@ -24,26 +24,26 @@ part 'message_data_reset_service.g.dart';
 
 const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
 
-const retiredDatabaseCleanupFiles = <AppDatabaseFile>[
+const _retiredDatabaseCleanupFiles = <AppDatabaseFile>[
   AppDatabaseFile.retiredMacosImport,
   AppDatabaseFile.retiredWorking,
 ];
 
-const activeGraphDerivedDatabaseFiles = <AppDatabaseFile>[
+const _activeGraphDerivedDatabaseFiles = <AppDatabaseFile>[
   AppDatabaseFile.sourceScopedImport,
   AppDatabaseFile.conversationGraph,
 ];
 
 List<String> get retiredDatabaseCleanupBaseNames =>
-    appDatabaseFileNames(retiredDatabaseCleanupFiles);
+    appDatabaseFileNames(_retiredDatabaseCleanupFiles);
 
 List<String> get activeGraphDerivedDatabaseBaseNames =>
-    appDatabaseFileNames(activeGraphDerivedDatabaseFiles);
+    appDatabaseFileNames(_activeGraphDerivedDatabaseFiles);
 
 List<String> get messageDataResetPostCleanupCheckBaseNames =>
     appDatabaseFileNames(<AppDatabaseFile>[
-      ...activeGraphDerivedDatabaseFiles,
-      ...retiredDatabaseCleanupFiles,
+      ..._activeGraphDerivedDatabaseFiles,
+      ..._retiredDatabaseCleanupFiles,
     ]);
 
 abstract interface class MessageDataResetService {
