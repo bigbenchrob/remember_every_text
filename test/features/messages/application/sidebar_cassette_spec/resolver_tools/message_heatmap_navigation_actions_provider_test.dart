@@ -1,7 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers/persistent_database_providers.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';

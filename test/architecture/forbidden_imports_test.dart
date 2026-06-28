@@ -1302,11 +1302,12 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'Consumers should import the public DB seam '
+            'Production code should import the public DB seam '
             'essentials/db/feature_level_providers.dart with explicit show '
-            'clauses. Direct imports of the persistent database provider '
-            'implementation subfile hide dependency authority and bypass the '
-            'public database boundary.\n'
+            'clauses, and tests should also use that public seam instead of '
+            'the provider implementation subfile. Direct imports of the '
+            'persistent database provider implementation subfile hide '
+            'dependency authority and bypass the public database boundary.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -7110,7 +7111,10 @@ _findPersistentDatabaseProviderImplementationImportOffenders() async {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    return path.startsWith('lib/');
+    if (path == 'test/architecture/forbidden_imports_test.dart') {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
   });
   final offenders = <String>{};
 
