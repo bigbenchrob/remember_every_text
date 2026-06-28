@@ -70,5 +70,47 @@ void main() {
       );
       expect(File(databasePath).lastModifiedSync(), lastModifiedBefore);
     });
+
+    test('rejects write queries against retired cleanup files', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'database_health_query_layer_',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      final databasePath = '${tempDir.path}/retired_macos_import.db';
+      final created = sqlite3.sqlite3.open(databasePath);
+      try {
+        created
+          ..execute('CREATE TABLE probe (value INTEGER NOT NULL)')
+          ..execute('INSERT INTO probe (value) VALUES (42)');
+      } finally {
+        created.dispose();
+      }
+
+      final layer = RetiredCleanupSqliteFileHealthQueryLayer(
+        databaseKey: databaseHealthKeyRetiredMacosImport,
+        role: databaseHealthRoleRetiredMacosImportCleanup,
+        databasePath: databasePath,
+      );
+
+      await expectLater(
+        layer.query('INSERT INTO probe (value) VALUES (99)'),
+        throwsA(isA<sqlite3.SqliteException>()),
+      );
+
+      final verification = sqlite3.sqlite3.open(databasePath);
+      try {
+        final values = verification.select(
+          'SELECT value FROM probe ORDER BY value',
+        );
+        expect(<int>[for (final row in values) row['value'] as int], <int>[42]);
+      } finally {
+        verification.dispose();
+      }
+    });
   });
 }
