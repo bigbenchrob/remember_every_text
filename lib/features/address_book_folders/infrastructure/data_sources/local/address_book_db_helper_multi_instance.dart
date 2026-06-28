@@ -18,6 +18,8 @@ class AddressBookDbHelperMultiInstance {
     Database db;
     try {
       db = await openReadOnlyDatabase(_path);
+      await db.execute('PRAGMA query_only = ON');
+      await db.execute('PRAGMA busy_timeout = 3000');
     } catch (error) {
       throw StateError(
         "AddressBook database couldn't be opened at path '$_path': $error",

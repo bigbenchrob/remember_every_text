@@ -1198,6 +1198,21 @@ void main() {
       );
     });
 
+    test('Direct sqflite read-only helpers set read-only pragmas', () async {
+      final offenders = await _findDirectSqfliteReadOnlyHelperOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Direct sqflite helper-based read-only opens must set query_only '
+            'and busy_timeout pragmas. Helper-based source probes are still '
+            'database access boundaries and should not regain mutable or '
+            'lock-prone behavior.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Native Drift executors stay behind database providers', () async {
       final offenders = await _findNativeDriftExecutorOffenders();
 
@@ -13667,6 +13682,32 @@ Future<List<String>> _findDirectSqfliteProbeHardeningOffenders() async {
     if (!uncommented.contains('readOnly: true') ||
         !uncommented.contains('singleInstance: false') ||
         !uncommented.contains('PRAGMA query_only = ON') ||
+        !uncommented.contains('PRAGMA busy_timeout = 3000')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDirectSqfliteReadOnlyHelperOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+  final helperOpenPattern = RegExp(r'\bopenReadOnlyDatabase\s*\(');
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (!helperOpenPattern.hasMatch(uncommented)) {
+      continue;
+    }
+
+    if (!uncommented.contains('PRAGMA query_only = ON') ||
         !uncommented.contains('PRAGMA busy_timeout = 3000')) {
       offenders.add(filePath);
     }
