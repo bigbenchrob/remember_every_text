@@ -187,6 +187,7 @@ class ImportDatabase implements ImportLedger {
     return rows.single['max_source_rowid'] as int?;
   }
 
+  @override
   Future<int> messageCountForSource(int sourceId) async {
     final rows = await database.rawQuery(
       'SELECT COUNT(*) AS message_count '

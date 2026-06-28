@@ -91,7 +91,6 @@ const Set<String> _sourceScopedImportDatabaseProviderAllowedFiles = {
   'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/source_scoped_import/application/source_scoped_import_ledger_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
-  'lib/essentials/conversation_graph/application/monitor/import_ledger_probe_reader_provider.dart',
   'lib/essentials/conversation_graph/application/status/conversation_graph_status_snapshot_provider.dart',
 };
 

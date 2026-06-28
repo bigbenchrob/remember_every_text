@@ -20,6 +20,8 @@ abstract interface class ImportLedger {
 
   Future<int?> maxMessageSourceRowIdForSource(int sourceId);
 
+  Future<int> messageCountForSource(int sourceId);
+
   Future<int?> maxHandleSourceRowIdForSource(int sourceId);
 
   Future<int?> maxAttachmentSourceRowIdForSource(int sourceId);
