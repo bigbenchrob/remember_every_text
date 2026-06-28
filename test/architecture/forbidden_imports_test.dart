@@ -287,6 +287,10 @@ const Set<String> _directSqliteImportAllowedFiles = {
   'lib/main.dart',
 };
 
+const Set<String> _directSqliteWriteOpenAllowedFiles = {
+  'lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart',
+};
+
 const Set<String> _nativeDriftExecutorAllowedFiles = {
   'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
 };
@@ -1144,6 +1148,21 @@ void main() {
             'adapters/probes. Any direct sqlite3/sqflite open must either '
             'dispose/close the handle in a finally block for one-off reads, or '
             'expose an explicit close boundary for owned wrapper instances.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Direct SQLite probe opens are read-only', () async {
+      final offenders = await _findDirectSqliteWriteOpenOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_directSqliteWriteOpenAllowedFiles.toList()..sort()),
+        reason:
+            'Direct SQLite opens outside the source-scoped import ledger writer '
+            'must be read-only probe/query access. Ordinary source, archive, '
+            'diagnostic, and readiness readers must not regain write authority '
+            'over source or retired cleanup files.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -13529,6 +13548,38 @@ Future<List<String>> _findDirectSqliteOpenCleanupOffenders() async {
     }
     if (opensSqflite && !closesSqfliteHandle) {
       offenders.add('$filePath opens sqflite without explicit close boundary');
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDirectSqliteWriteOpenOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+  final sqlite3OpenPattern = RegExp(
+    r'\bsqlite3(?:\.sqlite3)?\.open\s*\(([\s\S]*?)\);',
+  );
+  final sqfliteOpenPattern = RegExp(r'\bopenDatabase\s*\(([\s\S]*?)\);');
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+
+    final hasWritableSqlite3Open = sqlite3OpenPattern
+        .allMatches(uncommented)
+        .any((match) => !match.group(1)!.contains('OpenMode.readOnly'));
+    final hasWritableSqfliteOpen = sqfliteOpenPattern
+        .allMatches(uncommented)
+        .any((match) => !match.group(1)!.contains('readOnly: true'));
+
+    if (hasWritableSqlite3Open || hasWritableSqfliteOpen) {
+      offenders.add(filePath);
     }
   }
 
