@@ -1,26 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart' show overlayDatabaseProvider;
-import '../domain/ports/window_manager_port.dart';
-import '../domain/ports/window_storage_port.dart';
-import '../infrastructure/persistence/macos_window_manager.dart';
-import '../infrastructure/persistence/overlay_window_storage.dart';
+import '../infrastructure/persistence/window_state_infrastructure_providers.dart';
 import 'window_state_service.dart';
 
 part 'window_state_providers.g.dart';
-
-/// Infrastructure dependencies.
-@Riverpod(keepAlive: true)
-WindowStoragePort windowStoragePort(WindowStoragePortRef ref) {
-  return OverlayWindowStorage(
-    overlayDb: ref.watch(overlayDatabaseProvider.future),
-  );
-}
-
-@Riverpod(keepAlive: true)
-WindowManagerPort windowManagerPort(WindowManagerPortRef ref) {
-  return MacosWindowManager();
-}
 
 /// Application dependencies - This is the ONLY public service from this feature.
 @Riverpod(keepAlive: true)
