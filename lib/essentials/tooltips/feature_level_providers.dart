@@ -6,7 +6,8 @@
 /// ## Usage
 ///
 /// ```dart
-/// import 'package:remember_this_text/essentials/tooltips/feature_level_providers.dart';
+/// import 'package:remember_this_text/essentials/tooltips/feature_level_providers.dart'
+///     show TooltipSpec, TooltipWrapper;
 ///
 /// TooltipWrapper(
 ///   spec: TooltipSpec.contacts(ContactsTooltipSpec.editDisplayName()),
