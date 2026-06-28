@@ -2,10 +2,45 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_database_keys.dart';
+import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_query_layer.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/repositories/database_health_audit_queries.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 void main() {
+  group('database health read-only SQL guard', () {
+    test('allows select with and metadata pragma queries', () {
+      expect(
+        () => assertDatabaseHealthReadOnlySql('SELECT 1'),
+        returnsNormally,
+      );
+      expect(
+        () => assertDatabaseHealthReadOnlySql(
+          'WITH rows AS (SELECT 1) SELECT * FROM rows',
+        ),
+        returnsNormally,
+      );
+      expect(
+        () => assertDatabaseHealthReadOnlySql('PRAGMA user_version'),
+        returnsNormally,
+      );
+      expect(
+        () => assertDatabaseHealthReadOnlySql('PRAGMA table_info("messages")'),
+        returnsNormally,
+      );
+    });
+
+    test('rejects write and broad pragma queries before execution', () {
+      expect(
+        () => assertDatabaseHealthReadOnlySql('INSERT INTO probe VALUES (1)'),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        () => assertDatabaseHealthReadOnlySql('PRAGMA journal_mode = WAL'),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
   group('RetiredCleanupSqliteFileHealthQueryLayer', () {
     test('does not create a missing database file during inspection', () async {
       final tempDir = await Directory.systemTemp.createTemp(
@@ -99,7 +134,7 @@ void main() {
 
       await expectLater(
         layer.query('INSERT INTO probe (value) VALUES (99)'),
-        throwsA(isA<sqlite3.SqliteException>()),
+        throwsA(isA<StateError>()),
       );
 
       final verification = sqlite3.sqlite3.open(databasePath);

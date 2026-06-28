@@ -33,6 +33,7 @@ class RetiredCleanupSqliteFileHealthQueryLayer
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) async {
+    assertDatabaseHealthReadOnlySql(sql);
     if (!File(databasePath).existsSync()) {
       throw StateError('Database file does not exist: $databasePath');
     }
@@ -83,6 +84,7 @@ class SourceScopedImportDatabaseHealthQueryLayer
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) async {
+    assertDatabaseHealthReadOnlySql(sql);
     final rows = await _database.database.rawQuery(sql);
     return rows.map((row) => Map<String, Object?>.from(row)).toList();
   }
@@ -113,6 +115,7 @@ class ConversationGraphDatabaseHealthQueryLayer
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) {
+    assertDatabaseHealthReadOnlySql(sql);
     return _database.selectRows(sql);
   }
 }
@@ -141,6 +144,7 @@ class OverlayDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
 
   @override
   Future<List<Map<String, Object?>>> query(String sql) async {
+    assertDatabaseHealthReadOnlySql(sql);
     final rows = await _database.customSelect(sql).get();
     return rows.map((row) => Map<String, Object?>.from(row.data)).toList();
   }

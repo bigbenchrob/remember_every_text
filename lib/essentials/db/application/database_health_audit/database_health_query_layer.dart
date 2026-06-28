@@ -164,6 +164,23 @@ class AuditImportantColumnSpec {
   final List<String> notes;
 }
 
+void assertDatabaseHealthReadOnlySql(String sql) {
+  final normalized = sql.trimLeft().toLowerCase();
+  if (normalized.startsWith('select ') ||
+      normalized.startsWith('select\n') ||
+      normalized.startsWith('with ') ||
+      normalized.startsWith('with\n')) {
+    return;
+  }
+  if (RegExp(r'^pragma\s+(user_version|table_info)\b').hasMatch(normalized)) {
+    return;
+  }
+
+  throw StateError(
+    'Database health queries must be read-only SELECT/WITH or metadata PRAGMA statements',
+  );
+}
+
 int? _coerceInt(Object? value) {
   if (value == null) {
     return null;
