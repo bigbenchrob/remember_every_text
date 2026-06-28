@@ -36,6 +36,13 @@ ContactSummary? findContactSummaryById(
   List<ContactSummary> contacts,
   int contactId,
 ) {
+  final canonicalContactId = canonicalContactIdentityKey(contactId);
+  for (final contact in contacts) {
+    if (contact.participantId == canonicalContactId) {
+      return contact;
+    }
+  }
+
   for (final contact in contacts) {
     if (contactSummaryMatchesId(contact, contactId)) {
       return contact;

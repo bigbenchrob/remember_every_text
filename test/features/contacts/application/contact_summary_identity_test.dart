@@ -31,6 +31,22 @@ void main() {
     expect(contact?.participantId, graphContactId);
   });
 
+  test('findContactSummaryById prefers graph contact over rowid duplicate', () {
+    final graphContactId = SourceScopedRowKey.pack(
+      sourceId: liveAddressBookSourceId,
+      sourceRowId: 17,
+    );
+    final contacts = [
+      _contact(17, 'rowid compatibility'),
+      _contact(graphContactId, 'graph identity'),
+    ];
+
+    final contact = findContactSummaryById(contacts, 17);
+
+    expect(contact?.participantId, graphContactId);
+    expect(contact?.displayName, 'graph identity');
+  });
+
   test('does not match unrelated source-scoped contact ids', () {
     final graphContactId = SourceScopedRowKey.pack(
       sourceId: liveAddressBookSourceId,
