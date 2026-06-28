@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-28
 depends_on:
   - 73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md
   - 75-ARCHIVE-RECOVERY-IDENTITY-PLAN.md
@@ -13,13 +13,13 @@ depends_on:
 
 ## Purpose
 
-This audit compares the retained legacy recovered-message evidence universe with
-the graph-backed recovered repository now used by production recovered-message
-presentation.
+This audit compares the retired `working.db` recovered-message evidence
+universe with the graph-backed recovered repository now used by production
+recovered-message presentation.
 
 It began as a cutover gate. After parity review, production recovered evidence
-was cut over to the graph repository. The legacy repository now remains a
-diagnostic/retention comparison source until legacy retirement is reviewed
+was cut over to the graph repository. The retired tables now remain historical
+cleanup/diagnostic inventory until broader retired-file cleanup is reviewed
 separately.
 
 ## Compared Sources
@@ -264,9 +264,10 @@ Next safe implementation step:
 
 1. Treat the parity audit as complete for runtime purposes.
 2. Keep production recovered evidence on the graph repository.
-3. Retire the retained legacy parity diagnostic bridge from runtime code.
-4. Leave physical legacy recovered tables alone until broader legacy DB
-   retirement; they are historical storage, not the active evidence source.
+3. Retire the parity diagnostic bridge from runtime code.
+4. Leave physical retired recovered tables alone until broader retired-file
+   cleanup; they are historical cleanup/diagnostic inventory, not the active
+   evidence source.
 
 Status: diagnostic boundary added and later retired after graph cutover. The
 pure `compareRecoveredMessageEvidence` comparator classified:
@@ -295,11 +296,11 @@ removed once production recovered evidence was graph-backed and the remaining
 legacy-only rows were accepted as retention caveats.
 
 The diagnostic was temporarily visible in the source-scoped Graph health tab so
-retained legacy evidence could be compared against production graph evidence
+retired recovered evidence could be compared against production graph evidence
 without running one-off SQL. It has now been removed from the runtime panel.
 
 The diagnostic also included typed drilldown samples for unresolved legacy-only
-rows and text mismatches. These samples explained retained legacy caveats and
+rows and text mismatches. These samples explained retired-file caveats and
 evidence mismatches; they were not presentation policy and did not alter
 recovered evidence routing.
 
@@ -319,8 +320,8 @@ legacy-only retention decisions.
 
 With matched evidence parity clean and the remaining legacy-only rows explained,
 `recoveredUnlinkedMessagesProvider` now reads from
-`GraphRecoveredMessageEvidenceRepository`. Legacy recovered storage remains in
-place as a retained compatibility/diagnostic source until legacy retirement is
+`GraphRecoveredMessageEvidenceRepository`. Retired recovered storage remains in
+place as historical cleanup/diagnostic inventory until retired-file cleanup is
 reviewed separately.
 
 ## Production Graph Criteria

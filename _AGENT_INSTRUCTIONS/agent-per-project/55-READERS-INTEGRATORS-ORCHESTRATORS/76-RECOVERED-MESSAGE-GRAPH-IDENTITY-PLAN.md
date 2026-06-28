@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-05-31
+last_reviewed: 2026-06-28
 depends_on:
   - 69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
@@ -21,8 +21,8 @@ render through the shared Message Evidence Spine.
 
 This document records the conservative migration path that got there and the
 remaining retention rule: old `working.db.recovered_unlinked_*` tables are
-historical storage inside retained legacy DBs, not production recovered-message
-routing.
+historical cleanup/diagnostic inventory inside retired `working.db` files, not
+production recovered-message routing.
 
 ## Current State
 
@@ -127,8 +127,8 @@ This is a low-risk structural step because it preserves runtime behavior.
 
 Status: complete. `RecoveredMessageEvidenceRepository` is the named contract,
 and production wiring now uses `GraphRecoveredMessageEvidenceRepository`. The
-earlier retained legacy implementation was removed after parity review and user
-acceptance of the remaining retention caveats.
+former retained implementation was removed after parity review and user
+acceptance of the remaining retired-file caveats.
 
 The completed migration preserved and tested these recovery semantics:
 
@@ -143,8 +143,8 @@ The completed migration preserved and tested these recovery semantics:
 Status: complete for production routing. The live recovered-message provider no
 longer reads `working.db.recovered_unlinked_messages`. The temporary retained
 legacy diagnostic repository and parity bridge were removed; the physical
-legacy tables remain only as historical storage inside the retained legacy DB
-schema.
+tables remain only as historical cleanup/diagnostic inventory inside retired
+`working.db` files.
 
 The Message Evidence Spine depends on typed recovered evidence records, not
 legacy table details.
@@ -198,7 +198,7 @@ preserves source-scoped `ss_id` identity, hydrates attachment evidence through
 `working_ss.message_to_attachment`, and preserves contact-scoped direct matching
 plus nearby no-handle outgoing inference.
 
-The retained legacy recovered repository was later retired as runtime
+The former retained recovered repository was later retired as runtime
 diagnostic code after production recovered evidence moved to graph orphan
 evidence and the remaining legacy-only rows were accepted as retention caveats.
 
@@ -210,12 +210,13 @@ from testing the Unknown Senders discard action, not source/import evidence
 loss. The cutover accepted that 195 legacy recovered rows are now ordinary
 graph-projectable conversation messages.
 
-### 6. Retire legacy recovered tables only with broader legacy DB retirement
+### 6. Retire recovered tables only with broader retired-file cleanup
 
 The runtime parity diagnostic bridge has been removed. The old
 `working.db.recovered_unlinked_*` tables still physically exist as part of the
-retained legacy database schema and should be deleted only with the broader
-legacy DB retirement decision, not as a standalone recovery cleanup.
+retired `working.db` file schema and should be deleted only with the broader
+retired-file cleanup/export/discard decision, not as a standalone recovery
+cleanup.
 
 ## Non-Goals
 
@@ -233,15 +234,16 @@ Do not:
 
 Do not continue deleting recovered storage in isolation.
 
-The next safe work is broader legacy DB retirement planning:
+The next safe work is broader retired-file cleanup planning:
 
-1. Keep `working.db.recovered_unlinked_*` tables as historical retained storage
-   while the legacy DB schema itself is retained.
+1. Keep `working.db.recovered_unlinked_*` tables as historical
+   cleanup/diagnostic inventory while retired `working.db` files remain on
+   disk.
 2. Keep production recovered evidence on
    `GraphRecoveredMessageEvidenceRepository`.
 3. Treat recovered source-folder import as a future source-scoped import
    problem, not a reason to resurrect the legacy recovered repository.
-4. When broader legacy DB retirement starts, decide whether the historical
+4. When broader retired-file cleanup starts, decide whether the historical
    recovered rows need export, source-scoped import, or no further retention.
 
 ## Done Means
