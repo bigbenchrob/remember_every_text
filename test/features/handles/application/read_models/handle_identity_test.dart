@@ -33,6 +33,16 @@ void main() {
     );
   });
 
+  test('preserves unrelated source-scoped handle ids', () {
+    final nonLiveHandleId = SourceScopedRowKey.pack(
+      sourceId: liveAddressBookSourceId,
+      sourceRowId: 42,
+    );
+
+    expect(canonicalHandleIdentityKey(nonLiveHandleId), nonLiveHandleId);
+    expect(handleIdentityKeyVariants(nonLiveHandleId), {nonLiveHandleId});
+  });
+
   test('overlayValueForHandleIdentity resolves either key form', () {
     final graphHandleId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
@@ -47,6 +57,21 @@ void main() {
     );
     expect(
       overlayValueForHandleIdentity(<int, String>{graphHandleId: 'graph'}, 42),
+      'graph',
+    );
+  });
+
+  test('overlayValueForHandleIdentity prefers exact graph key', () {
+    final graphHandleId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 42,
+    );
+
+    expect(
+      overlayValueForHandleIdentity(<int, String>{
+        42: 'rowid-keyed',
+        graphHandleId: 'graph',
+      }, graphHandleId),
       'graph',
     );
   });
