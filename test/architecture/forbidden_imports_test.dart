@@ -2678,10 +2678,11 @@ void main() {
           ),
           reason:
               'sourceScopedImportDatabaseProvider is the concrete physical DB '
-              'provider for macos_import_ss.db. Ordinary source import, graph, '
-              'feature, and presentation code should consume semantic ports, '
-              'repository providers, or sourceScopedImportLedgerProvider '
-              'instead of reaching for the physical DB provider directly.\n'
+              'provider for the source-scoped import ledger file. Ordinary '
+              'source import, graph, feature, and presentation code should '
+              'consume semantic ports, repository providers, or '
+              'sourceScopedImportLedgerProvider instead of reaching for the '
+              'physical DB provider directly.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
