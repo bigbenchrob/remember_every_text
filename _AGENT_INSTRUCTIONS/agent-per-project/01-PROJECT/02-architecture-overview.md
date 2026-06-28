@@ -149,10 +149,10 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
   `essentials/app_mode/feature_level_providers.dart`.
 - Use the current provider names from code and database docs. Ordinary graph
   reads use `driftConversationGraphDatabaseProvider`; source-scoped import DB
-  construction lives behind `sourceScopedImportDatabaseProvider` exported by
-  `essentials/db/feature_level_providers.dart` and implemented in the DB
-  provider subfile, while ordinary source import semantics normally consume
-  `sourceScopedImportLedgerProvider`; overlay user intent and archive-source
+  construction lives behind `sourceScopedImportDatabaseProvider` in the DB
+  provider subfile, while ordinary source import, graph projection, archive
+  snapshot, and diagnostic semantics consume `sourceScopedImportLedgerProvider`
+  or named repositories/query layers; overlay user intent and archive-source
   metadata use `overlayDatabaseProvider`.
   Retired `macos_import.db` and `working.db` are transitional cleanup file concerns
   and no longer have central app providers.

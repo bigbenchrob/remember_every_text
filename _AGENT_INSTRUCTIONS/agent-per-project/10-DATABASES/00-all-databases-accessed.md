@@ -55,7 +55,7 @@ Use these aliases consistently across docs, code comments, and conversations.
 | --- | --- | --- | --- | --- |
 | `db-address-book` | `AddressBook-v22.abcddb` inside the most recent `/Library/Application Support/AddressBook/Sources/<UUID>/` | macOS contact source of truth | `getFolderAggregateEitherProvider` → `AddressBookFolderAggregate.mostRecentFolderPath` | Resolved dynamically at runtime |
 | `db-chat` | `chat.db` | macOS Messages source ledger | `pathsHelperProvider` from `lib/essentials/paths/feature_level_providers.dart` → `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
-| `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | Public access: `sourceScopedImportDatabaseProvider` exported by `lib/essentials/db/feature_level_providers.dart`; physical construction implemented in `persistent_database_providers.dart`; ordinary import semantics: `sourceScopedImportLedgerProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
+| `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | Physical access: `sourceScopedImportDatabaseProvider` in `lib/essentials/db/feature_level_providers/persistent_database_providers.dart`; ordinary import/projection semantics: `sourceScopedImportLedgerProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
 | `db-graph-working` | `working_ss.db` | Production source-scoped conversation graph consumed by graph readers and Message Evidence Spine | `driftConversationGraphDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working_ss.db` |
 | `db-import` | `macos_import.db` | Retired import cleanup file; old files may contain historical ledger tables | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
 | `db-working` | `working.db` | Retired working cleanup file/schema inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
@@ -86,7 +86,7 @@ macOS AddressBook (db-address-book)
 - `db-chat`: retrieved via `pathsHelperProvider` / `PathsHelper` inside
   import/monitor infrastructure; feature and presentation code must not open it
   directly or import the root `providers.dart` barrel just to resolve paths.
-- `db-import-ss`: physical provider access is `sourceScopedImportDatabaseProvider` exported from `lib/essentials/db/feature_level_providers.dart`; physical construction is implemented in `lib/essentials/db/feature_level_providers/persistent_database_providers.dart`. Source-scoped import semantics should consume `sourceScopedImportLedgerProvider` unless a graph projection/repository explicitly needs the concrete import database.
+- `db-import-ss`: physical provider access is `sourceScopedImportDatabaseProvider` from `lib/essentials/db/feature_level_providers/persistent_database_providers.dart`; physical construction is implemented in that DB-provider subfile. Source-scoped import, graph projection, archive snapshot, and diagnostic semantics should consume `sourceScopedImportLedgerProvider` or a named repository/query layer instead of reaching for the concrete import database.
 - `db-graph-working`: `driftConversationGraphDatabaseProvider` from `lib/essentials/db/feature_level_providers.dart`.
 - `db-import`: no central app provider remains; retired transitional cleanup file only.
 - `db-working`: no central app provider remains; retired transitional cleanup file only.
@@ -99,16 +99,14 @@ feature dependency. Direct access is limited to:
 
 - the central DB provider implementation that constructs it;
 - the semantic `sourceScopedImportLedgerProvider` bridge;
-- reset, health, and status diagnostics;
-- graph projection repository composition, where import-ledger rows are joined
-  into the graph projection;
-- archive attachment snapshot boundaries that need current source-scoped
-  attachment facts.
+- reset cleanup that must close the live database handle before deleting files;
+- database health/audit query layers that deliberately inspect physical
+  database files and schemas.
 
-Ordinary import services, graph readers, feature providers, widgets, and
-presentation code should consume semantic ports, repository providers, or
-`sourceScopedImportLedgerProvider` instead of reaching for the concrete
-physical provider.
+Ordinary import services, graph projection, archive attachment snapshot lookup,
+graph readers, feature providers, widgets, and presentation code must consume
+semantic ports, repository providers, or `sourceScopedImportLedgerProvider`
+instead of reaching for the concrete physical provider.
 
 ## Persistent vs One-Off Database Access
 
