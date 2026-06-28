@@ -3980,6 +3980,9 @@ criteria.
 - Clarified the self-barrel tripwire wording now that its allowlist is empty:
   a future offender is treated as provider-ownership drift, not accepted
   transitional debt.
+- Updated current onboarding/readiness handoff and feature-planning notes to
+  describe old import/working database health as retired cleanup diagnostics,
+  not compatibility storage or readiness authority.
 
 ### Vocabulary Note
 
