@@ -54,7 +54,10 @@ This README contains the canonical index to all project documentation including:
 - ✅ **Always use**: `hooks_riverpod` (never `flutter_riverpod`)
 - ✅ **Database access**: Use centralized providers only. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import DB construction lives behind `sourceScopedImportDatabaseProvider` exported by `lib/essentials/db/feature_level_providers.dart` and implemented in `lib/essentials/db/feature_level_providers/persistent_database_providers.dart`, while ordinary import semantics should consume `sourceScopedImportLedgerProvider`; overlay intent and archive-source metadata use `overlayDatabaseProvider`. Retired `macos_import.db` and `working.db` have no central app providers and should be treated as cleanup/diagnostic files only. Physical database filenames and Application Support paths live in `app_database_files.dart` / `database_directory.dart` and must not be re-exported through the provider seam.
 - ✅ **Public provider seams**: `feature_level_providers.dart` is for external consumers. Internal code inside the same feature or essential module must import exact sibling provider/repository/action/model files instead of its own public barrel.
-- ❌ **Never**: Create direct database instances (causes SQLite locking)
+- ❌ **Never**: Create long-lived or feature-owned database instances outside
+  the central DB providers. Named infrastructure repositories may still open
+  source/probe SQLite files for one-off read-only queries when they close the
+  handle before returning.
 
 ### 🔥 INVIOLABLE: Overlay / Working DB Separation
 
