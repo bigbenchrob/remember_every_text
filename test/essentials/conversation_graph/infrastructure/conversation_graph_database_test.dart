@@ -65,6 +65,32 @@ void main() {
     expect(columnNames, isNot(contains('reply_to_guid')));
   });
 
+  test('selectRows accepts only read queries', () async {
+    expect(
+      await graphDatabase.selectRows('SELECT 1 AS ok'),
+      <Map<String, Object?>>[
+        <String, Object?>{'ok': 1},
+      ],
+    );
+    expect(
+      await graphDatabase.selectRows(
+        'WITH rows AS (SELECT 2 AS ok) SELECT ok FROM rows',
+      ),
+      <Map<String, Object?>>[
+        <String, Object?>{'ok': 2},
+      ],
+    );
+    expect(
+      await graphDatabase.selectRows('PRAGMA table_info(messages)'),
+      isNotEmpty,
+    );
+
+    await expectLater(
+      graphDatabase.selectRows('DELETE FROM messages'),
+      throwsA(isA<StateError>()),
+    );
+  });
+
   test('creates chats and chat_to_message projection schema', () async {
     final handleColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(handles)',
