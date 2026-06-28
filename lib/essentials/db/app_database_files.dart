@@ -13,19 +13,19 @@ enum AppDatabaseFile {
   retiredWorking,
 }
 
-const _sourceScopedImportDatabaseFileName = 'macos_import_ss.db';
-const _conversationGraphDatabaseFileName = 'working_ss.db';
-const _overlayDatabaseFileName = 'user_overlays.db';
-const _retiredMacosImportDatabaseFileName = 'macos_import.db';
-const _retiredWorkingDatabaseFileName = 'working.db';
+const _sourceScopedImportFile = 'macos_import_ss.db';
+const _conversationGraphFile = 'working_ss.db';
+const _overlayFile = 'user_overlays.db';
+const _retiredMacosImportFile = 'macos_import.db';
+const _retiredWorkingFile = 'working.db';
 
 String appDatabaseFileName(AppDatabaseFile databaseFile) {
   return switch (databaseFile) {
-    AppDatabaseFile.sourceScopedImport => _sourceScopedImportDatabaseFileName,
-    AppDatabaseFile.conversationGraph => _conversationGraphDatabaseFileName,
-    AppDatabaseFile.overlay => _overlayDatabaseFileName,
-    AppDatabaseFile.retiredMacosImport => _retiredMacosImportDatabaseFileName,
-    AppDatabaseFile.retiredWorking => _retiredWorkingDatabaseFileName,
+    AppDatabaseFile.sourceScopedImport => _sourceScopedImportFile,
+    AppDatabaseFile.conversationGraph => _conversationGraphFile,
+    AppDatabaseFile.overlay => _overlayFile,
+    AppDatabaseFile.retiredMacosImport => _retiredMacosImportFile,
+    AppDatabaseFile.retiredWorking => _retiredWorkingFile,
   };
 }
 

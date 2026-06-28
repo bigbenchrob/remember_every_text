@@ -70,13 +70,9 @@ const Set<String> _onboardingReadinessActionProviderAllowedFiles = {
 // allowlists small so retired files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
 
-const Set<String> _retiredMacosImportFileAllowedFiles = {
-  'lib/essentials/db/app_database_files.dart',
-};
+const Set<String> _retiredMacosImportFileAllowedFiles = {};
 
-const Set<String> _retiredWorkingFileAllowedFiles = {
-  'lib/essentials/db/app_database_files.dart',
-};
+const Set<String> _retiredWorkingFileAllowedFiles = {};
 
 const Set<String> _retiredDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/app_database_files.dart',
@@ -2560,6 +2556,22 @@ void main() {
         );
       },
     );
+
+    test('Deprecated database filename symbols stay retired', () async {
+      final offenders = await _findDeprecatedDatabaseFilenameSymbolOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Physical database filenames are centralized behind '
+            'AppDatabaseFile/appDatabaseFileName. Production code must not '
+            'reintroduce old public filename constants such as '
+            'sourceScopedImportDatabaseFileName or '
+            'conversationGraphDatabaseFileName.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
 
     test(
       'Retired working database file stays behind cleanup boundaries',
@@ -6582,6 +6594,36 @@ Future<List<String>> _findSourceScopedImportDatabaseProviderOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findDeprecatedDatabaseFilenameSymbolOffenders() async {
+  const deprecatedSymbols = <String>[
+    'sourceScopedImportDatabaseFileName',
+    'conversationGraphDatabaseFileName',
+    'overlayDatabaseFileName',
+    'retiredMacosImportDatabaseFileName',
+    'retiredWorkingDatabaseFileName',
+  ];
+
+  final files = await _collectProjectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    for (final symbol in deprecatedSymbols) {
+      if (uncommented.contains(symbol)) {
+        offenders.add('$filePath uses $symbol');
+      }
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findRetiredWorkingFileOffenders() async {
