@@ -7,7 +7,7 @@ import 'package:remember_this_text/essentials/logging/application/pipeline_incid
 import 'package:remember_this_text/essentials/logging/domain/pipeline_incident_report.dart';
 
 void main() {
-  test('migration enum renders as retired import/migration', () {
+  test('migration enum renders as retired projection compatibility', () {
     expect(
       PipelineIncidentStage.migration.displayLabel,
       equals('Retired projection compatibility'),
