@@ -6,8 +6,6 @@ import '../../../../contacts/feature_level_providers.dart'
 import 'manual_linking_read_repository.dart';
 import 'manual_linking_read_repository_provider.dart';
 
-export 'manual_linking_read_repository.dart';
-
 part 'manual_linking_provider.g.dart';
 
 /// Provider that finds handles not linked to any participant.

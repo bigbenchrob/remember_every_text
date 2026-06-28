@@ -5,8 +5,6 @@ import 'handle_visibility_store_provider.dart';
 import 'spam_handles_repository.dart';
 import 'spam_handles_repository_provider.dart';
 
-export 'spam_handles_repository.dart';
-
 part 'spam_management_provider.g.dart';
 
 enum SpamFilterStatus { all, blacklisted, visible }
