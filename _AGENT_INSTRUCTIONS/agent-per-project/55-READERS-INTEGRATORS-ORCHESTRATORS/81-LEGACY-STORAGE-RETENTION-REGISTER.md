@@ -430,11 +430,18 @@ Current implementation note:
 - Active `lib/` code is guarded by an architecture test that forbids new
   legacy-named concepts. Retired storage and compatibility bridges must be
   named for their current architectural role.
-- As of 2026-06-28, active-code scans show no remaining old `db_importers` or
-  `db_migrate` execution trees. Remaining retired `macos_import.db` /
-  `working.db` references are bounded to central filename identity, reset
-  cleanup, read-only health diagnostics, Historical Archives overlay metadata
-  workflow/tests, and source-scoped import ledger tables.
+- As of the 2026-06-28 attachment reachability audit, active-code scans show
+  no remaining old `db_importers` or `db_migrate` execution trees. Remaining
+  retired `macos_import.db` / `working.db` references are bounded to central
+  filename identity, reset cleanup, read-only health diagnostics, and
+  tests/tripwires. No ordinary attachment evidence, archive sweep,
+  contact/message/conversation evidence, or feature presentation path consults
+  retired databases.
+- The audit does not justify deleting the remaining bounded references yet.
+  They still carry explicit cleanup, health, and test-guard purposes. Further
+  reduction should wait for a deliberate retired-file cleanup/export/discard
+  policy or a graph/source-scoped replacement for the remaining diagnostic
+  value.
 - Direct imports of DB-provider implementation files are guarded across both
   production and test code. External consumers use the central DB public seam
   with explicit provider imports; graph readiness and message-data version
