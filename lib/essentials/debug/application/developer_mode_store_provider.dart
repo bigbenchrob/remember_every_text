@@ -1,7 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart' show overlayDatabaseProvider;
+import '../../db/feature_level_providers/persistent_database_providers.dart'
+    show overlayDatabaseProvider;
 import '../infrastructure/persistence/overlay_developer_mode_store.dart';
 import 'developer_mode_store.dart';
 
