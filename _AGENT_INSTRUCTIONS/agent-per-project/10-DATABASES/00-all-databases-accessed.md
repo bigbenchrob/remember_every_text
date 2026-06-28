@@ -49,6 +49,10 @@ This is the canonical index for every SQLite database the project touches. Treat
   `lib/essentials/db/feature_level_providers.dart`, not from its implementation
   subfile. The subfile owns provider implementation; the public DB seam owns
   cross-feature access.
+- **Public provider seam imports stay narrow.** When a file imports
+  `feature_level_providers.dart` from another feature or essential module, it
+  must use an explicit `show` list. Broad seam imports hide database and
+  lifecycle authority even when the dependency is otherwise legitimate.
 - **Production reads are graph-backed.** Ordinary app data flows through `db-import-ss` and `db-graph-working`; archive-source metadata now lives in `db-overlay`. Retired `db-import` and `db-working` files are transitional cleanup inventory for reset and diagnostics.
 - **Overlay remains separate.** User intent lives in `db-overlay` and is merged at read time; no import/projection path may copy overlay intent into source-scoped graph tables or retired files.
 - **Shut everything down before manual access.** Quit the Flutter app and tooling prior to backups or ad-hoc SQL to avoid WAL/locking surprises.

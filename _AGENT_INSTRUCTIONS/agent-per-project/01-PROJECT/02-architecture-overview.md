@@ -136,6 +136,10 @@ Use `../25-ONBOARDING-AND-ARCHIVE/` for current behavior.
   Internal code must import the exact sibling provider, repository, action,
   model, or type file it depends on. Public provider seams should remain
   export-only.
+- External consumers that import a public provider seam must use an explicit
+  `show` list. A seam import should advertise exactly which provider, action,
+  render builder, or type the file needs; broad seam imports hide authority and
+  are treated as architectural drift.
 - Public provider seams must not have generated `feature_level_providers.g.dart`
   siblings.
   Generated provider state belongs in named application/provider files.
