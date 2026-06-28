@@ -2,9 +2,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../db/feature_level_providers/persistent_database_providers.dart'
-    show
-        driftConversationGraphDatabaseProvider,
-        sourceScopedImportDatabaseProvider;
+    show driftConversationGraphDatabaseProvider;
+import '../../../source_scoped_import/application/source_scoped_import_ledger_provider.dart'
+    show sourceScopedImportLedgerProvider;
 import '../../infrastructure/repositories/message_projection_repository.dart';
 import 'message_projection_repository.dart';
 
@@ -13,7 +13,7 @@ part 'message_projection_repository_provider.g.dart';
 @riverpod
 Future<MessageProjectionRepository> messageProjectionRepository(Ref ref) async {
   final importLedgerDatabase = await ref.watch(
-    sourceScopedImportDatabaseProvider.future,
+    sourceScopedImportLedgerProvider.future,
   );
   final graphDatabase = await ref.watch(
     driftConversationGraphDatabaseProvider.future,

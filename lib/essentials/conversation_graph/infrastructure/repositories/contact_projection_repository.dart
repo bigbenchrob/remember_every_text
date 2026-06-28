@@ -1,5 +1,5 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/contacts/contact_handle_keys.dart';
 import '../../application/contacts/contact_projection_repository.dart';
 
@@ -9,12 +9,12 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
     required this.graphDatabase,
   });
 
-  final ImportDatabase importLedgerDatabase;
+  final ImportLedger importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ContactProjectionResult> projectContacts() async {
-    final contactRows = await importLedgerDatabase.database.query(
+    final contactRows = await importLedgerDatabase.queryTable(
       'contacts',
       columns: <String>[
         'ss_id',
@@ -25,7 +25,7 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
       ],
       orderBy: 'ss_id ASC',
     );
-    final channelRows = await importLedgerDatabase.database.query(
+    final channelRows = await importLedgerDatabase.queryTable(
       'contact_channels',
       columns: <String>['contact_ss_id', 'value'],
       orderBy: 'contact_ss_id ASC, value ASC',

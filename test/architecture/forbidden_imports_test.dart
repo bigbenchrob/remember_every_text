@@ -91,17 +91,8 @@ const Set<String> _sourceScopedImportDatabaseProviderAllowedFiles = {
   'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/source_scoped_import/application/source_scoped_import_ledger_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
-  'lib/essentials/conversation_graph/application/attachments/attachment_projection_repository_provider.dart',
-  'lib/essentials/conversation_graph/application/chat_handle_joins/chat_to_handle_projection_repository_provider.dart',
-  'lib/essentials/conversation_graph/application/chat_message_joins/chat_to_message_projection_repository_provider.dart',
-  'lib/essentials/conversation_graph/application/chats/chat_projection_repository_provider.dart',
-  'lib/essentials/conversation_graph/application/contacts/contact_projection_repository_provider.dart',
-  'lib/essentials/conversation_graph/application/handles/handle_projection_repository_provider.dart',
-  'lib/essentials/conversation_graph/application/message_attachment_joins/message_to_attachment_projection_repository_provider.dart',
-  'lib/essentials/conversation_graph/application/messages/message_projection_repository_provider.dart',
   'lib/essentials/conversation_graph/application/monitor/import_ledger_probe_reader_provider.dart',
   'lib/essentials/conversation_graph/application/status/conversation_graph_status_snapshot_provider.dart',
-  'lib/features/attachments/application/graph_attachment_archive_providers.dart',
 };
 
 const Set<String> _historicalOnboardingMigrationKeyAllowedFiles = {

@@ -34,7 +34,7 @@ void main() {
     graphDb = await openConversationGraphTestDatabase();
     mapper = GraphCrossSnapshotMapper(
       attachmentLookup: SourceScopedAttachmentSnapshotLookup(
-        importLedgerDb: importLedgerDb,
+        importLedger: importLedgerDb,
       ),
       graphDb: graphDb,
     );

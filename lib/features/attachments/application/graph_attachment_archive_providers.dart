@@ -4,12 +4,13 @@ import '../../../essentials/db/feature_level_providers/persistent_database_provi
     show
         attachmentArchiveDirectoryProvider,
         driftConversationGraphDatabaseProvider,
-        overlayDatabaseProvider,
-        sourceScopedImportDatabaseProvider;
+        overlayDatabaseProvider;
 import '../../../essentials/paths/feature_level_providers.dart'
     show pathsHelperProvider;
 import '../../../essentials/source_scoped_import/application/source_database_opener_provider.dart'
     show sourceDatabaseOpenerProvider;
+import '../../../essentials/source_scoped_import/application/source_scoped_import_ledger_provider.dart'
+    show sourceScopedImportLedgerProvider;
 import '../infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
 import '../infrastructure/repositories/source_database_attachment_path_lookup.dart';
 import '../infrastructure/repositories/source_scoped_attachment_snapshot_lookup.dart';
@@ -55,10 +56,8 @@ graphAttachmentArchiveCandidateReader(
 Future<CurrentAttachmentSnapshotLookup> currentAttachmentSnapshotLookup(
   CurrentAttachmentSnapshotLookupRef ref,
 ) async {
-  final importLedgerDb = await ref.watch(
-    sourceScopedImportDatabaseProvider.future,
-  );
-  return SourceScopedAttachmentSnapshotLookup(importLedgerDb: importLedgerDb);
+  final importLedger = await ref.watch(sourceScopedImportLedgerProvider.future);
+  return SourceScopedAttachmentSnapshotLookup(importLedger: importLedger);
 }
 
 @riverpod

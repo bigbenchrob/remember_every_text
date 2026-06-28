@@ -25,9 +25,7 @@ void main() {
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    lookup = SourceScopedAttachmentSnapshotLookup(
-      importLedgerDb: importLedgerDb,
-    );
+    lookup = SourceScopedAttachmentSnapshotLookup(importLedger: importLedgerDb);
   });
 
   tearDown(() async {

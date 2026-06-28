@@ -1,22 +1,24 @@
-import '../../../../essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../../essentials/source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/current_attachment_snapshot_lookup.dart';
 
 class SourceScopedAttachmentSnapshotLookup
     implements CurrentAttachmentSnapshotLookup {
   const SourceScopedAttachmentSnapshotLookup({
-    required ImportDatabase importLedgerDb,
-  }) : _importLedgerDb = importLedgerDb;
+    required ImportLedger importLedger,
+  }) : _importLedger = importLedger;
 
-  final ImportDatabase _importLedgerDb;
+  final ImportLedger _importLedger;
 
   @override
   Future<bool> hasAttachmentsForSource(int sourceId) async {
-    final rows = await _importLedgerDb.database.rawQuery(
-      'SELECT COUNT(*) AS c FROM attachments WHERE source_id = ?',
-      <Object?>[sourceId],
+    final rows = await _importLedger.queryTable(
+      'attachments',
+      columns: <String>['ss_id'],
+      where: 'source_id = ?',
+      whereArgs: <Object?>[sourceId],
+      limit: 1,
     );
-    final count = rows.first['c'] as int? ?? 0;
-    return count > 0;
+    return rows.isNotEmpty;
   }
 
   @override
@@ -24,14 +26,11 @@ class SourceScopedAttachmentSnapshotLookup
     required int sourceId,
     required String guid,
   }) async {
-    final rows = await _importLedgerDb.database.rawQuery(
-      '''
-      SELECT ss_id
-      FROM attachments
-      WHERE source_id = ?
-        AND guid = ?
-      ''',
-      <Object?>[sourceId, guid],
+    final rows = await _importLedger.queryTable(
+      'attachments',
+      columns: <String>['ss_id'],
+      where: 'source_id = ? AND guid = ?',
+      whereArgs: <Object?>[sourceId, guid],
     );
     return <int>[
       for (final row in rows)

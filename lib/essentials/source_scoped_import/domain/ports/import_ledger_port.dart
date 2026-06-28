@@ -30,6 +30,15 @@ abstract interface class ImportLedger {
     int? startedAfterSourceRowId,
   });
 
+  Future<List<Map<String, Object?>>> queryTable(
+    String table, {
+    List<String>? columns,
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+  });
+
   Future<T> writeTransaction<T>(
     Future<T> Function(ImportLedgerWriteTransaction txn) action,
   );

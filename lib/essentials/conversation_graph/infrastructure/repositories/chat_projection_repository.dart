@@ -1,5 +1,5 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/chats/chat_projection_repository.dart';
 
 class SqliteChatProjectionRepository implements ChatProjectionRepository {
@@ -8,12 +8,12 @@ class SqliteChatProjectionRepository implements ChatProjectionRepository {
     required this.graphDatabase,
   });
 
-  final ImportDatabase importLedgerDatabase;
+  final ImportLedger importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ChatProjectionResult> projectChats() async {
-    final rows = await importLedgerDatabase.database.query(
+    final rows = await importLedgerDatabase.queryTable(
       'chats',
       columns: <String>['ss_id', 'guid', 'service', 'last_read_message_at_utc'],
       orderBy: 'ss_id ASC',

@@ -238,6 +238,25 @@ class ImportDatabase implements ImportLedger {
   }
 
   @override
+  Future<List<Map<String, Object?>>> queryTable(
+    String table, {
+    List<String>? columns,
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+  }) {
+    return database.query(
+      table,
+      columns: columns,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+    );
+  }
+
+  @override
   Future<SourceScopedImportSourceDeletionResult> deleteRowsForSource({
     required int sourceId,
   }) async {

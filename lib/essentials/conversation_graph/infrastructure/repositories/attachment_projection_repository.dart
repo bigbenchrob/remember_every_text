@@ -1,5 +1,5 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/attachments/attachment_projection_repository.dart';
 
 class SqliteAttachmentProjectionRepository
@@ -9,7 +9,7 @@ class SqliteAttachmentProjectionRepository
     required this.graphDatabase,
   });
 
-  final ImportDatabase importLedgerDatabase;
+  final ImportLedger importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
@@ -35,7 +35,7 @@ class SqliteAttachmentProjectionRepository
     required String? whereClause,
     required List<Object?> whereArgs,
   }) async {
-    final rows = await importLedgerDatabase.database.query(
+    final rows = await importLedgerDatabase.queryTable(
       'attachments',
       columns: <String>[
         'ss_id',

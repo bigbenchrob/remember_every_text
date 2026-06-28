@@ -1,5 +1,5 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/message_attachment_joins/message_to_attachment_projection_repository.dart';
 
 class SqliteMessageToAttachmentProjectionRepository
@@ -9,7 +9,7 @@ class SqliteMessageToAttachmentProjectionRepository
     required this.graphDatabase,
   });
 
-  final ImportDatabase importLedgerDatabase;
+  final ImportLedger importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
@@ -33,7 +33,7 @@ class SqliteMessageToAttachmentProjectionRepository
     required String? whereClause,
     required List<Object?> whereArgs,
   }) async {
-    final rows = await importLedgerDatabase.database.query(
+    final rows = await importLedgerDatabase.queryTable(
       'message_to_attachment',
       columns: <String>['message_ss_id', 'attachment_ss_id'],
       where: whereClause,

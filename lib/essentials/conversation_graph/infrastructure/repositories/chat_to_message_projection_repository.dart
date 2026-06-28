@@ -1,5 +1,5 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/chat_message_joins/chat_to_message_projection_repository.dart';
 
 class SqliteChatToMessageProjectionRepository
@@ -9,7 +9,7 @@ class SqliteChatToMessageProjectionRepository
     required this.graphDatabase,
   });
 
-  final ImportDatabase importLedgerDatabase;
+  final ImportLedger importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
 
   @override
@@ -32,7 +32,7 @@ class SqliteChatToMessageProjectionRepository
     required String? whereClause,
     required List<Object?> whereArgs,
   }) async {
-    final rows = await importLedgerDatabase.database.query(
+    final rows = await importLedgerDatabase.queryTable(
       'chat_to_message',
       columns: <String>['chat_ss_id', 'message_ss_id'],
       where: whereClause,
