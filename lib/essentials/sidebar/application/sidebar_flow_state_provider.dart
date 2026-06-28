@@ -1147,6 +1147,10 @@ class SidebarFlow extends _$SidebarFlow {
       _setState(preference.state, persistNavigation: false);
       _restoreCassetteRackForState(preference.state);
     } catch (error, stackTrace) {
+      if (_isDisposed) {
+        return;
+      }
+
       ref
           .read(appLoggerProvider.notifier)
           .warn(
@@ -1163,6 +1167,10 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void _restoreCassetteRackForState(SidebarFlowState restoredState) {
+    if (_isDisposed) {
+      return;
+    }
+
     final topMenuSpec = CassetteSpec.sidebarUtility(
       SidebarUtilityCassetteSpec.topChatMenu(
         selectedChoice: restoredState.topMenuChoice,
