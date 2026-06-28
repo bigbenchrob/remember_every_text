@@ -2713,7 +2713,7 @@ void main() {
           orderedEquals(_retiredWorkingCleanupBoundaryFiles.toList()..sort()),
           reason:
               'Retired working.db is cleanup/diagnostic inventory only. '
-              'Ordinary code must not add new retired working file access or '
+              'Ordinary code must not add new retired working.db file access or '
               'workflow authority.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
