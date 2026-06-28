@@ -166,6 +166,42 @@ void main() {
       expect(record, isNull);
     },
   );
+
+  test(
+    'returns null when archive relative path escapes archive root',
+    () async {
+      final messageSsId = _ss(100);
+      final attachmentSsId = _ss(200);
+      final escapedFile = File(path.join(tempDir.path, 'escaped.jpg'));
+      await escapedFile.writeAsString('outside');
+
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSsId: messageSsId,
+        attachmentSsId: attachmentSsId,
+        messageGuid: 'message-guid-1',
+      );
+      await _insertArchiveRow(
+        overlayDatabase,
+        messageGuid: 'message-guid-1',
+        importAttachmentId: 200,
+        archiveRelativePath: '../escaped.jpg',
+      );
+
+      final lookup = OverlayArchiveCompatibilityLookup(
+        graphDatabase: graphDatabase,
+        overlayDatabase: overlayDatabase,
+        archiveDirectory: archiveDir.path,
+      );
+
+      final record = await lookup.readArchiveRecord(
+        messageSsId: messageSsId,
+        attachmentSsId: attachmentSsId,
+      );
+
+      expect(record, isNull);
+    },
+  );
 }
 
 Future<void> _insertGraphAttachment(

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as path;
 
 import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
@@ -90,7 +91,12 @@ class OverlayArchiveCompatibilityLookup
     final relativePath = archiveRows.single.read<String>(
       'archive_relative_path',
     );
-    final absolutePath = '$archiveDirectory/$relativePath';
+    final archiveRoot = path.normalize(path.absolute(archiveDirectory));
+    final absolutePath = path.normalize(path.join(archiveRoot, relativePath));
+    if (!path.isWithin(archiveRoot, absolutePath)) {
+      return null;
+    }
+
     return GraphAttachmentArchiveRecord(
       archiveRelativePath: relativePath,
       archiveAbsolutePath: absolutePath,
