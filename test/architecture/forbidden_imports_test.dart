@@ -1312,6 +1312,20 @@ void main() {
       );
     });
 
+    test('Database health provider consumers use DB feature boundary', () async {
+      final offenders = await _findDatabaseHealthProviderIslandOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Consumers should import databaseHealthAuditServiceProvider through '
+            'essentials/db/feature_level_providers.dart. Direct imports of the '
+            'database-health provider file bypass the public database boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Database provider composes logging through explicit import', () async {
       final offenders = await _findDatabaseProviderLoggingImportOffenders();
 
@@ -7128,6 +7142,35 @@ _findPersistentDatabaseProviderImplementationImportOffenders() async {
       )) {
         offenders.add('$filePath imports $importTarget');
       }
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findDatabaseHealthProviderIslandOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == 'test/architecture/forbidden_imports_test.dart') {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  const directProviderImport =
+      'db/feature_level_providers/database_health_audit_service_provider.dart';
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    if (filePath ==
+        'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart') {
+      continue;
+    }
+    final source = await File(filePath).readAsString();
+    final imports = _extractImports(_stripComments(source));
+    if (imports.any((target) => target.endsWith(directProviderImport))) {
+      offenders.add('$filePath imports $directProviderImport');
     }
   }
 
