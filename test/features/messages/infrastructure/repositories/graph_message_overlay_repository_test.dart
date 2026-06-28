@@ -168,6 +168,28 @@ void main() {
     },
   );
 
+  test('reads unique GUID tag overlays with commas atomically', () async {
+    final messageId = _messageId(49);
+    await _insertGraphMessage(
+      graphDatabase: graphDatabase,
+      messageSsId: messageId,
+      guid: 'guid-49',
+    );
+    await overlayDatabase.addMessageUserTags(
+      messageGuid: 'guid-49',
+      tags: <String>['invoice, paid', 'urgent'],
+    );
+
+    final state = await repository.readForMessage(messageId);
+
+    expect(state.tags, contains('invoice, paid'));
+    expect(state.tags, contains('urgent'));
+    expect(state.tags, isNot(contains('invoice')));
+    expect(state.tags, isNot(contains('paid')));
+    expect(state.usedGuidFallback, isTrue);
+    expect(state.skippedGuidFallbackBecauseAmbiguous, isFalse);
+  });
+
   test(
     'does not apply GUID overlays when the GUID is graph-ambiguous',
     () async {
