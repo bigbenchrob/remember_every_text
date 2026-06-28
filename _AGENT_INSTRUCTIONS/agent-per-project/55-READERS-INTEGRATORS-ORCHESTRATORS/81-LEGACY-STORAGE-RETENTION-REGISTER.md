@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-24
+last_reviewed: 2026-06-28
 depends_on:
   - 71-LEGACY-DEPENDENCY-MATRIX.md
   - 73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md
@@ -426,6 +426,15 @@ Current implementation note:
 - Active `lib/` code is guarded by an architecture test that forbids new
   legacy-named concepts. Retired storage and compatibility bridges must be
   named for their current architectural role.
+- As of 2026-06-28, active-code scans show no remaining old `db_importers` or
+  `db_migrate` execution trees. Remaining retired `macos_import.db` /
+  `working.db` references are bounded to central filename identity, reset
+  cleanup, read-only health diagnostics, Historical Archives overlay metadata
+  workflow/tests, and source-scoped import ledger tables.
+- Direct imports of DB-provider implementation files are guarded across both
+  production and test code. External consumers use the central DB public seam
+  with explicit provider imports; graph readiness and message-data version
+  remain narrow refresh/readiness signals rather than physical DB providers.
 
 ## Recommended Next Slice
 

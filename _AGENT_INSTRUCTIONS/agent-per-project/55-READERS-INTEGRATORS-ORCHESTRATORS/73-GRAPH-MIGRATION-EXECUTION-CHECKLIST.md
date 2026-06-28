@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-19
+last_reviewed: 2026-06-28
 depends_on:
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
@@ -3900,6 +3900,21 @@ criteria.
   tripwire caught drift: `dbMaintenanceLockProvider` is a cross-feature DB
   lifecycle signal consumed through `essentials/db/feature_level_providers.dart`;
   its implementation subfile is not a convenience import surface for features.
+- Confirmed during provider-boundary hardening that graph readiness and
+  message-data version are narrow refresh/readiness signals, not physical
+  database providers. They remain imported through their explicit provider
+  files where tripwires require narrow authority instead of broad DB-seam
+  access.
+- Current active-code scans show no remaining old `db_importers` or
+  `db_migrate` execution trees. Remaining retired `macos_import.db` /
+  `working.db` references are concentrated in central filename identity, reset
+  cleanup, read-only database health diagnostics, Historical Archives overlay
+  metadata tests/workflow, and source-scoped import ledger tables.
+- The architecture tripwire suite passed on 2026-06-28 after
+  provider-boundary hardening, including checks for physical database provider
+  placement, self-barrel imports, retired DB filename leakage, direct SQLite
+  boundaries, retained metadata provider retirement, and source-scoped archive
+  identity boundaries.
 
 ### Vocabulary Note
 
