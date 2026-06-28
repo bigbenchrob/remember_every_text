@@ -1381,11 +1381,13 @@ criteria.
   metadata storage only. Old retained import ledger table and relationship
   checks moved out of the expected health surface; source-scoped import owns
   active message/chat/handle/attachment health checks.
-- Fresh retained `macos_import.db` creation now creates only
-  `schema_migrations` and `historical_archive_sources`. Older retained import
-  files remain upgrade-compatible, but new files do not recreate
-  `import_batches`, `messages`, `handles`, `chats`, attachments, or old
-  topology ledger tables.
+- At this checkpoint, fresh retained `macos_import.db` creation had been
+  narrowed to `schema_migrations` and `historical_archive_sources`; later
+  slices removed fresh retired import DB creation from active providers and
+  stopped inventorying `schema_migrations` as a diagnostic concern.
+  Older retired import files remain tolerated on disk, but active diagnostics do
+  not recreate or require `import_batches`, `messages`, `handles`, `chats`,
+  attachments, or old topology ledger tables.
 - Database health now treats retired `working.db` as recovered-message cleanup
   diagnostics only. Ordinary message/chat/contact/handle/attachment/reaction
   health and timeline navigation checks belong to `working_ss.db` and graph
