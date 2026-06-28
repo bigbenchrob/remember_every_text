@@ -159,6 +159,10 @@ const Set<String> _broadConversationGraphApplicationProviderImportAllowedFiles =
 // remaining provider-definition relocation work and should only shrink.
 const Set<String> _selfFeatureLevelProviderImportAllowedFiles = {};
 
+const Set<String> _providerImplementationExportAllowedFiles = {
+  'lib/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart',
+};
+
 const Set<String> _rawPresentationColorLiteralAllowedFiles = {
   // Theme token definitions are the correct home for raw color literals.
   'lib/config/theme/colors/theme_colors.dart',
@@ -1880,6 +1884,25 @@ void main() {
             'feature_level_providers.g.dart siblings. Provider state belongs in '
             'named application/provider files, not in the public seam.\n'
             'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Provider implementation files do not export contracts', () async {
+      final users = await _findProviderImplementationExportUsers();
+
+      expect(
+        users,
+        orderedEquals(
+          _providerImplementationExportAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'Provider implementation files should define providers, not act '
+            'as type or contract barrels. Consumers that need contracts or '
+            'models should import those files directly, while public seams '
+            'remain in feature_level_providers.dart. The remaining allowlist '
+            'entry is a DB readiness seam and should be reviewed before it '
+            'grows.\n'
+            'Actual users:\n${users.join('\n')}',
       );
     });
 
@@ -8455,6 +8478,33 @@ _findFeatureLevelProviderGeneratedSiblingOffenders() async {
   });
 
   return files..sort();
+}
+
+Future<List<String>> _findProviderImplementationExportUsers() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (!path.endsWith('_provider.dart')) {
+      return false;
+    }
+    if (path.endsWith('/feature_level_providers.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/features/') ||
+        path.startsWith('lib/essentials/');
+  });
+  final users = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (_extractExports(uncommented).isNotEmpty) {
+      users.add(filePath);
+    }
+  }
+
+  return users.toList()..sort();
 }
 
 Future<List<String>>
