@@ -4821,6 +4821,21 @@ void main() {
       );
     });
 
+    test('Conversation favourites use structured storage format', () async {
+      final offenders =
+          await _findConversationFavouritesStructuredStorageOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Conversation favourites are a global user-intent overlay that '
+            'will grow from Core into user-defined groups/tags. Persisted '
+            'values must remain structured JSON, not comma-delimited strings.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Conversation favourite button uses action boundary', () async {
       final offenders =
           await _findConversationFavouriteButtonActionBoundaryOffenders();
@@ -10563,6 +10578,27 @@ Future<List<String>> _findConversationFavouritesStorageOffenders() async {
       uncommented.contains('writeOverlaySetting')) {
     offenders.add('$filePath handles overlay settings storage directly');
   }
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findConversationFavouritesStructuredStorageOffenders() async {
+  const filePath =
+      'lib/essentials/conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (uncommented.contains("join(',')") || uncommented.contains('join(",")')) {
+    offenders.add('$filePath serializes favourites with comma join');
+  }
+  if (!uncommented.contains('jsonEncode')) {
+    offenders.add('$filePath does not encode favourites as JSON');
+  }
+
   return offenders..sort();
 }
 
