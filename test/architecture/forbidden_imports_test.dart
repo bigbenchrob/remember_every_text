@@ -14024,8 +14024,15 @@ bool _isCurrentArchitectureReferenceDoc(String filePath) {
     '_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/',
     '_AGENT_INSTRUCTIONS/agent-per-project/50-ENVIRONMENT-SAFETY/',
   ];
+  const sourceScopedGraphCurrentDocs = <String>{
+    '_AGENT_INSTRUCTIONS/agent-per-project/55-READERS-INTEGRATORS-ORCHESTRATORS/README.md',
+    '_AGENT_INSTRUCTIONS/agent-per-project/55-READERS-INTEGRATORS-ORCHESTRATORS/71-LEGACY-DEPENDENCY-MATRIX.md',
+    '_AGENT_INSTRUCTIONS/agent-per-project/55-READERS-INTEGRATORS-ORCHESTRATORS/83-LEGACY-DATABASE-RETIREMENT-ASSESSMENT.md',
+    '_AGENT_INSTRUCTIONS/agent-per-project/55-READERS-INTEGRATORS-ORCHESTRATORS/84-ATTACHMENT-REACHABILITY-AUDIT.md',
+  };
 
   return filePath == 'AGENTS.md' ||
+      sourceScopedGraphCurrentDocs.contains(filePath) ||
       prefixes.any((prefix) => filePath.startsWith(prefix));
 }
 
