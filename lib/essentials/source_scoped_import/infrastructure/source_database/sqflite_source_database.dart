@@ -12,6 +12,8 @@ final class SqfliteSourceDatabaseOpener implements SourceDatabaseOpener {
       readOnly: true,
       singleInstance: false,
     );
+    await database.execute('PRAGMA query_only = ON');
+    await database.execute('PRAGMA busy_timeout = 3000');
     return _SqfliteReadOnlySourceDatabase(database);
   }
 }

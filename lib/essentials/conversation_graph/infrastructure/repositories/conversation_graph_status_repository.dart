@@ -68,6 +68,8 @@ final class ConversationGraphStatusRepository {
     );
 
     try {
+      await db.execute('PRAGMA query_only = ON');
+      await db.execute('PRAGMA busy_timeout = 3000');
       final messageRows = await db.rawQuery(
         'SELECT COUNT(*) AS message_count, '
         'COALESCE(MAX(ROWID), 0) AS max_rowid FROM message',

@@ -1182,6 +1182,22 @@ void main() {
       );
     });
 
+    test('Direct sqflite probes use isolated read-only handles', () async {
+      final offenders = await _findDirectSqfliteProbeHardeningOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Direct sqflite source/probe opens outside the import ledger writer '
+            'must be read-only, non-singleton handles with query_only and '
+            'busy_timeout pragmas. Persistent app DB construction belongs in '
+            'central database providers; one-off source probes must not regain '
+            'shared mutable database authority.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Native Drift executors stay behind database providers', () async {
       final offenders = await _findNativeDriftExecutorOffenders();
 
@@ -13619,6 +13635,38 @@ Future<List<String>> _findDirectSqlite3PragmaOffenders() async {
     }
 
     if (!uncommented.contains('PRAGMA query_only = ON') ||
+        !uncommented.contains('PRAGMA busy_timeout = 3000')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDirectSqfliteProbeHardeningOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+  final sqfliteOpenPattern = RegExp(r'\bopenDatabase\s*\(');
+
+  for (final filePath in files) {
+    if (_directSqliteWriteOpenAllowedFiles.contains(filePath)) {
+      continue;
+    }
+
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (!sqfliteOpenPattern.hasMatch(uncommented)) {
+      continue;
+    }
+
+    if (!uncommented.contains('readOnly: true') ||
+        !uncommented.contains('singleInstance: false') ||
+        !uncommented.contains('PRAGMA query_only = ON') ||
         !uncommented.contains('PRAGMA busy_timeout = 3000')) {
       offenders.add(filePath);
     }
