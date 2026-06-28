@@ -154,9 +154,6 @@ const Set<String> _databaseDirectoryPathAllowedFiles = {
 const Set<String> _broadConversationGraphApplicationProviderImportAllowedFiles =
     {};
 
-// Transitional debt: feature/module internals should not import their own
-// outward-facing feature_level_providers.dart seam. These entries identify
-// remaining provider-definition relocation work and should only shrink.
 const Set<String> _selfFeatureLevelProviderImportAllowedFiles = {};
 
 const Set<String> _providerImplementationExportAllowedFiles = {};
@@ -1859,9 +1856,9 @@ void main() {
               'feature_level_providers.dart is an outward-facing public seam. '
               'Internal code inside the same feature or essential module must '
               'import exact sibling providers, repositories, actions, or types '
-              'instead of reaching back through its own public barrel. Existing '
-              'entries are transitional provider-definition relocation debt and '
-              'should only shrink.\n'
+              'instead of reaching back through its own public barrel. A new '
+              'offender usually means provider ownership should be moved to a '
+              'named sibling file rather than widened through the public seam.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
