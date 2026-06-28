@@ -8,7 +8,7 @@ import '../../../essentials/conversation_graph/feature_level_providers.dart'
         graphMaintenanceExecutionGateProvider,
         sourceScopedArchiveGraphImportServiceProvider,
         sourceScopedArchiveGraphRemovalServiceProvider;
-import '../../../essentials/db/feature_level_providers.dart'
+import '../../../essentials/db/feature_level_providers/db_maintenance_lock_provider.dart'
     show dbMaintenanceLockProvider;
 import '../../../essentials/db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
