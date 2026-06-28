@@ -3,9 +3,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
-import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
-import '../../conversation_graph/application/conversation_graph_build_report.dart';
-import '../../conversation_graph/application/conversation_graph_build_state.dart';
+import '../../conversation_graph/feature_level_providers.dart'
+    show
+        ConversationGraphBuildReport,
+        ConversationGraphBuildStatus,
+        ConversationGraphBuildState,
+        conversationGraphBuildControllerProvider;
 import '../../logging/application/diagnostic_report_actions.dart';
 import '../../logging/domain/diagnostic_report_presentation_result.dart';
 import '../../logging/feature_level_providers.dart'

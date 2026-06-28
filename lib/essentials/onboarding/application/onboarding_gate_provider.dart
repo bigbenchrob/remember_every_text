@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../conversation_graph/application/conversation_graph_build_controller_provider.dart';
+import '../../conversation_graph/feature_level_providers.dart'
+    show conversationGraphBuildControllerProvider;
 import '../../db/database_directory.dart';
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/feature_level_providers.dart'

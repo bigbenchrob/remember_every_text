@@ -5401,6 +5401,21 @@ void main() {
       );
     });
 
+    test('Onboarding graph build access uses graph seam', () async {
+      final offenders = await _findOnboardingGraphBuildSeamOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding may start and render source-scoped graph builds, but '
+            'it should consume graph build controller/state/report symbols '
+            'through essentials/conversation_graph/feature_level_providers.dart '
+            'rather than importing concrete graph application files directly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Graph status and favourites stores stay feature-boundary owned', () {
       const retiredProviderPaths = <String>[
         'lib/essentials/conversation_graph/infrastructure/repositories/conversation_favourites_store_provider.dart',
@@ -11492,6 +11507,37 @@ Future<List<String>> _findOnboardingGraphBuildPresentationOffenders() async {
         if (importTarget.endsWith('conversation_graph_build_orchestrator.dart'))
           '$filePath imports $importTarget',
     ]);
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findOnboardingGraphBuildSeamOffenders() async {
+  const filePaths = <String>{
+    'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+    'lib/essentials/onboarding/presentation/onboarding_dev_panel.dart',
+    'lib/essentials/onboarding/presentation/onboarding_overlay.dart',
+  };
+  const directGraphBuildImportSuffixes = <String>{
+    'conversation_graph/application/conversation_graph_build_controller_provider.dart',
+    'conversation_graph/application/conversation_graph_build_report.dart',
+    'conversation_graph/application/conversation_graph_build_state.dart',
+  };
+  final offenders = <String>[];
+
+  for (final filePath in filePaths) {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      continue;
+    }
+    final source = await file.readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (directGraphBuildImportSuffixes.any(importTarget.endsWith)) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
   }
 
   return offenders..sort();
