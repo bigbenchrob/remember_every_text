@@ -1724,9 +1724,10 @@ criteria.
 - Added `sourceScopedImportLedgerProvider` as the source-scoped import
   feature-level provider for the import ledger port. Source-scoped application
   provider files now watch that semantic provider instead of
-  `importDatabaseProvider` directly, and the architecture tripwire now protects
-  the entire `source_scoped_import/application` tree from importing the
-  concrete import database provider.
+  the concrete `sourceScopedImportDatabaseProvider` directly, and the
+  architecture tripwire now protects the entire
+  `source_scoped_import/application` tree from importing the concrete import
+  database provider.
 - Renamed source-scoped application constructor fields, provider locals, and
   importer call sites from `importDatabase` to `importLedger` where the
   dependency is typed as `ImportLedger`. Concrete `ImportDatabase` names remain
