@@ -2,8 +2,7 @@ import 'dart:io';
 
 import 'package:sqlite3/sqlite3.dart';
 
-import '../../../db/feature_level_providers/conversation_graph_readiness_provider.dart'
-    show ConversationGraphReadiness;
+import '../../../db/application/conversation_graph_readiness.dart';
 import '../../../db/infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart';
 import '../../application/onboarding_database_probe_reader.dart';
 import '../../domain/onboarding_environment_report.dart';

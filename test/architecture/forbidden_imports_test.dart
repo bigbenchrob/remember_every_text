@@ -159,9 +159,7 @@ const Set<String> _broadConversationGraphApplicationProviderImportAllowedFiles =
 // remaining provider-definition relocation work and should only shrink.
 const Set<String> _selfFeatureLevelProviderImportAllowedFiles = {};
 
-const Set<String> _providerImplementationExportAllowedFiles = {
-  'lib/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart',
-};
+const Set<String> _providerImplementationExportAllowedFiles = {};
 
 const Set<String> _rawPresentationColorLiteralAllowedFiles = {
   // Theme token definitions are the correct home for raw color literals.

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import 'package:remember_this_text/essentials/db/application/conversation_graph_readiness.dart';
 import 'package:remember_this_text/essentials/onboarding/application/database_existence_checker.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_database_probe_reader.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
@@ -37,37 +37,34 @@ void main() {
       expect(checker.hasPopulatedDatabases(databaseDirectory), isTrue);
     });
 
-    test(
-      'does not treat retired cleanup files as sufficient',
-      () {
-        final checker = DatabaseExistenceChecker(
-          _FakeDatabaseProbeReader(
-            probes: {
-              path.join(
-                databaseDirectory,
-                appDatabaseFileName(AppDatabaseFile.retiredMacosImport),
-              ): const OnboardingDatabaseProbe(
-                path: 'retired macos import',
-                exists: true,
-                readable: true,
-                sizeBytes: 1,
-              ),
-              path.join(
-                databaseDirectory,
-                appDatabaseFileName(AppDatabaseFile.retiredWorking),
-              ): const OnboardingDatabaseProbe(
-                path: 'retired working',
-                exists: true,
-                readable: true,
-                sizeBytes: 1,
-              ),
-            },
-          ),
-        );
+    test('does not treat retired cleanup files as sufficient', () {
+      final checker = DatabaseExistenceChecker(
+        _FakeDatabaseProbeReader(
+          probes: {
+            path.join(
+              databaseDirectory,
+              appDatabaseFileName(AppDatabaseFile.retiredMacosImport),
+            ): const OnboardingDatabaseProbe(
+              path: 'retired macos import',
+              exists: true,
+              readable: true,
+              sizeBytes: 1,
+            ),
+            path.join(
+              databaseDirectory,
+              appDatabaseFileName(AppDatabaseFile.retiredWorking),
+            ): const OnboardingDatabaseProbe(
+              path: 'retired working',
+              exists: true,
+              readable: true,
+              sizeBytes: 1,
+            ),
+          },
+        ),
+      );
 
-        expect(checker.hasPopulatedDatabases(databaseDirectory), isFalse);
-      },
-    );
+      expect(checker.hasPopulatedDatabases(databaseDirectory), isFalse);
+    });
   });
 }
 

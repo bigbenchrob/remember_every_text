@@ -1,5 +1,4 @@
-import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart'
-    show ConversationGraphReadiness;
+import '../../db/application/conversation_graph_readiness.dart';
 import '../domain/onboarding_environment_report.dart';
 
 abstract interface class OnboardingDatabaseProbeReader {

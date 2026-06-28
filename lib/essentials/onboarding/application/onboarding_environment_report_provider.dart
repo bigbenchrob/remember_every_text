@@ -7,10 +7,9 @@ import '../../../features/address_book_folders/domain/failures/folder_retrieval_
 import '../../../features/address_book_folders/feature_level_providers.dart'
     show futureGetFolderAggregateProvider;
 import '../../db/app_database_files.dart';
+import '../../db/application/conversation_graph_readiness.dart';
 import '../../db/database_directory.dart';
 import '../../db/feature_level_providers.dart' show dbMaintenanceLockProvider;
-import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart'
-    show ConversationGraphReadiness;
 import '../domain/onboarding_environment_report.dart';
 import 'full_disk_access_provider.dart';
 import 'onboarding_database_probe_reader.dart';

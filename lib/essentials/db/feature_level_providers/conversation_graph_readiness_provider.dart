@@ -7,8 +7,6 @@ import '../database_directory.dart';
 import '../infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart';
 import 'message_data_version_provider.dart';
 
-export '../application/conversation_graph_readiness.dart';
-
 part 'conversation_graph_readiness_provider.g.dart';
 
 @Riverpod(keepAlive: true)
