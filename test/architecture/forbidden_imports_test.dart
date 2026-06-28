@@ -82,6 +82,12 @@ const Set<String> _retiredDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/app_database_files.dart',
 };
 
+const Set<String> _retiredDatabaseEnumAllowedFiles = {
+  'lib/essentials/db/app_database_files.dart',
+  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
+  'lib/essentials/onboarding/application/message_data_reset_service.dart',
+};
+
 const Set<String> _retiredCleanupHealthInspectionAllowedFiles = {
   'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/db/infrastructure/repositories/database_health_audit_queries.dart',
@@ -2586,6 +2592,24 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Retired database enum references stay behind cleanup boundaries',
+      () async {
+        final offenders = await _findRetiredDatabaseEnumOffenders();
+
+        expect(
+          offenders,
+          orderedEquals(_retiredDatabaseEnumAllowedFiles.toList()..sort()),
+          reason:
+              'AppDatabaseFile retired cases are cleanup/diagnostic file '
+              'identities only. Production code must not spread retired '
+              'database references outside central filename identity, reset '
+              'cleanup, or database-health diagnostics.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Retired cleanup database inspection stays in database health boundary',
@@ -6586,6 +6610,29 @@ Future<List<String>> _findRetiredDatabaseFilenameLiteralOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (retiredFilenameLiteralPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findRetiredDatabaseEnumOffenders() async {
+  final files = await _collectProjectDartFiles((path) {
+    if (!path.startsWith('lib/')) {
+      return false;
+    }
+    return !path.endsWith('.g.dart') && !path.endsWith('.freezed.dart');
+  });
+  final offenders = <String>{};
+  final retiredDatabaseEnumPattern = RegExp(
+    r'\bAppDatabaseFile\.(retiredMacosImport|retiredWorking)\b',
+  );
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (retiredDatabaseEnumPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
