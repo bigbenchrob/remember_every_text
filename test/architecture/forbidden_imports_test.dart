@@ -6025,6 +6025,22 @@ void main() {
       );
     });
 
+    test('Message data reset keeps database file categories private', () async {
+      final offenders =
+          await _findMessageDataResetDatabaseCategoryBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'MessageDataResetService may expose derived database base names '
+            'for verification, but AppDatabaseFile category lists must stay '
+            'private to reset orchestration. Retired cleanup files should not '
+            'regain reusable storage authority through public constants.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test(
       'Historical archive source identity uses folder resolver boundary',
       () async {
@@ -12437,6 +12453,35 @@ Future<List<String>> _findMessageDataResetFileStoreBoundaryOffenders() async {
       uncommented.contains('existsSync(') ||
       uncommented.contains('.delete(')) {
     offenders.add('$filePath performs reset file access directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findMessageDataResetDatabaseCategoryBoundaryOffenders() async {
+  const filePath =
+      'lib/essentials/onboarding/application/message_data_reset_service.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final publicAppDatabaseFileCollectionPattern = RegExp(
+    r'\b(?:const|final|var)\s+(?!_)\w+\s*=\s*<AppDatabaseFile>\[',
+  );
+  final publicAppDatabaseFileGetterPattern = RegExp(
+    r'\bList<AppDatabaseFile>\s+get\s+(?!_)\w+',
+  );
+  final offenders = <String>[];
+
+  if (publicAppDatabaseFileCollectionPattern.hasMatch(uncommented)) {
+    offenders.add('$filePath exposes a public AppDatabaseFile collection');
+  }
+  if (publicAppDatabaseFileGetterPattern.hasMatch(uncommented)) {
+    offenders.add('$filePath exposes a public AppDatabaseFile getter');
   }
 
   return offenders..sort();
