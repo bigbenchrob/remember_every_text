@@ -307,11 +307,11 @@ and orchestration providers.
    This is the main remaining semantic blocker. Existing archives must remain
    resolvable while recovered sources gain graph identity.
 
-3. **Retire retained legacy compatibility deliberately.**
+3. **Retire old cleanup/diagnostic inventory deliberately.**
    Onboarding, reset, readiness, live updates, and message data invalidation now
-   use the graph lifecycle. Remaining legacy import/projection references should
-   be removed only when archive/recovery and retained diagnostics no longer need
-   legacy `working.db` identity.
+   use the graph lifecycle. Remaining retired import/projection references
+   should be reduced only when archive/recovery and read-only diagnostics no
+   longer need retired-file identity or schema context.
 
 4. **Classify or retire remaining legacy diagnostics.**
    Supabase mirror runtime stubs have been retired. Remaining diagnostics

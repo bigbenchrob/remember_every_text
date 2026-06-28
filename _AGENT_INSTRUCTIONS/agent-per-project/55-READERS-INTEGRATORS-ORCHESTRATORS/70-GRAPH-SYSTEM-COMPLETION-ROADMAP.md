@@ -393,12 +393,12 @@ Current status update:
 
 - onboarding and settings reimport build the source-scoped graph directly
 - live `chat.db` polling imports/projects the graph directly
-- retained legacy import/migration no longer runs as the live-update tail
+- retired import/migration no longer runs as the live-update tail
 - Historical Archives import/removal now uses source-scoped graph services
   directly; the retained archive pipeline bridge has been retired
 - old import/migration execution trees are removed from active production code
 
-The remaining issue is retained cleanup/diagnostic retirement: old
+The remaining issue is retired-file cleanup/diagnostic policy: old
 `macos_import.db` / `working.db` files may still exist for diagnostics,
 historical inventory, or user-safe cleanup, but ordinary production
 ownership now belongs to source-scoped import and graph projection.
@@ -575,7 +575,7 @@ The branch currently contains many intertwined changes:
 
 - graph import/projection work
 - message evidence spine work
-- retained legacy reduction work
+- retired-file cleanup/diagnostic reduction work
 - identity display work
 - conversation topology UI work
 - header/presentation work
