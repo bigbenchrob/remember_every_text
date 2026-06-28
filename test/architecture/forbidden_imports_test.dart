@@ -1322,7 +1322,7 @@ void main() {
     });
 
     test('All public provider seam imports stay explicit', () async {
-      final offenders = await _findBroadFeatureProviderSeamImportOffenders();
+      final offenders = await _findBroadPublicProviderSeamImportOffenders();
 
       expect(
         offenders,
@@ -8155,7 +8155,7 @@ Future<List<String>> _findBroadDatabaseProviderImportOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findBroadFeatureProviderSeamImportOffenders() async {
+Future<List<String>> _findBroadPublicProviderSeamImportOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
