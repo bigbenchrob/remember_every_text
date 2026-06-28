@@ -69,6 +69,53 @@ void main() {
   );
 
   test(
+    'reads rowid-keyed annotation tags with commas as structured JSON',
+    () async {
+      final messageId = _messageId(47);
+      await _insertGraphMessage(
+        graphDatabase: graphDatabase,
+        messageSsId: messageId,
+        guid: 'guid-47',
+      );
+      await _insertRowidAnnotationTags(
+        overlayDatabase,
+        messageId: 47,
+        tagsJson: '["invoice, paid","urgent"]',
+      );
+
+      final state = await repository.readForMessage(messageId);
+
+      expect(state.tags, contains('invoice, paid'));
+      expect(state.tags, contains('urgent'));
+      expect(state.tags, isNot(contains('invoice')));
+      expect(state.tags, isNot(contains('paid')));
+      expect(state.usedRowidAnnotationFallback, isTrue);
+    },
+  );
+
+  test(
+    'ignores malformed rowid-keyed annotation tags without failing read',
+    () async {
+      final messageId = _messageId(48);
+      await _insertGraphMessage(
+        graphDatabase: graphDatabase,
+        messageSsId: messageId,
+        guid: 'guid-48',
+      );
+      await _insertRowidAnnotationTags(
+        overlayDatabase,
+        messageId: 48,
+        tagsJson: 'not json',
+      );
+
+      final state = await repository.readForMessage(messageId);
+
+      expect(state.tags, isEmpty);
+      expect(state.usedRowidAnnotationFallback, isTrue);
+    },
+  );
+
+  test(
     'does not read rowid-keyed annotations for non-live graph messages',
     () async {
       final messageId = SourceScopedRowKey.pack(sourceId: 2, sourceRowId: 42);
@@ -242,4 +289,29 @@ Future<void> _insertGraphMessage({
     'guid': guid,
     'is_from_me': 0,
   });
+}
+
+Future<void> _insertRowidAnnotationTags(
+  OverlayDatabase overlayDatabase, {
+  required int messageId,
+  required String tagsJson,
+}) {
+  return overlayDatabase.customStatement(
+    '''
+    INSERT INTO message_annotations (
+      message_id,
+      tags,
+      is_starred,
+      is_archived,
+      created_at_utc,
+      updated_at_utc
+    ) VALUES (?, ?, 0, 0, ?, ?)
+    ''',
+    <Object?>[
+      messageId,
+      tagsJson,
+      '2026-06-28T00:00:00.000Z',
+      '2026-06-28T00:00:00.000Z',
+    ],
+  );
 }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../../../core/util/message_tag_normalizer.dart';
@@ -379,19 +381,23 @@ class GraphMessageOverlayRepository implements MessageOverlayRepository {
   }
 
   static List<String> _parseRowidAnnotationTags(String? tagsJson) {
-    final raw = tagsJson
-        ?.replaceAll('[', '')
-        .replaceAll(']', '')
-        .replaceAll('"', '')
-        .trim();
+    final raw = tagsJson?.trim();
     if (raw == null || raw.isEmpty) {
       return const <String>[];
     }
-    return raw
-        .split(',')
-        .map((tag) => tag.trim())
-        .where((tag) => tag.isNotEmpty)
-        .toList(growable: false);
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } on FormatException {
+      return const <String>[];
+    }
+    if (decoded is! List) {
+      return const <String>[];
+    }
+    return [
+      for (final tag in decoded)
+        if (tag is String && tag.trim().isNotEmpty) tag.trim(),
+    ];
   }
 
   static List<String> _mergeTags(List<String> first, List<String> second) {
