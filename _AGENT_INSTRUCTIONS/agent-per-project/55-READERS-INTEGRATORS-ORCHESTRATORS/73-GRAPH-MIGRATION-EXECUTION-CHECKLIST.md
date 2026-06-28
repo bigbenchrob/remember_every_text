@@ -3953,6 +3953,10 @@ criteria.
   `essentials/conversation_graph/feature_level_providers.dart`. The graph
   module remains the owner of build mechanics; onboarding now consumes only the
   public graph seam. Added a tripwire covering onboarding graph-build access.
+- Exposed the source-scoped archive import service through
+  `essentials/source_scoped_import/feature_level_providers.dart` and routed the
+  graph archive-import service provider through that seam. The source-scoped
+  provider implementation tripwire now covers this service as well.
 
 ### Vocabulary Note
 
