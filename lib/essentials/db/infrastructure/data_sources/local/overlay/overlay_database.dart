@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../../../../../core/util/message_tag_normalizer.dart';
@@ -216,11 +218,7 @@ class OverlayDatabase extends _$OverlayDatabase {
   Future<List<MessageAnnotation>> getMessagesByTag(String tag) async {
     final allAnnotations = await select(messageAnnotations).get();
     return allAnnotations.where((annotation) {
-      if (annotation.tags == null) {
-        return false;
-      }
-      // Tags stored as JSON array string: '["tag1","tag2"]'
-      return annotation.tags!.contains('"$tag"');
+      return _decodeMessageAnnotationTags(annotation.tags).contains(tag);
     }).toList();
   }
 
@@ -274,18 +272,7 @@ class OverlayDatabase extends _$OverlayDatabase {
     final existing = await getMessageAnnotation(messageId);
     final now = DateTime.now().toUtc().toIso8601String();
 
-    // Parse existing tags
-    var currentTags = <String>[];
-    if (existing?.tags != null) {
-      // Parse JSON array: '["tag1","tag2"]'
-      final tagsStr = existing!.tags!
-          .replaceAll('[', '')
-          .replaceAll(']', '')
-          .replaceAll('"', '');
-      if (tagsStr.isNotEmpty) {
-        currentTags = tagsStr.split(',').map((t) => t.trim()).toList();
-      }
-    }
+    final currentTags = _decodeMessageAnnotationTags(existing?.tags);
 
     // Add new tags (avoid duplicates)
     for (final tag in tagsToAdd) {
@@ -294,13 +281,10 @@ class OverlayDatabase extends _$OverlayDatabase {
       }
     }
 
-    // Serialize back to JSON array string
-    final tagsJson = '[${currentTags.map((t) => '"$t"').join(',')}]';
-
     await into(messageAnnotations).insertOnConflictUpdate(
       MessageAnnotationsCompanion.insert(
         messageId: Value(messageId),
-        tags: Value(tagsJson),
+        tags: Value(_encodeMessageAnnotationTags(currentTags)),
         createdAtUtc: now,
         updatedAtUtc: now,
       ),
@@ -317,16 +301,10 @@ class OverlayDatabase extends _$OverlayDatabase {
       return;
     }
 
-    // Parse existing tags
-    final tagsStr = existing.tags!
-        .replaceAll('[', '')
-        .replaceAll(']', '')
-        .replaceAll('"', '');
-    if (tagsStr.isEmpty) {
+    final currentTags = _decodeMessageAnnotationTags(existing.tags);
+    if (currentTags.isEmpty) {
       return;
     }
-
-    final currentTags = tagsStr.split(',').map((tag) => tag.trim()).toList();
 
     // Remove specified tags
     currentTags.removeWhere((tag) => tagsToRemove.contains(tag));
@@ -345,12 +323,11 @@ class OverlayDatabase extends _$OverlayDatabase {
       );
     } else {
       // Update with remaining tags
-      final tagsJson = '[${currentTags.map((t) => '"$t"').join(',')}]';
       await (update(
         messageAnnotations,
       )..where((tbl) => tbl.messageId.equals(messageId))).write(
         MessageAnnotationsCompanion(
-          tags: Value(tagsJson),
+          tags: Value(_encodeMessageAnnotationTags(currentTags)),
           updatedAtUtc: Value(now),
         ),
       );
@@ -408,6 +385,26 @@ class OverlayDatabase extends _$OverlayDatabase {
     await (delete(
       messageAnnotations,
     )..where((tbl) => tbl.messageId.equals(messageId))).go();
+  }
+
+  List<String> _decodeMessageAnnotationTags(String? tagsJson) {
+    if (tagsJson == null || tagsJson.trim().isEmpty) {
+      return <String>[];
+    }
+
+    try {
+      final decoded = jsonDecode(tagsJson);
+      if (decoded is! List) {
+        return <String>[];
+      }
+      return decoded.whereType<String>().toList();
+    } on FormatException {
+      return <String>[];
+    }
+  }
+
+  String _encodeMessageAnnotationTags(List<String> tags) {
+    return jsonEncode(tags);
   }
 
   Future<MessageUserFlag?> getMessageUserFlag(String messageGuid) {

@@ -243,6 +243,69 @@ void main() {
 
   group('Message user metadata', () {
     test(
+      'message annotation tags preserve commas as structured JSON values',
+      () async {
+        await db.addMessageTags(42, <String>['invoice, paid', 'urgent']);
+
+        final invoiceMatches = await db.getMessagesByTag('invoice, paid');
+        final splitInvoiceMatches = await db.getMessagesByTag('invoice');
+        final splitPaidMatches = await db.getMessagesByTag('paid');
+        final annotation = await db.getMessageAnnotation(42);
+
+        expect(invoiceMatches.map((row) => row.messageId), equals([42]));
+        expect(splitInvoiceMatches, isEmpty);
+        expect(splitPaidMatches, isEmpty);
+        expect(annotation?.tags, equals('["invoice, paid","urgent"]'));
+      },
+    );
+
+    test(
+      'message annotation tag removal treats comma-containing tags atomically',
+      () async {
+        await db.addMessageTags(42, <String>['invoice, paid', 'urgent']);
+
+        await db.removeMessageTags(42, <String>['invoice, paid']);
+
+        final invoiceMatches = await db.getMessagesByTag('invoice, paid');
+        final urgentMatches = await db.getMessagesByTag('urgent');
+        final annotation = await db.getMessageAnnotation(42);
+
+        expect(invoiceMatches, isEmpty);
+        expect(urgentMatches.map((row) => row.messageId), equals([42]));
+        expect(annotation?.tags, equals('["urgent"]'));
+      },
+    );
+
+    test(
+      'malformed message annotation tags do not crash reads or updates',
+      () async {
+        await db.customStatement('''
+          INSERT INTO message_annotations (
+            message_id,
+            tags,
+            created_at_utc,
+            updated_at_utc
+          )
+          VALUES (
+            42,
+            'not json',
+            '2026-06-28T00:00:00.000Z',
+            '2026-06-28T00:00:00.000Z'
+          )
+        ''');
+
+        final malformedMatches = await db.getMessagesByTag('not json');
+        await db.addMessageTags(42, <String>['restored, tag']);
+        final restoredMatches = await db.getMessagesByTag('restored, tag');
+        final annotation = await db.getMessageAnnotation(42);
+
+        expect(malformedMatches, isEmpty);
+        expect(restoredMatches.map((row) => row.messageId), equals([42]));
+        expect(annotation?.tags, equals('["restored, tag"]'));
+      },
+    );
+
+    test(
       'stores tags by guid with normalized per-message uniqueness',
       () async {
         await db.addMessageUserTags(
