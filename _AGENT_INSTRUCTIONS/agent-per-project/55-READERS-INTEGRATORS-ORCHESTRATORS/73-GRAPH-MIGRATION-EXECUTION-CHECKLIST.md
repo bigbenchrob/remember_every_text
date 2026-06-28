@@ -1386,13 +1386,10 @@ criteria.
   files remain upgrade-compatible, but new files do not recreate
   `import_batches`, `messages`, `handles`, `chats`, attachments, or old
   topology ledger tables.
-- Database health now treats retained `working.db` as recovered-message
-  compatibility storage plus minimal projection-state storage sanity. Ordinary
-  message/chat/contact/handle/attachment/reaction health and timeline
-  navigation checks belong to `working_ss.db` and graph evidence skeletons.
-- Later storage reduction removed the remaining special
-  `working.db.projection_state` health check; retired `working.db` health is
-  now limited to recovered-message cleanup diagnostics.
+- Database health now treats retired `working.db` as recovered-message cleanup
+  diagnostics only. Ordinary message/chat/contact/handle/attachment/reaction
+  health and timeline navigation checks belong to `working_ss.db` and graph
+  evidence skeletons.
 - Database health now inspects retained `macos_import.db` and `working.db`
   through read-only file query layers instead of central retained DB providers.
   Health/support diagnostics therefore report missing retained files without

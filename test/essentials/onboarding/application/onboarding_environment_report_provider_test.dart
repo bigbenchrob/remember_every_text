@@ -142,7 +142,7 @@ void main() {
         tempDir.path,
         'AddressBook-v22.abcddb',
       );
-      _createProjectionDatabase(
+      _createNonEmptyDatabaseFile(
         tempDir.path,
         appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
       );
@@ -192,11 +192,11 @@ void main() {
           tempDir.path,
           'AddressBook-v22.abcddb',
         );
-        _createProjectionDatabase(
+        _createNonEmptyDatabaseFile(
           tempDir.path,
           appDatabaseFileName(AppDatabaseFile.retiredMacosImport),
         );
-        _createProjectionDatabase(
+        _createNonEmptyDatabaseFile(
           tempDir.path,
           appDatabaseFileName(AppDatabaseFile.retiredWorking),
         );
@@ -241,7 +241,7 @@ void main() {
         tempDir.path,
         'AddressBook-v22.abcddb',
       );
-      _createProjectionDatabase(
+      _createNonEmptyDatabaseFile(
         tempDir.path,
         appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
       );
@@ -272,7 +272,7 @@ void main() {
     });
 
     test(
-      'complete projection state allows normal startup classification',
+      'complete graph databases allow normal startup classification',
       () async {
         final messagesDbPath = _createMessagesDatabase(
           tempDir.path,
@@ -282,7 +282,7 @@ void main() {
           tempDir.path,
           'AddressBook-v22.abcddb',
         );
-        _createProjectionDatabase(
+        _createNonEmptyDatabaseFile(
           tempDir.path,
           appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
         );
@@ -324,7 +324,7 @@ void main() {
           tempDir.path,
           'AddressBook-v22.abcddb',
         );
-        _createProjectionDatabase(
+        _createNonEmptyDatabaseFile(
           tempDir.path,
           appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
         );
@@ -373,7 +373,7 @@ void main() {
         final storage = OverlayOnboardingFailureStorage(
           overlayDb: Future<OverlayDatabase>.value(overlayDb),
         );
-        _createProjectionDatabase(
+        _createNonEmptyDatabaseFile(
           tempDir.path,
           appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
           rowCount: 120,
@@ -434,39 +434,15 @@ String _createMessagesDatabase(
   return filePath;
 }
 
-String _createProjectionDatabase(
+String _createNonEmptyDatabaseFile(
   String directoryPath,
   String fileName, {
   int rowCount = 1,
-  bool projectionComplete = false,
 }) {
   final filePath = '$directoryPath/$fileName';
   final db = sqlite3.open(filePath);
   try {
     db.execute('CREATE TABLE messages (ROWID INTEGER PRIMARY KEY, value TEXT)');
-    db.execute('''
-      CREATE TABLE projection_state (
-        id INTEGER PRIMARY KEY CHECK(id=1),
-        last_import_batch_id INTEGER,
-        last_projected_at_utc TEXT,
-        last_projected_message_id INTEGER,
-        last_projected_attachment_id INTEGER
-      )
-    ''');
-    db.execute(
-      '''
-      INSERT INTO projection_state (
-        id,
-        last_import_batch_id,
-        last_projected_at_utc,
-        last_projected_message_id,
-        last_projected_attachment_id
-      ) VALUES (1, ?, ?, ?, ?)
-      ''',
-      projectionComplete
-          ? <Object?>[1, DateTime.utc(2026, 03, 24).toIso8601String(), 1, null]
-          : const <Object?>[null, null, null, null],
-    );
     for (var index = 0; index < rowCount; index++) {
       db.execute('INSERT INTO messages (value) VALUES (?)', ['fixture-$index']);
     }
