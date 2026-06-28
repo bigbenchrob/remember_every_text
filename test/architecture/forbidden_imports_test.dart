@@ -1133,6 +1133,21 @@ void main() {
       );
     });
 
+    test('Direct SQLite opens have explicit close ownership', () async {
+      final offenders = await _findDirectSqliteOpenCleanupOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Direct SQLite access is allowed only for named infrastructure '
+            'adapters/probes. Any direct sqlite3/sqflite open must either '
+            'dispose/close the handle in a finally block for one-off reads, or '
+            'expose an explicit close boundary for owned wrapper instances.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Native Drift executors stay behind database providers', () async {
       final offenders = await _findNativeDriftExecutorOffenders();
 
@@ -13475,6 +13490,45 @@ Future<List<String>> _findDirectSqliteImportOffenders() async {
           importTarget.startsWith('package:sqflite'),
     )) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDirectSqliteOpenCleanupOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+  final sqlite3OpenPattern = RegExp(r'\bsqlite3(?:\.sqlite3)?\.open\s*\(');
+  final sqfliteOpenPattern = RegExp(r'\bopen(?:ReadOnly)?Database\s*\(');
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final opensSqlite3 = sqlite3OpenPattern.hasMatch(uncommented);
+    final opensSqflite = sqfliteOpenPattern.hasMatch(uncommented);
+    if (!opensSqlite3 && !opensSqflite) {
+      continue;
+    }
+
+    final hasFinally = uncommented.contains('finally');
+    final disposesSqlite3Handle = uncommented.contains('.dispose();');
+    final closesSqfliteHandle =
+        uncommented.contains('.close();') ||
+        uncommented.contains('Future<void> close()') ||
+        uncommented.contains('Future<void> close(');
+
+    if (opensSqlite3 && (!hasFinally || !disposesSqlite3Handle)) {
+      offenders.add('$filePath opens sqlite3 without finally/dispose');
+      continue;
+    }
+    if (opensSqflite && !closesSqfliteHandle) {
+      offenders.add('$filePath opens sqflite without explicit close boundary');
     }
   }
 
