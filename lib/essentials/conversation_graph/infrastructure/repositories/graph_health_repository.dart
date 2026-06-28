@@ -558,6 +558,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       mode: sqlite3.OpenMode.readOnly,
     );
     try {
+      overlayDb.execute('PRAGMA query_only = ON;');
+      overlayDb.execute('PRAGMA busy_timeout = 3000;');
       final rows = overlayDb.select('''
         SELECT message_guid, import_attachment_id, archive_relative_path
         FROM archived_attachments
@@ -617,6 +619,8 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       mode: sqlite3.OpenMode.readOnly,
     );
     try {
+      db.execute('PRAGMA query_only = ON;');
+      db.execute('PRAGMA busy_timeout = 3000;');
       final resultSet = db.select('''
         SELECT
           m.guid AS message_guid,

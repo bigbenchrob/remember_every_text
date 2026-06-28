@@ -42,6 +42,8 @@ class RetiredCleanupSqliteFileHealthQueryLayer
       mode: sqlite3.OpenMode.readOnly,
     );
     try {
+      db.execute('PRAGMA query_only = ON;');
+      db.execute('PRAGMA busy_timeout = 3000;');
       final resultSet = db.select(sql);
       return <Map<String, Object?>>[
         for (final row in resultSet)

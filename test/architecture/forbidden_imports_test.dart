@@ -1167,6 +1167,21 @@ void main() {
       );
     });
 
+    test('Direct sqlite3 probes set read-only pragmas', () async {
+      final offenders = await _findDirectSqlite3PragmaOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Direct sqlite3 probes must set PRAGMA query_only and busy_timeout '
+            'after opening read-only handles. This keeps source, archive, '
+            'diagnostic, and retired cleanup reads non-mutating and less prone '
+            'to lock failures.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Native Drift executors stay behind database providers', () async {
       final offenders = await _findNativeDriftExecutorOffenders();
 
@@ -13579,6 +13594,32 @@ Future<List<String>> _findDirectSqliteWriteOpenOffenders() async {
         .any((match) => !match.group(1)!.contains('readOnly: true'));
 
     if (hasWritableSqlite3Open || hasWritableSqfliteOpen) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDirectSqlite3PragmaOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+  final sqlite3OpenPattern = RegExp(r'\bsqlite3(?:\.sqlite3)?\.open\s*\(');
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (!sqlite3OpenPattern.hasMatch(uncommented)) {
+      continue;
+    }
+
+    if (!uncommented.contains('PRAGMA query_only = ON') ||
+        !uncommented.contains('PRAGMA busy_timeout = 3000')) {
       offenders.add(filePath);
     }
   }

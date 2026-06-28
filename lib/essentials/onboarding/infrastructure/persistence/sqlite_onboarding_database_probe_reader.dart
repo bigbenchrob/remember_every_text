@@ -77,10 +77,8 @@ final class SqliteOnboardingDatabaseProbeReader
     try {
       final db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
       try {
-        if (queryOnly) {
-          db.execute('PRAGMA query_only = ON;');
-          db.execute('PRAGMA busy_timeout = 3000;');
-        }
+        db.execute('PRAGMA query_only = ON;');
+        db.execute('PRAGMA busy_timeout = 3000;');
         final result = db.select('SELECT COUNT(*) as count FROM $tableName');
         if (result.isEmpty || result.first.values.isEmpty) {
           return null;

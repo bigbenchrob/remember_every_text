@@ -69,6 +69,8 @@ class SqliteHistoricalSnapshotReader implements HistoricalSnapshotReader {
     try {
       final db = sqlite3.open(chatDbPath, mode: OpenMode.readOnly);
       try {
+        db.execute('PRAGMA query_only = ON;');
+        db.execute('PRAGMA busy_timeout = 3000;');
         db.select('SELECT COUNT(*) FROM message LIMIT 1');
       } finally {
         db.dispose();
@@ -102,6 +104,8 @@ class SqliteHistoricalSnapshotReader implements HistoricalSnapshotReader {
     final db = sqlite3.open(chatDbPath, mode: OpenMode.readOnly);
 
     try {
+      db.execute('PRAGMA query_only = ON;');
+      db.execute('PRAGMA busy_timeout = 3000;');
       final results = db.select('''
         SELECT
           m.ROWID   AS hist_message_rowid,
