@@ -56,7 +56,7 @@ Providers/read models that merge overlay and graph/working data must request the
 | `handle_visibility_overrides` / `dismissed_handles` | User-controlled visibility, blacklist, and dismissal state. |
 | `virtual_participants` | Overlay-scoped participants created by the user. |
 | `archived_attachments` | Attachment archive metadata keyed by message GUID + import attachment ID. |
-| `overlay_settings` | Overlay-scoped key/value settings. |
+| `overlay_settings` | Overlay-scoped raw key/value settings, accessed only through named storage boundaries. |
 
 Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`. The graph and retired import/working schema references do not own overlay semantics; overlay details are owned here and in the code schema.
 
@@ -64,8 +64,9 @@ Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/ov
 
 1. **Write through services/providers**: Only user-driven services mutate this database. Never write to it during projection/migration.
 2. **Respect independence**: Do not copy overlay data into graph or retired working/projection tables. Merge at the provider/read-model layer. Review `07-overlay-database-independence.md` before touching overlay code.
-3. **Keep migrations forward-only**: Overlay database migrations must be additive and preserve user data; avoid destructive changes.
-4. **Invalidate providers after writes**: Ensure Riverpod providers that depend on overlay data are invalidated so merged views refresh.
+3. **Hide raw settings access**: `overlay_settings` is a persistence primitive, not an application API. Application and presentation code must use named stores or repositories; raw `readOverlaySetting` / `writeOverlaySetting` / `deleteOverlaySetting` access stays in overlay storage, infrastructure repositories, or explicitly named storage classes.
+4. **Keep migrations forward-only**: Overlay database migrations must be additive and preserve user data; avoid destructive changes.
+5. **Invalidate providers after writes**: Ensure Riverpod providers that depend on overlay data are invalidated so merged views refresh.
 
 ## Cross-References
 
