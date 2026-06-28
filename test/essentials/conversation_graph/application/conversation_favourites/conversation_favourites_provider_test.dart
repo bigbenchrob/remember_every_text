@@ -54,6 +54,10 @@ void main() {
             .coreConversationIds,
         [7, 42],
       );
+      expect(
+        await overlayDb.readOverlaySetting('conversation_favourites/core'),
+        '{"coreConversationIds":[7,42]}',
+      );
 
       final restoredContainer = buildContainer();
       addTearDown(restoredContainer.dispose);
@@ -94,7 +98,15 @@ void main() {
       );
     });
 
-    test('ignores invalid stored tokens', () {
+    test('restores Core favourites from structured JSON storage', () {
+      final favourites = ConversationFavourites.fromCoreStorage(
+        '{"coreConversationIds":[42,"nope",42,7]}',
+      );
+
+      expect(favourites.coreConversationIds, [42, 7]);
+    });
+
+    test('restores legacy comma-delimited Core favourites', () {
       final favourites = ConversationFavourites.fromCoreStorage('42,nope,42,7');
 
       expect(favourites.coreConversationIds, [42, 7]);

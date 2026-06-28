@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -27,6 +28,11 @@ class ConversationFavourites {
       return const ConversationFavourites();
     }
 
+    final jsonFavourites = _tryReadCoreJsonStorage(rawValue);
+    if (jsonFavourites != null) {
+      return jsonFavourites;
+    }
+
     final ids = <int>[];
     final seen = <int>{};
     for (final token in rawValue.split(',')) {
@@ -44,7 +50,8 @@ class ConversationFavourites {
 
   Set<int> get coreConversationIdSet => coreConversationIds.toSet();
 
-  String get coreStorageValue => coreConversationIds.join(',');
+  String get coreStorageValue =>
+      jsonEncode(<String, Object?>{'coreConversationIds': coreConversationIds});
 
   bool isCoreFavourite(int conversationId) {
     return coreConversationIdSet.contains(conversationId);
@@ -71,6 +78,35 @@ class ConversationFavourites {
         coreConversationIds.where((id) => id != conversationId),
       ),
     );
+  }
+
+  static ConversationFavourites? _tryReadCoreJsonStorage(String rawValue) {
+    try {
+      final decoded = jsonDecode(rawValue);
+      if (decoded is! Map) {
+        return null;
+      }
+      final rawIds = decoded['coreConversationIds'];
+      if (rawIds is! List) {
+        return const ConversationFavourites();
+      }
+
+      final ids = <int>[];
+      final seen = <int>{};
+      for (final rawId in rawIds) {
+        final id = rawId is int ? rawId : null;
+        if (id == null || !seen.add(id)) {
+          continue;
+        }
+        ids.add(id);
+      }
+
+      return ConversationFavourites(
+        coreConversationIds: List<int>.unmodifiable(ids),
+      );
+    } on FormatException {
+      return null;
+    }
   }
 }
 
