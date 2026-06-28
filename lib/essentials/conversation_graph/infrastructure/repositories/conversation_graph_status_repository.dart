@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../../../db/application/read_only_sql_guard.dart';
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../domain/status/conversation_graph_status.dart';
@@ -70,17 +71,21 @@ final class ConversationGraphStatusRepository {
     try {
       await db.execute('PRAGMA query_only = ON');
       await db.execute('PRAGMA busy_timeout = 3000');
-      final messageRows = await db.rawQuery(
+      final messageRows = await _readSourceRows(
+        db,
         'SELECT COUNT(*) AS message_count, '
         'COALESCE(MAX(ROWID), 0) AS max_rowid FROM message',
       );
-      final chatRows = await db.rawQuery(
+      final chatRows = await _readSourceRows(
+        db,
         'SELECT COUNT(*) AS chat_count FROM chat',
       );
-      final handleRows = await db.rawQuery(
+      final handleRows = await _readSourceRows(
+        db,
         'SELECT COUNT(*) AS handle_count FROM handle',
       );
-      final attachmentRows = await db.rawQuery(
+      final attachmentRows = await _readSourceRows(
+        db,
         'SELECT COUNT(*) AS attachment_count FROM attachment',
       );
       final messageRow = messageRows.single;
@@ -99,6 +104,14 @@ final class ConversationGraphStatusRepository {
     } finally {
       await db.close();
     }
+  }
+
+  Future<List<Map<String, Object?>>> _readSourceRows(
+    Database database,
+    String sql,
+  ) {
+    assertReadOnlySql(sql, boundary: 'Conversation graph source status query');
+    return database.rawQuery(sql);
   }
 
   Future<_GraphMessageSnapshot> _readGraphMessageSnapshot(
