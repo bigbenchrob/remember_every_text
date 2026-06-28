@@ -1390,6 +1390,9 @@ criteria.
   compatibility storage plus minimal projection-state storage sanity. Ordinary
   message/chat/contact/handle/attachment/reaction health and timeline
   navigation checks belong to `working_ss.db` and graph evidence skeletons.
+- Later storage reduction removed the remaining special
+  `working.db.projection_state` health check; retired `working.db` health is
+  now limited to recovered-message cleanup diagnostics.
 - Database health now inspects retained `macos_import.db` and `working.db`
   through read-only file query layers instead of central retained DB providers.
   Health/support diagnostics therefore report missing retained files without

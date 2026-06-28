@@ -172,7 +172,6 @@ void main() {
         retiredWorkingTables,
         containsAll(<String>{
           'schema_migrations',
-          'projection_state',
           'recovered_unlinked_messages',
           'recovered_unlinked_attachments',
         }),
@@ -180,18 +179,7 @@ void main() {
       expect(retiredWorkingTables, isNot(contains('messages')));
       expect(retiredWorkingTables, isNot(contains('chats')));
       expect(retiredWorkingTables, isNot(contains('global_message_index')));
-      expect(
-        report.tableInventory
-            .singleWhere(
-              (entry) =>
-                  entry.databaseKey == databaseHealthKeyRetiredWorking &&
-                  entry.tableName == 'projection_state',
-            )
-            .notes,
-        contains(
-          'Retired projection-state cleanup metadata only; not an app-facing readiness source.',
-        ),
-      );
+      expect(retiredWorkingTables, isNot(contains('projection_state')));
       expect(
         report.relationshipChecks
             .where(
@@ -224,22 +212,7 @@ void main() {
             .map((check) => check.checkKey),
         isNot(contains('messages_to_chats')),
       );
-      expect(
-        report.invariantChecks.map((check) => check.checkKey),
-        contains('retired_projection_state_cleanup_snapshot_if_present'),
-      );
-      final projectionStateCheck = report.invariantChecks.singleWhere(
-        (check) =>
-            check.checkKey ==
-            'retired_projection_state_cleanup_snapshot_if_present',
-      );
-      expect(projectionStateCheck.severity, DatabaseHealthSeverity.low);
-      expect(
-        projectionStateCheck.notes,
-        contains(
-          'Cleanup diagnostic only; graph readiness and update lifecycle do not use retired working.projection_state.',
-        ),
-      );
+      expect(report.invariantChecks.map((check) => check.checkKey), isEmpty);
       expect(
         report.invariantChecks.map((check) => check.checkKey),
         isNot(contains('working_messages_should_have_chat_linkage')),
@@ -395,7 +368,6 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
       ],
       databaseHealthKeyRetiredWorking => const <String>[
         'schema_migrations',
-        'projection_state',
         'recovered_unlinked_messages',
         'recovered_unlinked_attachments',
       ],

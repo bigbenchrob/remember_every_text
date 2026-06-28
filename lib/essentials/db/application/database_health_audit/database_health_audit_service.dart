@@ -680,12 +680,6 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
       ],
     ),
     AuditTableSpec(
-      tableName: 'projection_state',
-      notes: <String>[
-        'Retired projection-state cleanup metadata only; not an app-facing readiness source.',
-      ],
-    ),
-    AuditTableSpec(
       tableName: 'recovered_unlinked_messages',
       importantColumns: <AuditImportantColumnSpec>[
         AuditImportantColumnSpec('guid'),
@@ -1074,26 +1068,6 @@ _relationshipSpecsByDatabase = <String, List<_RelationshipCheckSpec>>{
 
 const Map<String, List<_InvariantCheckSpec>>
 _invariantSpecsByDatabase = <String, List<_InvariantCheckSpec>>{
-  databaseHealthKeyRetiredWorking: <_InvariantCheckSpec>[
-    _InvariantCheckSpec(
-      checkKey: 'retired_projection_state_cleanup_snapshot_if_present',
-      severity: DatabaseHealthSeverity.low,
-      description:
-          'If retired working.projection_state exists, it may contain the historical singleton row with id = 1.',
-      evaluatedRowCountSql: 'SELECT 1 AS c',
-      violationCountSql: '''
-            SELECT CASE
-              WHEN EXISTS (
-                SELECT 1 FROM "projection_state" WHERE id = 1
-              ) THEN 0
-              ELSE 1
-            END AS c
-      ''',
-      notes: <String>[
-        'Cleanup diagnostic only; graph readiness and update lifecycle do not use retired working.projection_state.',
-      ],
-    ),
-  ],
   databaseHealthKeySourceScopedImport: <_InvariantCheckSpec>[
     _InvariantCheckSpec(
       checkKey: 'source_scoped_attachment_edges_should_reference_rows',
