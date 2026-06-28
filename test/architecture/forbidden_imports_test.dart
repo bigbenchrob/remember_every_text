@@ -70,9 +70,9 @@ const Set<String> _onboardingReadinessActionProviderAllowedFiles = {
 // allowlists small so retired files cannot regain provider or workflow authority.
 const Set<String> _retiredArchiveMetadataProviderAllowedFiles = {};
 
-const Set<String> _retiredMacosImportFileAllowedFiles = {};
+const Set<String> _retiredMacosImportCleanupBoundaryFiles = {};
 
-const Set<String> _retiredWorkingFileAllowedFiles = {};
+const Set<String> _retiredWorkingCleanupBoundaryFiles = {};
 
 const Set<String> _retiredDatabaseFilenameLiteralAllowedFiles = {
   'lib/essentials/db/app_database_files.dart',
@@ -2636,12 +2636,12 @@ void main() {
       );
     });
 
-    test('Retired macos_import file stays behind cleanup boundaries', () async {
-      final offenders = await _findRetiredMacosImportFileOffenders();
+    test('Retired macos_import cleanup stays behind boundaries', () async {
+      final offenders = await _findRetiredMacosImportCleanupOffenders();
 
       expect(
         offenders,
-        orderedEquals(_retiredMacosImportFileAllowedFiles.toList()..sort()),
+        orderedEquals(_retiredMacosImportCleanupBoundaryFiles.toList()..sort()),
         reason:
             'Retired macos_import.db is cleanup/diagnostic inventory only. '
             'Ordinary code must not add new retired import file access or '
@@ -2706,11 +2706,11 @@ void main() {
     test(
       'Retired working database file stays behind cleanup boundaries',
       () async {
-        final offenders = await _findRetiredWorkingFileOffenders();
+        final offenders = await _findRetiredWorkingCleanupOffenders();
 
         expect(
           offenders,
-          orderedEquals(_retiredWorkingFileAllowedFiles.toList()..sort()),
+          orderedEquals(_retiredWorkingCleanupBoundaryFiles.toList()..sort()),
           reason:
               'Retired working.db is cleanup/diagnostic inventory only. '
               'Ordinary code must not add new retired working file access or '
@@ -6709,7 +6709,7 @@ Future<List<String>> _findRetiredArchiveMetadataProviderOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findRetiredMacosImportFileOffenders() async {
+Future<List<String>> _findRetiredMacosImportCleanupOffenders() async {
   final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
   final offenders = <String>{};
 
@@ -6802,7 +6802,7 @@ Future<List<String>> _findDeprecatedDatabaseFilenameSymbolOffenders() async {
   return offenders..sort();
 }
 
-Future<List<String>> _findRetiredWorkingFileOffenders() async {
+Future<List<String>> _findRetiredWorkingCleanupOffenders() async {
   final files = await _collectDartFiles((path) => !path.endsWith('.g.dart'));
   final offenders = <String>{};
 
