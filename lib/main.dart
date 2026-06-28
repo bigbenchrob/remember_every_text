@@ -104,7 +104,7 @@ class _MyDelegate extends NSWindowDelegate {
   }
 }
 
-final List<Object> _retainedWindowDelegateHandles = <Object>[];
+final List<Object> _windowDelegateLifetimeHandles = <Object>[];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -165,10 +165,10 @@ void main() async {
   // Initialize Media Kit.
   MediaKit.ensureInitialized();
 
-  // Retain the window delegate handle for the app lifetime so macOS window
+  // Keep the window delegate handle for the app lifetime so macOS window
   // close events keep flowing into the app-shell action boundary.
   final delegate = _MyDelegate();
-  _retainedWindowDelegateHandles.add(
+  _windowDelegateLifetimeHandles.add(
     WindowManipulator.addNSWindowDelegate(delegate),
   );
 
