@@ -1335,8 +1335,8 @@ void main() {
       );
     });
 
-    test('Public feature seam imports are not duplicated per file', () async {
-      final offenders = await _findDuplicateFeatureSeamImportOffenders();
+    test('Public provider seam imports are not duplicated per file', () async {
+      final offenders = await _findDuplicateProviderSeamImportOffenders();
 
       expect(
         offenders,
@@ -7442,7 +7442,7 @@ Future<List<String>> _findDatabaseHealthProviderIslandOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findDuplicateFeatureSeamImportOffenders() async {
+Future<List<String>> _findDuplicateProviderSeamImportOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
