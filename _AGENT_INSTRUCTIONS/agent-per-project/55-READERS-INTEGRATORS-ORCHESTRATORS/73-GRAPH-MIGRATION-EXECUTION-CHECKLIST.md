@@ -557,7 +557,7 @@ choke points are resolved.
 - Fresh `working.db` / `macos_import.db` dependency scan found no remaining
   ordinary app-facing reads. Remaining legacy DB consumers are now classified
   as production lifecycle, archive/recovery, diagnostics/settings, legacy DB
-  definitions, or tests for retained legacy systems.
+  definitions, or tests for retired-file/schema behavior.
 - `71-LEGACY-DEPENDENCY-MATRIX.md` was refreshed to remove stale search,
   contact, handle, chat, and heatmap ordinary-read blockers that have already
   been migrated.

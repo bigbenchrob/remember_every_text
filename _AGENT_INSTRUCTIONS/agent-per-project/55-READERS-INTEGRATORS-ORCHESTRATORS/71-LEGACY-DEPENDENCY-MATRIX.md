@@ -122,9 +122,9 @@ each retired-file cleanup bucket.
 
    The 2026-06-04 direct-provider scan found no ordinary feature/read surface
    opening the retired working/import providers. The retired working provider
-   was later removed; remaining retained import provider reads are historical
-   archive settings metadata, onboarding reset/maintenance, and retained import
-   schema/tests.
+   was later removed; remaining old import-file references are historical
+   archive settings metadata, onboarding reset/maintenance, and retired
+   import-schema/tests.
 
 2. **The remaining legacy DB references are concentrated in four categories.**
    They are production lifecycle, archive/recovery, diagnostics/settings, and
@@ -189,7 +189,7 @@ first-class and tested.
 | `lib/essentials/db/feature_level_providers/working_projection_readiness_provider.dart` | Retired | Former `working.db` readiness gate | Deletion candidate closed | Removed. Retained diagnostics now report legacy recovered evidence unavailability directly instead of using a central `working.db` readiness provider. |
 | `lib/essentials/db_migrate/infrastructure/repositories/drift_legacy_projection_status_repository.dart` | Retired | Former ad hoc “does legacy working.db have messages?” readiness check | Deletion candidate closed | Removed after onboarding/readiness moved to source-scoped graph readiness. The later retained archive pipeline and its private legacy rebuild check have also been retired; graph readiness is the app-facing readiness boundary. |
 | `lib/essentials/db_migrate/application/migrators/app_settings_migrator.dart` and empty `domain/policies/migration_order_policy.dart` | Retired | Unimplemented/empty migration scaffolding | Deletion candidate closed | Removed because they had no callers and were not part of any active compatibility boundary. |
-| `lib/essentials/db_importers/**` | Retired folder | Former mixed import/extractor/monitor/debug location | Deletion candidate closed | Removed. Source-scoped extractor/provider ownership moved to `lib/essentials/source_scoped_import/`; live `chat.db` monitoring moved to `lib/essentials/conversation_graph/application/monitor/`; retained DB debug settings moved to `lib/essentials/db/application/`. Architecture tests fail if the retired folder returns. |
+| `lib/essentials/db_importers/**` | Retired folder | Former mixed import/extractor/monitor/debug location | Deletion candidate closed | Removed. Source-scoped extractor/provider ownership moved to `lib/essentials/source_scoped_import/`; live `chat.db` monitoring moved to `lib/essentials/conversation_graph/application/monitor/`; retired-file debug settings moved to `lib/essentials/db/application/`. Architecture tests fail if the retired folder returns. |
 | `lib/essentials/db_importers/application/services/retained_legacy_archive_pipeline_provider.dart` | Retired | Former retained diagnostic import-control bridge | Deletion candidate closed | Removed after Historical Archives import/removal moved to source-scoped graph services and import-control stopped offering legacy import execution. |
 | `lib/essentials/db_importers/application/services/orchestrated_ledger_import_service.dart` | Retired | Former high-level retired `macos_import.db` import orchestrator | Deletion candidate closed | Removed after live, onboarding, settings, and Historical Archives paths all moved to source-scoped graph import/projection. Source-scoped rich-text enrichment now uses `sourceScopedMessageExtractorProvider` from `source_scoped_import`. |
 | `lib/essentials/db_importers/application/importers/**`, `lib/essentials/db_importers/infrastructure/sqlite/importers/**`, and old `ImportOrchestrator`/`IImportContext` framework | Retired | Former retained table-importer implementation details | Deletion candidate closed | Removed after the old ledger orchestrator was deleted and caller scans confirmed no active runtime path. Source-scoped importers now own graph facts directly; contact import uses shared handle normalization instead of the old importer utility wrapper. |
