@@ -38,7 +38,7 @@ void main() {
     });
 
     test(
-      'does not treat retired import and working databases as sufficient',
+      'does not treat retired cleanup files as sufficient',
       () {
         final checker = DatabaseExistenceChecker(
           _FakeDatabaseProbeReader(
