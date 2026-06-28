@@ -8175,17 +8175,18 @@ Future<List<String>> _findDbMaintenanceLockProviderIslandOffenders() async {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    return path.startsWith('lib/');
+    if (path == 'test/architecture/forbidden_imports_test.dart') {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
   });
   const directProviderImport =
-      'essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
+      'db/feature_level_providers/db_maintenance_lock_provider.dart';
   final offenders = <String>{};
 
   for (final filePath in files) {
     if (filePath ==
-            'lib/essentials/db/feature_level_providers/persistent_database_providers.dart' ||
-        filePath ==
-            'lib/essentials/db/feature_level_providers/db_maintenance_lock_provider.dart') {
+        'lib/essentials/db/feature_level_providers/db_maintenance_lock_provider.dart') {
       continue;
     }
     final source = await File(filePath).readAsString();

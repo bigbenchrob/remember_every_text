@@ -6,10 +6,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../db/app_database_files.dart';
 import '../../db/feature_level_providers.dart'
     show
+        dbMaintenanceLockProvider,
         driftConversationGraphDatabaseProvider,
         sourceScopedImportDatabaseProvider;
-import '../../db/feature_level_providers/db_maintenance_lock_provider.dart'
-    show dbMaintenanceLockProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
