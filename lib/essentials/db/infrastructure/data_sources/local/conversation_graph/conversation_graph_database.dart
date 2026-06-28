@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../../../application/read_only_sql_guard.dart';
+
 part 'conversation_graph_database.g.dart';
 
 /// Drift-backed source-scoped conversation graph projection database.
@@ -24,7 +26,7 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
     String sql, [
     List<Object?> args = const <Object?>[],
   ]) async {
-    _assertReadSql(sql);
+    assertReadOnlySql(sql, boundary: 'Conversation graph selectRows');
     final rows = await customSelect(sql, variables: _variables(args)).get();
     return [for (final row in rows) row.data];
   }
@@ -98,20 +100,6 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
     await _createContactToHandleSchema();
     await _createAttachmentSchema();
     await _createMessageToAttachmentSchema();
-  }
-
-  static void _assertReadSql(String sql) {
-    final normalized = sql.trimLeft().toLowerCase();
-    if (normalized.startsWith('select ') ||
-        normalized.startsWith('select\n') ||
-        normalized.startsWith('pragma ') ||
-        normalized.startsWith('pragma\n') ||
-        normalized.startsWith('with ') ||
-        normalized.startsWith('with\n')) {
-      return;
-    }
-
-    throw StateError('Conversation graph selectRows only accepts read queries');
   }
 
   static List<Variable> _variables(List<Object?> args) {

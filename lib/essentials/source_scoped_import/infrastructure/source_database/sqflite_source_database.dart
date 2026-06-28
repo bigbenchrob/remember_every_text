@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../../../db/application/read_only_sql_guard.dart';
 import '../../domain/ports/source_database_port.dart';
 
 final class SqfliteSourceDatabaseOpener implements SourceDatabaseOpener {
@@ -28,7 +29,7 @@ final class _SqfliteReadOnlySourceDatabase implements ReadOnlySourceDatabase {
     String sql, [
     List<Object?>? arguments,
   ]) async {
-    _assertReadSql(sql);
+    assertReadOnlySql(sql, boundary: 'Read-only source database rawQuery');
     return _database.rawQuery(sql, arguments);
   }
 
@@ -40,19 +41,5 @@ final class _SqfliteReadOnlySourceDatabase implements ReadOnlySourceDatabase {
   @override
   Future<void> close() {
     return _database.close();
-  }
-
-  static void _assertReadSql(String sql) {
-    final normalized = sql.trimLeft().toLowerCase();
-    if (normalized.startsWith('select ') ||
-        normalized.startsWith('select\n') ||
-        normalized.startsWith('pragma ') ||
-        normalized.startsWith('pragma\n') ||
-        normalized.startsWith('with ') ||
-        normalized.startsWith('with\n')) {
-      return;
-    }
-
-    throw StateError('Read-only source database rawQuery only accepts reads');
   }
 }

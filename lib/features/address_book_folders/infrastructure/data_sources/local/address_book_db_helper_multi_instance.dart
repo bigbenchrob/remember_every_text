@@ -1,5 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../../../../../essentials/db/application/read_only_sql_guard.dart';
+
 /// Opens one AddressBook SQLite candidate path for viability checks.
 ///
 /// AddressBook folder discovery probes multiple candidate database paths, so
@@ -22,7 +24,7 @@ class AddressBookDbHelperMultiInstance {
     String sql, [
     List<Object?>? arguments,
   ]) async {
-    _assertReadSql(sql);
+    assertReadOnlySql(sql, boundary: 'AddressBook readRows');
     final db = await _database;
     return db.rawQuery(sql, arguments);
   }
@@ -44,19 +46,5 @@ class AddressBookDbHelperMultiInstance {
   Future<void> close() async {
     await _db?.close();
     _db = null;
-  }
-
-  static void _assertReadSql(String sql) {
-    final normalized = sql.trimLeft().toLowerCase();
-    if (normalized.startsWith('select ') ||
-        normalized.startsWith('select\n') ||
-        normalized.startsWith('pragma ') ||
-        normalized.startsWith('pragma\n') ||
-        normalized.startsWith('with ') ||
-        normalized.startsWith('with\n')) {
-      return;
-    }
-
-    throw StateError('AddressBook readRows only accepts read queries');
   }
 }
