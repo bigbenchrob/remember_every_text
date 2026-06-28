@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../../essentials/db/feature_level_providers/persistent_database_providers.dart'
+import '../../../../../../essentials/db/feature_level_providers.dart'
     show overlayDatabaseProvider;
 import '../../../infrastructure/repositories/overlay_conversation_signature_preferences_store.dart';
 import 'conversation_signature_preferences_store.dart';

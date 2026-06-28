@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/db/feature_level_providers/persistent_database_providers.dart'
+import '../../../../essentials/db/feature_level_providers.dart'
     show overlayDatabaseProvider;
 import '../../infrastructure/repositories/overlay_handle_review_store.dart';
 import '../read_models/handle_display_name_provider.dart';

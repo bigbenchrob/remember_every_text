@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../db/feature_level_providers/persistent_database_providers.dart'
+import '../../../db/feature_level_providers.dart'
     show driftConversationGraphDatabaseProvider;
 import '../../../source_scoped_import/application/source_scoped_import_ledger_provider.dart'
     show sourceScopedImportLedgerProvider;

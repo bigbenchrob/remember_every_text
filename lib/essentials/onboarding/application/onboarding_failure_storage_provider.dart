@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers/persistent_database_providers.dart'
-    show overlayDatabaseProvider;
+import '../../db/feature_level_providers.dart' show overlayDatabaseProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../infrastructure/persistence/overlay_onboarding_failure_storage.dart';
 import 'onboarding_failure_store.dart';

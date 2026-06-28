@@ -1280,6 +1280,23 @@ void main() {
       );
     });
 
+    test('Database provider implementation imports stay internal', () async {
+      final offenders =
+          await _findPersistentDatabaseProviderImplementationImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Consumers should import the public DB seam '
+            'essentials/db/feature_level_providers.dart with explicit show '
+            'clauses. Direct imports of the persistent database provider '
+            'implementation subfile hide dependency authority and bypass the '
+            'public database boundary.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Database provider composes logging through explicit import', () async {
       final offenders = await _findDatabaseProviderLoggingImportOffenders();
 
@@ -7071,6 +7088,32 @@ Future<List<String>> _findDatabaseProviderLoggingImportOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>>
+_findPersistentDatabaseProviderImplementationImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importTarget.endsWith(
+        'db/feature_level_providers/persistent_database_providers.dart',
+      )) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findBroadLoggingProviderImportOffenders() async {

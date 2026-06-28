@@ -1,10 +1,10 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../essentials/db/feature_level_providers.dart'
+    show driftConversationGraphDatabaseProvider;
 import '../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart'
     show conversationGraphReadinessProvider;
-import '../../../../essentials/db/feature_level_providers/persistent_database_providers.dart'
-    show driftConversationGraphDatabaseProvider;
 import '../../../contacts/feature_level_providers.dart'
     show displayIdentityResolverProvider, handlesForContactProvider;
 import '../../domain/message_evidence/recovered_message_evidence.dart';

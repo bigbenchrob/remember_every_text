@@ -1,7 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers/persistent_database_providers.dart'
-    show overlayDatabaseProvider;
+import '../../db/feature_level_providers.dart' show overlayDatabaseProvider;
 import '../domain/ports/window_manager_port.dart';
 import '../domain/ports/window_storage_port.dart';
 import '../infrastructure/persistence/macos_window_manager.dart';

@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/db/feature_level_providers/persistent_database_providers.dart'
+import '../../../essentials/db/feature_level_providers.dart'
     show attachmentArchiveDirectoryProvider, overlayDatabaseProvider;
 import '../infrastructure/repositories/filesystem_attachment_archive_file_store.dart';
 import '../infrastructure/repositories/local_attachment_file_access.dart';

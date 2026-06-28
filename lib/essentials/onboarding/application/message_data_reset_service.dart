@@ -4,14 +4,14 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../db/app_database_files.dart';
+import '../../db/feature_level_providers.dart'
+    show
+        driftConversationGraphDatabaseProvider,
+        sourceScopedImportDatabaseProvider;
 import '../../db/feature_level_providers/db_maintenance_lock_provider.dart'
     show dbMaintenanceLockProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
-import '../../db/feature_level_providers/persistent_database_providers.dart'
-    show
-        driftConversationGraphDatabaseProvider,
-        sourceScopedImportDatabaseProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/application/app_navigator_key.dart';
 import '../domain/onboarding_environment_report.dart';

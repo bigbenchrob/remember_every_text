@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers/persistent_database_providers.dart'
+import '../../db/feature_level_providers.dart'
     show sourceScopedImportDatabaseProvider;
 import '../domain/ports/import_ledger_port.dart';
 
