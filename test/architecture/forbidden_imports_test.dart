@@ -1324,6 +1324,20 @@ void main() {
       );
     });
 
+    test('All feature provider seam imports stay explicit', () async {
+      final offenders = await _findBroadFeatureProviderSeamImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Public feature_level_providers.dart seams expose authority. '
+            'Production and test code should import them with explicit show '
+            'lists so each file declares the provider symbols it uses.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Public feature seam imports are not duplicated per file', () async {
       final offenders = await _findDuplicateFeatureSeamImportOffenders();
 
@@ -8131,6 +8145,29 @@ Future<List<String>> _findBroadDatabaseProviderImportOffenders() async {
   final offenders = <String>{};
   final broadImportPattern = RegExp(
     r'''import\s+['"][^'"]*db/feature_level_providers\.dart['"]\s*;''',
+  );
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (broadImportPattern.hasMatch(uncommented)) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findBroadFeatureProviderSeamImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  final offenders = <String>{};
+  final broadImportPattern = RegExp(
+    r'''import\s+['"][^'"]*feature_level_providers\.dart['"]\s*;''',
   );
 
   for (final filePath in files) {
