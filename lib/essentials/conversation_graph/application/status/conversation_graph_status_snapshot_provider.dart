@@ -1,9 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../db/app_database_files.dart';
-import '../../../db/feature_level_providers/persistent_database_providers.dart'
-    show driftConversationGraphDatabaseProvider;
+import '../../../db/feature_level_providers.dart'
+    show appDatabaseLabels, driftConversationGraphDatabaseProvider;
 import '../../../paths/feature_level_providers.dart' show pathsHelperProvider;
 import '../../../source_scoped_import/application/source_scoped_import_ledger_provider.dart'
     show sourceScopedImportLedgerProvider;
@@ -25,10 +24,8 @@ Future<ConversationGraphStatus> conversationGraphStatusSnapshot(Ref ref) async {
     chatDbPath: pathsHelper.chatDBPath,
     importLedger: importLedger,
     graphDatabase: graphDatabase,
-    importLedgerDatabaseLabel: appDatabaseFileName(
-      AppDatabaseFile.sourceScopedImport,
-    ),
-    graphDatabaseLabel: appDatabaseFileName(AppDatabaseFile.conversationGraph),
+    importLedgerDatabaseLabel: appDatabaseLabels.sourceScopedImport,
+    graphDatabaseLabel: appDatabaseLabels.conversationGraph,
     sourceId: liveChatDbSourceId,
   );
 }

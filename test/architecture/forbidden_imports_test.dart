@@ -122,11 +122,11 @@ const Set<String> _databaseHealthIdentityLiteralAllowedFiles = {
 
 const Set<String> _appDatabaseFileHelperAllowedFiles = {
   'lib/essentials/db/app_database_files.dart',
+  'lib/essentials/db/feature_level_providers/app_database_labels.dart',
   'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart',
   'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
   'lib/essentials/db/infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart',
-  'lib/essentials/conversation_graph/application/status/conversation_graph_status_snapshot_provider.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
   'lib/essentials/onboarding/application/database_existence_checker.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
