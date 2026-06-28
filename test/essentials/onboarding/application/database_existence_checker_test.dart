@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/application/conversation_graph_readiness.dart';
 import 'package:remember_this_text/essentials/onboarding/application/database_existence_checker.dart';
@@ -14,9 +13,9 @@ void main() {
       final checker = DatabaseExistenceChecker(
         _FakeDatabaseProbeReader(
           probes: {
-            path.join(
-              databaseDirectory,
-              appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
+            appDatabasePath(
+              AppDatabaseFile.sourceScopedImport,
+              databaseDirectory: databaseDirectory,
             ): const OnboardingDatabaseProbe(
               path: 'import',
               exists: true,
@@ -41,18 +40,18 @@ void main() {
       final checker = DatabaseExistenceChecker(
         _FakeDatabaseProbeReader(
           probes: {
-            path.join(
-              databaseDirectory,
-              appDatabaseFileName(AppDatabaseFile.retiredMacosImport),
+            appDatabasePath(
+              AppDatabaseFile.retiredMacosImport,
+              databaseDirectory: databaseDirectory,
             ): const OnboardingDatabaseProbe(
               path: 'retired macos import',
               exists: true,
               readable: true,
               sizeBytes: 1,
             ),
-            path.join(
-              databaseDirectory,
-              appDatabaseFileName(AppDatabaseFile.retiredWorking),
+            appDatabasePath(
+              AppDatabaseFile.retiredWorking,
+              databaseDirectory: databaseDirectory,
             ): const OnboardingDatabaseProbe(
               path: 'retired working',
               exists: true,

@@ -7247,15 +7247,23 @@ Future<List<String>> _findManualAppDatabasePathJoinOffenders() async {
     if (path == 'test/architecture/forbidden_imports_test.dart') {
       return false;
     }
+    if (path == 'lib/essentials/db/app_database_files.dart') {
+      return false;
+    }
     return path.startsWith('lib/') || path.startsWith('test/');
   });
   final offenders = <String>{};
+  final manualJoinPattern = RegExp(
+    r'\bpath\.join\s*\([^;]*\bappDatabaseFileName\s*\(',
+    dotAll: true,
+  );
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains(r'/${appDatabaseFileName(') ||
-        uncommented.contains(r'/$graphDatabaseFileName')) {
+        uncommented.contains(r'/$graphDatabaseFileName') ||
+        manualJoinPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }

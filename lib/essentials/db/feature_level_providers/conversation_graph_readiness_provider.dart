@@ -1,4 +1,3 @@
-import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../app_database_files.dart';
@@ -14,9 +13,9 @@ Future<ConversationGraphReadiness> conversationGraphReadiness(
   ConversationGraphReadinessRef ref,
 ) async {
   ref.watch(messageDataVersionProvider);
-  final dbPath = path.join(
-    databaseDirectoryPath,
-    appDatabaseFileName(AppDatabaseFile.conversationGraph),
+  final dbPath = appDatabasePath(
+    AppDatabaseFile.conversationGraph,
+    databaseDirectory: databaseDirectoryPath,
   );
   return const SqliteConversationGraphReadinessChecker().checkPath(dbPath);
 }
