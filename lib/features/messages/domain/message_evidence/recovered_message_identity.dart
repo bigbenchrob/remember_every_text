@@ -17,7 +17,7 @@ class RecoveredMessageIdentity {
   final int sourceId;
   final int sourceMessageRowId;
 
-  /// Apple message GUID, retained as source metadata and bridge data.
+  /// Apple message GUID, preserved as source metadata and bridge data.
   ///
   /// This is not canonical identity. Duplicate GUIDs across sources remain
   /// distinct source occurrences.
