@@ -246,7 +246,8 @@ Remaining work is production hardening rather than initial migration:
 - stale/failed graph state must remain visible and actionable
 - source-scoped import/projection must become the sole production lifecycle
   owner
-- legacy readiness may remain only as compatibility or diagnostic reference
+- retired-file diagnostics may report old file/schema inventory, but must not
+  participate in app readiness
 
 **Dependencies blocked**
 
@@ -643,8 +644,7 @@ Done means:
 - graph readiness is exposed through the central database dependency entry
   point.
 - graph UI does not masquerade missing graph data as "no messages".
-- legacy working readiness is compatibility/reference only for remaining legacy
-  subsystems.
+- retired `working.db` file/schema diagnostics are not app readiness.
 
 ### ChatDbChangeMonitor
 
