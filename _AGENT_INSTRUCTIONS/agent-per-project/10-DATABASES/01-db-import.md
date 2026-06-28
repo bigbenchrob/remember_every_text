@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-20
+last_reviewed: 2026-06-28
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -21,9 +21,10 @@ tests: []
 ## Overview
 
 `db-import` is the retired `macos_import.db` cleanup filename. Existing user data
-folders may still contain historical legacy ledger tables or older retired
-archive-source metadata from earlier versions, and diagnostics/reset code must
-tolerate those files.
+folders may still contain historical ledger tables, old migration/version
+tables, or older archive-source metadata from earlier versions. Reset and
+read-only diagnostics must tolerate those files without treating their broad
+schema shape as current app authority.
 
 > Current conformance note (2026-06-20): ordinary graph-era import work uses
 > `macos_import_ss.db` via source-scoped import providers. Archive-source
@@ -33,7 +34,8 @@ tolerate those files.
 
 - **Alias**: `db-import`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db`
-- **Primary Consumers**: Read-only database health diagnostics and reset cleanup
+- **Primary Consumers**: Reset cleanup and read-only diagnostics for the named
+  archive-source cleanup purpose
 
 ## File Location
 
@@ -54,9 +56,11 @@ deliberately required.
 metadata adapter has been removed from active code.
 
 Existing user folders may still contain older tables such as `messages`,
-`attachments`, `recovered_unlinked_messages`, or `import_batches`. Treat them as
-historical retired storage inventory. Do not build new ordinary features on
-those tables.
+`attachments`, `recovered_unlinked_messages`, `schema_migrations`, or
+`import_batches`. Treat them as tolerated retired-file residue unless a named
+diagnostic explicitly needs them. Current database health diagnostics no longer
+inventory old migration/version or ledger tables as important retained state.
+Do not build new ordinary features on those tables.
 
 ## Typical Use Cases
 

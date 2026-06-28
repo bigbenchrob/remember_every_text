@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-21
+last_reviewed: 2026-06-28
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -22,7 +22,8 @@ tests: []
 `db-working` is the retired `working.db` cleanup filename. The Drift schema and
 migrator implementation have been retired from active app code. Existing user
 data folders may still contain a retired projection file, and reset or
-read-only diagnostics must tolerate that file.
+read-only diagnostics must tolerate that file without treating the old broad
+projection schema as current app authority.
 
 > Current conformance note (2026-06-08): ordinary Flutter UI reads now use the
 > source-scoped conversation graph in `working_ss.db` through
@@ -32,7 +33,8 @@ read-only diagnostics must tolerate that file.
 
 - **Alias**: `db-working`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db`
-- **Primary Consumers**: Reset cleanup and read-only diagnostics
+- **Primary Consumers**: Reset cleanup and read-only diagnostics for the named
+  recovered-message cleanup purpose
 
 ## File Location
 
@@ -63,6 +65,12 @@ The old Drift schema implementation has been retired from app code.
 Existing user data folders may still contain a historical `working.db` file
 with the old projection tables, but MessageLens no longer opens that file
 through a Drift database class.
+
+Current database health diagnostics no longer inventory old migration/version
+tables, old projection-state tables, ordinal indexes, or the broad projection
+schema as important retained state. Those tables may physically exist in older
+files, but named diagnostics should focus on recovered-message cleanup evidence
+unless a reviewed retirement decision adds another explicit purpose.
 
 Representative historical tables that may still appear in old files:
 
