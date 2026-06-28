@@ -1,7 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../db/feature_level_providers/message_data_version_provider.dart';
+import '../../../db/feature_level_providers/message_data_version_provider.dart'
+    show messageDataVersionProvider;
 import '../conversations/conversation.dart';
 import '../identity/contact_page_graph_identity.dart';
 import 'contact_graph.dart';

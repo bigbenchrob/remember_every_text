@@ -16,7 +16,8 @@ import '../../../../essentials/conversation_graph/feature_level_providers.dart'
         conversationReaderProvider,
         messageAttachmentsProvider,
         messageGraphReaderProvider;
-import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
+import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart'
+    show messageDataVersionProvider;
 import '../../../../essentials/search/application/graph_message_search.dart';
 import '../../../../essentials/search/application/search_service.dart';
 import '../../../../essentials/search/feature_level_providers.dart'

@@ -6,7 +6,8 @@ import '../../../../../essentials/conversation_graph/feature_level_providers.dar
     show
         contactPageGraphHandleMessageTimelineProvider,
         contactPageGraphSnapshotProvider;
-import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
+import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart'
+    show messageDataVersionProvider;
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 
 part 'contact_timeline_provider.g.dart';
