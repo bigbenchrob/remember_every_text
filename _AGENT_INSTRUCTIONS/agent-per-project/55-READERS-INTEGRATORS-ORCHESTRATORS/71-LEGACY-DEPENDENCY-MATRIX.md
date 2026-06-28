@@ -84,22 +84,21 @@ discard/export decisions.
 ## Current Findings - 2026-06-06
 
 Fresh retention-oriented scans on 2026-06-06 confirmed the June 4 conclusion:
-no ordinary app-facing feature/read surface was found opening retained legacy
+no ordinary app-facing feature/read surface was found opening old
 `working.db` / `macos_import.db` providers. A later cleanup slice removed the
 central retired `working.db` provider entirely; retired `working.db` now
 exists only as file/schema storage for reset, diagnostics, and eventual storage
 retirement review.
 
-The remaining direct legacy provider/database usages are now explicitly
+The then-remaining direct old provider/database usages were explicitly
 classified:
 
-- retained archive-compatible import/projection execution
-- historical archive settings workflow
+- historical archive settings workflow (now overlay-backed)
 - onboarding reset / derived-data maintenance
 - database health and support diagnostics
 - retained import database schema tests
 - source-scoped graph import/projectors using the graph-era
-  `ImportDatabase` provider, not the retained legacy import DB
+  `ImportDatabase` provider, not the retired `macos_import.db`
 
 This means the next retirement step is not ordinary UI migration. It is
 retired-file audit: decide which retired DB files, schema references, and
@@ -197,7 +196,7 @@ first-class and tested.
 | `lib/essentials/db_migrate/**` | Retired | Former retired `working.db` projection execution stack | Deletion candidate closed | Removed after Historical Archives import/removal moved to source-scoped graph services, old legacy import/projection execution was retired, and caller scans confirmed no active production owner. Retired `working.db` schema/provider remains a separate retired-file cleanup question. |
 | `lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart` | Source-scoped graph build controller plus graph attachment archive source-row range | Live change monitor | Production lifecycle | Keep as live source detector. Live polling now builds the app-facing graph and archives graph source-row ranges; it no longer runs legacy import/migration maintenance. |
 | `lib/essentials/db_importers/application/services/legacy_compatibility_maintenance_service.dart` | Retired | Former live-update legacy import/migration tail | Deletion candidate closed | Removed after live polling proved graph import/projection plus graph attachment archiving as the production update path. |
-| `lib/essentials/onboarding/application/onboarding_gate_provider.dart` | Source-scoped graph build controller; derived-data reset through centralized lifecycle boundaries; graph-build failure recorded in overlay failure state | First-run and settings reimport lifecycle | Production lifecycle | Keep. First-run onboarding and settings reimport now build the graph directly and no longer invoke the retained legacy import/migration control path. Graph-build failures are persisted as onboarding semantic failures rather than legacy migration result entities. |
+| `lib/essentials/onboarding/application/onboarding_gate_provider.dart` | Source-scoped graph build controller; derived-data reset through centralized lifecycle boundaries; graph-build failure recorded in overlay failure state | First-run and settings reimport lifecycle | Production lifecycle | Keep. First-run onboarding and settings reimport now build the graph directly and no longer invoke the old import/migration control path. Graph-build failures are persisted as onboarding semantic failures rather than legacy migration result entities. |
 | `lib/essentials/onboarding/application/database_existence_checker.dart` | Source-scoped import file probe plus graph readiness | Startup data-state detection | Production lifecycle | Keep as graph-first readiness fallback. It must not treat retired `macos_import.db` / `working.db` files as sufficient app readiness. |
 | `lib/essentials/onboarding/application/message_data_reset_service.dart` | Source-scoped graph reset plus retired-file cleanup behavior | Data reset/maintenance | Production lifecycle | Keep; deliberately handles graph DBs, retired DB file cleanup, and overlay separation. |
 | `lib/essentials/onboarding/application/onboarding_environment_report_provider.dart` | Source probes, source-scoped import/graph readiness, overlay onboarding failure summaries | Environment diagnostics for onboarding | Production lifecycle | Keep; graph readiness is now app-facing readiness. The report consumes onboarding-owned failure summaries, not legacy import/migration result entities. |
@@ -265,7 +264,7 @@ only after `rg` reference checks, focused tests, and graph replacement coverage.
 | Unused `lib/essentials/contacts/domain/entities/` contact aggregate/value-object files | Removed after reference scan found no runtime imports. The later scan also removed unused `ContactId` / `MessageId` Freezed value objects and their unreferenced JSON converters; graph/contact/message identity is now expressed by source-scoped integer ids and typed graph/evidence read models. | Deletion candidate closed | Keep closed; graph contact summaries, message evidence scopes, and overlay identity resolvers own production identity/display behavior. |
 | Unused `ManualHandleLink` domain entity | Removed after reference scan found no runtime imports. Manual linking is now service-owned and graph/overlay read-model backed. | Deletion candidate closed | Keep closed; do not recreate a separate manual-link aggregate unless a real domain behavior requires it. |
 | Empty repository-interface stubs in retired feature/domain shells | Removed after reference scan found no runtime imports for the generic `i_repositories/repository_interface.dart` placeholders under contacts essentials, database domain, attachments, handles, and reactions. | Deletion candidate closed | Keep closed; real repository contracts now live at named graph/search/archive/evidence boundaries rather than empty DDD templates. |
-| Unused reactions feature shell | Removed after reference scans found no imports of `lib/features/reactions/feature_level_providers.dart`, `Reaction`, `ReactionId`, or `ReactionKind`. Retained legacy reaction tables/migrators and graph message semantic fields remain separate. | Deletion candidate closed | Keep reaction semantic preservation in message import/projection and retained legacy schemas. Do not recreate a reactions feature/domain model until reactions become an app-facing graph feature. |
+| Unused reactions feature shell | Removed after reference scans found no imports of `lib/features/reactions/feature_level_providers.dart`, `Reaction`, `ReactionId`, or `ReactionKind`. Old reaction tables/migrators and graph message semantic fields remain separate. | Deletion candidate closed | Keep reaction semantic preservation in message import/projection and old schema-reference docs. Do not recreate a reactions feature/domain model until reactions become an app-facing graph feature. |
 | Placeholder cross-surface feature coordinator shells | Removed unused "coming soon" feature-level providers for attachments/chats and the unreferenced handles ViewSpec coordinator after reference scans found only placeholder tests. | Deletion candidate closed | Keep active attachment archive, chat/conversation, and handle settings/read paths in their real application/infrastructure files. Reintroduce public feature barrels only when they export actual spec/coordinator behavior. |
 | Superseded handle placeholder cassette branch | Removed old `unmatchedHandlesList`, `strayPhoneNumbers`, and `strayEmails` cassette variants plus placeholder payload/resolver/widget files. | Deletion candidate closed | Keep the current unified handle triage flow: info card -> type switcher -> mode switcher -> `strayHandlesReview`. |
 | Unreachable handles settings cassette shell | Removed the unreferenced `HandlesSettingsSpec` coordinator, inert manual-link/spam payload resolvers, and placeholder settings widgets. Reference scan found no sidebar topology or runtime caller; current handle work is the unified triage flow and graph/overlay operation providers. | Deletion candidate closed | Keep the semantic manual-link/spam providers until their future product role is decided, but do not recreate a separate handles settings cassette shell without an actual settings route. |

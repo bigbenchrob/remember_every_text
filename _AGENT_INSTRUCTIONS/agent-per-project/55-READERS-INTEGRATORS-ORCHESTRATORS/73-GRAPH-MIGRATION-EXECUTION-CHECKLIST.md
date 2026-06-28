@@ -338,11 +338,11 @@ than dev-panel-owned.
   the entry point for both the source-scoped dev panel and live `chat.db`
   monitor graph builds.
 - Live `chat.db` changes now trigger the conversation graph build as the
-  app-facing production update path. The retained legacy import/migration
-  maintenance tail has been retired from live updates.
+  app-facing production update path. The old import/migration maintenance tail
+  has been retired from live updates.
 - Live `chat.db` monitor updates now treat source-scoped graph import/projection
-  as the app-facing success path; retained `macos_import.db` / `working.db`
-  files are transitional cleanup storage, not live-update outputs.
+  as the app-facing success path; old `macos_import.db` / `working.db` files
+  are retired cleanup/diagnostic inventory, not live-update outputs.
 - The live monitor now claims the global derived-data maintenance gate around
   the graph build and attachment archive pass.
   Gate denial still delays/retries to avoid overlapping maintenance work, but
@@ -371,8 +371,8 @@ than dev-panel-owned.
   overlay databases.
 - Database health/support-bundle audits now curate source-scoped import and
   conversation graph table/relationship/invariant checks explicitly, while
-  legacy `macos_import.db` and `working.db` are labelled as compatibility
-  databases rather than production authority.
+  old `macos_import.db` and `working.db` are labelled as retired cleanup
+  inventory rather than production authority.
 - Onboarding, environment-readiness, diagnostic-report, and import-control
   presentation copy now describes app-facing readiness as the source-scoped
   import ledger plus conversation graph rather than generic import/working
@@ -381,8 +381,8 @@ than dev-panel-owned.
   as well as legacy import/working databases.
 - First-run onboarding and settings-triggered reimport now run the central
   source-scoped conversation graph build directly. They no longer invoke the
-  retained legacy import/migration control path as the app-facing setup or
-  rebuild mechanism.
+  old import/migration control path as the app-facing setup or rebuild
+  mechanism.
 - Graph build failure is recorded in overlay onboarding failure state using the
   existing migration-failure reporting slot, so setup/reimport failures remain
   visible without making legacy migration the authority.
@@ -816,11 +816,11 @@ retention criteria.
 
 2026-06-03:
 
-- Live `chat.db` polling no longer runs the retained legacy import/migration
-  tail after a successful graph build. The live monitor now performs only:
+- Live `chat.db` polling no longer runs the old import/migration tail after a
+  successful graph build. The live monitor now performs only:
   source change detection, source-scoped graph build, graph attachment archive
   by source-row range, graph freshness cursor advancement, and shared message
-  evidence invalidation.
+  evidence invalidation. Old import/working files are not live-update outputs.
 - Removed `LegacyCompatibilityMaintenanceService`, its provider, generated
   provider output, and focused service tests. Manual import/onboarding legacy
   paths remain intact until those lifecycle entry points are retired
@@ -830,9 +830,8 @@ retention criteria.
   as a closed deletion candidate.
 - Retired the standalone legacy migration panel and removed the
   `ImportSpec.forMigration` route. The import control surface no longer offers
-  a user-facing migration tab; any retained legacy migration entry points are
-  compatibility/archive/diagnostic references, not onboarding/settings product
-  setup.
+  a user-facing migration tab; any old migration references are retired
+  archive/diagnostic notes, not onboarding/settings product setup.
 - First-run onboarding and settings-triggered reimport now call the central
   conversation graph build controller directly after derived-data reset. They
   no longer call `DbImportControlViewModel.startImport()` or

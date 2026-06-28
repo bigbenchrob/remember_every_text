@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-02
+last_reviewed: 2026-06-28
 depends_on:
   - 69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
@@ -341,7 +341,8 @@ Remaining work:
 Done means:
 
 - `working.db` and `macos_import.db` are not needed for ordinary app use
-- retained legacy references are diagnostic, archival, or explicitly bridged
+- remaining old DB/file references are cleanup/diagnostic inventory or
+  explicitly bridged archive/overlay identity
 - no feature silently depends on legacy identity
 
 ### 3. Archive and Recovery Identity
