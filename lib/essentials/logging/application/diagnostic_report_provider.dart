@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart'
+import '../../db/feature_level_providers/database_health_audit_service_provider.dart'
     show databaseHealthAuditServiceProvider;
 import '../infrastructure/log_export_service.dart';
 import '../infrastructure/support_bundle_diagnostic_report_exporter.dart';
