@@ -6,7 +6,8 @@ import '../../../../../config/theme/colors/theme_colors.dart'
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
-import '../../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import '../../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart'
+    show conversationGraphPopulatedProvider;
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../domain/sidebar_utilities_constants.dart';
 import '../resolver_tools/sidebar_top_menu_actions_provider.dart';

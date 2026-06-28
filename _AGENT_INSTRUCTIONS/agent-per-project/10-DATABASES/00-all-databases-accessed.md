@@ -120,10 +120,11 @@ instead of reaching for the concrete physical provider.
   future long-lived app database must be physically constructed in named files
   under `lib/essentials/db/feature_level_providers/` and exported by
   `lib/essentials/db/feature_level_providers.dart`.
-- Cross-feature DB lifecycle signals: maintenance locks, graph readiness, and
-  message-data version signals are consumed through the DB public seam unless a
-  named DB-layer implementation file is composing the signal internally. Do not
-  import provider implementation subfiles as convenience barrels from features.
+- Cross-feature DB lifecycle signals: the maintenance lock is consumed through
+  the DB public seam because it coordinates reset/rebuild/archive operations
+  across features. Narrow refresh/readiness signals such as graph readiness or
+  message-data version may use their explicit provider files when a tripwire
+  requires narrow imports to avoid broad DB authority.
 - One-off source/probe reads: infrastructure repositories may open `chat.db`,
   AddressBook candidates, historical archive `chat.db` files, or retired
   cleanup files for a named read-only query. They must set read-only/query-only
