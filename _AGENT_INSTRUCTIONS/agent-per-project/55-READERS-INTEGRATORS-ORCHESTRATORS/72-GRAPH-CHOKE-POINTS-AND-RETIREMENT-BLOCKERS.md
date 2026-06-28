@@ -43,8 +43,8 @@ policy:
 - ordinary live attachment evidence and living archive sweeps no longer read
   retired DB tables;
 - historical archive/recovered-source intake still needs explicit
-  source-scoped strategy before all retained-file safety language can be
-  removed.
+  source-scoped strategy before all retired-file safety language can be
+  reduced to cleanup/export/discard policy.
 
 ## Architectural Choke Points
 
@@ -279,10 +279,10 @@ the app-facing success path. Startup catch-up and cursor priming compare
 against the source-scoped import ledger. Attachment archiving uses graph
 message source-row ranges during live updates.
 
-Retained legacy import/migration maintenance no longer runs as the live-update
-tail. Retained `macos_import.db` and `working.db` may remain in user data
-folders for audit, recovery, and rollback safety, but they no longer define
-ordinary graph evidence freshness.
+Retired import/migration maintenance no longer runs as the live-update tail.
+Old `macos_import.db` and `working.db` files may remain in user data folders
+for cleanup inventory, read-only diagnostics, or explicit archive/recovery
+review, but they no longer define ordinary graph evidence freshness.
 
 **Dependencies blocked**
 
@@ -427,7 +427,7 @@ This section names what prevents each legacy layer from being retired.
 | Search still selects legacy message IDs | Search All, search result context, saved/tagged search | Closed: search returns graph `ss_id` scopes and saved/tag overlays resolve through graph identity or documented bridges. | Complete. |
 | Contact/profile/handle providers still read working participants/handles | contact picker, hero card, handle menu, manual link UI | Closed: graph contact identity layer covers contact summaries, handle lists, overrides, favourites, and manual link reads. | Complete. |
 | Legacy readiness gates app startup | onboarding, contact providers, global heatmap | Closed: graph readiness provider replaced working projection readiness for graph paths. | Complete. |
-| Retained live-update compatibility maintenance | live update path, compatibility `macos_import.db` / `working.db` freshness | Closed: `ChatDbChangeMonitor` triggers graph build, graph attachment archiving, graph invalidation, and cursor advancement without `LegacyCompatibilityMaintenanceService`. | Complete. |
+| Retired live-update maintenance tail | live update path, retired `macos_import.db` / `working.db` freshness | Closed: `ChatDbChangeMonitor` triggers graph build, graph attachment archiving, graph invalidation, and cursor advancement without `LegacyCompatibilityMaintenanceService`. | Complete. |
 | Archive/recovery maps through retired identity | deterministic recovery, archived attachment lookup | Closed for ordinary live attachment evidence; historical archive/recovered-source intake still needs source-scoped strategy. | Later. |
 | Overlay tables reference working IDs | favourites, display overrides, handle links, message annotations, chat overrides | Overlay key strategy and migration bridge exist. | Begin before search/contact migration; complete before retirement. |
 
