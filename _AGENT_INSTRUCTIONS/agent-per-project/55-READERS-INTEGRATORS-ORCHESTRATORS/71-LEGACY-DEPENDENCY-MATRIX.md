@@ -2,13 +2,15 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-06-06
+last_reviewed: 2026-06-28
 depends_on:
   - 66-SS-MIGRATION-STRATEGY.md
   - 67-SS-LEGACY-PARITY-AUDIT.md
   - 69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 81-LEGACY-STORAGE-RETENTION-REGISTER.md
+  - 83-LEGACY-DATABASE-RETIREMENT-ASSESSMENT.md
+  - 84-ATTACHMENT-REACHABILITY-AUDIT.md
 ---
 
 # 71 - Legacy Dependency Matrix
@@ -55,6 +57,29 @@ feature repositories should consume those typed key variants rather than
 duplicating source-scoped pack/unpack compatibility math. The bridge currently
 covers contact ids, handle ids, and live `chat.db` message rowids used by
 message overlay fallback and bounded-search context anchoring.
+
+## Current Findings - 2026-06-28
+
+The retained-storage policy has moved from "compatibility storage" to explicit
+retired-file cleanup/diagnostic inventory:
+
+- no ordinary app-facing feature/read surface opens `working.db` or
+  `macos_import.db`;
+- the old `db_importers` and `db_migrate` execution trees are removed;
+- Historical Archives source metadata is overlay-backed rather than stored in
+  retired `macos_import.db`;
+- ordinary live attachment evidence and living graph archive sweeps resolve
+  through `working_ss.db`, overlay `archived_attachments`, and the archive
+  filesystem, not retired DB tables;
+- active-code retired DB references are bounded to central filename identity,
+  reset cleanup, read-only database health diagnostics, and tests/tripwires.
+
+This means the matrix is now a retirement guardrail, not a migration backlog
+for ordinary user-facing reads. New work should not introduce retained
+`working.db` / `macos_import.db` dependencies. Remaining references should be
+reduced only when reset cleanup policy, historical archive reachability, and
+support diagnostics have graph/source-scoped replacements or explicit
+discard/export decisions.
 
 ## Current Findings - 2026-06-06
 
@@ -203,7 +228,7 @@ diagnostic/reference and not the ordinary app truth.
 
 | Consumer | Legacy dependency | Current role | Classification | Migration direction |
 | --- | --- | --- | --- | --- |
-| `lib/essentials/db/application/database_health_audit/**` | `macos_import.db`; `working.db`; source-scoped import; graph; overlay | Phase 1 database health report | Diagnostic/settings | Keep broad inventory while legacy lifecycle/recovery exists. Legacy layers are compatibility/reference, not app truth. |
+| `lib/essentials/db/application/database_health_audit/**` | retired `macos_import.db` / `working.db` file existence/schema; source-scoped import; graph; overlay | Database health report | Diagnostic/settings | Keep only read-only retired-file cleanup inventory plus graph/source-scoped health. Retired file inspection must not become app readiness or recovery authority. |
 | `lib/essentials/incremental_update/**` | Shadow import/projection DBs, old shadow update flow | Retired earlier incremental-update research package | Retired | Removed after graph lifecycle replaced the shadow runtime entry points. Historical docs remain as architecture lineage, not active implementation instructions. |
 | `lib/essentials/incremental_update_ss/**` | Retired proof folder | Former source-scoped proof instrumentation | Deletion candidate closed | Remaining waveform diagnostics moved under `conversation_graph` ownership. Production graph lifecycle does not depend on manual dev panel actions. |
 | `lib/essentials/db_importers/presentation/view_model/db_import_control_provider.dart` and related panels | Retired | Former legacy import/progress/maintenance panel | Deletion candidate closed | Removed after reset/clear ownership moved to `MessageDataResetService`, onboarding/dev controls, and sidebar action dispatch. The `ViewSpec.import` route and `ImportSpec` tag are also retired. |
