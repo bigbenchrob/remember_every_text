@@ -10,7 +10,11 @@ import '../../../features/contacts/feature_level_providers.dart'
         contactsInfoCassetteCoordinatorProvider;
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/feature_level_providers.dart'
-    as handles_feature;
+    as handles_feature
+    show
+        handlesCassetteCoordinatorProvider,
+        handlesInfoCassetteCoordinatorProvider,
+        strayHandleModeSettingProvider;
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature
     show

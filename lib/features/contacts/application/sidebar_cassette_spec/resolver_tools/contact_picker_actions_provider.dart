@@ -7,7 +7,9 @@ import '../../../../../essentials/logging/feature_level_providers.dart'
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../messages/feature_level_providers.dart' as messages_feature;
+import '../../../../messages/feature_level_providers.dart'
+    as messages_feature
+    show prewarmContactMessagesProvider;
 import '../../read_models/contact_profile_provider.dart';
 
 part 'contact_picker_actions_provider.g.dart';
