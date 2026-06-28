@@ -9,9 +9,22 @@ class AddressBookDbHelperMultiInstance {
   Database? _db;
   AddressBookDbHelperMultiInstance(this._path);
 
-  Future<Database> get database async {
+  Future<Database> get _database async {
     _db ??= await _initDatabase();
     return _db!;
+  }
+
+  Future<void> verifyReadable() async {
+    await _database;
+  }
+
+  Future<List<Map<String, Object?>>> readRows(
+    String sql, [
+    List<Object?>? arguments,
+  ]) async {
+    _assertReadSql(sql);
+    final db = await _database;
+    return db.rawQuery(sql, arguments);
   }
 
   Future<Database> _initDatabase() async {
@@ -31,5 +44,19 @@ class AddressBookDbHelperMultiInstance {
   Future<void> close() async {
     await _db?.close();
     _db = null;
+  }
+
+  static void _assertReadSql(String sql) {
+    final normalized = sql.trimLeft().toLowerCase();
+    if (normalized.startsWith('select ') ||
+        normalized.startsWith('select\n') ||
+        normalized.startsWith('pragma ') ||
+        normalized.startsWith('pragma\n') ||
+        normalized.startsWith('with ') ||
+        normalized.startsWith('with\n')) {
+      return;
+    }
+
+    throw StateError('AddressBook readRows only accepts read queries');
   }
 }

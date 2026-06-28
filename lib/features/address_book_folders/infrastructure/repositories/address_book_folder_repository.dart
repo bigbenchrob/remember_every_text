@@ -68,7 +68,7 @@ class AddressBookFolderRepository {
   Future<String?> _addressBookDbRejectionReason(String path) async {
     final helper = AddressBookDbHelperMultiInstance(path);
     try {
-      await helper.database;
+      await helper.verifyReadable();
       return null;
     } catch (error) {
       return '$error';
@@ -79,9 +79,8 @@ class AddressBookFolderRepository {
 
   Future<AddressBookFolderEntity> _processToFolderEntity(String path) async {
     final helper = AddressBookDbHelperMultiInstance(path);
-    final db = await helper.database;
     try {
-      final result = await db.rawQuery(_qsAddressFolderInfo(path));
+      final result = await helper.readRows(_qsAddressFolderInfo(path));
       final jsonResult = result.first;
       return AddressBookFolderEntity.fromJson(jsonResult);
     } catch (error) {
