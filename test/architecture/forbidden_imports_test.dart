@@ -1509,10 +1509,25 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'Production code should import exact window-state provider files '
-            'instead of the broad essentials/window_state/feature_level_providers.dart '
-            'seam. Window sizing and persistence authority should not travel '
-            'through convenience barrels.\n'
+            'Production code may import window-state providers through '
+            'essentials/window_state/feature_level_providers.dart only with an '
+            'explicit show list. Window sizing and persistence authority should '
+            'not travel through convenience barrels.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('External window state consumers use public seam', () async {
+      final offenders = await _findExternalWindowStateProviderFileOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'External production code should consume window-state providers '
+            'through essentials/window_state/feature_level_providers.dart with '
+            'an explicit show list. Direct imports of concrete application or '
+            'infrastructure provider files hide the public ownership seam.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -7569,6 +7584,33 @@ Future<List<String>> _findBroadWindowStateProviderImportOffenders() async {
     final uncommented = _stripComments(source);
     if (broadImportPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findExternalWindowStateProviderFileOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') &&
+        !path.startsWith('lib/essentials/window_state/');
+  });
+  final offenders = <String>{};
+  const forbiddenTargets = <String>{
+    'window_state/application/window_state_providers.dart',
+    'window_state/infrastructure/persistence/window_state_infrastructure_providers.dart',
+  };
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    for (final importTarget in _extractImports(uncommented)) {
+      if (forbiddenTargets.any(importTarget.endsWith)) {
+        offenders.add('$filePath imports $importTarget');
+      }
     }
   }
 
