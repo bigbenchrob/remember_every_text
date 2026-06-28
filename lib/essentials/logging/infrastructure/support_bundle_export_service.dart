@@ -169,11 +169,11 @@ class SupportBundleExportService {
       return _PipelineAuditLogFiles(
         files: [
           (
-            'Retired Historical Import Audit Log',
+            'Retired Import Audit Log',
             File(path.join(databaseDirectoryPath, 'import_log')),
           ),
           (
-            'Retired Historical Projection Audit Log',
+            'Retired Projection Audit Log',
             File(path.join(databaseDirectoryPath, 'migrate_log')),
           ),
           (

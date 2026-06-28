@@ -13894,6 +13894,7 @@ Future<List<String>> _findAmbiguousOldSystemPhraseOffenders() async {
     'old live',
     'old method',
     'old spec',
+    'retired historical',
   ];
   final offenders = <String>[];
 
