@@ -8,7 +8,7 @@ import '../../../essentials/db/feature_level_providers/persistent_database_provi
         sourceScopedImportDatabaseProvider;
 import '../../../essentials/paths/feature_level_providers.dart'
     show pathsHelperProvider;
-import '../../../essentials/source_scoped_import/feature_level_providers.dart'
+import '../../../essentials/source_scoped_import/application/source_database_opener_provider.dart'
     show sourceDatabaseOpenerProvider;
 import '../infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
 import '../infrastructure/repositories/source_database_attachment_path_lookup.dart';
