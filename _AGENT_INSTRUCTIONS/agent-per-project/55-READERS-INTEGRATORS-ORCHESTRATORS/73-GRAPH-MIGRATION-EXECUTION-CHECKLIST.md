@@ -993,6 +993,11 @@ criteria.
   It also records the hard caveat that the existing
   `(message_guid, import_attachment_id)` overlay archive tuple is a live-source
   compatibility bridge, not a universal source-scoped archive key.
+- Reconciled `83-LEGACY-DATABASE-RETIREMENT-ASSESSMENT.md` with the
+  attachment reachability audit. Document 83 now treats ordinary live
+  attachment evidence as verified graph-era behavior and leaves historical
+  archive reachability, reset cleanup, and read-only support diagnostics as the
+  remaining retired-file safety checks.
 - Manual handle-link service tests no longer instantiate legacy
   `WorkingDatabase` fixtures. The tests now exercise overlay-only user intent
   directly with graph-era stable ids, matching the production boundary where
