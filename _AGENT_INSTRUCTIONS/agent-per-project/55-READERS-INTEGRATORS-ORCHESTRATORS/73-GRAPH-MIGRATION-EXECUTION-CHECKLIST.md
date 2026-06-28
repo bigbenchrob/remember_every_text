@@ -3895,6 +3895,10 @@ criteria.
 - Narrowed message-data reset invalidation: reset still invalidates the
   physical derived database providers whose files are deleted, while graph
   readiness/populated refresh through the same message-data version signal.
+- Documented the DB maintenance-lock access rule after the direct-import
+  tripwire caught drift: `dbMaintenanceLockProvider` is a cross-feature DB
+  lifecycle signal consumed through `essentials/db/feature_level_providers.dart`;
+  its implementation subfile is not a convenience import surface for features.
 
 ### Vocabulary Note
 
