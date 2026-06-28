@@ -1708,6 +1708,26 @@ void main() {
     );
 
     test(
+      'External source-scoped import provider access uses public seam',
+      () async {
+        final offenders =
+            await _findExternalSourceScopedImportProviderImplementationImportOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Source-scoped import feature_level_providers.dart is the public '
+              'provider seam for graph, attachment, archive, and lifecycle '
+              'consumers. External production code should not import exported '
+              'source-scoped application provider implementation files '
+              'directly.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Source-scoped import application provider imports stay explicit',
       () async {
         final offenders =
@@ -8083,6 +8103,37 @@ _findBroadSourceScopedImportProviderImportOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>>
+_findExternalSourceScopedImportProviderImplementationImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') &&
+        !path.startsWith('lib/essentials/source_scoped_import/');
+  });
+  const implementationProviderSuffixes = <String>{
+    'source_scoped_import/application/archives/historical_messages_archive_source_folder_resolver_provider.dart',
+    'source_scoped_import/application/message_extractor_provider.dart',
+    'source_scoped_import/application/source_database_opener_provider.dart',
+    'source_scoped_import/application/source_scoped_import_ledger_provider.dart',
+  };
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (implementationProviderSuffixes.any(importTarget.endsWith)) {
+        offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>>

@@ -7,10 +7,8 @@ import '../../../essentials/db/feature_level_providers.dart'
         overlayDatabaseProvider;
 import '../../../essentials/paths/feature_level_providers.dart'
     show pathsHelperProvider;
-import '../../../essentials/source_scoped_import/application/source_database_opener_provider.dart'
-    show sourceDatabaseOpenerProvider;
-import '../../../essentials/source_scoped_import/application/source_scoped_import_ledger_provider.dart'
-    show sourceScopedImportLedgerProvider;
+import '../../../essentials/source_scoped_import/feature_level_providers.dart'
+    show sourceDatabaseOpenerProvider, sourceScopedImportLedgerProvider;
 import '../infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
 import '../infrastructure/repositories/source_database_attachment_path_lookup.dart';
 import '../infrastructure/repositories/source_scoped_attachment_snapshot_lookup.dart';

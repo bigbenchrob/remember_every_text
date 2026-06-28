@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../db/feature_level_providers.dart'
     show driftConversationGraphDatabaseProvider;
-import '../../../source_scoped_import/application/source_scoped_import_ledger_provider.dart'
+import '../../../source_scoped_import/feature_level_providers.dart'
     show sourceScopedImportLedgerProvider;
 import '../../infrastructure/repositories/contact_projection_repository.dart';
 import 'contact_projection_repository.dart';
