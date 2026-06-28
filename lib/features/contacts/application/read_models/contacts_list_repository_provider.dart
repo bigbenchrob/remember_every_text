@@ -2,9 +2,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../essentials/db/feature_level_providers.dart'
-    show dbMaintenanceLockProvider;
-import '../../../../essentials/db/feature_level_providers.dart'
-    show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
+    show
+        dbMaintenanceLockProvider,
+        driftConversationGraphDatabaseProvider,
+        overlayDatabaseProvider;
 import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
 import '../../infrastructure/repositories/graph_contacts_list_reader.dart';

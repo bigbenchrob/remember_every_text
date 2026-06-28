@@ -1280,6 +1280,20 @@ void main() {
       );
     });
 
+    test('Public feature seam imports are not duplicated per file', () async {
+      final offenders = await _findDuplicateFeatureSeamImportOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'If a file needs several symbols from the same public '
+            'feature_level_providers.dart seam, use one explicit show import. '
+            'Repeated imports of the same seam make authority harder to scan.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Database provider implementation imports stay internal', () async {
       final offenders =
           await _findPersistentDatabaseProviderImplementationImportOffenders();
@@ -7109,6 +7123,36 @@ _findPersistentDatabaseProviderImplementationImportOffenders() async {
         'db/feature_level_providers/persistent_database_providers.dart',
       )) {
         offenders.add('$filePath imports $importTarget');
+      }
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findDuplicateFeatureSeamImportOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final counts = <String, int>{};
+    for (final importTarget in _extractImports(uncommented)) {
+      if (!importTarget.endsWith('feature_level_providers.dart')) {
+        continue;
+      }
+      counts.update(importTarget, (count) => count + 1, ifAbsent: () => 1);
+    }
+
+    for (final entry in counts.entries) {
+      if (entry.value > 1) {
+        offenders.add('$filePath imports ${entry.key} ${entry.value} times');
       }
     }
   }
