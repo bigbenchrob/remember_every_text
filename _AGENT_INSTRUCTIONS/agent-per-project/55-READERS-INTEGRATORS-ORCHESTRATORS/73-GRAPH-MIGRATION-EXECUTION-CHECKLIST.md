@@ -3957,6 +3957,14 @@ criteria.
   `essentials/source_scoped_import/feature_level_providers.dart` and routed the
   graph archive-import service provider through that seam. The source-scoped
   provider implementation tripwire now covers this service as well.
+- Codified the remaining source-scoped importer-provider composition point:
+  `conversation_graph/application/conversation_graph_build_service_provider.dart`
+  is currently the only approved external composer of individual importers and
+  the rich-text enricher. This is a transitional graph-build seam, not a
+  general permission for other modules to acquire importer authority directly.
+  The allowlist should shrink to zero or be replaced by an aggregate
+  source-scoped import boundary if import orchestration is moved behind the
+  source-scoped import essential.
 
 ### Vocabulary Note
 

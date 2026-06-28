@@ -95,6 +95,10 @@ const Set<String> _sourceScopedImportDatabaseProviderAllowedFiles = {
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
 };
 
+const Set<String> _sourceScopedImporterProviderCompositionAllowedFiles = {
+  'lib/essentials/conversation_graph/application/conversation_graph_build_service_provider.dart',
+};
+
 const Set<String> _historicalOnboardingMigrationKeyAllowedFiles = {
   'lib/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart',
 };
@@ -1723,6 +1727,29 @@ void main() {
               'source-scoped application provider implementation files '
               'directly.\n'
               'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
+      'Source-scoped importer providers are composed only by graph build',
+      () async {
+        final users = await _findSourceScopedImporterProviderCompositionUsers();
+
+        expect(
+          users,
+          orderedEquals(
+            _sourceScopedImporterProviderCompositionAllowedFiles.toList()
+              ..sort(),
+          ),
+          reason:
+              'Individual source-scoped importer providers carry source and '
+              'ledger mutation authority. Until import orchestration is moved '
+              'behind a narrower aggregate import seam, the graph build '
+              'service is the only approved external composer. This allowlist '
+              'is transitional and should only shrink or be replaced by an '
+              'aggregate source-scoped import boundary.\n'
+              'Actual users:\n${users.join('\n')}',
         );
       },
     );
@@ -8150,6 +8177,41 @@ _findExternalSourceScopedImportProviderImplementationImportOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findSourceScopedImporterProviderCompositionUsers() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/') &&
+        !path.startsWith('lib/essentials/source_scoped_import/');
+  });
+  const importerProviderSuffixes = <String>{
+    'source_scoped_import/application/attachments/attachment_importer_provider.dart',
+    'source_scoped_import/application/chat_handle_joins/chat_handle_join_importer_provider.dart',
+    'source_scoped_import/application/chat_message_joins/chat_message_join_importer_provider.dart',
+    'source_scoped_import/application/chats/chat_importer_provider.dart',
+    'source_scoped_import/application/contacts/contact_importer_provider.dart',
+    'source_scoped_import/application/handles/handle_importer_provider.dart',
+    'source_scoped_import/application/message_attachment_joins/message_attachment_join_importer_provider.dart',
+    'source_scoped_import/application/messages/message_importer_provider.dart',
+    'source_scoped_import/application/messages/message_rich_text_enricher_provider.dart',
+  };
+  final users = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    for (final importTarget in imports) {
+      if (importerProviderSuffixes.any(importTarget.endsWith)) {
+        users.add(filePath);
+      }
+    }
+  }
+
+  return users.toList()..sort();
 }
 
 Future<List<String>>
