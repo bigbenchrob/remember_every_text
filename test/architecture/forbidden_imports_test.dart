@@ -1321,7 +1321,7 @@ void main() {
       );
     });
 
-    test('All feature provider seam imports stay explicit', () async {
+    test('All public provider seam imports stay explicit', () async {
       final offenders = await _findBroadFeatureProviderSeamImportOffenders();
 
       expect(
