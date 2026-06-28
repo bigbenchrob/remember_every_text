@@ -2,10 +2,12 @@
 tier: project
 scope: source-scoped-graph-migration
 status: active
-last_reviewed: 2026-05-30
+last_reviewed: 2026-06-28
 depends_on:
   - 70-GRAPH-SYSTEM-COMPLETION-ROADMAP.md
   - 71-LEGACY-DEPENDENCY-MATRIX.md
+  - 83-LEGACY-DATABASE-RETIREMENT-ASSESSMENT.md
+  - 84-ATTACHMENT-REACHABILITY-AUDIT.md
 ---
 
 # 72 - Graph Choke Points and Retirement Blockers
@@ -26,6 +28,24 @@ legacy read models can be retired deliberately.
 This is an architectural planning document only. It does not authorize
 implementation.
 
+## Current Status - 2026-06-28
+
+The high-leverage ordinary migration choke points are closed. Search, display
+identity, contact/handle identity, message evidence scope construction, graph
+readiness, live update, onboarding, settings reimport, and ordinary recovered
+message evidence now use graph/source-scoped paths.
+
+The remaining blocker category is retired-file cleanup and archive/recovery
+policy:
+
+- retired `macos_import.db` / `working.db` files may still exist on disk;
+- reset and database health diagnostics may still name or inspect those files;
+- ordinary live attachment evidence and living archive sweeps no longer read
+  retired DB tables;
+- historical archive/recovered-source intake still needs explicit
+  source-scoped strategy before all retained-file safety language can be
+  removed.
+
 ## Architectural Choke Points
 
 An architectural choke point is a relatively small subsystem whose migration,
@@ -36,17 +56,17 @@ downstream legacy dependencies.
 
 | Choke point | Current state | Dependencies blocked | Estimated leverage | Recommended relative order |
 | --- | --- | --- | --- | --- |
-| `SearchService` | Graph search facade returns `message_ss_id` scopes through named graph search repositories. | Closed for ordinary search; retained compatibility is limited to explicitly bridged overlay rows. | Closed high-leverage blocker | Complete. |
+| `SearchService` | Graph search facade returns `message_ss_id` scopes through named graph search repositories. | Closed for ordinary search; old overlay compatibility is limited to explicitly bridged rows. | Closed high-leverage blocker | Complete. |
 | Search identity model | Ordinary search, saved, and tagged scopes use graph message identity; duplicate GUID bridge behavior is explicit. | Closed for ordinary evidence selection. | Closed high-leverage blocker | Complete. |
 | Display Identity Resolver | Graph-aware resolver owns app-facing display names across ordinary contact/handle/conversation/sender surfaces. | Remaining risk is future surface drift, not an active legacy-read blocker. | Closed high-leverage blocker | Monitor during new surfaces. |
 | Contact Identity Layer | Contact/profile/handle menus read graph facts plus overlay intent; legacy participant/handle reads are retired from ordinary UI. | Closed for ordinary contact and handle identity. | Closed high-leverage blocker | Complete. |
 | MessageEvidenceScope construction | Ordinary contact, conversation, handle, global, search, and recovered routes enter through typed graph evidence scopes. | Closed for ordinary message-bearing routes. | Closed high-leverage blocker | Monitor during new evidence sources. |
 | Graph Readiness Provider | App-facing readiness now uses graph readiness; the old `workingProjectionReadinessProvider` has been retired. | Onboarding, auto-sync eligibility, graph UI readiness, reset/maintenance, stale graph prevention. | Closed high-leverage blocker | Complete; monitor during new lifecycle surfaces. |
-| `ChatDbChangeMonitor` | Polls live `chat.db`, triggers graph build as the app-facing success path, archives graph source-row ranges, and invalidates graph evidence. It no longer runs a retained legacy import/migration tail. | Live graph freshness, automatic incremental graph build, app launch consistency. | Closed high-leverage blocker | Complete; monitor build latency and invalidation behavior. |
-| `LegacyCompatibilityMaintenanceService` | Retired. | Former compatibility freshness for retained legacy systems. | Closed blocker | Removed after live polling proved graph import/projection plus graph attachment archiving as the production update path. |
+| `ChatDbChangeMonitor` | Polls live `chat.db`, triggers graph build as the app-facing success path, archives graph source-row ranges, and invalidates graph evidence. It no longer runs a retired import/migration tail. | Live graph freshness, automatic incremental graph build, app launch consistency. | Closed high-leverage blocker | Complete; monitor build latency and invalidation behavior. |
+| `LegacyCompatibilityMaintenanceService` | Retired. | Former compatibility freshness for retired import/working files. | Closed blocker | Removed after live polling proved graph import/projection plus graph attachment archiving as the production update path. |
 | `ConversationGraphBuildService` | Production-shaped build service exists and is wired through build controller, readiness, onboarding, reset, monitor, and diagnostics. | Normal graph build, idempotent incremental projection, post-build invalidation, readiness state. | Very high | With lifecycle orchestration. |
-| Graph lifecycle orchestration | Graph lifecycle is the app-facing production path for live update, onboarding, settings reimport, readiness, and message evidence invalidation. | Remaining work is mainly legacy archive/recovery compatibility and cleanup, not ordinary app ownership. | Closed high-leverage blocker | Complete for ordinary app flow; preserve diagnostics and latency tests. |
-| Attachment archive/recovery identity mapping | Archive and deterministic recovery still map through message GUIDs, import attachment IDs, and legacy working/import DBs. | Blocks retirement of recovery/archive legacy dependencies and historical source ingestion. | High but hazardous | Later, after ordinary graph path is stable. |
+| Graph lifecycle orchestration | Graph lifecycle is the app-facing production path for live update, onboarding, settings reimport, readiness, and message evidence invalidation. | Remaining work is mainly historical archive/recovery strategy and retired-file cleanup, not ordinary app ownership. | Closed high-leverage blocker | Complete for ordinary app flow; preserve diagnostics and latency tests. |
+| Attachment archive/recovery identity mapping | Ordinary live attachment evidence maps through graph `ss_id` endpoints plus a named live-source archive compatibility key. Historical archive/recovered-source intake still needs a source-scoped strategy. | Blocks final retired-file cleanup, not ordinary live attachment evidence. | High but hazardous | Last, after graph path and diagnostics stay stable. |
 | Overlay identity key strategy | Overlay tables use mixed identity forms: working IDs, GUIDs, normalized strings, and graph IDs in settings. | Blocks safe migration of favourites, tags, saved flags, manual links, handle dismissal, message annotations. | Very high | Audit before search/contact migration; implement as part of those migrations. |
 | Message data invalidation | Graph build and live monitor paths invalidate shared graph evidence directly. | Remaining risk is future source-specific invalidation drift. | Closed blocker | Complete; monitor during new evidence surfaces. |
 | Graph health diagnostics | Existing graph health is useful but not yet the authoritative readiness guard. | Safe promotion, rebuild detection, repair state, support diagnostics. | Medium-high | With readiness provider. |
@@ -362,7 +382,7 @@ that overlay key:
 
 **Dependencies blocked**
 
-- retiring legacy import DB for archive recovery
+- retiring old archive recovery assumptions
 - importing recovered Messages folders as graph sources
 - source-scoped attachment provenance
 - long-term forensic archive workflows
@@ -386,7 +406,7 @@ intentional and allowing them to become permanent architecture.
 
 | Bridge owner | Source side | Destination side | Why it exists | Intentional? | Removal condition |
 | --- | --- | --- | --- | --- | --- |
-| Graph contact/message repositories | graph identity plus retained compatibility APIs | graph evidence scopes | Some repository names still reflect the migration period, but ordinary UI selectors are graph-native. | Acceptable naming debt | Rename only if it removes confusion without destabilizing provider boundaries. |
+| Graph contact/message repositories | graph identity plus explicitly named compatibility bridges where old overlay/archive keys still exist | graph evidence scopes | Some repository names still reflect the migration period, but ordinary UI selectors are graph-native. | Acceptable naming debt | Rename only if it removes confusion without destabilizing provider boundaries. |
 | `message_user_flags` / `message_user_tags` | message GUID | graph message evidence | GUID was stable across working rebuilds and useful before `ss_id` graph identity. | Intentional bridge, future risk | Source-scoped message overlay key strategy exists; duplicate GUID behavior is explicit. |
 | `message_annotations` | legacy working message ID | overlay message annotations | Older annotation system predates graph identity. | Legacy debt | Either migrate to `ss_id` or retire if unused. |
 | `chat_overrides` | legacy working chat ID | conversation display overrides | Older chat custom-name system predates graph conversations. | Legacy debt | Migrate to graph conversation identity or retire if unused. |
@@ -408,7 +428,7 @@ This section names what prevents each legacy layer from being retired.
 | Contact/profile/handle providers still read working participants/handles | contact picker, hero card, handle menu, manual link UI | Closed: graph contact identity layer covers contact summaries, handle lists, overrides, favourites, and manual link reads. | Complete. |
 | Legacy readiness gates app startup | onboarding, contact providers, global heatmap | Closed: graph readiness provider replaced working projection readiness for graph paths. | Complete. |
 | Retained live-update compatibility maintenance | live update path, compatibility `macos_import.db` / `working.db` freshness | Closed: `ChatDbChangeMonitor` triggers graph build, graph attachment archiving, graph invalidation, and cursor advancement without `LegacyCompatibilityMaintenanceService`. | Complete. |
-| Archive/recovery maps through working identity | deterministic recovery, archived attachment lookup | Source-scoped attachment identity and graph recovery mapping exist. | Later. |
+| Archive/recovery maps through retired identity | deterministic recovery, archived attachment lookup | Closed for ordinary live attachment evidence; historical archive/recovered-source intake still needs source-scoped strategy. | Later. |
 | Overlay tables reference working IDs | favourites, display overrides, handle links, message annotations, chat overrides | Overlay key strategy and migration bridge exist. | Begin before search/contact migration; complete before retirement. |
 
 ### `macos_import.db`
@@ -416,9 +436,9 @@ This section names what prevents each legacy layer from being retired.
 | Blocker | Affected systems | Removal criteria | Recommended sequencing |
 | --- | --- | --- | --- |
 | Legacy import remains production source ledger | onboarding import, incremental import, migration | Source-scoped import is production import path and passes parity tests. | Lifecycle phase. |
-| Attachment archive reads legacy import attachments | batch archiving, archive sweep, recovery hints | Source-scoped import attachment facts power archive service. | Later, after lifecycle. |
-| Deterministic recovery maps historical sources through legacy import DB | recovered attachment import | Graph/source-scoped historical source import replaces mapper. | Archive/recovery phase. |
-| Health audit assumes legacy import/working pair | support diagnostics | Graph health covers source/import/working graph and legacy layers are reference only. | Lifecycle/diagnostic phase. |
+| Attachment archive reads retired import attachments | batch archiving, archive sweep, recovery hints | Closed for ordinary live archive sweeps; graph attachment facts power living archive maintenance. | Complete for live path; historical source strategy remains. |
+| Deterministic recovery maps historical sources through retired import DB | recovered attachment import | Graph/source-scoped historical source import replaces mapper. | Archive/recovery phase. |
+| Health audit assumes legacy import/working pair | support diagnostics | Closed for readiness; graph health covers graph/source-scoped state while retired files are read-only cleanup/diagnostic inventory. | Diagnostic hardening phase. |
 
 ### Legacy Read Models
 
@@ -428,13 +448,13 @@ This section names what prevents each legacy layer from being retired.
 | Contact read models remain legacy | contact picker, contact hero, handle filters | Closed: graph contact summaries and handle scopes exist. | Complete. |
 | Global heatmap remains legacy | global message timeline | Closed: graph full-scope global skeleton exists. | Complete. |
 | Old chat summary providers remain fallback | recent/age/unmatched chats | Closed: graph conversation summaries cover required product views and old fallbacks are retired or diagnostic-only. | Complete. |
-| Retired recovered-message diagnostics remain | Retired recovered parity diagnostic bridge | Production recovered evidence is graph-backed and remaining legacy-only rows have an accepted retirement explanation. | Closed; legacy recovered storage remains only as historical data inside retired DB files until broader storage retirement. |
+| Retired recovered-message diagnostics remain | Retired recovered parity diagnostic bridge | Production recovered evidence is graph-backed and remaining legacy-only rows have an accepted retirement explanation. | Closed; retired recovered storage remains only as historical cleanup/diagnostic inventory inside retired DB files until broader storage retirement. |
 
 ### Legacy Projection Systems
 
 | Blocker | Affected systems | Removal criteria | Recommended sequencing |
 | --- | --- | --- | --- |
-| Graph build still shares lifecycle with legacy compatibility systems | whole app | Closed: source-scoped import/projection owns production lifecycle without required legacy import/projection maintenance. | Complete. |
+| Graph build still shares lifecycle with retired compatibility systems | whole app | Closed: source-scoped import/projection owns production lifecycle without required retired import/projection maintenance. | Complete. |
 | Legacy migrators encode semantic parity | contacts, handles, attachments, message semantics | Graph parity tests prove equivalent behavior where semantics matter. | Continuous; do not shortcut. |
 | Overlay references legacy IDs | user intent preservation | Overlay bridge/migration strategy is proven. | Before deleting working DB. |
 | Recovery/archive depends on legacy identity | evidence archive | Recovery plan moves to graph/source-scoped identity. | Last major blocker. |
@@ -664,7 +684,7 @@ Done means:
 - archive availability can resolve from graph attachment identity.
 - existing archive records remain usable.
 - recovered Messages folders can be ingested or mapped without depending on
-  legacy working identity.
+  retired working identity.
 - source-scoped attachment provenance is preserved.
 
 ### Overlay Identity Key Strategy
