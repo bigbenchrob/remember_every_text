@@ -10,7 +10,7 @@ void main() {
   test('migration enum renders as retired import/migration', () {
     expect(
       PipelineIncidentStage.migration.displayLabel,
-      equals('Retired import/migration'),
+      equals('Retired projection compatibility'),
     );
   });
 
