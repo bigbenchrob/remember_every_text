@@ -20,6 +20,7 @@ import '../../application/monitor/chat_db_change_monitor_provider.dart';
 import '../../application/status/archived_attachment_file_opener_provider.dart';
 import '../../application/status/conversation_graph_status_provider.dart';
 import '../../application/status/conversation_graph_status_sheet_actions_provider.dart';
+import '../../domain/status/conversation_graph_status.dart';
 
 enum _StatusSheetTab { status, graphHealth, groupProfiles, messages }
 

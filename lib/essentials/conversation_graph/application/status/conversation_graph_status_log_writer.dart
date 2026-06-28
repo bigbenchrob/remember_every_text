@@ -1,5 +1,5 @@
+import '../../domain/status/conversation_graph_status.dart';
 import '../conversation_graph_build_report.dart';
-import 'conversation_graph_status_provider.dart';
 
 abstract interface class ConversationGraphStatusLogWriter {
   Future<String> writeRun({

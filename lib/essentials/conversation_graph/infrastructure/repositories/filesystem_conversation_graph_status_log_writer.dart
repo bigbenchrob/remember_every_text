@@ -4,7 +4,7 @@ import 'package:path/path.dart' as path;
 
 import '../../application/conversation_graph_build_report.dart';
 import '../../application/status/conversation_graph_status_log_writer.dart';
-import '../../application/status/conversation_graph_status_provider.dart';
+import '../../domain/status/conversation_graph_status.dart';
 
 class FilesystemConversationGraphStatusLogWriter
     implements ConversationGraphStatusLogWriter {
