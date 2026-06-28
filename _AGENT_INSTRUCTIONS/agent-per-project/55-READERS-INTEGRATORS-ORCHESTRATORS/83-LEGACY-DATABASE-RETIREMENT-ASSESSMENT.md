@@ -2,12 +2,13 @@
 tier: project
 scope: source-scoped-graph-migration
 status: policy-review
-last_reviewed: 2026-06-20
+last_reviewed: 2026-06-28
 depends_on:
   - 73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md
   - 80-GRAPH-MIGRATION-INTERIM-PROGRESS-REPORT.md
   - 81-LEGACY-STORAGE-RETENTION-REGISTER.md
   - 82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md
+  - 84-ATTACHMENT-REACHABILITY-AUDIT.md
 ---
 
 # 83 - Legacy Database Retirement Assessment
@@ -324,15 +325,27 @@ requires a value that cannot be derived from graph/source-scoped identity.
 
 Risks to verify before deletion:
 
-1. Attachment archive lookup still has any hidden dependency on old import
-   attachment IDs rather than source-scoped attachment identity or an
-   explicit compatibility key.
+1. Historical archive attachment reachability still needs a source-scoped
+   archive import/recovery strategy. The current live-source compatibility
+   tuple must not be generalized to arbitrary historical sources.
 2. Historical archive source metadata is stored only in `macos_import.db` and
    would be lost without migration or explicit discard.
 3. Support diagnostics still use old DB schema assumptions to determine
    archive health.
 4. Reset/maintenance expects old providers to exist and would fail if the
    files/providers disappear.
+
+Verified current status as of the 2026-06-28 attachment reachability audit:
+
+- ordinary live attachment evidence resolves through `working_ss.db` graph
+  topology plus overlay `archived_attachments`;
+- living archive sweeps read graph attachment facts, not retained
+  `working.db.attachments`;
+- the retained-shaped `(message_guid, import_attachment_id)` archive tuple is
+  a named live-source compatibility key, not canonical graph identity;
+- active-code scans found no ordinary attachment evidence, archive sweep,
+  contact/message/conversation evidence, or feature presentation path that
+  consults `macos_import.db` or `working.db`.
 
 Non-risks under the new policy:
 
@@ -489,12 +502,15 @@ explicit retirement planning.
 However, it is not yet ready for blind deletion because:
 
 1. reset/maintenance still names retired files as cleanup targets.
-2. attachment archive compatibility should receive one final source-scoped
-   trace audit before removing retired-file safety language.
+2. historical archive attachment reachability still needs a source-scoped
+   archive import/recovery strategy before retained-file safety language can be
+   removed completely.
+3. support diagnostics may still deliberately inspect retired-file existence
+   or schema as historical cleanup inventory.
 
 `working.db` and `macos_import.db` are now both retirement candidates, with
-attachment reachability and retired-file cleanup policy as the remaining
-safety checks.
+retired-file cleanup policy and historical archive reachability strategy as
+the remaining safety checks.
 
 `macos_import.db` is now eligible for explicit retired-file policy work because
 archive-source metadata has moved to a graph-era/overlay home.
