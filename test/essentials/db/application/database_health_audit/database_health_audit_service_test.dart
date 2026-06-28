@@ -106,11 +106,9 @@ void main() {
 
         expect(
           retiredCleanupTables,
-          containsAll(<String>{
-            'schema_migrations',
-            'historical_archive_sources',
-          }),
+          containsAll(<String>{'historical_archive_sources'}),
         );
+        expect(retiredCleanupTables, isNot(contains('schema_migrations')));
         expect(retiredCleanupTables, isNot(contains('messages')));
         expect(retiredCleanupTables, isNot(contains('import_batches')));
         expect(
@@ -363,7 +361,6 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
   List<String> _tablesFor(String key) {
     return switch (key) {
       databaseHealthKeyRetiredMacosImport => const <String>[
-        'schema_migrations',
         'historical_archive_sources',
       ],
       databaseHealthKeyRetiredWorking => const <String>[

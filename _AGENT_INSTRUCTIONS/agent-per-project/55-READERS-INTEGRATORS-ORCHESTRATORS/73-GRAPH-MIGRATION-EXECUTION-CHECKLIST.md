@@ -3918,6 +3918,10 @@ criteria.
   placement, self-barrel imports, retired DB filename leakage, direct SQLite
   boundaries, retained metadata provider retirement, and source-scoped archive
   identity boundaries.
+- Retired `macos_import.db.schema_migrations` is no longer inventoried by
+  database health diagnostics. Old migration/version tables may physically
+  remain in retired files, but retired import diagnostics now preserve only the
+  named archive-source cleanup purpose.
 
 ### Vocabulary Note
 

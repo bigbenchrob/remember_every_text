@@ -648,7 +648,6 @@ String _quoted(String value) {
 const Map<String, List<AuditTableSpec>>
 _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
   databaseHealthKeyRetiredMacosImport: <AuditTableSpec>[
-    AuditTableSpec(tableName: 'schema_migrations'),
     AuditTableSpec(
       tableName: 'historical_archive_sources',
       importantColumns: <AuditImportantColumnSpec>[

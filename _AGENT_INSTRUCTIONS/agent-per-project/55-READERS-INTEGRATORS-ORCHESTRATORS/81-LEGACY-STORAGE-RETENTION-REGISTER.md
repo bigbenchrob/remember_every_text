@@ -206,12 +206,14 @@ until a deliberate cleanup/export/discard policy removes the old file purpose.
 Fresh retired archive metadata DB creation no longer recreates those old
 archive-source metadata columns.
 Database health treats retired `macos_import.db` as retired archive-source
-cleanup inventory only; active source facts and topology health belong to
+cleanup inventory only and no longer inventories old `schema_migrations` as a
+special diagnostic table; active source facts and topology health belong to
 `macos_import_ss.db`.
 No active app provider now creates a fresh retired `macos_import.db`.
 Existing older retired `macos_import.db` files may still keep
 `schema_migrations`, `historical_archive_sources`, historical ledger tables,
-or old topology ledgers for transitional cleanup inventory.
+or old topology ledgers on disk, but only `historical_archive_sources` remains
+a named retained diagnostic concern.
 
 **Reduction criteria**
 
