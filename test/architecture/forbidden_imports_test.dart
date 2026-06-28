@@ -218,6 +218,12 @@ const Set<String> _sourceScopedSqlBitExtractionAllowedFiles = {
 
 const Set<String> _legacyTerminologyAllowedFiles = <String>{};
 
+const Set<String> _activeCompatibilityBridgeAllowedFiles = {
+  'lib/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
+  'lib/features/contacts/application/read_models/contact_summary_identity.dart',
+  'lib/features/handles/application/read_models/handle_identity.dart',
+};
+
 const Set<String> _debugPrintAllowedFiles = {
   'lib/essentials/logging/infrastructure/log_export_service.dart',
   'lib/essentials/logging/infrastructure/pipeline_incident_storage.dart',
@@ -943,6 +949,22 @@ void main() {
         );
       },
     );
+
+    test('Active compatibility bridges stay explicitly named', () async {
+      final offenders = await _findActiveCompatibilityBridgePhraseOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_activeCompatibilityBridgeAllowedFiles.toList()..sort()),
+        reason:
+            'Production compatibility bridges are allowed only when they are '
+            'explicitly named and reviewed. New bridge language should not '
+            'appear casually in feature code; add a narrow allowlist entry '
+            'only after confirming ownership, source side, destination side, '
+            'and retirement criteria.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
 
     test('Tests do not use placeholder coverage assertions', () async {
       final offenders = await _findPlaceholderTestCoverageOffenders();
@@ -13459,6 +13481,26 @@ Future<List<String>> _findAmbiguousOldSystemPhraseOffenders() async {
   }
 
   return offenders..sort();
+}
+
+Future<List<String>> _findActiveCompatibilityBridgePhraseOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final lowerSource = source.toLowerCase();
+    if (lowerSource.contains('compatibility bridge')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
 }
 
 Future<List<String>> _findPlaceholderTestCoverageOffenders() async {
