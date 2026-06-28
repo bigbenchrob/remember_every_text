@@ -86,6 +86,60 @@ void main() {
     expect(result.mappedByGuid, 1);
   });
 
+  test('source-scopes duplicate attachment GUIDs during mapping', () async {
+    final messageSsId = _ss(103);
+    final attachmentSsId = _ss(203);
+    final otherSourceAttachmentSsId = _ssForSource(
+      sourceId: 2,
+      sourceRowId: 203,
+    );
+    await _insertImportAttachment(
+      importLedgerDb,
+      attachmentSsId: attachmentSsId,
+      sourceRowId: 203,
+      guid: 'duplicate-attachment-guid',
+    );
+    await _insertImportAttachment(
+      importLedgerDb,
+      attachmentSsId: otherSourceAttachmentSsId,
+      sourceId: 2,
+      sourceRowId: 203,
+      guid: 'duplicate-attachment-guid',
+    );
+    await _insertGraphMessageAttachment(
+      graphDb,
+      messageSsId: messageSsId,
+      attachmentSsId: attachmentSsId,
+      messageGuid: 'message-guid-103',
+    );
+    await _insertGraphAttachment(
+      graphDb,
+      attachmentSsId: otherSourceAttachmentSsId,
+    );
+    await _insertGraphMessageAttachmentEdge(
+      graphDb,
+      messageSsId: messageSsId,
+      attachmentSsId: otherSourceAttachmentSsId,
+    );
+
+    final result = await mapper.mapRecords(
+      historicalRecords: [
+        _record(
+          histMessageGuid: 'message-guid-103',
+          histAttachmentGuid: 'duplicate-attachment-guid',
+        ),
+      ],
+    );
+
+    expect(result, isNotNull);
+    expect(result!.mapped, hasLength(1));
+    expect(result.mapped.first.currentAttachmentSsId, attachmentSsId);
+    expect(
+      result.mapped.first.currentAttachmentSsId,
+      isNot(otherSourceAttachmentSsId),
+    );
+  });
+
   test(
     'uses single-attachment fallback when GUID is null and unambiguous',
     () async {
@@ -174,14 +228,15 @@ Future<void> _insertImportAttachment(
   required int attachmentSsId,
   required int sourceRowId,
   required String? guid,
+  int sourceId = liveChatDbSourceId,
 }) async {
   final batchId = await importLedgerDb.insertImportBatch(
-    sourceId: liveChatDbSourceId,
+    sourceId: sourceId,
     startedAtUtc: '2026-05-31T10:00:00.000Z',
   );
   await importLedgerDb.database.insert('attachments', <String, Object?>{
     'ss_id': attachmentSsId,
-    'source_id': liveChatDbSourceId,
+    'source_id': sourceId,
     'source_rowid': sourceRowId,
     'guid': guid,
     'batch_id': batchId,
@@ -208,6 +263,31 @@ Future<void> _insertGraphMessageAttachment(
     ''',
     <Object?>[attachmentSsId, 'attachment-guid', 'photo.jpg'],
   );
+  await _insertGraphMessageAttachmentEdge(
+    graphDb,
+    messageSsId: messageSsId,
+    attachmentSsId: attachmentSsId,
+  );
+}
+
+Future<void> _insertGraphAttachment(
+  ConversationGraphDatabase graphDb, {
+  required int attachmentSsId,
+}) async {
+  await graphDb.executeSql(
+    '''
+    INSERT INTO attachments (ss_id, guid, filename)
+    VALUES (?, ?, ?)
+    ''',
+    <Object?>[attachmentSsId, 'attachment-guid', 'photo.jpg'],
+  );
+}
+
+Future<void> _insertGraphMessageAttachmentEdge(
+  ConversationGraphDatabase graphDb, {
+  required int messageSsId,
+  required int attachmentSsId,
+}) async {
   await graphDb.executeSql(
     '''
     INSERT INTO message_to_attachment (message_ss_id, attachment_ss_id)
@@ -218,8 +298,9 @@ Future<void> _insertGraphMessageAttachment(
 }
 
 int _ss(int sourceRowId) {
-  return SourceScopedRowKey.pack(
-    sourceId: liveChatDbSourceId,
-    sourceRowId: sourceRowId,
-  );
+  return _ssForSource(sourceId: liveChatDbSourceId, sourceRowId: sourceRowId);
+}
+
+int _ssForSource({required int sourceId, required int sourceRowId}) {
+  return SourceScopedRowKey.pack(sourceId: sourceId, sourceRowId: sourceRowId);
 }
