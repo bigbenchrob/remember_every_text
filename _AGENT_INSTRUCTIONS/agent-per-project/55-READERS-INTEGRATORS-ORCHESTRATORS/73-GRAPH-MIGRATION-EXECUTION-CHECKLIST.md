@@ -3929,6 +3929,21 @@ criteria.
   names for tests/verification, but the enum-level file categories stay private
   to the reset service so retired files cannot regain reusable storage
   authority through a convenience constant.
+- Documented `overlay_settings` as raw overlay key/value storage rather than
+  an application API. Active code is now aligned with the existing tripwire:
+  application and presentation layers use named stores/repositories, while
+  raw overlay setting reads/writes stay in storage or infrastructure
+  boundaries.
+- Moved window-state storage and macOS window-manager provider composition out
+  of the application provider file into
+  `window_state/infrastructure/persistence/window_state_infrastructure_providers.dart`.
+  The application provider now composes `WindowStateService` from typed ports,
+  while external consumers continue through the window-state public seam.
+- Added a window-state public-seam tripwire preventing external production code
+  from importing the concrete application/infrastructure provider files
+  directly. Window-state consumers must use
+  `essentials/window_state/feature_level_providers.dart` with explicit `show`
+  imports unless they are inside the window-state essential itself.
 
 ### Vocabulary Note
 
