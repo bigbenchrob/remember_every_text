@@ -3924,6 +3924,11 @@ criteria.
   database health diagnostics. Old migration/version tables may physically
   remain in retired files, but retired import diagnostics now preserve only the
   named archive-source cleanup purpose.
+- Message-data reset no longer exposes public `AppDatabaseFile` category lists
+  for retired cleanup or active graph files. Reset still publishes derived base
+  names for tests/verification, but the enum-level file categories stay private
+  to the reset service so retired files cannot regain reusable storage
+  authority through a convenience constant.
 
 ### Vocabulary Note
 
