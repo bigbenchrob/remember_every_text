@@ -875,6 +875,20 @@ void main() {
       );
     });
 
+    test('Overlay settings access stays in storage boundaries', () async {
+      final offenders = await _findOverlaySettingsAccessBoundaryOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'overlay_settings is a raw key/value persistence table. Active '
+            'application and presentation code must use named stores or '
+            'repositories instead of reading/writing arbitrary overlay keys.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Hand-written lib Dart files contain active code', () async {
       final offenders = await _findAllCommentLibDartFiles();
 
@@ -13418,6 +13432,46 @@ Future<List<String>> _findStoredProviderRefOffenders() async {
       ))
         filePath,
   ]..sort();
+}
+
+Future<List<String>> _findOverlaySettingsAccessBoundaryOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final touchesOverlaySettings =
+        uncommented.contains('readOverlaySetting') ||
+        uncommented.contains('writeOverlaySetting') ||
+        uncommented.contains('deleteOverlaySetting') ||
+        uncommented.contains('overlaySettings');
+    if (!touchesOverlaySettings) {
+      continue;
+    }
+    if (_isApprovedOverlaySettingsStorageBoundary(filePath)) {
+      continue;
+    }
+    offenders.add(filePath);
+  }
+
+  return offenders..sort();
+}
+
+bool _isApprovedOverlaySettingsStorageBoundary(String filePath) {
+  if (filePath ==
+      'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart') {
+    return true;
+  }
+  return filePath.contains('/infrastructure/persistence/') ||
+      filePath.contains('/infrastructure/repositories/') ||
+      (filePath.contains('/infrastructure/') &&
+          filePath.endsWith('_storage.dart'));
 }
 
 Future<List<String>> _findManualProviderDeclarationOffenders() async {
