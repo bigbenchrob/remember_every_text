@@ -984,6 +984,15 @@ criteria.
   `archiveGraphSweepBurst`) and diagnostics. The persisted overlay cursor keys
   remain unchanged as storage compatibility keys, but the service no longer
   describes graph attachment sweeps as working-database sweeps.
+- Added `84-ATTACHMENT-REACHABILITY-AUDIT.md` as the explicit ordinary
+  attachment reachability proof before further retired database cleanup.
+  Current live message evidence resolves through `working_ss.db` graph topology,
+  `OverlayArchiveCompatibilityLookup`, overlay `archived_attachments`, and the
+  archive filesystem. The audit confirms ordinary attachment evidence and
+  living graph archive sweeps do not require `macos_import.db` or `working.db`.
+  It also records the hard caveat that the existing
+  `(message_guid, import_attachment_id)` overlay archive tuple is a live-source
+  compatibility bridge, not a universal source-scoped archive key.
 - Manual handle-link service tests no longer instantiate legacy
   `WorkingDatabase` fixtures. The tests now exercise overlay-only user intent
   directly with graph-era stable ids, matching the production boundary where
