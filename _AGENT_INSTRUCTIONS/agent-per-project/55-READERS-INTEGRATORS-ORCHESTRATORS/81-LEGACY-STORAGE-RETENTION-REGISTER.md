@@ -285,8 +285,9 @@ Diagnostic reads are allowed to look across layers as long as they do not make
 retired cleanup inventory authoritative for ordinary feature behavior.
 Database health now treats retired `working.db` as recovered-message retired
 cleanup/diagnostic evidence only. It no longer preserves old
-`working.db.projection_state` as a special diagnostic shape. Ordinary
-message/chat/contact/handle/attachment/reaction health belongs to
+`working.db.schema_migrations` or `working.db.projection_state` as special
+diagnostic shapes. Ordinary message/chat/contact/handle/attachment/reaction
+health belongs to
 `working_ss.db`; retired `working.db` ordinal indexes are no longer audited as
 timeline infrastructure because graph evidence skeletons own timeline
 navigation.

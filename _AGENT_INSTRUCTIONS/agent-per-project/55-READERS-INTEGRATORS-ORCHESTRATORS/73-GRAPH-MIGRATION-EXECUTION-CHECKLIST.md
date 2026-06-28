@@ -1390,6 +1390,9 @@ criteria.
   diagnostics only. Ordinary message/chat/contact/handle/attachment/reaction
   health and timeline navigation checks belong to `working_ss.db` and graph
   evidence skeletons.
+- Retired `working.db.schema_migrations` is no longer inventoried by health
+  diagnostics; schema/version metadata from the old projection file is not
+  recovery evidence.
 - Database health now inspects retained `macos_import.db` and `working.db`
   through read-only file query layers instead of central retained DB providers.
   Health/support diagnostics therefore report missing retained files without

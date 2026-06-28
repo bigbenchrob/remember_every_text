@@ -674,12 +674,6 @@ _tableSpecsByDatabase = <String, List<AuditTableSpec>>{
   ],
   databaseHealthKeyRetiredWorking: <AuditTableSpec>[
     AuditTableSpec(
-      tableName: 'schema_migrations',
-      notes: <String>[
-        'Retired historical cleanup inventory only; graph readiness is app-facing.',
-      ],
-    ),
-    AuditTableSpec(
       tableName: 'recovered_unlinked_messages',
       importantColumns: <AuditImportantColumnSpec>[
         AuditImportantColumnSpec('guid'),

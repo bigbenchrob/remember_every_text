@@ -171,11 +171,11 @@ void main() {
       expect(
         retiredWorkingTables,
         containsAll(<String>{
-          'schema_migrations',
           'recovered_unlinked_messages',
           'recovered_unlinked_attachments',
         }),
       );
+      expect(retiredWorkingTables, isNot(contains('schema_migrations')));
       expect(retiredWorkingTables, isNot(contains('messages')));
       expect(retiredWorkingTables, isNot(contains('chats')));
       expect(retiredWorkingTables, isNot(contains('global_message_index')));
@@ -367,7 +367,6 @@ class _FakeHealthQueryLayer extends DatabaseHealthQueryLayer {
         'historical_archive_sources',
       ],
       databaseHealthKeyRetiredWorking => const <String>[
-        'schema_migrations',
         'recovered_unlinked_messages',
         'recovered_unlinked_attachments',
       ],
