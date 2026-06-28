@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-graph-migration
 owner: agent-per-project
-last_reviewed: 2026-06-02
+last_reviewed: 2026-06-28
 source_of_truth: roadmap
 links:
   - ./30-INVARIANTS.md
@@ -378,14 +378,13 @@ semantic reference, but not by recreating legacy schema shape blindly.
 
 ## Onboarding and Auto-Sync
 
-Current app lifecycle is graph-aware but still retains legacy compatibility
-systems:
+Current app lifecycle is graph-owned:
 
 - onboarding gate
-- import control panel
 - reset service
 - `ChatDbChangeMonitor`
-- retained legacy import/migration compatibility boundaries
+- source-scoped graph build services
+- database health/support diagnostics
 
 The graph build service, readiness providers, onboarding checks, reset flows,
 and live monitor are now wired into the app-facing graph path.
@@ -397,6 +396,7 @@ Current status update:
 - retained legacy import/migration no longer runs as the live-update tail
 - Historical Archives import/removal now uses source-scoped graph services
   directly; the retained archive pipeline bridge has been retired
+- old import/migration execution trees are removed from active production code
 
 The remaining issue is retained cleanup/diagnostic retirement: old
 `macos_import.db` / `working.db` files may still exist for diagnostics,
@@ -705,9 +705,9 @@ Closed ordinary read migrations:
 - global/contact heatmaps
 - recovered deleted/no-handle evidence presentation
 
-Remaining legacy dependencies are no longer ordinary reads. They are lifecycle,
-archive/recovery, diagnostics/settings, retained legacy schema, or tests for
-retained systems.
+Remaining retired-file references are no longer ordinary reads. They are reset
+cleanup, read-only diagnostics/settings, archive/recovery compatibility keys,
+historical documentation, or tests/tripwires.
 
 ## Recommended Order
 
