@@ -44,7 +44,7 @@ void main() {
               AppDatabaseFile.retiredMacosImport,
               databaseDirectory: databaseDirectory,
             ): const OnboardingDatabaseProbe(
-              path: 'retired macos import',
+              path: 'retired macos_import.db cleanup file',
               exists: true,
               readable: true,
               sizeBytes: 1,
@@ -53,7 +53,7 @@ void main() {
               AppDatabaseFile.retiredWorking,
               databaseDirectory: databaseDirectory,
             ): const OnboardingDatabaseProbe(
-              path: 'retired working',
+              path: 'retired working.db cleanup file',
               exists: true,
               readable: true,
               sizeBytes: 1,
