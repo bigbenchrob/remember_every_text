@@ -130,6 +130,9 @@ instead of reaching for the concrete physical provider.
   cleanup files for a named read-only query. They must set read-only/query-only
   mode where practical, return typed results, and close/dispose the handle in a
   `finally` block.
+  Sqflite probes must use isolated read-only handles (`singleInstance: false`
+  for direct `openDatabase` calls) and set `PRAGMA query_only = ON` plus
+  `PRAGMA busy_timeout = 3000` before issuing reads.
 - Presentation, application orchestration, feature widgets, and ordinary
   read-model code must never open database files directly.
 
