@@ -1690,9 +1690,9 @@ retention criteria.
 - Fresh active source/test scans confirm the retired `db_importers`,
   `db_migrate`, `incremental_update_ss`, and retained Drift `working` schema
   paths are absent except for the intentional architecture tripwire strings.
-- Retained `macos_import.db` and `working.db` are now documented as
-  transitional compatibility storage, not permanent system-of-record storage
-  and not deletion targets by default. Future slices should reduce retained
+- Old `macos_import.db` and `working.db` are now documented as retired
+  cleanup/diagnostic inventory, not permanent system-of-record storage
+  and not deletion targets by default. Future slices should reduce retired
   purposes through the storage retention register, and full deletion requires
   archive/recovery independence, graph/source-scoped diagnostic equivalents,
   historical cleanup migration/export/rejection, and a user-safe
@@ -2371,8 +2371,8 @@ retention criteria.
 - Clarified current archive documentation so full archive sweeps are described
   as explicit graph archive sweeps over graph candidates, not legacy archive
   compatibility paths.
-- Tightened source-database and historical handoff wording so retained
-  database files are documented as compatibility storage/diagnostics, while
+- Tightened source-database and historical handoff wording so old import/
+  working database files are documented as retired cleanup/diagnostics, while
   live `chat.db` remains a read-only source for the source-scoped graph.
 - Clarified the import-orchestrator docs split: current `ChatDbChangeMonitor`
   runbook content is live guidance, while retained importer mechanics are
@@ -2598,7 +2598,7 @@ retention criteria.
   - Added an architecture tripwire requiring conversation graph repository and
     projection tests to use import-ledger naming for the source-scoped import
     database. This keeps active graph projection terminology separate from
-    retained import compatibility storage.
+    retired import compatibility storage.
   - Moved retained-overlay id conversion out of the conversation graph domain
     folder into
     `application/identity/retained_overlay_identity_bridge.dart`, and updated
