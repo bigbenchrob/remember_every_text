@@ -435,9 +435,9 @@ const List<String> _retiredHistoricalArchiveUiPhrases = <String>[
   'working.db state',
 ];
 
-const Set<String> _retainedOverlayIdentityBridgeAllowedFiles = <String>{};
+const Set<String> _retiredOverlayIdentityBridgeAllowedFiles = <String>{};
 
-const Set<String> _retainedOverlayIdentityBridgeTestAllowedFiles = <String>{};
+const Set<String> _retiredOverlayIdentityBridgeTestAllowedFiles = <String>{};
 
 const Set<String> _featureIdentitySourceScopedRowKeyAllowedFiles = {
   'lib/features/messages/domain/message_evidence/recovered_message_identity.dart',
@@ -2841,32 +2841,32 @@ void main() {
       );
     });
 
-    test('Retained overlay identity bridge usage stays tracked', () async {
+    test('Retired overlay identity bridge usage stays tracked', () async {
       final offenders =
-          await _findRetainedOverlayIdentityBridgeImportOffenders();
+          await _findRetiredOverlayIdentityBridgeImportOffenders();
 
       expect(
         offenders,
         orderedEquals(
-          _retainedOverlayIdentityBridgeAllowedFiles.toList()..sort(),
+          _retiredOverlayIdentityBridgeAllowedFiles.toList()..sort(),
         ),
         reason:
             'retained_overlay_identity_bridge.dart has been retired. '
-            'Retained overlay compatibility must stay localized inside named '
+            'Overlay compatibility must stay localized inside named '
             'feature/infrastructure boundaries instead of returning as a '
             'shared bridge import.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
 
-    test('Retained overlay identity bridge tests do not return', () async {
+    test('Retired overlay identity bridge tests do not return', () async {
       final offenders =
-          await _findRetainedOverlayIdentityBridgeTestImportOffenders();
+          await _findRetiredOverlayIdentityBridgeTestImportOffenders();
 
       expect(
         offenders,
         orderedEquals(
-          _retainedOverlayIdentityBridgeTestAllowedFiles.toList()..sort(),
+          _retiredOverlayIdentityBridgeTestAllowedFiles.toList()..sort(),
         ),
         reason:
             'retained_overlay_identity_bridge.dart has been retired. Feature '
@@ -6956,7 +6956,7 @@ Future<List<String>> _findRetiredHistoricalArchiveUiPhraseOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findRetainedOverlayIdentityBridgeImportOffenders() async {
+Future<List<String>> _findRetiredOverlayIdentityBridgeImportOffenders() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart')) {
       return false;
@@ -6969,12 +6969,12 @@ Future<List<String>> _findRetainedOverlayIdentityBridgeImportOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
-    final importsRetainedOverlayIdentityBridge = imports.any(
+    final importsRetiredOverlayIdentityBridge = imports.any(
       (importTarget) =>
           importTarget.endsWith('retained_overlay_identity_bridge.dart'),
     );
 
-    if (importsRetainedOverlayIdentityBridge) {
+    if (importsRetiredOverlayIdentityBridge) {
       offenders.add(filePath);
     }
   }
@@ -6983,7 +6983,7 @@ Future<List<String>> _findRetainedOverlayIdentityBridgeImportOffenders() async {
 }
 
 Future<List<String>>
-_findRetainedOverlayIdentityBridgeTestImportOffenders() async {
+_findRetiredOverlayIdentityBridgeTestImportOffenders() async {
   final files = await _collectProjectDartFiles((path) {
     if (path.endsWith('.g.dart')) {
       return false;
@@ -6996,12 +6996,12 @@ _findRetainedOverlayIdentityBridgeTestImportOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
-    final importsRetainedOverlayIdentityBridge = imports.any(
+    final importsRetiredOverlayIdentityBridge = imports.any(
       (importTarget) =>
           importTarget.endsWith('retained_overlay_identity_bridge.dart'),
     );
 
-    if (importsRetainedOverlayIdentityBridge) {
+    if (importsRetiredOverlayIdentityBridge) {
       offenders.add(filePath);
     }
   }
