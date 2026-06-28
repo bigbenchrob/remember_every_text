@@ -1,7 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/db/feature_level_providers.dart'
+import '../../../../essentials/db/feature_level_providers/persistent_database_providers.dart'
     show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
 import '../../infrastructure/repositories/display_identity_repository.dart';
 import 'display_identity.dart';

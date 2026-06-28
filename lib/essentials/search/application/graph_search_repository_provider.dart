@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart'
+import '../../db/feature_level_providers/persistent_database_providers.dart'
     show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
 import '../infrastructure/repositories/graph_search_repository.dart';
 import 'graph_message_search.dart';

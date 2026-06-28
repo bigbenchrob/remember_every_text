@@ -9,7 +9,9 @@ import '../../../essentials/conversation_graph/feature_level_providers.dart'
         sourceScopedArchiveGraphImportServiceProvider,
         sourceScopedArchiveGraphRemovalServiceProvider;
 import '../../../essentials/db/feature_level_providers.dart'
-    show dbMaintenanceLockProvider, messageDataVersionProvider;
+    show dbMaintenanceLockProvider;
+import '../../../essentials/db/feature_level_providers/message_data_version_provider.dart'
+    show messageDataVersionProvider;
 import '../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
 import '../../../essentials/onboarding/feature_level_providers.dart'

@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/attachments/feature_level_providers.dart'
     show graphAttachmentArchiveLookupProvider;
-import '../../../db/feature_level_providers.dart'
+import '../../../db/feature_level_providers/persistent_database_providers.dart'
     show driftConversationGraphDatabaseProvider;
 import '../../infrastructure/repositories/chat_summary_repository.dart';
 import 'chat_summary_repository.dart';

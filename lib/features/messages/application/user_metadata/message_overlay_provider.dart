@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/db/feature_level_providers.dart'
+import '../../../../essentials/db/feature_level_providers/persistent_database_providers.dart'
     show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
 import '../../domain/entities/message_overlay_state.dart';
 import '../../infrastructure/repositories/graph_message_overlay_repository.dart';
