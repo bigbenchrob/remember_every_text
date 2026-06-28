@@ -3944,6 +3944,15 @@ criteria.
   directly. Window-state consumers must use
   `essentials/window_state/feature_level_providers.dart` with explicit `show`
   imports unless they are inside the window-state essential itself.
+- Routed graph, attachment, archive, and status provider composition that
+  consumes source-scoped import providers through
+  `essentials/source_scoped_import/feature_level_providers.dart` rather than
+  direct imports of exported source-scoped application provider files. Added a
+  tripwire so external production code cannot bypass that public seam.
+- Routed onboarding graph-build controller/state/report consumption through
+  `essentials/conversation_graph/feature_level_providers.dart`. The graph
+  module remains the owner of build mechanics; onboarding now consumes only the
+  public graph seam. Added a tripwire covering onboarding graph-build access.
 
 ### Vocabulary Note
 
