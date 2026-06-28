@@ -3965,6 +3965,20 @@ criteria.
   The allowlist should shrink to zero or be replaced by an aggregate
   source-scoped import boundary if import orchestration is moved behind the
   source-scoped import essential.
+- Removed provider-contract exports from status, handle manual-linking, and
+  spam-management provider files so generated provider files no longer act as
+  type barrels. Added a tripwire preventing ordinary `*_provider.dart` files
+  from exporting application/domain contracts.
+- Made all public `feature_level_providers.dart` imports explicit with `show`
+  lists, including test overrides that need DB providers. Added a tripwire so
+  future production or test files cannot import an entire public seam broadly.
+- Documented the paired public-seam rules in the constitution, project
+  architecture overview, and database access guide: internal code must not
+  import its own seam, while external seam consumers must declare exact symbols
+  through `show` lists.
+- Clarified the self-barrel tripwire wording now that its allowlist is empty:
+  a future offender is treated as provider-ownership drift, not accepted
+  transitional debt.
 
 ### Vocabulary Note
 
