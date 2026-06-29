@@ -11,6 +11,11 @@ class FilesystemAttachmentArchiveFileOperations
 
   @override
   Future<void> resetArchiveDirectory(String archiveDirectoryPath) async {
+    if (FileSystemEntity.typeSync(archiveDirectoryPath, followLinks: false) ==
+        FileSystemEntityType.link) {
+      throw StateError('Attachment archive directory must not be a symlink.');
+    }
+
     final directory = Directory(archiveDirectoryPath);
     if (directory.existsSync()) {
       await directory.delete(recursive: true);

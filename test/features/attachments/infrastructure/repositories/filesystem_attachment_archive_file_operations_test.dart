@@ -46,6 +46,22 @@ void main() {
     },
   );
 
+  test('reset rejects symlinked archive directory', () async {
+    final outsideDir = Directory(path.join(tempDir.path, 'outside_archive'));
+    await outsideDir.create(recursive: true);
+    final outsideFile = File(path.join(outsideDir.path, 'keep.jpg'));
+    await outsideFile.writeAsString('image');
+    final archiveLink = Link(archiveDir.path);
+    await archiveLink.create(outsideDir.path);
+
+    await expectLater(
+      operations.resetArchiveDirectory(archiveDir.path),
+      throwsStateError,
+    );
+
+    expect(outsideFile.existsSync(), isTrue);
+  });
+
   test('export returns zero when archive directory is absent', () async {
     final count = await operations.exportArchiveDirectory(archiveDir.path);
 
