@@ -5320,7 +5320,7 @@ void main() {
       );
     });
 
-    test('Support bundle copied diagnostics validate source files', () async {
+    test('Support bundle diagnostics validate source files', () async {
       final offenders =
           await _findSupportBundleCopiedDiagnosticSourceSafetyOffenders();
 
@@ -5328,9 +5328,9 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'Support bundle copied diagnostic files must reject symlinked '
-            'sources and raw database artifacts before copying pipeline logs '
-            'into the bundle.\n'
+            'Support bundle copied, appended, and generated diagnostic files '
+            'must reject symlinked sources and raw database artifacts before '
+            'including them in the bundle.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -11558,9 +11558,9 @@ _findSupportBundleCopiedDiagnosticSourceSafetyOffenders() async {
       '_isSafeDiagnosticSourceFile(source)'.allMatches(uncommented).length +
       '_isSafeDiagnosticSourceFile(file)'.allMatches(uncommented).length;
 
-  if (safetyCallCount < 2) {
+  if (safetyCallCount < 3) {
     offenders.add(
-      '$filePath does not validate all copied/appended diagnostic sources',
+      '$filePath does not validate all copied/appended/generated diagnostic sources',
     );
   }
   if (!uncommented.contains('bool _isSafeDiagnosticSourceFile(File source)') ||

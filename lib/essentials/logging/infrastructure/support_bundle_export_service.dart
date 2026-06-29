@@ -183,6 +183,10 @@ class SupportBundleExportService {
     required Directory bundleDirectory,
     required File file,
   }) {
+    if (!_isSafeDiagnosticSourceFile(file)) {
+      return false;
+    }
+
     final bundleRoot = path.normalize(path.absolute(bundleDirectory.path));
     final filePath = path.normalize(path.absolute(file.path));
     final isInsideBundle =

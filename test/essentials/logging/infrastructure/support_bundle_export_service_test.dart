@@ -121,6 +121,43 @@ void main() {
     );
   });
 
+  test(
+    'rejects symlinked health report files inside the support bundle',
+    () async {
+      final tempDirectory = await Directory.systemTemp.createTemp(
+        'support_bundle_export_service_test_',
+      );
+      addTearDown(() async {
+        if (tempDirectory.existsSync()) {
+          await tempDirectory.delete(recursive: true);
+        }
+      });
+
+      final logDirectory = Directory('${tempDirectory.path}/logs')
+        ..createSync(recursive: true);
+      final outsideFile = File('${tempDirectory.path}/outside_health.json');
+      await outsideFile.writeAsString('outside health');
+      final service = SupportBundleExportService(
+        _FakeLogFileWriter(logDirectory),
+        DatabaseHealthAuditService(
+          hasFullDiskAccess: true,
+          queryLayers: const [],
+          runtimeEnvironment: const _FakeRuntimeEnvironment(),
+          reportWriter: _SymlinkHealthReportWriter(outsideFile),
+        ),
+      );
+
+      final result = await service.export();
+      final attachmentNames = result.attachmentFiles
+          .map((file) => file.uri.pathSegments.last)
+          .toSet();
+
+      expect(result.databaseHealthIncluded, isFalse);
+      expect(attachmentNames, isNot(contains('database_health.json')));
+      expect(attachmentNames, contains('database_health_error.json'));
+    },
+  );
+
   test('does not append symlinked diagnostic log sources', () async {
     final tempDirectory = await Directory.systemTemp.createTemp(
       'support_bundle_export_service_test_',
@@ -234,5 +271,21 @@ class _OutsideBundleHealthReportWriter
     final file = File('${_outsideDirectory.path}/database_health.json');
     await file.writeAsString('{}\n');
     return file.path;
+  }
+}
+
+class _SymlinkHealthReportWriter implements DatabaseHealthAuditReportWriter {
+  const _SymlinkHealthReportWriter(this._outsideFile);
+
+  final File _outsideFile;
+
+  @override
+  Future<String> writeReport({
+    required String outputDirectoryPath,
+    required DatabaseHealthReport report,
+  }) async {
+    final link = Link('$outputDirectoryPath/database_health.json');
+    await link.create(_outsideFile.path);
+    return link.path;
   }
 }
