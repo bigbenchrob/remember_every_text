@@ -14890,16 +14890,35 @@ Future<List<String>> _findSupportBundleZipSafetyOffenders() async {
   final safetyCallIndex = uncommented.indexOf(
     '_isSafeSupportBundleDirectory(bundleDirectory)',
   );
+  final archiveTargetSafetyIndex = uncommented.indexOf(
+    '_isSafeSupportBundleArchiveTarget(archiveFile)',
+  );
+  final archiveDeleteIndex = uncommented.indexOf('archiveFile.delete()');
   final dittoIndex = uncommented.indexOf("Process.run('/usr/bin/ditto'");
 
   if (safetyCallIndex < 0) {
     offenders.add('$filePath zips support bundles without safety validation');
+  }
+  if (archiveTargetSafetyIndex < 0) {
+    offenders.add('$filePath does not validate the support-bundle zip target');
   }
   if (dittoIndex < 0) {
     offenders.add('$filePath no longer owns the support-bundle ditto boundary');
   }
   if (safetyCallIndex >= 0 && dittoIndex >= 0 && safetyCallIndex > dittoIndex) {
     offenders.add('$filePath invokes ditto before support-bundle validation');
+  }
+  if (archiveTargetSafetyIndex >= 0 &&
+      archiveDeleteIndex >= 0 &&
+      archiveTargetSafetyIndex > archiveDeleteIndex) {
+    offenders.add(
+      '$filePath deletes an existing support-bundle zip before target validation',
+    );
+  }
+  if (archiveTargetSafetyIndex >= 0 &&
+      dittoIndex >= 0 &&
+      archiveTargetSafetyIndex > dittoIndex) {
+    offenders.add('$filePath invokes ditto before zip target validation');
   }
 
   if (!uncommented.contains('FileSystemEntity.typeSync') ||
@@ -14919,6 +14938,14 @@ Future<List<String>> _findSupportBundleZipSafetyOffenders() async {
       !uncommented.contains(".endsWith('.db-wal')") ||
       !uncommented.contains(".endsWith('.db-shm')")) {
     offenders.add('$filePath does not reject raw database artifacts');
+  }
+  if (!uncommented.contains(
+        'bool _isSafeSupportBundleArchiveTarget(File archiveFile)',
+      ) ||
+      !uncommented.contains('archiveFile.path') ||
+      !uncommented.contains('FileSystemEntityType.notFound') ||
+      !uncommented.contains('FileSystemEntityType.file')) {
+    offenders.add('$filePath does not bound support-bundle zip target types');
   }
 
   return offenders..sort();

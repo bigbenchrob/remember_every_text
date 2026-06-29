@@ -142,6 +142,9 @@ Future<File?> createSupportBundleMailArchive(Directory bundleDirectory) async {
       .where((segment) => segment.isNotEmpty)
       .last;
   final archiveFile = File('${bundleDirectory.parent.path}/$bundleName.zip');
+  if (!_isSafeSupportBundleArchiveTarget(archiveFile)) {
+    return null;
+  }
 
   try {
     if (archiveFile.existsSync()) {
@@ -207,6 +210,12 @@ Future<bool> _isSafeSupportBundleDirectory(Directory bundleDirectory) async {
   }
 
   return true;
+}
+
+bool _isSafeSupportBundleArchiveTarget(File archiveFile) {
+  final type = FileSystemEntity.typeSync(archiveFile.path, followLinks: false);
+  return type == FileSystemEntityType.notFound ||
+      type == FileSystemEntityType.file;
 }
 
 List<String> buildAppleMailComposeScriptArgs({
