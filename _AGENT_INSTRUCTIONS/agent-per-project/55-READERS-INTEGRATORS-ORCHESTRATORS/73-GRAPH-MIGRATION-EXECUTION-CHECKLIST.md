@@ -4058,6 +4058,8 @@ retention criteria.
   be regular files, recovered archive roots cannot be symlinks, and recovered
   destination symlinks/directories are rejected before overlay archive rows are
   inserted.
+- Hardened attachment archive export so export refuses a symlinked archive root
+  and walks archive contents without following nested links.
 
 ### Vocabulary Note
 
