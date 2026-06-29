@@ -449,6 +449,10 @@ const Set<String> _messageEvidenceIdentityBridgeAllowedFiles = {
   'lib/features/messages/infrastructure/repositories/graph_message_overlay_repository.dart',
 };
 
+const Set<String> _retiredMessageOverlayWriteAllowedFiles = {
+  'lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart',
+};
+
 const Set<String> _liveChatGraphIdentityBridgeAllowedFiles = {
   'lib/essentials/conversation_graph/infrastructure/repositories/message_graph_repository.dart',
   'lib/features/handles/application/read_models/handle_identity.dart',
@@ -2941,6 +2945,21 @@ void main() {
             'repository; ordinary widgets/read models should speak message_ss_id '
             'directly.\n'
             'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Retired message overlay writes do not return', () async {
+      final offenders = await _findRetiredMessageOverlayWriteOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_retiredMessageOverlayWriteAllowedFiles.toList()..sort()),
+        reason:
+            'Rowid-keyed message_annotations and GUID-keyed message_user_* '
+            'tables are read-only compatibility inputs. New message user intent '
+            'must be written to graph-native message_intent_* overlay tables '
+            'keyed by message_ss_id.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
       );
     });
 
@@ -7091,6 +7110,44 @@ Future<List<String>> _findMessageEvidenceIdentityBridgeImportOffenders() async {
     final uncommented = _stripComments(source);
     if (uncommented.contains('canonicalMessageEvidenceId(') ||
         uncommented.contains('liveMessageRowIdForEvidenceId(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findRetiredMessageOverlayWriteOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
+  final retiredWriteApiPattern = RegExp(
+    r'\b(?:toggleMessageStar|setMessageArchived|addMessageTags|'
+    r'removeMessageTags|setMessageNotes|setMessagePriority|'
+    r'setMessageReminder|deleteMessageAnnotation|setMessageSaved|'
+    r'toggleMessageSaved|addMessageUserTags|removeMessageUserTag|'
+    r'removeMessageUserTags)\s*\(',
+  );
+  final retiredWriteSqlPattern = RegExp(
+    r'\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+'
+    r'(?:message_annotations|message_user_flags|message_user_tags)\b',
+    caseSensitive: false,
+  );
+  final retiredDriftTableWritePattern = RegExp(
+    r'\b(?:into|update|delete)\s*\(\s*'
+    r'(?:messageAnnotations|messageUserFlags|messageUserTags)\s*\)',
+  );
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (retiredWriteApiPattern.hasMatch(uncommented) ||
+        retiredWriteSqlPattern.hasMatch(uncommented) ||
+        retiredDriftTableWritePattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
   }
