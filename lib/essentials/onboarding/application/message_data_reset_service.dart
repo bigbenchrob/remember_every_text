@@ -34,13 +34,13 @@ const _activeGraphDerivedDatabaseFiles = <AppDatabaseFile>[
   AppDatabaseFile.conversationGraph,
 ];
 
-List<String> get retiredDatabaseCleanupBaseNames =>
+List<String> get _retiredDatabaseCleanupBaseNames =>
     appDatabaseFileNames(_retiredDatabaseCleanupFiles);
 
-List<String> get activeGraphDerivedDatabaseBaseNames =>
+List<String> get _activeGraphDerivedDatabaseBaseNames =>
     appDatabaseFileNames(_activeGraphDerivedDatabaseFiles);
 
-List<String> get messageDataResetPostCleanupCheckBaseNames =>
+List<String> get _messageDataResetPostCleanupCheckBaseNames =>
     appDatabaseFileNames(<AppDatabaseFile>[
       ..._activeGraphDerivedDatabaseFiles,
       ..._retiredDatabaseCleanupFiles,
@@ -80,7 +80,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
       final fileStore = _dependencies.fileStore;
       final deletedActiveGraphFilePaths = await fileStore
-          .deleteDatabaseBaseFiles(activeGraphDerivedDatabaseBaseNames);
+          .deleteDatabaseBaseFiles(_activeGraphDerivedDatabaseBaseNames);
       logger.info(
         'Deleted active graph derived database files',
         source: 'MessageDataResetService',
@@ -90,7 +90,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         },
       );
       final deletedRetiredCleanupFilePaths = await fileStore
-          .deleteDatabaseBaseFiles(retiredDatabaseCleanupBaseNames);
+          .deleteDatabaseBaseFiles(_retiredDatabaseCleanupBaseNames);
       logger.info(
         'Deleted retired database cleanup files',
         source: 'MessageDataResetService',
@@ -104,7 +104,7 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       _dependencies.bumpMessageDataVersion();
 
       final databaseExistsAfterReset = fileStore.databaseExistenceByBaseName(
-        messageDataResetPostCleanupCheckBaseNames,
+        _messageDataResetPostCleanupCheckBaseNames,
       );
 
       logger.info(

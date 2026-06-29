@@ -13050,6 +13050,9 @@ _findMessageDataResetDatabaseCategoryBoundaryOffenders() async {
   final publicAppDatabaseFileGetterPattern = RegExp(
     r'\bList<AppDatabaseFile>\s+get\s+(?!_)\w+',
   );
+  final publicDatabaseBaseNameGetterPattern = RegExp(
+    r'\bList<String>\s+get\s+(?!_)\w*(?:BaseNames|FileNames)\b',
+  );
   final offenders = <String>[];
 
   if (publicAppDatabaseFileCollectionPattern.hasMatch(uncommented)) {
@@ -13057,6 +13060,9 @@ _findMessageDataResetDatabaseCategoryBoundaryOffenders() async {
   }
   if (publicAppDatabaseFileGetterPattern.hasMatch(uncommented)) {
     offenders.add('$filePath exposes a public AppDatabaseFile getter');
+  }
+  if (publicDatabaseBaseNameGetterPattern.hasMatch(uncommented)) {
+    offenders.add('$filePath exposes public reset database base-name lists');
   }
 
   return offenders..sort();
