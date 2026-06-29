@@ -4031,6 +4031,10 @@ retention criteria.
   bundle-name validation, root symlink rejection, nested link rejection, and
   raw database artifact rejection. This prevents diagnostic export hardening
   from becoming an untested local implementation detail.
+- Hardened the support-bundle zip output path as well: the helper now refuses
+  to replace a pre-existing symlink or directory at the archive target, and the
+  architecture tripwire requires zip-target validation before delete or
+  platform archive execution.
 
 ### Vocabulary Note
 
