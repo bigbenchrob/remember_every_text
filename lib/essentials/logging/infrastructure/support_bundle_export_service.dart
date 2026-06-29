@@ -246,7 +246,22 @@ class SupportBundleExportService {
     if (!source.existsSync()) {
       return null;
     }
+    if (!_isSafeDiagnosticSourceFile(source)) {
+      return null;
+    }
     return source.copy(destinationPath);
+  }
+
+  bool _isSafeDiagnosticSourceFile(File source) {
+    if (FileSystemEntity.typeSync(source.path, followLinks: false) !=
+        FileSystemEntityType.file) {
+      return false;
+    }
+
+    final basename = path.basename(source.path).toLowerCase();
+    return !(basename.endsWith('.db') ||
+        basename.endsWith('.db-wal') ||
+        basename.endsWith('.db-shm'));
   }
 
   String _pad(int n) => n.toString().padLeft(2, '0');

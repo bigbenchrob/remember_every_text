@@ -5320,6 +5320,21 @@ void main() {
       );
     });
 
+    test('Support bundle copied diagnostics validate source files', () async {
+      final offenders =
+          await _findSupportBundleCopiedDiagnosticSourceSafetyOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Support bundle copied diagnostic files must reject symlinked '
+            'sources and raw database artifacts before copying pipeline logs '
+            'into the bundle.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('App logger consumers use logging feature boundary', () async {
       final offenders = await _findAppLoggerFeatureBoundaryOffenders();
 
@@ -11523,6 +11538,38 @@ Future<List<String>> _findRetiredAuditLogFileOffenders() async {
         uncommented.contains('"migrate_log"')) {
       offenders.add(filePath);
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findSupportBundleCopiedDiagnosticSourceSafetyOffenders() async {
+  const filePath =
+      'lib/essentials/logging/infrastructure/support_bundle_export_service.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return <String>['$filePath is missing'];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+
+  if (!uncommented.contains('_isSafeDiagnosticSourceFile(source)')) {
+    offenders.add(
+      '$filePath copies diagnostic files without source validation',
+    );
+  }
+  if (!uncommented.contains('bool _isSafeDiagnosticSourceFile(File source)') ||
+      !uncommented.contains('FileSystemEntity.typeSync') ||
+      !uncommented.contains('followLinks: false') ||
+      !uncommented.contains('FileSystemEntityType.file')) {
+    offenders.add('$filePath does not reject non-file or symlink sources');
+  }
+  if (!uncommented.contains(".endsWith('.db')") ||
+      !uncommented.contains(".endsWith('.db-wal')") ||
+      !uncommented.contains(".endsWith('.db-shm')")) {
+    offenders.add('$filePath does not reject raw database diagnostic sources');
   }
 
   return offenders..sort();
