@@ -175,6 +175,10 @@ Future<bool> _isSafeSupportBundleDirectory(Directory bundleDirectory) async {
   if (!bundleDirectory.existsSync()) {
     return false;
   }
+  if (FileSystemEntity.typeSync(bundleDirectory.path, followLinks: false) ==
+      FileSystemEntityType.link) {
+    return false;
+  }
 
   final bundleName = bundleDirectory.uri.pathSegments
       .where((segment) => segment.isNotEmpty)

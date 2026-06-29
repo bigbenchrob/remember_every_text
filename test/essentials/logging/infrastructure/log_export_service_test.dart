@@ -94,6 +94,44 @@ void main() {
     },
   );
 
+  test(
+    'createSupportBundleMailArchive rejects symlink bundle directory',
+    () async {
+      final tempDirectory = await Directory.systemTemp.createTemp(
+        'support_bundle_mail_archive_test_',
+      );
+      final realBundleDirectory = Directory(
+        '${tempDirectory.path}/real_support_bundle',
+      );
+      await realBundleDirectory.create();
+      await File(
+        '${realBundleDirectory.path}/diagnostic_report.log',
+      ).writeAsString('diagnostic log');
+      final bundleLink = Link(
+        '${tempDirectory.path}/support_bundle_2026-04-16_111443',
+      );
+      await bundleLink.create(realBundleDirectory.path);
+
+      addTearDown(() async {
+        if (tempDirectory.existsSync()) {
+          await tempDirectory.delete(recursive: true);
+        }
+      });
+
+      final archive = await createSupportBundleMailArchive(
+        Directory(bundleLink.path),
+      );
+
+      expect(archive, isNull);
+      expect(
+        File(
+          '${tempDirectory.path}/support_bundle_2026-04-16_111443.zip',
+        ).existsSync(),
+        isFalse,
+      );
+    },
+  );
+
   test('buildAppleMailComposeScriptArgs escapes attachments subject and recipient', () {
     final args = buildAppleMailComposeScriptArgs(
       attachmentFilePaths: [
