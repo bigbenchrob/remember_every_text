@@ -5869,6 +5869,24 @@ void main() {
       },
     );
 
+    test(
+      'Graph archive candidate graph query uses source-row naming',
+      () async {
+        final offenders = await _findGraphArchiveCandidateGraphAliasOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Graph attachment archive candidate queries should name live '
+              'graph-derived attachment endpoints as source-row identity. '
+              'The retained import_attachment_id column name should appear '
+              'only in overlay archive-table queries.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
     test('Graph health diagnostics use typed archive keys', () async {
       final offenders = await _findGraphHealthAdHocArchiveKeyOffenders();
 
@@ -12408,6 +12426,29 @@ Future<List<String>> _findGraphArchiveCandidateAdHocKeyOffenders() async {
   }
   if (!uncommented.contains('ArchiveCompatibilityKey')) {
     offenders.add('$filePath does not use ArchiveCompatibilityKey');
+  }
+
+  return offenders;
+}
+
+Future<List<String>> _findGraphArchiveCandidateGraphAliasOffenders() async {
+  const filePath =
+      'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  final graphAliases = RegExp(
+    r'SourceScopedRowSql\.sourceRowId\([^)]+\)\s+AS\s+import_attachment_id',
+    caseSensitive: false,
+  );
+  if (graphAliases.hasMatch(uncommented)) {
+    offenders.add(
+      '$filePath aliases graph source rowid as import_attachment_id',
+    );
   }
 
   return offenders;

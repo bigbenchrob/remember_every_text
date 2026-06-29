@@ -29,7 +29,8 @@ class SqliteGraphAttachmentArchiveCandidateReader
       SELECT DISTINCT
         a.ss_id AS graph_attachment_id,
         m.guid AS message_guid,
-        ${SourceScopedRowSql.sourceRowId('a.ss_id')} AS import_attachment_id,
+        ${SourceScopedRowSql.sourceRowId('a.ss_id')}
+          AS live_source_attachment_rowid,
         a.filename AS local_path,
         a.mime_type,
         NULL AS sha256_hex
@@ -134,7 +135,8 @@ class SqliteGraphAttachmentArchiveCandidateReader
       SELECT
         a.ss_id AS graph_attachment_id,
         m.guid AS message_guid,
-        ${SourceScopedRowSql.sourceRowId('a.ss_id')} AS import_attachment_id,
+        ${SourceScopedRowSql.sourceRowId('a.ss_id')}
+          AS live_source_attachment_rowid,
         a.filename AS local_path,
         a.mime_type,
         NULL AS sha256_hex
@@ -160,7 +162,8 @@ class SqliteGraphAttachmentArchiveCandidateReader
           SELECT
             a.ss_id AS graph_attachment_id,
             m.guid AS message_guid,
-            ${SourceScopedRowSql.sourceRowId('a.ss_id')} AS import_attachment_id,
+            ${SourceScopedRowSql.sourceRowId('a.ss_id')}
+              AS live_source_attachment_rowid,
             a.filename AS local_path,
             a.mime_type,
             NULL AS sha256_hex
@@ -231,13 +234,16 @@ class SqliteGraphAttachmentArchiveCandidateReader
   ArchiveCompatibilityKey? _archiveCompatibilityKeyFromRow(
     Map<String, Object?> row,
   ) {
-    final importAttachmentId = _readNullableInt(row, 'import_attachment_id');
-    if (importAttachmentId == null) {
+    final liveSourceAttachmentRowId = _readNullableInt(
+      row,
+      'live_source_attachment_rowid',
+    );
+    if (liveSourceAttachmentRowId == null) {
       return null;
     }
     return ArchiveCompatibilityKey.fromStoredTuple(
       messageGuid: _readRequiredString(row, 'message_guid'),
-      importAttachmentId: importAttachmentId,
+      importAttachmentId: liveSourceAttachmentRowId,
     );
   }
 
