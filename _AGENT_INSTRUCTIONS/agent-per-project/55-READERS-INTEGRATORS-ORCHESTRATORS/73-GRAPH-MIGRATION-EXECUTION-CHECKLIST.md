@@ -4066,6 +4066,9 @@ retention criteria.
 - Hardened conversation graph status log writes so generated `_LOGS`
   diagnostics refuse symlinked log directories and symlink/directory log
   targets before writing Markdown status artifacts.
+- Hardened message-history coverage report exports so selected export
+  directories cannot be symlink redirects and pre-existing symlink/directory
+  JSON targets are rejected before the report is written.
 
 ### Vocabulary Note
 
