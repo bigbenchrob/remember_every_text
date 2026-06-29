@@ -11554,10 +11554,13 @@ _findSupportBundleCopiedDiagnosticSourceSafetyOffenders() async {
 
   final uncommented = _stripComments(await file.readAsString());
   final offenders = <String>[];
+  final safetyCallCount =
+      '_isSafeDiagnosticSourceFile(source)'.allMatches(uncommented).length +
+      '_isSafeDiagnosticSourceFile(file)'.allMatches(uncommented).length;
 
-  if (!uncommented.contains('_isSafeDiagnosticSourceFile(source)')) {
+  if (safetyCallCount < 2) {
     offenders.add(
-      '$filePath copies diagnostic files without source validation',
+      '$filePath does not validate all copied/appended diagnostic sources',
     );
   }
   if (!uncommented.contains('bool _isSafeDiagnosticSourceFile(File source)') ||

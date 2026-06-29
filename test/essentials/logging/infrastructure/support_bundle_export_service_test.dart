@@ -120,6 +120,43 @@ void main() {
       isTrue,
     );
   });
+
+  test('does not append symlinked diagnostic log sources', () async {
+    final tempDirectory = await Directory.systemTemp.createTemp(
+      'support_bundle_export_service_test_',
+    );
+    addTearDown(() async {
+      if (tempDirectory.existsSync()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    });
+
+    final logDirectory = Directory('${tempDirectory.path}/logs')
+      ..createSync(recursive: true);
+    final protectedFile = File('${tempDirectory.path}/protected.txt');
+    await protectedFile.writeAsString('protected content');
+    await Link('${logDirectory.path}/app.log').create(protectedFile.path);
+
+    final service = SupportBundleExportService(
+      _FakeLogFileWriter(logDirectory),
+      DatabaseHealthAuditService(
+        hasFullDiskAccess: true,
+        queryLayers: const [],
+        runtimeEnvironment: const _FakeRuntimeEnvironment(),
+        reportWriter: const _FakeDatabaseHealthReportWriter(),
+      ),
+    );
+
+    final result = await service.export();
+    final diagnosticLog = File(
+      '${result.bundleDirectory.path}/diagnostic_report.log',
+    );
+    final content = await diagnosticLog.readAsString();
+
+    expect(content, contains('No raw database files are included.'));
+    expect(content, isNot(contains('protected content')));
+    expect(content, isNot(contains('Application Log (Current Session)')));
+  });
 }
 
 class _FakeLogFileWriter extends LogFileWriter {

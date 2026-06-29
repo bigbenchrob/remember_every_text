@@ -206,6 +206,9 @@ class SupportBundleExportService {
     if (!file.existsSync()) {
       return;
     }
+    if (!_isSafeDiagnosticSourceFile(file)) {
+      return;
+    }
 
     sink.write('--- $title ---\n');
     sink.write(await file.readAsString());
