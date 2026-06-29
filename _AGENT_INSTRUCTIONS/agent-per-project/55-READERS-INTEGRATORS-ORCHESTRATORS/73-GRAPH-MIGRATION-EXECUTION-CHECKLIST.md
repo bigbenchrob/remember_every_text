@@ -4052,6 +4052,8 @@ retention criteria.
   symlink, source symlinks are skipped rather than followed, and archive
   destination symlinks/directories are rejected before evidence files are
   copied into `attachment_archive`.
+- Hardened attachment archive reset so recursive archive cleanup refuses a
+  symlinked archive directory instead of deleting through a redirected path.
 
 ### Vocabulary Note
 
