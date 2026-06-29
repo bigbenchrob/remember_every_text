@@ -4016,6 +4016,10 @@ retention criteria.
   `import_attachment_id`. The retained overlay archive column name remains
   bounded to overlay table queries, and the architecture suite now guards this
   graph-reader alias boundary.
+- Hardened support bundle export so generated diagnostic attachments must be
+  bundle-local non-database artifacts. Even if a database-health report writer
+  returns a raw `.db`, `.db-wal`, or `.db-shm` path, the support bundle records
+  an error artifact instead of exporting the database file.
 
 ### Vocabulary Note
 
