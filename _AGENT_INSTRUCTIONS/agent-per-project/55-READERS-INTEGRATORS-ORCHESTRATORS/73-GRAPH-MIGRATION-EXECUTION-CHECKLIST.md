@@ -4060,6 +4060,9 @@ retention criteria.
   inserted.
 - Hardened attachment archive export so export refuses a symlinked archive root
   and walks archive contents without following nested links.
+- Bounded overlay archive relative paths at read, write, and integrity-check
+  boundaries. New overlay archive rows cannot persist absolute or parent-escape
+  paths, and existing escaped rows are not resolved as archive files.
 
 ### Vocabulary Note
 
