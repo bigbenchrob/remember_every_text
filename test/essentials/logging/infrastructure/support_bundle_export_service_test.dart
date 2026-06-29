@@ -46,6 +46,38 @@ void main() {
       expect(content, contains('No raw database files are included.'));
     },
   );
+
+  test('rejects raw database files returned by health writer', () async {
+    final tempDirectory = await Directory.systemTemp.createTemp(
+      'support_bundle_export_service_test_',
+    );
+    addTearDown(() async {
+      if (tempDirectory.existsSync()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    });
+
+    final logDirectory = Directory('${tempDirectory.path}/logs')
+      ..createSync(recursive: true);
+    final service = SupportBundleExportService(
+      _FakeLogFileWriter(logDirectory),
+      DatabaseHealthAuditService(
+        hasFullDiskAccess: true,
+        queryLayers: const [],
+        runtimeEnvironment: const _FakeRuntimeEnvironment(),
+        reportWriter: const _RawDatabasePathHealthReportWriter(),
+      ),
+    );
+
+    final result = await service.export();
+    final attachmentNames = result.attachmentFiles
+        .map((file) => file.uri.pathSegments.last)
+        .toSet();
+
+    expect(result.databaseHealthIncluded, isFalse);
+    expect(attachmentNames, isNot(contains('working.db')));
+    expect(attachmentNames, contains('database_health_error.json'));
+  });
 }
 
 class _FakeLogFileWriter extends LogFileWriter {
@@ -90,6 +122,21 @@ class _FakeDatabaseHealthReportWriter
   }) async {
     final file = File('$outputDirectoryPath/database_health.json');
     await file.writeAsString('{}\n');
+    return file.path;
+  }
+}
+
+class _RawDatabasePathHealthReportWriter
+    implements DatabaseHealthAuditReportWriter {
+  const _RawDatabasePathHealthReportWriter();
+
+  @override
+  Future<String> writeReport({
+    required String outputDirectoryPath,
+    required DatabaseHealthReport report,
+  }) async {
+    final file = File('$outputDirectoryPath/working.db');
+    await file.writeAsString('not really sqlite\n');
     return file.path;
   }
 }

@@ -74,23 +74,31 @@ class SupportBundleExportService {
       final auditOutput = await _databaseHealthAuditService.writePhase1Report(
         outputDirectoryPath: bundleDirectory.path,
       );
-      attachmentFiles.add(File(auditOutput.reportPath));
-      databaseHealthIncluded = true;
+      final reportFile = File(auditOutput.reportPath);
+      if (_isSafeBundleDiagnosticAttachment(
+        bundleDirectory: bundleDirectory,
+        file: reportFile,
+      )) {
+        attachmentFiles.add(reportFile);
+        databaseHealthIncluded = true;
+      } else {
+        attachmentFiles.add(
+          await _writeDatabaseHealthErrorFile(
+            bundleDirectory: bundleDirectory,
+            message:
+                'Database health report path was rejected because support '
+                'bundles may include only bundle-local diagnostic artifacts.',
+          ),
+        );
+      }
     } catch (error, stackTrace) {
-      final errorFile = File(
-        '${bundleDirectory.path}/database_health_error.json',
+      attachmentFiles.add(
+        await _writeDatabaseHealthErrorFile(
+          bundleDirectory: bundleDirectory,
+          message: error.toString(),
+          stackTrace: stackTrace.toString(),
+        ),
       );
-      await errorFile.writeAsString(
-        '${const JsonEncoder.withIndent('  ').convert(<String, Object?>{
-          'generated_at': DateTime.now().toUtc().toIso8601String(),
-          'artifact': 'database_health.json',
-          'status': 'failed',
-          'message': error.toString(),
-          'stack_trace': stackTrace.toString(),
-          'notes': <String>['Support bundle export continued after database health generation failed.', 'No raw database copies were exported.'],
-        })}\n',
-      );
-      attachmentFiles.add(errorFile);
     }
 
     return SupportBundleExportResult(
@@ -148,6 +156,46 @@ class SupportBundleExportService {
     headerLines.forEach(buffer.writeln);
     buffer.writeln();
     return buffer.toString();
+  }
+
+  Future<File> _writeDatabaseHealthErrorFile({
+    required Directory bundleDirectory,
+    required String message,
+    String? stackTrace,
+  }) async {
+    final errorFile = File(
+      '${bundleDirectory.path}/database_health_error.json',
+    );
+    await errorFile.writeAsString(
+      '${const JsonEncoder.withIndent('  ').convert(<String, Object?>{
+        'generated_at': DateTime.now().toUtc().toIso8601String(),
+        'artifact': 'database_health.json',
+        'status': 'failed',
+        'message': message,
+        if (stackTrace != null) 'stack_trace': stackTrace,
+        'notes': <String>['Support bundle export continued after database health generation failed.', 'No raw database copies were exported.'],
+      })}\n',
+    );
+    return errorFile;
+  }
+
+  bool _isSafeBundleDiagnosticAttachment({
+    required Directory bundleDirectory,
+    required File file,
+  }) {
+    final bundleRoot = path.normalize(path.absolute(bundleDirectory.path));
+    final filePath = path.normalize(path.absolute(file.path));
+    final isInsideBundle =
+        path.equals(bundleRoot, path.dirname(filePath)) ||
+        path.isWithin(bundleRoot, filePath);
+    if (!isInsideBundle) {
+      return false;
+    }
+
+    final basename = path.basename(filePath).toLowerCase();
+    return !(basename.endsWith('.db') ||
+        basename.endsWith('.db-wal') ||
+        basename.endsWith('.db-shm'));
   }
 
   Future<void> _appendFileIfPresent(
