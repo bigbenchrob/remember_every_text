@@ -3996,6 +3996,13 @@ retention criteria.
 - Updated current onboarding/readiness handoff and feature-planning notes to
   describe old import/working database health as retired cleanup diagnostics,
   not compatibility storage or readiness authority.
+- Hardened reset cleanup around database base filenames: reset file deletion
+  now rejects path-like inputs, the `DerivedMessageDataFileStore` contract
+  explicitly states that callers pass filenames rather than paths, and the
+  architecture suite guards that reset cleanup cannot expose reusable database
+  file-category lists or bypass base-name validation. This preserves
+  attachment archives and unrelated folders while keeping retired
+  `macos_import.db` / `working.db` cleanup a bounded reset concern.
 
 ### Vocabulary Note
 
