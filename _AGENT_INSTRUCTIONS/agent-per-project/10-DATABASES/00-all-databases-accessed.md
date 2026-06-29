@@ -143,7 +143,10 @@ instead of reaching for the concrete physical provider.
   `finally` block.
   Sqflite probes must use isolated read-only handles (`singleInstance: false`
   for direct `openDatabase` calls) and set `PRAGMA query_only = ON` plus
-  `PRAGMA busy_timeout = 3000` before issuing reads.
+  `PRAGMA busy_timeout = 3000` before issuing reads. Direct probe `rawQuery`
+  calls must pass SQL through a named read-only SQL guard such as
+  `assertReadOnlySql(...)`; the retired/import-ledger writer is the explicit
+  exception because it owns its mutable schema and write transaction boundary.
 - Presentation, application orchestration, feature widgets, and ordinary
   read-model code must never open database files directly.
 
