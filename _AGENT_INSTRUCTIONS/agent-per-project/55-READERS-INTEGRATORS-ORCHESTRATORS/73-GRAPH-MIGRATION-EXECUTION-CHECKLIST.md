@@ -4020,6 +4020,9 @@ retention criteria.
   bundle-local non-database artifacts. Even if a database-health report writer
   returns a raw `.db`, `.db-wal`, or `.db-shm` path, the support bundle records
   an error artifact instead of exporting the database file.
+- Hardened support bundle mail-archive creation so the zip helper refuses
+  non-support-bundle directories, symlinked contents, and raw database files
+  before invoking the platform archive tool.
 
 ### Vocabulary Note
 
