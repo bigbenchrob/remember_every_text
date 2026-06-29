@@ -1223,6 +1223,22 @@ void main() {
       );
     });
 
+    test('Direct sqlite3 probe selects use read-only SQL guard', () async {
+      final offenders = await _findDirectSqlite3SelectGuardOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Direct sqlite3 probes that open a database and issue select '
+            'queries must pass SQL through a named read-only guard. sqlite3 '
+            'select is read-only by API, but these helpers are still source, '
+            'archive, diagnostic, or retired-cleanup database boundaries and '
+            'must state that contract explicitly.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Direct sqflite probes use isolated read-only handles', () async {
       final offenders = await _findDirectSqfliteProbeHardeningOffenders();
 
@@ -14454,6 +14470,40 @@ Future<List<String>> _findDirectSqfliteRawQueryGuardOffenders() async {
     final uncommented = _stripComments(source);
     if (!sqfliteOpenPattern.hasMatch(uncommented) ||
         !uncommented.contains('.rawQuery(')) {
+      continue;
+    }
+
+    if (!uncommented.contains('assertReadOnlySql(') &&
+        !uncommented.contains('assertDatabaseHealthReadOnlySql(')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findDirectSqlite3SelectGuardOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>[];
+  final sqlite3OpenPattern = RegExp(r'\bsqlite3(?:\.sqlite3)?\.open\s*\(');
+
+  for (final filePath in files) {
+    if (_directSqliteWriteOpenAllowedFiles.contains(filePath)) {
+      continue;
+    }
+
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    final imports = _extractImports(uncommented);
+    final importsSqlite3 = imports.contains('package:sqlite3/sqlite3.dart');
+    if (!importsSqlite3 ||
+        !sqlite3OpenPattern.hasMatch(uncommented) ||
+        !uncommented.contains('.select(')) {
       continue;
     }
 

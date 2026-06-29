@@ -1,5 +1,6 @@
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../db/application/read_only_sql_guard.dart';
 import '../../application/monitor/chat_db_source_probe_reader.dart';
 
 final class SqliteChatDbSourceProbeReader implements ChatDbSourceProbeReader {
@@ -12,9 +13,9 @@ final class SqliteChatDbSourceProbeReader implements ChatDbSourceProbeReader {
       try {
         db.execute('PRAGMA query_only = ON;');
         db.execute('PRAGMA busy_timeout = 3000;');
-        final result = db.select(
-          'SELECT MAX(ROWID) as max_rowid FROM message;',
-        );
+        const sql = 'SELECT MAX(ROWID) as max_rowid FROM message;';
+        assertReadOnlySql(sql, boundary: 'Chat DB source max rowid query');
+        final result = db.select(sql);
         if (result.isEmpty || result.first.values.isEmpty) {
           throw const FormatException('MAX(ROWID) query returned no rows');
         }
@@ -38,11 +39,16 @@ final class SqliteChatDbSourceProbeReader implements ChatDbSourceProbeReader {
       try {
         db.execute('PRAGMA query_only = ON;');
         db.execute('PRAGMA busy_timeout = 3000;');
-        final result = db.select('''
+        const sql = '''
 SELECT COUNT(*) AS importable_message_count
 FROM message
 WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0;
-''');
+''';
+        assertReadOnlySql(
+          sql,
+          boundary: 'Chat DB source importable message count query',
+        );
+        final result = db.select(sql);
         if (result.isEmpty || result.first.values.isEmpty) {
           throw const FormatException(
             'importable message count query returned no rows',

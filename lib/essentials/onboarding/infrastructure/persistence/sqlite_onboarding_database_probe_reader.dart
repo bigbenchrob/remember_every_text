@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../../db/application/conversation_graph_readiness.dart';
+import '../../../db/application/read_only_sql_guard.dart';
 import '../../../db/infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart';
 import '../../application/onboarding_database_probe_reader.dart';
 import '../../domain/onboarding_environment_report.dart';
@@ -78,7 +79,12 @@ final class SqliteOnboardingDatabaseProbeReader
       try {
         db.execute('PRAGMA query_only = ON;');
         db.execute('PRAGMA busy_timeout = 3000;');
-        final result = db.select('SELECT COUNT(*) as count FROM $tableName');
+        final sql = 'SELECT COUNT(*) as count FROM $tableName';
+        assertReadOnlySql(
+          sql,
+          boundary: 'Onboarding database probe count query',
+        );
+        final result = db.select(sql);
         if (result.isEmpty || result.first.values.isEmpty) {
           return null;
         }

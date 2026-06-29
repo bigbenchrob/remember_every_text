@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../../essentials/db/application/read_only_sql_guard.dart';
 import '../../application/historical_snapshot_reader.dart';
 
 class SqliteHistoricalSnapshotReaderFactory
@@ -71,7 +72,12 @@ class SqliteHistoricalSnapshotReader implements HistoricalSnapshotReader {
       try {
         db.execute('PRAGMA query_only = ON;');
         db.execute('PRAGMA busy_timeout = 3000;');
-        db.select('SELECT COUNT(*) FROM message LIMIT 1');
+        const sql = 'SELECT COUNT(*) FROM message LIMIT 1';
+        assertReadOnlySql(
+          sql,
+          boundary: 'Historical snapshot validation query',
+        );
+        db.select(sql);
       } finally {
         db.dispose();
       }
@@ -106,7 +112,7 @@ class SqliteHistoricalSnapshotReader implements HistoricalSnapshotReader {
     try {
       db.execute('PRAGMA query_only = ON;');
       db.execute('PRAGMA busy_timeout = 3000;');
-      final results = db.select('''
+      const sql = '''
         SELECT
           m.ROWID   AS hist_message_rowid,
           m.guid    AS hist_message_guid,
@@ -123,7 +129,9 @@ class SqliteHistoricalSnapshotReader implements HistoricalSnapshotReader {
         JOIN attachment a ON a.ROWID = maj.attachment_id
         WHERE m.guid IS NOT NULL
           AND LENGTH(TRIM(m.guid)) > 0
-      ''');
+      ''';
+      assertReadOnlySql(sql, boundary: 'Historical snapshot enumeration query');
+      final results = db.select(sql);
 
       final records = <HistoricalAttachmentRecord>[];
       var filesFound = 0;

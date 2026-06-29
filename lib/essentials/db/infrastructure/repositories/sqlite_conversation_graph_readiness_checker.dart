@@ -4,6 +4,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../../app_database_files.dart';
 import '../../application/conversation_graph_readiness.dart';
+import '../../application/read_only_sql_guard.dart';
 
 final class SqliteConversationGraphReadinessChecker
     implements ConversationGraphReadinessChecker {
@@ -115,12 +116,18 @@ final class SqliteConversationGraphReadinessChecker
       'attachments',
       'message_to_attachment',
     ];
-    final rows = db.select('''
+    final sql =
+        '''
       SELECT name
       FROM sqlite_master
       WHERE type = 'table'
         AND name IN (${List.filled(requiredTables.length, '?').join(', ')})
-      ''', requiredTables);
+      ''';
+    assertReadOnlySql(
+      sql,
+      boundary: 'Conversation graph readiness tables query',
+    );
+    final rows = db.select(sql, requiredTables);
     final existing = {
       for (final row in rows)
         if (row['name'] is String) row['name'] as String,
@@ -132,7 +139,12 @@ final class SqliteConversationGraphReadinessChecker
   }
 
   static int _count(Database db, String tableName) {
-    final rows = db.select('SELECT COUNT(*) AS count FROM $tableName');
+    final sql = 'SELECT COUNT(*) AS count FROM $tableName';
+    assertReadOnlySql(
+      sql,
+      boundary: 'Conversation graph readiness count query',
+    );
+    final rows = db.select(sql);
     final value = rows.single['count'];
     if (value is int) {
       return value;

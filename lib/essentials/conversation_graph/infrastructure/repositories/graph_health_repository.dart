@@ -4,6 +4,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 import '../../../archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../db/app_database_files.dart';
+import '../../../db/application/read_only_sql_guard.dart';
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../application/health/graph_health_report.dart';
@@ -560,10 +561,15 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     try {
       overlayDb.execute('PRAGMA query_only = ON;');
       overlayDb.execute('PRAGMA busy_timeout = 3000;');
-      final rows = overlayDb.select('''
+      const sql = '''
         SELECT message_guid, import_attachment_id, archive_relative_path
         FROM archived_attachments
-        ''');
+        ''';
+      assertReadOnlySql(
+        sql,
+        boundary: 'Historical archive metadata keys query',
+      );
+      final rows = overlayDb.select(sql);
       final availableKeys = <ArchiveCompatibilityKey>{};
       final allKeys = <ArchiveCompatibilityKey>{};
       var filesMissingCount = 0;
@@ -621,7 +627,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     try {
       db.execute('PRAGMA query_only = ON;');
       db.execute('PRAGMA busy_timeout = 3000;');
-      final resultSet = db.select('''
+      const sql = '''
         SELECT
           m.guid AS message_guid,
           a.ROWID AS import_attachment_id,
@@ -631,7 +637,12 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
         JOIN attachment a ON a.ROWID = maj.attachment_id
         WHERE m.guid IS NOT NULL
           AND m.guid != ''
-      ''');
+      ''';
+      assertReadOnlySql(
+        sql,
+        boundary: 'Recovered Messages attachment key query',
+      );
+      final resultSet = db.select(sql);
       final availableKeys = <ArchiveCompatibilityKey>{};
       final allKeys = <ArchiveCompatibilityKey>{};
       for (final row in resultSet) {
