@@ -21,6 +21,13 @@ class OverlayRecoveredAttachmentArchiveWriter
 
   @override
   Future<int?> archive(MappedAttachmentRecord record) async {
+    if (_isSymlink(_archiveDir)) {
+      throw StateError('Attachment archive directory must not be a symlink.');
+    }
+    if (!_isRegularFile(record.resolvedFilePath)) {
+      throw StateError('Recovered attachment source must be a regular file.');
+    }
+
     final archiveKey = record.currentArchiveCompatibilityKey;
     final existing =
         await (_overlayDb.select(_overlayDb.archivedAttachments)..where(
@@ -42,6 +49,11 @@ class OverlayRecoveredAttachmentArchiveWriter
     final prefix = contentHash.substring(0, 2);
     final relativePath = '$prefix/$contentHash$ext';
     final destFile = File('$_archiveDir/$relativePath');
+    if (_isSymlink(destFile.path) || _isDirectory(destFile.path)) {
+      throw StateError(
+        'Recovered attachment archive destination must be a regular file path.',
+      );
+    }
 
     if (!destFile.existsSync()) {
       await destFile.parent.create(recursive: true);
@@ -75,5 +87,20 @@ class OverlayRecoveredAttachmentArchiveWriter
         );
 
     return fileSize;
+  }
+
+  static bool _isRegularFile(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.file;
+  }
+
+  static bool _isDirectory(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.directory;
+  }
+
+  static bool _isSymlink(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.link;
   }
 }

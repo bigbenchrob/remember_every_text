@@ -119,6 +119,76 @@ void main() {
       expect(archivedRows.single.archiveRelativePath, 'aa/existing.jpg');
     },
   );
+
+  test('rejects symlinked archive directory', () async {
+    await overlayDatabase.close();
+    if (archiveDir.existsSync()) {
+      await archiveDir.delete(recursive: true);
+    }
+    final outsideArchive = Directory(path.join(tempDir.path, 'outside_archive'))
+      ..createSync();
+    final archiveLink = Link(archiveDir.path);
+    await archiveLink.create(outsideArchive.path);
+    overlayDatabase = OverlayDatabase(NativeDatabase.memory());
+    writer = OverlayRecoveredAttachmentArchiveWriter(
+      overlayDb: overlayDatabase,
+      archiveDir: archiveLink.path,
+    );
+    final sourceFile = File(path.join(tempDir.path, 'historical', 'photo.jpg'));
+    await sourceFile.parent.create(recursive: true);
+    await sourceFile.writeAsString('historical image');
+
+    await expectLater(
+      writer.archive(_record(resolvedFilePath: sourceFile.path)),
+      throwsStateError,
+    );
+  });
+
+  test('rejects symlinked recovered source file', () async {
+    final outsideFile = File(path.join(tempDir.path, 'outside.jpg'));
+    await outsideFile.writeAsString('outside image');
+    final sourceLink = Link(path.join(tempDir.path, 'linked.jpg'));
+    await sourceLink.create(outsideFile.path);
+
+    await expectLater(
+      writer.archive(_record(resolvedFilePath: sourceLink.path)),
+      throwsStateError,
+    );
+
+    final archivedRows = await overlayDatabase
+        .select(overlayDatabase.archivedAttachments)
+        .get();
+    expect(archivedRows, isEmpty);
+  });
+
+  test('rejects symlinked recovered archive destination', () async {
+    final sourceFile = File(path.join(tempDir.path, 'historical', 'photo.jpg'));
+    await sourceFile.parent.create(recursive: true);
+    await sourceFile.writeAsString('historical image');
+    final sourceBytes = await sourceFile.readAsBytes();
+    final expectedHash = sha256.convert(sourceBytes).toString();
+    final outsideFile = File(path.join(tempDir.path, 'outside.jpg'));
+    await outsideFile.writeAsString('outside');
+    final destinationParent = Directory(
+      path.join(archiveDir.path, expectedHash.substring(0, 2)),
+    );
+    await destinationParent.create(recursive: true);
+    final destinationLink = Link(
+      path.join(destinationParent.path, '$expectedHash.jpg'),
+    );
+    await destinationLink.create(outsideFile.path);
+
+    await expectLater(
+      writer.archive(_record(resolvedFilePath: sourceFile.path)),
+      throwsStateError,
+    );
+
+    expect(outsideFile.readAsStringSync(), 'outside');
+    final archivedRows = await overlayDatabase
+        .select(overlayDatabase.archivedAttachments)
+        .get();
+    expect(archivedRows, isEmpty);
+  });
 }
 
 MappedAttachmentRecord _record({
