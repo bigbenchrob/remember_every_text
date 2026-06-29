@@ -6247,6 +6247,22 @@ void main() {
       );
     });
 
+    test('Message data reset file store rejects path-like base names', () async {
+      final offenders =
+          await _findMessageDataResetFileStoreValidationOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Derived message-data reset may delete database base files and '
+            'their SQLite companions, but it must validate that each input is '
+            'a base filename, not a path. This prevents reset cleanup from '
+            'ever reaching attachment archives or unrelated directories.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Message data reset keeps database file categories private', () async {
       final offenders =
           await _findMessageDataResetDatabaseCategoryBoundaryOffenders();
@@ -12980,6 +12996,38 @@ Future<List<String>> _findMessageDataResetFileStoreBoundaryOffenders() async {
       uncommented.contains('existsSync(') ||
       uncommented.contains('.delete(')) {
     offenders.add('$filePath performs reset file access directly');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findMessageDataResetFileStoreValidationOffenders() async {
+  const filePath =
+      'lib/essentials/onboarding/infrastructure/persistence/filesystem_derived_message_data_file_store.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return <String>['$filePath is missing'];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+  if (!uncommented.contains('_validatedDatabaseBaseName')) {
+    offenders.add('$filePath does not validate database base names');
+  }
+  if (!uncommented.contains('path.isAbsolute(baseName)') ||
+      !uncommented.contains('path.basename(baseName)') ||
+      !uncommented.contains(r"baseName.contains(r'\')")) {
+    offenders.add('$filePath does not reject path-like database base names');
+  }
+  if (!RegExp(
+    r'databaseBaseFileExists[\s\S]*_validatedDatabaseBaseName\(baseName\)',
+  ).hasMatch(uncommented)) {
+    offenders.add('$filePath existence checks bypass base-name validation');
+  }
+  if (!RegExp(
+    r'deleteDatabaseBaseFiles[\s\S]*_validatedDatabaseBaseName\(baseName\)',
+  ).hasMatch(uncommented)) {
+    offenders.add('$filePath deletion bypasses base-name validation');
   }
 
   return offenders..sort();
