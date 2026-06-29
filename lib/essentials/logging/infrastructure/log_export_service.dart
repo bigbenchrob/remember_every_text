@@ -134,6 +134,9 @@ Future<File?> createSupportBundleMailArchive(Directory bundleDirectory) async {
   if (!Platform.isMacOS) {
     return null;
   }
+  if (!await _isSafeSupportBundleDirectory(bundleDirectory)) {
+    return null;
+  }
 
   final bundleName = bundleDirectory.uri.pathSegments
       .where((segment) => segment.isNotEmpty)
@@ -166,6 +169,40 @@ Future<File?> createSupportBundleMailArchive(Directory bundleDirectory) async {
     debugPrint('LogExportService: support bundle archive threw: $error');
     return null;
   }
+}
+
+Future<bool> _isSafeSupportBundleDirectory(Directory bundleDirectory) async {
+  if (!bundleDirectory.existsSync()) {
+    return false;
+  }
+
+  final bundleName = bundleDirectory.uri.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList(growable: false);
+  if (bundleName.isEmpty || !bundleName.last.startsWith('support_bundle_')) {
+    return false;
+  }
+
+  await for (final entity in bundleDirectory.list(
+    recursive: true,
+    followLinks: false,
+  )) {
+    if (entity is Link) {
+      return false;
+    }
+    if (entity is! File) {
+      continue;
+    }
+
+    final basename = entity.uri.pathSegments.last.toLowerCase();
+    if (basename.endsWith('.db') ||
+        basename.endsWith('.db-wal') ||
+        basename.endsWith('.db-shm')) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 List<String> buildAppleMailComposeScriptArgs({

@@ -36,6 +36,64 @@ void main() {
     expect(archive.lengthSync(), greaterThan(0));
   });
 
+  test(
+    'createSupportBundleMailArchive rejects raw database contents',
+    () async {
+      final tempDirectory = await Directory.systemTemp.createTemp(
+        'support_bundle_mail_archive_test_',
+      );
+      final bundleDirectory = Directory(
+        '${tempDirectory.path}/support_bundle_2026-04-16_111443',
+      );
+      await bundleDirectory.create();
+      await File('${bundleDirectory.path}/working.db').writeAsString('db');
+
+      addTearDown(() async {
+        if (tempDirectory.existsSync()) {
+          await tempDirectory.delete(recursive: true);
+        }
+      });
+
+      final archive = await createSupportBundleMailArchive(bundleDirectory);
+
+      expect(archive, isNull);
+      expect(
+        File(
+          '${tempDirectory.path}/support_bundle_2026-04-16_111443.zip',
+        ).existsSync(),
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'createSupportBundleMailArchive rejects non-support directories',
+    () async {
+      final tempDirectory = await Directory.systemTemp.createTemp(
+        'support_bundle_mail_archive_test_',
+      );
+      final bundleDirectory = Directory('${tempDirectory.path}/not_a_bundle');
+      await bundleDirectory.create();
+      await File(
+        '${bundleDirectory.path}/diagnostic_report.log',
+      ).writeAsString('diagnostic log');
+
+      addTearDown(() async {
+        if (tempDirectory.existsSync()) {
+          await tempDirectory.delete(recursive: true);
+        }
+      });
+
+      final archive = await createSupportBundleMailArchive(bundleDirectory);
+
+      expect(archive, isNull);
+      expect(
+        File('${tempDirectory.path}/not_a_bundle.zip').existsSync(),
+        isFalse,
+      );
+    },
+  );
+
   test('buildAppleMailComposeScriptArgs escapes attachments subject and recipient', () {
     final args = buildAppleMailComposeScriptArgs(
       attachmentFilePaths: [
