@@ -4026,6 +4026,11 @@ retention criteria.
 - Extended the support bundle zip guard to reject a symlink used as the bundle
   directory itself, preventing the archive helper from traversing outside the
   generated diagnostic bundle root.
+- Added an architecture tripwire for the support-bundle mail-archive helper:
+  the allowed platform archive shell-out must remain preceded by generated
+  bundle-name validation, root symlink rejection, nested link rejection, and
+  raw database artifact rejection. This prevents diagnostic export hardening
+  from becoming an untested local implementation detail.
 
 ### Vocabulary Note
 
