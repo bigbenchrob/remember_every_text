@@ -45,6 +45,10 @@ const Set<String> _pipelineIncidentActionProviderAllowedFiles = {
   'lib/features/environment_readiness/presentation/view/pipeline_incident_panel_view.dart',
 };
 
+const Set<String> _retiredAuditLogFileAllowedFiles = {
+  'lib/essentials/logging/infrastructure/support_bundle_export_service.dart',
+};
+
 const Set<String> _historicalArchivesWorkflowActionProviderAllowedFiles = {
   'lib/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart',
   'lib/features/settings/presentation/view/historical_archives_panel.dart',
@@ -5268,6 +5272,20 @@ void main() {
             'PipelineIncidentStage.migration is retained only for persisted '
             'historical overlay rows. Current graph projection incidents '
             'should use PipelineIncidentStage.graphProjection.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Retired audit log files stay support-bundle only', () async {
+      final offenders = await _findRetiredAuditLogFileOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(_retiredAuditLogFileAllowedFiles.toList()..sort()),
+        reason:
+            'import_log and migrate_log are retained diagnostic artifacts only. '
+            'They may be copied into support bundles, but must not regain '
+            'ordinary import/projection lifecycle authority.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -11376,6 +11394,31 @@ _findPipelineIncidentHistoricalMigrationStageOffenders() async {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     if (uncommented.contains('PipelineIncidentStage.migration')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findRetiredAuditLogFileOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (!path.startsWith('lib/') ||
+        path.endsWith('.g.dart') ||
+        path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return true;
+  });
+  final offenders = <String>[];
+
+  for (final filePath in files) {
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains("'import_log'") ||
+        uncommented.contains('"import_log"') ||
+        uncommented.contains("'migrate_log'") ||
+        uncommented.contains('"migrate_log"')) {
       offenders.add(filePath);
     }
   }
