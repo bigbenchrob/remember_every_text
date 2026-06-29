@@ -22,6 +22,15 @@ void main() {
               readable: true,
               sizeBytes: 1,
             ),
+            appDatabasePath(
+              AppDatabaseFile.conversationGraph,
+              databaseDirectory: databaseDirectory,
+            ): const OnboardingDatabaseProbe(
+              path: 'graph',
+              exists: true,
+              readable: true,
+              sizeBytes: 1,
+            ),
           },
           graphReadiness: const ConversationGraphReadiness(
             isReady: true,
@@ -34,6 +43,33 @@ void main() {
       );
 
       expect(checker.hasPopulatedDatabases(databaseDirectory), isTrue);
+    });
+
+    test('does not trust readiness when graph file is missing', () {
+      final checker = DatabaseExistenceChecker(
+        _FakeDatabaseProbeReader(
+          probes: {
+            appDatabasePath(
+              AppDatabaseFile.sourceScopedImport,
+              databaseDirectory: databaseDirectory,
+            ): const OnboardingDatabaseProbe(
+              path: 'import',
+              exists: true,
+              readable: true,
+              sizeBytes: 1,
+            ),
+          },
+          graphReadiness: const ConversationGraphReadiness(
+            isReady: true,
+            reason: 'stale ready result',
+            messageCount: 1,
+            chatCount: 1,
+            chatToMessageEdgeCount: 1,
+          ),
+        ),
+      );
+
+      expect(checker.hasPopulatedDatabases(databaseDirectory), isFalse);
     });
 
     test('does not treat retired cleanup files as sufficient', () {

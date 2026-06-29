@@ -25,14 +25,21 @@ class DatabaseExistenceChecker {
       AppDatabaseFile.conversationGraph,
       databaseDirectory: databaseDirectory,
     );
+    final graphProbe = databaseProbeReader.probeFile(graphPath);
 
     if (!importProbe.exists || !importProbe.readable) {
+      return false;
+    }
+    if (!graphProbe.exists || !graphProbe.readable) {
+      return false;
+    }
+    if ((importProbe.sizeBytes ?? 0) == 0 || (graphProbe.sizeBytes ?? 0) == 0) {
       return false;
     }
 
     final graphReady = databaseProbeReader
         .readConversationGraphReadiness(graphPath)
         .isReady;
-    return (importProbe.sizeBytes ?? 0) > 0 && graphReady;
+    return graphReady;
   }
 }
