@@ -2017,6 +2017,21 @@ void main() {
       );
     });
 
+    test('Support bundle zip helper validates archive input', () async {
+      final offenders = await _findSupportBundleZipSafetyOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'The support-bundle mail archive helper is allowed to shell out to '
+            'ditto only after validating that the archive root is a generated '
+            'support bundle, not a symlink, contains no nested links, and '
+            'contains no raw database artifacts.\n'
+            'Actual violations:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Raw file sinks stay behind approved boundaries', () async {
       final offenders = await _findRawFileSinkOffenders();
 
@@ -14856,6 +14871,54 @@ Future<List<String>> _findProcessRunOffenders() async {
     if (processPattern.hasMatch(uncommented)) {
       offenders.add(filePath);
     }
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>> _findSupportBundleZipSafetyOffenders() async {
+  const filePath =
+      'lib/essentials/logging/infrastructure/log_export_service.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return <String>['$filePath is missing'];
+  }
+
+  final uncommented = _stripComments(await file.readAsString());
+  final offenders = <String>[];
+
+  final safetyCallIndex = uncommented.indexOf(
+    '_isSafeSupportBundleDirectory(bundleDirectory)',
+  );
+  final dittoIndex = uncommented.indexOf("Process.run('/usr/bin/ditto'");
+
+  if (safetyCallIndex < 0) {
+    offenders.add('$filePath zips support bundles without safety validation');
+  }
+  if (dittoIndex < 0) {
+    offenders.add('$filePath no longer owns the support-bundle ditto boundary');
+  }
+  if (safetyCallIndex >= 0 && dittoIndex >= 0 && safetyCallIndex > dittoIndex) {
+    offenders.add('$filePath invokes ditto before support-bundle validation');
+  }
+
+  if (!uncommented.contains('FileSystemEntity.typeSync') ||
+      !uncommented.contains('FileSystemEntityType.link')) {
+    offenders.add('$filePath does not reject a symlink bundle root');
+  }
+  if (!uncommented.contains("startsWith('support_bundle_')")) {
+    offenders.add('$filePath does not require generated support-bundle naming');
+  }
+  if (!uncommented.contains('bundleDirectory.list') ||
+      !uncommented.contains('recursive: true') ||
+      !uncommented.contains('followLinks: false') ||
+      !uncommented.contains('entity is Link')) {
+    offenders.add('$filePath does not reject nested symlink contents');
+  }
+  if (!uncommented.contains(".endsWith('.db')") ||
+      !uncommented.contains(".endsWith('.db-wal')") ||
+      !uncommented.contains(".endsWith('.db-shm')")) {
+    offenders.add('$filePath does not reject raw database artifacts');
   }
 
   return offenders..sort();
