@@ -28,6 +28,9 @@ class FilesystemAttachmentArchiveFileStore
 
   @override
   Future<void> ensureArchiveDirectory(String archiveDirectoryPath) async {
+    if (_isSymlink(archiveDirectoryPath)) {
+      throw StateError('Attachment archive directory must not be a symlink.');
+    }
     await Directory(archiveDirectoryPath).create(recursive: true);
   }
 
@@ -38,8 +41,12 @@ class FilesystemAttachmentArchiveFileStore
     required ArchiveCompatibilityKey archiveKey,
     required String? sha256Hex,
   }) async {
+    if (_isSymlink(archiveDirectoryPath)) {
+      throw StateError('Attachment archive directory must not be a symlink.');
+    }
+
     final sourceFile = File(sourcePath);
-    if (!sourceFile.existsSync()) {
+    if (!_isRegularFile(sourcePath)) {
       return null;
     }
 
@@ -55,6 +62,13 @@ class FilesystemAttachmentArchiveFileStore
     }
 
     final destinationFile = File(path.join(archiveDirectoryPath, relativePath));
+    if (_isSymlink(destinationFile.path) ||
+        _isDirectory(destinationFile.path)) {
+      throw StateError(
+        'Attachment archive destination must be a regular file path.',
+      );
+    }
+
     await destinationFile.parent.create(recursive: true);
     await sourceFile.copy(destinationFile.path);
 
@@ -104,5 +118,20 @@ class FilesystemAttachmentArchiveFileStore
     } on Exception {
       return null;
     }
+  }
+
+  static bool _isRegularFile(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.file;
+  }
+
+  static bool _isDirectory(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.directory;
+  }
+
+  static bool _isSymlink(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.link;
   }
 }

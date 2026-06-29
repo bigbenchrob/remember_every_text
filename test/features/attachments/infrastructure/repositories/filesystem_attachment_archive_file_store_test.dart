@@ -33,10 +33,39 @@ void main() {
     expect(archiveDir.existsSync(), isTrue);
   });
 
+  test('rejects symlinked archive directory', () async {
+    final outsideDir = Directory(path.join(tempDir.path, 'outside_archive'))
+      ..createSync();
+    final archiveLink = Link(archiveDir.path);
+    await archiveLink.create(outsideDir.path);
+
+    await expectLater(
+      store.ensureArchiveDirectory(archiveDir.path),
+      throwsStateError,
+    );
+  });
+
   test('returns null when source file is absent', () async {
     final write = await store.writeArchiveEntry(
       archiveDirectoryPath: archiveDir.path,
       sourcePath: path.join(tempDir.path, 'missing.jpg'),
+      archiveKey: _archiveKey(),
+      sha256Hex: null,
+    );
+
+    expect(write, isNull);
+    expect(archiveDir.existsSync(), isFalse);
+  });
+
+  test('returns null when source file is a symlink', () async {
+    final outsideFile = File(path.join(tempDir.path, 'outside.jpg'));
+    await outsideFile.writeAsString('outside image');
+    final sourceLink = Link(path.join(tempDir.path, 'linked.jpg'));
+    await sourceLink.create(outsideFile.path);
+
+    final write = await store.writeArchiveEntry(
+      archiveDirectoryPath: archiveDir.path,
+      sourcePath: sourceLink.path,
       archiveKey: _archiveKey(),
       sha256Hex: null,
     );
@@ -92,6 +121,31 @@ void main() {
       File(path.join(archiveDir.path, 'ab/$suppliedHash.png')).existsSync(),
       isTrue,
     );
+  });
+
+  test('rejects symlinked archive destination target', () async {
+    final sourceFile = File(path.join(tempDir.path, 'photo.png'));
+    await sourceFile.writeAsString('image bytes');
+    const suppliedHash = 'abcdef123456';
+    final outsideFile = File(path.join(tempDir.path, 'outside.png'));
+    await outsideFile.writeAsString('outside');
+    final destinationParent = Directory(path.join(archiveDir.path, 'ab'));
+    await destinationParent.create(recursive: true);
+    final destinationLink = Link(
+      path.join(destinationParent.path, '$suppliedHash.png'),
+    );
+    await destinationLink.create(outsideFile.path);
+
+    await expectLater(
+      store.writeArchiveEntry(
+        archiveDirectoryPath: archiveDir.path,
+        sourcePath: sourceFile.path,
+        archiveKey: _archiveKey(),
+        sha256Hex: suppliedHash,
+      ),
+      throwsStateError,
+    );
+    expect(outsideFile.readAsStringSync(), 'outside');
   });
 
   test('falls back to compatibility id path when hash is unusable', () async {
