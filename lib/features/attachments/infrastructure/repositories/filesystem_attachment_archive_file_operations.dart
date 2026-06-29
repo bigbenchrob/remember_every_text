@@ -25,6 +25,10 @@ class FilesystemAttachmentArchiveFileOperations
 
   @override
   Future<int?> exportArchiveDirectory(String archiveDirectoryPath) async {
+    if (_isSymlink(archiveDirectoryPath)) {
+      throw StateError('Attachment archive directory must not be a symlink.');
+    }
+
     final sourceDirectory = Directory(archiveDirectoryPath);
     if (!sourceDirectory.existsSync()) {
       return 0;
@@ -50,7 +54,10 @@ class FilesystemAttachmentArchiveFileOperations
     await exportDirectory.create(recursive: true);
 
     var filesCopied = 0;
-    await for (final entity in sourceDirectory.list(recursive: true)) {
+    await for (final entity in sourceDirectory.list(
+      recursive: true,
+      followLinks: false,
+    )) {
       if (entity is File) {
         final relativePath = path.relative(
           entity.path,
@@ -66,5 +73,10 @@ class FilesystemAttachmentArchiveFileOperations
     }
 
     return filesCopied;
+  }
+
+  static bool _isSymlink(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.link;
   }
 }

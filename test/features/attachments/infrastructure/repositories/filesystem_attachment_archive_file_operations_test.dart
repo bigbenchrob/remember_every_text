@@ -67,4 +67,16 @@ void main() {
 
     expect(count, 0);
   });
+
+  test('export rejects symlinked archive directory', () async {
+    final outsideDir = Directory(path.join(tempDir.path, 'outside_archive'));
+    await outsideDir.create(recursive: true);
+    final archiveLink = Link(archiveDir.path);
+    await archiveLink.create(outsideDir.path);
+
+    await expectLater(
+      operations.exportArchiveDirectory(archiveDir.path),
+      throwsStateError,
+    );
+  });
 }
