@@ -4003,6 +4003,14 @@ retention criteria.
   file-category lists or bypass base-name validation. This preserves
   attachment archives and unrelated folders while keeping retired
   `macos_import.db` / `working.db` cleanup a bounded reset concern.
+- Tightened onboarding readiness so a stale graph-readiness result cannot make
+  setup appear complete unless both active source-scoped import and graph
+  database files exist, are readable, and are non-empty. Retired cleanup files
+  still do not satisfy readiness.
+- Hardened database-health diagnostic SQL checks so retired-file health
+  inspection rejects multi-statement strings and write verbs before execution,
+  even when a query starts with `SELECT` or `WITH`. This keeps retired
+  `macos_import.db` / `working.db` inspection read-only and diagnostic-only.
 
 ### Vocabulary Note
 
