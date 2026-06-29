@@ -78,6 +78,48 @@ void main() {
     expect(attachmentNames, isNot(contains('working.db')));
     expect(attachmentNames, contains('database_health_error.json'));
   });
+
+  test('rejects health report files outside the support bundle', () async {
+    final tempDirectory = await Directory.systemTemp.createTemp(
+      'support_bundle_export_service_test_',
+    );
+    addTearDown(() async {
+      if (tempDirectory.existsSync()) {
+        await tempDirectory.delete(recursive: true);
+      }
+    });
+
+    final logDirectory = Directory('${tempDirectory.path}/logs')
+      ..createSync(recursive: true);
+    final outsideDirectory = Directory('${tempDirectory.path}/outside')
+      ..createSync(recursive: true);
+    final service = SupportBundleExportService(
+      _FakeLogFileWriter(logDirectory),
+      DatabaseHealthAuditService(
+        hasFullDiskAccess: true,
+        queryLayers: const [],
+        runtimeEnvironment: const _FakeRuntimeEnvironment(),
+        reportWriter: _OutsideBundleHealthReportWriter(outsideDirectory),
+      ),
+    );
+
+    final result = await service.export();
+    final attachmentPaths = result.attachmentFiles
+        .map((file) => file.path)
+        .toSet();
+
+    expect(result.databaseHealthIncluded, isFalse);
+    expect(
+      attachmentPaths.any((filePath) => filePath.contains('/outside/')),
+      isFalse,
+    );
+    expect(
+      attachmentPaths.any(
+        (filePath) => filePath.endsWith('database_health_error.json'),
+      ),
+      isTrue,
+    );
+  });
 }
 
 class _FakeLogFileWriter extends LogFileWriter {
@@ -137,6 +179,23 @@ class _RawDatabasePathHealthReportWriter
   }) async {
     final file = File('$outputDirectoryPath/working.db');
     await file.writeAsString('not really sqlite\n');
+    return file.path;
+  }
+}
+
+class _OutsideBundleHealthReportWriter
+    implements DatabaseHealthAuditReportWriter {
+  const _OutsideBundleHealthReportWriter(this._outsideDirectory);
+
+  final Directory _outsideDirectory;
+
+  @override
+  Future<String> writeReport({
+    required String outputDirectoryPath,
+    required DatabaseHealthReport report,
+  }) async {
+    final file = File('${_outsideDirectory.path}/database_health.json');
+    await file.writeAsString('{}\n');
     return file.path;
   }
 }
