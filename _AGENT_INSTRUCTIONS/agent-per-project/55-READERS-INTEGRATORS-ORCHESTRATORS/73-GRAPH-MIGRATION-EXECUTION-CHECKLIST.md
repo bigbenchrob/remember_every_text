@@ -4048,6 +4048,10 @@ retention criteria.
 - Hardened the database-health report writer itself so generated
   `database_health.json` output refuses symlinked output directories and
   symlink/directory report targets before writing diagnostic JSON.
+- Hardened attachment archive file writes so the archive root cannot be a
+  symlink, source symlinks are skipped rather than followed, and archive
+  destination symlinks/directories are rejected before evidence files are
+  copied into `attachment_archive`.
 
 ### Vocabulary Note
 
