@@ -38,6 +38,14 @@ void main() {
             'Active graph rebuild files and retired cleanup files must remain '
             'separate reset categories.',
       );
+      expect(
+        messageDataResetPostCleanupCheckBaseNames,
+        isNot(contains(appDatabaseFileName(AppDatabaseFile.overlay))),
+        reason:
+            'Reset Message Data deletes derived graph/import files and retired '
+            'cleanup files only. Overlay user intent must remain outside reset '
+            'deletion and post-cleanup checks.',
+      );
     },
   );
 }
