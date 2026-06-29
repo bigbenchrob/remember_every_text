@@ -4023,6 +4023,9 @@ retention criteria.
 - Hardened support bundle mail-archive creation so the zip helper refuses
   non-support-bundle directories, symlinked contents, and raw database files
   before invoking the platform archive tool.
+- Extended the support bundle zip guard to reject a symlink used as the bundle
+  directory itself, preventing the archive helper from traversing outside the
+  generated diagnostic bundle root.
 
 ### Vocabulary Note
 
