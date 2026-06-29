@@ -110,6 +110,51 @@ void main() {
   );
 
   test(
+    'does not resolve archive records that escape the archive root',
+    () async {
+      final archiveKey = _archiveKey();
+      await overlayDatabase.customStatement(
+        '''
+      INSERT INTO archived_attachments (
+        message_guid,
+        import_attachment_id,
+        archive_relative_path,
+        archived_at_utc,
+        file_size_bytes
+      ) VALUES (?, ?, ?, ?, ?)
+      ''',
+        <Object?>[
+          archiveKey.messageGuid,
+          archiveKey.importAttachmentId,
+          '../outside.jpg',
+          '2026-06-19T10:00:00.000Z',
+          5,
+        ],
+      );
+
+      final record = await readStore.readArchiveRecord(archiveKey);
+
+      expect(record, isNull);
+    },
+  );
+
+  test('rejects archive records that would escape the archive root', () async {
+    await expectLater(
+      writeStore.writeArchiveRecord(
+        ArchivedAttachmentWrite(
+          archiveKey: _archiveKey(),
+          archiveRelativePath: '../outside.jpg',
+          archivedAtUtc: '2026-06-19T10:00:00.000Z',
+          fileSizeBytes: 5,
+          contentHash: null,
+          originalLocalPath: null,
+        ),
+      ),
+      throwsStateError,
+    );
+  });
+
+  test(
     'writes, reads, and clears recovery hints by compatibility key',
     () async {
       final archiveKey = _archiveKey();

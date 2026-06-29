@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as path;
 
 import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
@@ -43,7 +44,14 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
 
     final row = archiveRows.single;
     final relativePath = row.read<String>('archive_relative_path');
-    final absolutePath = '$_archiveDirectory/$relativePath';
+    final absolutePath = _boundedArchivePath(
+      archiveDirectory: _archiveDirectory,
+      relativePath: relativePath,
+    );
+    if (absolutePath == null) {
+      return null;
+    }
+
     return AttachmentArchiveLookupRecord(
       archiveRelativePath: relativePath,
       archiveAbsolutePath: absolutePath,
@@ -61,5 +69,24 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
         attachmentRecoveryHintSettingKey(archiveKey: archiveKey),
       ),
     );
+  }
+
+  static String? _boundedArchivePath({
+    required String archiveDirectory,
+    required String relativePath,
+  }) {
+    if (archiveDirectory.isEmpty ||
+        relativePath.isEmpty ||
+        path.isAbsolute(relativePath)) {
+      return null;
+    }
+
+    final archiveRoot = path.normalize(path.absolute(archiveDirectory));
+    final absolutePath = path.normalize(path.join(archiveRoot, relativePath));
+    if (!path.isWithin(archiveRoot, absolutePath)) {
+      return null;
+    }
+
+    return absolutePath;
   }
 }

@@ -210,6 +210,24 @@ void main() {
     expect(unchecked.hashMatches, isNull);
     expect(unchecked.actualHash, isNull);
   });
+
+  test('integrity check does not read paths outside archive root', () async {
+    final outsideFile = File(path.join(tempDir.path, 'outside.jpg'));
+    await outsideFile.writeAsString('outside image');
+    final outsideHash = sha256
+        .convert(await outsideFile.readAsBytes())
+        .toString();
+
+    final result = await store.checkIntegrity(
+      archiveDirectoryPath: archiveDir.path,
+      relativePath: '../outside.jpg',
+      storedHash: outsideHash,
+    );
+
+    expect(result.fileExists, isFalse);
+    expect(result.hashMatches, isNull);
+    expect(result.actualHash, isNull);
+  });
 }
 
 ArchiveCompatibilityKey _archiveKey() {

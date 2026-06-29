@@ -86,7 +86,18 @@ class FilesystemAttachmentArchiveFileStore
     required String relativePath,
     required String? storedHash,
   }) async {
-    final file = File(path.join(archiveDirectoryPath, relativePath));
+    final file = _archiveFile(
+      archiveDirectoryPath: archiveDirectoryPath,
+      relativePath: relativePath,
+    );
+    if (file == null) {
+      return const ArchiveIntegrityFileCheck(
+        fileExists: false,
+        hashMatches: null,
+        actualHash: null,
+      );
+    }
+
     if (!file.existsSync()) {
       return const ArchiveIntegrityFileCheck(
         fileExists: false,
@@ -133,5 +144,25 @@ class FilesystemAttachmentArchiveFileStore
   static bool _isSymlink(String filePath) {
     return FileSystemEntity.typeSync(filePath, followLinks: false) ==
         FileSystemEntityType.link;
+  }
+
+  static File? _archiveFile({
+    required String archiveDirectoryPath,
+    required String relativePath,
+  }) {
+    if (archiveDirectoryPath.isEmpty ||
+        relativePath.isEmpty ||
+        path.isAbsolute(relativePath) ||
+        _isSymlink(archiveDirectoryPath)) {
+      return null;
+    }
+
+    final archiveRoot = path.normalize(path.absolute(archiveDirectoryPath));
+    final absolutePath = path.normalize(path.join(archiveRoot, relativePath));
+    if (!path.isWithin(archiveRoot, absolutePath)) {
+      return null;
+    }
+
+    return File(absolutePath);
   }
 }

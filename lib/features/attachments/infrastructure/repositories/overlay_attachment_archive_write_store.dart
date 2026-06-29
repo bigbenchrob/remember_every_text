@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as path;
 
 import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
@@ -28,8 +29,12 @@ class OverlayAttachmentArchiveWriteStore
   }
 
   @override
-  Future<void> writeArchiveRecord(ArchivedAttachmentWrite record) {
-    return _overlayDatabase
+  Future<void> writeArchiveRecord(ArchivedAttachmentWrite record) async {
+    if (!_isSafeArchiveRelativePath(record.archiveRelativePath)) {
+      throw StateError('Archive relative path must stay inside the archive.');
+    }
+
+    await _overlayDatabase
         .into(_overlayDatabase.archivedAttachments)
         .insert(
           ArchivedAttachmentsCompanion.insert(
@@ -91,5 +96,16 @@ class OverlayAttachmentArchiveWriteStore
     return (_overlayDatabase.delete(
       _overlayDatabase.overlaySettings,
     )..where((tbl) => tbl.key.equals(hintKey))).go();
+  }
+
+  static bool _isSafeArchiveRelativePath(String relativePath) {
+    if (relativePath.isEmpty || path.isAbsolute(relativePath)) {
+      return false;
+    }
+
+    final normalized = path.normalize(relativePath);
+    return normalized != '.' &&
+        normalized != '..' &&
+        !normalized.startsWith('../');
   }
 }
