@@ -3066,6 +3066,21 @@ void main() {
       );
     });
 
+    test('Import database open keeps filename injection explicit', () async {
+      final offenders = await _findImportDatabaseOpenDefaultNameOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'ImportDatabase.open must require its databaseName from the '
+            'central DB provider layer. Reintroducing a default or hard-coded '
+            'source-scoped filename inside source_scoped_import would recreate '
+            'a physical DB provider island.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
     test('Database health identity literals stay centralized', () async {
       final offenders = await _findDatabaseHealthIdentityLiteralOffenders();
 
@@ -7321,6 +7336,44 @@ Future<List<String>> _findSourceScopedDatabaseFilenameLiteralOffenders() async {
   }
 
   return offenders.toList()..sort();
+}
+
+Future<List<String>> _findImportDatabaseOpenDefaultNameOffenders() async {
+  const filePath =
+      'lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    return const <String>[];
+  }
+
+  final source = await file.readAsString();
+  final uncommented = _stripComments(source);
+  final offenders = <String>[];
+  final openSignaturePattern = RegExp(
+    r'static\s+Future<ImportDatabase>\s+open\s*\(\{(?<params>[\s\S]*?)\}\)',
+    multiLine: true,
+  );
+  final match = openSignaturePattern.firstMatch(uncommented);
+  final params = match?.namedGroup('params');
+  if (params == null) {
+    offenders.add('$filePath missing ImportDatabase.open named parameters');
+    return offenders;
+  }
+
+  if (!params.contains('required String databaseName')) {
+    offenders.add('$filePath ImportDatabase.open databaseName is not required');
+  }
+  if (params.contains('databaseName =')) {
+    offenders.add('$filePath ImportDatabase.open provides a default filename');
+  }
+  if (uncommented.contains('macos_import_ss.db') ||
+      uncommented.contains('sourceScopedImportDatabaseFileName') ||
+      uncommented.contains('appDatabaseFileName(') ||
+      uncommented.contains('AppDatabaseFile.sourceScopedImport')) {
+    offenders.add('$filePath owns source-scoped import filename policy');
+  }
+
+  return offenders..sort();
 }
 
 Future<List<String>> _findDatabaseHealthIdentityLiteralOffenders() async {
