@@ -4035,6 +4035,10 @@ retention criteria.
   to replace a pre-existing symlink or directory at the archive target, and the
   architecture tripwire requires zip-target validation before delete or
   platform archive execution.
+- Hardened copied support-bundle diagnostics so retained audit log paths must
+  resolve to ordinary source files, not symlinks or raw database artifacts,
+  before being copied into the generated diagnostic bundle. The architecture
+  suite now guards this copied-diagnostic source validation.
 
 ### Vocabulary Note
 
