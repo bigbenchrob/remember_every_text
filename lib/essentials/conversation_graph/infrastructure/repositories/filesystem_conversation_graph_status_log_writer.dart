@@ -24,6 +24,11 @@ class FilesystemConversationGraphStatusLogWriter
     final capturedAt = DateTime.now();
     final logsDirectory =
         _logsDirectory ?? Directory(path.join(_projectRootPath(), '_LOGS'));
+    if (_isSymlink(logsDirectory.path)) {
+      throw StateError(
+        'Conversation graph log directory must not be a symlink.',
+      );
+    }
     logsDirectory.createSync(recursive: true);
 
     final file = File(
@@ -32,6 +37,9 @@ class FilesystemConversationGraphStatusLogWriter
         'conversation_graph_status_${conversationGraphStatusLogFileTimestamp(capturedAt)}.md',
       ),
     );
+    if (_isSymlink(file.path) || _isDirectory(file.path)) {
+      throw StateError('Conversation graph log target must be a regular file.');
+    }
 
     await file.writeAsString(
       formatConversationGraphStatusLogRun(
@@ -67,4 +75,14 @@ String _projectRootPath() {
     }
     directory = parent;
   }
+}
+
+bool _isDirectory(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.directory;
+}
+
+bool _isSymlink(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.link;
 }
