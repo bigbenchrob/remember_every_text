@@ -4069,6 +4069,9 @@ retention criteria.
 - Hardened message-history coverage report exports so selected export
   directories cannot be symlink redirects and pre-existing symlink/directory
   JSON targets are rejected before the report is written.
+- Hardened retained pipeline audit log appends so log names must be base names,
+  the diagnostic log directory cannot be a symlink, and symlink/directory log
+  targets are rejected before append.
 
 ### Vocabulary Note
 
