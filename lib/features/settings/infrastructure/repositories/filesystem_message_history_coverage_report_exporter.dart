@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
+
 import '../../application/sidebar_cassette_spec/actions/message_history_coverage_report_actions.dart';
 import '../../application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
 
@@ -22,13 +24,25 @@ class FilesystemMessageHistoryCoverageReportExporter
   }) async {
     try {
       final exportDirectory = Directory(exportDirectoryPath);
+      if (_isSymlink(exportDirectory.path)) {
+        throw StateError(
+          'Coverage report export directory must not be a symlink.',
+        );
+      }
       await exportDirectory.create(recursive: true);
 
       final effectiveNow = now ?? DateTime.now();
       final exportFile = File(
-        '${exportDirectory.path}/'
-        '${messageHistoryCoverageReportExportFileName(effectiveNow)}',
+        path.join(
+          exportDirectory.path,
+          messageHistoryCoverageReportExportFileName(effectiveNow),
+        ),
       );
+      if (_isSymlink(exportFile.path) || _isDirectory(exportFile.path)) {
+        throw StateError(
+          'Coverage report export target must be a regular file.',
+        );
+      }
       await exportFile.writeAsString(
         messageHistoryCoverageReportExportJson(
           report: report,
@@ -54,4 +68,14 @@ class FilesystemMessageHistoryCoverageReportExporter
       );
     }
   }
+}
+
+bool _isDirectory(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.directory;
+}
+
+bool _isSymlink(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.link;
 }
