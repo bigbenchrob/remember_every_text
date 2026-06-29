@@ -4045,6 +4045,9 @@ retention criteria.
 - Applied the same diagnostic-source validation to generated database-health
   attachments before they are included from inside the support bundle, so a
   bundle-local symlink cannot masquerade as a safe health report artifact.
+- Hardened the database-health report writer itself so generated
+  `database_health.json` output refuses symlinked output directories and
+  symlink/directory report targets before writing diagnostic JSON.
 
 ### Vocabulary Note
 
