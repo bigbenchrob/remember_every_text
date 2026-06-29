@@ -4042,6 +4042,9 @@ retention criteria.
 - Applied the same diagnostic-source validation to files appended into
   `diagnostic_report.log`, so symlinked log paths are not followed into support
   bundles and copied/appended diagnostic artifacts share one safety predicate.
+- Applied the same diagnostic-source validation to generated database-health
+  attachments before they are included from inside the support bundle, so a
+  bundle-local symlink cannot masquerade as a safe health report artifact.
 
 ### Vocabulary Note
 
