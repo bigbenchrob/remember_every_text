@@ -219,9 +219,13 @@ a named retained diagnostic concern.
 
 Done means:
 
-- archive-source metadata has an overlay-owned workflow home or a
-  source-scoped/source-registry provenance home, as appropriate.
-- existing archive-source status can be migrated or intentionally discarded.
+- active archive-source metadata has an overlay-owned workflow home or a
+  source-scoped/source-registry provenance home, as appropriate. This is
+  satisfied for the current Historical Archives workflow by
+  `HistoricalArchiveSourcesRepository` over overlay settings.
+- existing retired-file archive-source rows have either been migrated,
+  exported, or intentionally discarded. This remains a retired-file cleanup
+  policy question, not an active workflow blocker.
 - the settings workflow no longer reads `macos_import.db` for archive-source
   rows. This is satisfied for active Historical Archives metadata by the
   overlay-backed `HistoricalArchiveSourcesRepository`.
@@ -415,7 +419,7 @@ Known retired-file purposes:
 
 | Purpose | Current retired-file inventory | Allowed owner | Reduction target |
 | --- | --- | --- | --- |
-| Archive-source workflow metadata | overlay settings key `historical_archive_sources/v1`; old `macos_import.db.historical_archive_sources` may exist in retired files | Historical Archives settings repository | Active metadata has moved to overlay storage. Decide whether old archive-source metadata is migrated, exported, or intentionally discarded before deleting retired files. |
+| Archive-source workflow metadata | overlay settings key `historical_archive_sources/v1`; old `macos_import.db.historical_archive_sources` may exist in retired files | Historical Archives settings repository | Active metadata has moved to overlay storage and no longer blocks ordinary workflow retirement. Old retired-file rows remain only a cleanup/export/discard policy question before deleting retired files. |
 | Existing-folder reset cleanup | `macos_import.db`, `working.db`, WAL/SHM files | Message data reset service | Keep until old derived files are either no longer created or a safe backup/cleanup policy replaces direct deletion. |
 | Support diagnostics and audit | read-only retired-file inspection | Database health/support diagnostics | Add graph/source-scoped equivalents for any retained-file report value before narrowing retired-file inspection. |
 | Historical comparison / retained-file audit | existing user `working.db` / `macos_import.db` files | Diagnostic-only file readers | Keep only while a named diagnostic or audit report still needs retained-file context; ordinary rollback safety is no longer a retention reason. |
