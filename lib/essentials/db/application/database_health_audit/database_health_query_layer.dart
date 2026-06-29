@@ -165,14 +165,27 @@ class AuditImportantColumnSpec {
 }
 
 void assertDatabaseHealthReadOnlySql(String sql) {
-  final normalized = sql.trimLeft().toLowerCase();
-  if (normalized.startsWith('select ') ||
-      normalized.startsWith('select\n') ||
-      normalized.startsWith('with ') ||
-      normalized.startsWith('with\n')) {
+  final normalized = sql.trim().toLowerCase();
+  final withoutTrailingTerminator = normalized.endsWith(';')
+      ? normalized.substring(0, normalized.length - 1).trimRight()
+      : normalized;
+  if (withoutTrailingTerminator.contains(';') ||
+      RegExp(
+        r'\b(insert|update|delete|drop|create|alter|replace|vacuum|attach|detach|reindex)\b',
+      ).hasMatch(withoutTrailingTerminator)) {
+    throw StateError(
+      'Database health queries must not contain write statements or multiple statements',
+    );
+  }
+  if (withoutTrailingTerminator.startsWith('select ') ||
+      withoutTrailingTerminator.startsWith('select\n') ||
+      withoutTrailingTerminator.startsWith('with ') ||
+      withoutTrailingTerminator.startsWith('with\n')) {
     return;
   }
-  if (RegExp(r'^pragma\s+(user_version|table_info)\b').hasMatch(normalized)) {
+  if (RegExp(
+    r'^pragma\s+(user_version|table_info)\b',
+  ).hasMatch(withoutTrailingTerminator)) {
     return;
   }
 

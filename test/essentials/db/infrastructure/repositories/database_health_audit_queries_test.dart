@@ -27,6 +27,10 @@ void main() {
         () => assertDatabaseHealthReadOnlySql('PRAGMA table_info("messages")'),
         returnsNormally,
       );
+      expect(
+        () => assertDatabaseHealthReadOnlySql('SELECT 1;'),
+        returnsNormally,
+      );
     });
 
     test('rejects write and broad pragma queries before execution', () {
@@ -36,6 +40,16 @@ void main() {
       );
       expect(
         () => assertDatabaseHealthReadOnlySql('PRAGMA journal_mode = WAL'),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        () => assertDatabaseHealthReadOnlySql('SELECT 1; DROP TABLE probe'),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        () => assertDatabaseHealthReadOnlySql(
+          'WITH removed AS (DELETE FROM probe RETURNING *) SELECT * FROM removed',
+        ),
         throwsA(isA<StateError>()),
       );
     });
