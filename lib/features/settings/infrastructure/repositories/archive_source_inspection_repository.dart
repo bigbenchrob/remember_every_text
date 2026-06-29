@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../../essentials/db/application/read_only_sql_guard.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../application/archive_source_inspection.dart';
 
@@ -145,6 +146,7 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
 }
 
 int _readCount(Database database, String sql) {
+  assertReadOnlySql(sql, boundary: 'Archive source inspection count query');
   final result = database.select(sql);
   if (result.isEmpty) {
     return 0;
@@ -165,9 +167,10 @@ int _readIntegerValue(Object? value) {
 
 ArchiveSourceDateRange _readArchiveDateRange(Database database) {
   try {
-    final result = database.select(
-      'SELECT MIN(date) AS earliest_date, MAX(date) AS latest_date FROM message',
-    );
+    const sql =
+        'SELECT MIN(date) AS earliest_date, MAX(date) AS latest_date FROM message';
+    assertReadOnlySql(sql, boundary: 'Archive source date range query');
+    final result = database.select(sql);
     if (result.isEmpty) {
       return const ArchiveSourceDateRange(
         earliestMessageUtc: null,
@@ -250,10 +253,14 @@ Future<ArchiveSourceDryRunEstimate> _estimateDryRunAgainstConversationGraph({
     const sourceChunkSize = 400;
 
     for (var offset = 0; ; offset += sourceChunkSize) {
-      final rows = sourceDatabase.select(
-        'SELECT DISTINCT guid FROM message '
-        'WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0 ORDER BY guid LIMIT $sourceChunkSize OFFSET $offset',
+      final sql =
+          'SELECT DISTINCT guid FROM message '
+          'WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0 ORDER BY guid LIMIT $sourceChunkSize OFFSET $offset';
+      assertReadOnlySql(
+        sql,
+        boundary: 'Archive source dry-run duplicate GUID query',
       );
+      final rows = sourceDatabase.select(sql);
       if (rows.isEmpty) {
         break;
       }

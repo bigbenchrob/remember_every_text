@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../../../core/util/date_converter.dart';
+import '../../../../essentials/db/application/read_only_sql_guard.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 
 class MessageHistoryCoverageRepository {
@@ -28,13 +29,18 @@ class MessageHistoryCoverageRepository {
         database.execute('PRAGMA query_only = ON;');
         database.execute('PRAGMA busy_timeout = 3000;');
 
-        final result = database.select('''
+        const sql = '''
           SELECT
             COUNT(*) AS total_count,
             MIN(CASE WHEN date IS NOT NULL AND date != 0 THEN date END) AS first_date,
             MAX(CASE WHEN date IS NOT NULL AND date != 0 THEN date END) AS last_date
           FROM message
-        ''');
+        ''';
+        assertReadOnlySql(
+          sql,
+          boundary: 'Message history source summary query',
+        );
+        final result = database.select(sql);
         if (result.isEmpty) {
           return null;
         }
