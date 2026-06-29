@@ -4011,6 +4011,11 @@ retention criteria.
   inspection rejects multi-statement strings and write verbs before execution,
   even when a query starts with `SELECT` or `WITH`. This keeps retired
   `macos_import.db` / `working.db` inspection read-only and diagnostic-only.
+- Hardened graph attachment archive candidate naming so graph-derived live
+  attachment endpoints are locally named as source-row identity rather than
+  `import_attachment_id`. The retained overlay archive column name remains
+  bounded to overlay table queries, and the architecture suite now guards this
+  graph-reader alias boundary.
 
 ### Vocabulary Note
 
