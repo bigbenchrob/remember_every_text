@@ -4054,6 +4054,10 @@ retention criteria.
   copied into `attachment_archive`.
 - Hardened attachment archive reset so recursive archive cleanup refuses a
   symlinked archive directory instead of deleting through a redirected path.
+- Hardened recovered attachment archive writes so historical source files must
+  be regular files, recovered archive roots cannot be symlinks, and recovered
+  destination symlinks/directories are rejected before overlay archive rows are
+  inserted.
 
 ### Vocabulary Note
 
