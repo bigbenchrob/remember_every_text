@@ -4039,6 +4039,9 @@ retention criteria.
   resolve to ordinary source files, not symlinks or raw database artifacts,
   before being copied into the generated diagnostic bundle. The architecture
   suite now guards this copied-diagnostic source validation.
+- Applied the same diagnostic-source validation to files appended into
+  `diagnostic_report.log`, so symlinked log paths are not followed into support
+  bundles and copied/appended diagnostic artifacts share one safety predicate.
 
 ### Vocabulary Note
 
