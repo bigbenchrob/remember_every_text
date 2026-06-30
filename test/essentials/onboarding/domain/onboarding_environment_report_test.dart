@@ -125,6 +125,11 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 50,
     ),
+    overlayDatabase: OnboardingDatabaseProbe(
+      path: appDatabaseFileName(AppDatabaseFile.overlay),
+      exists: true,
+      readable: true,
+    ),
     sourceScopedImportDatabase: OnboardingDatabaseProbe(
       path: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
       exists: true,

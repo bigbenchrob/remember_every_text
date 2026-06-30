@@ -666,6 +666,16 @@ class _EvidenceCard extends StatelessWidget {
             typography: typography,
           ),
           _EvidenceRow(
+            label: 'User settings and archive metadata',
+            value: report.overlayDatabase.readable
+                ? 'Available'
+                : report.overlayDatabase.exists
+                ? 'Present but blocked'
+                : 'Not created yet',
+            colors: colors,
+            typography: typography,
+          ),
+          _EvidenceRow(
             label: 'Conversation graph',
             value: report.conversationGraph.hasData
                 ? 'Ready'

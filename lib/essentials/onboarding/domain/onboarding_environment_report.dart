@@ -73,6 +73,7 @@ class OnboardingEnvironmentReport {
     required this.syncPlausibility,
     required this.messagesDatabase,
     required this.addressBookDatabase,
+    required this.overlayDatabase,
     required this.sourceScopedImportDatabase,
     required this.conversationGraph,
     required this.attachmentArchiveDirectory,
@@ -94,6 +95,7 @@ class OnboardingEnvironmentReport {
   final OnboardingSyncPlausibility syncPlausibility;
   final OnboardingDatabaseProbe messagesDatabase;
   final OnboardingDatabaseProbe? addressBookDatabase;
+  final OnboardingDatabaseProbe overlayDatabase;
   final OnboardingDatabaseProbe sourceScopedImportDatabase;
   final OnboardingDatabaseProbe conversationGraph;
   final OnboardingDatabaseProbe attachmentArchiveDirectory;

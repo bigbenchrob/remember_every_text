@@ -237,6 +237,10 @@ class _OnboardingEnvironmentEvaluator {
       AppDatabaseFile.sourceScopedImport,
       databaseDirectory: inputs.databaseDirectoryPath,
     );
+    final overlayDbPath = appDatabasePath(
+      AppDatabaseFile.overlay,
+      databaseDirectory: inputs.databaseDirectoryPath,
+    );
     final graphDbPath = appDatabasePath(
       AppDatabaseFile.conversationGraph,
       databaseDirectory: inputs.databaseDirectoryPath,
@@ -283,6 +287,7 @@ class _OnboardingEnvironmentEvaluator {
       sourceScopedImportDbPath,
       rowCount: importRowCount,
     );
+    final overlayProbe = databaseProbeReader.probeFile(overlayDbPath);
     final graphProbe = databaseProbeReader.probeFile(
       graphDbPath,
       rowCount: graphRowCount,
@@ -349,6 +354,7 @@ class _OnboardingEnvironmentEvaluator {
       syncPlausibility: syncPlausibility,
       messagesDatabase: messagesProbe.copyWith(rowCount: sourceMessageCount),
       addressBookDatabase: addressBookProbe.probe,
+      overlayDatabase: overlayProbe,
       sourceScopedImportDatabase: importProbe,
       conversationGraph: graphProbe,
       attachmentArchiveDirectory: attachmentArchiveProbe,

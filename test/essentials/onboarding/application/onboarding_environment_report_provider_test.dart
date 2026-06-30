@@ -305,6 +305,10 @@ void main() {
           tempDir.path,
           appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
         );
+        _createReadableFile(
+          tempDir.path,
+          appDatabaseFileName(AppDatabaseFile.overlay),
+        );
         _createGraphDatabase(tempDir.path, graphComplete: true);
         Directory('${tempDir.path}/attachment_archive').createSync();
 
@@ -333,6 +337,8 @@ void main() {
 
         expect(report.state, OnboardingEnvironmentState.ready);
         expect(report.blockerKind, OnboardingBlockerKind.none);
+        expect(report.overlayDatabase.exists, isTrue);
+        expect(report.overlayDatabase.readable, isTrue);
         expect(report.attachmentArchiveDirectory.exists, isTrue);
         expect(report.attachmentArchiveDirectory.readable, isTrue);
       },
@@ -379,6 +385,7 @@ void main() {
         );
 
         expect(report.state, OnboardingEnvironmentState.ready);
+        expect(report.overlayDatabase.exists, isFalse);
         expect(report.attachmentArchiveDirectory.exists, isFalse);
         expect(report.attachmentArchiveDirectory.readable, isFalse);
       },
