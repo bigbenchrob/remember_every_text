@@ -11,11 +11,14 @@ Tester:
 - [x] `tool/release_smoke.sh` passed on 2026-06-30.
 - [x] `flutter build macos` passed on 2026-06-30.
 - [x] Build artifact: `build/macos/Build/Products/Release/MessageLens.app`.
+- [x] Built artifact bundle id verified as `com.bigbenchsoftware.MessageLens`.
+- [x] Built artifact team id verified as `FQHT2QP3NE`.
 - [ ] Manual real-data smoke completed.
 
 Notes:
 
 - Build emitted existing Xcode/device and `volume_controller` `PrivacyInfo.xcprivacy` warnings only.
+- `codesign -dvvv` reported `Authority=(unavailable)` for the local build artifact. Run the production notarization/distribution path before handoff if a fully signed external release artifact is required.
 
 ## Startup And Readiness
 
@@ -98,7 +101,8 @@ Notes:
 - [x] `tool/release_smoke.sh` passes.
 - [x] Additional focused tests for touched release areas are included in the release smoke script.
 - [x] `flutter build macos` passes for this release-candidate build.
-- [ ] Bundle id and signing path preserve Full Disk Access continuity.
+- [x] Bundle id and signing team preserve Full Disk Access continuity inputs.
+- [ ] Production signing authority verified through the notarized distribution path.
 
 Notes:
 
