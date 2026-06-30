@@ -476,6 +476,11 @@ class _GraphHealthSection extends StatelessWidget {
           _StatusSection(
             title: 'Attachment archive readiness',
             rows: [
+              _StatusRow(
+                'release meaning',
+                _attachmentArchiveReadinessMeaning(report),
+                labelWidth: 250,
+              ),
               _StatusRow('archive records', '${report.archiveRecordCount}'),
               _StatusRow(
                 'attachments with archive record',
@@ -509,12 +514,22 @@ class _GraphHealthSection extends StatelessWidget {
                 '${report.archiveRecordsWithoutGraphAttachmentCount}',
                 labelWidth: 250,
               ),
+              _StatusRow(
+                'next action',
+                _attachmentArchiveNextAction(report),
+                labelWidth: 250,
+              ),
             ],
           ),
           _StatusSection(
             title: 'Attachment recovery source audit',
             rows: report.attachmentRecoveryAuditIncluded
                 ? [
+                    _StatusRow(
+                      'release meaning',
+                      _attachmentRecoveryAuditMeaning(report),
+                      labelWidth: 260,
+                    ),
                     _StatusRow(
                       'historical MessageLens archive',
                       report.historicalArchiveAvailable
@@ -584,6 +599,11 @@ class _GraphHealthSection extends StatelessWidget {
             _StatusSection(
               title: 'Archive rehydrate dry run',
               rows: [
+                _StatusRow(
+                  'release meaning',
+                  _archiveRehydrateDryRunMeaning(report),
+                  labelWidth: 270,
+                ),
                 _StatusRow(
                   'already available in current archive',
                   '${report.dryRunAlreadyAvailableInCurrentArchiveCount}',
@@ -727,6 +747,57 @@ class _GraphHealthSection extends StatelessWidget {
       ),
     );
   }
+}
+
+String _attachmentArchiveReadinessMeaning(GraphHealthReport report) {
+  if (!report.archiveFileAuditIncluded) {
+    return 'current archive links are counted; file existence checks are '
+        'skipped in the default report';
+  }
+  if (report.archiveFilesMissingCount == 0 &&
+      report.attachmentsMissingArchiveRecordCount == 0) {
+    return 'current archive records and files cover every graph attachment';
+  }
+  if (report.archiveFilesMissingCount > 0) {
+    return 'some archive records point to files that are not present';
+  }
+  return 'some graph attachments do not yet have archive records';
+}
+
+String _attachmentArchiveNextAction(GraphHealthReport report) {
+  if (!report.archiveFileAuditIncluded) {
+    return 'run the deliberate recovery audit before making release or '
+        'retirement decisions';
+  }
+  if (report.archiveFilesMissingCount == 0 &&
+      report.attachmentsMissingArchiveRecordCount == 0) {
+    return 'no archive action needed for currently projected attachments';
+  }
+  return 'use recovery sources or current source paths to rehydrate missing '
+      'archive files before retiring retained storage';
+}
+
+String _attachmentRecoveryAuditMeaning(GraphHealthReport report) {
+  if (report.attachmentsStillMissingFromKnownRecoverySourcesCount == 0) {
+    return 'known recovery sources explain every currently missing archive '
+        'attachment';
+  }
+  return 'some missing archive attachments are not explained by configured '
+      'recovery sources';
+}
+
+String _archiveRehydrateDryRunMeaning(GraphHealthReport report) {
+  if (report.dryRunStillMissingEverywhereCount == 0) {
+    return 'a rehydrate pass should be able to restore all currently missing '
+        'archive files from known sources';
+  }
+  if (report.dryRunStillMissingPluginPayloadCandidateCount ==
+      report.dryRunStillMissingEverywhereCount) {
+    return 'remaining missing items appear to be plugin payload candidates; '
+        'review samples before treating them as release blockers';
+  }
+  return 'some attachments remain unreachable after all configured recovery '
+      'sources';
 }
 
 class _MissingAttachmentSampleSection extends StatelessWidget {
