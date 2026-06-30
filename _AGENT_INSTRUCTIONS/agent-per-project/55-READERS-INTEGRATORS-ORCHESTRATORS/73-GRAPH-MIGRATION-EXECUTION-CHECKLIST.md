@@ -4081,6 +4081,9 @@ retention criteria.
 - Hardened archive availability reads so overlay/archive compatibility records
   only report `archiveFileExists` for regular files and do not treat symlinked
   archive paths as available attachment evidence.
+- Hardened graph-health archive file audits so current/historical archive
+  availability counts require bounded archive-relative paths and regular files;
+  symlinked or parent-escaping archive rows no longer inflate recovery counts.
 
 ### Vocabulary Note
 
