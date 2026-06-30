@@ -7547,6 +7547,10 @@ Future<List<String>> _findDatabaseDirectoryPathBarrelImportOffenders() async {
     return path.startsWith('lib/');
   });
   final offenders = <String>{};
+  final dbProviderImportPattern = RegExp(
+    r'''import\s+['"][^'"]*db/feature_level_providers\.dart['"][^;]*;''',
+    multiLine: true,
+  );
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
@@ -7554,12 +7558,11 @@ Future<List<String>> _findDatabaseDirectoryPathBarrelImportOffenders() async {
     if (!uncommented.contains('databaseDirectoryPath')) {
       continue;
     }
-    final importLines = uncommented
-        .split('\n')
-        .where((line) => line.trimLeft().startsWith('import '))
-        .where((line) => line.contains('db/feature_level_providers.dart'));
+    final importDirectives = dbProviderImportPattern
+        .allMatches(uncommented)
+        .map((match) => match.group(0) ?? '');
 
-    for (final line in importLines) {
+    for (final line in importDirectives) {
       final isExplicitNonDirectoryImport =
           line.contains(' show ') && !line.contains('databaseDirectoryPath');
       if (isExplicitNonDirectoryImport) {

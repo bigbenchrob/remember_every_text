@@ -67,5 +67,25 @@ void main() {
       expect(reportedError, isNotNull);
       expect(reportedStackTrace, isNotNull);
     });
+
+    test('reports readable directories through the probe boundary', () {
+      final tempDirectory = Directory.systemTemp.createTempSync(
+        'onboarding-probe-directory-',
+      );
+      addTearDown(() {
+        if (tempDirectory.existsSync()) {
+          tempDirectory.deleteSync(recursive: true);
+        }
+      });
+
+      final probe = const SqliteOnboardingDatabaseProbeReader().probeDirectory(
+        tempDirectory.path,
+      );
+
+      expect(probe.path, tempDirectory.path);
+      expect(probe.exists, isTrue);
+      expect(probe.readable, isTrue);
+      expect(probe.lastModified, isNotNull);
+    });
   });
 }

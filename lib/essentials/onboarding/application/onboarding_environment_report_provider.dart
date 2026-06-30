@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:dartz/dartz.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -257,7 +255,7 @@ class _OnboardingEnvironmentEvaluator {
       AppDatabaseFile.conversationGraph,
       databaseDirectory: inputs.databaseDirectoryPath,
     );
-    final attachmentArchiveProbe = _probeDirectory(
+    final attachmentArchiveProbe = databaseProbeReader.probeDirectory(
       inputs.attachmentArchiveDirectoryPath,
     );
     final isMaintenanceLocked = inputs.isMaintenanceLocked;
@@ -617,37 +615,6 @@ class _OnboardingEnvironmentEvaluator {
         );
       },
     );
-  }
-
-  OnboardingDatabaseProbe _probeDirectory(String directoryPath) {
-    final directory = Directory(directoryPath);
-    if (!directory.existsSync()) {
-      return OnboardingDatabaseProbe(
-        path: directoryPath,
-        exists: false,
-        readable: false,
-      );
-    }
-
-    try {
-      final stat = directory.statSync();
-      directory.listSync(followLinks: false);
-      return OnboardingDatabaseProbe(
-        path: directoryPath,
-        exists: true,
-        readable: true,
-        sizeBytes: stat.size,
-        lastModified: stat.modified,
-      );
-    } catch (error) {
-      return OnboardingDatabaseProbe(
-        path: directoryPath,
-        exists: true,
-        readable: false,
-        failureMessage:
-            'Attachment archive directory exists but could not be read: $error',
-      );
-    }
   }
 
   String? _detectResetAppDatabasesReason({

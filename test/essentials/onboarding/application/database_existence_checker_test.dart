@@ -130,6 +130,16 @@ class _FakeDatabaseProbeReader implements OnboardingDatabaseProbeReader {
   }
 
   @override
+  OnboardingDatabaseProbe probeDirectory(String directoryPath) {
+    return probes[directoryPath] ??
+        OnboardingDatabaseProbe(
+          path: directoryPath,
+          exists: false,
+          readable: false,
+        );
+  }
+
+  @override
   ConversationGraphReadiness readConversationGraphReadiness(String dbPath) {
     return graphReadiness;
   }

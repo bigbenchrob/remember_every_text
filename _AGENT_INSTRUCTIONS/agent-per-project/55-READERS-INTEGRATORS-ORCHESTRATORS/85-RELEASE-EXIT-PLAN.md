@@ -303,6 +303,7 @@ Verification:
 - `flutter analyze`
 - focused tests for touched release areas
 - architecture tripwire
+- `tool/release_smoke.sh`
 - manual smoke checklist
 - `flutter build macos` when ready for release candidate
 
@@ -393,9 +394,9 @@ release candidate.
 
 #### Build Readiness
 
-- Run `flutter analyze`.
-- Run focused tests for touched release areas.
-- Run the architecture tripwire test once before release candidate.
+- Run `tool/release_smoke.sh`.
+- Run any additional focused tests for release areas touched after the smoke
+  script was last updated.
 - Build macOS only when ready to produce a release candidate, preserving the
   bundle id and signing path required for Full Disk Access continuity.
 

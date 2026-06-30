@@ -64,6 +64,37 @@ final class SqliteOnboardingDatabaseProbeReader
   }
 
   @override
+  OnboardingDatabaseProbe probeDirectory(String directoryPath) {
+    final directory = Directory(directoryPath);
+    if (!directory.existsSync()) {
+      return OnboardingDatabaseProbe(
+        path: directoryPath,
+        exists: false,
+        readable: false,
+      );
+    }
+
+    try {
+      final stat = directory.statSync();
+      directory.listSync(followLinks: false);
+      return OnboardingDatabaseProbe(
+        path: directoryPath,
+        exists: true,
+        readable: true,
+        sizeBytes: stat.size,
+        lastModified: stat.modified,
+      );
+    } catch (error) {
+      return OnboardingDatabaseProbe(
+        path: directoryPath,
+        exists: true,
+        readable: false,
+        failureMessage: 'Directory exists but could not be read: $error',
+      );
+    }
+  }
+
+  @override
   int? readTableCount({
     required String dbPath,
     required String tableName,

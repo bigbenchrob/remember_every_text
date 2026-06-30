@@ -4,6 +4,8 @@ import '../domain/onboarding_environment_report.dart';
 abstract interface class OnboardingDatabaseProbeReader {
   OnboardingDatabaseProbe probeFile(String filePath, {int? rowCount});
 
+  OnboardingDatabaseProbe probeDirectory(String directoryPath);
+
   int? readTableCount({
     required String dbPath,
     required String tableName,

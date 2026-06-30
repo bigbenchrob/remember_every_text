@@ -9,8 +9,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_service_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_state.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/database_directory.dart';
@@ -226,6 +229,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          ..._lifecycleOverrides(),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           onboardingFullDiskAccessProvider.overrideWith(
             (ref) => hasFullDiskAccess,
@@ -516,6 +520,30 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
   @override
   Future<void> confirmResetAndPrepareReimport() async {
     confirmResetAndPrepareReimportCallCount += 1;
+  }
+}
+
+List<Override> _lifecycleOverrides() {
+  return [
+    conversationGraphBuildControllerProvider.overrideWith(
+      _FakeConversationGraphBuildController.new,
+    ),
+    chatDbChangeMonitorProvider.overrideWith(_FakeChatDbChangeMonitor.new),
+  ];
+}
+
+final class _FakeConversationGraphBuildController
+    extends ConversationGraphBuildController {
+  @override
+  ConversationGraphBuildState build() {
+    return const ConversationGraphBuildState.idle();
+  }
+}
+
+final class _FakeChatDbChangeMonitor extends ChatDbChangeMonitor {
+  @override
+  ChatDbChangeMonitorState build() {
+    return const ChatDbChangeMonitorState(lastMaxRowId: 149359);
   }
 }
 
