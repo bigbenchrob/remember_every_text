@@ -117,6 +117,7 @@ final class HistoricalArchivesWorkflowState {
     required this.sourceLabel,
     required this.preflightSummaryLines,
     required this.dryRunSummaryLines,
+    required this.importSafetySummaryLines,
     required this.resultSummaryLines,
     required this.activityLog,
     required this.phases,
@@ -130,6 +131,7 @@ final class HistoricalArchivesWorkflowState {
   final String sourceLabel;
   final List<String> preflightSummaryLines;
   final List<String> dryRunSummaryLines;
+  final List<String> importSafetySummaryLines;
   final List<String> resultSummaryLines;
   final List<HistoricalArchivesLogEntryViewModel> activityLog;
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
@@ -145,6 +147,7 @@ final class HistoricalArchivesWorkflowState {
     String? sourceLabel,
     List<String>? preflightSummaryLines,
     List<String>? dryRunSummaryLines,
+    List<String>? importSafetySummaryLines,
     List<String>? resultSummaryLines,
     List<HistoricalArchivesLogEntryViewModel>? activityLog,
     List<HistoricalArchivesWorkflowPhaseViewModel>? phases,
@@ -165,6 +168,8 @@ final class HistoricalArchivesWorkflowState {
       preflightSummaryLines:
           preflightSummaryLines ?? this.preflightSummaryLines,
       dryRunSummaryLines: dryRunSummaryLines ?? this.dryRunSummaryLines,
+      importSafetySummaryLines:
+          importSafetySummaryLines ?? this.importSafetySummaryLines,
       resultSummaryLines: resultSummaryLines ?? this.resultSummaryLines,
       activityLog: activityLog ?? this.activityLog,
       phases: phases ?? this.phases,
@@ -226,6 +231,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
     required this.sourceLabel,
     required this.preflightSummaryLines,
     required this.dryRunSummaryLines,
+    required this.importSafetySummaryLines,
     required this.importButtonEnabled,
     required this.importButtonDetail,
     required this.archiveRemovalTargetChatDbPath,
@@ -247,6 +253,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
   final String sourceLabel;
   final List<String> preflightSummaryLines;
   final List<String> dryRunSummaryLines;
+  final List<String> importSafetySummaryLines;
   final bool importButtonEnabled;
   final String importButtonDetail;
   final String? archiveRemovalTargetChatDbPath;
@@ -284,6 +291,9 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
     dryRunSummaryLines: [
       'Estimated new messages: waiting for preflight',
       'Estimated duplicates: waiting for preflight',
+    ],
+    importSafetySummaryLines: [
+      'Waiting for preflight before archive import safety can be confirmed.',
     ],
     resultSummaryLines: [
       'No archive import has run yet.',
@@ -874,6 +884,10 @@ buildHistoricalArchivesWorkflowPanelModel({
     sourceLabel: workflowState.sourceLabel,
     preflightSummaryLines: workflowState.preflightSummaryLines,
     dryRunSummaryLines: workflowState.dryRunSummaryLines,
+    importSafetySummaryLines: _importSafetySummaryLines(
+      workflowState,
+      currentMessagesDatabasePath: currentMessagesDatabasePath,
+    ),
     importButtonEnabled: _importButtonEnabled(
       executionGate: executionGate,
       workflowState: workflowState,
@@ -963,6 +977,48 @@ List<HistoricalArchivesLogEntryViewModel> _buildActivityLog({
   }
 
   return workflowState.activityLog;
+}
+
+List<String> _importSafetySummaryLines(
+  HistoricalArchivesWorkflowState workflowState, {
+  required String currentMessagesDatabasePath,
+}) {
+  final selectedFolderPath = workflowState.selectedFolderPath;
+  final selectedChatDbPath = selectedFolderPath == null
+      ? null
+      : path.join(selectedFolderPath, 'chat.db');
+
+  if (selectedChatDbPath != null &&
+      _isCurrentMacChatDbPath(
+        selectedChatDbPath,
+        currentMessagesDatabasePath: currentMessagesDatabasePath,
+      )) {
+    return const [
+      'Live Messages source detected: import is disabled for this folder.',
+      'Choose an older Messages archive folder instead.',
+    ];
+  }
+
+  return switch (workflowState.preflight.status) {
+    HistoricalArchivesPreflightStatus.waitingForFolder => const [
+      'Choose an archive folder before importing.',
+      'MessageLens will run preflight before enabling Begin Import.',
+    ],
+    HistoricalArchivesPreflightStatus.running => const [
+      'Preflight is still reading the selected folder.',
+      'Begin Import stays disabled until source checks complete.',
+    ],
+    HistoricalArchivesPreflightStatus.failed => const [
+      'Begin Import is disabled because the selected folder failed preflight.',
+      'No archive messages will be imported from this source until it passes.',
+    ],
+    HistoricalArchivesPreflightStatus.completeReadyToImport => [
+      'Begin Import adds messages from "${workflowState.sourceLabel}" without replacing current message data.',
+      'The live Messages database is not modified.',
+      'User settings, favourites, and manual labels remain in the overlay database.',
+      'Archive messages keep separate source identity even when GUIDs overlap with live messages.',
+    ],
+  };
 }
 
 String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
@@ -1282,6 +1338,8 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
     sourceLabel: result.sourceLabel,
     preflightSummaryLines: result.preflightSummaryLines,
     dryRunSummaryLines: result.dryRunSummaryLines,
+    importSafetySummaryLines:
+        buildInitialHistoricalArchivesWorkflowState().importSafetySummaryLines,
     resultSummaryLines:
         buildInitialHistoricalArchivesWorkflowState().resultSummaryLines,
     activityLog: result.activityLog,

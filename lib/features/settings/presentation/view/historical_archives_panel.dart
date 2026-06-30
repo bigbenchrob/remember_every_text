@@ -176,6 +176,24 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                           color: colors.content.textSecondary,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Import safety',
+                        style: typography.controlValue.copyWith(
+                          color: colors.content.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (final line
+                          in panelModel.importSafetySummaryLines) ...[
+                        Text(
+                          line,
+                          style: typography.body.copyWith(
+                            color: colors.content.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ],
                   ),
                 ),

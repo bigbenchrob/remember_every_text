@@ -39,6 +39,10 @@ void main() {
           'Estimated new messages: 8,120',
           'Estimated duplicates: 762',
         ],
+        importSafetySummaryLines: [
+          'Begin Import adds messages from "archive-2017-macbook" without replacing current message data.',
+          'The live Messages database is not modified.',
+        ],
         importButtonEnabled: true,
         importButtonDetail:
             'Preflight is complete and the execution gate is available.',
@@ -109,6 +113,17 @@ void main() {
       expect(find.text('Dry Run Summary'), findsOneWidget);
       expect(find.text('Estimated new messages: 8,120'), findsOneWidget);
       expect(find.text('Estimated duplicates: 762'), findsOneWidget);
+      expect(find.text('Import safety'), findsOneWidget);
+      expect(
+        find.text(
+          'Begin Import adds messages from "archive-2017-macbook" without replacing current message data.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('The live Messages database is not modified.'),
+        findsOneWidget,
+      );
       expect(find.text('Clear Selected Folder'), findsOneWidget);
       expect(
         find.text('Clear Imported Archive Data for This Source'),
@@ -169,6 +184,7 @@ void main() {
         sourceLabel: 'archive-2017-macbook',
         preflightSummaryLines: ['Total messages: 8,882'],
         dryRunSummaryLines: ['Estimated new messages: 8,120'],
+        importSafetySummaryLines: ['Import safety fixture line.'],
         importButtonEnabled: false,
         importButtonDetail: 'Disabled in this shell.',
         archiveRemovalTargetChatDbPath:

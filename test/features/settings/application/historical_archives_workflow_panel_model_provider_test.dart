@@ -129,6 +129,28 @@ void main() {
         contains('Archive rows remain isolated'),
       );
       expect(
+        model.importSafetySummaryLines,
+        contains(
+          'Begin Import adds messages from "Archive-2017" without replacing current message data.',
+        ),
+      );
+      expect(
+        model.importSafetySummaryLines,
+        contains('The live Messages database is not modified.'),
+      );
+      expect(
+        model.importSafetySummaryLines,
+        contains(
+          'User settings, favourites, and manual labels remain in the overlay database.',
+        ),
+      );
+      expect(
+        model.importSafetySummaryLines,
+        contains(
+          'Archive messages keep separate source identity even when GUIDs overlap with live messages.',
+        ),
+      );
+      expect(
         model.archiveManagementSummaryLines,
         contains('Removal target chat.db: /tmp/Archive-2017/chat.db'),
       );
