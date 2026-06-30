@@ -4072,6 +4072,9 @@ retention criteria.
 - Hardened retained pipeline audit log appends so log names must be base names,
   the diagnostic log directory cannot be a symlink, and symlink/directory log
   targets are rejected before append.
+- Hardened application log writes so the app log directory and rotating
+  `app.log` targets cannot be symlink redirects or directory targets before
+  initialization or rotation.
 
 ### Vocabulary Note
 
