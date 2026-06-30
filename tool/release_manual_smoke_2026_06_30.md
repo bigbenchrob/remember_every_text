@@ -13,6 +13,7 @@ Tester:
 - [x] Build artifact: `build/macos/Build/Products/Release/MessageLens.app`.
 - [x] Built artifact bundle id verified as `com.bigbenchsoftware.MessageLens`.
 - [x] Built artifact team id verified as `FQHT2QP3NE`.
+- [x] Production `lib/` scan found retired DB references only in reset cleanup, database health diagnostics, and central filename constants.
 - [ ] Manual real-data smoke completed.
 
 Notes:
