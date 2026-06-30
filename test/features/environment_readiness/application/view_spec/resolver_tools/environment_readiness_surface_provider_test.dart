@@ -167,6 +167,11 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 100,
     ),
+    attachmentArchiveDirectory: const OnboardingDatabaseProbe(
+      path: 'attachment_archive',
+      exists: true,
+      readable: true,
+    ),
     hasFullDiskAccess: hasFullDiskAccess,
   );
 }

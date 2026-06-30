@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -9,7 +11,8 @@ import '../../../features/address_book_folders/feature_level_providers.dart'
 import '../../db/app_database_files.dart';
 import '../../db/application/conversation_graph_readiness.dart';
 import '../../db/database_directory.dart';
-import '../../db/feature_level_providers.dart' show dbMaintenanceLockProvider;
+import '../../db/feature_level_providers.dart'
+    show attachmentArchiveDirectoryProvider, dbMaintenanceLockProvider;
 import '../domain/onboarding_environment_report.dart';
 import 'full_disk_access_provider.dart';
 import 'onboarding_database_probe_reader.dart';
@@ -136,6 +139,9 @@ Future<OnboardingEnvironmentReport> onboardingEnvironmentReport(Ref ref) async {
     messagesDatabasePath: ref.watch(onboardingMessagesDatabasePathProvider),
     addressBookEither: await ref.watch(futureGetFolderAggregateProvider.future),
     databaseDirectoryPath: ref.watch(onboardingDatabaseDirectoryPathProvider),
+    attachmentArchiveDirectoryPath: ref.watch(
+      attachmentArchiveDirectoryProvider,
+    ),
     isMaintenanceLocked: ref.watch(dbMaintenanceLockProvider),
   );
   final evaluator = _OnboardingEnvironmentEvaluator(inputs);
@@ -151,6 +157,7 @@ class _OnboardingEnvironmentInputs {
     required this.messagesDatabasePath,
     required this.addressBookEither,
     required this.databaseDirectoryPath,
+    required this.attachmentArchiveDirectoryPath,
     required this.isMaintenanceLocked,
   });
 
@@ -162,6 +169,7 @@ class _OnboardingEnvironmentInputs {
   final Either<FolderRetrievalFailure, AddressBookFolderAggregate>
   addressBookEither;
   final String databaseDirectoryPath;
+  final String attachmentArchiveDirectoryPath;
   final bool isMaintenanceLocked;
 }
 
@@ -232,6 +240,9 @@ class _OnboardingEnvironmentEvaluator {
     final graphDbPath = appDatabasePath(
       AppDatabaseFile.conversationGraph,
       databaseDirectory: inputs.databaseDirectoryPath,
+    );
+    final attachmentArchiveProbe = _probeDirectory(
+      inputs.attachmentArchiveDirectoryPath,
     );
     final isMaintenanceLocked = inputs.isMaintenanceLocked;
 
@@ -340,6 +351,7 @@ class _OnboardingEnvironmentEvaluator {
       addressBookDatabase: addressBookProbe.probe,
       sourceScopedImportDatabase: importProbe,
       conversationGraph: graphProbe,
+      attachmentArchiveDirectory: attachmentArchiveProbe,
       hasFullDiskAccess: hasFullDiskAccess,
       sourceAttachmentCount: sourceAttachmentCount,
       addressBookFailureMessage: addressBookProbe.failureMessage,
@@ -580,6 +592,37 @@ class _OnboardingEnvironmentEvaluator {
         );
       },
     );
+  }
+
+  OnboardingDatabaseProbe _probeDirectory(String directoryPath) {
+    final directory = Directory(directoryPath);
+    if (!directory.existsSync()) {
+      return OnboardingDatabaseProbe(
+        path: directoryPath,
+        exists: false,
+        readable: false,
+      );
+    }
+
+    try {
+      final stat = directory.statSync();
+      directory.listSync(followLinks: false);
+      return OnboardingDatabaseProbe(
+        path: directoryPath,
+        exists: true,
+        readable: true,
+        sizeBytes: stat.size,
+        lastModified: stat.modified,
+      );
+    } catch (error) {
+      return OnboardingDatabaseProbe(
+        path: directoryPath,
+        exists: true,
+        readable: false,
+        failureMessage:
+            'Attachment archive directory exists but could not be read: $error',
+      );
+    }
   }
 
   String? _detectResetAppDatabasesReason({

@@ -673,6 +673,16 @@ class _EvidenceCard extends StatelessWidget {
             colors: colors,
             typography: typography,
           ),
+          _EvidenceRow(
+            label: 'Attachment archive',
+            value: report.attachmentArchiveDirectory.readable
+                ? 'Available'
+                : report.attachmentArchiveDirectory.exists
+                ? 'Present but blocked'
+                : 'Not created yet',
+            colors: colors,
+            typography: typography,
+          ),
         ],
       ),
     );

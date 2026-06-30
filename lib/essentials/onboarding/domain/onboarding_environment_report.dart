@@ -75,6 +75,7 @@ class OnboardingEnvironmentReport {
     required this.addressBookDatabase,
     required this.sourceScopedImportDatabase,
     required this.conversationGraph,
+    required this.attachmentArchiveDirectory,
     required this.hasFullDiskAccess,
     this.sourceAttachmentCount,
     this.addressBookFailureMessage,
@@ -95,6 +96,7 @@ class OnboardingEnvironmentReport {
   final OnboardingDatabaseProbe? addressBookDatabase;
   final OnboardingDatabaseProbe sourceScopedImportDatabase;
   final OnboardingDatabaseProbe conversationGraph;
+  final OnboardingDatabaseProbe attachmentArchiveDirectory;
   final bool hasFullDiskAccess;
   final int? sourceAttachmentCount;
   final String? addressBookFailureMessage;

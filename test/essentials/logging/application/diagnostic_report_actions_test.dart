@@ -53,6 +53,11 @@ void main() {
         readable: true,
         rowCount: 0,
       ),
+      attachmentArchiveDirectory: const OnboardingDatabaseProbe(
+        path: 'attachment_archive',
+        exists: true,
+        readable: true,
+      ),
       hasFullDiskAccess: true,
       lastImportFailure: const OnboardingPipelineFailure(
         phase: OnboardingPipelinePhase.import,
