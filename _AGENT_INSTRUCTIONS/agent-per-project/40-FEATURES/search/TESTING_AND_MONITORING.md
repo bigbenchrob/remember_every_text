@@ -2,24 +2,24 @@
 tier: feature
 scope: testing-monitoring
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-14
 links:
 	- ./STATE_AND_PROVIDER_INVENTORY.md
 	- ./WORK_LOG.md
 tests: []
 feature: search
 doc_type: testing-monitoring
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-14
 ---
 
 # Testing & Monitoring — Search
 
-> Legacy note (2026-04-21): apply this as general intent only. Current tests should target `lib/essentials/search`, message timeline search modes, index rebuild orchestration, and fallback behavior from FTS to legacy queries.
+> Current conformance note (2026-06-06): current search is graph-backed through `lib/essentials/search` and the Message Evidence Spine. Tests should target graph `message_ss_id` scopes, full-scope skeleton/search behavior, result-context navigation, and overlay saved/tag search semantics. Do not reintroduce retired `working.db` FTS/index fallback as ordinary search behavior.
 
 ## Automated Coverage Targets
 - Unit: query parser, ranking heuristics, filter logic.
-- Integration: index rebuild pipeline from import delta to queryable state.
+- Integration: source-scoped graph build/data-version update to queryable graph evidence state.
 - Widget: search UI interactions, keyboard shortcuts, result navigation.
 
 ## Test Data Requirements
@@ -29,7 +29,7 @@ last_updated: 2025-11-06
 
 ## Monitoring & Telemetry
 - Query latency metrics with alerting on P95/P99 regressions.
-- Index freshness timestamps and rebuild success/failure counts.
+- Graph freshness timestamps, graph build success/failure counts, and search latency against graph scopes.
 - Error logging for failed navigation conversions.
 
 ## Manual Verification Checklist
@@ -37,6 +37,6 @@ last_updated: 2025-11-06
 - Filters (date range, participant) produce consistent subsets.
 - Navigation to chat/message from search maintains user context.
 
-## TODO
+## Open Stewardship Items
 - Establish baseline performance targets for macOS release hardware.
 - Integrate telemetry dashboards once indexing backend is chosen.

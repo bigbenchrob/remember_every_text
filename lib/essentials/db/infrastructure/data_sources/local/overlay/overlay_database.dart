@@ -1,13 +1,14 @@
-import 'package:characters/characters.dart';
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../../../../../core/util/message_tag_normalizer.dart';
 
 part 'overlay_database.g.dart';
 
-/// Overlay database for user preferences and customizations (user_overlays.db).
-/// This database stores user-specific overrides that enhance the working database
-/// without polluting it with UI-specific state.
+/// Overlay database for user preferences and customizations.
+/// This database stores user-specific overrides that enhance graph/source data
+/// without polluting derived databases with UI-specific state.
 @DriftDatabase(
   tables: [
     ParticipantOverrides,
@@ -28,7 +29,7 @@ class OverlayDatabase extends _$OverlayDatabase {
   OverlayDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,6 +45,16 @@ class OverlayDatabase extends _$OverlayDatabase {
         await m.createTable(messageUserFlags);
         await m.createTable(messageUserTags);
       }
+      if (from < 4) {
+        await m.dropColumn(participantOverrides, 'nickname');
+      }
+      if (from < 5) {
+        await _createGraphMessageIntentTables();
+      }
+      if (from < 6) {
+        await m.dropColumn(participantOverrides, 'name_mode');
+        await m.dropColumn(virtualParticipants, 'short_name');
+      }
       await _createOverlayIndexes();
     },
   );
@@ -54,6 +65,42 @@ class OverlayDatabase extends _$OverlayDatabase {
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_message_user_tags_tag_normalized ON message_user_tags(tag_normalized)',
+    );
+    await _createGraphMessageIntentTables();
+  }
+
+  Future<void> _createGraphMessageIntentTables() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS message_intent_overlays (
+        message_ss_id INTEGER PRIMARY KEY,
+        is_saved INTEGER NOT NULL DEFAULT 0 CHECK (is_saved IN (0, 1)),
+        is_starred INTEGER NOT NULL DEFAULT 0 CHECK (is_starred IN (0, 1)),
+        is_archived INTEGER NOT NULL DEFAULT 0 CHECK (is_archived IN (0, 1)),
+        user_notes TEXT,
+        priority INTEGER CHECK (priority IS NULL OR (priority BETWEEN 1 AND 5)),
+        remind_at TEXT,
+        created_at_utc TEXT NOT NULL,
+        updated_at_utc TEXT NOT NULL
+      )
+    ''');
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS message_intent_tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_ss_id INTEGER NOT NULL,
+        tag_display TEXT NOT NULL,
+        tag_normalized TEXT NOT NULL,
+        created_at_utc TEXT NOT NULL,
+        updated_at_utc TEXT NOT NULL,
+        UNIQUE(message_ss_id, tag_normalized)
+      )
+    ''');
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_message_intent_tags_message '
+      'ON message_intent_tags(message_ss_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_message_intent_tags_normalized '
+      'ON message_intent_tags(tag_normalized)',
     );
   }
 
@@ -70,15 +117,8 @@ class OverlayDatabase extends _$OverlayDatabase {
     )..where((t) => t.participantId.equals(participantId))).getSingleOrNull();
   }
 
-  /// Get all nicknames as a map (contact key -> nickname).
-  /// Useful for fast in-memory merge (similar to your prior shortName flow).
-  Future<Map<String, String>> getAllNicknamesByKey() async {
-    final rows = await select(participantOverrides).get();
-    return {
-      for (final row in rows)
-        if (row.nickname != null)
-          'participant:${row.participantId}': row.nickname!,
-    };
+  Future<List<ParticipantOverride>> getAllParticipantOverrides() {
+    return select(participantOverrides).get();
   }
 
   /// Upsert helper for setting display name override.
@@ -178,11 +218,7 @@ class OverlayDatabase extends _$OverlayDatabase {
   Future<List<MessageAnnotation>> getMessagesByTag(String tag) async {
     final allAnnotations = await select(messageAnnotations).get();
     return allAnnotations.where((annotation) {
-      if (annotation.tags == null) {
-        return false;
-      }
-      // Tags stored as JSON array string: '["tag1","tag2"]'
-      return annotation.tags!.contains('"$tag"');
+      return _decodeMessageAnnotationTags(annotation.tags).contains(tag);
     }).toList();
   }
 
@@ -236,18 +272,7 @@ class OverlayDatabase extends _$OverlayDatabase {
     final existing = await getMessageAnnotation(messageId);
     final now = DateTime.now().toUtc().toIso8601String();
 
-    // Parse existing tags
-    var currentTags = <String>[];
-    if (existing?.tags != null) {
-      // Parse JSON array: '["tag1","tag2"]'
-      final tagsStr = existing!.tags!
-          .replaceAll('[', '')
-          .replaceAll(']', '')
-          .replaceAll('"', '');
-      if (tagsStr.isNotEmpty) {
-        currentTags = tagsStr.split(',').map((t) => t.trim()).toList();
-      }
-    }
+    final currentTags = _decodeMessageAnnotationTags(existing?.tags);
 
     // Add new tags (avoid duplicates)
     for (final tag in tagsToAdd) {
@@ -256,13 +281,10 @@ class OverlayDatabase extends _$OverlayDatabase {
       }
     }
 
-    // Serialize back to JSON array string
-    final tagsJson = '[${currentTags.map((t) => '"$t"').join(',')}]';
-
     await into(messageAnnotations).insertOnConflictUpdate(
       MessageAnnotationsCompanion.insert(
         messageId: Value(messageId),
-        tags: Value(tagsJson),
+        tags: Value(_encodeMessageAnnotationTags(currentTags)),
         createdAtUtc: now,
         updatedAtUtc: now,
       ),
@@ -279,16 +301,10 @@ class OverlayDatabase extends _$OverlayDatabase {
       return;
     }
 
-    // Parse existing tags
-    final tagsStr = existing.tags!
-        .replaceAll('[', '')
-        .replaceAll(']', '')
-        .replaceAll('"', '');
-    if (tagsStr.isEmpty) {
+    final currentTags = _decodeMessageAnnotationTags(existing.tags);
+    if (currentTags.isEmpty) {
       return;
     }
-
-    final currentTags = tagsStr.split(',').map((tag) => tag.trim()).toList();
 
     // Remove specified tags
     currentTags.removeWhere((tag) => tagsToRemove.contains(tag));
@@ -307,12 +323,11 @@ class OverlayDatabase extends _$OverlayDatabase {
       );
     } else {
       // Update with remaining tags
-      final tagsJson = '[${currentTags.map((t) => '"$t"').join(',')}]';
       await (update(
         messageAnnotations,
       )..where((tbl) => tbl.messageId.equals(messageId))).write(
         MessageAnnotationsCompanion(
-          tags: Value(tagsJson),
+          tags: Value(_encodeMessageAnnotationTags(currentTags)),
           updatedAtUtc: Value(now),
         ),
       );
@@ -370,6 +385,26 @@ class OverlayDatabase extends _$OverlayDatabase {
     await (delete(
       messageAnnotations,
     )..where((tbl) => tbl.messageId.equals(messageId))).go();
+  }
+
+  List<String> _decodeMessageAnnotationTags(String? tagsJson) {
+    if (tagsJson == null || tagsJson.trim().isEmpty) {
+      return <String>[];
+    }
+
+    try {
+      final decoded = jsonDecode(tagsJson);
+      if (decoded is! List) {
+        return <String>[];
+      }
+      return decoded.whereType<String>().toList();
+    } on FormatException {
+      return <String>[];
+    }
+  }
+
+  String _encodeMessageAnnotationTags(List<String> tags) {
+    return jsonEncode(tags);
   }
 
   Future<MessageUserFlag?> getMessageUserFlag(String messageGuid) {
@@ -614,7 +649,7 @@ class OverlayDatabase extends _$OverlayDatabase {
     return {for (final row in rows) row.handleId};
   }
 
-  /// Link a handle to a real (working-DB) participant.
+  /// Link a handle to a graph contact/participant identity.
   Future<void> setHandleOverride(int handleId, int participantId) async {
     final now = DateTime.now().toUtc().toIso8601String();
 
@@ -738,7 +773,7 @@ class OverlayDatabase extends _$OverlayDatabase {
     );
   }
 
-  /// Remove the visibility override for a handle (reverts to working defaults).
+  /// Remove the visibility override for a handle (reverts to graph defaults).
   Future<void> deleteHandleVisibility(int handleId) async {
     await (delete(
       handleVisibilityOverrides,
@@ -762,13 +797,11 @@ class OverlayDatabase extends _$OverlayDatabase {
     return transaction(() async {
       final newId = await _nextVirtualParticipantId();
       final now = DateTime.now().toUtc().toIso8601String();
-      final shortName = _deriveShortName(trimmedName);
 
       await into(virtualParticipants).insert(
         VirtualParticipantsCompanion.insert(
           id: Value(newId),
           displayName: trimmedName,
-          shortName: shortName,
           notes: Value(notes),
           createdAtUtc: now,
           updatedAtUtc: now,
@@ -851,45 +884,6 @@ class OverlayDatabase extends _$OverlayDatabase {
 
     await (update(overlaySettings)..where((tbl) => tbl.key.equals(settingKey)))
         .write(OverlaySettingsCompanion(value: Value(settingValue)));
-  }
-
-  String _deriveShortName(String name) {
-    final tokens = name
-        .split(RegExp(r'\s+'))
-        .map((token) => token.trim())
-        .where((token) => token.isNotEmpty)
-        .toList(growable: false);
-
-    if (tokens.length >= 2) {
-      final first = _firstCharacter(tokens[0]);
-      final second = _firstCharacter(tokens[1]);
-      return '${first ?? ''}${second ?? ''}'.toUpperCase().padRight(2, '?');
-    }
-
-    if (tokens.length == 1) {
-      final chars = tokens.first.characters
-          .take(2)
-          .toList(growable: false)
-          .join();
-      if (chars.isNotEmpty) {
-        return chars.toUpperCase();
-      }
-    }
-
-    final fallback = name.characters.take(1).toList(growable: false).join();
-    if (fallback.isNotEmpty) {
-      return fallback.toUpperCase();
-    }
-
-    return '?';
-  }
-
-  String? _firstCharacter(String value) {
-    final iterator = value.characters.iterator;
-    if (!iterator.moveNext()) {
-      return null;
-    }
-    return iterator.current;
   }
 
   // Helper methods for favorite contacts
@@ -1031,10 +1025,27 @@ class OverlayDatabase extends _$OverlayDatabase {
     }
   }
 
+  /// Clear only the recency marker for a contact row.
+  ///
+  /// This preserves favourite intent because favourites and recents share this
+  /// table during the overlay transition.
+  Future<void> clearContactAccess(int participantId) async {
+    final nowIso = DateTime.now().toUtc().toIso8601String();
+    await (update(
+      favoriteContacts,
+    )..where((tbl) => tbl.participantId.equals(participantId))).write(
+      FavoriteContactsCompanion(
+        lastInteractionUtc: const Value(null),
+        updatedAtUtc: Value(nowIso),
+      ),
+    );
+  }
+
   /// Get recently accessed contacts (top N by lastInteractionUtc).
   /// This returns all contacts that have been accessed, sorted by recency.
   Future<List<FavoriteContact>> getRecentContacts({int limit = 10}) async {
     return (select(favoriteContacts)
+          ..where((tbl) => tbl.lastInteractionUtc.isNotNull())
           ..orderBy([
             (tbl) => OrderingTerm(
               expression: tbl.lastInteractionUtc,
@@ -1099,27 +1110,17 @@ class OverlayDatabase extends _$OverlayDatabase {
   }
 }
 
-/// User-defined short names and preferences for participants
 /// User-defined naming overrides for participants.
 ///
-/// Naming is intentionally kept separate from the working.db projection.
+/// Naming is intentionally kept separate from graph/import projection.
 /// If a column is null, the UI resolver should fall back to global settings
-/// and/or working participant fields.
+/// and/or graph contact fields.
 class ParticipantOverrides extends Table {
   @override
   String get tableName => 'participant_overrides';
 
-  /// Matches working.participants.id
+  /// Matches the graph-era contact/participant identity.
   IntColumn get participantId => integer().named('participant_id')();
-
-  /// Nullable: when null, this participant inherits global default.
-  ///
-  /// Stored values map to ParticipantNameMode.dbValue (except we recommend
-  /// storing null for inherit).
-  IntColumn get nameMode => integer().named('name_mode').nullable()();
-
-  /// User's nickname, e.g. "Westy"
-  TextColumn get nickname => text().named('nickname').nullable()();
 
   /// User's custom display name override, e.g. "Dad (Mobile)"
   TextColumn get displayNameOverride =>
@@ -1230,18 +1231,18 @@ class MessageUserTags extends Table {
 
 /// User-defined manual links from handles to participants or virtual participants.
 ///
-/// Each row links a handle to either a real participant (from working DB) or a
-/// virtual participant (from overlay DB). A row with both IDs null means the
+/// Each row links a graph handle to either a graph contact/participant identity
+/// or a virtual participant from overlay DB. A row with both IDs null means the
 /// handle has been reviewed but intentionally left unlinked ("dismissed").
 class HandleToParticipantOverrides extends Table {
   @override
   String get tableName => 'handle_to_participant_overrides';
 
-  /// Matches working.handles_canonical.id
+  /// Matches graph canonical handle identity.
   IntColumn get handleId => integer().named('handle_id')();
 
-  /// Matches working.participants.id (null when linking to a virtual participant
-  /// or when the handle is dismissed).
+  /// Matches graph contact/participant identity (null when linking to a virtual
+  /// participant or when the handle is dismissed).
   IntColumn get participantId => integer().named('participant_id').nullable()();
 
   /// Matches overlay virtual_participants.id (null when linking to a real
@@ -1269,8 +1270,6 @@ class VirtualParticipants extends Table {
 
   TextColumn get displayName => text().named('display_name')();
 
-  TextColumn get shortName => text().named('short_name')();
-
   TextColumn get notes => text().named('notes').nullable()();
 
   TextColumn get createdAtUtc => text().named('created_at_utc')();
@@ -1297,19 +1296,19 @@ class OverlaySettings extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-/// User's pinned/favorite contacts
+/// User's favorited contacts.
 class FavoriteContacts extends Table {
   @override
   String get tableName => 'favorite_contacts';
 
-  /// Matches working.participants.id
+  /// Matches graph-era contact/participant identity.
   IntColumn get participantId => integer().named('participant_id')();
 
   /// Order position (lower = higher priority, auto-managed)
   IntColumn get sortOrder =>
       integer().named('sort_order').withDefault(const Constant(0))();
 
-  /// ISO8601 timestamp when contact was pinned/created
+  /// ISO8601 timestamp when contact was favorited/created.
   TextColumn get createdAtUtc => text().named('created_at_utc')();
 
   /// ISO8601 timestamp of last user interaction (for auto-sorting)
@@ -1338,14 +1337,14 @@ class FavoriteContacts extends Table {
 /// reversible via restore or by labeling the handle.
 /// User overrides for handle visibility and blacklist state.
 ///
-/// When present, these values take precedence over the working DB defaults
-/// at the provider merge layer. Handles without a row here use the working
-/// DB values (visible=true, blacklisted=false).
+/// When present, these values take precedence over graph defaults at the
+/// provider merge layer. Handles without a row here use the graph default
+/// values (visible=true, blacklisted=false).
 class HandleVisibilityOverrides extends Table {
   @override
   String get tableName => 'handle_visibility_overrides';
 
-  /// The handle ID from handles_canonical in the working DB.
+  /// The graph canonical handle identity.
   IntColumn get handleId => integer().named('handle_id')();
 
   /// Whether the handle is visible in the UI.
@@ -1381,8 +1380,8 @@ class DismissedHandles extends Table {
 /// Tracks attachment files that MessageLens has archived locally.
 ///
 /// When macOS evicts files from ~/Library/Messages/Attachments, the archive
-/// retains the copy. The resolution provider merges working attachment records
-/// with this overlay table at read time to locate the file.
+/// retains the copy. Resolution providers merge graph attachment records with
+/// this overlay table at read time to locate the file.
 class ArchivedAttachments extends Table {
   @override
   String get tableName => 'archived_attachments';
@@ -1391,7 +1390,7 @@ class ArchivedAttachments extends Table {
   IntColumn get id => integer().named('id').autoIncrement()();
 
   /// The GUID of the parent message. Together with [importAttachmentId],
-  /// forms the stable composite key that survives migration cycles.
+  /// forms the stable archive compatibility key.
   TextColumn get messageGuid => text().named('message_guid')();
 
   /// The attachment's ROWID from chat.db, carried through import.

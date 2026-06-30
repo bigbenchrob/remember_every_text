@@ -1,6 +1,21 @@
 enum PipelineIncidentSeverity { context, warning, blocking }
 
-enum PipelineIncidentStage { import, migration }
+/// Persisted pipeline-stage names.
+///
+/// Do not rename [PipelineIncidentStage.migration]. Older overlay incident
+/// rows may still store that enum name even though the user-facing label now
+/// describes it as retired projection compatibility.
+enum PipelineIncidentStage { import, graphProjection, migration }
+
+extension PipelineIncidentStageDisplay on PipelineIncidentStage {
+  String get displayLabel {
+    return switch (this) {
+      PipelineIncidentStage.import => 'Import',
+      PipelineIncidentStage.graphProjection => 'Graph projection',
+      PipelineIncidentStage.migration => 'Retired projection compatibility',
+    };
+  }
+}
 
 class PipelineIncidentEntry {
   const PipelineIncidentEntry({
@@ -53,17 +68,15 @@ class PipelineIncidentEntry {
     final severity = PipelineIncidentSeverity.values.where(
       (candidate) => candidate.name == severityName,
     );
-    final stage = PipelineIncidentStage.values.where(
-      (candidate) => candidate.name == stageName,
-    );
+    final stage = _pipelineIncidentStageFromName(stageName);
     final recordedAtUtc = DateTime.tryParse(recordedAtRaw)?.toUtc();
-    if (severity.isEmpty || stage.isEmpty || recordedAtUtc == null) {
+    if (severity.isEmpty || stage == null || recordedAtUtc == null) {
       return null;
     }
 
     return PipelineIncidentEntry(
       severity: severity.first,
-      stage: stage.first,
+      stage: stage,
       summary: summary,
       recordedAtUtc: recordedAtUtc,
       code: value['code'] as String?,
@@ -150,11 +163,9 @@ class PipelineIncidentReport {
       return null;
     }
 
-    final stage = PipelineIncidentStage.values.where(
-      (candidate) => candidate.name == stageName,
-    );
+    final stage = _pipelineIncidentStageFromName(stageName);
     final recordedAtUtc = DateTime.tryParse(recordedAtRaw)?.toUtc();
-    if (stage.isEmpty || recordedAtUtc == null) {
+    if (stage == null || recordedAtUtc == null) {
       return null;
     }
 
@@ -175,7 +186,7 @@ class PipelineIncidentReport {
 
     return PipelineIncidentReport(
       reportId: reportId,
-      stage: stage.first,
+      stage: stage,
       headline: headline,
       summary: summary,
       recordedAtUtc: recordedAtUtc,
@@ -184,4 +195,13 @@ class PipelineIncidentReport {
       dismissed: value['dismissed'] as bool? ?? false,
     );
   }
+}
+
+PipelineIncidentStage? _pipelineIncidentStageFromName(String stageName) {
+  for (final candidate in PipelineIncidentStage.values) {
+    if (candidate.name == stageName) {
+      return candidate;
+    }
+  }
+  return null;
 }

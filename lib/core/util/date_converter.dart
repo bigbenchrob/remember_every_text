@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-// dumbass competition varying apple date formats:
+// Apple data sources use several timestamp encodings:
 //  apple: nanoseconds since 2001-01-01
 //  appleSeconds: seconds since 2001=01-01 (e.g. Apple contacts db)
 //  unix: seconds since 1970-01-01

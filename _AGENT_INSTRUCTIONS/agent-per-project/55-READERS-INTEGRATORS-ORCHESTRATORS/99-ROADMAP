@@ -1,3 +1,13 @@
+Historical note, 2026-06-21:
+
+This roadmap captured the early productization direction when graph-backed
+surfaces were still replacing legacy UI/data paths. Use Documents 70-83 and the
+active execution checklist for current migration status. In particular,
+ordinary conversation, contact, search, recovered-message, and message-evidence
+surfaces are now graph-backed; `macos_import.db` and `working.db` are retired
+cleanup/reference files, not provider-switch alternatives for ordinary app
+behavior.
+
 Yes. At this point the architecture has crossed from proof into productization. I’d think about the next work in staged layers.
 
 **Stage 1: Stabilize The Graph Spine**

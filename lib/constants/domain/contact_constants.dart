@@ -1,6 +1,4 @@
-// NEW: contact picker mode constants
-// Flat chooser shown only when total contacts < 6.
+// Flat chooser shown only when total contacts are below this threshold.
 const kContactPickerGroupingThreshold = 6;
 
-// NEW: contact picker mode constants
 enum ContactPickerMode { flat, grouped }

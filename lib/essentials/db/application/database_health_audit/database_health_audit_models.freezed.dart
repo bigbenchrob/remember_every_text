@@ -3005,7 +3005,9 @@ as String?,
 /// @nodoc
 mixin _$HealthReportSummary {
 
- DatabaseHealthStatus get overallStatus; int get tableCount; int get relationshipCheckCount; int get invariantCheckCount; int get passCount; int get warningCount; int get failCount; int get errorCount; List<String> get headlineFindings;
+ DatabaseHealthStatus get overallStatus;/// Count of active app-health tables only. Retired cleanup tables may appear
+/// in detailed inventory but must not inflate the top-level health summary.
+ int get tableCount; int get relationshipCheckCount; int get invariantCheckCount; int get passCount; int get warningCount; int get failCount; int get errorCount; List<String> get headlineFindings;
 /// Create a copy of HealthReportSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3211,6 +3213,8 @@ class _HealthReportSummary implements HealthReportSummary {
   factory _HealthReportSummary.fromJson(Map<String, dynamic> json) => _$HealthReportSummaryFromJson(json);
 
 @override final  DatabaseHealthStatus overallStatus;
+/// Count of active app-health tables only. Retired cleanup tables may appear
+/// in detailed inventory but must not inflate the top-level health summary.
 @override final  int tableCount;
 @override final  int relationshipCheckCount;
 @override final  int invariantCheckCount;

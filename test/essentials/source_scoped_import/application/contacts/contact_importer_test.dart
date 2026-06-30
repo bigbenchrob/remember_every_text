@@ -5,6 +5,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/c
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -86,7 +87,8 @@ void main() {
 
     final result = await ContactImporter(
       addressBookDbPath: addressBookDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importContacts();
 
     expect(result.examinedContactCount, 1);
@@ -115,7 +117,8 @@ void main() {
 
     final secondResult = await ContactImporter(
       addressBookDbPath: addressBookDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importContacts();
     expect(secondResult.insertedContactCount, 0);
     expect(secondResult.insertedChannelCount, 0);

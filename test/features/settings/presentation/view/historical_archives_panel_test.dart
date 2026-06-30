@@ -2,8 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
+import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/presentation/view/historical_archives_panel.dart';
-import 'package:remember_this_text/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart';
 
 void main() {
   group('HistoricalArchivesPanel', () {
@@ -13,7 +14,7 @@ void main() {
       const model = HistoricalArchivesWorkflowPanelViewModel(
         statusLabel: 'Ready For Import',
         summaryText:
-            'A previously selected archive has completed preflight and is ready for canonical import.',
+            'A previously selected archive has completed preflight and is ready for source-scoped import.',
         executionGate: HistoricalArchivesExecutionGateViewModel(
           status: HistoricalArchivesExecutionGateStatus.available,
           statusLabel: 'Available',
@@ -38,28 +39,31 @@ void main() {
           'Estimated new messages: 8,120',
           'Estimated duplicates: 762',
         ],
+        importSafetySummaryLines: [
+          'Begin Import adds messages from "archive-2017-macbook" without replacing current message data.',
+          'The live Messages database is not modified.',
+        ],
         importButtonEnabled: true,
         importButtonDetail:
             'Preflight is complete and the execution gate is available.',
         archiveRemovalTargetChatDbPath:
             '/Users/rob/Library/Messages/Archive-2017/messages/chat.db',
-        matchedImportedArchiveBatchCount: 2,
         archiveManagementSummaryLines: [
           'Removal target chat.db: /Users/rob/Library/Messages/Archive-2017/messages/chat.db',
-          'Matched imported archive batches in db-import: 2',
+          'Source-scoped archive removal: available after preflight',
         ],
         removeImportedArchiveDataEnabled: true,
         removeImportedArchiveDataDetail:
-            'Removing imported archive data will delete 2 matched batches for this selected source from db-import, then rebuild the app timeline.',
+            'Removing imported archive data will delete source-scoped import rows for this selected source, then reproject the conversation graph from the remaining import facts.',
         activityLog: [
           HistoricalArchivesLogEntryViewModel(
             label: 'Reading archive…',
             message: 'chat.db and Attachments metadata were read successfully.',
           ),
           HistoricalArchivesLogEntryViewModel(
-            label: 'Migration started…',
+            label: 'Source-scoped graph import started…',
             message:
-                'Canonical migration has been requested and is awaiting execution ownership.',
+                'Source-scoped archive import and graph projection have been requested and are awaiting execution ownership.',
           ),
         ],
         resultSummaryLines: ['The previous import completed successfully.'],
@@ -70,7 +74,7 @@ void main() {
             detail: 'Archive source metadata was read successfully.',
           ),
           HistoricalArchivesWorkflowPhaseViewModel(
-            label: 'Normalizing records into canonical ledger format',
+            label: 'Normalizing records for source-scoped import',
             status: HistoricalArchivesWorkflowPhaseStatus.running,
             detail: 'Normalization is in progress.',
           ),
@@ -81,6 +85,9 @@ void main() {
         overrides: [
           historicalArchivesWorkflowPanelModelProvider.overrideWith(
             (ref) => model,
+          ),
+          developerModeProvider.overrideWith(
+            () => _FakeDeveloperMode(DeveloperModeValue.user),
           ),
         ],
       );
@@ -94,16 +101,33 @@ void main() {
       );
       await tester.pump();
 
+      expect(
+        find.text(
+          'Import historical Messages folders without replacing current message data.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Execution Gate'), findsOneWidget);
       expect(find.text('Available'), findsOneWidget);
       expect(find.text('Preflight complete — ready to import'), findsWidgets);
       expect(find.text('Dry Run Summary'), findsOneWidget);
       expect(find.text('Estimated new messages: 8,120'), findsOneWidget);
       expect(find.text('Estimated duplicates: 762'), findsOneWidget);
+      expect(find.text('Import safety'), findsOneWidget);
+      expect(
+        find.text(
+          'Begin Import adds messages from "archive-2017-macbook" without replacing current message data.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text('The live Messages database is not modified.'),
+        findsOneWidget,
+      );
       expect(find.text('Clear Selected Folder'), findsOneWidget);
       expect(
         find.text('Clear Imported Archive Data for This Source'),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.text(
@@ -113,29 +137,29 @@ void main() {
       );
       expect(
         find.text(
-          'Developer/testing only. This deletes previously imported archive records from MessageLens for the selected archive source, then rebuilds the app timeline.',
+          'Developer/testing only. This deletes source-scoped import rows from MessageLens for the selected archive source, then reprojects the conversation graph.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.text(
           'Removal target chat.db: /Users/rob/Library/Messages/Archive-2017/messages/chat.db',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
-        find.text('Matched imported archive batches in db-import: 2'),
-        findsOneWidget,
+        find.text('Source-scoped archive removal: available after preflight'),
+        findsNothing,
       );
       expect(
         find.text(
-          'Removing imported archive data will delete 2 matched batches for this selected source from db-import, then rebuild the app timeline.',
+          'Removing imported archive data will delete source-scoped import rows for this selected source, then reproject the conversation graph from the remaining import facts.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.text('Activity Log'), findsOneWidget);
       expect(find.text('Reading archive…'), findsOneWidget);
-      expect(find.text('Migration started…'), findsOneWidget);
+      expect(find.text('Source-scoped graph import started…'), findsOneWidget);
     });
 
     testWidgets('shows confirmation dialog before removing imported archive data', (
@@ -160,18 +184,18 @@ void main() {
         sourceLabel: 'archive-2017-macbook',
         preflightSummaryLines: ['Total messages: 8,882'],
         dryRunSummaryLines: ['Estimated new messages: 8,120'],
+        importSafetySummaryLines: ['Import safety fixture line.'],
         importButtonEnabled: false,
         importButtonDetail: 'Disabled in this shell.',
         archiveRemovalTargetChatDbPath:
             '/Users/rob/Library/Messages/Archive-2017/messages/chat.db',
-        matchedImportedArchiveBatchCount: 2,
         archiveManagementSummaryLines: [
           'Removal target chat.db: /Users/rob/Library/Messages/Archive-2017/messages/chat.db',
-          'Matched imported archive batches in db-import: 2',
+          'Source-scoped archive removal: available after preflight',
         ],
         removeImportedArchiveDataEnabled: true,
         removeImportedArchiveDataDetail:
-            'Removing imported archive data will delete 2 matched batches for this selected source from db-import, then rebuild the app timeline.',
+            'Removing imported archive data will delete source-scoped import rows for this selected source, then reproject the conversation graph from the remaining import facts.',
         activityLog: [
           HistoricalArchivesLogEntryViewModel(
             label: 'Ready',
@@ -192,6 +216,9 @@ void main() {
         overrides: [
           historicalArchivesWorkflowPanelModelProvider.overrideWith(
             (ref) => model,
+          ),
+          developerModeProvider.overrideWith(
+            () => _FakeDeveloperMode(DeveloperModeValue.developer),
           ),
         ],
       );
@@ -228,7 +255,7 @@ void main() {
         find.descendant(
           of: confirmationDialog,
           matching: find.textContaining(
-            'Matched imported archive batches in db-import: 2',
+            'This deletes source-scoped import rows from MessageLens for this selected source, then reprojects the conversation graph from the remaining import facts.',
           ),
         ),
         findsOneWidget,
@@ -237,4 +264,13 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
     });
   });
+}
+
+final class _FakeDeveloperMode extends DeveloperMode {
+  _FakeDeveloperMode(this._value);
+
+  final DeveloperModeValue _value;
+
+  @override
+  Future<DeveloperModeValue> build() async => _value;
 }

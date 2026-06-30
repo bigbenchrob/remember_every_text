@@ -1,5 +1,14 @@
 # Checklist: Enhanced Message Search
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Future enhanced-search work should be planned
+against `GraphSearchRepository`, typed graph search scopes, and evidence-spine
+tests rather than retained `working.db` FTS/indexer tasks.
+Unchecked items below are not approved implementation tasks unless rewritten
+for graph search repository boundaries and source-scoped `message_ss_id`
+evidence scopes.
+
 ## Phase 1: Foundation & Lexical Search
 
 - [ ] **Infrastructure Setup**
@@ -25,7 +34,7 @@
 ## Phase 2: Indexing Infrastructure & Example
 
 - [ ] **Emotional Indexer (Schema)**
-    - [ ] Create `message_emotion_features` table in Drift (`working.db`).
+    - [ ] Graph-era rewrite required: define any emotion/semantic features as graph-search acceleration data behind repository methods, not retained `working.db` schema.
     - [ ] Run `dart run build_runner build`.
 
 - [ ] **Emotional Indexer (Logic)**
@@ -34,7 +43,7 @@
     - [ ] Register in `SearchIndexOrchestrator`.
 
 - [ ] **Pipeline Integration**
-    - [ ] Update `ChatDbChangeMonitor` to call `SearchIndexOrchestrator.rebuildForMessages` (or `rebuildAll` for now) after migration.
+    - [ ] Graph-era rewrite required: integrate any derived search acceleration with graph lifecycle orchestration without making it evidence-rendering authority.
     - [ ] Verify new messages get indexed automatically.
 
 - [ ] **Search Enhancements**

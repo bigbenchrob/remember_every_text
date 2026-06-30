@@ -2,32 +2,36 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
   });
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('working_ss_db_test_');
-    workingDatabase = await openConversationGraphTestDatabase();
+    tempDir = await Directory.systemTemp.createTemp(
+      'conversation_graph_db_test_',
+    );
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await workingDatabase.close();
+    await graphDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
   });
 
   test('creates messages projection schema only', () async {
-    final messageColumns = await workingDatabase.database.rawQuery(
+    final messageColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(messages)',
     );
     final columnNames = messageColumns.map((row) => row['name']).toSet();
@@ -61,35 +65,61 @@ void main() {
     expect(columnNames, isNot(contains('reply_to_guid')));
   });
 
+  test('selectRows accepts only read queries', () async {
+    expect(
+      await graphDatabase.selectRows('SELECT 1 AS ok'),
+      <Map<String, Object?>>[
+        <String, Object?>{'ok': 1},
+      ],
+    );
+    expect(
+      await graphDatabase.selectRows(
+        'WITH rows AS (SELECT 2 AS ok) SELECT ok FROM rows',
+      ),
+      <Map<String, Object?>>[
+        <String, Object?>{'ok': 2},
+      ],
+    );
+    expect(
+      await graphDatabase.selectRows('PRAGMA table_info(messages)'),
+      isNotEmpty,
+    );
+
+    await expectLater(
+      graphDatabase.selectRows('DELETE FROM messages'),
+      throwsA(isA<StateError>()),
+    );
+  });
+
   test('creates chats and chat_to_message projection schema', () async {
-    final handleColumns = await workingDatabase.database.rawQuery(
+    final handleColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(handles)',
     );
-    final canonicalHandleColumns = await workingDatabase.database.rawQuery(
+    final canonicalHandleColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(canonical_handles)',
     );
-    final handleAliasColumns = await workingDatabase.database.rawQuery(
+    final handleAliasColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(handle_aliases)',
     );
-    final chatColumns = await workingDatabase.database.rawQuery(
+    final chatColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(chats)',
     );
-    final edgeColumns = await workingDatabase.database.rawQuery(
+    final edgeColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(chat_to_message)',
     );
-    final participantColumns = await workingDatabase.database.rawQuery(
+    final participantColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(chat_to_handle)',
     );
-    final contactColumns = await workingDatabase.database.rawQuery(
+    final contactColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(contacts)',
     );
-    final contactEdgeColumns = await workingDatabase.database.rawQuery(
+    final contactEdgeColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(contact_to_handle)',
     );
-    final attachmentColumns = await workingDatabase.database.rawQuery(
+    final attachmentColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(attachments)',
     );
-    final attachmentEdgeColumns = await workingDatabase.database.rawQuery(
+    final attachmentEdgeColumns = await graphDatabase.database.rawQuery(
       'PRAGMA table_info(message_to_attachment)',
     );
 
@@ -142,7 +172,6 @@ void main() {
     expect(contactColumns.map((row) => row['name']).toSet(), <String>{
       'contact_id',
       'display_name',
-      'short_name',
       'given_name',
       'family_name',
       'organization',
@@ -187,23 +216,24 @@ void main() {
   test(
     'opens existing pre-Drift graph database with upgrade strategy',
     () async {
-      final dbPath = '${tempDir.path}/working_ss.db';
-      final legacyDatabase = await databaseFactoryFfi.openDatabase(dbPath);
-      await legacyDatabase.execute('''
+      final dbPath = appDatabasePath(
+        AppDatabaseFile.conversationGraph,
+        databaseDirectory: tempDir.path,
+      );
+      final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+      await existingDatabase.execute('''
       CREATE TABLE messages (
         ss_id INTEGER PRIMARY KEY,
         guid TEXT
       )
     ''');
-      await legacyDatabase.execute('PRAGMA user_version = 0');
-      await legacyDatabase.close();
+      await existingDatabase.execute('PRAGMA user_version = 0');
+      await existingDatabase.close();
 
-      final driftDatabase = ConversationGraphDatabase(
-        NativeDatabase(File(dbPath)),
-      );
-      addTearDown(driftDatabase.close);
+      await graphDatabase.close();
+      graphDatabase = ConversationGraphDatabase(NativeDatabase(File(dbPath)));
 
-      final tables = await driftDatabase.selectRows('''
+      final tables = await graphDatabase.selectRows('''
       SELECT name
       FROM sqlite_master
       WHERE type = 'table'

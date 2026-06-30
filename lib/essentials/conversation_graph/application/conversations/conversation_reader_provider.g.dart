@@ -7,7 +7,7 @@ part of 'conversation_reader_provider.dart';
 // **************************************************************************
 
 String _$conversationReaderHash() =>
-    r'ed33d6e953462af2242bfe0e3dcd107ebe6de8a5';
+    r'35e9006b7fc559dc37724df0405a4b6e951d6923';
 
 /// See also [conversationReader].
 @ProviderFor(conversationReader)
@@ -27,7 +27,7 @@ final conversationReaderProvider =
 typedef ConversationReaderRef =
     AutoDisposeFutureProviderRef<ConversationReader>;
 String _$conversationOverviewsHash() =>
-    r'1004148b0973bb599273211682f1881c0feb930e';
+    r'41ec527ca3e2a8e9fcdc0beb390d088309fd6867';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -177,8 +177,140 @@ class _ConversationOverviewsProviderElement
   int get limit => (origin as ConversationOverviewsProvider).limit;
 }
 
+String _$conversationOverviewByIdHash() =>
+    r'45cb90caf8075ea15b4d24bbcb9882f29dcd4685';
+
+/// See also [conversationOverviewById].
+@ProviderFor(conversationOverviewById)
+const conversationOverviewByIdProvider = ConversationOverviewByIdFamily();
+
+/// See also [conversationOverviewById].
+class ConversationOverviewByIdFamily
+    extends Family<AsyncValue<ConversationOverview?>> {
+  /// See also [conversationOverviewById].
+  const ConversationOverviewByIdFamily();
+
+  /// See also [conversationOverviewById].
+  ConversationOverviewByIdProvider call({required int conversationId}) {
+    return ConversationOverviewByIdProvider(conversationId: conversationId);
+  }
+
+  @override
+  ConversationOverviewByIdProvider getProviderOverride(
+    covariant ConversationOverviewByIdProvider provider,
+  ) {
+    return call(conversationId: provider.conversationId);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'conversationOverviewByIdProvider';
+}
+
+/// See also [conversationOverviewById].
+class ConversationOverviewByIdProvider
+    extends AutoDisposeFutureProvider<ConversationOverview?> {
+  /// See also [conversationOverviewById].
+  ConversationOverviewByIdProvider({required int conversationId})
+    : this._internal(
+        (ref) => conversationOverviewById(
+          ref as ConversationOverviewByIdRef,
+          conversationId: conversationId,
+        ),
+        from: conversationOverviewByIdProvider,
+        name: r'conversationOverviewByIdProvider',
+        debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+            ? null
+            : _$conversationOverviewByIdHash,
+        dependencies: ConversationOverviewByIdFamily._dependencies,
+        allTransitiveDependencies:
+            ConversationOverviewByIdFamily._allTransitiveDependencies,
+        conversationId: conversationId,
+      );
+
+  ConversationOverviewByIdProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.conversationId,
+  }) : super.internal();
+
+  final int conversationId;
+
+  @override
+  Override overrideWith(
+    FutureOr<ConversationOverview?> Function(
+      ConversationOverviewByIdRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: ConversationOverviewByIdProvider._internal(
+        (ref) => create(ref as ConversationOverviewByIdRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        conversationId: conversationId,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<ConversationOverview?> createElement() {
+    return _ConversationOverviewByIdProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ConversationOverviewByIdProvider &&
+        other.conversationId == conversationId;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, conversationId.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin ConversationOverviewByIdRef
+    on AutoDisposeFutureProviderRef<ConversationOverview?> {
+  /// The parameter `conversationId` of this provider.
+  int get conversationId;
+}
+
+class _ConversationOverviewByIdProviderElement
+    extends AutoDisposeFutureProviderElement<ConversationOverview?>
+    with ConversationOverviewByIdRef {
+  _ConversationOverviewByIdProviderElement(super.provider);
+
+  @override
+  int get conversationId =>
+      (origin as ConversationOverviewByIdProvider).conversationId;
+}
+
 String _$conversationMessagesHash() =>
-    r'bd95d1cb8b4a5876ec51dac8c223a8ac586bf7cc';
+    r'1eb6fa335178c45ca945fa7b16f5dd6580cb78b8';
 
 /// See also [conversationMessages].
 @ProviderFor(conversationMessages)
@@ -328,7 +460,7 @@ class _ConversationMessagesProviderElement
 }
 
 String _$conversationIdsMatchingMessageTextHash() =>
-    r'08d01047833d53a6f163cb5957f7f169a13d6f56';
+    r'006c0f8c9a5e9e094a0e3edcfa745244f0f6a91e';
 
 /// See also [conversationIdsMatchingMessageText].
 @ProviderFor(conversationIdsMatchingMessageText)
@@ -479,7 +611,7 @@ class _ConversationIdsMatchingMessageTextProviderElement
 }
 
 String _$conversationMessageTextMatchesHash() =>
-    r'54d768d531f264819a27ce4f8b2cfcb33050dfaf';
+    r'c0b6d08d28ef654522ac191d5df0f10d4475701b';
 
 /// See also [conversationMessageTextMatches].
 @ProviderFor(conversationMessageTextMatches)

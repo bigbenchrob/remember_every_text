@@ -1,5 +1,12 @@
 # MessageLens App Breakdown Refactor - Implementation Plan
 
+> Current conformance note (2026-06-06): this implementation plan is a
+> historical refactor record. Preserve its architectural invariants, but do not
+> treat its concrete message-timeline terms as current. `MessageTimelineScope`,
+> `MessagesTimelineView`, and `working.db` ordinal timeline paths have been
+> superseded by graph-backed `MessageEvidenceScope`, full-scope skeletons,
+> viewport hydration, and shared message evidence rendering.
+
 ## Purpose
 
 This document operationalizes the architectural verdict in `agent-seed.txt` and

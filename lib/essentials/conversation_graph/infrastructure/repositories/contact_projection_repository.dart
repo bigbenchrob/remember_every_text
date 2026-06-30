@@ -1,31 +1,31 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
+import '../../application/contacts/contact_handle_keys.dart';
 import '../../application/contacts/contact_projection_repository.dart';
 
 class SqliteContactProjectionRepository implements ContactProjectionRepository {
   const SqliteContactProjectionRepository({
-    required this.importDatabase,
-    required this.workingDatabase,
+    required this.importLedgerDatabase,
+    required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ImportLedger importLedgerDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ContactProjectionResult> projectContacts() async {
-    final contactRows = await importDatabase.database.query(
+    final contactRows = await importLedgerDatabase.queryTable(
       'contacts',
       columns: <String>[
         'ss_id',
         'display_name',
-        'short_name',
         'first_name',
         'last_name',
         'organization',
       ],
       orderBy: 'ss_id ASC',
     );
-    final channelRows = await importDatabase.database.query(
+    final channelRows = await importLedgerDatabase.queryTable(
       'contact_channels',
       columns: <String>['contact_ss_id', 'value'],
       orderBy: 'contact_ss_id ASC, value ASC',
@@ -44,17 +44,15 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
 
     var insertedContactCount = 0;
     var insertedContactHandleEdgeCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in contactRows) {
         final contactId = _requiredInt(row, 'ss_id');
         final displayName = (row['display_name'] as String?)?.trim();
-        final shortName = (row['short_name'] as String?)?.trim();
         final givenName = (row['first_name'] as String?)?.trim();
         final familyName = (row['last_name'] as String?)?.trim();
         final organization = (row['organization'] as String?)?.trim();
         if (!_isProjectableContact(
           displayName: displayName,
-          shortName: shortName,
           givenName: givenName,
           familyName: familyName,
           organization: organization,
@@ -62,31 +60,23 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
           continue;
         }
 
-        final insertedContactCountDelta = await workingDatabase
+        final insertedContactCountDelta = await graphDatabase
             .executeAndReadChanges(
               '''
               INSERT OR IGNORE INTO contacts (
                 contact_id,
                 display_name,
-                short_name,
                 given_name,
                 family_name,
                 organization
-              ) VALUES (?, ?, ?, ?, ?, ?)
+              ) VALUES (?, ?, ?, ?, ?)
               ''',
               <Object?>[
                 contactId,
                 _resolvedDisplayName(
                   displayName: displayName,
-                  shortName: shortName,
                   givenName: givenName,
                   familyName: familyName,
-                  organization: organization,
-                ),
-                _resolvedShortName(
-                  displayName: displayName,
-                  shortName: shortName,
-                  givenName: givenName,
                   organization: organization,
                 ),
                 givenName,
@@ -105,7 +95,7 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
             if (handleSsId == null) {
               continue;
             }
-            final insertedEdgeCountDelta = await workingDatabase
+            final insertedEdgeCountDelta = await graphDatabase
                 .executeAndReadChanges(
                   '''
                   INSERT OR IGNORE INTO contact_to_handle (
@@ -133,7 +123,7 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
   }
 
   Future<Map<String, int>> _handleSsIdsByKey() async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT
         h.id AS handle_value,
         ha.canonical_handle_ss_id AS canonical_handle_ss_id,
@@ -184,13 +174,11 @@ class SqliteContactProjectionRepository implements ContactProjectionRepository {
 
 bool _isProjectableContact({
   required String? displayName,
-  required String? shortName,
   required String? givenName,
   required String? familyName,
   required String? organization,
 }) {
   return _isMeaningful(displayName) ||
-      _isMeaningful(shortName) ||
       _isMeaningful(givenName) ||
       _isMeaningful(familyName) ||
       _isMeaningful(organization);
@@ -205,28 +193,13 @@ bool _isMeaningful(String? value) {
 
 String _resolvedDisplayName({
   required String? displayName,
-  required String? shortName,
   required String? givenName,
   required String? familyName,
   required String? organization,
 }) {
   return displayName ??
       organization ??
-      shortName ??
       givenName ??
       familyName ??
-      'Unknown Contact';
-}
-
-String _resolvedShortName({
-  required String? displayName,
-  required String? shortName,
-  required String? givenName,
-  required String? organization,
-}) {
-  return shortName ??
-      givenName ??
-      displayName ??
-      organization ??
       'Unknown Contact';
 }

@@ -14,6 +14,23 @@ created: 2025-11-07
 
 # Feature Proposal: Virtual Overlay Contacts
 
+## Current Conformance Note (2026-06-06)
+
+This document is historical planning material and must not be used as a direct
+implementation blueprint without redesign. The current architecture still needs
+a way for users to give meaning to unfamiliar handles, but it must conform to
+the graph-era identity model:
+
+- user-created identity is overlay intent, merged at read time with graph facts.
+- do not create fake `working.db` participants or require legacy participant
+  IDs to make a handle usable.
+- do not store or display `short_name`/nickname as a separate identity concept.
+  There is one user-edited display-name override, and it wins everywhere.
+- unknown-handle labels may become known-contact labels only through the
+  canonical display identity resolver.
+- any future "app-created contact" design must define graph identity keys,
+  overlay keys, and removal/migration criteria before implementation.
+
 ## Overview
 
 Introduce "virtual contacts" that live entirely inside `user_overlays.db` so users can link unmatched handles to meaningful identities even when no macOS AddressBook card exists. The feature extends the existing manual handle linking workflow by allowing the picker dialog to create a new overlay participant ("<New Contact…>") before applying the standard handle → participant assignment.

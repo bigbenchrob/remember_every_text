@@ -1,31 +1,28 @@
+import '../../../source_scoped_import/application/attachments/attachment_importer.dart';
 import '../../../source_scoped_import/application/messages/message_importer.dart';
 import '../../../source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import '../contacts/contact_projection_repository.dart';
+import '../conversation_graph_build_report.dart';
 import '../messages/message_projection_repository.dart';
 
 typedef GraphBuildStep = Future<void> Function();
 typedef MessageImportStep = Future<MessageImportResult> Function();
+typedef AttachmentImportStep = Future<AttachmentImportResult> Function();
+typedef MessageImportAwareGraphBuildStep =
+    Future<void> Function(MessageImportResult messageImportResult);
+typedef AttachmentProjectionStep =
+    Future<void> Function(
+      MessageImportResult messageImportResult,
+      AttachmentImportResult attachmentImportResult,
+    );
 typedef RichTextEnrichmentStep =
-    Future<MessageRichTextEnrichmentResult> Function();
-typedef MessageProjectionStep = Future<MessageProjectionResult> Function();
-
-class ConversationGraphBuildReport {
-  const ConversationGraphBuildReport({
-    required this.startedAt,
-    required this.finishedAt,
-    required this.completedStageNames,
-    required this.messageImportResult,
-    required this.richTextEnrichmentResult,
-    required this.messageProjectionResult,
-  });
-
-  final DateTime startedAt;
-  final DateTime finishedAt;
-  final List<String> completedStageNames;
-  final MessageImportResult messageImportResult;
-  final MessageRichTextEnrichmentResult richTextEnrichmentResult;
-  final MessageProjectionResult messageProjectionResult;
-}
+    Future<MessageRichTextEnrichmentResult> Function(
+      MessageImportResult messageImportResult,
+    );
+typedef MessageProjectionStep =
+    Future<MessageProjectionResult> Function(
+      MessageImportResult messageImportResult,
+    );
 
 class ConversationGraphBuildOrchestrator {
   const ConversationGraphBuildOrchestrator({
@@ -53,78 +50,121 @@ class ConversationGraphBuildOrchestrator {
   final GraphBuildStep importContacts;
   final MessageImportStep importMessages;
   final RichTextEnrichmentStep enrichMissingText;
-  final GraphBuildStep importAttachments;
-  final GraphBuildStep importChatMessageJoins;
+  final AttachmentImportStep importAttachments;
+  final MessageImportAwareGraphBuildStep importChatMessageJoins;
   final GraphBuildStep importChatHandleJoins;
-  final GraphBuildStep importMessageAttachmentJoins;
+  final MessageImportAwareGraphBuildStep importMessageAttachmentJoins;
   final GraphBuildStep projectHandles;
   final Future<ContactProjectionResult> Function() projectContacts;
   final GraphBuildStep projectChatHandleEdges;
   final GraphBuildStep projectChats;
   final MessageProjectionStep projectMessages;
-  final GraphBuildStep projectAttachments;
-  final GraphBuildStep projectChatMessageEdges;
-  final GraphBuildStep projectMessageAttachmentEdges;
+  final AttachmentProjectionStep projectAttachments;
+  final MessageImportAwareGraphBuildStep projectChatMessageEdges;
+  final MessageImportAwareGraphBuildStep projectMessageAttachmentEdges;
 
   Future<ConversationGraphBuildReport> runOnce() async {
     final startedAt = DateTime.now().toUtc();
     final completedStageNames = <String>[];
+    final stageTimings = <ConversationGraphBuildStageTiming>[];
 
-    await importChats();
-    completedStageNames.add('import_chats');
+    Future<void> runStage(String name, GraphBuildStep step) async {
+      final stageStartedAt = DateTime.now().toUtc();
+      await step();
+      final stageFinishedAt = DateTime.now().toUtc();
+      completedStageNames.add(name);
+      stageTimings.add(
+        ConversationGraphBuildStageTiming(
+          stageName: name,
+          startedAt: stageStartedAt,
+          finishedAt: stageFinishedAt,
+        ),
+      );
+    }
 
-    await importHandles();
-    completedStageNames.add('import_handles');
+    Future<T> runValueStage<T>(String name, Future<T> Function() step) async {
+      final stageStartedAt = DateTime.now().toUtc();
+      final result = await step();
+      final stageFinishedAt = DateTime.now().toUtc();
+      completedStageNames.add(name);
+      stageTimings.add(
+        ConversationGraphBuildStageTiming(
+          stageName: name,
+          startedAt: stageStartedAt,
+          finishedAt: stageFinishedAt,
+        ),
+      );
+      return result;
+    }
 
-    await importContacts();
-    completedStageNames.add('import_contacts');
+    await runStage('import_chats', importChats);
 
-    final messageImportResult = await importMessages();
-    completedStageNames.add('import_messages');
+    await runStage('import_handles', importHandles);
 
-    final richTextEnrichmentResult = await enrichMissingText();
-    completedStageNames.add('enrich_missing_text');
+    await runStage('import_contacts', importContacts);
 
-    await importAttachments();
-    completedStageNames.add('import_attachments');
+    final messageImportResult = await runValueStage(
+      'import_messages',
+      importMessages,
+    );
 
-    await importChatMessageJoins();
-    completedStageNames.add('import_chat_message_joins');
+    final richTextEnrichmentResult = await runValueStage(
+      'enrich_missing_text',
+      () => enrichMissingText(messageImportResult),
+    );
 
-    await importChatHandleJoins();
-    completedStageNames.add('import_chat_handle_joins');
+    final attachmentImportResult = await runValueStage(
+      'import_attachments',
+      importAttachments,
+    );
 
-    await importMessageAttachmentJoins();
-    completedStageNames.add('import_message_attachment_joins');
+    await runStage(
+      'import_chat_message_joins',
+      () => importChatMessageJoins(messageImportResult),
+    );
 
-    await projectHandles();
-    completedStageNames.add('project_handles');
+    await runStage('import_chat_handle_joins', importChatHandleJoins);
 
-    await projectContacts();
-    completedStageNames.add('project_contacts');
+    await runStage(
+      'import_message_attachment_joins',
+      () => importMessageAttachmentJoins(messageImportResult),
+    );
 
-    await projectChatHandleEdges();
-    completedStageNames.add('project_chat_handle_edges');
+    await runStage('project_handles', projectHandles);
 
-    await projectChats();
-    completedStageNames.add('project_chats');
+    await runValueStage('project_contacts', projectContacts);
 
-    final messageProjectionResult = await projectMessages();
-    completedStageNames.add('project_messages');
+    await runStage('project_chat_handle_edges', projectChatHandleEdges);
 
-    await projectAttachments();
-    completedStageNames.add('project_attachments');
+    await runStage('project_chats', projectChats);
 
-    await projectChatMessageEdges();
-    completedStageNames.add('project_chat_message_edges');
+    final messageProjectionResult = await runValueStage(
+      'project_messages',
+      () => projectMessages(messageImportResult),
+    );
 
-    await projectMessageAttachmentEdges();
-    completedStageNames.add('project_message_attachment_edges');
+    await runStage(
+      'project_attachments',
+      () => projectAttachments(messageImportResult, attachmentImportResult),
+    );
+
+    await runStage(
+      'project_chat_message_edges',
+      () => projectChatMessageEdges(messageImportResult),
+    );
+
+    await runStage(
+      'project_message_attachment_edges',
+      () => projectMessageAttachmentEdges(messageImportResult),
+    );
 
     return ConversationGraphBuildReport(
       startedAt: startedAt,
       finishedAt: DateTime.now().toUtc(),
       completedStageNames: List<String>.unmodifiable(completedStageNames),
+      stageTimings: List<ConversationGraphBuildStageTiming>.unmodifiable(
+        stageTimings,
+      ),
       messageImportResult: messageImportResult,
       richTextEnrichmentResult: richTextEnrichmentResult,
       messageProjectionResult: messageProjectionResult,

@@ -1,86 +1,95 @@
-import '../../db/application/database_health_audit/database_health_audit_service.dart';
 import '../../onboarding/domain/onboarding_environment_report.dart';
+import '../domain/diagnostic_report_presentation_result.dart';
 import '../domain/pipeline_incident_report.dart';
-import '../infrastructure/log_export_service.dart';
-import '../infrastructure/log_file_writer.dart';
-import '../infrastructure/support_bundle_export_service.dart';
+import 'diagnostic_report_exporter.dart';
 
 const developerDiagnosticRecipientEmail = 'messagelens@gmail.com';
 
 Future<DiagnosticReportPresentationResult> exportDiagnosticReport(
-  LogFileWriter writer, {
-  required DatabaseHealthAuditService databaseHealthAuditService,
-}) {
-  return LogExportService(
-    SupportBundleExportService(writer, databaseHealthAuditService),
-  ).exportAndPresent(recipientEmail: developerDiagnosticRecipientEmail);
+  DiagnosticReportExporter exporter,
+) {
+  return exporter.exportAndPresent(
+    const DiagnosticReportExportRequest(
+      recipientEmail: developerDiagnosticRecipientEmail,
+      subjectPrefix: 'MessageLens Diagnostic Report',
+      attachedEmailBodyLines: [
+        'MessageLens attached the support bundle to this draft.',
+        '',
+        'Describe the issue here:',
+      ],
+      manualAttachmentEmailBodyLines: [
+        'MessageLens prepared a support bundle but could not attach it automatically.',
+        'It has been revealed in Finder so it can be attached manually.',
+        '',
+        'Describe the issue here:',
+      ],
+    ),
+  );
 }
 
 Future<DiagnosticReportPresentationResult>
 exportOnboardingFailureDiagnosticReport(
-  LogFileWriter writer, {
+  DiagnosticReportExporter exporter, {
   required OnboardingEnvironmentReport report,
-  required DatabaseHealthAuditService databaseHealthAuditService,
 }) {
-  return LogExportService(
-    SupportBundleExportService(writer, databaseHealthAuditService),
-  ).exportAndPresent(
-    recipientEmail: developerDiagnosticRecipientEmail,
-    subjectPrefix: 'MessageLens Onboarding Failure Report',
-    attachedEmailBodyLines: [
-      'MessageLens attached the support bundle to this draft.',
-      '',
-      'This report was prepared from the onboarding failure screen.',
-      'Observed state: ${report.state.name}',
-      'Blocker kind: ${report.blockerKind.name}',
-      '',
-      'Describe what happened just before setup failed:',
-    ],
-    manualAttachmentEmailBodyLines: [
-      'MessageLens prepared a support bundle but could not attach it automatically.',
-      'It has been revealed in Finder so it can be attached manually.',
-      '',
-      'This report was prepared from the onboarding failure screen.',
-      'Observed state: ${report.state.name}',
-      'Blocker kind: ${report.blockerKind.name}',
-      '',
-      'Describe what happened just before setup failed:',
-    ],
-    headerLines: buildOnboardingFailureReportHeaderLines(report),
+  return exporter.exportAndPresent(
+    DiagnosticReportExportRequest(
+      recipientEmail: developerDiagnosticRecipientEmail,
+      subjectPrefix: 'MessageLens Onboarding Failure Report',
+      attachedEmailBodyLines: [
+        'MessageLens attached the support bundle to this draft.',
+        '',
+        'This report was prepared from the onboarding failure screen.',
+        'Observed state: ${report.state.name}',
+        'Blocker kind: ${report.blockerKind.name}',
+        '',
+        'Describe what happened just before setup failed:',
+      ],
+      manualAttachmentEmailBodyLines: [
+        'MessageLens prepared a support bundle but could not attach it automatically.',
+        'It has been revealed in Finder so it can be attached manually.',
+        '',
+        'This report was prepared from the onboarding failure screen.',
+        'Observed state: ${report.state.name}',
+        'Blocker kind: ${report.blockerKind.name}',
+        '',
+        'Describe what happened just before setup failed:',
+      ],
+      headerLines: buildOnboardingFailureReportHeaderLines(report),
+    ),
   );
 }
 
 Future<DiagnosticReportPresentationResult>
 exportPipelineIncidentDiagnosticReport(
-  LogFileWriter writer, {
+  DiagnosticReportExporter exporter, {
   required PipelineIncidentReport report,
-  required DatabaseHealthAuditService databaseHealthAuditService,
 }) {
-  return LogExportService(
-    SupportBundleExportService(writer, databaseHealthAuditService),
-  ).exportAndPresent(
-    recipientEmail: developerDiagnosticRecipientEmail,
-    subjectPrefix: 'MessageLens Pipeline Incident Report',
-    attachedEmailBodyLines: [
-      'MessageLens attached the support bundle to this draft.',
-      '',
-      'This report was prepared from the pipeline incident screen.',
-      'Observed stage: ${report.stage.name}',
-      'Headline: ${report.headline}',
-      '',
-      'Describe what happened just before the failure appeared:',
-    ],
-    manualAttachmentEmailBodyLines: [
-      'MessageLens prepared a support bundle but could not attach it automatically.',
-      'It has been revealed in Finder so it can be attached manually.',
-      '',
-      'This report was prepared from the pipeline incident screen.',
-      'Observed stage: ${report.stage.name}',
-      'Headline: ${report.headline}',
-      '',
-      'Describe what happened just before the failure appeared:',
-    ],
-    headerLines: buildPipelineIncidentReportHeaderLines(report),
+  return exporter.exportAndPresent(
+    DiagnosticReportExportRequest(
+      recipientEmail: developerDiagnosticRecipientEmail,
+      subjectPrefix: 'MessageLens Pipeline Incident Report',
+      attachedEmailBodyLines: [
+        'MessageLens attached the support bundle to this draft.',
+        '',
+        'This report was prepared from the pipeline incident screen.',
+        'Observed stage: ${report.stage.displayLabel}',
+        'Headline: ${report.headline}',
+        '',
+        'Describe what happened just before the failure appeared:',
+      ],
+      manualAttachmentEmailBodyLines: [
+        'MessageLens prepared a support bundle but could not attach it automatically.',
+        'It has been revealed in Finder so it can be attached manually.',
+        '',
+        'This report was prepared from the pipeline incident screen.',
+        'Observed stage: ${report.stage.displayLabel}',
+        'Headline: ${report.headline}',
+        '',
+        'Describe what happened just before the failure appeared:',
+      ],
+      headerLines: buildPipelineIncidentReportHeaderLines(report),
+    ),
   );
 }
 
@@ -98,8 +107,14 @@ List<String> buildOnboardingFailureReportHeaderLines(
       probe: report.addressBookDatabase,
       unavailableMessage: report.addressBookFailureMessage ?? 'unavailable',
     ),
-    _describeProbe(label: 'Import database', probe: report.importDatabase),
-    _describeProbe(label: 'Working database', probe: report.workingDatabase),
+    _describeProbe(
+      label: 'Source-scoped import ledger',
+      probe: report.sourceScopedImportDatabase,
+    ),
+    _describeProbe(
+      label: 'Conversation graph',
+      probe: report.conversationGraph,
+    ),
   ];
 
   final importMessage = report.importFailureMessage;
@@ -107,9 +122,9 @@ List<String> buildOnboardingFailureReportHeaderLines(
     lines.add('Import failure: $importMessage');
   }
 
-  final migrationMessage = report.migrationFailureMessage;
-  if (migrationMessage != null && migrationMessage.isNotEmpty) {
-    lines.add('Migration failure: $migrationMessage');
+  final graphProjectionMessage = report.graphProjectionFailureMessage;
+  if (graphProjectionMessage != null && graphProjectionMessage.isNotEmpty) {
+    lines.add('Graph projection failure: $graphProjectionMessage');
   }
 
   final recordedAt = report.latestFailureRecordedAt;
@@ -126,7 +141,7 @@ List<String> buildPipelineIncidentReportHeaderLines(
 ) {
   final lines = <String>[
     'Context: pipeline_incident',
-    'Stage: ${report.stage.name}',
+    'Stage: ${report.stage.displayLabel}',
     'Headline: ${report.headline}',
     'Summary: ${report.summary}',
     'Blocking incident: ${report.hasBlockingIncident}',
@@ -136,7 +151,7 @@ List<String> buildPipelineIncidentReportHeaderLines(
 
   for (final entry in report.entries) {
     lines.add(
-      'Entry [${entry.severity.name}/${entry.stage.name}]: ${entry.summary}',
+      'Entry [${entry.severity.name}/${entry.stage.displayLabel}]: ${entry.summary}',
     );
     if (entry.code != null && entry.code!.isNotEmpty) {
       lines.add('Entry code: ${entry.code}');
@@ -163,5 +178,6 @@ String _describeProbe({
       'path=${probe.path}; '
       'exists=${probe.exists}; '
       'readable=${probe.readable}; '
-      'rows=${probe.rowCount ?? 'unknown'}';
+      'rows=${probe.rowCount ?? 'unknown'}'
+      '${probe.failureMessage == null ? '' : '; failure=${probe.failureMessage}'}';
 }

@@ -1,27 +1,23 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart'
-    show
-        databaseDirectoryPath,
-        dbMaintenanceLockProvider,
-        driftWorkingDatabaseProvider,
-        sqfliteImportDatabaseProvider;
-import '../../db/feature_level_providers/message_data_version_provider.dart';
-import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
-import '../../logging/application/app_logger.dart';
-import '../../navigation/application/sidebar_mode_provider.dart';
-import '../../navigation/domain/sidebar_mode.dart';
+import '../../conversation_graph/feature_level_providers.dart'
+    show conversationGraphBuildControllerProvider;
+import '../../db/database_directory.dart';
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
+import '../../navigation/feature_level_providers.dart'
+    show SidebarMode, activeSidebarModeProvider;
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 import 'database_existence_checker.dart';
-import 'fda_checker.dart';
+import 'full_disk_access_provider.dart';
+import 'message_data_reset_service.dart';
+import 'onboarding_database_probe_reader_provider.dart';
 import 'onboarding_environment_report_provider.dart';
+import 'onboarding_failure_storage_provider.dart';
 
 part 'onboarding_gate_provider.g.dart';
 
@@ -33,16 +29,15 @@ part 'onboarding_gate_provider.g.dart';
 /// screen is shown.  Nothing else can proceed until FDA is confirmed.
 ///
 /// Gate 2 — Data import:
-/// Once FDA is confirmed, checks whether both import and working databases
-/// exist with data.  If not, exposes [OnboardingStatus.awaitingUserAction]
-/// so the import overlay appears.
+/// Once FDA is confirmed, checks whether the source-scoped import ledger and
+/// app-facing conversation graph exist with data. If not, exposes
+/// [OnboardingStatus.awaitingUserAction] so the import overlay appears.
 ///
-/// [startImportAndMigration] delegates to [DbImportControlViewModel] and
-/// watches its state to transition through importing → migrating → complete.
+/// [startImportAndGraphBuild] builds the source-scoped conversation graph
+/// directly. Retired database files are cleanup/diagnostic inventory only
+/// and are not the app-facing setup path.
 @Riverpod(keepAlive: true)
 class OnboardingGate extends _$OnboardingGate {
-  static const _checker = DatabaseExistenceChecker();
-  static const _fdaChecker = FdaChecker();
   OnboardingStatus? _workflowOverrideStatus;
   bool _automaticRecoveryInFlight = false;
   bool _automaticRecoverySuppressed = false;
@@ -97,10 +92,11 @@ class OnboardingGate extends _$OnboardingGate {
       'environmentBlocker': report?.blockerKind.name,
       'hasFullDiskAccess': report?.hasFullDiskAccess,
       'hasPopulatedAppDatabases': hasPopulatedAppDatabases,
-      'importDbExists': report?.importDatabase.exists,
-      'importDbRowCount': report?.importDatabase.rowCount,
-      'workingDbExists': report?.workingDatabase.exists,
-      'workingDbRowCount': report?.workingDatabase.rowCount,
+      'sourceScopedImportDbExists': report?.sourceScopedImportDatabase.exists,
+      'sourceScopedImportDbRowCount':
+          report?.sourceScopedImportDatabase.rowCount,
+      'conversationGraphExists': report?.conversationGraph.exists,
+      'conversationGraphRowCount': report?.conversationGraph.rowCount,
       'shouldResetAppDatabasesBeforeImport':
           report?.shouldResetAppDatabasesBeforeImport,
       'resetAppDatabasesReason': report?.resetAppDatabasesReason,
@@ -141,7 +137,7 @@ class OnboardingGate extends _$OnboardingGate {
         OnboardingStatus.awaitingFda,
       OnboardingEnvironmentState.ready => OnboardingStatus.notNeeded,
       OnboardingEnvironmentState.importFailed ||
-      OnboardingEnvironmentState.migrationFailed ||
+      OnboardingEnvironmentState.graphProjectionFailed ||
       OnboardingEnvironmentState.sourceUnavailable ||
       OnboardingEnvironmentState.sourceSparseOrUnsynced ||
       OnboardingEnvironmentState.readyToImport =>
@@ -153,24 +149,27 @@ class OnboardingGate extends _$OnboardingGate {
     return switch (status) {
       OnboardingStatus.recoveringFailedAttempt ||
       OnboardingStatus.importing ||
-      OnboardingStatus.migrating ||
+      OnboardingStatus.buildingGraph ||
       OnboardingStatus.complete ||
       OnboardingStatus.reimporting ||
-      OnboardingStatus.reimportMigrating ||
-      OnboardingStatus.reimportComplete => true,
+      OnboardingStatus.reimportBuildingGraph ||
+      OnboardingStatus.reimportComplete ||
+      OnboardingStatus.awaitingUserAction => true,
       null ||
       OnboardingStatus.awaitingFda ||
-      OnboardingStatus.awaitingUserAction ||
       OnboardingStatus.notNeeded => false,
     };
   }
 
   OnboardingStatus _fallbackBuildStatus() {
-    if (!_fdaChecker.canReadMessagesDatabase()) {
+    if (!ref.read(onboardingFullDiskAccessProvider)) {
       return OnboardingStatus.awaitingFda;
     }
 
-    final hasData = _checker.hasPopulatedDatabases(databaseDirectoryPath);
+    final checker = DatabaseExistenceChecker(
+      ref.read(onboardingDatabaseProbeReaderProvider),
+    );
+    final hasData = checker.hasPopulatedDatabases(databaseDirectoryPath);
     if (hasData) {
       return OnboardingStatus.notNeeded;
     }
@@ -178,13 +177,10 @@ class OnboardingGate extends _$OnboardingGate {
     return OnboardingStatus.awaitingUserAction;
   }
 
-  /// Kick off the full import + migration pipeline.
+  /// Kick off the source-scoped conversation graph build.
   ///
-  /// Calls [startImport] then [startMigration] separately so the overlay
-  /// can show the correct phase, and passes `skipImportCheck: true` to
-  /// prevent the recursive-loop bug in startMigration's unimported-data
-  /// guard. Wrapped in try/catch so the user is **never** stranded.
-  Future<void> startImportAndMigration() async {
+  /// Wrapped in try/catch so the user is never stranded.
+  Future<void> startImportAndGraphBuild() async {
     if (state != OnboardingStatus.awaitingUserAction) {
       return;
     }
@@ -192,14 +188,14 @@ class OnboardingGate extends _$OnboardingGate {
     ref
         .read(appLoggerProvider.notifier)
         .info(
-          'Starting fresh onboarding import and migration',
+          'Starting fresh onboarding conversation graph build',
           source: 'OnboardingGate',
         );
 
     // Gate 2 safety check: verify we can still read chat.db before
     // committing to the import.  If FDA was revoked after the earlier
     // check, fall back to the FDA screen.
-    if (!_fdaChecker.canReadMessagesDatabase()) {
+    if (!ref.read(onboardingFullDiskAccessProvider)) {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
@@ -212,60 +208,23 @@ class OnboardingGate extends _$OnboardingGate {
 
     await _prepareForFreshStartIfNeeded();
 
-    // ── Import phase ──
+    // ── Graph build phase ──
     _setWorkflowOverride(OnboardingStatus.importing);
-    // Wait until the frame has actually painted so the overlay's
-    // _ProgressContent widget is mounted and ref.watch-ing
-    // dbImportControlViewModelProvider.  A plain Future.delayed(Duration.zero)
-    // fires before the frame pipeline, which means the widget isn't
-    // watching yet and the auto-dispose provider may be a stale instance.
+    await _waitForEndOfFrame();
+    _setWorkflowOverride(OnboardingStatus.buildingGraph);
     await _waitForEndOfFrame();
     try {
-      await ref.read(dbImportControlViewModelProvider.notifier).startImport();
-    } catch (_) {
+      await _runConversationGraphBuild(owner: 'onboarding-first-run');
+    } catch (error) {
+      await _recordConversationGraphBuildFailure(error);
       _finishFirstRunWithFailure();
       return;
     }
-
-    final importSucceeded =
-        ref.read(dbImportControlViewModelProvider).lastImportResult?.success ??
-        false;
-    if (!importSucceeded) {
-      _finishFirstRunWithFailure();
-      return;
-    }
-
-    // ── Migration phase ──
-    _setWorkflowOverride(OnboardingStatus.migrating);
-    await _waitForEndOfFrame();
-    try {
-      await ref
-          .read(dbImportControlViewModelProvider.notifier)
-          .startMigration(skipImportCheck: true);
-    } catch (_) {
-      _finishFirstRunWithFailure();
-      return;
-    }
-
-    final migrationSucceeded =
-        ref
-            .read(dbImportControlViewModelProvider)
-            .lastMigrationResult
-            ?.success ??
-        false;
-    if (!migrationSucceeded) {
-      _finishFirstRunWithFailure();
-      return;
-    }
-
-    // Signal all data-dependent providers (contacts, messages, etc.) to
-    // rebuild with the freshly-populated working database.
-    ref.read(messageDataVersionProvider.notifier).bump();
 
     ref
         .read(appLoggerProvider.notifier)
         .info(
-          'Fresh onboarding import and migration completed successfully',
+          'Fresh onboarding conversation graph build completed successfully',
           source: 'OnboardingGate',
         );
 
@@ -289,7 +248,7 @@ class OnboardingGate extends _$OnboardingGate {
 
   /// Open System Settings to the Full Disk Access pane.
   Future<void> openFdaSettings() async {
-    await FdaChecker.openFdaSettings();
+    await ref.read(fullDiskAccessProvider).openSettings();
   }
 
   void refreshEnvironment() {
@@ -304,16 +263,7 @@ class OnboardingGate extends _$OnboardingGate {
   /// files, and reset state to [OnboardingStatus.awaitingUserAction] so the
   /// next launch triggers a clean onboarding.
   Future<void> abortImport() async {
-    // Delete import and working DB files (plus WAL/SHM companions).
-    for (final name in ['macos_import.db', 'working.db']) {
-      final basePath = path.join(databaseDirectoryPath, name);
-      for (final suffix in ['', '-wal', '-shm']) {
-        final file = File('$basePath$suffix');
-        if (file.existsSync()) {
-          await file.delete();
-        }
-      }
-    }
+    await ref.read(messageDataResetServiceProvider).resetDerivedData();
 
     // Reset to awaiting so the next launch shows the welcome screen.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -323,40 +273,32 @@ class OnboardingGate extends _$OnboardingGate {
 
   /// Trigger a full reimport from settings.
   ///
-  /// Unlike [startImportAndMigration], this can be called when the app is
+  /// Unlike [startImportAndGraphBuild], this can be called when the app is
   /// already running with populated databases.  It shows the same
-  /// progress overlay but uses the reimport-specific status values so the
-  /// UI can distinguish first-run from settings-triggered reimport.
+  /// progress overlay but uses the reimport-specific status values so the UI
+  /// can distinguish first-run from settings-triggered graph rebuild.
   Future<void> startReimport() async {
     if (state != OnboardingStatus.notNeeded) {
       return;
     }
 
-    // Clean out the previous import DB so the pipeline reimports everything.
-    await _deleteImportDatabaseFiles();
+    // Clean out previous derived graph/import data so the build reimports
+    // everything from the live source while preserving overlays and archive
+    // files.
+    await ref.read(messageDataResetServiceProvider).resetDerivedData();
 
-    // ── Import phase ──
+    // ── Graph rebuild phase ──
     _setWorkflowOverride(OnboardingStatus.reimporting);
     await _waitForEndOfFrame();
-    try {
-      await ref.read(dbImportControlViewModelProvider.notifier).startImport();
-    } catch (_) {
-      _setWorkflowOverride(OnboardingStatus.reimportComplete);
-      return;
-    }
-
-    // ── Migration phase ──
-    _setWorkflowOverride(OnboardingStatus.reimportMigrating);
+    _setWorkflowOverride(OnboardingStatus.reimportBuildingGraph);
     await _waitForEndOfFrame();
     try {
-      await ref
-          .read(dbImportControlViewModelProvider.notifier)
-          .startMigration(skipImportCheck: true);
-    } catch (_) {
-      // Swallow — land on complete so user can dismiss.
+      await _runConversationGraphBuild(owner: 'settings-reimport');
+    } catch (error) {
+      await _recordConversationGraphBuildFailure(error);
+      _finishReimportWithFailure();
+      return;
     }
-
-    ref.read(messageDataVersionProvider.notifier).bump();
 
     _setWorkflowOverride(OnboardingStatus.reimportComplete);
   }
@@ -411,9 +353,7 @@ class OnboardingGate extends _$OnboardingGate {
             'Auto-resetting app databases before onboarding retry: ${report.resetAppDatabasesReason ?? 'no reason provided'}',
             source: 'OnboardingGate',
           );
-      await ref
-          .read(dbImportControlViewModelProvider.notifier)
-          .resetAllDatabases();
+      await ref.read(messageDataResetServiceProvider).resetDerivedData();
     } catch (error) {
       _automaticRecoverySuppressed = true;
       ref
@@ -441,9 +381,7 @@ class OnboardingGate extends _$OnboardingGate {
             source: 'OnboardingGate',
             context: {'reason': report?.resetAppDatabasesReason},
           );
-      await ref
-          .read(dbImportControlViewModelProvider.notifier)
-          .resetAllDatabases();
+      await ref.read(messageDataResetServiceProvider).resetDerivedData();
       ref.invalidate(onboardingEnvironmentReportProvider);
       return;
     }
@@ -454,108 +392,50 @@ class OnboardingGate extends _$OnboardingGate {
           'Preparing for fresh onboarding start by deleting derived databases',
           source: 'OnboardingGate',
         );
-    await _deleteDerivedDatabaseFiles();
+    await ref.read(messageDataResetServiceProvider).resetDerivedData();
+  }
+
+  Future<void> _runConversationGraphBuild({required String owner}) async {
+    await ref
+        .read(conversationGraphBuildControllerProvider.notifier)
+        .runOnce(owner: owner);
+    await _clearConversationGraphBuildFailure();
+  }
+
+  Future<void> _recordConversationGraphBuildFailure(Object error) async {
+    final storage = ref.read(onboardingFailureStorageProvider);
+    await storage.saveGraphProjectionFailure(
+      message: 'Conversation graph build failed: $error',
+      recordedAt: DateTime.now().toUtc(),
+    );
+  }
+
+  Future<void> _clearConversationGraphBuildFailure() async {
+    final storage = ref.read(onboardingFailureStorageProvider);
+    await storage.clearGraphProjectionFailure();
   }
 
   void _finishFirstRunWithFailure() {
     ref
         .read(appLoggerProvider.notifier)
         .warn(
-          'Fresh onboarding import/migration failed; returning to awaiting user action',
+          'Fresh onboarding conversation graph build failed; returning to awaiting user action',
           source: 'OnboardingGate',
         );
     _clearWorkflowOverride();
     ref.invalidate(onboardingEnvironmentReportProvider);
-    state = OnboardingStatus.awaitingUserAction;
+    _setWorkflowOverride(OnboardingStatus.awaitingUserAction);
   }
 
-  /// Close any open import DB connection, delete the files, and
-  /// invalidate the provider so the next access creates a fresh instance.
-  Future<void> _deleteImportDatabaseFiles() async {
-    final deletedFiles = <String>[];
-
-    // Close an existing connection if the provider was already accessed.
-    try {
-      final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
-      await ledgerDb.close();
-    } catch (_) {
-      // No connection open — safe to proceed.
-    }
-    ref.invalidate(sqfliteImportDatabaseProvider);
-
-    // Delete the file and WAL/SHM companions.
-    final basePath = path.join(databaseDirectoryPath, 'macos_import.db');
-    for (final suffix in ['', '-wal', '-shm']) {
-      final file = File('$basePath$suffix');
-      if (file.existsSync()) {
-        await file.delete();
-        deletedFiles.add(file.path);
-      }
-    }
-
+  void _finishReimportWithFailure() {
     ref
         .read(appLoggerProvider.notifier)
-        .info(
-          'Deleted import ledger files for fresh onboarding start',
+        .warn(
+          'Settings-triggered reimport failed; returning to awaiting user action',
           source: 'OnboardingGate',
-          context: {
-            'deletedCount': deletedFiles.length,
-            'deletedFiles': deletedFiles,
-          },
         );
-    ref.invalidate(sqfliteImportDatabaseProvider);
-  }
-
-  Future<void> _deleteDerivedDatabaseFiles() async {
-    final deletedFiles = <String>[];
-
-    try {
-      final ledgerDb = await ref.read(sqfliteImportDatabaseProvider.future);
-      await ledgerDb.close();
-    } catch (_) {
-      // No connection open — safe to proceed.
-    }
-    ref.invalidate(sqfliteImportDatabaseProvider);
-
-    final workingDbPath = path.join(databaseDirectoryPath, 'working.db');
-    if (File(workingDbPath).existsSync()) {
-      try {
-        final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-        await workingDb.close();
-      } catch (_) {
-        // No connection open — safe to proceed.
-      }
-    }
-    ref.invalidate(driftWorkingDatabaseProvider);
-
-    ref.read(dbMaintenanceLockProvider.notifier).begin();
-    try {
-      for (final baseName in <String>['macos_import.db', 'working.db']) {
-        final basePath = path.join(databaseDirectoryPath, baseName);
-        for (final suffix in ['', '-wal', '-shm']) {
-          final file = File('$basePath$suffix');
-          if (file.existsSync()) {
-            await file.delete();
-            deletedFiles.add(file.path);
-          }
-        }
-      }
-
-      ref.invalidate(sqfliteImportDatabaseProvider);
-      ref.invalidate(driftWorkingDatabaseProvider);
-    } finally {
-      ref.read(dbMaintenanceLockProvider.notifier).end();
-    }
-
-    ref
-        .read(appLoggerProvider.notifier)
-        .info(
-          'Deleted derived database files for fresh onboarding start',
-          source: 'OnboardingGate',
-          context: {
-            'deletedCount': deletedFiles.length,
-            'deletedFiles': deletedFiles,
-          },
-        );
+    _clearWorkflowOverride();
+    ref.invalidate(onboardingEnvironmentReportProvider);
+    _setWorkflowOverride(OnboardingStatus.awaitingUserAction);
   }
 }

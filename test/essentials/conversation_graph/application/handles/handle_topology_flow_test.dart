@@ -10,6 +10,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/h
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -18,8 +19,8 @@ import '../../conversation_graph_test_database.dart';
 void main() {
   late Directory tempDir;
   late String chatDbPath;
-  late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ImportDatabase importLedgerDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -29,17 +30,17 @@ void main() {
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('ss_handle_test_');
     chatDbPath = '${tempDir.path}/chat.db';
-    importDatabase = await ImportDatabase.open(
+    importLedgerDatabase = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
     await _createSourceTables(chatDbPath);
   });
 
   tearDown(() async {
-    await workingDatabase.close();
-    await importDatabase.close();
+    await graphDatabase.close();
+    await importLedgerDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -55,12 +56,13 @@ void main() {
 
     final importResult = await HandleImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importNewHandles();
     final projectionResult = await HandleProjector(
       repository: SqliteHandleProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectHandles();
 
@@ -68,8 +70,8 @@ void main() {
       sourceId: liveChatDbSourceId,
       sourceRowId: 12,
     );
-    final importRows = await importDatabase.database.query('handles');
-    final workingRows = await workingDatabase.database.query('handles');
+    final importRows = await importLedgerDatabase.database.query('handles');
+    final workingRows = await graphDatabase.database.query('handles');
 
     expect(importResult.startedAfterSourceRowId, 0);
     expect(importResult.insertedHandleCount, 1);
@@ -84,8 +86,8 @@ void main() {
     expect(workingRows.single.keys, isNot(contains('source_rowid')));
     expect(workingRows.single.keys, isNot(contains('batch_id')));
 
-    final aliases = await workingDatabase.database.query('handle_aliases');
-    final canonicalHandles = await workingDatabase.database.query(
+    final aliases = await graphDatabase.database.query('handle_aliases');
+    final canonicalHandles = await graphDatabase.database.query(
       'canonical_handles',
     );
     expect(aliases.single['handle_ss_id'], expectedSsId);
@@ -111,12 +113,13 @@ void main() {
 
       await HandleImporter(
         chatDbPath: chatDbPath,
-        importDatabase: importDatabase,
+        importLedger: importLedgerDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
       ).importNewHandles();
       await HandleProjector(
         repository: SqliteHandleProjectionRepository(
-          importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          importLedgerDatabase: importLedgerDatabase,
+          graphDatabase: graphDatabase,
         ),
       ).projectHandles();
 
@@ -128,11 +131,11 @@ void main() {
         sourceId: liveChatDbSourceId,
         sourceRowId: 13,
       );
-      final handles = await workingDatabase.database.query('handles');
-      final canonicalHandles = await workingDatabase.database.query(
+      final handles = await graphDatabase.database.query('handles');
+      final canonicalHandles = await graphDatabase.database.query(
         'canonical_handles',
       );
-      final aliases = await workingDatabase.database.query(
+      final aliases = await graphDatabase.database.query(
         'handle_aliases',
         orderBy: 'handle_ss_id ASC',
       );
@@ -152,7 +155,11 @@ void main() {
   );
 
   test('handle import is idempotent and source-scoped', () async {
-    await _insertLedgerHandle(importDatabase, sourceId: 3, sourceRowId: 999999);
+    await _insertLedgerHandle(
+      importLedgerDatabase,
+      sourceId: 3,
+      sourceRowId: 999999,
+    );
     await _insertSourceHandle(
       chatDbPath,
       rowId: 5,
@@ -162,7 +169,8 @@ void main() {
 
     final importer = HandleImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     );
     final first = await importer.importNewHandles();
     final second = await importer.importNewHandles();
@@ -178,18 +186,21 @@ void main() {
 
     final importResult = await ChatHandleJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoins();
     final projector = ChatToHandleProjector(
       repository: SqliteChatToHandleProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final firstProjection = await projector.projectEdges();
     final secondProjection = await projector.projectEdges();
-    final importRows = await importDatabase.database.query('chat_to_handle');
-    final workingRows = await workingDatabase.database.query('chat_to_handle');
+    final importRows = await importLedgerDatabase.database.query(
+      'chat_to_handle',
+    );
+    final workingRows = await graphDatabase.database.query('chat_to_handle');
 
     final chatSsId = SourceScopedRowKey.pack(
       sourceId: liveChatDbSourceId,
@@ -259,21 +270,22 @@ Future<void> _insertSourceChatHandle(
 }
 
 Future<void> _insertLedgerHandle(
-  ImportDatabase importDatabase, {
+  ImportDatabase importLedgerDatabase, {
   required int sourceId,
   required int sourceRowId,
 }) async {
-  await importDatabase.database.insert('source_registry', <String, Object?>{
-    'source_id': sourceId,
-    'source_key': 'source-$sourceId',
-    'source_kind': 'archive_chat_db',
-    'created_at_utc': DateTime.now().toUtc().toIso8601String(),
-  });
-  final batchId = await importDatabase.insertImportBatch(
+  await importLedgerDatabase.database
+      .insert('source_registry', <String, Object?>{
+        'source_id': sourceId,
+        'source_key': 'source-$sourceId',
+        'source_kind': 'archive_chat_db',
+        'created_at_utc': DateTime.now().toUtc().toIso8601String(),
+      });
+  final batchId = await importLedgerDatabase.insertImportBatch(
     sourceId: sourceId,
     startedAtUtc: DateTime.now().toUtc().toIso8601String(),
   );
-  await importDatabase.database.insert('handles', <String, Object?>{
+  await importLedgerDatabase.database.insert('handles', <String, Object?>{
     'ss_id': SourceScopedRowKey.pack(
       sourceId: sourceId,
       sourceRowId: sourceRowId,

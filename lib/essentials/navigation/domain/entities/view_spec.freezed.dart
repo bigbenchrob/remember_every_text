@@ -55,13 +55,12 @@ extension ViewSpecPatterns on ViewSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ViewMessages value)?  messages,TResult Function( _ViewSettings value)?  settings,TResult Function( _ViewImport value)?  import,TResult Function( _ViewEnvironmentReadiness value)?  environmentReadiness,TResult Function( _ViewOnboarding value)?  onboarding,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ViewMessages value)?  messages,TResult Function( _ViewSettings value)?  settings,TResult Function( _ViewEnvironmentReadiness value)?  environmentReadiness,TResult Function( _ViewOnboarding value)?  onboarding,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _ViewMessages() when messages != null:
 return messages(_that);case _ViewSettings() when settings != null:
-return settings(_that);case _ViewImport() when import != null:
-return import(_that);case _ViewEnvironmentReadiness() when environmentReadiness != null:
+return settings(_that);case _ViewEnvironmentReadiness() when environmentReadiness != null:
 return environmentReadiness(_that);case _ViewOnboarding() when onboarding != null:
 return onboarding(_that);case _:
   return orElse();
@@ -81,13 +80,12 @@ return onboarding(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ViewMessages value)  messages,required TResult Function( _ViewSettings value)  settings,required TResult Function( _ViewImport value)  import,required TResult Function( _ViewEnvironmentReadiness value)  environmentReadiness,required TResult Function( _ViewOnboarding value)  onboarding,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ViewMessages value)  messages,required TResult Function( _ViewSettings value)  settings,required TResult Function( _ViewEnvironmentReadiness value)  environmentReadiness,required TResult Function( _ViewOnboarding value)  onboarding,}){
 final _that = this;
 switch (_that) {
 case _ViewMessages():
 return messages(_that);case _ViewSettings():
-return settings(_that);case _ViewImport():
-return import(_that);case _ViewEnvironmentReadiness():
+return settings(_that);case _ViewEnvironmentReadiness():
 return environmentReadiness(_that);case _ViewOnboarding():
 return onboarding(_that);case _:
   throw StateError('Unexpected subclass');
@@ -106,13 +104,12 @@ return onboarding(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ViewMessages value)?  messages,TResult? Function( _ViewSettings value)?  settings,TResult? Function( _ViewImport value)?  import,TResult? Function( _ViewEnvironmentReadiness value)?  environmentReadiness,TResult? Function( _ViewOnboarding value)?  onboarding,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ViewMessages value)?  messages,TResult? Function( _ViewSettings value)?  settings,TResult? Function( _ViewEnvironmentReadiness value)?  environmentReadiness,TResult? Function( _ViewOnboarding value)?  onboarding,}){
 final _that = this;
 switch (_that) {
 case _ViewMessages() when messages != null:
 return messages(_that);case _ViewSettings() when settings != null:
-return settings(_that);case _ViewImport() when import != null:
-return import(_that);case _ViewEnvironmentReadiness() when environmentReadiness != null:
+return settings(_that);case _ViewEnvironmentReadiness() when environmentReadiness != null:
 return environmentReadiness(_that);case _ViewOnboarding() when onboarding != null:
 return onboarding(_that);case _:
   return null;
@@ -131,12 +128,11 @@ return onboarding(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( MessagesSpec spec)?  messages,TResult Function( SettingsViewSpec spec)?  settings,TResult Function( ImportSpec spec)?  import,TResult Function( EnvironmentReadinessSpec spec)?  environmentReadiness,TResult Function( OnboardingSpec spec)?  onboarding,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( MessagesSpec spec)?  messages,TResult Function( SettingsViewSpec spec)?  settings,TResult Function( EnvironmentReadinessSpec spec)?  environmentReadiness,TResult Function( OnboardingSpec spec)?  onboarding,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ViewMessages() when messages != null:
 return messages(_that.spec);case _ViewSettings() when settings != null:
-return settings(_that.spec);case _ViewImport() when import != null:
-return import(_that.spec);case _ViewEnvironmentReadiness() when environmentReadiness != null:
+return settings(_that.spec);case _ViewEnvironmentReadiness() when environmentReadiness != null:
 return environmentReadiness(_that.spec);case _ViewOnboarding() when onboarding != null:
 return onboarding(_that.spec);case _:
   return orElse();
@@ -156,12 +152,11 @@ return onboarding(_that.spec);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( MessagesSpec spec)  messages,required TResult Function( SettingsViewSpec spec)  settings,required TResult Function( ImportSpec spec)  import,required TResult Function( EnvironmentReadinessSpec spec)  environmentReadiness,required TResult Function( OnboardingSpec spec)  onboarding,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( MessagesSpec spec)  messages,required TResult Function( SettingsViewSpec spec)  settings,required TResult Function( EnvironmentReadinessSpec spec)  environmentReadiness,required TResult Function( OnboardingSpec spec)  onboarding,}) {final _that = this;
 switch (_that) {
 case _ViewMessages():
 return messages(_that.spec);case _ViewSettings():
-return settings(_that.spec);case _ViewImport():
-return import(_that.spec);case _ViewEnvironmentReadiness():
+return settings(_that.spec);case _ViewEnvironmentReadiness():
 return environmentReadiness(_that.spec);case _ViewOnboarding():
 return onboarding(_that.spec);case _:
   throw StateError('Unexpected subclass');
@@ -180,12 +175,11 @@ return onboarding(_that.spec);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( MessagesSpec spec)?  messages,TResult? Function( SettingsViewSpec spec)?  settings,TResult? Function( ImportSpec spec)?  import,TResult? Function( EnvironmentReadinessSpec spec)?  environmentReadiness,TResult? Function( OnboardingSpec spec)?  onboarding,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( MessagesSpec spec)?  messages,TResult? Function( SettingsViewSpec spec)?  settings,TResult? Function( EnvironmentReadinessSpec spec)?  environmentReadiness,TResult? Function( OnboardingSpec spec)?  onboarding,}) {final _that = this;
 switch (_that) {
 case _ViewMessages() when messages != null:
 return messages(_that.spec);case _ViewSettings() when settings != null:
-return settings(_that.spec);case _ViewImport() when import != null:
-return import(_that.spec);case _ViewEnvironmentReadiness() when environmentReadiness != null:
+return settings(_that.spec);case _ViewEnvironmentReadiness() when environmentReadiness != null:
 return environmentReadiness(_that.spec);case _ViewOnboarding() when onboarding != null:
 return onboarding(_that.spec);case _:
   return null;
@@ -340,81 +334,6 @@ as SettingsViewSpec,
 $SettingsViewSpecCopyWith<$Res> get spec {
   
   return $SettingsViewSpecCopyWith<$Res>(_self.spec, (value) {
-    return _then(_self.copyWith(spec: value));
-  });
-}
-}
-
-/// @nodoc
-
-
-class _ViewImport implements ViewSpec {
-  const _ViewImport(this.spec);
-  
-
-@override final  ImportSpec spec;
-
-/// Create a copy of ViewSpec
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$ViewImportCopyWith<_ViewImport> get copyWith => __$ViewImportCopyWithImpl<_ViewImport>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ViewImport&&(identical(other.spec, spec) || other.spec == spec));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,spec);
-
-@override
-String toString() {
-  return 'ViewSpec.import(spec: $spec)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$ViewImportCopyWith<$Res> implements $ViewSpecCopyWith<$Res> {
-  factory _$ViewImportCopyWith(_ViewImport value, $Res Function(_ViewImport) _then) = __$ViewImportCopyWithImpl;
-@useResult
-$Res call({
- ImportSpec spec
-});
-
-
-$ImportSpecCopyWith<$Res> get spec;
-
-}
-/// @nodoc
-class __$ViewImportCopyWithImpl<$Res>
-    implements _$ViewImportCopyWith<$Res> {
-  __$ViewImportCopyWithImpl(this._self, this._then);
-
-  final _ViewImport _self;
-  final $Res Function(_ViewImport) _then;
-
-/// Create a copy of ViewSpec
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? spec = null,}) {
-  return _then(_ViewImport(
-null == spec ? _self.spec : spec // ignore: cast_nullable_to_non_nullable
-as ImportSpec,
-  ));
-}
-
-/// Create a copy of ViewSpec
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ImportSpecCopyWith<$Res> get spec {
-  
-  return $ImportSpecCopyWith<$Res>(_self.spec, (value) {
     return _then(_self.copyWith(spec: value));
   });
 }

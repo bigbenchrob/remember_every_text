@@ -2,11 +2,10 @@ import 'dart:convert';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../navigation/domain/entities/view_spec.dart';
 import '../../navigation/domain/navigation_constants.dart';
-import '../../navigation/feature_level_providers.dart';
-import '../../onboarding/domain/import_spec.dart';
 import '../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import 'app_logger.dart';
 
@@ -48,8 +47,6 @@ class NavigationLogEntry {
       messages: (messagesSpec) => {
         'type': 'messages',
         'spec': messagesSpec.when(
-          conversationBrowser: () => {'variant': 'conversationBrowser'},
-          forChat: (chatId) => {'variant': 'forChat', 'chatId': chatId},
           forConversation: (conversationId, anchorMessageId, searchQuery) => {
             'variant': 'forConversation',
             'conversationId': conversationId,
@@ -99,12 +96,6 @@ class NavigationLogEntry {
             'beforeCount': beforeCount,
             'afterCount': afterCount,
           },
-          forChatInDateRange: (chatId, startDate, endDate) => {
-            'variant': 'forChatInDateRange',
-            'chatId': chatId,
-            'startDate': startDate.toIso8601String(),
-            'endDate': endDate.toIso8601String(),
-          },
           handleLens: (handleId) => {
             'variant': 'handleLens',
             'handleId': handleId,
@@ -120,13 +111,6 @@ class NavigationLogEntry {
           messageHistoryCoverageReport: () => {
             'variant': 'messageHistoryCoverageReport',
           },
-        ),
-      },
-      import: (importSpec) => {
-        'type': 'import',
-        'spec': importSpec.when(
-          forImport: () => {'variant': 'forImport'},
-          forMigration: () => {'variant': 'forMigration'},
         ),
       },
       environmentReadiness: (readinessSpec) => {

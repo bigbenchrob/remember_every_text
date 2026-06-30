@@ -5,6 +5,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/a
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -49,7 +50,8 @@ void main() {
 
     final result = await AttachmentImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importAttachments();
     final rows = await importDatabase.database.query('attachments');
 
@@ -77,7 +79,8 @@ void main() {
 
     final importer = AttachmentImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     );
     final firstResult = await importer.importAttachments();
     final secondResult = await importer.importAttachments();
@@ -104,7 +107,8 @@ void main() {
 
     final result = await AttachmentImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importAttachments();
 
     expect(result.startedAfterSourceRowId, 0);

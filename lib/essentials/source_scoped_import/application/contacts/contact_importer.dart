@@ -1,10 +1,9 @@
-import 'package:sqflite/sqflite.dart';
-
 import '../../../../core/util/date_converter.dart';
-import '../../../db_importers/application/importers/identifier_utils.dart';
+import '../../../db/shared/handle_identifier_utils.dart';
 import '../../domain/known_sources.dart';
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
-import '../../infrastructure/import_database_provider.dart';
 
 class ContactImportResult {
   const ContactImportResult({
@@ -21,21 +20,19 @@ class ContactImportResult {
 class ContactImporter {
   const ContactImporter({
     required this.addressBookDbPath,
-    required this.importDatabase,
+    required this.importLedger,
+    required this.sourceDatabaseOpener,
     this.sourceId = liveAddressBookSourceId,
   });
 
   final String addressBookDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
+  final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
   Future<ContactImportResult> importContacts() async {
-    final sourceDb = await openDatabase(
-      addressBookDbPath,
-      readOnly: true,
-      singleInstance: false,
-    );
-    final batchId = await importDatabase.insertImportBatch(
+    final sourceDb = await sourceDatabaseOpener.openReadOnly(addressBookDbPath);
+    final batchId = await importLedger.insertImportBatch(
       sourceId: sourceId,
       startedAtUtc: DateTime.now().toUtc().toIso8601String(),
     );
@@ -56,7 +53,7 @@ class ContactImporter {
 
       var insertedContactCount = 0;
       var insertedChannelCount = 0;
-      await importDatabase.database.transaction((txn) async {
+      await importLedger.writeTransaction((txn) async {
         final validContactRowIds = <int>{};
         for (final row in contactRows) {
           final sourceRowId = _readNullableInt(row['Z_PK']);
@@ -69,33 +66,28 @@ class ContactImporter {
           final middle = _trim(row['ZMIDDLENAME']);
           final last = _trim(row['ZLASTNAME']);
           final organization = _trim(row['ZORGANIZATION']);
-          final nickname = _trim(row['ZNICKNAME']);
-          final insertedId = await txn.insert('contacts', <String, Object?>{
-            'ss_id': SourceScopedRowKey.pack(
-              sourceId: sourceId,
-              sourceRowId: sourceRowId,
-            ),
-            'source_id': sourceId,
-            'source_rowid': sourceRowId,
-            'display_name': _buildContactDisplayName(
-              firstName: first,
-              middleName: middle,
-              lastName: last,
-              organization: organization,
-            ),
-            'short_name': _buildShortName(
-              nickname: nickname,
-              firstName: first,
-              organization: organization,
-            ),
-            'first_name': first,
-            'last_name': last,
-            'organization': organization,
-            'created_at_utc': DateConverter.appleToIsoString(
-              row['ZCREATIONDATE'],
-            ),
-            'batch_id': batchId,
-          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+          final insertedId = await txn
+              .insertIgnore('contacts', <String, Object?>{
+                'ss_id': SourceScopedRowKey.pack(
+                  sourceId: sourceId,
+                  sourceRowId: sourceRowId,
+                ),
+                'source_id': sourceId,
+                'source_rowid': sourceRowId,
+                'display_name': _buildContactDisplayName(
+                  firstName: first,
+                  middleName: middle,
+                  lastName: last,
+                  organization: organization,
+                ),
+                'first_name': first,
+                'last_name': last,
+                'organization': organization,
+                'created_at_utc': DateConverter.appleToIsoString(
+                  row['ZCREATIONDATE'],
+                ),
+                'batch_id': batchId,
+              });
           if (insertedId != 0) {
             insertedContactCount += 1;
           }
@@ -135,7 +127,7 @@ class ContactImporter {
             txn,
             sourceContactRowId: owner,
             kind: 'phone',
-            value: normalizeIdentifier(rawNumber) ?? rawNumber,
+            value: normalizeHandleIdentifier(rawNumber) ?? rawNumber,
             label: _trim(row['ZLABEL']),
             batchId: batchId,
           );
@@ -156,14 +148,14 @@ class ContactImporter {
   }
 
   Future<int> _insertChannel(
-    Transaction txn, {
+    ImportLedgerWriteTransaction txn, {
     required int sourceContactRowId,
     required String kind,
     required String value,
     required int batchId,
     String? label,
   }) {
-    return txn.insert('contact_channels', <String, Object?>{
+    return txn.insertIgnore('contact_channels', <String, Object?>{
       'source_id': sourceId,
       'source_contact_rowid': sourceContactRowId,
       'contact_ss_id': SourceScopedRowKey.pack(
@@ -174,7 +166,7 @@ class ContactImporter {
       'value': value,
       'label': label,
       'batch_id': batchId,
-    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    });
   }
 }
 
@@ -218,21 +210,4 @@ String _buildContactDisplayName({
     return organization;
   }
   return 'Unknown Contact';
-}
-
-String? _buildShortName({
-  String? nickname,
-  String? firstName,
-  String? organization,
-}) {
-  if (nickname != null && nickname.isNotEmpty) {
-    return nickname;
-  }
-  if (firstName != null && firstName.isNotEmpty) {
-    return firstName;
-  }
-  if (organization != null && organization.isNotEmpty) {
-    return organization;
-  }
-  return null;
 }

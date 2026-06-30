@@ -1,12 +1,12 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../timeline/ordinal/message_timeline_ordinal_provider.dart';
+import '../../../domain/message_evidence/message_evidence_scope.dart';
+import '../../message_evidence/message_evidence_spine_provider.dart';
 import 'contact_timeline_provider.dart';
 
 part 'prewarm_contact_messages_provider.g.dart';
 
-/// Warms the contact-scoped sidebar heatmap and center-timeline ordinal state
+/// Warms the contact-scoped sidebar heatmap and center evidence skeleton
 /// before the user-visible contact transition completes.
 ///
 /// This exists to avoid the first contact selection on a cold launch showing
@@ -20,8 +20,8 @@ Future<void> prewarmContactMessages(
   await Future.wait<void>([
     ref.watch(contactTimelineProvider(contactId: contactId).future),
     ref.watch(
-      messageTimelineOrdinalProvider(
-        scope: MessageTimelineScope.contact(contactId: contactId),
+      messageEvidenceTimelineSkeletonProvider(
+        scope: ContactAllMessagesEvidenceScope(contactId: contactId),
       ).future,
     ),
   ]);

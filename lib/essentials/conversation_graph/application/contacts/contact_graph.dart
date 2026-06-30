@@ -43,3 +43,15 @@ class ContactGraphSnapshot {
   final List<ConversationOverview> conversations;
   final ContactMessageActivity? messageActivity;
 }
+
+class ContactGraphMessageTimelineEntry {
+  const ContactGraphMessageTimelineEntry({
+    required this.messageId,
+    required this.dateUtc,
+    required this.monthKey,
+  });
+
+  final int messageId;
+  final String? dateUtc;
+  final String? monthKey;
+}

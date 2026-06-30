@@ -50,6 +50,34 @@ Lower-level factual observation should not become entangled with higher-level or
 
 ---
 
+# User-Facing Identity Invariant
+
+Known contacts are always named by the user-assigned name in user-facing UI.
+
+There is exactly one user-defined contact name override:
+
+```text
+participant_overrides.display_name_override
+```
+
+This is written only by the contact hero-card pencil rename action. Other name-like fields are imported or derived metadata, not user intent.
+
+Preferred display precedence:
+
+```text
+user display-name override
+→ imported AddressBook display name
+→ raw handle only when no known contact identity exists
+```
+
+There is no separate app-facing "short name" identity. Imported AddressBook names and raw handles remain source facts and useful metadata, but they must not replace the user's chosen identity label for a known contact.
+
+Handles may appear for a known contact only in explicitly handle-oriented contexts, such as a contact handle scope selector, developer diagnostics, or a metadata line explaining an active handle filter.
+
+Conversation graph surfaces must resolve participant handles through the preferred contact-name boundary before rendering conversation titles, signatures, message evidence headers, or search context labels.
+
+---
+
 # Reader Invariants
 
 ## Readers Observe Facts
@@ -438,7 +466,8 @@ Shadow/dev databases may contain structural shim rows needed to satisfy existing
 
 Example:
 
-- a shadow-only placeholder `chats` row used as a temporary foreign-key anchor for message rows before `chat_message_join` topology import exists
+- a shadow-only placeholder `chats` row used by an obsolete proof-stage schema
+  while topology import was incomplete
 
 These rows are implementation scaffolding, not observed source facts.
 
@@ -469,15 +498,13 @@ chat_message_join
 
 not to `message.chat_id`.
 
-The shadow incremental-update pipeline now preserves this source topology as its own concern before migration/projection runs:
+The graph-era source-scoped pipeline preserves this source topology as its own
+concern before projection:
 
 ```text
-HandleStageController
-→ ChatStageController
-→ MessageImportStageController
-→ ChatMessageJoinStageController
-→ MessageMigrationStageController
-→ ComparativeValidationStageController
+chat.db.chat_message_join
+→ macos_import_ss.chat_to_message
+→ working_ss.chat_to_message
 ```
 
 This ordering is intentional.
@@ -485,19 +512,22 @@ This ordering is intentional.
 Source topology preservation means:
 
 - observe source relationship rows
-- preserve source-scoped relationship provenance in `macos_import_shadow.db`
+- preserve source-scoped relationship provenance in `macos_import_ss.db`
 - keep topology import resumable and idempotent
-- run migration/projection only after source topology has had a chance to catch up
-- project source-local relationship endpoints into `SourceScopedRowKey` working identities when topology projection is introduced
+- project source-local relationship endpoints into `SourceScopedRowKey` working
+  identities during graph projection
 
 Source topology preservation does not mean:
 
 - canonical chat resolution
-- merge-collapsed relationship projection into `working_shadow.db`
+- merge-collapsed relationship projection into `working_ss.db`
 - search/UI relationship semantics
 - production projection ownership
 
-Working relationship projection remains deferred until a projection concern explicitly owns it. When it is introduced, source-derived relationship endpoints should be occurrence-preserving and source-scoped, not remapped through merge-collapsed canonical endpoint layers.
+Working relationship projection is now owned by the conversation graph
+projectors. Source-derived relationship endpoints must remain
+occurrence-preserving and source-scoped, not remapped through merge-collapsed
+canonical endpoint layers.
 
 ---
 
@@ -695,6 +725,42 @@ Developer-facing status panels and comparative logs may expose:
 - reason text
 
 They must display already-derived facts and meanings. They must not become a separate source of semantic interpretation, production mutation, or scheduling authority.
+
+---
+
+## Message Evidence Must Flow Through the Evidence Spine
+
+Message-bearing surfaces must converge on the shared Message Evidence Spine.
+
+The canonical flow is documented in:
+
+```text
+69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md
+```
+
+In short:
+
+```text
+MessageEvidenceScope
+→ lightweight timeline skeleton
+→ visible row hydration
+→ render-ready attachment evidence
+→ shared evidence timeline / row widgets
+```
+
+Source-specific scopes are allowed. Source-specific evidence presentation is not.
+
+Hard rules:
+
+- no new source-specific message renderer without explicit architectural review
+- pagination is not timeline navigation
+- timeline-like evidence scopes must preserve the full logical selected message universe even when hydration/media loading is windowed
+- the skeleton is semantic timeline, heatmap coordination, jump/navigation, and temporal orientation infrastructure, not merely a performance cache
+- timeline-like surfaces coordinate heatmaps, jumps, and anchors against the full lightweight skeleton
+- hydration limits apply to visible rows, not to the selected logical message scope
+- attachment policy must be resolved before widgets receive render-ready evidence
+
+Visual changes to message evidence should usually be made in the shared evidence widgets, not in contact-, conversation-, search-, handle-, or recovered-specific surfaces.
 
 ---
 

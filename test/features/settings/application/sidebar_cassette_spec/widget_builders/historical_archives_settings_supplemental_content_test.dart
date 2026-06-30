@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart';
-import 'package:remember_this_text/features/settings/presentation/view_model/historical_archives_workflow_panel_model_provider.dart';
 
 void main() {
   group('HistoricalArchivesSettingsSupplementalContent', () {

@@ -1,5 +1,12 @@
 # Modular FTS Indexing Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Do not use it as an active execution list for
+retained `working.db` FTS maintenance. Future search-index work should begin
+from graph-native search scopes and document why a materialized index is needed
+before adding it.
+
 > 🚦 **Execution guardrails**: ship Step 1 (orchestrator + SimpleLexicalIndexer) before starting Step 2 (FTS indexer). Enable FTS behind a feature flag and perform manual validation before flipping it on. Defer semantic/emotion indexers to future feature branches.
 
 ## Preparation

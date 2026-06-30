@@ -1,6 +1,10 @@
 # Rationalize Message Views — Test Plan
 
-> Historical context note (2026-04-21): this test plan was written during the migration. Current tests should use the final `MessageTimelineScope` variants and current provider locations under `application/timeline/ordinal` and `presentation/view_model/timeline`.
+> Historical context note (2026-06-06): this test plan was written during an
+> intermediate message-view migration. Current tests should target
+> `MessageEvidenceScope`, full-skeleton construction, viewport hydration by
+> graph `message_ss_id`, shared message evidence rendering, and graph attachment
+> evidence.
 
 ## Unit Tests
 

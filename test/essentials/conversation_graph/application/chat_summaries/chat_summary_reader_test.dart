@@ -8,6 +8,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/cha
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_summary_repository.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -16,7 +17,7 @@ import '../../conversation_graph_test_database.dart';
 void main() {
   late Directory tempDir;
   late Directory archiveDir;
-  late ConversationGraphDatabase workingDatabase;
+  late ConversationGraphDatabase graphDatabase;
   late OverlayDatabase overlayDatabase;
 
   setUpAll(() {
@@ -28,13 +29,13 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp('ss_chat_summary_test_');
     archiveDir = Directory(path.join(tempDir.path, 'attachment_archive'));
     await archiveDir.create(recursive: true);
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
     overlayDatabase = OverlayDatabase(NativeDatabase.memory());
   });
 
   tearDown(() async {
     await overlayDatabase.close();
-    await workingDatabase.close();
+    await graphDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -47,52 +48,52 @@ void main() {
     final firstMessageSsId = _ss(201);
     final secondMessageSsId = _ss(202);
 
-    await _insertChat(workingDatabase, ssId: chatSsId);
+    await _insertChat(graphDatabase, ssId: chatSsId);
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       ssId: firstHandleSsId,
       id: '+15550000101',
     );
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       ssId: secondHandleSsId,
       id: '+15550000102',
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       handleSsId: firstHandleSsId,
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       handleSsId: secondHandleSsId,
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: firstMessageSsId,
       dateUtc: '2026-05-19T10:00:00.000Z',
       text: 'older',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: secondMessageSsId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'newer',
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: firstMessageSsId,
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: secondMessageSsId,
     );
 
     final summaries = await ChatSummaryReader(
-      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+      repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
     ).readSummaries();
 
     expect(summaries, hasLength(1));
@@ -113,32 +114,32 @@ void main() {
     final olderMessageSsId = _ss(201);
     final newerMessageSsId = _ss(202);
 
-    await _insertChat(workingDatabase, ssId: chatSsId);
+    await _insertChat(graphDatabase, ssId: chatSsId);
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: olderMessageSsId,
       dateUtc: '2026-05-19T10:00:00.000Z',
       text: 'visible',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: newerMessageSsId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: null,
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: olderMessageSsId,
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: newerMessageSsId,
     );
 
     final summaries = await ChatSummaryReader(
-      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+      repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
     ).readSummaries();
 
     expect(summaries.single.lastMessageAtUtc, '2026-05-20T10:00:00.000Z');
@@ -149,21 +150,21 @@ void main() {
     final chatSsId = _ss(7);
     final messageSsId = _ss(201);
 
-    await _insertChat(workingDatabase, ssId: chatSsId);
+    await _insertChat(graphDatabase, ssId: chatSsId);
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: messageSsId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: null,
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: messageSsId,
     );
 
     final summaries = await ChatSummaryReader(
-      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+      repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
     ).readSummaries();
 
     expect(summaries.single.messageCount, 1);
@@ -176,41 +177,41 @@ void main() {
     final firstHandleSsId = _ss(101);
     final secondHandleSsId = _ss(102);
 
-    await _insertChat(workingDatabase, ssId: groupChatSsId);
-    await _insertChat(workingDatabase, ssId: singleChatSsId);
+    await _insertChat(graphDatabase, ssId: groupChatSsId);
+    await _insertChat(graphDatabase, ssId: singleChatSsId);
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       ssId: firstHandleSsId,
       id: '+15550000101',
     );
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       ssId: secondHandleSsId,
       id: '+15550000102',
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: groupChatSsId,
       handleSsId: firstHandleSsId,
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: groupChatSsId,
       handleSsId: firstHandleSsId,
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: groupChatSsId,
       handleSsId: secondHandleSsId,
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: singleChatSsId,
       handleSsId: firstHandleSsId,
     );
 
     final reader = ChatSummaryReader(
-      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+      repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
     );
     final summaries = await reader.readSummaries();
     final sanityCounts = await reader.readSanityCounts();
@@ -237,58 +238,58 @@ void main() {
     final groupMessageSsId = _ss(201);
     final singleMessageSsId = _ss(202);
 
-    await _insertChat(workingDatabase, ssId: groupChatSsId);
-    await _insertChat(workingDatabase, ssId: singleChatSsId);
+    await _insertChat(graphDatabase, ssId: groupChatSsId);
+    await _insertChat(graphDatabase, ssId: singleChatSsId);
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       ssId: firstHandleSsId,
       id: '+15550000101',
     );
     await _insertHandle(
-      workingDatabase,
+      graphDatabase,
       ssId: secondHandleSsId,
       id: '+15550000102',
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: groupChatSsId,
       handleSsId: firstHandleSsId,
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: groupChatSsId,
       handleSsId: secondHandleSsId,
     );
     await _insertChatHandle(
-      workingDatabase,
+      graphDatabase,
       chatSsId: singleChatSsId,
       handleSsId: firstHandleSsId,
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: groupMessageSsId,
       dateUtc: '2026-05-19T10:00:00.000Z',
       text: 'group',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: singleMessageSsId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'single',
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: groupChatSsId,
       messageSsId: groupMessageSsId,
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: singleChatSsId,
       messageSsId: singleMessageSsId,
     );
 
     final reader = ChatSummaryReader(
-      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+      repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
     );
     final groups = await reader.readSummaries(
       filter: ChatSummaryFilter.groupOnly,
@@ -310,33 +311,33 @@ void main() {
     final firstMessageSsId = _ss(201);
     final secondMessageSsId = _ss(202);
 
-    await _insertChat(workingDatabase, ssId: chatSsId);
+    await _insertChat(graphDatabase, ssId: chatSsId);
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: firstMessageSsId,
       dateUtc: '2026-05-19T10:00:00.000Z',
       text: 'older',
       isFromMe: true,
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: secondMessageSsId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'newer',
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: firstMessageSsId,
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: secondMessageSsId,
     );
 
     final messages = await ChatSummaryReader(
-      repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+      repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
     ).readRecentMessages(chatSsId: chatSsId);
 
     expect(messages.map((message) => message.messageSsId), [
@@ -353,34 +354,32 @@ void main() {
       final textMessageSsId = _ss(201);
       final noTextMessageSsId = _ss(202);
 
-      await _insertChat(workingDatabase, ssId: chatSsId);
+      await _insertChat(graphDatabase, ssId: chatSsId);
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         ssId: textMessageSsId,
         dateUtc: '2026-05-19T10:00:00.000Z',
         text: 'visible',
       );
       await _insertMessage(
-        workingDatabase,
+        graphDatabase,
         ssId: noTextMessageSsId,
         dateUtc: '2026-05-20T10:00:00.000Z',
         text: null,
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatSsId: chatSsId,
         messageSsId: textMessageSsId,
       );
       await _insertChatMessage(
-        workingDatabase,
+        graphDatabase,
         chatSsId: chatSsId,
         messageSsId: noTextMessageSsId,
       );
 
       final reader = ChatSummaryReader(
-        repository: SqliteChatSummaryRepository(
-          workingDatabase: workingDatabase,
-        ),
+        repository: SqliteChatSummaryRepository(graphDatabase: graphDatabase),
       );
       final latestRows = await reader.readRecentMessages(chatSsId: chatSsId);
       final textRows = await reader.readRecentTextMessages(chatSsId: chatSsId);
@@ -411,32 +410,32 @@ void main() {
     await archivedFile.parent.create(recursive: true);
     await archivedFile.writeAsString('archived image bytes');
 
-    await _insertChat(workingDatabase, ssId: chatSsId);
+    await _insertChat(graphDatabase, ssId: chatSsId);
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: firstMessageSsId,
       guid: 'message-guid-1',
       dateUtc: '2026-05-19T10:00:00.000Z',
       text: 'photo',
     );
     await _insertMessage(
-      workingDatabase,
+      graphDatabase,
       ssId: secondMessageSsId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'document',
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: firstMessageSsId,
     );
     await _insertChatMessage(
-      workingDatabase,
+      graphDatabase,
       chatSsId: chatSsId,
       messageSsId: secondMessageSsId,
     );
     await _insertAttachment(
-      workingDatabase,
+      graphDatabase,
       ssId: imageAttachmentSsId,
       transferName: 'photo.jpg',
       filename: existingImageFile.path,
@@ -444,7 +443,7 @@ void main() {
       totalBytes: 1200,
     );
     await _insertAttachment(
-      workingDatabase,
+      graphDatabase,
       ssId: documentAttachmentSsId,
       transferName: 'brief.pdf',
       filename: missingDocumentPath,
@@ -452,12 +451,12 @@ void main() {
       totalBytes: 2400,
     );
     await _insertMessageAttachment(
-      workingDatabase,
+      graphDatabase,
       messageSsId: firstMessageSsId,
       attachmentSsId: imageAttachmentSsId,
     );
     await _insertMessageAttachment(
-      workingDatabase,
+      graphDatabase,
       messageSsId: secondMessageSsId,
       attachmentSsId: documentAttachmentSsId,
     );
@@ -486,9 +485,12 @@ void main() {
 
     final reader = ChatSummaryReader(
       repository: SqliteChatSummaryRepository(
-        workingDatabase: workingDatabase,
-        overlayDatabase: overlayDatabase,
-        attachmentArchiveDirectory: archiveDir.path,
+        graphDatabase: graphDatabase,
+        archiveLookup: OverlayArchiveCompatibilityLookup(
+          graphDatabase: graphDatabase,
+          overlayDatabase: overlayDatabase,
+          archiveDirectory: archiveDir.path,
+        ),
       ),
     );
     final stats = await reader.readAttachmentStats(chatSsId: chatSsId);
@@ -530,10 +532,10 @@ int _ss(int sourceRowId) {
 }
 
 Future<void> _insertChat(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int ssId,
 }) async {
-  await workingDatabase.database.insert('chats', <String, Object?>{
+  await graphDatabase.database.insert('chats', <String, Object?>{
     'ss_id': ssId,
     'guid': 'chat-$ssId',
     'is_group': 0,
@@ -541,25 +543,25 @@ Future<void> _insertChat(
 }
 
 Future<void> _insertHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int ssId,
   required String id,
 }) async {
-  await workingDatabase.database.insert('handles', <String, Object?>{
+  await graphDatabase.database.insert('handles', <String, Object?>{
     'ss_id': ssId,
     'id': id,
   });
 }
 
 Future<void> _insertMessage(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int ssId,
   required String dateUtc,
   required String? text,
   String? guid,
   bool isFromMe = false,
 }) async {
-  await workingDatabase.database.insert('messages', <String, Object?>{
+  await graphDatabase.database.insert('messages', <String, Object?>{
     'ss_id': ssId,
     'guid': guid ?? 'message-$ssId',
     'is_from_me': isFromMe ? 1 : 0,
@@ -569,36 +571,36 @@ Future<void> _insertMessage(
 }
 
 Future<void> _insertChatHandle(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int chatSsId,
   required int handleSsId,
 }) async {
-  await workingDatabase.database.insert('chat_to_handle', <String, Object?>{
+  await graphDatabase.database.insert('chat_to_handle', <String, Object?>{
     'chat_ss_id': chatSsId,
     'handle_ss_id': handleSsId,
   }, conflictAlgorithm: ConflictAlgorithm.ignore);
 }
 
 Future<void> _insertChatMessage(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int chatSsId,
   required int messageSsId,
 }) async {
-  await workingDatabase.database.insert('chat_to_message', <String, Object?>{
+  await graphDatabase.database.insert('chat_to_message', <String, Object?>{
     'chat_ss_id': chatSsId,
     'message_ss_id': messageSsId,
   }, conflictAlgorithm: ConflictAlgorithm.ignore);
 }
 
 Future<void> _insertAttachment(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int ssId,
   required String transferName,
   required String filename,
   required String mimeType,
   required int totalBytes,
 }) async {
-  await workingDatabase.database.insert('attachments', <String, Object?>{
+  await graphDatabase.database.insert('attachments', <String, Object?>{
     'ss_id': ssId,
     'guid': 'attachment-$ssId',
     'transfer_name': transferName,
@@ -609,11 +611,11 @@ Future<void> _insertAttachment(
 }
 
 Future<void> _insertMessageAttachment(
-  ConversationGraphDatabase workingDatabase, {
+  ConversationGraphDatabase graphDatabase, {
   required int messageSsId,
   required int attachmentSsId,
 }) async {
-  await workingDatabase.database.insert(
+  await graphDatabase.database.insert(
     'message_to_attachment',
     <String, Object?>{
       'message_ss_id': messageSsId,

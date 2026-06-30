@@ -1,15 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:remember_this_text/essentials/db_importers/domain/entities/db_import_result.dart';
-import 'package:remember_this_text/essentials/db_migrate/domain/entities/db_migration_result.dart';
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/logging/application/diagnostic_report_actions.dart';
+import 'package:remember_this_text/essentials/logging/application/diagnostic_report_exporter.dart';
+import 'package:remember_this_text/essentials/logging/domain/diagnostic_report_presentation_result.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 
 void main() {
+  test('exportDiagnosticReport delegates through exporter boundary', () async {
+    final exporter = _FakeDiagnosticReportExporter();
+
+    final result = await exportDiagnosticReport(exporter);
+
+    expect(result.exportPath, '/tmp/report');
+    expect(exporter.requests, hasLength(1));
+    expect(
+      exporter.requests.single.subjectPrefix,
+      'MessageLens Diagnostic Report',
+    );
+    expect(
+      exporter.requests.single.recipientEmail,
+      developerDiagnosticRecipientEmail,
+    );
+  });
+
   test('buildOnboardingFailureReportHeaderLines includes failure context', () {
     final report = OnboardingEnvironmentReport(
-      state: OnboardingEnvironmentState.migrationFailed,
-      blockerKind: OnboardingBlockerKind.migrationFailed,
+      state: OnboardingEnvironmentState.graphProjectionFailed,
+      blockerKind: OnboardingBlockerKind.graphProjectionFailed,
       syncPlausibility: OnboardingSyncPlausibility.unknown,
       messagesDatabase: const OnboardingDatabaseProbe(
         path: 'messages.db',
@@ -23,43 +41,77 @@ void main() {
         readable: true,
         rowCount: 10,
       ),
-      importDatabase: const OnboardingDatabaseProbe(
-        path: 'macos_import.db',
+      overlayDatabase: OnboardingDatabaseProbe(
+        path: appDatabaseFileName(AppDatabaseFile.overlay),
+        exists: true,
+        readable: true,
+      ),
+      sourceScopedImportDatabase: OnboardingDatabaseProbe(
+        path: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
         exists: true,
         readable: true,
         rowCount: 123,
       ),
-      workingDatabase: const OnboardingDatabaseProbe(
-        path: 'working.db',
+      conversationGraph: OnboardingDatabaseProbe(
+        path: appDatabaseFileName(AppDatabaseFile.conversationGraph),
         exists: true,
         readable: true,
         rowCount: 0,
       ),
+      attachmentArchiveDirectory: const OnboardingDatabaseProbe(
+        path: 'attachment_archive',
+        exists: true,
+        readable: true,
+      ),
       hasFullDiskAccess: true,
-      lastImportResult: const DbImportResult(
+      lastImportFailure: const OnboardingPipelineFailure(
+        phase: OnboardingPipelinePhase.import,
         batchId: 1,
-        success: false,
-        error: 'import failed',
+        message: 'import failed',
       ),
-      lastMigrationResult: const DbMigrationResult(
+      lastGraphProjectionFailure: const OnboardingPipelineFailure(
+        phase: OnboardingPipelinePhase.graphProjection,
         batchId: 1,
-        success: false,
-        error: 'foreign key failed',
+        message: 'foreign key failed',
       ),
-      lastMigrationFailureRecordedAt: DateTime.utc(2026, 4, 14, 12, 0, 0),
+      lastGraphProjectionFailureRecordedAt: DateTime.utc(2026, 4, 14, 12, 0, 0),
     );
 
     final headerLines = buildOnboardingFailureReportHeaderLines(report);
 
     expect(headerLines, contains('Context: onboarding_failure'));
-    expect(headerLines, contains('State: migrationFailed'));
-    expect(headerLines, contains('Blocker: migrationFailed'));
-    expect(headerLines, contains('Migration failure: foreign key failed'));
+    expect(headerLines, contains('State: graphProjectionFailed'));
+    expect(headerLines, contains('Blocker: graphProjectionFailed'));
+    expect(
+      headerLines,
+      contains('Graph projection failure: foreign key failed'),
+    );
     expect(
       headerLines,
       contains(
-        'Working database: path=working.db; exists=true; readable=true; rows=0',
+        'Source-scoped import ledger: path=${appDatabaseFileName(AppDatabaseFile.sourceScopedImport)}; exists=true; readable=true; rows=123',
+      ),
+    );
+    expect(
+      headerLines,
+      contains(
+        'Conversation graph: path=${appDatabaseFileName(AppDatabaseFile.conversationGraph)}; exists=true; readable=true; rows=0',
       ),
     );
   });
+}
+
+class _FakeDiagnosticReportExporter implements DiagnosticReportExporter {
+  final requests = <DiagnosticReportExportRequest>[];
+
+  @override
+  Future<DiagnosticReportPresentationResult> exportAndPresent(
+    DiagnosticReportExportRequest request,
+  ) async {
+    requests.add(request);
+    return const DiagnosticReportPresentationResult(
+      exportPath: '/tmp/report',
+      attachedToMailDraft: false,
+    );
+  }
 }

@@ -18,6 +18,26 @@ void main() {
     expect(result.examinedEdgeCount, 3);
     expect(result.insertedEdgeCount, 2);
   });
+
+  test('delegates bounded edge projection to repository', () async {
+    final repository = _FakeChatToMessageProjectionRepository(
+      result: const ChatToMessageProjectionResult(
+        examinedEdgeCount: 1,
+        insertedEdgeCount: 1,
+      ),
+    );
+    final result = await ChatToMessageProjector(repository: repository)
+        .projectEdgesAfterSourceMessageRowId(
+          sourceId: 7,
+          startedAfterSourceRowId: 40,
+        );
+
+    expect(repository.boundedCallCount, 1);
+    expect(repository.lastSourceId, 7);
+    expect(repository.lastStartedAfterSourceRowId, 40);
+    expect(result.examinedEdgeCount, 1);
+    expect(result.insertedEdgeCount, 1);
+  });
 }
 
 class _FakeChatToMessageProjectionRepository
@@ -26,10 +46,24 @@ class _FakeChatToMessageProjectionRepository
 
   final ChatToMessageProjectionResult result;
   int callCount = 0;
+  int boundedCallCount = 0;
+  int? lastSourceId;
+  int? lastStartedAfterSourceRowId;
 
   @override
   Future<ChatToMessageProjectionResult> projectEdges() async {
     callCount += 1;
+    return result;
+  }
+
+  @override
+  Future<ChatToMessageProjectionResult> projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) async {
+    boundedCallCount += 1;
+    lastSourceId = sourceId;
+    lastStartedAfterSourceRowId = startedAfterSourceRowId;
     return result;
   }
 }

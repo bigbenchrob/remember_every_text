@@ -2,26 +2,45 @@
 tier: project
 scope: handoff
 owner: agent-per-project
-last_reviewed: 2026-03-29
-source_of_truth: doc
+status: superseded-historical
+last_reviewed: 2026-06-14
+source_of_truth: historical-record
 links:
   - ../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md
   - ../20-DATA-IMPORT-MIGRATION/11-rust-message-extractor.md
-  - ../50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/README.md
-  - ../56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/README.md
+  - ../42-SPEC-SYSTEM/README.md
+  - ../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md
   - ./02-macos-fda-grant-continuity.md
 tests: []
 ---
 
 # Onboarding / Import Debug Handoff
 
-This document is the current handoff for the macOS first-run onboarding and import debugging effort.
+> **Superseded historical record.** This document describes a March 2026
+> legacy import-panel debugging incident. It is retained to preserve project
+> history, but it is not current graph-era onboarding, import, or lifecycle
+> guidance.
+>
+> Current ordinary app setup and live update flow is source-scoped:
+> `chat.db` -> `macos_import_ss.db` -> `working_ss.db`, coordinated by the
+> onboarding/readiness surfaces, `ConversationGraphBuildController`, and
+> `ChatDbChangeMonitor`. Old `macos_import.db` / `working.db` files are
+> retired cleanup/diagnostic inventory only; they do not own ordinary app
+> import/projection behavior.
 
-Use it when a fresh agent needs to resume work without re-deriving the recent history.
+Use this file only to understand the historical incident. For current work,
+start with:
 
-## Current Objective
+- `../25-ONBOARDING-AND-ARCHIVE/README.md`
+- `../20-DATA-IMPORT-MIGRATION/01-overview.md`
+- `../55-READERS-INTEGRATORS-ORCHESTRATORS/73-GRAPH-MIGRATION-EXECUTION-CHECKLIST.md`
 
-The current user goal is to get the first-run path working end-to-end for a new user:
+The original handoff follows below and should not be treated as an active
+debugging brief.
+
+## Original Historical Objective
+
+The March 2026 user goal was to get the first-run path working end-to-end for a new user:
 
 1. Environmental readiness should accurately evaluate whether the app can proceed.
 2. The user should be able to reach and use the legacy developer import and migration panel.
@@ -126,19 +145,20 @@ Two fixes were then applied:
 
 Focused tests were added and passed for those navigation behaviors.
 
-## Current Blocker
+## Original Historical Blocker
 
-The current user-reported blocker is:
+The user-reported blocker at the time was:
 
 > The Import button does not start import.
 
-This is now more important than the earlier panel-routing issue.
+This was more important than the earlier panel-routing issue.
 
-The current debugging target is no longer just panel visibility. It is the execution path from the legacy import panel into the import orchestrator.
+The debugging target was no longer just panel visibility. It was the execution path from the legacy import panel into the import orchestrator.
 
-## Most Relevant Files To Read First
+## Historical Files That Were Relevant
 
-Read these in roughly this order when resuming debugging:
+These files were relevant to the historical incident. Do not use this list as
+current graph-era implementation guidance:
 
 1. `lib/essentials/db_importers/presentation/view/db_import_control_panel.dart`
 2. `lib/essentials/db_importers/presentation/view_model/db_import_control_provider.dart`
@@ -149,7 +169,7 @@ Read these in roughly this order when resuming debugging:
 7. `lib/essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart`
 8. `lib/essentials/db_importers/application/import_execution_gate_provider.dart`
 
-Read these tests as the current safety net:
+These tests were the historical safety net for that incident:
 
 1. `test/essentials/navigation/presentation/widgets/onboarding_center_panel_sync_observer_test.dart`
 2. `test/essentials/navigation/application/panel_widget_providers_test.dart`
@@ -277,8 +297,9 @@ Use this sequence unless the user gives a newer one:
    - onboarding state changes
    - import DB is recreated and populated
 
-## Resume Prompt For A Fresh Agent
+## Historical Resume Prompt
 
-Use the following as the working brief:
+This prompt is preserved for provenance only. Do not use it as a current working
+brief without first checking the graph-era onboarding and data-import docs.
 
 > Read `_AGENT_INSTRUCTIONS/agent-instructions-shared/00-global/agent-guardrails.md`, `_AGENT_INSTRUCTIONS/agent-per-project/README.md`, and `_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/03-onboarding-import-debug-handoff.md`. Then debug why the legacy import developer panel's `Start Import` button does not start import. Preserve the environmental readiness flow and the recent import-panel routing fixes. Focus first on `db_import_control_panel.dart`, `db_import_control_provider.dart`, onboarding gate interactions, and any import execution locks or auto-sync interference. Propose a minimal plan before editing files.

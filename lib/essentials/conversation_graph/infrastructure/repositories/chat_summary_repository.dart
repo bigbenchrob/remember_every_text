@@ -1,31 +1,27 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart';
-
+import '../../../../features/attachments/feature_level_providers.dart'
+    show GraphAttachmentArchiveLookup;
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../source_scoped_import/domain/source_scoped_row_key.dart';
 import '../../application/chat_summaries/chat_summary.dart';
 import '../../application/chat_summaries/chat_summary_repository.dart';
 
 class SqliteChatSummaryRepository implements ChatSummaryRepository {
   const SqliteChatSummaryRepository({
-    required this.workingDatabase,
-    this.overlayDatabase,
-    this.attachmentArchiveDirectory,
+    required this.graphDatabase,
+    this.archiveLookup,
   });
 
-  final ConversationGraphDatabase workingDatabase;
-  final OverlayDatabase? overlayDatabase;
-  final String? attachmentArchiveDirectory;
+  final ConversationGraphDatabase graphDatabase;
+  final GraphAttachmentArchiveLookup? archiveLookup;
 
   @override
   Future<List<ChatSummary>> readSummaries({
     ChatSummaryFilter filter = ChatSummaryFilter.all,
     ChatSummarySort sort = ChatSummarySort.mostRecentMessage,
-    int limit = 50,
+    int? limit = 50,
   }) async {
-    final rows = await workingDatabase.selectRows('''
+    final rows = await graphDatabase.selectRows('''
       SELECT
         c.ss_id AS chat_ss_id,
         COUNT(DISTINCT COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id))
@@ -70,12 +66,13 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
 
     final filtered = _applyFilter(summaries, filter);
     _applySort(filtered, sort);
-    return filtered.take(limit).toList(growable: false);
+    return (limit == null ? filtered : filtered.take(limit))
+        .toList(growable: false);
   }
 
   @override
   Future<ChatSummarySanityCounts> readSanityCounts() async {
-    final summaries = await readSummaries(limit: 1000000);
+    final summaries = await readSummaries(limit: null);
     var groupChatCount = 0;
     var singleParticipantChatCount = 0;
     var orphanChatCount = 0;
@@ -124,7 +121,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
     required int chatSsId,
     int limit = 20,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_ss_id,
@@ -162,7 +159,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
     required int chatSsId,
     int limit = 20,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         m.ss_id AS message_ss_id,
@@ -201,7 +198,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   Future<ChatMessageTextStats> readMessageTextStats({
     required int chatSsId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         COUNT(*) AS total_message_count,
@@ -227,7 +224,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   Future<ChatAttachmentStats> readAttachmentStats({
     required int chatSsId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         a.ss_id AS attachment_ss_id,
@@ -283,7 +280,7 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
       }
 
       final archiveAvailability = await _readArchiveAvailability(
-        messageGuid: row['message_guid'] as String?,
+        messageSsId: _readInt(row['message_ss_id']),
         attachmentSsId: _readInt(row['attachment_ss_id']),
       );
       if (archiveAvailability.hasArchiveRecord) {
@@ -315,10 +312,11 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   Future<List<MessageAttachment>> readMessageAttachments({
     required int messageSsId,
   }) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT
         a.ss_id AS attachment_ss_id,
+        mta.message_ss_id,
         m.guid AS message_guid,
         a.guid,
         a.filename,
@@ -341,8 +339,9 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
 
   Future<MessageAttachment> _attachmentFromRow(Map<String, Object?> row) async {
     final attachmentSsId = _readInt(row['attachment_ss_id']);
+    final messageSsId = _readInt(row['message_ss_id']);
     final archiveAvailability = await _readArchiveAvailability(
-      messageGuid: row['message_guid'] as String?,
+      messageSsId: messageSsId,
       attachmentSsId: attachmentSsId,
     );
     return MessageAttachment(
@@ -362,50 +361,31 @@ class SqliteChatSummaryRepository implements ChatSummaryRepository {
   }
 
   Future<_ArchiveAvailability> _readArchiveAvailability({
-    required String? messageGuid,
+    required int messageSsId,
     required int attachmentSsId,
   }) async {
-    final overlayDb = overlayDatabase;
-    final archiveDirectory = attachmentArchiveDirectory;
-    if (overlayDb == null ||
-        archiveDirectory == null ||
-        archiveDirectory.isEmpty ||
-        messageGuid == null ||
-        messageGuid.isEmpty) {
+    final lookup = archiveLookup;
+    if (lookup == null) {
       return const _ArchiveAvailability.none();
     }
 
-    final importAttachmentId = SourceScopedRowKey.unpackSourceRowId(
-      attachmentSsId,
+    final record = await lookup.readArchiveRecord(
+      messageSsId: messageSsId,
+      attachmentSsId: attachmentSsId,
     );
-    final rows = await overlayDb
-        .customSelect(
-          'SELECT archive_relative_path '
-          'FROM archived_attachments '
-          'WHERE message_guid = ? AND import_attachment_id = ? '
-          'LIMIT 1',
-          variables: [
-            Variable<String>(messageGuid),
-            Variable<int>(importAttachmentId),
-          ],
-        )
-        .get();
-    if (rows.isEmpty) {
+    if (record == null) {
       return const _ArchiveAvailability.none();
     }
 
-    final relativePath = rows.single.read<String>('archive_relative_path');
-    final archiveAbsolutePath = '$archiveDirectory/$relativePath';
-    final archiveFile = File(archiveAbsolutePath);
     return _ArchiveAvailability(
-      archiveRelativePath: relativePath,
-      archiveAbsolutePath: archiveAbsolutePath,
-      archiveFileExists: archiveFile.existsSync(),
+      archiveRelativePath: record.archiveRelativePath,
+      archiveAbsolutePath: record.archiveAbsolutePath,
+      archiveFileExists: record.archiveFileExists,
     );
   }
 
   Future<List<String>> _readParticipantHandles(int chatSsId) async {
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT DISTINCT
         COALESCE(ch.display_handle, h.id) AS handle_id,

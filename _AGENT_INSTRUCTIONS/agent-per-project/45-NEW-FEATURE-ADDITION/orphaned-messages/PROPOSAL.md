@@ -2,7 +2,7 @@
 tier: feature
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-06-06
 source_of_truth: doc
 links:
   - ../../15-MACOS-SOURCE-DATABASES/10-chat-db-orphan-messages.md
@@ -10,10 +10,12 @@ links:
   - ../../10-DATABASES/INVIOLATE_RULES.md
   - ../../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md
   - ../../20-DATA-IMPORT-MIGRATION/20-migration-orchestrator.md
+  - ../../55-READERS-INTEGRATORS-ORCHESTRATORS/76-RECOVERED-MESSAGE-GRAPH-IDENTITY-PLAN.md
+  - ../../55-READERS-INTEGRATORS-ORCHESTRATORS/77-RECOVERED-MESSAGE-GRAPH-PARITY-AUDIT.md
    - ./RETROSPECTIVE.md
 tests: []
 feature: orphaned-messages
-status: implemented-v1
+status: historical-implemented-v1
 created: 2026-03-13
 ---
 
@@ -24,6 +26,22 @@ created: 2026-03-13
 **Created**: 2026-03-13
 
 ---
+
+## Current Conformance Note (2026-06-06)
+
+This proposal records the original retained legacy implementation of Recovered
+Unlinked Messages. The user-facing concept remains valid, but the production
+migration target is now the source-scoped graph path:
+
+- source facts live in `macos_import_ss.db`
+- ordinary and recovered evidence is identified by stable `ss_id`
+- graph recovery parity and cutover are tracked in documents `76` and `77`
+- `working.db` recovered tables are retained compatibility/reference sources
+  until recovered-message cutover criteria are met
+
+Do not use this document as authority to add new ordinary `working.db` or
+`macos_import.db` import/migration surfaces. Preserve its data-fidelity and
+quarantine-labeling intent through graph recovery/evidence scopes.
 
 ## Overview
 

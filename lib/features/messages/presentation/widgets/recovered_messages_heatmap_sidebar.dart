@@ -5,15 +5,15 @@ import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
+import '../../application/message_evidence/current_visible_month_provider.dart';
+import '../../application/message_evidence/recovered_message_evidence_provider.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/recovered_message_navigation_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/widget_builders/messages_heatmap_widget.dart';
 import '../../application/view_spec/resolver_tools/recovered_messages_heatmap_data.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
-import '../../domain/value_objects/message_timeline_scope.dart';
-import '../../infrastructure/repositories/recovered_unlinked_messages_provider.dart';
-import '../view_model/timeline/ordinal/current_visible_month_provider.dart';
+import '../../domain/message_evidence/message_evidence_scope.dart';
+import '../../domain/message_evidence/recovered_message_evidence.dart';
 
 class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
   const RecoveredMessagesHeatmapSidebar({
@@ -30,13 +30,13 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final typography = ref.watch(themeTypographyProvider);
-    final timelineScope = MessageTimelineScope.recovered(
+    final timelineScope = RecoveredMessagesEvidenceScope(
       contactId: contactId,
       onlyNoHandleFromMe: onlyNoHandleFromMe,
     );
-    final visibleMonthKey = ref
-        .watch(currentVisibleMonthForScopeProvider(scope: timelineScope))
-        .valueOrNull;
+    final visibleMonthKey = ref.watch(
+      currentVisibleMonthForScopeProvider(scope: timelineScope),
+    );
     final asyncMessages = ref.watch(
       recoveredUnlinkedMessagesProvider(contactId: contactId),
     );
@@ -83,31 +83,12 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
               }
 
               final startDate = DateTime(year, month, 1);
-              if (onlyNoHandleFromMe) {
-                ref
-                    .read(sidebarActionDispatcherProvider.notifier)
-                    .dispatch(
-                      intent: RecoveredMonthFocused(
-                        monthAnchor: startDate,
-                        onlyNoHandleFromMe: true,
-                      ),
-                      context: const SidebarActionDispatchContext(
-                        sidebarMode: SidebarMode.messages,
-                      ),
-                    );
-                return;
-              }
-
               ref
-                  .read(sidebarActionDispatcherProvider.notifier)
-                  .dispatch(
-                    intent: RecoveredMonthFocused(
-                      contactId: contactId,
-                      monthAnchor: startDate,
-                    ),
-                    context: const SidebarActionDispatchContext(
-                      sidebarMode: SidebarMode.messages,
-                    ),
+                  .read(recoveredMessageNavigationActionsProvider.notifier)
+                  .focusMonth(
+                    contactId: onlyNoHandleFromMe ? null : contactId,
+                    monthAnchor: startDate,
+                    onlyNoHandleFromMe: onlyNoHandleFromMe,
                   );
             },
           );

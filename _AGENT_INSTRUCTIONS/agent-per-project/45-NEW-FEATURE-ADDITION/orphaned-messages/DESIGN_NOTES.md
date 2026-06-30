@@ -2,7 +2,7 @@
 tier: feature
 scope: design-notes
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-06-06
 source_of_truth: doc
 links:
   - ./PROPOSAL.md
@@ -13,6 +13,16 @@ tests: []
 ---
 
 # Design Notes — Orphaned Messages / Unlinked Source Content
+
+## Current Conformance Note (2026-06-06)
+
+These design notes describe the original recovered/unlinked-message design
+language. The conceptual split remains important: recovered rows must be
+visible, quarantined, and honest about missing topology. The implementation
+authority has shifted to source-scoped graph recovery planning and the Message
+Evidence Spine. New work should express recovered rows as graph evidence scopes
+where possible, with retained legacy repositories used only as named
+compatibility/reference bridges.
 
 ## Core Principle
 

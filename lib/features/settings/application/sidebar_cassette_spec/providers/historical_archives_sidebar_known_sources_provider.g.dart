@@ -7,7 +7,7 @@ part of 'historical_archives_sidebar_known_sources_provider.dart';
 // **************************************************************************
 
 String _$historicalArchivesSidebarKnownSourcesHash() =>
-    r'd83e17a0dfe58faba928613ec5953cbb697e5fb8';
+    r'60e5aaa81af9a32979b8d2225c268570bf480c5e';
 
 /// See also [historicalArchivesSidebarKnownSources].
 @ProviderFor(historicalArchivesSidebarKnownSources)

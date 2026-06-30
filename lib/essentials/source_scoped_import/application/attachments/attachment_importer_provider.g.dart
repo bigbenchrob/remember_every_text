@@ -7,7 +7,7 @@ part of 'attachment_importer_provider.dart';
 // **************************************************************************
 
 String _$attachmentImporterHash() =>
-    r'10253bd213c69ab8644d21affee3eacd10eeeeb5';
+    r'0a0ba70e8ddde95281bb988eb96d84e0ebb8029a';
 
 /// See also [attachmentImporter].
 @ProviderFor(attachmentImporter)

@@ -3,7 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../presentation/view_model/historical_archives_workflow_panel_model_provider.dart';
+import '../../historical_archives_workflow_actions_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
 
 class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
@@ -42,7 +42,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Text(
-                'No archive folders have been added yet. When this workflow is fully wired, known sources will appear here with date range, message count, last import result, last-run counts, and last imported time.',
+                'No archive folders have been added yet. Known sources will appear here with date range, message count, last import result, last-run counts, and last imported time.',
                 style: typography.body.copyWith(
                   color: colors.content.textSecondary,
                 ),
@@ -67,7 +67,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               behavior: HitTestBehavior.opaque,
               onTap: () async {
                 await ref
-                    .read(historicalArchivesWorkflowProvider.notifier)
+                    .read(historicalArchivesWorkflowActionsProvider.notifier)
                     .chooseMessagesFolder();
               },
               child: Padding(

@@ -61,7 +61,7 @@ void main() {
           resolveStableCascadeChild(currentSpec, context: textSizeContext),
           equals(
             const CassetteSpec.settings(
-              SettingsCassetteSpec.textSizePlaceholder(),
+              SettingsCassetteSpec.textSizeInfo(),
             ),
           ),
         );
@@ -69,7 +69,7 @@ void main() {
           resolveStableCascadeChild(currentSpec, context: imageSizeContext),
           equals(
             const CassetteSpec.settings(
-              SettingsCassetteSpec.imageSizePlaceholder(),
+              SettingsCassetteSpec.imageSizeInfo(),
             ),
           ),
         );

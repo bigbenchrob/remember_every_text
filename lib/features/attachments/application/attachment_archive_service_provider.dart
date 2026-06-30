@@ -1,45 +1,47 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:crypto/crypto.dart';
-import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sqlite3/sqlite3.dart';
 
-import '../../../essentials/db/feature_level_providers.dart';
-import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
-import '../../../essentials/logging/application/app_logger.dart';
-import '../../../providers.dart';
+import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
 import '../domain/entities/attachment_recovery_metadata.dart';
 import 'archive_settings_provider.dart';
-import 'attachment_recovery_hint_storage.dart';
+import 'attachment_archive_file_store.dart';
+import 'attachment_archive_runtime_providers.dart'
+    show
+        attachmentArchiveDirectoryPathProvider,
+        attachmentArchiveSettingsStoreProvider;
+import 'attachment_archive_settings_store.dart';
+import 'attachment_archive_store_providers.dart'
+    show
+        attachmentArchiveFileStoreProvider,
+        attachmentArchiveWriteStoreProvider;
+import 'attachment_archive_write_store.dart';
+import 'graph_attachment_archive_candidate_reader.dart';
+import 'graph_attachment_archive_providers.dart'
+    show
+        currentMessagesAttachmentPathLookupProvider,
+        graphAttachmentArchiveCandidateReaderProvider;
 
 part 'attachment_archive_service_provider.g.dart';
 
-const _kDefaultWorkingSweepLimit = 100;
-const _kWorkingSweepSelectionPageSize = 250;
+const _kDefaultGraphSweepLimit = 100;
+const _kGraphSweepSelectionPageSize = 250;
 const _kManualSweepBurstChunkCount = 25;
 const _kManualSweepSkippedSampleLimit = 3;
 
-@riverpod
-Future<String> attachmentArchiveMessagesDatabasePath(Ref ref) async {
-  final pathsHelper = await ref.watch(pathsHelperProvider.future);
-  return pathsHelper.chatDBPath;
-}
-
 /// Service that copies attachment files into the MessageLens archive and
-/// records them in the overlay database.
+/// records them through the attachment archive store.
 ///
-/// Archiving is idempotent: if an overlay record already exists for the
-/// given (messageGuid, importAttachmentId) pair, the file is not re-copied.
+/// Archiving is idempotent: if an archive record already exists for the
+/// derived archive compatibility key, the file is not re-copied.
 @Riverpod(keepAlive: true)
 class AttachmentArchiveService extends _$AttachmentArchiveService {
   bool _pauseRequested = false;
   bool _cancelRequested = false;
-  bool _workingSweepInFlight = false;
+  bool _graphSweepInFlight = false;
 
   @override
   BulkArchiveProgress build() {
@@ -51,100 +53,74 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// Returns `true` if the file was newly archived, `false` if skipped
   /// (already archived or source missing).
   Future<bool> archiveAttachment({
-    required String messageGuid,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
     required String resolvedLocalPath,
     required String? mimeType,
     required String? sha256Hex,
   }) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveStore = await ref.read(
+      attachmentArchiveWriteStoreProvider.future,
+    );
+    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
     // Idempotency check: skip if already archived.
-    final existing =
-        await (overlayDb.select(overlayDb.archivedAttachments)..where(
-              (t) =>
-                  t.messageGuid.equals(messageGuid) &
-                  t.importAttachmentId.equals(importAttachmentId),
-            ))
-            .getSingleOrNull();
+    final alreadyArchived = await archiveStore.hasArchiveRecord(archiveKey);
 
-    if (existing != null) {
-      await _clearRecoveryHint(
-        overlayDb,
-        messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
-      );
+    if (alreadyArchived) {
+      await archiveStore.clearRecoveryHint(archiveKey);
       return false;
     }
 
     final sourcePath = await _resolveArchivableSourcePath(
       preferredLocalPath: resolvedLocalPath,
-      importAttachmentId: importAttachmentId,
+      archiveKey: archiveKey,
     );
     if (sourcePath == null) {
       return false;
     }
 
-    final sourceFile = File(sourcePath);
-
-    // Compute hash if not available.
-    final contentHash = sha256Hex ?? await _computeSha256(sourceFile);
-
-    // Determine archive path.
-    final ext = p.extension(sourcePath).toLowerCase();
-    final String relativePath;
-    if (contentHash != null && contentHash.length >= 2) {
-      final prefix = contentHash.substring(0, 2);
-      relativePath = '$prefix/$contentHash$ext';
-    } else {
-      relativePath = '_by_id/$importAttachmentId$ext';
-    }
-
-    final destFile = File('$archiveDir/$relativePath');
-
-    // Copy file into archive.
+    late final ArchivedAttachmentFileWrite archiveWrite;
     try {
-      await destFile.parent.create(recursive: true);
-      await sourceFile.copy(destFile.path);
-    } on FileSystemException catch (e) {
+      final writeResult = await fileStore.writeArchiveEntry(
+        archiveDirectoryPath: archiveDir,
+        sourcePath: sourcePath,
+        archiveKey: archiveKey,
+        sha256Hex: sha256Hex,
+      );
+      if (writeResult == null) {
+        return false;
+      }
+      archiveWrite = writeResult;
+    } on Object catch (error) {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
-            'Failed to archive attachment $importAttachmentId: $e',
+            'Failed to archive attachment '
+            '${archiveKey.liveSourceAttachmentRowId}: $error',
             source: 'AttachmentArchiveService',
           );
       return false;
     }
 
-    // Record in overlay DB.
-    final fileSize = await destFile.length();
-    await overlayDb
-        .into(overlayDb.archivedAttachments)
-        .insert(
-          ArchivedAttachmentsCompanion.insert(
-            messageGuid: messageGuid,
-            importAttachmentId: importAttachmentId,
-            archiveRelativePath: relativePath,
-            archivedAtUtc: DateTime.now().toUtc().toIso8601String(),
-            fileSizeBytes: fileSize,
-            contentHash: Value(contentHash),
-            originalLocalPath: Value(sourcePath),
-          ),
-        );
-
-    await _clearRecoveryHint(
-      overlayDb,
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
+    await archiveStore.writeArchiveRecord(
+      ArchivedAttachmentWrite(
+        archiveKey: archiveKey,
+        archiveRelativePath: archiveWrite.relativePath,
+        archivedAtUtc: DateTime.now().toUtc().toIso8601String(),
+        fileSizeBytes: archiveWrite.fileSizeBytes,
+        contentHash: archiveWrite.contentHash,
+        originalLocalPath: archiveWrite.sourcePath,
+      ),
     );
+
+    await archiveStore.clearRecoveryHint(archiveKey);
 
     return true;
   }
 
   Future<void> prioritizeRecovery({
-    required String messageGuid,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
     required String? resolvedLocalPath,
     required String? mimeType,
   }) async {
@@ -153,14 +129,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return;
     }
 
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final hintKey = attachmentRecoveryHintSettingKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
+    final archiveStore = await ref.read(
+      attachmentArchiveWriteStoreProvider.future,
     );
-    final existingHint = decodeAttachmentRecoveryHint(
-      await overlayDb.readOverlaySetting(hintKey),
-    );
+    final existingHint = await archiveStore.readRecoveryHint(archiveKey);
     final now = DateTime.now().toUtc();
     final currentPriority = existingHint?.recoveryPriority ?? 0;
 
@@ -174,24 +146,23 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       isNonRecoverable: existingHint?.isNonRecoverable ?? false,
     );
 
-    await overlayDb.writeOverlaySetting(
-      settingKey: hintKey,
-      settingValue: encodeAttachmentRecoveryHint(prioritizedHint),
+    await archiveStore.writeRecoveryHint(
+      archiveKey: archiveKey,
+      metadata: prioritizedHint,
     );
 
     if (resolvedLocalPath == null || resolvedLocalPath.isEmpty) {
       return;
     }
 
-    final sourceFile = File(resolvedLocalPath);
-    if (!sourceFile.existsSync()) {
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
+    if (!fileStore.fileExists(fileStore.expandHomePath(resolvedLocalPath))) {
       return;
     }
 
     unawaited(
       archiveAttachment(
-        messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
+        archiveKey: archiveKey,
         resolvedLocalPath: resolvedLocalPath,
         mimeType: mimeType,
         sha256Hex: null,
@@ -199,13 +170,21 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
   }
 
-  /// Archive only the linked attachments imported in a specific ledger batch.
-  ///
-  /// This is used by the incremental import flow so newly imported messages
-  /// can remain hidden until their archive-backed display files are ready.
-  Future<AttachmentArchiveResult> archiveImportedBatch({
-    required int batchId,
+  Future<AttachmentArchiveResult> archiveGraphMessageSourceRange({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+    required int? lastImportedSourceRowId,
   }) async {
+    final lastSourceRowId = lastImportedSourceRowId;
+    if (lastSourceRowId == null || lastSourceRowId <= startedAfterSourceRowId) {
+      return const AttachmentArchiveResult(
+        totalScanned: 0,
+        newlyArchived: 0,
+        skipped: 0,
+        failed: 0,
+      );
+    }
+
     final settings = await ref.read(archiveSettingsProvider.future);
     if (!settings.isEnabled) {
       return const AttachmentArchiveResult(
@@ -216,27 +195,15 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
+    final candidateReader = await ref.read(
+      graphAttachmentArchiveCandidateReaderProvider.future,
+    );
     final logger = ref.read(appLoggerProvider.notifier);
 
-    final rows = await importDb.rawQuery(
-      '''
-      SELECT DISTINCT
-        m.guid AS message_guid,
-        a.id AS import_attachment_id,
-        a.local_path,
-        a.mime_type,
-        a.sha256_hex
-      FROM attachments a
-      JOIN message_attachments ma ON ma.attachment_id = a.id
-      JOIN messages m ON m.id = ma.message_id
-      WHERE a.batch_id = ?
-        AND m.guid IS NOT NULL
-        AND LENGTH(TRIM(m.guid)) > 0
-        AND a.local_path IS NOT NULL
-        AND LENGTH(TRIM(a.local_path)) > 0
-      ''',
-      <Object?>[batchId],
+    final rows = await candidateReader.readSourceRange(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
+      lastSourceRowId: lastSourceRowId,
     );
 
     final archiveOutcome = await _archiveRows(
@@ -246,9 +213,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     final result = archiveOutcome.result;
 
     logger.info(
-      'Attachment archive batch $batchId: ${result.newlyArchived} new, '
-      '${result.skipped} skipped, ${result.failed} failed out of '
-      '${result.totalScanned} attachment(s)',
+      'Attachment archive graph source range '
+      '$startedAfterSourceRowId-$lastSourceRowId: '
+      '${result.newlyArchived} new, ${result.skipped} skipped, '
+      '${result.failed} failed out of ${result.totalScanned} attachment(s)',
       source: 'AttachmentArchiveService',
     );
 
@@ -257,14 +225,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return result;
   }
 
-  /// Sweep a small rolling chunk of working attachments looking for image
+  /// Sweep a small rolling chunk of graph attachments looking for image
   /// files that are not yet archived but may now exist in Messages/Attachments.
   ///
-  /// This is intentionally low-cost: it advances by working attachment ID,
+  /// This is intentionally low-cost: it advances by graph attachment ID,
   /// touches only a bounded chunk per invocation, and persists its cursor in
   /// overlay settings so historical iCloud downloads are eventually archived.
-  Future<AttachmentArchiveResult> archiveNextWorkingSweepChunk({
-    int limit = _kDefaultWorkingSweepLimit,
+  Future<AttachmentArchiveResult> archiveNextGraphSweepChunk({
+    int limit = _kDefaultGraphSweepLimit,
     bool updateSweepDebugState = true,
   }) async {
     if (limit <= 0) {
@@ -286,7 +254,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    if (_workingSweepInFlight) {
+    if (_graphSweepInFlight) {
       return const AttachmentArchiveResult(
         totalScanned: 0,
         newlyArchived: 0,
@@ -295,20 +263,23 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    _workingSweepInFlight = true;
+    _graphSweepInFlight = true;
 
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+      final settingsStore = await ref.read(
+        attachmentArchiveSettingsStoreProvider.future,
+      );
+      final candidateReader = await ref.read(
+        graphAttachmentArchiveCandidateReaderProvider.future,
+      );
       final logger = ref.read(appLoggerProvider.notifier);
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
 
-      final cursor = await _readWorkingSweepCursor(overlayDb);
-      final selection = await _selectWorkingSweepRows(
-        overlayDb: overlayDb,
-        workingDb: workingDb,
+      final cursor = await _readGraphSweepCursor(settingsStore);
+      final selection = await candidateReader.selectSweepCandidates(
         afterAttachmentId: cursor,
         limit: limit,
+        pageSize: _kGraphSweepSelectionPageSize,
       );
 
       final archiveOutcome = await _archiveRows(
@@ -318,22 +289,22 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       final result = archiveOutcome.result;
       if (updateSweepDebugState) {
         final completedAtUtc = DateTime.now().toUtc().toIso8601String();
-        await _writeWorkingSweepStatus(
-          overlayDb,
+        await _writeGraphSweepStatus(
+          settingsStore,
           startedAtUtc: startedAtUtc,
           completedAtUtc: completedAtUtc,
           nextCursor: selection.nextCursor,
           result: result,
         );
       } else {
-        await _writeWorkingSweepCursor(
-          overlayDb,
+        await _writeGraphSweepCursor(
+          settingsStore,
           nextCursor: selection.nextCursor,
         );
       }
 
       logger.debug(
-        'Working attachment sweep: ${result.newlyArchived} new, '
+        'Graph attachment sweep: ${result.newlyArchived} new, '
         '${result.skipped} skipped, ${result.failed} failed out of '
         '${result.totalScanned} attachment(s); next cursor ${selection.nextCursor}',
         source: 'AttachmentArchiveService',
@@ -343,7 +314,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       return result;
     } finally {
-      _workingSweepInFlight = false;
+      _graphSweepInFlight = false;
     }
   }
 
@@ -352,8 +323,8 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// This scans multiple regular sweep chunks in one call, stopping once it
   /// reaches the end of the current cursor cycle so it does not rescan the
   /// same tail candidates repeatedly inside a single manual run.
-  Future<AttachmentArchiveResult> archiveWorkingSweepBurst({
-    int chunkLimit = _kDefaultWorkingSweepLimit,
+  Future<AttachmentArchiveResult> archiveGraphSweepBurst({
+    int chunkLimit = _kDefaultGraphSweepLimit,
     int maxChunks = _kManualSweepBurstChunkCount,
   }) async {
     if (chunkLimit <= 0 || maxChunks <= 0) {
@@ -375,7 +346,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    if (_workingSweepInFlight) {
+    if (_graphSweepInFlight) {
       return const AttachmentArchiveResult(
         totalScanned: 0,
         newlyArchived: 0,
@@ -384,13 +355,17 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    _workingSweepInFlight = true;
+    _graphSweepInFlight = true;
 
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
+      final settingsStore = await ref.read(
+        attachmentArchiveSettingsStoreProvider.future,
+      );
+      final candidateReader = await ref.read(
+        graphAttachmentArchiveCandidateReaderProvider.future,
+      );
       final startedAtUtc = DateTime.now().toUtc().toIso8601String();
-      var cursor = await _readWorkingSweepCursor(overlayDb);
+      var cursor = await _readGraphSweepCursor(settingsStore);
       var totalScanned = 0;
       var newlyArchived = 0;
       var skipped = 0;
@@ -399,11 +374,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       for (var index = 0; index < maxChunks; index++) {
         final previousCursor = cursor;
-        final selection = await _selectWorkingSweepRows(
-          overlayDb: overlayDb,
-          workingDb: workingDb,
+        final selection = await candidateReader.selectSweepCandidates(
           afterAttachmentId: cursor,
           limit: chunkLimit,
+          pageSize: _kGraphSweepSelectionPageSize,
         );
         final archiveOutcome = await _archiveRows(
           rows: selection.rows,
@@ -419,7 +393,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         skippedSamples.addAll(archiveOutcome.skippedSamples);
 
         cursor = selection.nextCursor;
-        await _writeWorkingSweepCursor(overlayDb, nextCursor: cursor);
+        await _writeGraphSweepCursor(settingsStore, nextCursor: cursor);
 
         if (result.totalScanned == 0) {
           break;
@@ -443,7 +417,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       final completedAtUtc = DateTime.now().toUtc().toIso8601String();
       await _writeManualSweepBurstStatus(
-        overlayDb,
+        settingsStore,
         startedAtUtc: startedAtUtc,
         completedAtUtc: completedAtUtc,
         result: burstResult,
@@ -454,15 +428,16 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       return burstResult;
     } finally {
-      _workingSweepInFlight = false;
+      _graphSweepInFlight = false;
     }
   }
 
-  /// Archive all locally available attachments from the working DB.
+  /// Archive all locally available attachments from the conversation graph.
   ///
-  /// Intended to be called after a migration cycle completes. Runs in the
-  /// background without blocking the UI. Emits [BulkArchiveProgress] state
-  /// updates and supports pause/cancel.
+  /// Intended for manual graph archive sweeps. Live graph updates use
+  /// source-row-range archiving instead. Runs in the background without
+  /// blocking the UI. Emits [BulkArchiveProgress] state updates and supports
+  /// pause/cancel.
   Future<AttachmentArchiveResult> archiveAllAvailable() async {
     _pauseRequested = false;
     _cancelRequested = false;
@@ -478,26 +453,17 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       );
     }
 
-    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final candidateReader = await ref.read(
+      graphAttachmentArchiveCandidateReaderProvider.future,
+    );
+    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
     final logger = ref.read(appLoggerProvider.notifier);
 
     // Ensure archive directory exists.
-    await Directory(archiveDir).create(recursive: true);
+    await fileStore.ensureArchiveDirectory(archiveDir);
 
-    // Query all attachments with a local path from working DB.
-    final rows = await workingDb.customSelect('''
-      SELECT
-        a.id,
-        a.message_guid,
-        a.import_attachment_id,
-        a.local_path,
-        a.mime_type,
-        a.sha256_hex
-      FROM attachments a
-      WHERE a.local_path IS NOT NULL
-        AND LENGTH(TRIM(a.local_path)) > 0
-      ''').get();
+    final rows = await candidateReader.readAllAvailableLive();
 
     final archiveOutcome = await _archiveRows(
       rows: rows,
@@ -525,7 +491,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }
 
   Future<_ArchiveRowsOutcome> _archiveRows({
-    required List<dynamic> rows,
+    required List<GraphAttachmentArchiveCandidate> rows,
     required bool updateProgressState,
     int skippedSampleLimit = 0,
   }) async {
@@ -540,6 +506,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     var skipped = 0;
     var failed = 0;
     final skippedSamples = <String>[];
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
     for (final row in rows) {
       // Handle cancellation.
@@ -567,16 +534,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         state = state.copyWith(phase: BulkArchivePhase.running);
       }
 
-      final messageGuid = _readRequiredString(row, 'message_guid');
-      final importAttachmentId = _readNullableInt(row, 'import_attachment_id');
-      final localPath = _readNullableString(row, 'local_path');
+      final archiveKey = row.archiveCompatibilityKey;
+      final localPath = row.localPath;
 
-      if (importAttachmentId == null || localPath == null) {
+      if (archiveKey == null || localPath == null) {
         skipped++;
         _recordSkippedSample(
           skippedSamples,
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
+          archiveKey: archiveKey,
           localPath: localPath,
           reason: 'missing metadata',
           sampleLimit: skippedSampleLimit,
@@ -584,19 +549,17 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
         continue;
       }
 
-      // Expand ~/
-      final resolvedPath = _expandHomePath(localPath);
+      final resolvedPath = fileStore.expandHomePath(localPath);
 
       final archivablePath = await _resolveArchivableSourcePath(
         preferredLocalPath: resolvedPath,
-        importAttachmentId: importAttachmentId,
+        archiveKey: archiveKey,
       );
       if (archivablePath == null) {
         skipped++;
         _recordSkippedSample(
           skippedSamples,
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
+          archiveKey: archiveKey,
           localPath: resolvedPath,
           reason: 'source missing',
           sampleLimit: skippedSampleLimit,
@@ -606,11 +569,10 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
       try {
         final success = await archiveAttachment(
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
+          archiveKey: archiveKey,
           resolvedLocalPath: archivablePath,
-          mimeType: _readNullableString(row, 'mime_type'),
-          sha256Hex: _readNullableString(row, 'sha256_hex'),
+          mimeType: row.mimeType,
+          sha256Hex: row.sha256Hex,
         );
 
         if (success) {
@@ -619,8 +581,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
           skipped++;
           _recordSkippedSample(
             skippedSamples,
-            messageGuid: messageGuid,
-            importAttachmentId: importAttachmentId,
+            archiveKey: archiveKey,
             localPath: resolvedPath,
             reason: 'not archived',
             sampleLimit: skippedSampleLimit,
@@ -656,8 +617,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
 
   void _recordSkippedSample(
     List<String> skippedSamples, {
-    required String messageGuid,
-    required int? importAttachmentId,
+    required ArchiveCompatibilityKey? archiveKey,
     required String? localPath,
     required String reason,
     required int sampleLimit,
@@ -666,9 +626,11 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       return;
     }
 
-    final attachmentLabel = importAttachmentId == null
+    final archiveCompatibilitySourceRowId =
+        archiveKey?.liveSourceAttachmentRowId;
+    final attachmentLabel = archiveCompatibilitySourceRowId == null
         ? 'unknown-id'
-        : '$importAttachmentId';
+        : '$archiveCompatibilitySourceRowId';
     final pathLabel = localPath == null || localPath.isEmpty
         ? 'no-path'
         : localPath;
@@ -705,16 +667,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// content hashes. Returns a result describing how many passed, failed,
   /// or were missing.
   Future<ArchiveIntegrityResult> verifyIntegrity() async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveStore = await ref.read(
+      attachmentArchiveWriteStoreProvider.future,
+    );
+    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
     final logger = ref.read(appLoggerProvider.notifier);
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
 
-    final rows = await overlayDb
-        .customSelect(
-          'SELECT id, archive_relative_path, content_hash '
-          'FROM archived_attachments',
-        )
-        .get();
+    final rows = await archiveStore.readIntegrityEntries();
 
     var verified = 0;
     var hashMismatch = 0;
@@ -722,28 +682,30 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     var noHash = 0;
 
     for (final row in rows) {
-      final relativePath = row.read<String>('archive_relative_path');
-      final storedHash = row.readNullable<String>('content_hash');
-      final file = File('$archiveDir/$relativePath');
+      final integrityCheck = await fileStore.checkIntegrity(
+        archiveDirectoryPath: archiveDir,
+        relativePath: row.relativePath,
+        storedHash: row.contentHash,
+      );
 
-      if (!file.existsSync()) {
+      if (!integrityCheck.fileExists) {
         fileMissing++;
         continue;
       }
 
-      if (storedHash == null || storedHash.isEmpty) {
+      if (row.contentHash == null || row.contentHash!.isEmpty) {
         noHash++;
         continue;
       }
 
-      final actualHash = await _computeSha256(file);
-      if (actualHash == storedHash) {
+      if (integrityCheck.hashMatches == true) {
         verified++;
       } else {
         hashMismatch++;
         logger.warn(
-          'Archive integrity: hash mismatch for $relativePath '
-          '(stored: $storedHash, actual: $actualHash)',
+          'Archive integrity: hash mismatch for ${row.relativePath} '
+          '(stored: ${row.contentHash}, '
+          'actual: ${integrityCheck.actualHash})',
           source: 'AttachmentArchiveService',
         );
       }
@@ -765,43 +727,25 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     );
   }
 
-  static String _expandHomePath(String rawPath) {
-    if (rawPath.startsWith('~/')) {
-      final home = Platform.environment['HOME'] ?? '';
-      if (home.isNotEmpty) {
-        return rawPath.replaceFirst('~', home);
-      }
-    }
-    return rawPath;
-  }
-
-  static Future<String?> _computeSha256(File file) async {
-    try {
-      final bytes = await file.readAsBytes();
-      return sha256.convert(bytes).toString();
-    } on Exception {
-      return null;
-    }
-  }
-
   Future<String?> _resolveArchivableSourcePath({
     required String preferredLocalPath,
-    required int importAttachmentId,
+    required ArchiveCompatibilityKey archiveKey,
   }) async {
-    final expandedPreferredPath = _expandHomePath(preferredLocalPath);
-    if (File(expandedPreferredPath).existsSync()) {
+    final fileStore = ref.read(attachmentArchiveFileStoreProvider);
+    final expandedPreferredPath = fileStore.expandHomePath(preferredLocalPath);
+    if (fileStore.fileExists(expandedPreferredPath)) {
       return expandedPreferredPath;
     }
 
     final refreshedPath = await _lookupCurrentMessagesAttachmentPath(
-      importAttachmentId,
+      archiveKey,
     );
     if (refreshedPath == null) {
       return null;
     }
 
-    final expandedRefreshedPath = _expandHomePath(refreshedPath);
-    if (!File(expandedRefreshedPath).existsSync()) {
+    final expandedRefreshedPath = fileStore.expandHomePath(refreshedPath);
+    if (!fileStore.fileExists(expandedRefreshedPath)) {
       return null;
     }
 
@@ -809,7 +753,7 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
       ref
           .read(appLoggerProvider.notifier)
           .debug(
-            'Attachment $importAttachmentId resolved via refreshed chat.db '
+            'Attachment ${archiveKey.liveSourceAttachmentRowId} resolved via refreshed chat.db '
             'path $expandedRefreshedPath',
             source: 'AttachmentArchiveService',
           );
@@ -819,55 +763,31 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }
 
   Future<String?> _lookupCurrentMessagesAttachmentPath(
-    int importAttachmentId,
+    ArchiveCompatibilityKey archiveKey,
   ) async {
     try {
-      final chatDbPath = await ref.read(
-        attachmentArchiveMessagesDatabasePathProvider.future,
+      final lookup = await ref.read(
+        currentMessagesAttachmentPathLookupProvider.future,
       );
-      if (!File(chatDbPath).existsSync()) {
-        return null;
-      }
-
-      final database = sqlite3.open(chatDbPath, mode: OpenMode.readOnly);
-      try {
-        database.execute('PRAGMA query_only = ON;');
-        database.execute('PRAGMA busy_timeout = 3000;');
-        final rows = database.select(
-          'SELECT filename FROM attachment WHERE ROWID = ? LIMIT 1;',
-          [importAttachmentId],
-        );
-        if (rows.isEmpty) {
-          return null;
-        }
-
-        final value = rows.first['filename'];
-        if (value == null) {
-          return null;
-        }
-
-        final path = '$value'.trim();
-        if (path.isEmpty) {
-          return null;
-        }
-
-        return path;
-      } finally {
-        database.dispose();
-      }
+      return lookup.attachmentPathForSourceRowId(
+        archiveKey.liveSourceAttachmentRowId,
+      );
     } on Object catch (error) {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
-            'Failed to refresh attachment path for $importAttachmentId: $error',
+            'Failed to refresh attachment path for '
+            '${archiveKey.liveSourceAttachmentRowId}: $error',
             source: 'AttachmentArchiveService',
           );
       return null;
     }
   }
 
-  Future<int> _readWorkingSweepCursor(OverlayDatabase overlayDb) async {
-    final rawValue = await overlayDb.readOverlaySetting(kArchiveSweepCursorKey);
+  Future<int> _readGraphSweepCursor(
+    AttachmentArchiveSettingsStore settingsStore,
+  ) async {
+    final rawValue = await settingsStore.readSetting(kArchiveSweepCursorKey);
     if (rawValue == null || rawValue.isEmpty) {
       return 0;
     }
@@ -875,319 +795,85 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return int.tryParse(rawValue) ?? 0;
   }
 
-  Future<_WorkingSweepSelection> _selectWorkingSweepRows({
-    required OverlayDatabase overlayDb,
-    required WorkingDatabase workingDb,
-    required int afterAttachmentId,
-    required int limit,
-  }) async {
-    final selectedRows = <dynamic>[];
-    final selectedAttachmentIds = <int>{};
-    var cursor = afterAttachmentId;
-    var wrappedToStart = false;
-
-    while (selectedRows.length < limit) {
-      final rawRows = await _fetchWorkingSweepRows(
-        workingDb,
-        afterAttachmentId: cursor,
-        limit: _kWorkingSweepSelectionPageSize,
-      );
-
-      if (rawRows.isEmpty) {
-        if (!wrappedToStart && afterAttachmentId > 0) {
-          wrappedToStart = true;
-          cursor = 0;
-          continue;
-        }
-
-        return _WorkingSweepSelection(rows: selectedRows, nextCursor: 0);
-      }
-
-      final archivedKeys = await _loadArchivedKeysForRows(
-        overlayDb,
-        rows: rawRows,
-      );
-      var lastProcessedAttachmentId = cursor;
-
-      for (final row in rawRows) {
-        final workingAttachmentId = _readNullableInt(
-          row,
-          'working_attachment_id',
-        );
-        lastProcessedAttachmentId =
-            workingAttachmentId ?? lastProcessedAttachmentId;
-        final archiveKey = _buildArchiveIdentityKeyForRow(row);
-        if (archiveKey == null || archivedKeys.contains(archiveKey)) {
-          continue;
-        }
-
-        if (workingAttachmentId != null &&
-            selectedAttachmentIds.contains(workingAttachmentId)) {
-          continue;
-        }
-
-        selectedRows.add(row);
-        if (workingAttachmentId != null) {
-          selectedAttachmentIds.add(workingAttachmentId);
-        }
-        if (selectedRows.length == limit) {
-          break;
-        }
-      }
-
-      cursor = lastProcessedAttachmentId;
-      if (rawRows.length < _kWorkingSweepSelectionPageSize) {
-        if (selectedRows.length < limit &&
-            !wrappedToStart &&
-            afterAttachmentId > 0) {
-          wrappedToStart = true;
-          cursor = 0;
-          continue;
-        }
-
-        return _WorkingSweepSelection(
-          rows: selectedRows,
-          nextCursor: selectedRows.length < limit ? 0 : cursor,
-        );
-      }
-    }
-
-    return _WorkingSweepSelection(rows: selectedRows, nextCursor: cursor);
-  }
-
-  Future<List<dynamic>> _fetchWorkingSweepRows(
-    WorkingDatabase workingDb, {
-    required int afterAttachmentId,
-    required int limit,
-  }) async {
-    return workingDb
-        .customSelect(
-          '''
-          SELECT
-            a.id AS working_attachment_id,
-            a.message_guid,
-            a.import_attachment_id,
-            a.local_path,
-            a.mime_type,
-            a.sha256_hex
-          FROM attachments a
-          WHERE a.id > ?
-            AND a.import_attachment_id IS NOT NULL
-            AND a.local_path IS NOT NULL
-            AND LENGTH(TRIM(a.local_path)) > 0
-            AND a.mime_type LIKE 'image/%'
-          ORDER BY a.id
-          LIMIT ?
-          ''',
-          variables: [Variable<int>(afterAttachmentId), Variable<int>(limit)],
-        )
-        .get();
-  }
-
-  Future<Set<String>> _loadArchivedKeysForRows(
-    OverlayDatabase overlayDb, {
-    required List<dynamic> rows,
-  }) async {
-    final keyedRows = rows
-        .map((row) {
-          final messageGuid = _readNullableString(row, 'message_guid');
-          final importAttachmentId = _readNullableInt(
-            row,
-            'import_attachment_id',
-          );
-          if (messageGuid == null || importAttachmentId == null) {
-            return null;
-          }
-          return (messageGuid, importAttachmentId);
-        })
-        .whereType<(String, int)>()
-        .toList(growable: false);
-
-    if (keyedRows.isEmpty) {
-      return <String>{};
-    }
-
-    final predicates = <String>[];
-    final variables = <Variable<Object>>[];
-    for (final (messageGuid, importAttachmentId) in keyedRows) {
-      predicates.add('(message_guid = ? AND import_attachment_id = ?)');
-      variables.add(Variable<String>(messageGuid));
-      variables.add(Variable<int>(importAttachmentId));
-    }
-
-    final rowsResult = await overlayDb
-        .customSelect(
-          'SELECT message_guid, import_attachment_id '
-          'FROM archived_attachments '
-          'WHERE ${predicates.join(' OR ')}',
-          variables: variables,
-        )
-        .get();
-
-    return rowsResult
-        .map(
-          (row) => _buildArchiveIdentityKey(
-            messageGuid: row.read<String>('message_guid'),
-            importAttachmentId: row.read<int>('import_attachment_id'),
-          ),
-        )
-        .toSet();
-  }
-
-  String? _buildArchiveIdentityKeyForRow(dynamic row) {
-    final messageGuid = _readNullableString(row, 'message_guid');
-    final importAttachmentId = _readNullableInt(row, 'import_attachment_id');
-    if (messageGuid == null || importAttachmentId == null) {
-      return null;
-    }
-
-    return _buildArchiveIdentityKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
-  }
-
-  String _buildArchiveIdentityKey({
-    required String messageGuid,
-    required int importAttachmentId,
-  }) {
-    return '$messageGuid::$importAttachmentId';
-  }
-
-  Future<void> _writeWorkingSweepStatus(
-    OverlayDatabase overlayDb, {
+  Future<void> _writeGraphSweepStatus(
+    AttachmentArchiveSettingsStore settingsStore, {
     required String startedAtUtc,
     required String completedAtUtc,
     required int nextCursor,
     required AttachmentArchiveResult result,
   }) async {
-    await _writeWorkingSweepCursor(overlayDb, nextCursor: nextCursor);
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastStartedAtUtcKey,
-      settingValue: startedAtUtc,
+    await _writeGraphSweepCursor(settingsStore, nextCursor: nextCursor);
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastStartedAtUtcKey,
+      value: startedAtUtc,
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastCompletedAtUtcKey,
-      settingValue: completedAtUtc,
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastCompletedAtUtcKey,
+      value: completedAtUtc,
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastTotalScannedKey,
-      settingValue: '${result.totalScanned}',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastTotalScannedKey,
+      value: '${result.totalScanned}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastNewlyArchivedKey,
-      settingValue: '${result.newlyArchived}',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastNewlyArchivedKey,
+      value: '${result.newlyArchived}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastSkippedKey,
-      settingValue: '${result.skipped}',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastSkippedKey,
+      value: '${result.skipped}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepLastFailedKey,
-      settingValue: '${result.failed}',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepLastFailedKey,
+      value: '${result.failed}',
     );
   }
 
-  Future<void> _writeWorkingSweepCursor(
-    OverlayDatabase overlayDb, {
+  Future<void> _writeGraphSweepCursor(
+    AttachmentArchiveSettingsStore settingsStore, {
     required int nextCursor,
   }) async {
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveSweepCursorKey,
-      settingValue: '$nextCursor',
+    await settingsStore.writeSetting(
+      key: kArchiveSweepCursorKey,
+      value: '$nextCursor',
     );
   }
 
   Future<void> _writeManualSweepBurstStatus(
-    OverlayDatabase overlayDb, {
+    AttachmentArchiveSettingsStore settingsStore, {
     required String startedAtUtc,
     required String completedAtUtc,
     required AttachmentArchiveResult result,
     List<String> skippedSamples = const [],
   }) async {
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastStartedAtUtcKey,
-      settingValue: startedAtUtc,
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastStartedAtUtcKey,
+      value: startedAtUtc,
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastCompletedAtUtcKey,
-      settingValue: completedAtUtc,
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastCompletedAtUtcKey,
+      value: completedAtUtc,
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastTotalScannedKey,
-      settingValue: '${result.totalScanned}',
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastTotalScannedKey,
+      value: '${result.totalScanned}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastNewlyArchivedKey,
-      settingValue: '${result.newlyArchived}',
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastNewlyArchivedKey,
+      value: '${result.newlyArchived}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastSkippedKey,
-      settingValue: '${result.skipped}',
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastSkippedKey,
+      value: '${result.skipped}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastFailedKey,
-      settingValue: '${result.failed}',
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastFailedKey,
+      value: '${result.failed}',
     );
-    await overlayDb.writeOverlaySetting(
-      settingKey: kArchiveManualSweepLastSkippedSamplesKey,
-      settingValue: skippedSamples.join('\n'),
+    await settingsStore.writeSetting(
+      key: kArchiveManualSweepLastSkippedSamplesKey,
+      value: skippedSamples.join('\n'),
     );
-  }
-
-  String _readRequiredString(Object? row, String key) {
-    final value = _readNullableString(row, key);
-    if (value == null) {
-      throw StateError('Missing required string column $key');
-    }
-    return value;
-  }
-
-  String? _readNullableString(Object? row, String key) {
-    if (row is Map<String, Object?>) {
-      final value = row[key];
-      return value == null ? null : '$value';
-    }
-    if (row is QueryRow) {
-      return row.readNullable<String>(key);
-    }
-
-    throw StateError('Unsupported row type for string column $key: $row');
-  }
-
-  int? _readNullableInt(Object? row, String key) {
-    if (row is Map<String, Object?>) {
-      final value = row[key];
-      if (value == null) {
-        return null;
-      }
-      if (value is int) {
-        return value;
-      }
-      if (value is num) {
-        return value.toInt();
-      }
-      return int.tryParse('$value');
-    }
-    if (row is QueryRow) {
-      return row.readNullable<int>(key);
-    }
-
-    throw StateError('Unsupported row type for int column $key: $row');
-  }
-
-  Future<void> _clearRecoveryHint(
-    OverlayDatabase overlayDb, {
-    required String messageGuid,
-    required int importAttachmentId,
-  }) async {
-    final hintKey = attachmentRecoveryHintSettingKey(
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
-    );
-    await (overlayDb.delete(
-      overlayDb.overlaySettings,
-    )..where((tbl) => tbl.key.equals(hintKey))).go();
   }
 }
 
@@ -1204,13 +890,6 @@ class AttachmentArchiveResult {
   final int newlyArchived;
   final int skipped;
   final int failed;
-}
-
-class _WorkingSweepSelection {
-  const _WorkingSweepSelection({required this.rows, required this.nextCursor});
-
-  final List<dynamic> rows;
-  final int nextCursor;
 }
 
 class _ArchiveRowsOutcome {

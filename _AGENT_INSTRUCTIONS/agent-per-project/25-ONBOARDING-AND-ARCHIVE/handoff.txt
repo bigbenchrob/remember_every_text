@@ -29,13 +29,16 @@ The project README canonical map at README.md was updated with the new 25-ONBOAR
 Prior sessions (same branch): Living Attachments Archive Phases 0–4 implemented and passing (36/36 tests). flutter analyze was clean. build_runner succeeded.
 
 Known Failure Points / Outstanding Issues
-1. Debug prints left in production widget (MUST REVERT)
-contact_selection_control_widget.dart has temporary debug instrumentation from the bug investigation:
+1. Debug prints left in production widget (RESOLVED)
+contact_selection_control_widget.dart previously had temporary debug
+instrumentation from the bug investigation:
 
 Line 2: import 'package:flutter/foundation.dart'; — added only for debugPrint
 Lines 47–52: debugPrint('[ChangeContact] TAP! ...') in _handleTap()
 Line 59: debugPrint('[ChangeContact] chooseAnotherContact completed')
-These must be removed before merge.
+These were removed before the graph-era cleanup pass. The widget now uses the
+app logger around the actual sidebar action dispatch path instead of temporary
+`debugPrint` calls.
 
 2. "< Change contact..." button unresponsive on fresh start (UNRESOLVED BUG)
 Symptom: After launching the app fresh, choosing a contact in the sidebar, the "Change contact..." back-link at the top of the info card does nothing when tapped.
@@ -53,7 +56,8 @@ The docs are markdown only (no Dart changes in this session), so analyze should 
 The 8 new doc files and README edit exist only as working tree changes — they need to be committed (either as part of the feature branch or separately).
 
 Recommended Next Steps for Receiving Agent
-Revert debug prints in contact_selection_control_widget.dart: remove the foundation.dart import and both debugPrint calls
+No action needed for the old contact-selection debug prints; they have already
+been removed from `contact_selection_control_widget.dart`.
 Investigate the button bug: The most productive approach is to git diff HEAD~1 HEAD -- lib/essentials/sidebar/ and examine what changed in the cascade/rack/topology files — the bug was introduced by the Ftr.img-archive commit
 Commit the documentation if satisfied with content
 Run flutter analyze to confirm clean state after any code changes

@@ -4,25 +4,22 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
-import '../../../features/contacts/infrastructure/repositories/recent_contacts_repository.dart';
-import '../../../features/handles/application/state/stray_handle_mode_provider.dart';
+import '../../../features/contacts/feature_level_providers.dart'
+    show contactAccessActionsProvider;
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
-import '../../../features/handles/infrastructure/repositories/stray_handles_provider.dart';
-import '../../../features/messages/domain/value_objects/message_timeline_scope.dart';
-import '../../../features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart';
-import '../../../features/settings/application/sidebar_cassette_spec/actions/message_history_coverage_report_actions.dart';
-import '../../../features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
+import '../../../features/handles/feature_level_providers.dart'
+    show handleReviewActionsProvider, strayHandleModeSettingProvider;
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
+import '../../../features/settings/feature_level_providers.dart'
+    show
+        messageHistoryCoverageReportExporterProvider,
+        messageHistoryCoverageReportProvider;
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
-import '../../db/application/database_health_audit/database_health_audit_service.dart';
-import '../../db/feature_level_providers.dart';
-import '../../logging/application/app_logger.dart';
 import '../../logging/application/diagnostic_report_actions.dart';
-import '../../navigation/domain/entities/view_spec.dart';
-import '../../navigation/domain/navigation_constants.dart';
+import '../../logging/feature_level_providers.dart'
+    show diagnosticLogDirectoryPathProvider, diagnosticReportExporterProvider;
 import '../../navigation/domain/sidebar_mode.dart';
-import '../../navigation/feature_level_providers.dart';
 import '../../onboarding/application/message_data_reset_service.dart';
 import '../application/cassette_rack_state_provider.dart';
 import '../application/ephemeral_cassette_projection_provider.dart';
@@ -55,9 +52,9 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
   }) async {
     switch (intent) {
       case TopMenuChanged(:final choice):
-        ref
+        await ref
             .read(sidebarFlowProvider.notifier)
-            .topMenuChanged(
+            .topMenuChangedRestoringContactContext(
               choice: _mapTopMenuChoice(choice),
               cassetteIndex: _requireCassetteIndex(context),
             );
@@ -137,8 +134,38 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
               messageScope: _mapMessageScope(scope),
               cassetteIndex: _requireCassetteIndex(context),
             );
+      case ContactProjectionChanged(:final contactId, :final projection):
+        switch (projection) {
+          case SidebarContactProjection.allMessages:
+            ref
+                .read(sidebarFlowProvider.notifier)
+                .showContactTimelineAt(contactId: contactId);
+          case SidebarContactProjection.conversations:
+            ref
+                .read(sidebarFlowProvider.notifier)
+                .showContactConversationNavigator(contactId: contactId);
+        }
       case HeatMapMonthFocused(:final monthAnchor, :final contactId):
         _dispatchHeatMapFocus(contactId: contactId, monthAnchor: monthAnchor);
+      case ConversationSelected(
+        :final conversationId,
+        :final anchorMessageId,
+        :final searchQuery,
+      ):
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .selectConversation(
+              conversationId: conversationId,
+              anchorMessageId: anchorMessageId,
+              searchQuery: searchQuery,
+            );
+      case ContactConversationSelected(:final contactId, :final conversationId):
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .selectContactConversation(
+              contactId: contactId,
+              conversationId: conversationId,
+            );
       case RecoveredMonthFocused(
         :final monthAnchor,
         :final contactId,
@@ -149,6 +176,8 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
           monthAnchor: monthAnchor,
           onlyNoHandleFromMe: onlyNoHandleFromMe,
         );
+      case RecoveredNoHandleFromMeOpened():
+        ref.read(sidebarFlowProvider.notifier).showRecoveredNoHandleFromMe();
       case StrayHandleFilterChanged(:final filter):
         _replaceCassetteAtContext(
           context: context,
@@ -164,17 +193,20 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             .setMode(_mapStrayHandleMode(mode));
       case StrayHandleOpened(:final handleId):
         ref
-            .read(panelsViewStateProvider(context.sidebarMode).notifier)
-            .show(
-              panel: WindowPanel.center,
-              spec: ViewSpec.messages(
-                MessagesSpec.handleLens(handleId: handleId),
-              ),
-            );
+            .read(sidebarFlowProvider.notifier)
+            .openStrayHandleLens(handleId: handleId);
+      case HandleMessagesOpened(:final handleId):
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .openHandleMessages(handleId: handleId);
       case StrayHandleDismissed(:final normalizedHandle):
-        await _dismissHandle(normalizedHandle);
+        await ref
+            .read(handleReviewActionsProvider.notifier)
+            .dismissUnfamiliarHandle(normalizedHandle);
       case StrayHandleRestored(:final normalizedHandle):
-        await _restoreHandle(normalizedHandle);
+        await ref
+            .read(handleReviewActionsProvider.notifier)
+            .restoreUnfamiliarHandle(normalizedHandle);
       case SettingsTransientActionCancelled():
         ref
             .read(
@@ -182,22 +214,21 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             )
             .clear();
       case SendLogsRequested():
-        final writer = ref.read(appLoggerProvider.notifier).writer;
-        final databaseHealthAuditService = await ref.read(
-          databaseHealthAuditServiceProvider.future,
+        final diagnosticReportExporter = await ref.read(
+          diagnosticReportExporterProvider.future,
         );
-        await exportDiagnosticReport(
-          writer,
-          databaseHealthAuditService: databaseHealthAuditService,
-        );
+        await exportDiagnosticReport(diagnosticReportExporter);
       case ExportMessageHistoryCoverageReportRequested():
-        final writer = ref.read(appLoggerProvider.notifier).writer;
+        final exportDirectoryPath = ref.read(
+          diagnosticLogDirectoryPathProvider,
+        );
         final report = await ref.read(
           messageHistoryCoverageReportProvider.future,
         );
-        await exportMessageHistoryCoverageReport(
+        final exporter = ref.read(messageHistoryCoverageReportExporterProvider);
+        await exporter.export(
           report: report,
-          exportDirectory: writer.logDir,
+          exportDirectoryPath: exportDirectoryPath,
         );
       case ResetMessageDataRequested():
         final resetService = ref.read(messageDataResetServiceProvider);
@@ -214,30 +245,18 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
       return;
     }
 
-    // If the contact timeline is already showing, scroll in place rather than
-    // tearing down and rebuilding the entire panel with a new ViewSpec.
     final flowState = ref.read(sidebarFlowProvider);
-    if (flowState.chosenContactId == contactId &&
-        flowState.topMenuChoice == TopChatMenuChoice.contacts &&
-        flowState.messageScope == SidebarFlowMessageScope.regular) {
-      final scope = MessageTimelineScope.contact(
-        contactId: contactId,
-        filterHandleId: flowState.selectedHandleId,
-      );
-      final timeline = ref.read(
-        messageTimelineViewModelProvider(scope: scope).notifier,
-      );
-      if (monthAnchor == null) {
-        timeline.jumpToLatest();
-      } else {
-        timeline.jumpToDate(monthAnchor);
-      }
-      return;
-    }
+    final selectedHandleId = flowState.chosenContactId == contactId
+        ? flowState.selectedHandleId
+        : null;
 
     ref
         .read(sidebarFlowProvider.notifier)
-        .showContactTimelineAt(contactId: contactId, scrollToDate: monthAnchor);
+        .showContactTimelineAt(
+          contactId: contactId,
+          scrollToDate: monthAnchor,
+          filterHandleId: selectedHandleId,
+        );
   }
 
   void _dispatchRecoveredMonthFocus({
@@ -257,38 +276,22 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
         .showRecoveredDeletedAt(contactId: contactId, startDate: monthAnchor);
   }
 
-  Future<void> _dismissHandle(String normalizedHandle) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.dismissHandle(normalizedHandle);
-    _invalidateStrayHandleProviders();
-  }
-
-  Future<void> _restoreHandle(String normalizedHandle) async {
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.restoreHandle(normalizedHandle);
-    _invalidateStrayHandleProviders();
-  }
-
   Future<void> _handleContactChosen({
     required SidebarActionDispatchContext context,
     required int contactId,
   }) async {
+    final previousProjection = ref.read(sidebarFlowProvider).contactProjection;
     ref
         .read(sidebarFlowProvider.notifier)
         .contactChosen(
           contactId: contactId,
           infoCardIndex: _requirePreviousCassetteIndex(context),
+          contactProjection: previousProjection,
         );
 
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    await overlayDb.trackContactAccess(contactId);
-    ref.invalidate(recentContactsProvider);
-  }
-
-  void _invalidateStrayHandleProviders() {
-    ref.invalidate(strayHandlesProvider);
-    ref.invalidate(spamCandidateHandlesProvider);
-    ref.invalidate(dismissedHandlesProvider);
+    await ref
+        .read(contactAccessActionsProvider.notifier)
+        .recordContactSelection(contactId);
   }
 
   void _replaceCassetteAtContext({

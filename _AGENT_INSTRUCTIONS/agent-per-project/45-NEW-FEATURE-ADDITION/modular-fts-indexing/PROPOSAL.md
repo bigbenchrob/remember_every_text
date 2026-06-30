@@ -1,5 +1,17 @@
 # Modular FTS Indexing Proposal
 
+## Current Conformance Note (2026-06-06)
+
+This proposal is historical search-backend research. Its modular-indexer
+discipline remains useful, but the current production search authority is
+graph-native `SearchService` / `GraphSearchRepository` returning canonical
+`message_ss_id` evidence scopes.
+
+Future FTS work must be treated as an optional graph search backend or
+acceleration layer. It must not revive retained `working.db` FTS/index rebuilds
+as the ordinary selector, and it must not create a source-specific message
+renderer. Search results must still flow into the Message Evidence Spine.
+
 ## Summary
 Introduce a modular search indexing subsystem that mirrors the existing migration orchestrator pattern. The system will coordinate independent indexers so that new search capabilities can be added, removed, or iterated without touching unrelated flows. Initial scope delivers an orchestrator plus two indexers: the current single-string lookup (formalized as a lexical indexer) and a new multi-term FTS indexer that supports ranked results for multiple terms.
 

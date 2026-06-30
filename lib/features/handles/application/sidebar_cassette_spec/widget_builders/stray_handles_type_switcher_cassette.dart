@@ -3,11 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
-import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
-import '../../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../../../essentials/sidebar/feature_level_providers.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
+import '../resolver_tools/stray_handle_sidebar_actions_provider.dart';
 
 /// A segmented control for selecting which type of stray handles to review:
 /// Phone numbers, Email addresses, or Business URNs.
@@ -29,15 +26,12 @@ class StrayHandlesTypeSwitcherCassette extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
+    final actions = ref.read(strayHandleSidebarActionsProvider.notifier);
 
     Future<void> handleFilterChange(StrayHandleFilter newFilter) async {
-      await dispatcher.dispatch(
-        intent: StrayHandleFilterChanged(filter: _mapFilter(newFilter)),
-        context: SidebarActionDispatchContext(
-          sidebarMode: SidebarMode.messages,
-          cassetteIndex: cassetteIndex,
-        ),
+      await actions.changeFilter(
+        filter: newFilter,
+        cassetteIndex: cassetteIndex,
       );
     }
 
@@ -50,7 +44,7 @@ class StrayHandlesTypeSwitcherCassette extends ConsumerWidget {
         groupValue: selectedFilter,
         onValueChanged: handleFilterChange,
         padding: const EdgeInsets.all(2),
-        // Use neutral gray for unselected border/separator
+        selectedColor: colors.buttons.primaryBackground,
         unselectedColor: colors.surfaces.surface,
         borderColor: colors.lines.border,
         pressedColor: colors.surfaces.hover,
@@ -79,14 +73,6 @@ class StrayHandlesTypeSwitcherCassette extends ConsumerWidget {
   }
 }
 
-SidebarStrayHandleFilter _mapFilter(StrayHandleFilter filter) {
-  return switch (filter) {
-    StrayHandleFilter.phones => SidebarStrayHandleFilter.phones,
-    StrayHandleFilter.emails => SidebarStrayHandleFilter.emails,
-    StrayHandleFilter.businessUrns => SidebarStrayHandleFilter.businessUrns,
-  };
-}
-
 class _SegmentContent extends StatelessWidget {
   const _SegmentContent({
     required this.label,
@@ -107,10 +93,8 @@ class _SegmentContent extends StatelessWidget {
       child: Text(
         label,
         style: typography.caption.copyWith(
-          // Selected segment has blue background, so use white text
-          // Unselected uses secondary text color
           color: isSelected
-              ? CupertinoColors.white
+              ? colors.buttons.primaryForeground
               : colors.content.textSecondary,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           fontSize: 12,

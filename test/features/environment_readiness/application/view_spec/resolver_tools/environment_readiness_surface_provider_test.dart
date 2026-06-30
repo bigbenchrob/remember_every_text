@@ -1,12 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/features/environment_readiness/application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import 'package:remember_this_text/features/environment_readiness/domain/entities/environment_readiness_surface_view_model.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('environmentReadinessSurfaceProvider', () {
     late ProviderContainer container;
 
@@ -100,6 +103,34 @@ void main() {
       ]);
       expect(surface.detail.tone, EnvironmentReadinessTone.warning);
     });
+
+    test('shows normal-use readiness when graph is already ready', () async {
+      container = ProviderContainer(
+        overrides: [
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _report(
+              state: OnboardingEnvironmentState.ready,
+              blockerKind: OnboardingBlockerKind.none,
+            ),
+          ),
+        ],
+      );
+
+      await container.read(onboardingEnvironmentReportProvider.future);
+      final surface = container.read(environmentReadinessSurfaceProvider);
+
+      expect(
+        surface.detail.stepKey,
+        EnvironmentReadinessStepKey.importReadiness,
+      );
+      expect(surface.detail.title, 'Ready To Use');
+      expect(surface.detail.actions.map((action) => action.kind), [
+        EnvironmentReadinessActionKind.recheck,
+      ]);
+      expect(surface.steps.map((step) => step.status).toSet(), {
+        EnvironmentReadinessStepStatus.success,
+      });
+    });
   });
 }
 
@@ -124,17 +155,27 @@ OnboardingEnvironmentReport _report({
       readable: true,
       rowCount: 10,
     ),
-    importDatabase: const OnboardingDatabaseProbe(
-      path: 'macos_import.db',
+    overlayDatabase: OnboardingDatabaseProbe(
+      path: appDatabaseFileName(AppDatabaseFile.overlay),
+      exists: true,
+      readable: true,
+    ),
+    sourceScopedImportDatabase: OnboardingDatabaseProbe(
+      path: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
       exists: true,
       readable: true,
       rowCount: 100,
     ),
-    workingDatabase: const OnboardingDatabaseProbe(
-      path: 'working.db',
+    conversationGraph: OnboardingDatabaseProbe(
+      path: appDatabaseFileName(AppDatabaseFile.conversationGraph),
       exists: true,
       readable: true,
       rowCount: 100,
+    ),
+    attachmentArchiveDirectory: const OnboardingDatabaseProbe(
+      path: 'attachment_archive',
+      exists: true,
+      readable: true,
     ),
     hasFullDiskAccess: hasFullDiskAccess,
   );

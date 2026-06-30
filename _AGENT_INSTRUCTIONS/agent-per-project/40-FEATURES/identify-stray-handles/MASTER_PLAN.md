@@ -2,9 +2,9 @@
 
 > **Branch:** `Ftr.stray`
 > **Status:** Historical implementation plan; current code has implemented substantial Phase 1/2 pieces under `lib/features/handles` and `lib/features/contacts`.
-> **Last updated:** 2026-04-21 conformance note
+> **Last updated:** 2026-06-05 conformance note
 
-> Current conformance note: keep this document as historical context. For current code, use `HandlesCassetteSpec` variants such as `strayPhoneNumbers`, `strayEmails`, `strayHandlesReview`, `strayHandlesModeSwitcher`, and `strayHandlesTypeSwitcher`; use `MessagesSpec.handleLens(handleId: ...)` for Handle Lens. There is no separate current `StrayHandlesSpec` or `HandleLensSpec` type.
+> Current conformance note: keep this document as historical context. For current code, use the unified handle triage flow: info card -> type switcher -> mode switcher -> `HandlesCassetteSpec.strayHandlesReview`; use `MessagesSpec.handleLens(handleId: ...)` for Handle Lens. There is no separate current `StrayHandlesSpec` or `HandleLensSpec` type, and the old separate phone/email/unmatched sidebar cassette variants have been retired. Ordinary handle/contact facts are graph-backed; manual links and virtual contacts are overlay-owned user intent.
 
 ## Problem
 
@@ -24,7 +24,7 @@ Once linked, a virtual participant is **indistinguishable** from an AddressBook 
 
 | Principle | Detail |
 |---|---|
-| **Overlay / working separation** | Inviolable. Virtual participants and handle overrides live in overlay DB only. Migration never consults overlay. Providers merge both DBs; overlay wins on conflict. |
+| **Overlay / graph separation** | Inviolable. Virtual participants and handle overrides live in overlay DB only. Source-scoped import and graph projection never consult overlay. Providers merge graph facts with overlay intent; overlay wins on conflict. |
 | **Virtual participant parity** | Once created, a virtual participant flows through every provider and UI surface exactly like a real contact. A subtle badge may distinguish them visually, but functionally they are peers. |
 | **Handle Lens is utilitarian** | Its sole purpose is identification → action. Bare message list + action buttons. No heatmap, no search, no rich rendering. "Link it or forget it." |
 | **is_ignored / is_blacklisted / is_visible** | Inert for now. Left in schema but not wired. May be used during import later, or dropped. |
@@ -45,8 +45,8 @@ Once linked, a virtual participant is **indistinguishable** from an AddressBook 
   - `updated_at TEXT`
 
 - **`handle_to_participant_overrides`** table:
-  - `handle_id INTEGER PRIMARY KEY` (references working-DB handle)
-  - `participant_id INTEGER` (references working-DB participant — for linking to real contacts)
+  - `handle_id INTEGER PRIMARY KEY` (references graph canonical handle identity)
+  - `participant_id INTEGER` (references graph contact identity — for linking to real contacts)
   - `virtual_participant_id INTEGER` (references overlay virtual_participants.id)
   - `reviewed_at TEXT`
   - **Constraint:** exactly one of `participant_id` / `virtual_participant_id` is non-null.
@@ -55,9 +55,9 @@ Once linked, a virtual participant is **indistinguishable** from an AddressBook 
 
 ### Provider layer
 
-- Current implementation uses contacts providers/repositories such as `participantsForPickerProvider`, `contactsListRepositoryProvider`, `virtualParticipantsProvider`, and `participant_merge_utils.dart` to merge working-DB participants with overlay virtual participants and overrides. Overlay wins on conflict (per inviolable rule).
+- Current implementation uses contacts providers/repositories such as `contactsListRepositoryProvider`, `virtualParticipantsProvider`, display identity providers, and graph contact/handle repositories to merge graph contacts with overlay virtual participants and overrides. Overlay wins on conflict (per inviolable rule).
 - Contact picker, hero card, heatmap, message views all consume this merged provider. Virtual participants get the same treatment as real ones.
-- **`strayHandlesProvider`** — returns handles that have no participant link in *either* DB (working join miss + no overlay override). Drives sidebar list in Phase 2.
+- **`strayHandlesProvider`** — returns graph handles that have no graph contact link and no overlay manual-link/dismissal override. Drives the current handle review surface.
 
 ### Prerequisite cleanup
 

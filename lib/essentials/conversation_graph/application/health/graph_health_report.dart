@@ -7,12 +7,14 @@ class GraphHealthReport {
     required this.handleAliasCount,
     required this.contactCount,
     required this.attachmentCount,
+    required this.archiveFileAuditIncluded,
     required this.archiveRecordCount,
     required this.attachmentsWithArchiveRecordCount,
     required this.attachmentsMissingArchiveRecordCount,
     required this.archiveFilesAvailableCount,
     required this.archiveFilesMissingCount,
-    required this.archiveRecordsWithoutWorkingAttachmentCount,
+    required this.archiveRecordsWithoutGraphAttachmentCount,
+    required this.attachmentRecoveryAuditIncluded,
     required this.historicalArchiveAvailable,
     required this.historicalArchiveRecordCount,
     required this.historicalArchiveFilesAvailableCount,
@@ -58,12 +60,14 @@ class GraphHealthReport {
   final int handleAliasCount;
   final int contactCount;
   final int attachmentCount;
+  final bool archiveFileAuditIncluded;
   final int archiveRecordCount;
   final int attachmentsWithArchiveRecordCount;
   final int attachmentsMissingArchiveRecordCount;
   final int archiveFilesAvailableCount;
   final int archiveFilesMissingCount;
-  final int archiveRecordsWithoutWorkingAttachmentCount;
+  final int archiveRecordsWithoutGraphAttachmentCount;
+  final bool attachmentRecoveryAuditIncluded;
   final bool historicalArchiveAvailable;
   final int historicalArchiveRecordCount;
   final int historicalArchiveFilesAvailableCount;
@@ -128,8 +132,8 @@ class GraphHealthReport {
 class MissingAttachmentRecoverySample {
   const MissingAttachmentRecoverySample({
     required this.attachmentSsId,
-    required this.messageGuid,
-    required this.importAttachmentId,
+    required this.archiveMessageGuid,
+    required this.archiveCompatibilitySourceRowId,
     required this.filename,
     required this.mimeType,
     required this.uti,
@@ -140,8 +144,8 @@ class MissingAttachmentRecoverySample {
   });
 
   final int attachmentSsId;
-  final String messageGuid;
-  final int importAttachmentId;
+  final String archiveMessageGuid;
+  final int archiveCompatibilitySourceRowId;
   final String? filename;
   final String? mimeType;
   final String? uti;

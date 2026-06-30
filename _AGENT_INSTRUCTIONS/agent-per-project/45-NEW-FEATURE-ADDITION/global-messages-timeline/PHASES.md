@@ -3,7 +3,7 @@ tier: project
 scope: phases
 owner: agent-per-project
 last_reviewed: 2025-12-24
-source_of_truth: doc
+source_of_truth: historical-record
 links:
   - ./PROPOSAL.md
   - ../ordinal-index-all-messages/PHASES.md
@@ -12,7 +12,16 @@ tests: []
 
 # Global Messages Timeline — Phase Plan
 
-This plan intentionally mirrors the contact-messages architecture and reuses the existing global ordinal index work.
+> Current conformance note (2026-06-19): this phase plan records the original
+> ordinal-index implementation target. Future global timeline work should
+> mirror the graph-backed Message Evidence Spine: source-specific scope
+> construction, full logical skeleton, viewport hydration, and shared evidence
+> rendering. Retained `working.db` ordinal indexes are not the production
+> authority.
+
+This plan intentionally mirrors the contact-messages architecture. Its
+timeline-navigation invariant remains valid, but its old global ordinal index
+mechanics are historical.
 
 ## Phase 0: Scope Confirmation
 - Decide v1 scope: **A / B / C** (defined in `PROPOSAL.md`).
@@ -20,11 +29,11 @@ This plan intentionally mirrors the contact-messages architecture and reuses the
 - Confirm whether “unknown senders” needs the concept of contact linkage now or later.
 
 ## Phase 1: Data Contracts Verification
-- Confirm `message_index` supports:
-  - total count
-  - ordinal → messageId
-  - monthKey → firstOrdinal (if using month jump)
-  - messageId → ordinal (for “jump to search hit”)
+- Confirm the graph evidence skeleton supports:
+  - total logical message count
+  - ordinal/index → `message_ss_id`
+  - month key → first skeleton index (if using month jump)
+  - `message_ss_id` → skeleton index (for “jump to search hit”)
 - Confirm corresponding message projection supports correspondent labeling:
   - “best display name” for sender/other party
   - handle/email/phone as fallback
@@ -32,8 +41,8 @@ This plan intentionally mirrors the contact-messages architecture and reuses the
 ## Phase 2: Providers (Jump + Hydration)
 - Create `global_messages` view-model module:
   - `globalMessagesViewModelProvider`
-  - `globalMessagesOrdinalProvider`
-  - `messageByGlobalOrdinalProvider`
+  - graph-backed global skeleton provider
+  - visible-row hydration provider
 - Ensure `dbMaintenanceLockProvider` short-circuits global ordinal provider similarly to contact messages.
 
 ## Phase 3: Search Integration

@@ -248,17 +248,6 @@ class _ParticipantListItem extends ConsumerWidget {
                         color: colors.content.textPrimary,
                       ),
                     ),
-                    if (participant.shortName.isNotEmpty &&
-                        participant.shortName != participant.displayName) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        participant.shortName,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.content.textSecondary,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

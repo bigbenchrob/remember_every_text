@@ -1,29 +1,49 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/chat_message_joins/chat_to_message_projection_repository.dart';
 
 class SqliteChatToMessageProjectionRepository
     implements ChatToMessageProjectionRepository {
   const SqliteChatToMessageProjectionRepository({
-    required this.importDatabase,
-    required this.workingDatabase,
+    required this.importLedgerDatabase,
+    required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ImportLedger importLedgerDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ChatToMessageProjectionResult> projectEdges() async {
-    final rows = await importDatabase.database.query(
+    return _projectEdgesWhere(whereClause: null, whereArgs: const <Object?>[]);
+  }
+
+  @override
+  Future<ChatToMessageProjectionResult> projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _projectEdgesWhere(
+      whereClause: 'source_id = ? AND source_message_rowid > ?',
+      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    );
+  }
+
+  Future<ChatToMessageProjectionResult> _projectEdgesWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
+    final rows = await importLedgerDatabase.queryTable(
       'chat_to_message',
       columns: <String>['chat_ss_id', 'message_ss_id'],
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'ss_id ASC',
     );
 
     var insertedEdgeCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO chat_to_message (
             chat_ss_id,

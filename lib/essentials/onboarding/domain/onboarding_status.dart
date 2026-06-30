@@ -3,7 +3,7 @@ enum OnboardingStatus {
   /// Both databases exist and contain data — no overlay needed.
   notNeeded,
 
-  /// MessageLens is clearing stale app databases before setup restarts.
+  /// MessageLens is clearing incomplete derived app databases before setup restarts.
   recoveringFailedAttempt,
 
   /// Full Disk Access has not been granted — show FDA instruction screen.
@@ -19,17 +19,17 @@ enum OnboardingStatus {
   /// Import orchestrator is running.
   importing,
 
-  /// Migration orchestrator is running.
-  migrating,
+  /// Conversation graph build is running.
+  buildingGraph,
 
-  /// Both pipelines succeeded — show summary with "Get Started" or "Done".
+  /// Import and graph build succeeded — show summary with "Get Started" or "Done".
   complete,
 
   /// Reimport triggered from settings — skip welcome, go straight to import.
   reimporting,
 
-  /// Reimport migration phase.
-  reimportMigrating,
+  /// Reimport graph build phase.
+  reimportBuildingGraph,
 
   /// Reimport finished — show summary with "Done" button.
   reimportComplete,

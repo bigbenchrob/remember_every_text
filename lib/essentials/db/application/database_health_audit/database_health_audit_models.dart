@@ -223,6 +223,9 @@ abstract class HealthReportSummary with _$HealthReportSummary {
   @JsonSerializable(fieldRename: FieldRename.snake, includeIfNull: false)
   const factory HealthReportSummary({
     required DatabaseHealthStatus overallStatus,
+
+    /// Count of active app-health tables only. Retired cleanup tables may appear
+    /// in detailed inventory but must not inflate the top-level health summary.
     required int tableCount,
     required int relationshipCheckCount,
     required int invariantCheckCount,

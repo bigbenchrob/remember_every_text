@@ -3,12 +3,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
 import '../../state/stray_handle_mode_provider.dart';
-import '../resolvers/stray_emails_resolver.dart';
 import '../resolvers/stray_handles_mode_switcher_resolver.dart';
 import '../resolvers/stray_handles_review_resolver.dart';
 import '../resolvers/stray_handles_type_switcher_resolver.dart';
-import '../resolvers/stray_phones_resolver.dart';
-import '../resolvers/unmatched_handles_resolver.dart';
 
 part 'cassette_coordinator.g.dart';
 
@@ -43,12 +40,6 @@ class HandlesCassetteCoordinator extends _$HandlesCassetteCoordinator {
     required int cassetteIndex,
   }) async {
     return spec.map(
-      unmatchedHandlesList: (_) =>
-          ref.read(unmatchedHandlesResolverProvider.notifier).resolve(),
-      strayPhoneNumbers: (_) =>
-          ref.read(strayPhonesResolverProvider.notifier).resolve(),
-      strayEmails: (_) =>
-          ref.read(strayEmailsResolverProvider.notifier).resolve(),
       strayHandlesReview: (reviewSpec) {
         // Read mode from global provider (mode switcher controls this)
         final mode = ref.watch(strayHandleModeSettingProvider);

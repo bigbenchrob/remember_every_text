@@ -2,18 +2,24 @@
 tier: feature
 scope: tests
 owner: agent-per-project
-last_reviewed: 2026-04-05
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./PROPOSAL.md
   - ./CHECKLIST.md
 tests: []
 feature: archive-canonical-attachments
-status: proposed
+status: historical-planning-record
 created: 2026-04-05
 ---
 
 # Test Plan - Archive-Canonical Attachments
+
+> Current conformance note (2026-06-06): this test plan is historical. Current
+> tests should target the shared attachment resolver/archive service, graph
+> attachment evidence hydration, and the Message Evidence Spine rather than
+> introducing source-specific attachment renderers or retained `working.db`
+> attachment presentation paths.
 
 ## Resolver Tests
 

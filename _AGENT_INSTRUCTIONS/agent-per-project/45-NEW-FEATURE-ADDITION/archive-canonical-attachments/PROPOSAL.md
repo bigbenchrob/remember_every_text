@@ -2,8 +2,8 @@
 tier: feature
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-04-05
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ../../25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md
   - ../../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md
@@ -16,15 +16,25 @@ links:
   - ./TESTS.md
 tests: []
 feature: archive-canonical-attachments
-status: proposed
+status: historical-planning-record
 created: 2026-04-05
 ---
 
 # Feature Proposal - Archive-Canonical Attachments
 
 **Proposed Branch**: `Ftr.img-archive`
-**Status**: Proposed
+**Status**: Historical planning record
 **Created**: 2026-04-05
+
+> Current conformance note (2026-06-06): this proposal captured the product
+> direction that later became the archive-first attachment model documented in
+> `../../25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md` and
+> `../../25-ONBOARDING-AND-ARCHIVE/70-attachments-end-to-end.md`. Treat the
+> canonical onboarding/archive docs and current code as authoritative. Do not
+> use this April proposal to reintroduce live-first display, retained
+> `working.db` authority, or source-specific attachment rendering shortcuts.
+> Remaining future work should be framed as resolver/archive-service refinement,
+> not as a new competing attachment display path.
 
 ---
 
@@ -95,7 +105,7 @@ When archive mode is enabled, the user should experience MessageLens as a durabl
 ## Hard Invariants
 
 1. Do not suppress message rows because an attachment is pending, missing, or failed.
-2. Do not write archive metadata into working DB tables.
+2. Do not write archive metadata into projection tables.
 3. Do not bypass centralized DB providers.
 4. Do not let archive-enabled mode silently fall back to live-file rendering after the new contract is adopted.
 5. Do not remove live-only behavior when archive mode is disabled.
@@ -238,7 +248,7 @@ This keeps UX simple while still supporting good retry decisions and debugging.
    Some attachments that appear unavailable may later be restored by Apple, so the plan must distinguish durable absence from retriable absence.
 
 5. **Doc drift during transition**
-   The current canonical archive doc still encodes the old live-first rule and must not remain the long-term source of truth once implementation starts.
+   At proposal time, canonical archive docs still encoded older live-first assumptions. Current canonical archive docs now supersede this planning note.
 
 ---
 

@@ -1,9 +1,15 @@
 import 'package:dartz/dartz.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../essentials/db/feature_level_providers.dart';
-import '../../../handles/infrastructure/repositories/stray_handles_provider.dart';
-import '../../infrastructure/repositories/virtual_participants_provider.dart';
+import '../../../handles/feature_level_providers.dart'
+    show
+        handleDisplayNameProvider,
+        handleIdentityKeyVariants,
+        strayHandlesProvider;
+import '../read_models/contact_summary_identity.dart';
+import '../read_models/handles_for_contact_provider.dart';
+import '../read_models/virtual_participants_provider.dart';
+import 'manual_handle_link_store_provider.dart';
 
 part 'manual_handle_link_service.g.dart';
 
@@ -18,11 +24,11 @@ class Failure {
   String toString() => 'Failure: $message';
 }
 
-/// Service for managing manual handle-to-contact links.
+/// Action boundary for managing manual handle-to-contact links.
 ///
-/// All writes target the overlay database exclusively. The working database
-/// is never modified here — providers merge both databases at read time
-/// with overlay winning on conflict (inviolable architectural rule).
+/// All writes target the manual-link store, whose production implementation is
+/// overlay-only. The graph database is never modified here; providers merge
+/// graph facts with overlay intent at read time with overlay winning on conflict.
 @riverpod
 class ManualHandleLinkService extends _$ManualHandleLinkService {
   @override
@@ -46,8 +52,8 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
     }
 
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      final existing = await overlayDb.getVirtualParticipants();
+      final store = await ref.read(manualHandleLinkStoreProvider.future);
+      final existing = await store.readVirtualParticipants();
       final normalizedLower = normalizedName.toLowerCase();
 
       final hasDuplicate = existing.any(
@@ -61,7 +67,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
         );
       }
 
-      final created = await overlayDb.createVirtualParticipant(
+      final created = await store.createVirtualParticipant(
         displayName: normalizedName,
         notes: notes,
       );
@@ -76,7 +82,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
     }
   }
 
-  /// Links a handle to a real (working-DB) participant.
+  /// Links a handle to a graph contact/participant identity.
   ///
   /// Writes only to the overlay database. Providers merge at read time.
   ///
@@ -88,14 +94,18 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
     required int participantId,
   }) async {
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
+      final store = await ref.read(manualHandleLinkStoreProvider.future);
 
       // Check if manual link already exists to a different participant
-      final existingOverride = await overlayDb.getHandleOverride(handleId);
+      final existingOverride = await store.readHandleOverride(handleId);
+      final canonicalParticipantId = canonicalContactIdentityKey(participantId);
 
       if (existingOverride != null &&
           existingOverride.participantId != null &&
-          existingOverride.participantId != participantId) {
+          !contactIdentityIdsMatch(
+            existingOverride.participantId!,
+            canonicalParticipantId,
+          )) {
         return const Left(
           Failure(
             'Handle is already manually linked to a different contact. '
@@ -105,10 +115,15 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
       }
 
       // Write overlay-only link
-      await overlayDb.setHandleOverride(handleId, participantId);
+      await store.linkHandleToParticipant(
+        handleId: handleId,
+        participantId: canonicalParticipantId,
+      );
 
-      // Invalidate cached providers
-      ref.invalidate(strayHandlesProvider);
+      _invalidateManualLinkReads(
+        handleId: handleId,
+        participantId: canonicalParticipantId,
+      );
 
       return const Right(unit);
     } catch (e, stackTrace) {
@@ -127,16 +142,18 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
     required int virtualParticipantId,
   }) async {
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
+      final store = await ref.read(manualHandleLinkStoreProvider.future);
 
-      await overlayDb.setHandleVirtualParticipantOverride(
-        handleId,
-        virtualParticipantId,
+      await store.linkHandleToVirtualParticipant(
+        handleId: handleId,
+        virtualParticipantId: virtualParticipantId,
       );
 
-      // Invalidate cached providers
-      ref.invalidate(strayHandlesProvider);
-      ref.invalidate(virtualParticipantsProvider);
+      _invalidateManualLinkReads(
+        handleId: handleId,
+        virtualParticipantId: virtualParticipantId,
+        includeVirtualParticipants: true,
+      );
 
       return const Right(unit);
     } catch (e, stackTrace) {
@@ -151,7 +168,7 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
 
   /// Removes a manual link between handle and participant.
   ///
-  /// Deletes the overlay override only. The working database is not touched.
+  /// Deletes the overlay override only. The graph database is not touched.
   /// The handle reverts to its automatic link (if any) or unlinked status.
   ///
   /// If the handle was linked to a virtual participant and that participant
@@ -161,10 +178,10 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
   /// deleted (i.e. the contact no longer exists), `false` otherwise.
   Future<Either<Failure, bool>> unlinkHandle({required int handleId}) async {
     try {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
+      final store = await ref.read(manualHandleLinkStoreProvider.future);
 
       // Check if manual link exists
-      final existingOverride = await overlayDb.getHandleOverride(handleId);
+      final existingOverride = await store.readHandleOverride(handleId);
 
       if (existingOverride == null) {
         return const Left(Failure('No manual link found for this handle.'));
@@ -173,30 +190,63 @@ class ManualHandleLinkService extends _$ManualHandleLinkService {
       final virtualParticipantId = existingOverride.virtualParticipantId;
 
       // Remove overlay link only
-      await overlayDb.deleteHandleOverride(handleId);
+      await store.deleteHandleOverride(handleId);
 
       // If this handle was linked to a virtual participant, check whether
       // the virtual participant still has any remaining handles.
       var contactDeleted = false;
       if (virtualParticipantId != null) {
-        final remaining = await overlayDb.getOverridesForVirtualParticipant(
+        final remaining = await store.readOverridesForVirtualParticipant(
           virtualParticipantId,
         );
         if (remaining.isEmpty) {
-          await overlayDb.deleteVirtualParticipant(virtualParticipantId);
+          await store.deleteVirtualParticipant(virtualParticipantId);
           contactDeleted = true;
           ref.invalidate(virtualParticipantsProvider);
         }
       }
 
       // Invalidate cached providers
-      ref.invalidate(strayHandlesProvider);
+      _invalidateManualLinkReads(
+        handleId: handleId,
+        participantId: existingOverride.participantId,
+        virtualParticipantId: existingOverride.virtualParticipantId,
+      );
 
       return Right(contactDeleted);
     } catch (e, stackTrace) {
       return Left(
         Failure('Failed to unlink handle: $e', stackTrace: stackTrace),
       );
+    }
+  }
+
+  void _invalidateManualLinkReads({
+    required int handleId,
+    int? participantId,
+    int? virtualParticipantId,
+    bool includeVirtualParticipants = false,
+  }) {
+    ref.invalidate(strayHandlesProvider);
+    for (final candidateHandleId in handleIdentityKeyVariants(handleId)) {
+      ref.invalidate(handleDisplayNameProvider(handleId: candidateHandleId));
+    }
+    if (participantId != null) {
+      for (final candidateContactId in contactIdentityKeyVariants(
+        participantId,
+      )) {
+        ref.invalidate(
+          handlesForContactProvider(contactId: candidateContactId),
+        );
+      }
+    }
+    if (virtualParticipantId != null) {
+      ref.invalidate(
+        handlesForContactProvider(contactId: virtualParticipantId),
+      );
+    }
+    if (includeVirtualParticipants) {
+      ref.invalidate(virtualParticipantsProvider);
     }
   }
 }

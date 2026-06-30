@@ -2,6 +2,13 @@
 
 FEATURE: Message History Coverage Check
 
+Current conformance note (2026-06-19):
+
+This seed is a historical planning artifact. The user-facing trust question
+remains valid, but the current implementation must compare source `chat.db`
+against graph-accounted MessageLens evidence. Do not use this seed to restore
+retained `working.db` as the ordinary coverage authority.
+
 Purpose
 
 Provide a deterministic, user-facing diagnostic that answers:
@@ -50,7 +57,7 @@ High-Level Behavior
 When the user runs the check, the system performs a comparison between:
 
 * Apple source database (chat.db)
-* MessageLens working database (working.db)
+* graph-accounted MessageLens evidence
 
 It produces a Coverage Report summarizing:
 
@@ -113,7 +120,7 @@ From chat.db:
 * Earliest message date
 * Latest message date
 
-From working.db:
+From graph-accounted MessageLens evidence:
 
 * Count of messages in primary timeline tables
 * Count of messages in recovered/unlinked table
@@ -223,7 +230,7 @@ Within it:
 
 Resolver responsibilities:
 
-* Query both databases
+* Query source `chat.db` and graph-accounted MessageLens evidence
 * Compute report
 * Return pure domain entity
 
@@ -242,7 +249,7 @@ TL;DR
 
 Build a deterministic diagnostic that:
 
-* Compares chat.db vs working.db
+* Compares source `chat.db` vs graph-accounted MessageLens evidence
 * Proves whether MessageLens is missing anything
 * Distinguishes import problems vs incomplete Mac history
 * Presents results in a calm, trust-building way

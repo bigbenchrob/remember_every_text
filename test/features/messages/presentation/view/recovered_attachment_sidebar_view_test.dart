@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:remember_this_text/essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_resolver_provider.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/attachment_provenance.dart';
 import 'package:remember_this_text/features/attachments/domain/constants/resolved_attachment_availability.dart';
@@ -92,9 +93,11 @@ void main() {
     ) async {
       const attachment = AttachmentInfo(
         id: 3,
-        importAttachmentId: 88,
+        archiveCompatibilityKey: ArchiveCompatibilityKey(
+          messageGuid: 'guid-3',
+          importAttachmentId: 88,
+        ),
         localPath: '~/Library/Messages/Attachments/missing/missing.jpg',
-        messageGuid: 'guid-3',
         mimeType: 'image/jpeg',
         transferName: 'missing.jpg',
       );
@@ -103,11 +106,7 @@ void main() {
         tester,
         attachment: attachment,
         overrides: <Override>[
-          attachmentResolverProvider(
-            attachment,
-            messageGuid: 'guid-3',
-            importAttachmentId: 88,
-          ).overrideWith((ref) async {
+          attachmentResolverProvider(attachment).overrideWith((ref) async {
             return const ResolvedAttachment(
               attachmentInfo: attachment,
               availability:
@@ -141,9 +140,11 @@ void main() {
 
       const attachment = AttachmentInfo(
         id: 4,
-        importAttachmentId: 99,
+        archiveCompatibilityKey: ArchiveCompatibilityKey(
+          messageGuid: 'guid-4',
+          importAttachmentId: 99,
+        ),
         localPath: '~/Library/Messages/Attachments/historical/original.jpg',
-        messageGuid: 'guid-4',
         mimeType: 'image/jpeg',
         transferName: 'historical.jpg',
       );
@@ -152,16 +153,12 @@ void main() {
         tester,
         attachment: attachment,
         overrides: <Override>[
-          attachmentResolverProvider(
-            attachment,
-            messageGuid: 'guid-4',
-            importAttachmentId: 99,
-          ).overrideWith((ref) async {
+          attachmentResolverProvider(attachment).overrideWith((ref) async {
             return ResolvedAttachment(
               attachmentInfo: attachment,
               availability: ResolvedAttachmentAvailability.available,
               provenance: AttachmentProvenance.importedHistorical,
-              resolvedFile: recoveredFile,
+              resolvedFilePath: recoveredFile.path,
             );
           }),
         ],

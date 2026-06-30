@@ -1,17 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../../essentials/sidebar/feature_level_providers.dart';
-import '../../../../messages/feature_level_providers.dart' as messages_feature;
-import '../../../infrastructure/repositories/contact_profile_provider.dart';
 import '../../../presentation/widgets/grouped_contact_selector.dart';
 import '../payloads/contact_chooser_cassette_payload.dart';
+import '../resolver_tools/contact_picker_actions_provider.dart';
 
 /// Widget builder for the grouped contact picker display.
 ///
@@ -23,7 +15,7 @@ import '../payloads/contact_chooser_cassette_payload.dart';
 /// Widget builders:
 /// - Accept fully-decided inputs (not specs)
 /// - May use `ref.watch()` for reactive updates
-/// - Construct specs only on user interaction (output, not interpretation)
+/// - Dispatch semantic actions on user interaction; do not construct panel specs
 /// - Never make branching decisions about which UI to show
 class ContactGroupedPickerWidget extends HookConsumerWidget {
   const ContactGroupedPickerWidget({super.key, required this.payload});
@@ -32,12 +24,6 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    useEffect(() {
-      unawaited(ref.read(workingProjectionReadinessProvider.future));
-      unawaited(ref.read(overlayDatabaseProvider.future));
-      return null;
-    }, const []);
-
     final pickerFilterMode = payload.pickerFilterMode!;
     final filteredSections = payload.filteredSections!;
 
@@ -45,7 +31,7 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
       selectedParticipantId: payload.chosenContactId,
       onContactSelected: (contactId) => _handleContactSelection(ref, contactId),
       onContactHovered: (contactId) {
-        _prewarmContactInvestigation(ref, contactId);
+        _prewarmContact(ref, contactId);
       },
       currentMode: pickerFilterMode,
       unifiedSections: filteredSections,
@@ -53,26 +39,17 @@ class ContactGroupedPickerWidget extends HookConsumerWidget {
   }
 
   Future<void> _handleContactSelection(WidgetRef ref, int contactId) async {
-    _prewarmContactInvestigation(ref, contactId);
-    ref
-        .read(sidebarActionDispatcherProvider.notifier)
-        .dispatch(
-          intent: ContactChosen(contactId: contactId),
-          context: SidebarActionDispatchContext(
-            sidebarMode: SidebarMode.messages,
-            cassetteIndex: payload.cassetteIndex,
-          ),
+    await ref
+        .read(contactPickerActionsProvider.notifier)
+        .chooseContact(
+          contactId: contactId,
+          cassetteIndex: payload.cassetteIndex,
         );
   }
 
-  void _prewarmContactInvestigation(WidgetRef ref, int contactId) {
-    unawaited(ref.read(contactProfileProvider(contactId: contactId).future));
-    unawaited(
-      ref.read(
-        messages_feature
-            .prewarmContactMessagesProvider(contactId: contactId)
-            .future,
-      ),
-    );
+  void _prewarmContact(WidgetRef ref, int contactId) {
+    ref
+        .read(contactPickerActionsProvider.notifier)
+        .prewarmContact(contactId: contactId);
   }
 }

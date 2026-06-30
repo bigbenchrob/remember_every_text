@@ -1,35 +1,45 @@
-import 'dart:io';
+import '../../db/app_database_files.dart';
+import 'onboarding_database_probe_reader.dart';
 
-import 'package:path/path.dart' as path;
-
-import '../../db/feature_level_providers/working_projection_readiness_provider.dart';
-
-/// Pure check: do `macos_import.db` and `working.db` both exist with data?
+/// Pure check: do the source-scoped import ledger and conversation graph exist?
 ///
-/// Returns `true` when both files are present and non-empty (file size > 0).
+/// Returns `true` when the graph import ledger exists and the graph is ready.
 /// This is a cheap filesystem check that avoids opening SQLite connections.
 ///
 /// A zero-byte file is treated the same as absent — SQLite creates the file
 /// on first connection but it contains no tables until schema runs.
 class DatabaseExistenceChecker {
-  const DatabaseExistenceChecker();
+  const DatabaseExistenceChecker(this.databaseProbeReader);
 
-  /// Returns `true` if both import and working databases exist and are non-empty.
+  final OnboardingDatabaseProbeReader databaseProbeReader;
+
+  /// Returns `true` if both import and graph databases exist and are populated.
   bool hasPopulatedDatabases(String databaseDirectory) {
-    final importFile = File(path.join(databaseDirectory, 'macos_import.db'));
-    final workingPath = path.join(databaseDirectory, 'working.db');
+    final importProbe = databaseProbeReader.probeFile(
+      appDatabasePath(
+        AppDatabaseFile.sourceScopedImport,
+        databaseDirectory: databaseDirectory,
+      ),
+    );
+    final graphPath = appDatabasePath(
+      AppDatabaseFile.conversationGraph,
+      databaseDirectory: databaseDirectory,
+    );
+    final graphProbe = databaseProbeReader.probeFile(graphPath);
 
-    if (!importFile.existsSync()) {
+    if (!importProbe.exists || !importProbe.readable) {
+      return false;
+    }
+    if (!graphProbe.exists || !graphProbe.readable) {
+      return false;
+    }
+    if ((importProbe.sizeBytes ?? 0) == 0 || (graphProbe.sizeBytes ?? 0) == 0) {
       return false;
     }
 
-    // A freshly-created SQLite DB may have schema but zero user data.
-    // For a robust check we'd query row counts, but file size > 4096
-    // (one page) is a reasonable heuristic for "has tables with data".
-    // The gate provider does the definitive row-count check if the files exist.
-    final workingReady = const WorkingProjectionReadinessChecker()
-        .checkPath(workingPath)
+    final graphReady = databaseProbeReader
+        .readConversationGraphReadiness(graphPath)
         .isReady;
-    return importFile.lengthSync() > 0 && workingReady;
+    return graphReady;
   }
 }

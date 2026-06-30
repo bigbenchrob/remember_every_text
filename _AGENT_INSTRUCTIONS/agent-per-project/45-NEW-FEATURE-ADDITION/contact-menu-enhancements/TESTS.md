@@ -17,6 +17,19 @@ tests: []
 **Status**: 🟡 In Progress  
 **Last Updated**: 2025-11-08
 
+## Current Conformance Note (2026-06-06)
+
+The examples below are historical. Current tests for contact menu/favourite
+work should assert graph-era behavior:
+
+- favourites persist in overlay and are keyed to stable graph/contact identity.
+- display labels come from the canonical display identity resolver.
+- user display-name override wins everywhere.
+- raw handles appear only as fallback or explicit handle-scope metadata.
+- short-name/nickname filtering is not a current requirement.
+- widgets receive typed display models and callbacks; they do not query
+  `working.db` or reconstruct participant identity.
+
 ## Test Coverage Goals
 
 ### Unit Tests
@@ -88,6 +101,11 @@ group('FavoriteContact', () {
 ```
 
 ---
+
+> Current conformance note (2026-06-19): tests in this document are historical
+> sketches. Current Contacts tests must use graph contact identity plus overlay
+> Favourites/user-name intent. Do not copy retained `WorkingDatabase` mocks or
+> participant-ID-first provider examples into new graph-era tests.
 
 ### 2. Favorite Contacts Provider Tests
 

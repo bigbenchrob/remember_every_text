@@ -2,12 +2,12 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-09
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
   - ./06-addressbook-path-resolution.md
-  - ./01-db-import.md
+  - ./00-all-databases-accessed.md
   - ./10-group-import-working.md
   - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
 tests: []
@@ -15,11 +15,11 @@ tests: []
 
 # `db-address-book` — macOS Contacts Source (`AddressBook-v22.abcddb`)
 
-`db-address-book` is the live macOS AddressBook database shipped with the operating system. It is the canonical source of truth for contacts that ultimately populate `db-working.participants` and participate in handle linking.
+`db-address-book` is the live macOS AddressBook database shipped with the operating system. It is the canonical source of truth for contact facts that are imported into the source-scoped ledger and projected into graph contact/handle identity.
 
 - **Alias**: `db-address-book`
 - **Physical File**: `AddressBook-v22.abcddb` inside the most recent `~/Library/Application Support/AddressBook/Sources/<UUID>/` folder
-- **Primary Consumer**: Import orchestrator (read-only)
+- **Primary Consumer**: Source-scoped import infrastructure (read-only)
 
 ## Resolution & Location
 
@@ -45,13 +45,15 @@ final aggregateEither = await ref.read(
 );
 
 final aggregate = aggregateEither.getOrElse(
-  (failure) => throw Exception('AddressBook resolution failed: ${failure.message}'),
+  (failure) => throw StateError(
+    'AddressBook resolution failed: ${failure.message}',
+  ),
 );
 
 final activePath = aggregate.mostRecentFolderPath.value;
 ```
 
-Only the import pipeline should open the sqlite file. Application code interacts with the projected data via `db-working`.
+Only source-scoped import infrastructure should open the sqlite file. Application code interacts with projected contact/identity data through graph readers plus overlay display-identity resolution.
 
 ## Key Tables Consumed During Import
 
@@ -62,7 +64,7 @@ Only the import pipeline should open the sqlite file. Application code interacts
 | `ZABCDEINTERNALMETADATA` | Provider metadata (used for deduplication diagnostics). |
 | `ZABCDCONTACTINDEX` | Search metadata leveraged during import health checks. |
 
-The import pipeline copies this data into ledger tables (`contacts`, `contact_phone_email`, and `contact_to_chat_handle`) while preserving `Z_PK` identifiers. See `01-db-import.md` for ledger schema expectations.
+The source-scoped import pipeline copies this data into contact and channel facts while preserving source identifiers. Graph projection turns those facts into app-facing contact/handle relationships; user-authored display identity remains in overlay.
 
 ## Usage Rules
 
@@ -74,6 +76,6 @@ The import pipeline copies this data into ledger tables (`contacts`, `contact_ph
 ## Cross-References
 
 - `06-addressbook-path-resolution.md` — Full provider chain and testing guidance.
-- `01-db-import.md` — Ledger destination after AddressBook data is staged.
-- `10-group-import-working.md` — Contract guaranteeing `Z_PK` propagation into `db-working`.
+- `00-all-databases-accessed.md` — Current source-scoped import and graph database entry points.
+- `10-group-import-working.md` — Historical retired identity contract; do not use it for new graph-era contact work.
 - `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Ledger table definitions referencing AddressBook data.

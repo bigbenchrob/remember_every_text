@@ -2,19 +2,27 @@
 tier: feature
 scope: design
 owner: agent-per-project
-last_reviewed: 2026-04-05
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./PROPOSAL.md
   - ./CHECKLIST.md
   - ../../25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md
 tests: []
 feature: archive-canonical-attachments
-status: proposed
+status: historical-planning-record
 created: 2026-04-05
 ---
 
 # Design Notes - Archive-Canonical Attachments
+
+> Current conformance note (2026-06-06): these notes are preserved as design
+> rationale for the archive-first model. The current canonical behavior and
+> terminology live in `../../25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md`
+> and `../../25-ONBOARDING-AND-ARCHIVE/70-attachments-end-to-end.md`.
+> Message evidence and attachment presentation should use the shared resolver
+> and graph evidence spine; widgets must not implement their own live-vs-archive
+> policy.
 
 ## Core Design Decision
 

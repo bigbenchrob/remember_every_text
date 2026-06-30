@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../messages/domain/entities/attachment_info.dart';
@@ -12,15 +10,15 @@ part 'resolved_attachment.freezed.dart';
 /// The result of resolving an attachment through the multi-source pipeline.
 ///
 /// Combines the attachment metadata with its runtime availability state,
-/// the provenance of the resolved file (if any), and the actual [File]
-/// handle for rendering.
+/// the provenance of the resolved file (if any), and the displayable file path
+/// selected by the resolver.
 @freezed
 abstract class ResolvedAttachment with _$ResolvedAttachment {
   const factory ResolvedAttachment({
     required AttachmentInfo attachmentInfo,
     required ResolvedAttachmentAvailability availability,
     AttachmentProvenance? provenance,
-    File? resolvedFile,
+    String? resolvedFilePath,
     AttachmentRecoveryMetadata? recoveryMetadata,
   }) = _ResolvedAttachment;
 
@@ -28,6 +26,6 @@ abstract class ResolvedAttachment with _$ResolvedAttachment {
 
   bool get isDisplayable {
     return availability == ResolvedAttachmentAvailability.available &&
-        resolvedFile != null;
+        resolvedFilePath != null;
   }
 }

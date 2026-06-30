@@ -11,6 +11,7 @@ export './application/ephemeral_cassette_projection_provider.dart';
 export './application/renderable_sidebar_cassette_specs_provider.dart';
 export './application/sidebar_action_dispatcher.dart';
 export './application/sidebar_cassette_render_router.dart';
+export './application/sidebar_flow_preference_store_provider.dart';
 export './application/sidebar_flow_state_provider.dart';
 export './domain/entities/cassette_spec.dart';
 export './presentation/view/sidebar_cassette_card.dart';

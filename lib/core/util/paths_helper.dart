@@ -1,6 +1,5 @@
 import 'dart:io';
 
-//import 'package:get/instance_manager.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -29,15 +28,11 @@ class PathsHelper {
 
   static Future<PathsHelper> _createInstance() async {
     final appDocsDirPath = await getPathProviderDirectoryPath('appDocs');
-    // print('appdocs: $appDocsDirPath');
     final downloadsDirPath = Platform.isIOS
         ? null
         : await getPathProviderDirectoryPath('downloads');
-    // print('downloadsDirPath: $downloadsDirPath');
     final libDirPath = await getPathProviderDirectoryPath('library');
-    // print('libDirPath: $libDirPath');
     final tempDirPath = await getPathProviderDirectoryPath('temp');
-    // print('tempDirPath: $tempDirPath');
 
     final userStub = downloadsDirPath
         ?.split(context.separator)
@@ -85,14 +80,16 @@ class PathsHelper {
           break;
 
         default:
-          throw '$directoryKey is not a recognized key';
+          throw StateError('$directoryKey is not a recognized key');
       }
 
       if (directory == null) {
-        throw 'path providfer path not found';
+        throw StateError('Path provider directory not found');
       }
-    } catch (e) {
-      throw "PathsHelper initialization error, getPathProviderDirectoryPath(): unspecified error with key '$directoryKey'";
+    } catch (error) {
+      throw StateError(
+        "PathsHelper initialization error for key '$directoryKey': $error",
+      );
     }
     return directory.path;
   }

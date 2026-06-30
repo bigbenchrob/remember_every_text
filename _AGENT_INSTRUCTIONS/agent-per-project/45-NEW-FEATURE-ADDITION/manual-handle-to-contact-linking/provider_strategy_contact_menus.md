@@ -2,18 +2,28 @@
 tier: feature
 scope: provider-strategy
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-06
 links:
   - ./PROPOSAL.md
   - ../../50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md
 tests: []
 feature: manual-handle-to-contact-linking
 doc_type: provider-strategy
-status: draft
-last_updated: 2025-11-06
+status: historical-draft-superseded-by-graph-overlay-read-models
+last_updated: 2026-06-06
 ---
 
 # Provider Strategy: Contact Menus (Working + Overlay DBs)
+
+## Current Conformance Note (2026-06-06)
+
+This provider strategy is historical. The high-level menu distinction still
+matters, but current ordinary contact/handle menus must be graph-backed read
+models plus overlay user intent. They should not read retained `working.db` as
+the production source of contact/handle linkage.
+
+Use this document only as background for why manual links are overlay-owned and
+why menus need both “linked” and “all meaningful contacts” variants.
 
 This document describes the **simplest and clearest provider strategy** for supplying both:
 
@@ -109,10 +119,10 @@ contactsAsync.when(
 );
 ```
 
-Invalidate when needed (e.g. after a migration):
-```dart
-ref.invalidate(contactsMenuBProvider);
-```
+Historical note: this pre-graph proposal referred to direct provider
+invalidation after migration. Current code should route refresh through named
+application/action boundaries and graph/message data-version signals instead of
+showing raw invalidation calls in widgets or ad hoc services.
 
 ---
 
@@ -188,18 +198,12 @@ linkedContactsAsync.when(
 );
 ```
 
-### Invalidation
+### Refresh Ownership
 
-Whenever user links a handle or re-imports data:
-```dart
-ref.invalidate(contactsMenuAProvider);
-```
-
-You can also invalidate both menus for simplicity:
-```dart
-ref.invalidate(contactsMenuAProvider);
-ref.invalidate(contactsMenuBProvider);
-```
+Whenever user links a handle or source data changes, current graph-era code
+should delegate to the relevant feature action/service boundary. The old
+menu-specific invalidation examples are retired with the working-DB menu
+prototype.
 
 ---
 

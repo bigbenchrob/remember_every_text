@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 
-part 'conversation_graph_database.g.dart';
+import '../../../../application/read_only_sql_guard.dart';
 
-const String conversationGraphDatabaseFileName = 'working_ss.db';
+part 'conversation_graph_database.g.dart';
 
 /// Drift-backed source-scoped conversation graph projection database.
 @DriftDatabase(tables: [])
@@ -26,6 +26,7 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
     String sql, [
     List<Object?> args = const <Object?>[],
   ]) async {
+    assertReadOnlySql(sql, boundary: 'Conversation graph selectRows');
     final rows = await customSelect(sql, variables: _variables(args)).get();
     return [for (final row in rows) row.data];
   }
@@ -51,6 +52,22 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
       return value.round();
     }
     return 0;
+  }
+
+  Future<void> clearProjectionRows() async {
+    await transaction(() async {
+      await executeSql('DELETE FROM message_to_attachment');
+      await executeSql('DELETE FROM chat_to_message');
+      await executeSql('DELETE FROM chat_to_handle');
+      await executeSql('DELETE FROM contact_to_handle');
+      await executeSql('DELETE FROM handle_aliases');
+      await executeSql('DELETE FROM canonical_handles');
+      await executeSql('DELETE FROM messages');
+      await executeSql('DELETE FROM attachments');
+      await executeSql('DELETE FROM chats');
+      await executeSql('DELETE FROM contacts');
+      await executeSql('DELETE FROM handles');
+    });
   }
 
   Future<void> _createSchema() async {
@@ -180,7 +197,6 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
       CREATE TABLE IF NOT EXISTS contacts (
         contact_id INTEGER PRIMARY KEY,
         display_name TEXT NOT NULL,
-        short_name TEXT,
         given_name TEXT,
         family_name TEXT,
         organization TEXT

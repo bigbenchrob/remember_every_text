@@ -275,7 +275,7 @@ class _EffectiveCenterPanelSpecProviderElement
 }
 
 String _$effectiveRightPanelStackHash() =>
-    r'c01f13da628386de71fb3f2f9c6f30cdb1360fc6';
+    r'52cbc7193e85262e3a54e3e5f9639a80ad1c3088';
 
 /// See also [effectiveRightPanelStack].
 @ProviderFor(effectiveRightPanelStack)
@@ -521,7 +521,7 @@ class _EffectiveRightPanelSpecProviderElement
 String _$isSidebarParkedHash() => r'68b5bfb67126e36b1347605de9f07193616c26d1';
 
 /// Whether the center panel is showing content that operates independently
-/// of the sidebar (e.g. import/migration, workbench).
+/// of the sidebar (e.g. maintenance, diagnostics, workbench).
 ///
 /// When true, the sidebar should display a contextual overlay with a
 /// dismiss action rather than the cassette rack.
@@ -531,7 +531,7 @@ String _$isSidebarParkedHash() => r'68b5bfb67126e36b1347605de9f07193616c26d1';
 const isSidebarParkedProvider = IsSidebarParkedFamily();
 
 /// Whether the center panel is showing content that operates independently
-/// of the sidebar (e.g. import/migration, workbench).
+/// of the sidebar (e.g. maintenance, diagnostics, workbench).
 ///
 /// When true, the sidebar should display a contextual overlay with a
 /// dismiss action rather than the cassette rack.
@@ -539,7 +539,7 @@ const isSidebarParkedProvider = IsSidebarParkedFamily();
 /// Copied from [isSidebarParked].
 class IsSidebarParkedFamily extends Family<bool> {
   /// Whether the center panel is showing content that operates independently
-  /// of the sidebar (e.g. import/migration, workbench).
+  /// of the sidebar (e.g. maintenance, diagnostics, workbench).
   ///
   /// When true, the sidebar should display a contextual overlay with a
   /// dismiss action rather than the cassette rack.
@@ -548,7 +548,7 @@ class IsSidebarParkedFamily extends Family<bool> {
   const IsSidebarParkedFamily();
 
   /// Whether the center panel is showing content that operates independently
-  /// of the sidebar (e.g. import/migration, workbench).
+  /// of the sidebar (e.g. maintenance, diagnostics, workbench).
   ///
   /// When true, the sidebar should display a contextual overlay with a
   /// dismiss action rather than the cassette rack.
@@ -581,7 +581,7 @@ class IsSidebarParkedFamily extends Family<bool> {
 }
 
 /// Whether the center panel is showing content that operates independently
-/// of the sidebar (e.g. import/migration, workbench).
+/// of the sidebar (e.g. maintenance, diagnostics, workbench).
 ///
 /// When true, the sidebar should display a contextual overlay with a
 /// dismiss action rather than the cassette rack.
@@ -589,7 +589,7 @@ class IsSidebarParkedFamily extends Family<bool> {
 /// Copied from [isSidebarParked].
 class IsSidebarParkedProvider extends AutoDisposeProvider<bool> {
   /// Whether the center panel is showing content that operates independently
-  /// of the sidebar (e.g. import/migration, workbench).
+  /// of the sidebar (e.g. maintenance, diagnostics, workbench).
   ///
   /// When true, the sidebar should display a contextual overlay with a
   /// dismiss action rather than the cassette rack.
@@ -1041,7 +1041,7 @@ class _ShouldShowEndSidebarProviderElement
 }
 
 String _$contextualSidebarWidgetHash() =>
-    r'0d6ec1bd7f343c9cbf9d8a323a7e81b372e73b18';
+    r'3f7b437cab31d9042aaee4e5db0c5d75550806e3';
 
 /// See also [contextualSidebarWidget].
 @ProviderFor(contextualSidebarWidget)

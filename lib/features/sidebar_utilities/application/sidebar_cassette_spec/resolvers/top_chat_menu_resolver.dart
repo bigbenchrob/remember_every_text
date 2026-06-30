@@ -25,7 +25,7 @@ part 'top_chat_menu_resolver.g.dart';
 class TopChatMenuResolver extends _$TopChatMenuResolver {
   @override
   void build() {
-    // Stateless resolver; invoked imperatively.
+    // Stateless resolver; called by the sidebar utility coordinator.
   }
 
   /// Resolve the top chat menu cassette.

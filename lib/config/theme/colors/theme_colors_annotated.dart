@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../providers.dart'
+import '../../../essentials/app_mode/feature_level_providers.dart'
     show platformBrightnessProvider, switchableDarkModeProvider;
 
 part 'theme_colors_annotated.g.dart';

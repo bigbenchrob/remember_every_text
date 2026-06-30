@@ -31,9 +31,6 @@ class ContactsTooltipCoordinator extends _$ContactsTooltipCoordinator {
   Future<String> resolve(ContactsTooltipSpec spec) async {
     return spec.when(
       editDisplayName: () => 'Edit display name',
-      // Future handlers:
-      // favoriteContact: () => 'Mark as favorite',
-      // viewAllChats: () => 'View all conversations',
     );
   }
 }

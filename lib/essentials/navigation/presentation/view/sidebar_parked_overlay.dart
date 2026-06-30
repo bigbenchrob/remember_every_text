@@ -4,19 +4,16 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../onboarding/application/onboarding_environment_report_provider.dart';
-import '../../../onboarding/application/onboarding_gate_provider.dart';
-import '../../../onboarding/domain/import_spec.dart';
+import '../../../onboarding/feature_level_providers.dart'
+    show onboardingDevOverridesProvider, onboardingReadinessActionsProvider;
+import '../../application/panel_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
-import '../../application/panels_view_state_provider.dart';
 import '../../domain/entities/view_spec.dart';
-import '../../domain/navigation_constants.dart';
 import '../../domain/sidebar_mode.dart';
-import '../../feature_level_providers.dart';
 
 /// Overlay displayed in the sidebar when the center panel is showing
 /// content that operates independently of the cassette rack (e.g.
-/// import/migration controls).
+/// maintenance and diagnostic controls).
 ///
 /// Provides a prominent Cancel button so the user can dismiss the
 /// center panel operation and return to normal sidebar navigation.
@@ -115,16 +112,17 @@ class SidebarParkedOverlay extends ConsumerWidget {
         false;
 
     if (isReadinessSpec) {
-      if (hasSimulatedOnboardingOverride) {
-        ref.read(onboardingDevOverridesProvider.notifier).clearAll();
-      }
-      ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+      ref
+          .read(onboardingReadinessActionsProvider.notifier)
+          .recheckReadiness(
+            clearSimulationOverride: hasSimulatedOnboardingOverride,
+          );
       return;
     }
 
     ref
-        .read(panelsViewStateProvider(mode).notifier)
-        .clear(panel: WindowPanel.center);
+        .read(panelActionsProvider.notifier)
+        .cancelParkedCenterOperation(mode: mode);
   }
 
   static String _labelForSpec(ViewSpec? spec) {
@@ -132,11 +130,6 @@ class SidebarParkedOverlay extends ConsumerWidget {
       return 'Operation in Progress';
     }
     return spec.when(
-      import: (importSpec) => importSpec.maybeWhen(
-        forImport: () => 'Database Import',
-        forMigration: () => 'Database Migration',
-        orElse: () => 'Database Operation',
-      ),
       messages: (_) => 'Operation in Progress',
       settings: (_) => 'Settings',
       environmentReadiness: (_) => 'Environment Readiness',
@@ -149,7 +142,6 @@ class SidebarParkedOverlay extends ConsumerWidget {
       return CupertinoIcons.gear_alt;
     }
     return spec.when(
-      import: (_) => CupertinoIcons.square_arrow_down,
       messages: (_) => CupertinoIcons.gear_alt,
       settings: (_) => CupertinoIcons.gear,
       environmentReadiness: (_) => CupertinoIcons.check_mark_circled,

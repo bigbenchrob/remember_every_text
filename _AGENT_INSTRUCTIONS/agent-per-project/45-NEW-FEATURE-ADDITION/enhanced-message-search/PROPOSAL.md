@@ -1,5 +1,16 @@
 # Feature Proposal: Enhanced Message Search
 
+## Current Conformance Note (2026-06-06)
+
+This proposal is historical. Multi-term, semantic, and metadata-assisted search
+remain valuable future directions, but the current production search spine is
+graph-native and returns `message_ss_id` evidence scopes. Any future indexer or
+search engine must be an implementation detail behind graph search repository
+methods and must feed the shared Message Evidence Spine.
+
+Do not reintroduce post-migration retained `working.db` indexing as ordinary
+search authority.
+
 ## 1. Summary
 We propose to overhaul the message search capability in MessageLens. The current implementation relies on simple substring matching (`LIKE '%query%'`), which limits users to single contiguous strings. The new system will support multi-term search (e.g., "quick lazy" matches "the quick brown fox... lazy dog") and establish a modular architecture for future enhancements like semantic search, synonym expansion, and metadata-based filtering (e.g., emotional intensity).
 

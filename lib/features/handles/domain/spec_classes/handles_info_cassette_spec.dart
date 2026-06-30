@@ -44,7 +44,7 @@ abstract class HandlesInfoCassetteSpec with _$HandlesInfoCassetteSpec {
 ///
 /// Alternative (later):
 /// - Move this enum into the Handles feature and reference it here by import.
-/// - That is a larger migration because essentials then depends on feature code.
+/// - That is a larger dependency refactor because essentials then depends on feature code.
 /// For now, keep it here to avoid circular dependencies.
 enum HandlesInfoKey {
   /// Explanation for stray emails section

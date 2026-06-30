@@ -28,12 +28,12 @@ You MUST read these files in order before any code changes:
 8. **`_AGENT_INSTRUCTIONS/agent-per-project/08-SIDEBAR-LAYOUTS/00-sidebar-cassettes-controls-and-info-cards.md`** - Sidebar cassette, control-stack, and info-card composition rules
 9. **`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/00-all-databases-accessed.md`** - Database access patterns and schema references
 10. **`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/06-addressbook-path-resolution.md`** - AddressBook path resolution (CRITICAL for imports)
-11. **`_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/01-aggregate-boundaries.md`** - DDD structure and aggregate boundaries
-12. **`_AGENT_INSTRUCTIONS/agent-per-project/00-PROJECT/02-architecture-overview.md`** - Project architecture and DDD layer responsibilities
-13. **`_AGENT_INSTRUCTIONS/agent-per-project/50-CROSS-SURFACE-SPEC-SYSTEMS-OVERVIEW/`** - 🔥 CRITICAL: How sealed spec classes coordinate UI across all surfaces
-14. **`_AGENT_INSTRUCTIONS/agent-per-project/52-FEATURE-HANDLING-OF-X-SURFACE-SPECS/`** - Universal coordinator → resolver → widget_builder pattern
-15. **`_AGENT_INSTRUCTIONS/agent-per-project/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/`** - Sidebar cassette rack, cascade, card chrome
-16. **`_AGENT_INSTRUCTIONS/agent-per-project/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/`** - ViewSpec panel navigation and feature dispatch
+11. **`_AGENT_INSTRUCTIONS/agent-per-project/01-PROJECT/01-aggregate-boundaries.md`** - DDD structure and aggregate boundaries
+12. **`_AGENT_INSTRUCTIONS/agent-per-project/01-PROJECT/02-architecture-overview.md`** - Project architecture and DDD layer responsibilities
+13. **`_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/`** - 🔥 CRITICAL: How sealed spec classes coordinate UI across all surfaces
+14. **`_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/40-feature-responsibilities.md`** - Coordinator → resolver → payload/rendering boundaries
+15. **`_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/20-sidebar-cassette-system.md`** - Sidebar cassette rack, cascade, card chrome
+16. **`_AGENT_INSTRUCTIONS/agent-per-project/42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md`** - ViewSpec panel navigation and feature dispatch
 17. **`_AGENT_INSTRUCTIONS/agent-per-project/60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`** - 🔥 MUST-READ before any production build; preserve bundle id and release signing so macOS Full Disk Access grants carry over across shipped builds
 
 ## Quick Reference Code Standards
@@ -48,7 +48,7 @@ You MUST read these files in order before any code changes:
  - **Control bodies**: Always put control bodies on new lines with braces
 - **🔥 FREEZED CLASSES**: ALL Freezed classes MUST be declared as `abstract class`, never just `class`
  - **Freezed unnamed ctor order**: Place `const ClassName._();` AFTER the primary `const factory` constructor in the class body to satisfy `sort_unnamed_constructors_first`.
-- **🔥 DATABASE ACCESS**: ALL database access MUST use providers in `lib/essentials/db/feature_level_providers.dart`
+- **🔥 DATABASE ACCESS**: ALL database access MUST use centralized providers. Ordinary graph reads use `driftConversationGraphDatabaseProvider`; source-scoped import DB construction lives behind `sourceScopedImportDatabaseProvider` exported by `lib/essentials/db/feature_level_providers.dart` and implemented in `lib/essentials/db/feature_level_providers/persistent_database_providers.dart`, while ordinary import semantics should consume `sourceScopedImportLedgerProvider`; overlay intent uses `overlayDatabaseProvider`; retired `macos_import.db` and `working.db` have no central app providers and are cleanup/diagnostic files only.
 - **AddressBook imports**: MUST use `getFolderAggregateEitherProvider` for path resolution
 - **🔥 RIVERPOD PATTERNS**: Follow ONLY the patterns documented in `_AGENT_INSTRUCTIONS/agent-instructions-shared/20-flutter/riverpod-provider-patterns.md` - DO NOT scan codebase for examples
 - **Provider naming**: Class names follow documented pattern: `MyFeature` → generates `myFeatureProvider`
@@ -76,11 +76,13 @@ You MUST read these files in order before any code changes:
 - Before checking out another branch or asking the user to merge, agents should verify `git status` is clean in the parent repo. If the only dirty path is `_AGENT_INSTRUCTIONS/agent-instructions-shared`, that workflow is incomplete and must be resolved first.
 
 ## Project Architecture
-- **`lib/essentials/`** - Core systems (navigation, import, databases, window state)
+- **`lib/essentials/`** - Core systems (navigation, source import, conversation graph, databases, window state)
 - **`lib/features/`** - Business features following DDD (messages, chats, contacts, address_book_folders)
-- **`lib/essentials/db/`** - Database layer with working/import/overlay access providers and schema definitions
-- **`lib/essentials/db_importers/`** - macOS data import system
-- **`lib/essentials/db_migrate/`** - Projection migration system
+- **`lib/essentials/db/`** - Central database providers, graph/retained/overlay database infrastructure, and readiness helpers
+- **`lib/essentials/source_scoped_import/`** - Production source-scoped import ledger and importers
+- **`lib/essentials/conversation_graph/`** - Production graph projection/build/read layer
+- **`lib/essentials/db_importers/`** - Retained import diagnostics, live source monitoring, and archive compatibility bridges
+- **Retired `lib/essentials/db_migrate/`** - Historical retained projection reference only; no active app provider or service
 - **`lib/essentials/navigation/`** - ViewSpec-based reactive navigation system
 - **`rust/`** - High-performance Rust modules via flutter_rust_bridge
 - **`_AGENT_INSTRUCTIONS/`** - Comprehensive agent documentation (READ FIRST!)
@@ -143,21 +145,24 @@ class MyFeature extends _$MyFeature {
 - ❌ Direct AddressBook path hardcoding (use getFolderAggregateEitherProvider)
 - ❌ String-based navigation (use ViewSpec sealed classes)
 - ❌ 🔥 **SCANNING CODEBASE FOR PROVIDER EXAMPLES** (use documented patterns only)
-- ❌ 🔥 **CRITICAL**: Direct database instantiation (use `sqfliteImportDatabaseProvider` & `driftWorkingDatabaseProvider`)
+- ❌ 🔥 **CRITICAL**: Direct database instantiation (use centralized graph/import/overlay/retained providers)
 - ❌ 🔥 **MacosTheme.of(context) / Theme.of(context)** (use `themeColorsProvider` & `themeTypographyProvider`)
 - ❌ 🔥 **Feature coordinators doing logic** (coordinators route only; resolvers own meaning)
 - ❌ 🔥 **Application-layer builders returning view models** (return widget content; coordinator wraps in chrome)
-- ❌ 🔥 **INVIOLABLE: Dual-writing to overlay AND working DB** (user intent → overlay ONLY; migration → working ONLY; providers merge at read time with overlay winning on conflict. See `10-DATABASES/07-overlay-database-independence.md`)
-- ❌ 🔥 **INVIOLABLE: Migration snapshot/restore of overlay data** (migration must NEVER read overlay, snapshot it, then restore into working. Providers merge at read time instead.)
-- ❌ 🔥 **INVIOLABLE: User-intent columns on working-DB tables** (flags like `is_blacklisted`/`is_visible` must NOT live on working tables rebuilt by migration. Store in overlay; merge in providers.)
-- ❌ 🔥 **INVIOLABLE: Suppressing anomalous records** (NEVER skip, hide, filter, or `SizedBox.shrink()` any record at ANY layer — import, migration, provider, or UI. Anomalous data MUST be rendered visibly and investigated, never concealed. See `10-DATABASES/INVIOLATE_RULES.md` Rule 2)
+- ❌ 🔥 **INVIOLABLE: Dual-writing to overlay AND graph/working projection DBs** (user intent → overlay ONLY; source import / graph projection / retained projection → derived DBs ONLY; providers merge at read time with overlay winning on conflict. See `10-DATABASES/07-overlay-database-independence.md`)
+- ❌ 🔥 **INVIOLABLE: Projection snapshot/restore of overlay data** (projection/import must NEVER read overlay, snapshot it, then restore into projection. Providers merge at read time instead.)
+- ❌ 🔥 **INVIOLABLE: User-intent columns on projection tables** (flags like `is_blacklisted`/`is_visible` must NOT live on tables rebuilt by graph projection or retained migration. Store in overlay; merge in providers.)
+- ❌ 🔥 **INVIOLABLE: Suppressing anomalous records** (NEVER skip, hide, filter, or `SizedBox.shrink()` any record at ANY layer — import, projection, provider, or UI. Anomalous data MUST be rendered visibly and investigated, never concealed. See `10-DATABASES/INVIOLATE_RULES.md` Rule 2)
 
 ## 🔥 MANDATORY DATABASE ACCESS RULE
 
-**ANY CLASS accessing working.db or import.db MUST use the centralized providers:**
+**ANY CLASS accessing application databases MUST use centralized providers:**
 
-- **Import DB**: `ref.watch(sqfliteImportDatabaseProvider)` from `lib/essentials/db/feature_level_providers.dart`
-- **Working DB**: `ref.watch(driftWorkingDatabaseProvider)` from `lib/essentials/db/feature_level_providers.dart`
+- **Graph DB**: `ref.watch(driftConversationGraphDatabaseProvider.future)` from `lib/essentials/db/feature_level_providers.dart`
+- **Source-scoped import DB**: physical construction is `sourceScopedImportDatabaseProvider` exported by `lib/essentials/db/feature_level_providers.dart` and implemented in `lib/essentials/db/feature_level_providers/persistent_database_providers.dart`; ordinary import semantics should consume `sourceScopedImportLedgerProvider`
+- **Overlay DB**: `ref.watch(overlayDatabaseProvider.future)` from `lib/essentials/db/feature_level_providers.dart`
+- **Retired import cleanup file**: `macos_import.db` has no central app provider; treat it as cleanup/diagnostic file storage only
+- **Retired working cleanup file**: `working.db` has no central app provider; treat it as cleanup/diagnostic file storage only
 - **NEVER**: Direct `ImportDatabase()` or `DriftDb()` instantiation
 - **REASON**: Prevents SQLite locking issues from multiple connections to same file
 

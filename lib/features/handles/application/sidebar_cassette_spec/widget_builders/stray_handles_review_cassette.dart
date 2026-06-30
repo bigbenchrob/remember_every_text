@@ -5,22 +5,21 @@ import 'package:intl/intl.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../../config/theme/theme_typography.dart';
-import '../../../../../../essentials/navigation/application/panel_widget_providers.dart';
-import '../../../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../../essentials/navigation/feature_level_providers.dart';
-import '../../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
-import '../../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
+import '../../../../../../essentials/sidebar/feature_level_providers.dart'
+    show sidebarFlowProvider;
+import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
-import '../../../domain/utilities/handle_normalizer.dart';
-import '../../../infrastructure/repositories/stray_handles_provider.dart';
+import '../../read_models/stray_handle_summary.dart';
+import '../../read_models/stray_handles_provider.dart';
+import '../resolver_tools/stray_handle_sidebar_actions_provider.dart';
 
 /// Sidebar cassette that displays a scrollable list of stray handles,
 /// filtered by phone numbers or email addresses.
 ///
 /// Each row shows the handle value, message count, and last message date.
 /// Reviewed-but-unlinked handles are visually muted. Tapping a row
-/// dispatches [MessagesSpec.handleLens] to the center panel.
+/// dispatches a semantic sidebar action; center evidence derives from
+/// SidebarFlowState.
 ///
 /// Mode support:
 /// - [StrayHandleMode.allStrays]: Shows all stray handles (default)
@@ -47,7 +46,7 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
+    final actions = ref.read(strayHandleSidebarActionsProvider.notifier);
 
     // Select provider based on mode
     final asyncHandles = switch (mode) {
@@ -60,20 +59,13 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
       data: (handles) {
         final filtered = _applyFilter(handles);
 
-        // Determine which handle is currently displayed in the center panel.
-        final centerSpec = ref.watch(
-          effectiveCenterPanelSpecProvider(SidebarMode.messages),
-        );
-        final activeHandleId = centerSpec?.map(
-          messages: (m) => m.spec.maybeMap(
-            handleLens: (hl) => hl.handleId,
-            forHandle: (fh) => fh.handleId,
-            orElse: () => null,
-          ),
-          settings: (_) => null,
-          import: (_) => null,
-          onboarding: (_) => null,
-          environmentReadiness: (_) => null,
+        final activeHandleId = ref.watch(
+          sidebarFlowProvider.select((state) {
+            if (state.topMenuChoice != TopChatMenuChoice.strayHandles) {
+              return null;
+            }
+            return state.selectedHandleEvidenceId;
+          }),
         );
 
         if (filtered.isEmpty) {
@@ -108,12 +100,12 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
               handle: handle,
               mode: mode,
               isSelected: handle.handleId == activeHandleId,
-              onTap: () => _openHandleLens(dispatcher, handle.handleId),
+              onTap: () => actions.openHandleLens(handleId: handle.handleId),
               onDismiss: mode != StrayHandleMode.dismissed
-                  ? () => _dismissHandle(dispatcher, handle)
+                  ? () => actions.dismissHandle(handle)
                   : null,
               onRestore: mode == StrayHandleMode.dismissed
-                  ? () => _restoreHandle(dispatcher, handle)
+                  ? () => actions.restoreHandle(handle)
                   : null,
             );
           },
@@ -173,44 +165,6 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
     StrayHandleMode.dismissed =>
       'No dismissed items.\nItems you dismiss will appear here.',
   };
-
-  Future<void> _openHandleLens(
-    SidebarActionDispatcher dispatcher,
-    int handleId,
-  ) async {
-    await dispatcher.dispatch(
-      intent: StrayHandleOpened(handleId: handleId),
-      context: const SidebarActionDispatchContext(
-        sidebarMode: SidebarMode.messages,
-      ),
-    );
-  }
-
-  Future<void> _dismissHandle(
-    SidebarActionDispatcher dispatcher,
-    StrayHandleSummary handle,
-  ) async {
-    final normalizedHandle = normalizeHandleIdentifier(handle.handleValue);
-    await dispatcher.dispatch(
-      intent: StrayHandleDismissed(normalizedHandle: normalizedHandle),
-      context: const SidebarActionDispatchContext(
-        sidebarMode: SidebarMode.messages,
-      ),
-    );
-  }
-
-  Future<void> _restoreHandle(
-    SidebarActionDispatcher dispatcher,
-    StrayHandleSummary handle,
-  ) async {
-    final normalizedHandle = normalizeHandleIdentifier(handle.handleValue);
-    await dispatcher.dispatch(
-      intent: StrayHandleRestored(normalizedHandle: normalizedHandle),
-      context: const SidebarActionDispatchContext(
-        sidebarMode: SidebarMode.messages,
-      ),
-    );
-  }
 }
 
 class _StrayHandleRow extends ConsumerWidget {
@@ -243,9 +197,7 @@ class _StrayHandleRow extends ConsumerWidget {
     final showSpamBadge =
         handle.junkScore >= 3 && mode != StrayHandleMode.dismissed;
 
-    // Muted warning/destructive hue for spam rows
-    // Using coral-red for instant spam recognition during blitz cleanup
-    const spamTint = Color(0xFFD64545);
+    final spamTint = colors.buttons.destructiveForeground;
 
     // Show dismiss button for spam candidates
     final showDismiss =
@@ -395,7 +347,7 @@ class _StrayHandleRow extends ConsumerWidget {
               child: Align(
                 alignment: Alignment.centerRight,
                 child: showDismiss
-                    ? _DismissButton(onPressed: onDismiss!)
+                    ? _DismissButton(onPressed: onDismiss!, colors: colors)
                     : _RestoreButton(onPressed: onRestore!, colors: colors),
               ),
             ),
@@ -422,9 +374,10 @@ class _StrayHandleRow extends ConsumerWidget {
 
 /// Dismiss button with destructive styling and hover state.
 class _DismissButton extends StatefulWidget {
-  const _DismissButton({required this.onPressed});
+  const _DismissButton({required this.onPressed, required this.colors});
 
   final VoidCallback onPressed;
+  final ThemeColors colors;
 
   @override
   State<_DismissButton> createState() => _DismissButtonState();
@@ -436,31 +389,28 @@ class _DismissButtonState extends State<_DismissButton> {
 
   @override
   Widget build(BuildContext context) {
-    // Red X on neutral surface at rest - action is clear without hover
-    // Hover/pressed reinforce, not redefine
-    const destructiveRed = Color(0xFFD64545);
-    const neutralGray = Color(0xFF8E8E93); // System gray
+    final destructiveColor = widget.colors.buttons.destructiveForeground;
+    final neutralColor = widget.colors.content.textTertiary;
 
     // Background: neutral at rest, slight darkening on hover/press
     final bgColor = _isPressed
-        ? neutralGray.withValues(alpha: 0.18)
+        ? neutralColor.withValues(alpha: 0.18)
         : _isHovered
-        ? neutralGray.withValues(alpha: 0.12)
-        : neutralGray.withValues(alpha: 0.08);
+        ? neutralColor.withValues(alpha: 0.12)
+        : neutralColor.withValues(alpha: 0.08);
 
     // Border: subtle at rest, slightly stronger on interaction
     final borderColor = _isPressed
-        ? neutralGray.withValues(alpha: 0.35)
+        ? neutralColor.withValues(alpha: 0.35)
         : _isHovered
-        ? neutralGray.withValues(alpha: 0.28)
-        : neutralGray.withValues(alpha: 0.20);
+        ? neutralColor.withValues(alpha: 0.28)
+        : neutralColor.withValues(alpha: 0.20);
 
-    // Icon: RED at rest, intensifies on hover/press
     final iconColor = _isPressed
-        ? destructiveRed
+        ? destructiveColor
         : _isHovered
-        ? destructiveRed.withValues(alpha: 0.95)
-        : destructiveRed.withValues(alpha: 0.75);
+        ? destructiveColor.withValues(alpha: 0.95)
+        : destructiveColor.withValues(alpha: 0.75);
 
     return Tooltip(
       message: 'Dismiss handle',

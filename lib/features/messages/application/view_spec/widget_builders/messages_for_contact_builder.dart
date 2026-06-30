@@ -1,25 +1,22 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../../presentation/view/messages_timeline_view.dart';
+import '../../../presentation/view/contact_messages_evidence_view.dart';
 
 /// Widget builder for the contact messages view.
 ///
-/// Constructs a unified [MessagesTimelineView] for the given contact,
+/// Constructs a message evidence view for the given contact,
 /// optionally scrolled to a specific date.
 Widget buildMessagesForContactView({
   required int contactId,
   DateTime? scrollToDate,
   int? filterHandleId,
 }) {
-  return MessagesTimelineView(
+  return ContactMessagesEvidenceView(
     key: ValueKey<String>(
-      'messages-contact:$contactId:${filterHandleId ?? 'all'}:${scrollToDate?.toIso8601String() ?? 'latest'}',
+      'evidence-messages-contact:$contactId:${filterHandleId ?? 'all'}:${scrollToDate?.toIso8601String() ?? 'latest'}',
     ),
-    scope: MessageTimelineScope.contact(
-      contactId: contactId,
-      filterHandleId: filterHandleId,
-    ),
-    scrollToDate: scrollToDate,
+    contactId: contactId,
+    monthAnchor: scrollToDate,
+    filterHandleId: filterHandleId,
   );
 }

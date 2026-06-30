@@ -2,8 +2,8 @@
 tier: feature
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-03-14
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ../orphaned-messages/PROPOSAL.md
   - ../orphaned-messages/RETROSPECTIVE.md
@@ -16,7 +16,7 @@ links:
   - ./RETROSPECTIVE.md
 tests: []
 feature: message-variant-preservation
-status: proposed
+status: historical-proposal-superseded-by-ss-semantic-preservation
 created: 2026-03-14
 ---
 
@@ -27,6 +27,20 @@ created: 2026-03-14
 **Created**: 2026-03-14
 
 ---
+
+## Current Conformance Note (2026-06-06)
+
+This proposal is preserved as design history. Its core intent survives:
+semantic parity does not mean field parity, and anomalous Apple message rows
+must remain visible and explainable. Its concrete `macos_import.db` /
+`working.db` implementation language is superseded by the source-scoped import
+ledger, graph projection, and Message Evidence Spine.
+
+New message-semantic work should preserve source facts in `macos_import_ss.db`,
+derive small graph/query-oriented semantics into `working_ss.db` or read models
+only when they support named behavior, and avoid rebuilding a raw Apple message
+mirror. Do not resurrect balloon/app payload fields merely because they appear
+in this historical plan.
 
 ## Overview
 

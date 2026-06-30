@@ -1,3 +1,12 @@
+CURRENT CONFORMANCE NOTE (2026-06-19):
+
+This appendix is a preserved historical implementation summary from an earlier
+database-health-audit pass. Its references to ordinary `macos_import.db` /
+`working.db` audit targets describe the old retained-legacy transition period,
+not current production authority. Current health work should treat
+source-scoped import, conversation graph readiness, overlay separation, and
+retained compatibility diagnostics as distinct domains.
+
 PROMPT:
 
 Summarize the implementation you just created.

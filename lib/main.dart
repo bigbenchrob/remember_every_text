@@ -1,5 +1,3 @@
-// ignore_for_file: unnecessary_overrides, use_setters_to_change_properties
-
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
@@ -14,17 +12,20 @@ import 'package:macos_ui/macos_ui.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import './providers.dart';
 import 'config/theme/colors/theme_colors.dart';
 import 'config/theme/theme_typography.dart';
-import 'essentials/db/application/database_health_audit/database_health_audit_service.dart';
-import 'essentials/db/feature_level_providers.dart';
-import 'essentials/db_importers/application/monitor/chat_db_change_monitor_provider.dart';
-import 'essentials/logging/application/app_logger.dart';
+import 'essentials/app_mode/feature_level_providers.dart'
+    show platformBrightnessProvider, switchableDarkModeProvider;
+import 'essentials/conversation_graph/feature_level_providers.dart'
+    show chatDbChangeMonitorProvider;
+import 'essentials/db/database_directory.dart';
 import 'essentials/logging/application/diagnostic_report_actions.dart';
+import 'essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider, diagnosticReportExporterProvider;
 import 'essentials/navigation/application/router.dart';
 import 'essentials/services/startup_flags_service.dart';
-import 'essentials/window_state/feature_level_providers.dart';
+import 'essentials/window_state/feature_level_providers.dart'
+    show windowStateServiceProvider;
 import 'frb_generated.dart';
 
 /// This method initializes macos_window_utils and styles the window.
@@ -40,13 +41,8 @@ class _MyDelegate extends NSWindowDelegate {
   ProviderContainer? _container;
   Timer? _pendingSave;
 
-  void setContainer(ProviderContainer container) {
+  void attachContainer(ProviderContainer container) {
     _container = container;
-  }
-
-  @override
-  void windowDidResize() {
-    super.windowDidResize();
   }
 
   @override
@@ -87,13 +83,28 @@ class _MyDelegate extends NSWindowDelegate {
         container
             .read(windowStateServiceProvider)
             .saveCurrentWindowState(includeSize: includeSize)
-            .catchError((error) {
-              // Silently ignore errors in background saves
+            .catchError((Object error, StackTrace stackTrace) {
+              container
+                  .read(appLoggerProvider.notifier)
+                  .warn(
+                    'Failed to save window state: $error',
+                    source: 'WindowState',
+                    context: {
+                      'includeSize': includeSize.toString(),
+                      'stack': stackTrace
+                          .toString()
+                          .split('\n')
+                          .take(10)
+                          .join('\n'),
+                    },
+                  );
             });
       });
     }
   }
 }
+
+final List<Object> _windowDelegateLifetimeHandles = <Object>[];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -110,7 +121,7 @@ void main() async {
       zoneSpecification: ZoneSpecification(
         print: (self, parent, zone, line) {
           if (!line.contains('sqflite warning')) {
-            parent.print(zone, line);
+            debugPrint(line);
           }
         },
       ),
@@ -138,9 +149,9 @@ void main() async {
     } else {
       await RustLib.init();
     }
-  } catch (e) {
+  } catch (error) {
     debugPrint(
-      'RustLib.init failed: $e — URL preview parsing will be unavailable',
+      'RustLib.init failed: $error — URL preview parsing will be unavailable',
     );
   }
 
@@ -151,29 +162,29 @@ void main() async {
     'Startup flags: optionLaunchResetRequested=${startupFlags.optionLaunchResetRequested}',
   );
 
-  // Initialize Media Kit
+  // Initialize Media Kit.
   MediaKit.ensureInitialized();
 
-  /// By default, enableWindowDelegate is set to false to ensure compatibility
-  /// with other plugins. Set it to true if you wish to use NSWindowDelegate.
-  /// WindowManipulator.initialize(enableWindowDelegate: true);\
+  // Keep the window delegate handle for the app lifetime so macOS window
+  // close events keep flowing into the app-shell action boundary.
   final delegate = _MyDelegate();
-  // ignore: unused_local_variable
-  final handle = WindowManipulator.addNSWindowDelegate(delegate);
+  _windowDelegateLifetimeHandles.add(
+    WindowManipulator.addNSWindowDelegate(delegate),
+  );
 
   final brightness =
       sched.SchedulerBinding.instance.platformDispatcher.platformBrightness;
 
-  // Create provider container
+  // Create provider container.
   final container = ProviderContainer(
     overrides: [
-      // Initialize platform brightness immediately
+      // Initialize platform brightness immediately.
       platformBrightnessProvider.overrideWith((ref) => brightness),
     ],
   );
 
-  // Set up the delegate to access the container
-  delegate.setContainer(container);
+  // Set up the delegate to access the container.
+  delegate.attachContainer(container);
 
   // Initialize the app logger early so all subsequent operations are captured.
   final logger = container.read(appLoggerProvider.notifier);
@@ -213,8 +224,11 @@ void main() async {
   // Restore window state
   try {
     await container.read(windowStateServiceProvider).restoreWindowState();
-  } catch (e) {
-    logger.warn('Failed to restore window state: $e', source: 'WindowState');
+  } catch (error) {
+    logger.warn(
+      'Failed to restore window state: $error',
+      source: 'WindowState',
+    );
   }
 
   // Reassert minimum window size after the first frame when the NSWindow exists.
@@ -369,13 +383,10 @@ class _StartupResetConfirmationDialogState
 
     logger.info('Export Logs clicked', source: 'StartupDialog');
 
-    final databaseHealthAuditService = await ref.read(
-      databaseHealthAuditServiceProvider.future,
+    final diagnosticReportExporter = await ref.read(
+      diagnosticReportExporterProvider.future,
     );
-    final result = await exportDiagnosticReport(
-      logger.writer,
-      databaseHealthAuditService: databaseHealthAuditService,
-    );
+    final result = await exportDiagnosticReport(diagnosticReportExporter);
     if (!mounted) {
       return;
     }
@@ -435,7 +446,7 @@ class _StartupResetConfirmationDialogState
               ),
               const SizedBox(height: 16),
               Text(
-                "MessageLens can delete its local app data and rebuild everything from scratch.\n\nThis deletes only MessageLens's own local data folder, including imported databases, caches, indexes, migration state, and other generated app data. It does not delete your system Library folder or other applications' data.",
+                "MessageLens can delete its local app data and rebuild everything from scratch.\n\nThis deletes only MessageLens's own local data folder, including imported databases, caches, indexes, graph build state, and other generated app data. It does not delete your system Library folder or other applications' data.",
                 style: typography.body.copyWith(
                   color: colors.content.textSecondary,
                 ),

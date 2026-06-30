@@ -2,7 +2,7 @@
 tier: project
 scope: source-scoped-migration
 owner: agent-per-project
-last_reviewed: 2026-05-20
+last_reviewed: 2026-06-26
 source_of_truth: doc
 links:
   - ./30-INVARIANTS.md
@@ -35,10 +35,15 @@ Add new architecture spines beside legacy essentials when the responsibility is 
 
 Examples:
 
-- `essentials/db_importers/` remains the legacy import spine.
-- `essentials/source_scoped_import/` may become the production source-scoped import spine.
-- `essentials/db/` remains the legacy database access spine.
-- `essentials/conversation_graph/` may become the source-scoped working graph spine.
+- Retired `essentials/db_importers/` must not return. Source-scoped import
+  belongs in `essentials/source_scoped_import/`; graph lifecycle belongs in
+  `essentials/conversation_graph/`; retired-file diagnostics belong in
+  `essentials/db/`.
+- `essentials/source_scoped_import/` is the source-scoped import semantics spine.
+- `essentials/db/` owns centralized physical database provider construction,
+  database filename identity, readiness probes, and retired-file diagnostics.
+- `essentials/conversation_graph/` is the source-scoped working graph,
+  projection, lifecycle, and graph-read spine.
 
 Do not bury app-wide source-scoped infrastructure inside one feature folder.
 
@@ -52,7 +57,7 @@ Examples:
 
 - `features/search/`
 - `features/contacts/`
-- `features/conversations/`
+- `features/chats/`
 - `features/messages/`
 
 When a legacy feature needs source-scoped behavior, add implementation variants inside the existing feature folder rather than creating a sibling feature.

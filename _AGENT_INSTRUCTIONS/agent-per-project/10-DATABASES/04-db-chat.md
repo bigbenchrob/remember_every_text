@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-20
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -16,21 +16,28 @@ tests: []
 
 # `db-chat` — macOS Messages Source (`chat.db`)
 
-`db-chat` is Apple Messages' live sqlite database. It provides chat, handle, and message source data that seeds the import ledger.
+`db-chat` is Apple Messages' live sqlite database. It provides chat, handle, attachment, and message source data that seeds the source-scoped import ledger and conversation graph.
 
 - **Alias**: `db-chat`
 - **Physical File**: `~/Library/Messages/chat.db`
-- **Primary Consumer**: Import orchestrator (read-only)
+- **Primary Consumer**: Source-scoped import and monitor infrastructure (read-only)
 
 ## Location & Access
 
 | Item | Value |
 | --- | --- |
 | Path | `~/Library/Messages/chat.db` |
-| Access pattern | Resolved via `PathsHelper.messagesDatabasePath` inside the import infrastructure |
+| Access pattern | Resolved via `pathsHelperProvider` from `lib/essentials/paths/feature_level_providers.dart`, then `PathsHelper.messagesDatabasePath`, inside the import infrastructure |
 | Permissions | Requires Full Disk Access |
 
-Feature and presentation code must not open `chat.db` directly. The import and monitoring infrastructure opens it read-only through `PathsHelper` to detect new rows and copy source data into `db-import`, where migrations can safely project it forward.
+Feature and presentation code must not open `chat.db` directly. The import and
+monitoring infrastructure opens it read-only through `pathsHelperProvider` /
+`PathsHelper` to detect new rows and copy source data into `db-import-ss`, where
+graph projectors can safely project it forward. Code that needs `PathsHelper`
+should use the narrow paths provider seam rather than importing the root
+`providers.dart` barrel. Named archive/recovery workflows may also open selected
+historical `chat.db` snapshots read-only; that access must remain a recovery
+boundary, not an ordinary feature read.
 
 ## Important Reality Check
 
@@ -56,18 +63,19 @@ Do not assume `message` plus `chat_message_join` gives a complete picture of all
 | `chat_message_join` | Mapping needed to associate messages with chats. |
 | `attachment` / `message_attachment_join` | Attachments tied to messages. |
 
-Importers persist these tables into ledger equivalents (`chats`, `handles`, `messages`, `recovered_unlinked_messages`, `chat_to_handle`, `chat_to_message`, `attachments`, `message_attachments`, `recovered_unlinked_message_attachments`) while preserving source identifiers. See `01-db-import.md` for ledger schema expectations.
+Source-scoped importers persist these tables into ledger equivalents (`chats`, `handles`, `messages`, recovered/orphan message facts, `chat_to_handle`, `chat_to_message`, `attachments`, `message_attachments`) while preserving source identifiers and deriving canonical `ss_id` endpoints for graph projection. Retired `db-import` cleanup files may contain equivalent facts from the retired importer era, but they are cleanup inventory only and must not be treated as an active compatibility import path.
 
 ## Usage Rules
 
-1. **Never mutate** `chat.db`. Copy data into `db-import` and operate on the ledger instead.
-2. **Respect ROWIDs/GUIDs**: Preserve all primary keys to maintain referential integrity across the import → migration pipeline.
+1. **Never mutate** `chat.db`. Copy data into source-scoped import and operate on the ledger/graph instead.
+2. **Respect ROWIDs/GUIDs**: Preserve source facts and derive `ss_id` from source IDs; GUIDs remain metadata/bridge fields, not canonical identity.
 3. **WAL discipline**: Close all application handles before running manual SQLite tooling to avoid write-ahead-log conflicts.
 4. **Testing**: Provide fixture copies of `chat.db` when exercising import logic; avoid touching the live file in automated tests.
 
 ## Cross-References
 
-- `01-db-import.md` — Ledger schema seeded from `chat.db`.
-- `10-group-import-working.md` — Contract ensuring IDs survive into `db-working`.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Detailed ledger table definitions.
+- `00-all-databases-accessed.md` — Current source-scoped graph and retired storage aliases.
+- `01-db-import.md` — Retired import ledger schema seeded from `chat.db`.
+- `10-group-import-working.md` — Retired import/working contract and source-scoped replacement note.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Retired ledger table definitions.
 - `../15-MACOS-SOURCE-DATABASES/README.md` — Source-database behavior and reverse-engineering notes.

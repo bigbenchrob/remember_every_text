@@ -2,7 +2,7 @@
 tier: project
 scope: database-health-audit
 owner: agent-per-project
-last_reviewed: 2026-04-16
+last_reviewed: 2026-06-22
 source_of_truth: code
 links:
   - ./00-overview.md
@@ -22,6 +22,10 @@ When the app prepares a developer-facing diagnostic export, it should generate a
 - `database_health.json` when audit generation succeeds
 
 If the audit fails, the bundle should still be produced.
+
+The diagnostic header should make the boundary explicit: the bundle contains
+active graph health and retired cleanup inventory when available, but it does
+not include raw database files.
 
 ## Orchestration Boundary
 
@@ -77,9 +81,19 @@ Included when available:
 - `import_log`
 - `migrate_log`
 
+These logs may describe retired import/projection runs from
+older support bundles. Current source-scoped graph build health is represented
+in `database_health.json` and the conversation graph status surfaces, not in
+`migrate_log`.
+
 Included when audit succeeds:
 
 - `database_health.json`
+
+This report may include detailed retired cleanup inventory for old
+`macos_import.db` / `working.db` files. Its top-level health summary remains
+active-health scoped; retired cleanup tables are diagnostic detail, not app
+readiness or ordinary behavior.
 
 Included when audit fails:
 

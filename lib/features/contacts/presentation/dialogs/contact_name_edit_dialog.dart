@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../infrastructure/repositories/contacts_list_repository.dart';
+import '../../application/read_models/contact_summary.dart';
 
 /// Maximum length for custom display names.
 const int kMaxDisplayNameLength = 25;
@@ -27,10 +27,7 @@ const int kMaxDisplayNameLength = 25;
 /// );
 /// if (result != null) {
 ///   // User saved a new name (or cleared to use auto-generated)
-///   await overlayDb.setParticipantDisplayNameOverride(
-///     contact.participantId,
-///     result.isEmpty ? null : result,
-///   );
+///   await contactDisplayNameOverrideActions.setDisplayNameOverride(...);
 /// }
 /// ```
 Future<String?> showContactNameEditDialog({
@@ -190,7 +187,7 @@ class _ContactNameEditDialogState
                     '${_currentText.length}/$kMaxDisplayNameLength',
                     style: typography.cassetteCardFooter.copyWith(
                       color: _currentText.length > kMaxDisplayNameLength
-                          ? Colors.red
+                          ? colors.status.error
                           : colors.content.textTertiary,
                     ),
                   ),

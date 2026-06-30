@@ -1,43 +1,20 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as path;
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../../db/feature_level_providers.dart';
 import '../domain/known_sources.dart';
+import '../domain/ports/import_ledger_port.dart';
 
-part 'import_database_provider.g.dart';
-
-const String importDatabaseFileName = 'macos_import_ss.db';
-
-@Riverpod(keepAlive: true)
-Future<ImportDatabase> importDatabase(ImportDatabaseRef ref) async {
-  final directory = Directory(databaseDirectoryPath);
-  if (!directory.existsSync()) {
-    await directory.create(recursive: true);
-  }
-
-  final database = await ImportDatabase.open(
-    databaseDirectory: databaseDirectoryPath,
-    databaseName: importDatabaseFileName,
-  );
-
-  ref.onDispose(() async {
-    await database.close();
-  });
-
-  return database;
-}
-
-class ImportDatabase {
+class ImportDatabase implements ImportLedger {
   ImportDatabase._(this.database);
 
   final Database database;
 
   static Future<ImportDatabase> open({
     required String databaseDirectory,
-    String databaseName = importDatabaseFileName,
+    required String databaseName,
   }) async {
     final directory = Directory(databaseDirectory);
     if (!directory.existsSync()) {
@@ -46,7 +23,7 @@ class ImportDatabase {
 
     final db = await openDatabase(
       path.join(databaseDirectory, databaseName),
-      version: 8,
+      version: 9,
       onCreate: (db, version) async {
         await _createSchema(db);
       },
@@ -78,9 +55,13 @@ class ImportDatabase {
           await _createAttachmentSchema(db);
           await _createMessageToAttachmentSchema(db);
         }
+        if (oldVersion < 9) {
+          await _createIncrementalProjectionIndexes(db);
+        }
       },
       onOpen: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
+        await _createIncrementalProjectionIndexes(db);
       },
     );
 
@@ -92,6 +73,16 @@ class ImportDatabase {
     await database.close();
   }
 
+  @override
+  Future<T> writeTransaction<T>(
+    Future<T> Function(ImportLedgerWriteTransaction txn) action,
+  ) {
+    return database.transaction((txn) {
+      return action(ImportDatabaseWriteTransaction._(txn));
+    });
+  }
+
+  @override
   Future<int> insertImportBatch({
     required int sourceId,
     required String startedAtUtc,
@@ -102,6 +93,91 @@ class ImportDatabase {
     });
   }
 
+  @override
+  Future<int> getOrCreateSource({
+    required String sourceKey,
+    required String sourceKind,
+    String? sourceLabel,
+  }) async {
+    final normalizedKey = sourceKey.trim();
+    final normalizedKind = sourceKind.trim();
+    final trimmedLabel = sourceLabel?.trim();
+    final normalizedLabel = trimmedLabel == null || trimmedLabel.isEmpty
+        ? null
+        : trimmedLabel;
+
+    if (normalizedKey.isEmpty) {
+      throw ArgumentError.value(sourceKey, 'sourceKey', 'must not be empty');
+    }
+    if (normalizedKind.isEmpty) {
+      throw ArgumentError.value(sourceKind, 'sourceKind', 'must not be empty');
+    }
+
+    return database.transaction((txn) async {
+      final existing = await txn.query(
+        'source_registry',
+        columns: <String>['source_id'],
+        where: 'source_key = ?',
+        whereArgs: <Object?>[normalizedKey],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) {
+        final existingSourceId = existing.single['source_id'];
+        if (existingSourceId is! int) {
+          throw StateError('source_registry.source_id must be an integer');
+        }
+        return existingSourceId;
+      }
+
+      final nextRows = await txn.rawQuery(
+        'SELECT COALESCE(MAX(source_id), ?) + 1 AS next_source_id '
+        'FROM source_registry',
+        <Object?>[liveAddressBookSourceId],
+      );
+      final nextSourceIdValue = nextRows.single['next_source_id'];
+      if (nextSourceIdValue is! int) {
+        throw StateError('next source_id must be an integer');
+      }
+      final nextSourceId = nextSourceIdValue;
+
+      await txn.insert('source_registry', <String, Object?>{
+        'source_id': nextSourceId,
+        'source_key': normalizedKey,
+        'source_kind': normalizedKind,
+        'source_label': normalizedLabel,
+        'created_at_utc': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      return nextSourceId;
+    });
+  }
+
+  @override
+  Future<int?> sourceIdForKey(String sourceKey) async {
+    final normalizedKey = sourceKey.trim();
+    if (normalizedKey.isEmpty) {
+      throw ArgumentError.value(sourceKey, 'sourceKey', 'must not be empty');
+    }
+
+    final rows = await database.query(
+      'source_registry',
+      columns: <String>['source_id'],
+      where: 'source_key = ?',
+      whereArgs: <Object?>[normalizedKey],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+
+    final value = rows.single['source_id'];
+    if (value is! int) {
+      throw StateError('source_registry.source_id must be an integer');
+    }
+    return value;
+  }
+
+  @override
   Future<int?> maxMessageSourceRowIdForSource(int sourceId) async {
     final rows = await database.rawQuery(
       'SELECT MAX(source_rowid) AS max_source_rowid '
@@ -111,6 +187,210 @@ class ImportDatabase {
     return rows.single['max_source_rowid'] as int?;
   }
 
+  @override
+  Future<int> messageCountForSource(int sourceId) async {
+    final rows = await database.rawQuery(
+      'SELECT COUNT(*) AS message_count '
+      'FROM messages WHERE source_id = ?',
+      <Object?>[sourceId],
+    );
+    return rows.single['message_count'] as int? ?? 0;
+  }
+
+  @override
+  Future<ImportLedgerMessageStatusSnapshot> messageStatusForSource(
+    int sourceId,
+  ) async {
+    final rows = await database.rawQuery(
+      '''
+      SELECT
+        COUNT(*) AS message_count,
+        COALESCE(MAX(source_rowid), 0) AS max_source_rowid,
+        SUM(CASE WHEN text IS NULL AND attributed_body_blob IS NOT NULL
+          THEN 1 ELSE 0 END) AS needing_enrichment_count,
+        SUM(CASE WHEN text IS NULL OR text = '' THEN 1 ELSE 0 END)
+          AS without_text_count
+      FROM messages
+      WHERE source_id = ?
+      ''',
+      <Object?>[sourceId],
+    );
+    final row = rows.single;
+    return ImportLedgerMessageStatusSnapshot(
+      count: _readInt(row['message_count']),
+      maxSourceRowId: _readInt(row['max_source_rowid']),
+      needingEnrichmentCount: _readInt(row['needing_enrichment_count']),
+      withoutTextCount: _readInt(row['without_text_count']),
+    );
+  }
+
+  @override
+  Future<ImportLedgerProjectionStatusSnapshot>
+  projectionStatusSnapshot() async {
+    final chatRows = await database.rawQuery(
+      'SELECT COUNT(*) AS chat_count FROM chats',
+    );
+    final handleRows = await database.rawQuery(
+      'SELECT COUNT(*) AS handle_count FROM handles',
+    );
+    final chatToMessageRows = await database.rawQuery(
+      'SELECT COUNT(*) AS edge_count FROM chat_to_message',
+    );
+    final chatToHandleRows = await database.rawQuery(
+      'SELECT COUNT(*) AS edge_count FROM chat_to_handle',
+    );
+    final attachmentRows = await database.rawQuery(
+      'SELECT COUNT(*) AS attachment_count FROM attachments',
+    );
+    final messageToAttachmentRows = await database.rawQuery(
+      'SELECT COUNT(*) AS edge_count FROM message_to_attachment',
+    );
+
+    return ImportLedgerProjectionStatusSnapshot(
+      chatCount: _readInt(chatRows.single['chat_count']),
+      handleCount: _readInt(handleRows.single['handle_count']),
+      chatToMessageEdgeCount: _readInt(chatToMessageRows.single['edge_count']),
+      chatToHandleEdgeCount: _readInt(chatToHandleRows.single['edge_count']),
+      attachmentCount: _readInt(attachmentRows.single['attachment_count']),
+      messageToAttachmentEdgeCount: _readInt(
+        messageToAttachmentRows.single['edge_count'],
+      ),
+    );
+  }
+
+  @override
+  Future<List<ImportLedgerMessageTextCandidate>>
+  findMessagesNeedingTextEnrichment({
+    int? sourceId,
+    int? startedAfterSourceRowId,
+  }) async {
+    final whereParts = <String>[
+      'text IS NULL',
+      'attributed_body_blob IS NOT NULL',
+      if (sourceId != null) 'source_id = ?',
+      if (startedAfterSourceRowId != null) 'source_rowid > ?',
+    ];
+    final whereArgs = <Object?>[
+      if (sourceId != null) sourceId,
+      if (startedAfterSourceRowId != null) startedAfterSourceRowId,
+    ];
+    final rows = await database.query(
+      'messages',
+      columns: <String>['ss_id', 'source_rowid', 'attributed_body_blob'],
+      where: whereParts.join(' AND '),
+      whereArgs: whereArgs,
+      orderBy: 'source_rowid ASC',
+    );
+
+    return rows
+        .map((row) {
+          final blob = row['attributed_body_blob'];
+          final attributedBodyBlob = switch (blob) {
+            Uint8List() => blob,
+            List<int>() => Uint8List.fromList(blob),
+            _ => throw StateError('messages.attributed_body_blob is required'),
+          };
+          return ImportLedgerMessageTextCandidate(
+            ssId: _readRequiredInt(row, 'ss_id'),
+            sourceRowId: _readRequiredInt(row, 'source_rowid'),
+            attributedBodyBlob: attributedBodyBlob,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> queryTable(
+    String table, {
+    List<String>? columns,
+    String? where,
+    List<Object?>? whereArgs,
+    String? orderBy,
+    int? limit,
+  }) {
+    return database.query(
+      table,
+      columns: columns,
+      where: where,
+      whereArgs: whereArgs,
+      orderBy: orderBy,
+      limit: limit,
+    );
+  }
+
+  @override
+  Future<SourceScopedImportSourceDeletionResult> deleteRowsForSource({
+    required int sourceId,
+  }) async {
+    return database.transaction((txn) async {
+      final messageAttachmentEdges = await txn.delete(
+        'message_to_attachment',
+        where: 'message_source_id = ? OR attachment_source_id = ?',
+        whereArgs: <Object?>[sourceId, sourceId],
+      );
+      final chatHandleEdges = await txn.delete(
+        'chat_to_handle',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final chatMessageEdges = await txn.delete(
+        'chat_to_message',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final contactChannels = await txn.delete(
+        'contact_channels',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final contacts = await txn.delete(
+        'contacts',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final attachments = await txn.delete(
+        'attachments',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final messages = await txn.delete(
+        'messages',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final chats = await txn.delete(
+        'chats',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final handles = await txn.delete(
+        'handles',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+      final importBatches = await txn.delete(
+        'import_batches',
+        where: 'source_id = ?',
+        whereArgs: <Object?>[sourceId],
+      );
+
+      return SourceScopedImportSourceDeletionResult(
+        sourceId: sourceId,
+        messages: messages,
+        chats: chats,
+        handles: handles,
+        contacts: contacts,
+        contactChannels: contactChannels,
+        attachments: attachments,
+        chatMessageEdges: chatMessageEdges,
+        chatHandleEdges: chatHandleEdges,
+        messageAttachmentEdges: messageAttachmentEdges,
+        importBatches: importBatches,
+      );
+    });
+  }
+
+  @override
   Future<int?> maxHandleSourceRowIdForSource(int sourceId) async {
     final rows = await database.rawQuery(
       'SELECT MAX(source_rowid) AS max_source_rowid '
@@ -120,6 +400,7 @@ class ImportDatabase {
     return rows.single['max_source_rowid'] as int?;
   }
 
+  @override
   Future<int?> maxAttachmentSourceRowIdForSource(int sourceId) async {
     final rows = await database.rawQuery(
       'SELECT MAX(source_rowid) AS max_source_rowid '
@@ -193,6 +474,7 @@ class ImportDatabase {
     await _createContactChannelSchema(db);
     await _createAttachmentSchema(db);
     await _createMessageToAttachmentSchema(db);
+    await _createIncrementalProjectionIndexes(db);
   }
 
   static Future<void> _addMessageSemanticSourceColumns(Database db) async {
@@ -314,6 +596,10 @@ class ImportDatabase {
       'CREATE INDEX IF NOT EXISTS idx_chat_to_message_message '
       'ON chat_to_message(message_ss_id)',
     );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_chat_to_message_source_message_cursor '
+      'ON chat_to_message(source_id, source_message_rowid)',
+    );
   }
 
   static Future<void> _createChatToHandleSchema(Database db) async {
@@ -347,7 +633,6 @@ class ImportDatabase {
         source_id INTEGER NOT NULL,
         source_rowid INTEGER NOT NULL,
         display_name TEXT NOT NULL,
-        short_name TEXT,
         first_name TEXT,
         last_name TEXT,
         organization TEXT,
@@ -450,6 +735,23 @@ class ImportDatabase {
       'CREATE INDEX IF NOT EXISTS idx_message_to_attachment_attachment '
       'ON message_to_attachment(attachment_ss_id)',
     );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS '
+      'idx_message_to_attachment_source_message_cursor '
+      'ON message_to_attachment(message_source_id, source_message_rowid)',
+    );
+  }
+
+  static Future<void> _createIncrementalProjectionIndexes(Database db) async {
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_chat_to_message_source_message_cursor '
+      'ON chat_to_message(source_id, source_message_rowid)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS '
+      'idx_message_to_attachment_source_message_cursor '
+      'ON message_to_attachment(message_source_id, source_message_rowid)',
+    );
   }
 
   static Future<void> _ensureLiveSource(Database db) async {
@@ -468,4 +770,51 @@ class ImportDatabase {
       'created_at_utc': DateTime.now().toUtc().toIso8601String(),
     }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
+}
+
+final class ImportDatabaseWriteTransaction
+    implements ImportLedgerWriteTransaction {
+  const ImportDatabaseWriteTransaction._(this._txn);
+
+  final Transaction _txn;
+
+  @override
+  Future<int> insertIgnore(String table, Map<String, Object?> values) {
+    return _txn.insert(
+      table,
+      values,
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  @override
+  Future<int> update(
+    String table,
+    Map<String, Object?> values, {
+    String? where,
+    List<Object?>? whereArgs,
+  }) {
+    return _txn.update(table, values, where: where, whereArgs: whereArgs);
+  }
+}
+
+int _readRequiredInt(Map<String, Object?> row, String field) {
+  final value = row[field];
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  throw StateError('messages.$field is required');
+}
+
+int _readInt(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return 0;
 }

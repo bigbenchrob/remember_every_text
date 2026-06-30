@@ -52,11 +52,12 @@ In messages mode, the gears are:
 4. Right-panel compatibility
    The right panel may only exist if the active center spec supports that
    subordinate content
-5. Timeline scope
-   Message surfaces interpret the center-panel spec as a
-   `MessageTimelineScope`
-6. Ordinal access and row hydration
-   Message rows are loaded by stable ordinal and hydrated on demand
+5. Message evidence scope
+   Message surfaces interpret the center-panel spec as a typed
+   `MessageEvidenceScope`
+6. Evidence skeleton and row hydration
+   Message scopes build a full logical skeleton, then hydrate visible rows by
+   stable graph `message_ss_id`
 
 Each lower gear depends on the higher gear. None of those downstream gears
 should be required to infer the meaning of the upstream state by inspecting

@@ -1,13 +1,22 @@
 # Deterministic Historical Attachment Recovery Design Notes
 
+## Current Conformance Note (2026-06-06)
+
+These design notes preserve the deterministic no-heuristics rule. Their
+three-layer import/working bridge is superseded by graph-era mapping:
+historical snapshot facts should map to source-scoped import facts and graph
+attachment/message edges, with overlay archive records remaining the durable
+user-owned file metadata.
+
 ## Summary
 
 Replace the heuristic historical recovery intake with a deterministic
 three-layer mapping flow. The historical chat.db provides authoritative
-message↔attachment relationships. The current import DB bridges Apple's
-`attachment.guid` to the runtime `import_attachment_id`. Archive files are
-written to the existing content-addressable store with overlay rows carrying
-provenance `imported_historical_snapshot`.
+message↔attachment relationships. Graph-era recovery maps those facts to
+source-scoped message/attachment identity first; retained overlay-compatible
+archive keys are a bridge only where existing archive metadata still requires
+them. Archive files are written to the existing content-addressable store with
+overlay rows carrying provenance `imported_historical_snapshot`.
 
 ## Hard Invariants
 
@@ -31,44 +40,50 @@ Layer 1: Historical snapshot DB (user-provided, SQLITE_OPEN_READONLY)
   Source of: attachment.guid, message.guid, attachment.filename,
              message_attachment_join relationships
 
-Layer 2: Current import DB (via sqfliteImportDatabaseProvider)
-  Source of: attachments.guid → attachments.id bridge
-  ONLY layer holding BOTH Apple's attachment.guid AND the id
-  that becomes import_attachment_id in working DB
+Layer 2: Current source-scoped import DB / graph attachment facts
+  Source of: attachment source facts and source-scoped attachment identity
+  Supersedes the retired import DB bridge once graph attachment projection is
+  available for the selected source.
 
-Layer 3: Current working DB + overlay (via existing providers)
-  Source of: (message_guid, import_attachment_id) runtime identity
+Layer 3: Current conversation graph + overlay
+  Source of: canonical message_ss_id / attachment_ss_id runtime identity, plus
+             retained overlay-compatible archive keys during the transition
   Target of: overlay archived_attachments row insertion
 ```
 
 ### Precondition
 
-The current import DB must be populated from at least one live
-import+migration cycle. If empty/absent, historical recovery refuses
-with a clear diagnostic.
+The source-scoped import DB and conversation graph must be populated for the
+selected source. If graph/source-scoped attachment facts are unavailable,
+historical recovery must refuse with a clear diagnostic rather than falling
+back to retained import/projection authority.
 
 ## Attachment Identity Mapping
 
 ### The Problem
 
-Apple's `attachment.guid` is preserved in the import DB but is NOT projected
-into the working DB. The working DB uses `import_attachment_id` (= import DB
-`attachments.id`). The overlay keys on `(message_guid, import_attachment_id)`.
+Apple's `attachment.guid` was historically bridged through retained
+`macos_import.db` and retained `working.db`. In the graph era, canonical
+message/attachment identity is source-scoped; retained
+`(message_guid, import_attachment_id)` overlay keys are compatibility keys, not
+the app's ordinary identity model.
 
-Therefore, mapping a historical attachment to its current overlay key requires
-bridging through the import DB: `historical attachment.guid` → `import DB
-attachments.guid` → `import DB attachments.id` → `working DB
-import_attachment_id`.
+Therefore, mapping a historical attachment should prefer source-scoped graph
+identity: historical source facts → source-scoped import facts → graph
+`message_ss_id` / `attachment_ss_id`, with a named retained overlay bridge only
+where existing archive metadata still requires `(message_guid,
+import_attachment_id)`.
 
 ### Primary Match (Step 1)
 
 For `(hist_message_guid, hist_attachment_guid)`:
 
-1. Query import DB: `SELECT id FROM attachments WHERE guid = :hist_attachment_guid`
-2. If exactly one row → candidate `import_attachment_id`
-3. Verify the pair exists in working DB:
-   `SELECT 1 FROM attachments WHERE message_guid = :hist_message_guid AND import_attachment_id = :id`
-4. Confirmed → MAPPED with `match_method = 'guid_match'`
+1. Resolve the historical source attachment to a source-scoped graph attachment
+   occurrence when available.
+2. Verify the graph message/attachment edge exists.
+3. If existing archive metadata still requires retained overlay-compatible
+   keys, resolve those through the named archive compatibility bridge.
+4. Confirmed → MAPPED with an explicit graph/bridge match method.
 
 ### Single-Attachment Fallback (Step 2)
 
@@ -76,9 +91,9 @@ Permitted ONLY when ALL three conditions hold:
 
 1. `hist_attachment_guid` IS NULL (not different — NULL)
 2. Historical message has EXACTLY ONE attachment (from `message_attachment_join`)
-3. Current working DB has EXACTLY ONE attachment for that `message_guid`
+3. Current graph has EXACTLY ONE attachment for that message scope
 
-If all three: the single current `import_attachment_id` is the match.
+If all three: the single current graph attachment occurrence is the match.
 `match_method = 'single_attachment_fallback'`
 
 If ANY condition fails: record is UNMAPPED.

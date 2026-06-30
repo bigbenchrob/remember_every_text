@@ -2,19 +2,31 @@
 tier: feature
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2026-04-29
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./V2_ARCHITECTURE_PLAN.md
   - ./IMPLEMENTATION_PLAN.md
   - ./SPIKE_RETROSPECTIVE.md
 tests: []
 feature: historical-messages-merge-redux
-status: in_progress
+status: historical-checklist-superseded-by-graph-recovery
 created: 2026-04-29
 ---
 
 # Checklist - Historical Messages Merge Redux
+
+## Current Conformance Note (2026-06-06)
+
+This checklist records the retained-legacy archive-merge plan and should not be
+used as the current execution checklist. Current archive/recovery execution is
+tracked through the source-scoped graph migration documents, especially the
+archive recovery identity plan and recovered-message graph identity/parity
+plans.
+
+The durable lessons still apply: archive import must be observable, idempotent,
+atomic at the app-visible boundary, and never rendered directly from a private
+staging database.
 
 ## Current Snapshot - 2026-04-29
 

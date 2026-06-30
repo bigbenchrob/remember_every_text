@@ -11,6 +11,8 @@ enum SidebarTopMenuChoice {
 
 enum SidebarMessageScope { regular, recoveredDeleted }
 
+enum SidebarContactProjection { allMessages, conversations }
+
 enum SidebarStrayHandleFilter { phones, emails, businessUrns }
 
 enum SidebarStrayHandleMode { allStrays, spamCandidates, dismissed }
@@ -96,11 +98,43 @@ final class ContactMessageScopeChanged extends SidebarPersistentIntent {
   final SidebarMessageScope scope;
 }
 
+final class ContactProjectionChanged extends SidebarPersistentIntent {
+  const ContactProjectionChanged({
+    required this.contactId,
+    required this.projection,
+  });
+
+  final int contactId;
+  final SidebarContactProjection projection;
+}
+
 final class HeatMapMonthFocused extends SidebarPersistentIntent {
   const HeatMapMonthFocused({this.monthAnchor, this.contactId});
 
   final int? contactId;
   final DateTime? monthAnchor;
+}
+
+final class ConversationSelected extends SidebarPersistentIntent {
+  const ConversationSelected({
+    required this.conversationId,
+    this.anchorMessageId,
+    this.searchQuery,
+  });
+
+  final int conversationId;
+  final int? anchorMessageId;
+  final String? searchQuery;
+}
+
+final class ContactConversationSelected extends SidebarPersistentIntent {
+  const ContactConversationSelected({
+    required this.contactId,
+    required this.conversationId,
+  });
+
+  final int contactId;
+  final int conversationId;
 }
 
 final class RecoveredMonthFocused extends SidebarPersistentIntent {
@@ -113,6 +147,10 @@ final class RecoveredMonthFocused extends SidebarPersistentIntent {
   final int? contactId;
   final DateTime monthAnchor;
   final bool onlyNoHandleFromMe;
+}
+
+final class RecoveredNoHandleFromMeOpened extends SidebarPersistentIntent {
+  const RecoveredNoHandleFromMeOpened();
 }
 
 final class StrayHandleFilterChanged extends SidebarPersistentIntent {
@@ -129,6 +167,12 @@ final class StrayHandleModeChanged extends SidebarPersistentIntent {
 
 final class StrayHandleOpened extends SidebarPersistentIntent {
   const StrayHandleOpened({required this.handleId});
+
+  final int handleId;
+}
+
+final class HandleMessagesOpened extends SidebarPersistentIntent {
+  const HandleMessagesOpened({required this.handleId});
 
   final int handleId;
 }

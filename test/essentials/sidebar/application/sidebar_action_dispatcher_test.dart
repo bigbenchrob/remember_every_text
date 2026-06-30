@@ -1,13 +1,17 @@
+import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
+    show overlayDatabaseProvider;
+import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
+import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
-import 'package:remember_this_text/essentials/navigation/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/ephemeral_cassette_projection_provider.dart';
@@ -20,6 +24,7 @@ import 'package:remember_this_text/features/contacts/domain/spec_classes/contact
 import 'package:remember_this_text/features/handles/application/state/stray_handle_mode_provider.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
+import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_view_spec.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
@@ -31,14 +36,17 @@ void main() {
     late ProviderContainer container;
     late SidebarActionDispatcher dispatcher;
     late _FakeMessageDataResetService resetService;
+    late OverlayDatabase overlayDb;
 
     setUp(() {
       resetService = _FakeMessageDataResetService();
+      overlayDb = OverlayDatabase(NativeDatabase.memory());
       container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           messageDataResetServiceProvider.overrideWith((ref) => resetService),
           ...cassetteRackTestHarnessOverrides(),
         ],
@@ -46,8 +54,9 @@ void main() {
       dispatcher = container.read(sidebarActionDispatcherProvider.notifier);
     });
 
-    tearDown(() {
+    tearDown(() async {
       container.dispose();
+      await overlayDb.close();
     });
 
     testWidgets('dispatches top menu changes through sidebar flow', (
@@ -76,6 +85,65 @@ void main() {
         equals(const ViewSpec.messages(MessagesSpec.globalTimeline())),
       );
     });
+
+    testWidgets('dispatches conversation selection through sidebar flow', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      await dispatcher.dispatch(
+        intent: const ConversationSelected(conversationId: 8796093022216),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      final flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.conversations);
+      expect(flowState.selectedConversationId, 8796093022216);
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.forConversation(conversationId: 8796093022216),
+          ),
+        ),
+      );
+    });
+
+    testWidgets(
+      'dispatches contact conversation selection through sidebar flow',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        await dispatcher.dispatch(
+          intent: const ContactConversationSelected(
+            contactId: 24,
+            conversationId: 8796093022216,
+          ),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+          ),
+        );
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        final flowState = container.read(sidebarFlowProvider);
+        expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+        expect(flowState.chosenContactId, 24);
+        expect(flowState.selectedConversationId, 8796093022216);
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            const ViewSpec.messages(
+              MessagesSpec.forConversation(conversationId: 8796093022216),
+            ),
+          ),
+        );
+      },
+    );
 
     test(
       'dispatches stray handle filter changes via cassette replacement',
@@ -140,6 +208,49 @@ void main() {
       );
     });
 
+    testWidgets(
+      'dispatches handle message opening to standalone handle route',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        await dispatcher.dispatch(
+          intent: const HandleMessagesOpened(handleId: 9001),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+          ),
+        );
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            const ViewSpec.messages(MessagesSpec.forHandle(handleId: 9001)),
+          ),
+        );
+      },
+    );
+
+    testWidgets('dispatches stray handle lens opening through sidebar flow', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      await dispatcher.dispatch(
+        intent: const StrayHandleOpened(handleId: 7),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(const ViewSpec.messages(MessagesSpec.handleLens(handleId: 7))),
+      );
+    });
+
     test('dispatches reset message data through reset service', () async {
       await dispatcher.dispatch(
         intent: const ResetMessageDataRequested(),
@@ -182,9 +293,7 @@ void main() {
             const CassetteSpec.sidebarUtility(
               SidebarUtilityCassetteSpec.settingsMenu(),
             ),
-            const CassetteSpec.settings(
-              SettingsCassetteSpec.textSizePlaceholder(),
-            ),
+            const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
           ]),
         );
         expect(
@@ -207,9 +316,7 @@ void main() {
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
-          const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizePlaceholder(),
-          ),
+          const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
         ]);
 
         await dispatcher.dispatch(
@@ -322,9 +429,7 @@ void main() {
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
-          const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizePlaceholder(),
-          ),
+          const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
         ]);
 
         await dispatcher.dispatch(
@@ -375,9 +480,7 @@ void main() {
           const CassetteSpec.sidebarUtility(
             SidebarUtilityCassetteSpec.settingsMenu(),
           ),
-          const CassetteSpec.settings(
-            SettingsCassetteSpec.textSizePlaceholder(),
-          ),
+          const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
         ]);
 
         await dispatcher.dispatch(
@@ -464,9 +567,7 @@ void main() {
             const CassetteSpec.sidebarUtility(
               SidebarUtilityCassetteSpec.settingsMenu(),
             ),
-            const CassetteSpec.settings(
-              SettingsCassetteSpec.textSizePlaceholder(),
-            ),
+            const CassetteSpec.settings(SettingsCassetteSpec.textSizeInfo()),
           ]),
         );
       },
@@ -498,6 +599,92 @@ void main() {
       );
     });
 
+    testWidgets(
+      'dispatches contact all-messages heat map focus through projected graph route',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        final flow = container.read(sidebarFlowProvider.notifier);
+        final anchor = DateTime(2024, 04, 01);
+
+        flow.topMenuChanged(
+          choice: TopChatMenuChoice.contacts,
+          cassetteIndex: 0,
+        );
+        flow.contactChosen(contactId: 42, infoCardIndex: 1);
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            const ViewSpec.messages(MessagesSpec.forContact(contactId: 42)),
+          ),
+        );
+
+        await dispatcher.dispatch(
+          intent: HeatMapMonthFocused(contactId: 42, monthAnchor: anchor),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+          ),
+        );
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(container.read(sidebarFlowProvider).selectedHandleId, isNull);
+        expect(container.read(sidebarFlowProvider).scrollToDate, anchor);
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            ViewSpec.messages(
+              MessagesSpec.forContact(contactId: 42, scrollToDate: anchor),
+            ),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'dispatches filtered contact heat map focus through projected graph route',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        final flow = container.read(sidebarFlowProvider.notifier);
+        final anchor = DateTime(2024, 04, 01);
+
+        flow.topMenuChanged(
+          choice: TopChatMenuChoice.contacts,
+          cassetteIndex: 0,
+        );
+        flow.contactChosen(contactId: 42, infoCardIndex: 1);
+        flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 4);
+        await _flushMessagesPanelReconciliation(tester);
+
+        await dispatcher.dispatch(
+          intent: HeatMapMonthFocused(contactId: 42, monthAnchor: anchor),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+          ),
+        );
+
+        await _flushMessagesPanelReconciliation(tester);
+
+        expect(container.read(sidebarFlowProvider).selectedHandleId, 7);
+        expect(container.read(sidebarFlowProvider).scrollToDate, anchor);
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            ViewSpec.messages(
+              MessagesSpec.forContact(
+                contactId: 42,
+                scrollToDate: anchor,
+                filterHandleId: 7,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
     test(
       'dispatches choose another contact from downstream cassette context',
       () async {
@@ -513,12 +700,6 @@ void main() {
           ),
           const CassetteSpec.contacts(
             ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
-          ),
-          const CassetteSpec.contactsInfo(
-            ContactsInfoCassetteSpec.infoCard(
-              key: ContactsInfoKey.chosenContact,
-              chosenContactId: 42,
-            ),
           ),
           const CassetteSpec.contacts(
             ContactsCassetteSpec.messageScopeToggle(contactId: 42),
@@ -640,7 +821,7 @@ void main() {
         intent: const ContactHandleSelected(contactId: 42, handleId: 7),
         context: const SidebarActionDispatchContext(
           sidebarMode: SidebarMode.messages,
-          cassetteIndex: 5,
+          cassetteIndex: 4,
         ),
       );
 
@@ -673,7 +854,7 @@ void main() {
           ),
           context: const SidebarActionDispatchContext(
             sidebarMode: SidebarMode.messages,
-            cassetteIndex: 4,
+            cassetteIndex: 3,
           ),
         );
 
@@ -693,6 +874,94 @@ void main() {
         );
       },
     );
+
+    testWidgets('dispatches contact projection changes through sidebar flow', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .selectContactConversation(contactId: 42, conversationId: 9001);
+
+      await dispatcher.dispatch(
+        intent: const ContactProjectionChanged(
+          contactId: 42,
+          projection: SidebarContactProjection.allMessages,
+        ),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      var flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(flowState.chosenContactId, 42);
+      expect(
+        flowState.contactProjection,
+        SidebarFlowContactProjection.allMessages,
+      );
+      expect(flowState.selectedConversationId, isNull);
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(const ViewSpec.messages(MessagesSpec.forContact(contactId: 42))),
+      );
+
+      await dispatcher.dispatch(
+        intent: const ContactProjectionChanged(
+          contactId: 42,
+          projection: SidebarContactProjection.conversations,
+        ),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(flowState.chosenContactId, 42);
+      expect(
+        flowState.contactProjection,
+        SidebarFlowContactProjection.conversations,
+      );
+      expect(flowState.selectedConversationId, isNull);
+      expect(_activeSpec(container, WindowPanel.center), isNull);
+    });
+
+    testWidgets('dispatches recovered no-handle opening through sidebar flow', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      await dispatcher.dispatch(
+        intent: const RecoveredNoHandleFromMeOpened(),
+        context: const SidebarActionDispatchContext(
+          sidebarMode: SidebarMode.messages,
+        ),
+      );
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      final flowState = container.read(sidebarFlowProvider);
+      expect(
+        flowState.topMenuChoice,
+        TopChatMenuChoice.recoveredNoHandleFromMeMessages,
+      );
+      expect(flowState.chosenContactId, isNull);
+      expect(flowState.selectedHandleId, isNull);
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.recoveredNoHandleFromMeMessages(),
+          ),
+        ),
+      );
+    });
   });
 }
 
@@ -740,7 +1009,7 @@ ViewSpec? _activeSpec(ProviderContainer container, WindowPanel panel) {
   return stacks[panel]?.activePage?.spec;
 }
 
-class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
+class _AlwaysPopulatedGraph extends ConversationGraphPopulated {
   @override
   bool build() {
     return true;

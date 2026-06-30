@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-20
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
@@ -14,7 +14,7 @@ tests: []
 
 # `db-overlay` — User Overrides (`user_overlays.db`)
 
-`db-overlay` stores long-lived user customisations that must survive import/migration cycles. It pairs with `db-working` at the provider layer—never through direct database synchronization.
+`db-overlay` stores long-lived user customisations that must survive source import, graph projection, retired-file cleanup, and rebuild cycles. It pairs with graph/working projection at the read-model layer - never through direct database synchronization.
 
 - **Alias**: `db-overlay`
 - **Physical File**: `~/Library/Application Support/com.bigbenchsoftware.MessageLens/user_overlays.db`
@@ -41,34 +41,35 @@ Usage template:
 final overlayDb = await ref.watch(overlayDatabaseProvider.future);
 ```
 
-Providers that merge overlay and working data must request both databases separately and combine results in-memory. See `07-overlay-database-independence.md` for the non-negotiable rules.
+Providers/read models that merge overlay and graph/working data must request the relevant databases separately and combine results in-memory. See `07-overlay-database-independence.md` for the non-negotiable rules.
 
 ## Schema Highlights
 
 | Table | Purpose |
 | --- | --- |
 | `handle_to_participant_overrides` | Manual links between handles and participants (supersedes automatic matches when present). |
-| `participant_overrides` | Custom participant metadata (short names, notes, display preferences). |
+| `participant_overrides` | Custom display metadata, especially the single user-authored display-name override. Short-name/nickname concepts are not app-facing identity inputs. |
 | `chat_overrides` | Chat-specific preferences (custom titles, colours, pin states) that persist across rebuilds. |
-| `message_annotations` | Per-message annotations keyed by working message ID; newer saved/tag metadata uses GUID-keyed tables below. |
-| `message_user_flags` / `message_user_tags` | Message saved state and user tags keyed by message GUID. |
+| graph-keyed message intent tables | Saved/tag/user intent keyed by graph `message_ss_id` where available. |
+| retained message annotations/flags/tags | Legacy-keyed message intent retained only through explicit compatibility bridges. |
 | `favorite_contacts` | Favorite/recent contact state keyed by `participants.id`. |
 | `handle_visibility_overrides` / `dismissed_handles` | User-controlled visibility, blacklist, and dismissal state. |
 | `virtual_participants` | Overlay-scoped participants created by the user. |
 | `archived_attachments` | Attachment archive metadata keyed by message GUID + import attachment ID. |
-| `overlay_settings` | Overlay-scoped key/value settings. |
+| `overlay_settings` | Overlay-scoped raw key/value settings, accessed only through named storage boundaries. |
 
-Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`. The `20-DATA-IMPORT-MIGRATION` schema reference covers import and working databases; overlay details are owned here and in the code schema.
+Full definitions live in `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`. The graph and retired import/working schema references do not own overlay semantics; overlay details are owned here and in the code schema.
 
 ## Usage Rules
 
-1. **Write through providers**: Only user-driven services mutate this database. Never write to it during migrations.
-2. **Respect independence**: Do not copy overlay data into `db-working`. Merge at the provider layer. Review `07-overlay-database-independence.md` before touching overlay code.
-3. **Keep migrations forward-only**: Overlay database migrations must be additive and preserve user data; avoid destructive changes.
-4. **Invalidate providers after writes**: Ensure Riverpod providers that depend on overlay data are invalidated so merged views refresh.
+1. **Write through services/providers**: Only user-driven services mutate this database. Never write to it during projection/migration.
+2. **Respect independence**: Do not copy overlay data into graph or retired working/projection tables. Merge at the provider/read-model layer. Review `07-overlay-database-independence.md` before touching overlay code.
+3. **Hide raw settings access**: `overlay_settings` is a persistence primitive, not an application API. Application and presentation code must use named stores or repositories; raw `readOverlaySetting` / `writeOverlaySetting` / `deleteOverlaySetting` access stays in overlay storage, infrastructure repositories, or explicitly named storage classes.
+4. **Keep migrations forward-only**: Overlay database migrations must be additive and preserve user data; avoid destructive changes.
+5. **Invalidate providers after writes**: Ensure Riverpod providers that depend on overlay data are invalidated so merged views refresh.
 
 ## Cross-References
 
-- `07-overlay-database-independence.md` — Architectural rules for keeping overlay and working databases isolated.
-- `10-group-import-working.md` — Context on how overlay data supplements the import/working pipeline.
-- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Table definitions and migration history.
+- `07-overlay-database-independence.md` — Architectural rules for keeping overlay and projection databases isolated.
+- `10-group-import-working.md` — Retired import/working storage context.
+- `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Retired table definitions and migration history.

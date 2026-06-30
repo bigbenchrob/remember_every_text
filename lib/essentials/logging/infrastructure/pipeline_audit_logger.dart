@@ -2,19 +2,14 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../db/feature_level_providers.dart';
+import '../../db/database_directory.dart';
 
-/// Writes structured, human-readable audit logs for import and migration
-/// pipelines.
+/// Writes structured, human-readable audit logs for active graph lifecycle and
+/// diagnostic pipelines.
 ///
 /// Each run appends a new timestamped section to the log file. Files are
 /// stored in the app's database directory so they sit alongside the databases
-/// they describe:
-///
-/// ```
-/// ~/Library/Application Support/com.bigbenchsoftware.MessageLens/import_log
-/// ~/Library/Application Support/com.bigbenchsoftware.MessageLens/migrate_log
-/// ```
+/// they describe.
 class PipelineAuditLogger {
   PipelineAuditLogger._(this._sink, this._filePath);
 
@@ -26,11 +21,27 @@ class PipelineAuditLogger {
 
   /// Open (or create) a log file in the database directory.
   ///
-  /// [fileName] is relative to [databaseDirectoryPath] — e.g. `import_log`
-  /// or `migrate_log`.
-  static Future<PipelineAuditLogger> open(String fileName) async {
-    final logPath = path.join(databaseDirectoryPath, fileName);
+  /// [fileName] is relative to [databaseDirectoryPath].
+  static Future<PipelineAuditLogger> open(
+    String fileName, {
+    String? directoryPath,
+  }) async {
+    if (fileName.isEmpty ||
+        path.isAbsolute(fileName) ||
+        path.basename(fileName) != fileName) {
+      throw StateError('Pipeline audit log file name must be a base name.');
+    }
+
+    final baseDirectoryPath = directoryPath ?? databaseDirectoryPath;
+    if (_isSymlink(baseDirectoryPath)) {
+      throw StateError('Pipeline audit log directory must not be a symlink.');
+    }
+
+    final logPath = path.join(baseDirectoryPath, fileName);
     final file = File(logPath);
+    if (_isSymlink(file.path) || _isDirectory(file.path)) {
+      throw StateError('Pipeline audit log target must be a regular file.');
+    }
     final sink = file.openWrite(mode: FileMode.append);
     return PipelineAuditLogger._(sink, logPath);
   }
@@ -127,4 +138,14 @@ class PipelineAuditLogger {
     await _sink.flush();
     await _sink.close();
   }
+}
+
+bool _isDirectory(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.directory;
+}
+
+bool _isSymlink(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.link;
 }

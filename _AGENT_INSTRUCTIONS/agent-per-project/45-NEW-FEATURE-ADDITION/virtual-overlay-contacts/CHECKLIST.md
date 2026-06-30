@@ -19,6 +19,19 @@ last_updated: 2025-11-07
 
 **Progress**: 18/41 tasks complete (44%)
 
+## Current Conformance Note (2026-06-06)
+
+Do not continue this checklist as written. It documents a partially explored
+legacy-era design. The current replacement direction is:
+
+- app-created labels for unfamiliar handles belong in overlay.
+- the graph remains the source of handle/message/conversation facts.
+- display identity is semantic and resolver-owned.
+- there is one user-edited display-name override; `short_name` generation and
+  virtual participant display precedence are deprecated.
+- future implementation must define graph/overlay keys and removal criteria
+  before adding schema.
+
 ---
 
 ## Phase 1: Overlay Schema & Drift Plumbing

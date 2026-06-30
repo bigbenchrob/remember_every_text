@@ -1,11 +1,16 @@
 # Checklist: Message History Coverage Check
 
+> Current conformance note (2026-06-06): this checklist is historical. Completed
+> items that mention `working.db` describe the original implementation target;
+> current coverage maintenance should preserve graph-accounted read models and
+> must not reopen retained `working.db` as the ordinary coverage source.
+
 ## Phase 1: Core Coverage Report
 
 - [x] Add a new transient Settings troubleshooting action for `Message history coverage...`.
 - [x] Add a new settings cassette spec and coordinator route for the coverage flow.
 - [x] Define a pure coverage report entity and status enum for whole-library coverage.
-- [x] Implement a resolver that reads `chat.db` and `working.db` through approved access paths.
+- [x] Implement a resolver that reads `chat.db` and graph-accounted MessageLens evidence through approved access paths.
 - [x] Compute source total, visible total, recovered total, total accounted, missing count, and source date range.
 - [x] Classify `complete`, `incomplete_import`, `incomplete_source_history`, and `unknown` using a conservative heuristic.
 - [x] Render the computed report as a self-contained transient settings cassette with a title and explanatory body text.
@@ -35,3 +40,4 @@
 
 - [x] Phase 1 only: add the transient settings entry and computed report cassette.
 - [x] Defer export and troubleshooting follow-up actions until after the first slice is working.
+- [x] Graph-era maintenance target: preserve source `chat.db` to graph-accounted coverage reporting; do not restore retained `working.db` as the ordinary comparison source.

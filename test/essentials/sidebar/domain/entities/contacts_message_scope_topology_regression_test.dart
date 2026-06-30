@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
-import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_info_cassette_spec.dart';
 
 void main() {
@@ -48,7 +47,7 @@ void main() {
       );
     });
 
-    test('contactHeroSummary child remains unchanged across contexts', () {
+    test('contactHeroSummary cascades directly to message scope controls', () {
       const currentSpec = CassetteSpec.contacts(
         ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
       );
@@ -69,11 +68,8 @@ void main() {
         context: recoveredContext,
       );
 
-      const expectedChild = CassetteSpec.contactsInfo(
-        ContactsInfoCassetteSpec.infoCard(
-          key: ContactsInfoKey.chosenContact,
-          chosenContactId: 42,
-        ),
+      const expectedChild = CassetteSpec.contacts(
+        ContactsCassetteSpec.messageScopeToggle(contactId: 42),
       );
 
       expect(regularChild, equals(expectedChild));

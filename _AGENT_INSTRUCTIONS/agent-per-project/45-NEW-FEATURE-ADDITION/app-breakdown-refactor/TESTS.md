@@ -1,5 +1,11 @@
 # MessageLens App Breakdown Refactor - Metrics and Tests
 
+> Current conformance note (2026-06-06): this test plan is historical. The
+> architectural test posture remains useful, but current message evidence tests
+> should target graph-backed `MessageEvidenceScope`, full selected logical
+> skeletons, viewport hydration, and shared evidence rendering. Do not recreate
+> retired `MessagesTimelineView` or retained `working.db` timeline test paths.
+
 ## Purpose
 
 This document defines how each refactor phase is judged.

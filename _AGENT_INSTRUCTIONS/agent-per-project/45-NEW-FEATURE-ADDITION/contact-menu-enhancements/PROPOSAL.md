@@ -3,8 +3,8 @@ tier: project
 scope: feature-proposal
 owner: agent-per-project
 last_reviewed: 2025-11-08
-source_of_truth: doc
-status: awaiting_approval
+source_of_truth: historical-record
+status: superseded
 links:
   - ../README.md
   - ../../40-FEATURES/README.md
@@ -14,6 +14,23 @@ tests: []
 ---
 
 # Feature Proposal: Contact Menu Enhancements
+
+## Current Conformance Note (2026-06-06)
+
+This proposal predates the graph-era contact identity model. Preserve the
+product intent: contact selection should be scalable, favourites should be
+visible, and user intent must persist. Do not preserve the old identity shape.
+Current implementation guidance is:
+
+- contact facts come from the source-scoped conversation graph.
+- contact favourites and user-selected names live in overlay only.
+- display naming is semantic, not relational: user override wins, then known
+  graph/imported contact identity, then raw handle only as fallback or explicit
+  handle-scope metadata.
+- do not reintroduce participant-ID-centric UI contracts, short-name/nickname
+  display precedence, or `working.db`-owned contact favourites.
+- user-facing language should use "Favourites", not "Pinned", unless describing
+  a historical implementation detail.
 
 ## Executive Summary
 

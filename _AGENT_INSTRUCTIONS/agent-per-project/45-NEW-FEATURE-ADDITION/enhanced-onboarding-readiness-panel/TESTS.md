@@ -1,5 +1,11 @@
 # Environment Readiness Center Panel Tests
 
+## Current Conformance Note (2026-06-06)
+
+This test plan is historical. Current tests should focus on graph-era
+readiness evidence, source probes, AddressBook readiness, and presentation
+separation. Retained import/projection diagnostics are compatibility evidence.
+
 ## Unit Tests
 
 ### Snapshot And Sequencing
@@ -15,7 +21,10 @@
 - missing Full Disk Access activates the FDA step
 - readable Messages DB with sparse local history activates the Messages step
 - unreadable or unresolved Contacts source activates the Contacts step
-- all sources healthy with app storage not yet ready activates import readiness
+- all sources healthy with import storage not yet ready activates source-scoped
+  import readiness
+- populated source-scoped import with incomplete working graph activates graph
+  readiness
 
 ### Action Mapping
 
@@ -28,6 +37,8 @@
 
 - readiness resolver maps current onboarding environment report into step state correctly
 - pipeline failure evidence does not falsely masquerade as permission failure
+- graph build/projection failure evidence does not masquerade as source-scoped
+  import failure
 - inferred local-history scarcity remains marked as inferred in the view model
 
 ## Provider / Resolver Tests
@@ -108,8 +119,9 @@ Expected:
 
 ### Regression Checks
 
-- import ownership remains in existing import systems
-- migration ownership remains in existing migration systems
+- source-scoped import ownership remains in existing import systems
+- graph build/projection ownership remains in graph orchestration
+- retired cleanup diagnostics do not become readiness authority
 - DB access invariants remain intact
 - widgets do not independently probe the machine
 - app-level routing remains ViewSpec-driven

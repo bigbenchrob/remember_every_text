@@ -1,5 +1,15 @@
 # Refactor Handles Feature to Cross-Surface Spec Pattern
 
+> Current conformance note (2026-06-05): keep this as a historical refactor
+> plan. The active handles feature now uses `info_cassette_spec` and
+> `sidebar_cassette_spec` folders for routed cassette surfaces. The old
+> separate phone/email/unmatched sidebar cassette builders and resolvers have
+> been retired in favor of the unified handle triage flow ending at
+> `HandlesCassetteSpec.strayHandlesReview`, and the unreachable handles
+> settings cassette shell has also been retired. Do not recreate a handles
+> `settings_cassette_spec` or `view_spec` coordinator unless a real routed
+> surface is added.
+
 ## Goal
 
 Refactor the handles feature folder structure to conform to the cross-surface spec

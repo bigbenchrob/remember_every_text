@@ -2,8 +2,8 @@
 tier: project
 scope: design-notes
 owner: agent-per-project
-last_reviewed: 2025-12-24
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./PROPOSAL.md
   - ../../40-FEATURES/messages/message-display-flow-walkthrough.md
@@ -11,6 +11,13 @@ tests: []
 ---
 
 # Design Notes — Global Messages Timeline
+
+## Current Conformance Note (2026-06-06)
+
+These notes are historical. The view-model/jump/hydration separation remains
+architecturally sound, but future global message browsing should plug into the
+shared Message Evidence Spine instead of recreating a feature-local timeline
+renderer or relying on retained `working.db` ordinal indexes.
 
 ## Core Principle
 Preserve the now-proven message-display structure:

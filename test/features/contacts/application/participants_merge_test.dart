@@ -1,145 +1,106 @@
-import 'package:drift/drift.dart' as drift;
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/working/working_database.dart';
+import 'package:remember_this_text/features/contacts/application/read_models/contact_summary.dart';
+import 'package:remember_this_text/features/contacts/application/read_models/contacts_list_repository_provider.dart';
 import 'package:remember_this_text/features/contacts/application/sidebar_cassette_spec/resolver_tools/participants_for_picker_provider.dart';
 import 'package:remember_this_text/features/contacts/domain/participant_origin.dart';
 
-String buildCompoundIdentifier({
-  required String normalizedIdentifier,
-  required String rawIdentifier,
-  required String service,
-}) {
-  return '${normalizedIdentifier}_${rawIdentifier}_$service';
-}
-
 void main() {
   group('participantsForPickerProvider', () {
-    late OverlayDatabase overlayDb;
-    late WorkingDatabase workingDb;
-    late ProviderContainer container;
-
-    setUp(() {
-      overlayDb = OverlayDatabase(NativeDatabase.memory());
-      workingDb = WorkingDatabase(NativeDatabase.memory());
-
-      container = ProviderContainer(
-        overrides: [
-          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-          driftWorkingDatabaseProvider.overrideWith((ref) async => workingDb),
-        ],
-      );
-    });
-
-    tearDown(() async {
-      await overlayDb.close();
-      await workingDb.close();
-      container.dispose();
-    });
-
-    test(
-      'merges working and virtual participants with correct origins',
-      () async {
-        final workingHandleId = await workingDb
-            .into(workingDb.handlesCanonical)
-            .insert(
-              HandlesCanonicalCompanion.insert(
-                rawIdentifier: '+17785551234',
-                displayName: '+17785551234',
-                compoundIdentifier: buildCompoundIdentifier(
-                  normalizedIdentifier: '+17785551234',
-                  rawIdentifier: '+17785551234',
-                  service: 'SMS',
-                ),
-                service: const drift.Value('SMS'),
-              ),
-            );
-
-        final workingParticipantId = await workingDb
-            .into(workingDb.workingParticipants)
-            .insert(
-              WorkingParticipantsCompanion.insert(
-                originalName: 'Existing Person',
-                displayName: 'Existing Person',
-                shortName: 'Existing',
-              ),
-            );
-
-        await workingDb
-            .into(workingDb.handleToParticipant)
-            .insert(
-              HandleToParticipantCompanion.insert(
-                handleId: workingHandleId,
-                participantId: workingParticipantId,
-                confidence: const drift.Value(1.0),
-                source: const drift.Value('addressbook'),
-              ),
-            );
-
-        final virtualContact = await overlayDb.createVirtualParticipant(
+    test('maps contact summaries into picker participants', () async {
+      final container = _containerWithContacts([
+        _contactSummary(
+          participantId: 1,
+          displayName: 'Existing Person',
+          origin: ParticipantOrigin.working,
+          handleCount: 1,
+        ),
+        _contactSummary(
+          participantId: 2,
           displayName: 'Virtual Friend',
-        );
+          origin: ParticipantOrigin.overlayVirtual,
+          handleCount: 1,
+        ),
+      ]);
+      addTearDown(container.dispose);
 
-        final virtualHandleId = await workingDb
-            .into(workingDb.handlesCanonical)
-            .insert(
-              HandlesCanonicalCompanion.insert(
-                rawIdentifier: '+17785559876',
-                displayName: '+17785559876',
-                compoundIdentifier: buildCompoundIdentifier(
-                  normalizedIdentifier: '+17785559876',
-                  rawIdentifier: '+17785559876',
-                  service: 'SMS',
-                ),
-                service: const drift.Value('SMS'),
-              ),
-            );
-
-        await overlayDb.setHandleVirtualParticipantOverride(
-          virtualHandleId,
-          virtualContact.id,
-        );
-
-        final results = await container.read(
-          participantsForPickerProvider(searchQuery: '').future,
-        );
-
-        expect(results, hasLength(2));
-        expect(results.first.origin, ParticipantOrigin.working);
-        expect(results.first.handleCount, equals(1));
-        expect(results.last.origin, ParticipantOrigin.overlayVirtual);
-        expect(results.last.displayName, equals('Virtual Friend'));
-        expect(results.last.handleCount, equals(1));
-        expect(results.last.isVirtual, isTrue);
-      },
-    );
-
-    test('filters virtual participants by search query', () async {
-      await workingDb
-          .into(workingDb.workingParticipants)
-          .insert(
-            WorkingParticipantsCompanion.insert(
-              originalName: 'Alice Wonderland',
-              displayName: 'Alice Wonderland',
-              shortName: 'Alice',
-            ),
-          );
-
-      final virtualContact = await overlayDb.createVirtualParticipant(
-        displayName: 'Overlay Only',
+      final results = await container.read(
+        participantsForPickerProvider(searchQuery: '').future,
       );
+
+      expect(results, hasLength(2));
+      expect(results.first.origin, ParticipantOrigin.working);
+      expect(results.first.handleCount, equals(1));
+      expect(results.last.origin, ParticipantOrigin.overlayVirtual);
+      expect(results.last.displayName, equals('Virtual Friend'));
+      expect(results.last.handleCount, equals(1));
+      expect(results.last.isVirtual, isTrue);
+    });
+
+    test('filters participants by search query', () async {
+      final container = _containerWithContacts([
+        _contactSummary(
+          participantId: 1,
+          displayName: 'Alice Wonderland',
+          origin: ParticipantOrigin.working,
+          handleCount: 1,
+        ),
+        _contactSummary(
+          participantId: 2,
+          displayName: 'Overlay Only',
+          origin: ParticipantOrigin.overlayVirtual,
+          handleCount: 1,
+        ),
+      ]);
+      addTearDown(container.dispose);
 
       final results = await container.read(
         participantsForPickerProvider(searchQuery: 'overlay').future,
       );
 
       expect(results, hasLength(1));
-      expect(results.first.id, virtualContact.id);
+      expect(results.first.id, 2);
       expect(results.first.origin, ParticipantOrigin.overlayVirtual);
     });
+
+    test(
+      'returns empty when the contact repository returns no contacts',
+      () async {
+        final container = _containerWithContacts(const []);
+        addTearDown(container.dispose);
+
+        final results = await container.read(
+          participantsForPickerProvider(searchQuery: '').future,
+        );
+
+        expect(results, isEmpty);
+      },
+    );
   });
+}
+
+ProviderContainer _containerWithContacts(List<ContactSummary> contacts) {
+  return ProviderContainer(
+    overrides: [
+      contactsListRepositoryProvider.overrideWith((ref) async => contacts),
+    ],
+  );
+}
+
+ContactSummary _contactSummary({
+  required int participantId,
+  required String displayName,
+  required ParticipantOrigin origin,
+  required int handleCount,
+}) {
+  return ContactSummary(
+    participantId: participantId,
+    displayName: displayName,
+    autoGeneratedName: displayName,
+    totalChats: 1,
+    totalMessages: 1,
+    origin: origin,
+    handleCount: handleCount,
+  );
 }

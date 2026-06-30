@@ -75,6 +75,10 @@ Invalid states must be unrepresentable.
 
 Correct architecture prevents invalid semantic states from existing.
 
+When a bug appears, fix derivation, invalidation, ownership, or projection.
+
+Do NOT add imperative repair.
+
 The solution to invalid state is:
 
 - derivation correction
@@ -220,6 +224,19 @@ Must NOT own:
 - Application layer depends on abstractions, not DB mechanics.
 - Widgets render semantics; they do not decide semantics.
 - Presentation must not become a coordinator substitute.
+- `feature_level_providers.dart` is an outward-facing public seam. Internal
+  code inside the same feature or essential module must not import its own
+  `feature_level_providers.dart` as a convenience barrel. Internal code must
+  import the exact sibling provider, repository, action, model, or type file it
+  actually depends on.
+- External consumers may import another feature or essential module's public
+  `feature_level_providers.dart` seam, but the import must use an explicit
+  `show` list. Public seams expose authority; consumers must declare the exact
+  providers, actions, render builders, or types they depend on instead of
+  pulling the whole seam into scope.
+- `feature_level_providers.dart` must remain export-only and must not have a
+  generated `feature_level_providers.g.dart` sibling. Provider state belongs in
+  named application/provider files, not in the public seam.
 
 
 ---
@@ -267,6 +284,66 @@ Destroys:
 Repositories belong in infrastructure.
 
 Always.
+
+
+---
+
+
+### Drift Pattern: Internal code imports its own feature-level provider barrel.
+
+### Why This Is Dangerous
+
+Hides:
+
+- real dependencies
+- provider-definition ownership
+- authority boundaries
+- future refactor cost
+
+It allows internal files to reach through the same public surface intended for
+external consumers, making local dependencies look smaller while broadening
+actual authority.
+
+### Correct Repair
+
+Internal files should import:
+
+- the exact sibling provider file
+- the exact repository abstraction or implementation
+- the exact action/controller file
+- the exact display model or domain type
+
+If the needed provider exists only in `feature_level_providers.dart`, treat that
+as transitional provider-definition debt. Move the provider to an owned sibling
+file before removing the self-barrel import.
+
+The root `providers.dart` barrel is retired. Cross-cutting providers must live
+behind owned essential seams such as
+`essentials/paths/feature_level_providers.dart` or
+`essentials/app_mode/feature_level_providers.dart`; do not recreate a root
+provider convenience barrel.
+
+Do not add `part 'feature_level_providers.g.dart';` or regenerate
+`feature_level_providers.g.dart` for public feature/essential seams. Physical
+database provider construction still belongs in `essentials/db`, but generated
+provider state must live in named implementation files under
+`essentials/db/feature_level_providers/`, not in the public DB seam itself.
+
+External seam imports must remain narrow:
+
+```dart
+import '../contacts/feature_level_providers.dart'
+    show contactProfileProvider;
+```
+
+Do not write a broad external seam import:
+
+```dart
+import '../contacts/feature_level_providers.dart';
+```
+
+The broad form hides authority just as surely as a self-barrel import hides
+local dependencies.
 
 
 ---

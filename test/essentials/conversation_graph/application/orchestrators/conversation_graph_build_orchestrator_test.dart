@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 
@@ -20,8 +21,9 @@ void main() {
           lastImportedSourceRowId: 12,
         );
       },
-      enrichMissingText: () async {
+      enrichMissingText: (messageImportResult) async {
         calls.add('enrich_missing_text');
+        expect(messageImportResult.insertedMessageCount, 2);
         return const MessageRichTextEnrichmentResult(
           candidateMessageCount: 3,
           enrichedMessageCount: 2,
@@ -29,13 +31,24 @@ void main() {
           extractorAvailable: true,
         );
       },
-      importAttachments: _record(calls, 'import_attachments'),
-      importChatMessageJoins: _record(calls, 'import_chat_message_joins'),
+      importAttachments: () async {
+        calls.add('import_attachments');
+        return const AttachmentImportResult(
+          startedAfterSourceRowId: 20,
+          examinedAttachmentCount: 1,
+          insertedAttachmentCount: 1,
+          lastImportedSourceRowId: 21,
+        );
+      },
+      importChatMessageJoins: (messageImportResult) async {
+        calls.add('import_chat_message_joins');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+      },
       importChatHandleJoins: _record(calls, 'import_chat_handle_joins'),
-      importMessageAttachmentJoins: _record(
-        calls,
-        'import_message_attachment_joins',
-      ),
+      importMessageAttachmentJoins: (messageImportResult) async {
+        calls.add('import_message_attachment_joins');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+      },
       projectHandles: _record(calls, 'project_handles'),
       projectContacts: () async {
         calls.add('project_contacts');
@@ -47,19 +60,27 @@ void main() {
       },
       projectChatHandleEdges: _record(calls, 'project_chat_handle_edges'),
       projectChats: _record(calls, 'project_chats'),
-      projectMessages: () async {
+      projectMessages: (messageImportResult) async {
         calls.add('project_messages');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
         return const MessageProjectionResult(
           examinedMessageCount: 5,
           insertedMessageCount: 4,
         );
       },
-      projectAttachments: _record(calls, 'project_attachments'),
-      projectChatMessageEdges: _record(calls, 'project_chat_message_edges'),
-      projectMessageAttachmentEdges: _record(
-        calls,
-        'project_message_attachment_edges',
-      ),
+      projectAttachments: (messageImportResult, attachmentImportResult) async {
+        calls.add('project_attachments');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+        expect(attachmentImportResult.startedAfterSourceRowId, 20);
+      },
+      projectChatMessageEdges: (messageImportResult) async {
+        calls.add('project_chat_message_edges');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+      },
+      projectMessageAttachmentEdges: (messageImportResult) async {
+        calls.add('project_message_attachment_edges');
+        expect(messageImportResult.startedAfterSourceRowId, 10);
+      },
     );
 
     final report = await orchestrator.runOnce();

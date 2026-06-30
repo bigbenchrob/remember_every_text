@@ -18,8 +18,4 @@ sealed class ContactsTooltipSpec with _$ContactsTooltipSpec {
 
   /// Tooltip for the edit display name icon in the hero card
   const factory ContactsTooltipSpec.editDisplayName() = EditDisplayNameTooltip;
-
-  // Future tooltips:
-  // const factory ContactsTooltipSpec.favoriteContact() = FavoriteContactTooltip;
-  // const factory ContactsTooltipSpec.viewAllChats() = ViewAllChatsTooltip;
 }

@@ -7,4 +7,14 @@ class AttachmentProjector {
 
   Future<AttachmentProjectionResult> projectAttachments() =>
       repository.projectAttachments();
+
+  Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return repository.projectAttachmentsAfterSourceRowId(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
+    );
+  }
 }

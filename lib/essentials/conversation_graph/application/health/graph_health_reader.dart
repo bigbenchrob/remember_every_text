@@ -6,7 +6,13 @@ class GraphHealthReader {
 
   final GraphHealthRepository repository;
 
-  Future<GraphHealthReport> readHealthReport() {
-    return repository.readHealthReport();
+  Future<GraphHealthReport> readHealthReport({
+    bool includeFileAudits = false,
+    bool includeRecoveryAudit = false,
+  }) {
+    return repository.readHealthReport(
+      includeFileAudits: includeFileAudits,
+      includeRecoveryAudit: includeRecoveryAudit,
+    );
   }
 }

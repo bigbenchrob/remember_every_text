@@ -3,28 +3,28 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
-import '../../db/application/database_health_audit/database_health_audit_service.dart';
-import '../../db_importers/domain/entities/db_import_result.dart';
-import '../../db_importers/presentation/view_model/db_import_control_provider.dart';
-import '../../db_migrate/domain/entities/db_migration_result.dart';
-import '../../logging/application/app_logger.dart';
+import '../../conversation_graph/feature_level_providers.dart'
+    show
+        ConversationGraphBuildReport,
+        ConversationGraphBuildStatus,
+        ConversationGraphBuildState,
+        conversationGraphBuildControllerProvider;
 import '../../logging/application/diagnostic_report_actions.dart';
-import '../../logging/infrastructure/log_export_service.dart';
+import '../../logging/domain/diagnostic_report_presentation_result.dart';
+import '../../logging/feature_level_providers.dart'
+    show diagnosticReportExporterProvider;
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
+import '../application/onboarding_overlay_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
-import 'onboarding_progress_view.dart';
-
-/// Amber tone for FDA warning icon and alert text.
-const _kWarningAmber = Color(0xFFFF9500);
 
 /// Full-window blocking overlay shown during first-run onboarding.
 ///
 /// Renders a semi-transparent barrier over the entire app and presents
 /// a centered card whose content switches based on [OnboardingStatus]:
 ///   - [awaitingUserAction] → welcome panel with "Import" button
-///   - [importing] / [migrating] → live stage progress
+///   - [importing] / [buildingGraph] → live stage progress
 ///   - [complete] → success summary with "Get Started" button
 class OnboardingOverlay extends ConsumerWidget {
   const OnboardingOverlay({super.key});
@@ -83,14 +83,14 @@ class OnboardingOverlay extends ConsumerWidget {
                   typography: typography,
                 ),
                 OnboardingStatus.importing ||
-                OnboardingStatus.migrating ||
+                OnboardingStatus.buildingGraph ||
                 OnboardingStatus.reimporting ||
-                OnboardingStatus.reimportMigrating => _ProgressContent(
+                OnboardingStatus.reimportBuildingGraph => _ProgressContent(
                   colors: colors,
                   typography: typography,
                   isReimport:
                       status == OnboardingStatus.reimporting ||
-                      status == OnboardingStatus.reimportMigrating,
+                      status == OnboardingStatus.reimportBuildingGraph,
                 ),
                 OnboardingStatus.complete => _CompleteContent(
                   colors: colors,
@@ -136,7 +136,11 @@ class _FdaContent extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.lock_outline_rounded, size: 56, color: _kWarningAmber),
+        Icon(
+          Icons.lock_outline_rounded,
+          size: 56,
+          color: colors.status.warning,
+        ),
         const SizedBox(height: 20),
         Text(
           'Full Disk Access Required',
@@ -209,8 +213,10 @@ class _FdaContent extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         FilledButton(
-          onPressed: () {
-            ref.read(onboardingGateProvider.notifier).openFdaSettings();
+          onPressed: () async {
+            await ref
+                .read(onboardingOverlayActionsProvider.notifier)
+                .openFullDiskAccessSettings();
           },
           style: FilledButton.styleFrom(
             backgroundColor: colors.buttons.primaryBackground,
@@ -225,7 +231,9 @@ class _FdaContent extends ConsumerWidget {
         const SizedBox(height: 12),
         TextButton(
           onPressed: () {
-            ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+            ref
+                .read(onboardingOverlayActionsProvider.notifier)
+                .recheckEnvironment();
           },
           child: Text(
             'Re-check environment',
@@ -352,10 +360,10 @@ class _WelcomeContent extends ConsumerWidget {
             runSpacing: 12,
             children: [
               FilledButton(
-                onPressed: () {
-                  ref
-                      .read(onboardingGateProvider.notifier)
-                      .startImportAndMigration();
+                onPressed: () async {
+                  await ref
+                      .read(onboardingOverlayActionsProvider.notifier)
+                      .startImportAndGraphBuild();
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.buttons.primaryBackground,
@@ -373,16 +381,13 @@ class _WelcomeContent extends ConsumerWidget {
               if (presentation.canSendDiagnosticReport && report != null)
                 OutlinedButton(
                   onPressed: () async {
-                    final writer = ref.read(appLoggerProvider.notifier).writer;
-                    final databaseHealthAuditService = await ref.read(
-                      databaseHealthAuditServiceProvider.future,
+                    final diagnosticReportExporter = await ref.read(
+                      diagnosticReportExporterProvider.future,
                     );
                     final result =
                         await exportOnboardingFailureDiagnosticReport(
-                          writer,
+                          diagnosticReportExporter,
                           report: report!,
-                          databaseHealthAuditService:
-                              databaseHealthAuditService,
                         );
                     if (!context.mounted) {
                       return;
@@ -407,7 +412,9 @@ class _WelcomeContent extends ConsumerWidget {
         else ...[
           FilledButton(
             onPressed: () {
-              ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+              ref
+                  .read(onboardingOverlayActionsProvider.notifier)
+                  .recheckEnvironment();
             },
             style: FilledButton.styleFrom(
               backgroundColor: colors.buttons.primaryBackground,
@@ -422,10 +429,10 @@ class _WelcomeContent extends ConsumerWidget {
           if (presentation.allowsManualImport) ...[
             const SizedBox(height: 12),
             OutlinedButton(
-              onPressed: () {
-                ref
-                    .read(onboardingGateProvider.notifier)
-                    .startImportAndMigration();
+              onPressed: () async {
+                await ref
+                    .read(onboardingOverlayActionsProvider.notifier)
+                    .startImportAndGraphBuild();
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.content.textPrimary,
@@ -513,18 +520,18 @@ class _EnvironmentSummaryCard extends StatelessWidget {
             isGood: report.addressBookDatabase?.readable ?? false,
           ),
           _DiagnosticRow(
-            label: 'Import database',
-            value: _appDbValue(report.importDatabase),
+            label: 'Imported message data',
+            value: _appDbValue(report.sourceScopedImportDatabase),
             colors: colors,
             typography: typography,
-            isGood: report.importDatabase.hasData,
+            isGood: report.sourceScopedImportDatabase.hasData,
           ),
           _DiagnosticRow(
-            label: 'Working database',
-            value: _appDbValue(report.workingDatabase),
+            label: 'Conversation browsing data',
+            value: _appDbValue(report.conversationGraph),
             colors: colors,
             typography: typography,
-            isGood: report.workingDatabase.hasData,
+            isGood: report.conversationGraph.hasData,
           ),
         ],
       ),
@@ -616,7 +623,7 @@ class _DiagnosticRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = isGood ? const Color(0xFF4CAF50) : _kWarningAmber;
+    final statusColor = isGood ? colors.status.success : colors.status.warning;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -748,18 +755,18 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
         icon: Icons.error_outline_rounded,
         iconKind: _PresentationIconKind.warning,
       );
-    case OnboardingEnvironmentState.migrationFailed:
+    case OnboardingEnvironmentState.graphProjectionFailed:
       return _AwaitingUserActionPresentation(
-        title: 'Imported Data Could Not Be Prepared',
+        title: 'Messages Could Not Be Prepared',
         body:
             'MessageLens imported source data, but the app could not finish '
             'preparing it for use. You can retry now or send a report to the '
             'developer.',
-        notes: _migrationFailureNotes(report),
+        notes: _graphProjectionFailureNotes(report),
         canImportImmediately: true,
         canSendDiagnosticReport: true,
         allowsManualImport: false,
-        primaryActionLabel: 'Retry Import and Migration',
+        primaryActionLabel: 'Retry Import and Graph Build',
         icon: Icons.sync_problem_rounded,
         iconKind: _PresentationIconKind.warning,
       );
@@ -818,43 +825,44 @@ List<String> _importFailureNotes(OnboardingEnvironmentReport report) {
     'If the import fails again, use "Send Report To Developer" to have MessageLens prepare an email with the diagnostic report attached when possible.',
   );
 
-  if (!report.importDatabase.exists || !report.importDatabase.hasData) {
+  if (!report.sourceScopedImportDatabase.exists ||
+      !report.sourceScopedImportDatabase.hasData) {
     notes.add(
-      'No usable import ledger was left behind, so the next retry will start from a clean import pass.',
+      'No usable imported message data was left behind, so the next retry will start from a clean import pass.',
     );
   }
 
   return notes;
 }
 
-List<String> _migrationFailureNotes(OnboardingEnvironmentReport report) {
+List<String> _graphProjectionFailureNotes(OnboardingEnvironmentReport report) {
   final notes = <String>[];
 
-  final recordedAt = report.lastMigrationFailureRecordedAt;
-  if (report.usingPersistedMigrationFailure && recordedAt != null) {
+  final recordedAt = report.lastGraphProjectionFailureRecordedAt;
+  if (report.usingPersistedGraphProjectionFailure && recordedAt != null) {
     notes.add(
       _persistedFailureNote(
-        kind: 'migration',
-        freshness: report.migrationFailureFreshness(),
+        kind: 'graph projection',
+        freshness: report.graphProjectionFailureFreshness(),
         recordedAt: recordedAt,
       ),
     );
   }
 
-  final message = report.migrationFailureMessage;
+  final message = report.graphProjectionFailureMessage;
   if (message != null && message.isNotEmpty) {
     notes.add(message);
   }
 
-  if (report.importDatabase.hasData) {
+  if (report.sourceScopedImportDatabase.hasData) {
     notes.add(
-      'The import ledger contains data, so the failure happened while preparing app-facing tables.',
+      'The imported message data exists, so the failure happened while preparing it for browsing.',
     );
   }
 
-  if (!report.workingDatabase.hasData) {
+  if (!report.conversationGraph.hasData) {
     notes.add(
-      'The working database is still empty or incomplete. Retrying will rerun the full import and migration pipeline.',
+      'The conversation browsing data is still empty or incomplete. Retrying will rerun setup.',
     );
   }
 
@@ -1041,8 +1049,8 @@ class _AwaitingUserActionPresentation {
   Color iconColor(ThemeColors colors) {
     return switch (iconKind) {
       _PresentationIconKind.primary => colors.accents.primary,
-      _PresentationIconKind.warning => _kWarningAmber,
-      _PresentationIconKind.success => const Color(0xFF4CAF50),
+      _PresentationIconKind.warning => colors.status.warning,
+      _PresentationIconKind.success => colors.status.success,
     };
   }
 }
@@ -1061,14 +1069,22 @@ class _ProgressContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controlState = ref.watch(dbImportControlViewModelProvider);
+    final graphBuildState = ref.watch(conversationGraphBuildControllerProvider);
+    final statusMessage = _progressStatusMessage(
+      graphBuildState: graphBuildState,
+      isReimport: isReimport,
+    );
+    final progressValue =
+        graphBuildState.status == ConversationGraphBuildStatus.succeeded
+        ? 1.0
+        : null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          controlState.statusMessage ?? 'Working…',
+          statusMessage,
           style: typography.headline.copyWith(
             color: colors.content.textPrimary,
           ),
@@ -1077,19 +1093,19 @@ class _ProgressContent extends ConsumerWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
-            value: controlState.progress,
+            value: progressValue,
             backgroundColor: colors.lines.borderSubtle,
             valueColor: AlwaysStoppedAnimation<Color>(colors.accents.primary),
             minHeight: 6,
           ),
         ),
         const SizedBox(height: 16),
-        Flexible(
-          child: OnboardingProgressView(
-            stages: controlState.stages,
-            colors: colors,
-            typography: typography,
-          ),
+        Text(
+          isReimport
+              ? 'MessageLens is rebuilding its local browsing data from Messages.'
+              : 'MessageLens is building its local browsing data from Messages.',
+          style: typography.body.copyWith(color: colors.content.textSecondary),
+          textAlign: TextAlign.center,
         ),
         if (!isReimport) ...[
           const SizedBox(height: 12),
@@ -1097,7 +1113,9 @@ class _ProgressContent extends ConsumerWidget {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () {
-                ref.read(onboardingGateProvider.notifier).abortImport();
+                ref
+                    .read(onboardingOverlayActionsProvider.notifier)
+                    .abortImport();
               },
               child: Text(
                 'Abort Import',
@@ -1111,6 +1129,23 @@ class _ProgressContent extends ConsumerWidget {
       ],
     );
   }
+}
+
+String _progressStatusMessage({
+  required ConversationGraphBuildState graphBuildState,
+  required bool isReimport,
+}) {
+  return switch (graphBuildState.status) {
+    ConversationGraphBuildStatus.running =>
+      isReimport ? 'Rebuilding browsing data…' : 'Building browsing data…',
+    ConversationGraphBuildStatus.succeeded =>
+      isReimport ? 'Browsing data rebuilt' : 'Browsing data ready',
+    ConversationGraphBuildStatus.failed =>
+      graphBuildState.lastError ??
+          'MessageLens could not prepare browsing data',
+    ConversationGraphBuildStatus.idle =>
+      isReimport ? 'Preparing rebuild…' : 'Preparing setup…',
+  };
 }
 
 /// Success panel: summary metrics + dismiss button.
@@ -1127,17 +1162,17 @@ class _CompleteContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controlState = ref.watch(dbImportControlViewModelProvider);
-    final importResult = controlState.lastImportResult;
-    final migrationResult = controlState.lastMigrationResult;
+    final graphBuildReport = ref
+        .watch(conversationGraphBuildControllerProvider)
+        .lastReport;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(
+        Icon(
           Icons.check_circle_rounded,
           size: 56,
-          color: Color(0xFF4CAF50),
+          color: colors.status.success,
         ),
         const SizedBox(height: 20),
         Text(
@@ -1148,10 +1183,9 @@ class _CompleteContent extends ConsumerWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-        if (importResult != null || migrationResult != null) ...[
-          _SummaryMetrics(
-            importResult: importResult,
-            migrationResult: migrationResult,
+        if (graphBuildReport != null) ...[
+          _GraphBuildSummaryMetrics(
+            report: graphBuildReport,
             colors: colors,
             typography: typography,
           ),
@@ -1159,7 +1193,7 @@ class _CompleteContent extends ConsumerWidget {
         ],
         FilledButton(
           onPressed: () {
-            ref.read(onboardingGateProvider.notifier).dismiss();
+            ref.read(onboardingOverlayActionsProvider.notifier).dismiss();
           },
           style: FilledButton.styleFrom(
             backgroundColor: colors.buttons.primaryBackground,
@@ -1189,8 +1223,6 @@ class _RecoveryContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controlState = ref.watch(dbImportControlViewModelProvider);
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1209,7 +1241,7 @@ class _RecoveryContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'MessageLens detected signs that an earlier import or migration left incomplete app databases. It is deleting the app databases now so setup can restart from a clean slate.',
+          'MessageLens detected signs that an earlier setup attempt left incomplete local data. It is clearing that data now so setup can restart cleanly.',
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -1240,45 +1272,30 @@ class _RecoveryContent extends ConsumerWidget {
             color: colors.accents.primary,
           ),
         ),
-        if (controlState.statusMessage != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            controlState.statusMessage!,
-            style: typography.caption.copyWith(
-              color: colors.content.textTertiary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
       ],
     );
   }
 }
 
-/// Displays key counts from the import/migration results.
-class _SummaryMetrics extends StatelessWidget {
-  const _SummaryMetrics({
-    required this.importResult,
-    required this.migrationResult,
+/// Displays key counts from setup.
+class _GraphBuildSummaryMetrics extends StatelessWidget {
+  const _GraphBuildSummaryMetrics({
+    required this.report,
     required this.colors,
     required this.typography,
   });
 
-  final DbImportResult? importResult;
-  final DbMigrationResult? migrationResult;
+  final ConversationGraphBuildReport report;
   final ThemeColors colors;
   final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context) {
-    final metrics = <(String, int)>[];
-
-    if (importResult != null) {
-      metrics.add(('Messages', importResult!.messagesImported));
-      metrics.add(('Chats', importResult!.chatsImported));
-      metrics.add(('Contacts', importResult!.contactsImported));
-      metrics.add(('Attachments', importResult!.attachmentsImported));
-    }
+    final metrics = <(String, int)>[
+      ('Imported', report.messageImportResult.insertedMessageCount),
+      ('Projected', report.messageProjectionResult.insertedMessageCount),
+      ('Text enriched', report.richTextEnrichmentResult.enrichedMessageCount),
+    ];
 
     return Wrap(
       spacing: 16,

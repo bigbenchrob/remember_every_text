@@ -10,6 +10,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.2.0] — 2026-06-30
+
+### Added
+
+- MessageLens now uses the source-scoped conversation graph as the ordinary production data path for conversations, contacts, search, message evidence, attachments, and live updates.
+- Added conversation-first navigation with graph-backed conversation signatures, favourites, participant-aware filtering, and shared message evidence views.
+- Added graph-backed historical Messages archive import with preflight, dry-run estimates, import safety copy, source-scoped identity, and developer-gated archive removal controls.
+- Added release readiness surfaces for Full Disk Access, source Messages data, AddressBook data, graph data, overlay storage, attachment archive storage, graph build state, and live update state.
+- Added release smoke tooling with `tool/release_smoke.sh` and a manual real-data smoke checklist.
+
+### Changed
+
+- Message evidence now renders through one shared spine and header across contact, conversation, search, unfamiliar-source, recovered, and archive-derived scopes.
+- Live message intake now updates the graph directly without ordinary `working.db` updates.
+- Attachment evidence now resolves through graph topology plus overlay archive metadata, with visible fallback evidence when files are unavailable.
+- Retired `macos_import.db` and `working.db` are treated as transitional cleanup/diagnostic storage rather than ordinary app authority.
+
+### Fixed
+
+- Contact and conversation labels now prefer user-assigned display names consistently before falling back to imported names or raw handles.
+- Contact timelines preserve full-scope heatmap navigation while hydrating only visible message rows.
+- Rich text enrichment for new messages is bounded to newly imported rows, restoring fast single-message intake while preserving decoded text.
+
 ## [0.1.16] — 2026-04-27
 
 ### Changed

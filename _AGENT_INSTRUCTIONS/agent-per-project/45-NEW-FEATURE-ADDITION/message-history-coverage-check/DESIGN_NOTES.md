@@ -1,5 +1,10 @@
 # Design Notes: Message History Coverage Check
 
+> Current conformance note (2026-06-06): this design note is historical. The
+> active feature still answers the same user question, but current
+> implementation uses graph-accounted MessageLens evidence rather than retained
+> `working.db` as the ordinary accounting source.
+
 ## Overview
 
 This feature should be implemented as a Settings troubleshooting flow, not as a new panel or a new diagnostics subsystem.
@@ -52,12 +57,13 @@ If later product review still prefers an explicit in-cassette `Run Coverage Chec
 
 ## Data Model
 
-Phase 1 should define a pure value object for the report, with fields equivalent to:
+Historical Phase 1 defined a pure value object for the report, with fields
+equivalent to:
 
 - `chatDbTotalCount`
-- `workingDbVisibleCount`
-- `workingDbRecoveredCount`
-- `workingDbTotalAccountedCount`
+- visible graph evidence count
+- recovered/orphan graph evidence count
+- total graph-accounted count
 - `missingCount`
 - `earliestMessageDate`
 - `latestMessageDate`
@@ -76,12 +82,13 @@ Read from local Apple `chat.db`:
 
 Use read-only SQLite access and the existing FDA/path helpers.
 
-### Working Database
+### MessageLens Evidence
 
-Read from MessageLens `working.db`:
+Current graph-era implementation reads from graph-accounted MessageLens
+evidence:
 
-- visible count from the working timeline index used for global timeline display
-- recovered count from `recovered_unlinked_messages`
+- visible ordinary graph evidence
+- recovered/orphan graph evidence
 
 This keeps the displayed count aligned with what the user can actually browse in MessageLens timelines.
 

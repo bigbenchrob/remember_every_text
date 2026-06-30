@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
+
 import '../domain/log_entry.dart';
 
 /// Appends [LogEntry] objects as JSONL lines to a rotating log file.
@@ -7,10 +9,15 @@ import '../domain/log_entry.dart';
 /// Location: `~/Library/Logs/MessageLens/app.log`
 /// Rotation: current + 1 previous file, ~2 MB cap per file.
 class LogFileWriter {
+  LogFileWriter({Directory? logDirectory})
+    : _configuredLogDirectory = logDirectory;
+
   static const _maxBytes = 2 * 1024 * 1024; // 2 MB
   static const _logDirName = 'MessageLens';
   static const _logFileName = 'app.log';
   static const _prevLogFileName = 'app.log.1';
+
+  final Directory? _configuredLogDirectory;
 
   late final Directory _logDir;
   late final File _logFile;
@@ -34,18 +41,28 @@ class LogFileWriter {
       return;
     }
 
-    final home = Platform.environment['HOME'];
-    if (home == null) {
-      return; // Can't determine home dir — logging will be in-memory only.
+    final configuredLogDirectory = _configuredLogDirectory;
+    if (configuredLogDirectory != null) {
+      _logDir = configuredLogDirectory;
+    } else {
+      final home = Platform.environment['HOME'];
+      if (home == null) {
+        return; // Can't determine home dir — logging will be in-memory only.
+      }
+      _logDir = Directory(path.join(home, 'Library', 'Logs', _logDirName));
     }
-
-    _logDir = Directory('$home/Library/Logs/$_logDirName');
-    _logFile = File('${_logDir.path}/$_logFileName');
-    _prevLogFile = File('${_logDir.path}/$_prevLogFileName');
+    _logFile = File(path.join(_logDir.path, _logFileName));
+    _prevLogFile = File(path.join(_logDir.path, _prevLogFileName));
 
     try {
+      if (_isSymlink(_logDir.path)) {
+        throw StateError('Application log directory must not be a symlink.');
+      }
       if (!_logDir.existsSync()) {
         _logDir.createSync(recursive: true);
+      }
+      if (_isUnsafeLogTarget(_logFile) || _isUnsafeLogTarget(_prevLogFile)) {
+        throw StateError('Application log targets must be regular files.');
       }
 
       // Rotate on startup if the current log exceeds the cap.
@@ -105,6 +122,9 @@ class LogFileWriter {
 
   void _rotate() {
     try {
+      if (_isUnsafeLogTarget(_logFile) || _isUnsafeLogTarget(_prevLogFile)) {
+        return;
+      }
       if (_prevLogFile.existsSync()) {
         _prevLogFile.deleteSync();
       }
@@ -127,4 +147,18 @@ class LogFileWriter {
       // If rotation fails, continue writing to the current file.
     }
   }
+}
+
+bool _isUnsafeLogTarget(File file) {
+  return _isSymlink(file.path) || _isDirectory(file.path);
+}
+
+bool _isDirectory(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.directory;
+}
+
+bool _isSymlink(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.link;
 }

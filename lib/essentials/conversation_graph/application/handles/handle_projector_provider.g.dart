@@ -6,7 +6,7 @@ part of 'handle_projector_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$handleProjectorHash() => r'91c9cce4ae6dd98df129d9d3ceec8f9281533aaa';
+String _$handleProjectorHash() => r'4b072805ed246cfaec5a5cdebdf8dbbc4c27287e';
 
 /// See also [handleProjector].
 @ProviderFor(handleProjector)

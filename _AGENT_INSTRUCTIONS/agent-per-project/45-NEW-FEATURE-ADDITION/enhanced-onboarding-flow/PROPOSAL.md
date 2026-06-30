@@ -1,5 +1,17 @@
 # Enhanced Onboarding Flow Proposal
 
+## Current Conformance Note (2026-06-06)
+
+This proposal remains conceptually relevant for environment readiness: setup
+must distinguish permissions, source availability, AddressBook readiness,
+local-history sparsity, and app-owned data health. The pipeline authority has
+changed since this was written.
+
+Current onboarding/reimport success is based on source-scoped import and
+conversation graph build/readiness. Retained `db_importers` / `db_migrate`
+`macos_import.db` -> `working.db` flows are retired historical references and
+cleanup/diagnostic storage, not the ordinary production setup path.
+
 ## Problem
 
 The current onboarding gate answers only two questions:
@@ -15,7 +27,7 @@ Current failure modes that are not distinguished clearly:
 - Messages database exists but local history is sparse or absent
 - This Mac is not meaningfully participating in Messages sync
 - AddressBook access or path resolution is unavailable
-- import succeeded partially but migration failed
+- source-scoped import succeeded partially but graph projection failed
 - app-owned databases exist but are stale, empty, or inconsistent
 - startup blockers are caused by pipeline errors rather than permissions
 
@@ -37,7 +49,7 @@ requiring developer intervention for ordinary setup failures.
 
 ## Non-Goals
 
-- replacing the import or migration systems
+- replacing the source-scoped import or graph-build systems
 - silently modifying macOS privacy settings
 - guaranteeing authoritative knowledge of Apple's iCloud sync state
 - building a long wizard with many user-driven steps
@@ -51,7 +63,7 @@ The flow should answer:
 
 - can MessageLens access the required source data?
 - does this Mac appear to have useful Messages data locally?
-- can the app import and project that data successfully?
+- can the app source-scope and project that data into the conversation graph?
 - if not, what should the user do next?
 
 ## Existing Architecture Summary
@@ -60,14 +72,14 @@ The app already has an essentials-owned onboarding gate and overlay:
 
 - `OnboardingGate` classifies the startup state
 - `OnboardingOverlay` blocks the app and renders the current phase
-- import and migration remain owned by their existing systems
+- source-scoped import and graph build remain owned by their existing systems
 - panel routing is ViewSpec-based and feature-dispatched
 
 This proposal keeps that architecture intact:
 
 - onboarding coordinates
-- db_import imports
-- db_migrate migrates
+- source-scoped import imports
+- graph build/projection projects
 - onboarding presents a user-safe projection of environment and pipeline state
 
 ## Proposed Outcome
@@ -81,9 +93,10 @@ That report should evaluate, at minimum:
 - AddressBook readability or path-resolution readiness
 - presence of local Messages history
 - rough health of source row counts
-- existence and health of import and working databases
-- import pipeline failure state
-- migration pipeline failure state
+- existence and health of source-scoped import and conversation graph databases
+- source-scoped import failure state
+- graph build/projection failure state
+- retained compatibility database diagnostics when explicitly labeled
 - likely sync/data-availability state for this Mac
 
 The onboarding UI then renders a diagnosis-oriented experience instead of a
@@ -99,8 +112,8 @@ The enhanced flow should classify startup into stable, user-facing buckets:
 4. Ready to import
 5. Import in progress
 6. Import blocked or failed
-7. Migration in progress
-8. Migration blocked or failed
+7. Graph build in progress
+8. Graph build blocked or failed
 9. Ready / healthy
 
 These are user-facing categories, not a mirror of every internal pipeline step.
@@ -119,8 +132,8 @@ Every recommendation should be tied to a concrete signal, such as:
 - file unreadable
 - file absent
 - source row counts near zero
-- import database empty after import attempt
-- migration projection state incomplete
+- source-scoped import database empty after import attempt
+- conversation graph projection state incomplete
 
 ### 3. No architectural leakage
 
@@ -130,7 +143,7 @@ unless a diagnostic details surface explicitly asks for them.
 ### 4. Preserve ownership boundaries
 
 Onboarding may inspect environment and project pipeline health, but must not
-take over import/migration responsibilities.
+take over source-scoped import or graph-build responsibilities.
 
 ## Recommended First Delivery
 
@@ -170,7 +183,7 @@ This work is successful when the app can clearly tell a user:
 - whether permissions are missing
 - whether this Mac actually has useful local Messages data
 - whether the source databases are reachable
-- whether import or migration is the current blocker
+- whether source-scoped import or graph build is the current blocker
 - what action the user should take next
 
 ## Deliverables

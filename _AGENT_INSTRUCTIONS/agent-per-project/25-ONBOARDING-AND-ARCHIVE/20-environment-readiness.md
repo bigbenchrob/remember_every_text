@@ -2,10 +2,10 @@
 
 ## Purpose
 
-Before presenting the user with import/migration options, the onboarding
-system evaluates the macOS environment to determine what is accessible, what
-is missing, and what action the user should take. This prevents ambiguous
-error states and provides evidence-backed advice.
+Before presenting the user with setup/retry options, the onboarding system
+evaluates the macOS environment to determine what is accessible, what is
+missing, and what action the user should take. This prevents ambiguous error
+states and provides evidence-backed advice.
 
 Current readiness presentation is split across essentials and a feature:
 `lib/essentials/onboarding/` owns the report and gate state,
@@ -80,14 +80,14 @@ path logic (see [`10-DATABASES/06-addressbook-path-resolution.md`](../10-DATABAS
 
 ### 4. App Database Probe
 
-**Check:** Probe `macos_import.db` and `working.db` for file existence,
-readability, and message row counts. `DatabaseExistenceChecker` remains the
-fallback filesystem check used by `OnboardingGate` while the async report is
-loading or unavailable.
+**Check:** Probe `macos_import_ss.db` and `working_ss.db` / conversation graph
+readiness for file existence, readability, graph completeness, and message row
+counts. `DatabaseExistenceChecker` remains the fallback filesystem check used
+by `OnboardingGate` while the async report is loading or unavailable.
 
 **Evidence gathered:**
-- Import DB present/absent/empty
-- Working DB present/absent/empty
+- Source-scoped import ledger present/absent/empty
+- Conversation graph present/absent/empty/without required topology
 
 **Outcomes:**
 - Both populated → `ready` (app can skip onboarding)
@@ -95,17 +95,17 @@ loading or unavailable.
 
 ### 5. Failure History
 
-**Check:** Read persisted import/migration results from overlay DB
+**Check:** Read persisted import/graph-projection failure summaries from overlay DB
 `OverlaySettings` table.
 
 **Evidence gathered:**
 - Last import result (success/failure, timestamp, row counts)
-- Last migration result (success/failure, timestamp)
+- Last graph projection/build failure (timestamp)
 - Whether the failure is "fresh" (recent enough to be the current blocker)
 
 **Outcomes:**
 - Last import failed → `importFailed`
-- Last migration failed → `migrationFailed`
+- Last graph projection/build failed → `graphProjectionFailed`
 - No failure history → standard flow
 
 ## Report Model
@@ -120,11 +120,11 @@ class OnboardingEnvironmentReport {
     required this.messagesDatabase,
     required this.addressBookDatabase,
     required this.importDatabase,
-    required this.workingDatabase,
+    required this.conversationGraph,
     required this.hasFullDiskAccess,
     this.sourceAttachmentCount,
-    this.lastImportResult,
-    this.lastMigrationResult,
+    this.lastImportFailure,
+    this.lastGraphProjectionFailure,
     this.shouldResetAppDatabasesBeforeImport = false,
     this.resetAppDatabasesReason,
   });
@@ -140,10 +140,10 @@ class OnboardingEnvironmentReport {
 | `sourceSparseOrUnsynced` | Source has < 10 messages | Warning about likely missing sync + proceed option |
 | `readyToImport` | Sources healthy, DBs empty | "Import" button |
 | `importFailed` | Last import failed | Error details + "Retry" |
-| `migrationFailed` | Last migration failed | Error details + "Retry" |
+| `graphProjectionFailed` | Last graph projection/build failed | Error details + "Retry" |
 | `ready` | App databases populated | No overlay (normal app) |
 
-Import and migration progress are `OnboardingStatus` workflow states, not
+Import and graph-build progress are `OnboardingStatus` workflow states, not
 `OnboardingEnvironmentState` values.
 
 ## Current Readiness Surface
@@ -172,7 +172,7 @@ says it is "likely" or "inferred." No false certainty.
 Every recommendation is tied to a concrete signal:
 - File unreadable → permission advice
 - Row counts near zero → sync advice
-- Import DB empty after attempt → pipeline advice
+- Source-scoped import ledger empty after attempt → pipeline advice
 
 ### No Architectural Leakage
 

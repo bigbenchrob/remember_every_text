@@ -1,0 +1,151 @@
+import 'dart:io';
+
+import 'package:sqlite3/sqlite3.dart' as sqlite3;
+
+import '../../../source_scoped_import/infrastructure/import_database_provider.dart'
+    as source_scoped_import;
+import '../../application/database_health_audit/database_health_database_keys.dart';
+import '../../application/database_health_audit/database_health_query_layer.dart';
+import '../data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../data_sources/local/overlay/overlay_database.dart';
+
+class RetiredCleanupSqliteFileHealthQueryLayer
+    extends DatabaseHealthQueryLayer {
+  RetiredCleanupSqliteFileHealthQueryLayer({
+    required this.databaseKey,
+    required this.role,
+    required this.databasePath,
+  });
+
+  @override
+  final String databaseKey;
+
+  @override
+  final String role;
+
+  @override
+  final String databasePath;
+
+  @override
+  Future<bool> databaseFileExists() async {
+    return File(databasePath).existsSync();
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> query(String sql) async {
+    assertDatabaseHealthReadOnlySql(sql);
+    if (!File(databasePath).existsSync()) {
+      throw StateError('Database file does not exist: $databasePath');
+    }
+
+    final db = sqlite3.sqlite3.open(
+      databasePath,
+      mode: sqlite3.OpenMode.readOnly,
+    );
+    try {
+      db.execute('PRAGMA query_only = ON;');
+      db.execute('PRAGMA busy_timeout = 3000;');
+      final resultSet = db.select(sql);
+      return <Map<String, Object?>>[
+        for (final row in resultSet)
+          <String, Object?>{
+            for (var i = 0; i < resultSet.columnNames.length; i++)
+              resultSet.columnNames[i]: row[i],
+          },
+      ];
+    } finally {
+      db.dispose();
+    }
+  }
+}
+
+class SourceScopedImportDatabaseHealthQueryLayer
+    extends DatabaseHealthQueryLayer {
+  SourceScopedImportDatabaseHealthQueryLayer({
+    required source_scoped_import.ImportDatabase database,
+    required this.databasePath,
+  }) : _database = database;
+
+  final source_scoped_import.ImportDatabase _database;
+
+  @override
+  final String databasePath;
+
+  @override
+  Future<bool> databaseFileExists() async {
+    return File(databasePath).existsSync();
+  }
+
+  @override
+  String get databaseKey => databaseHealthKeySourceScopedImport;
+
+  @override
+  String get role => databaseHealthRoleSourceScopedImportLedger;
+
+  @override
+  Future<List<Map<String, Object?>>> query(String sql) async {
+    assertDatabaseHealthReadOnlySql(sql);
+    final rows = await _database.database.rawQuery(sql);
+    return rows.map((row) => Map<String, Object?>.from(row)).toList();
+  }
+}
+
+class ConversationGraphDatabaseHealthQueryLayer
+    extends DatabaseHealthQueryLayer {
+  ConversationGraphDatabaseHealthQueryLayer({
+    required ConversationGraphDatabase database,
+    required this.databasePath,
+  }) : _database = database;
+
+  final ConversationGraphDatabase _database;
+
+  @override
+  final String databasePath;
+
+  @override
+  Future<bool> databaseFileExists() async {
+    return File(databasePath).existsSync();
+  }
+
+  @override
+  String get databaseKey => databaseHealthKeyConversationGraph;
+
+  @override
+  String get role => databaseHealthRoleConversationGraph;
+
+  @override
+  Future<List<Map<String, Object?>>> query(String sql) {
+    assertDatabaseHealthReadOnlySql(sql);
+    return _database.selectRows(sql);
+  }
+}
+
+class OverlayDatabaseHealthQueryLayer extends DatabaseHealthQueryLayer {
+  OverlayDatabaseHealthQueryLayer({
+    required OverlayDatabase database,
+    required this.databasePath,
+  }) : _database = database;
+
+  final OverlayDatabase _database;
+
+  @override
+  final String databasePath;
+
+  @override
+  Future<bool> databaseFileExists() async {
+    return File(databasePath).existsSync();
+  }
+
+  @override
+  String get databaseKey => databaseHealthKeyOverlay;
+
+  @override
+  String get role => databaseHealthRoleOverlay;
+
+  @override
+  Future<List<Map<String, Object?>>> query(String sql) async {
+    assertDatabaseHealthReadOnlySql(sql);
+    final rows = await _database.customSelect(sql).get();
+    return rows.map((row) => Map<String, Object?>.from(row.data)).toList();
+  }
+}

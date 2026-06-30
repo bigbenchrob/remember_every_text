@@ -1,6 +1,6 @@
 # Phase 2 — Checklist
 
-> Historical checklist: current implementation names differ. Use `HandlesCassetteSpec` variants for sidebar review and `MessagesSpec.handleLens(...)` for Handle Lens; do not create new `StrayHandlesSpec` or `HandleLensSpec` types based on this checklist.
+> Historical checklist: current implementation names differ. Use the unified handle triage flow ending at `HandlesCassetteSpec.strayHandlesReview` for sidebar review and `MessagesSpec.handleLens(...)` for Handle Lens; do not create new `StrayHandlesSpec` or `HandleLensSpec` types based on this checklist.
 
 ## Sidebar Cassette
 - [ ] Define `StrayHandlesSpec` in cassette spec system

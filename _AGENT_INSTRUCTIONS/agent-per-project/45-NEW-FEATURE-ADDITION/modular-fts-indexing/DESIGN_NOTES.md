@@ -1,5 +1,13 @@
 # Modular FTS Indexing Design Notes
 
+## Current Conformance Note (2026-06-06)
+
+These notes are historical. The useful principle is modular search backends
+with explicit validation and observability. The superseded part is the retained
+`working_messages` / post-migration FTS ownership model. Any revived FTS path
+should read graph/search repository data, emit `message_ss_id` results, and
+remain behind the graph evidence scope boundary.
+
 ## Background
 - Existing indexing relies on three structural tables (`global_message_index`, `message_index`, `contact_message_index`) populated during migration and maintained via triggers.
 - Full-text search infrastructure (`messages_fts` + triggers) already exists but current search providers rely on `LIKE '%term%'` filters.

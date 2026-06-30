@@ -6,7 +6,7 @@ part of 'contact_projector_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$contactProjectorHash() => r'61e1025ba40838961bb37a8fa450f3a3fcc1fe00';
+String _$contactProjectorHash() => r'6ceb08382ee0d4dda3edbf50c1ab953f0d34944f';
 
 /// See also [contactProjector].
 @ProviderFor(contactProjector)

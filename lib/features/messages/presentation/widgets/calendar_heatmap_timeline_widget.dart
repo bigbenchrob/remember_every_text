@@ -3,10 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart' show MacosTooltip;
 
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../essentials/navigation/feature_level_providers.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
 
 /// Renders a calendar heatmap timeline visualization
@@ -27,7 +23,7 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
     required this.data,
     this.monthSize = 14.0,
     this.monthSpacing = 2.0,
-    this.onMonthTap,
+    required this.onMonthTap,
     this.selectedMonthKey,
     this.monthTooltipBuilder,
     super.key,
@@ -37,9 +33,9 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
   final double monthSize;
   final double monthSpacing;
 
-  /// Optional custom tap handler. If not provided, uses default chat navigation.
-  /// Parameters: (year, month, messageCount)
-  final void Function(int year, int month, int messageCount)? onMonthTap;
+  /// Caller-owned tap handler. Heatmap widgets render timeline data; they do
+  /// not choose message evidence routes.
+  final void Function(int year, int month, int messageCount) onMonthTap;
 
   /// Currently selected/visible month in format "YYYY-MM"
   final String? selectedMonthKey;
@@ -68,7 +64,6 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
             onMonthTap: onMonthTap,
             selectedMonthKey: selectedMonthKey,
             monthTooltipBuilder: monthTooltipBuilder,
-            ref: ref,
           ),
       ],
     );
@@ -133,8 +128,7 @@ class _YearRowsGroup extends StatelessWidget {
     required this.yearRows,
     required this.monthSize,
     required this.monthSpacing,
-    required this.ref,
-    this.onMonthTap,
+    required this.onMonthTap,
     this.selectedMonthKey,
     this.monthTooltipBuilder,
   });
@@ -142,8 +136,7 @@ class _YearRowsGroup extends StatelessWidget {
   final List<YearRow> yearRows;
   final double monthSize;
   final double monthSpacing;
-  final WidgetRef ref;
-  final void Function(int year, int month, int messageCount)? onMonthTap;
+  final void Function(int year, int month, int messageCount) onMonthTap;
   final String? selectedMonthKey;
   final String? Function(MonthData monthData)? monthTooltipBuilder;
 
@@ -161,7 +154,6 @@ class _YearRowsGroup extends StatelessWidget {
             onMonthTap: onMonthTap,
             selectedMonthKey: selectedMonthKey,
             monthTooltipBuilder: monthTooltipBuilder,
-            ref: ref,
           ),
           SizedBox(height: monthSpacing * 2),
         ],
@@ -171,13 +163,12 @@ class _YearRowsGroup extends StatelessWidget {
 }
 
 /// A single year row: year label + 12 month cells
-class _SingleYearRow extends StatelessWidget {
+class _SingleYearRow extends ConsumerWidget {
   const _SingleYearRow({
     required this.yearRow,
     required this.monthSize,
     required this.monthSpacing,
-    required this.ref,
-    this.onMonthTap,
+    required this.onMonthTap,
     this.selectedMonthKey,
     this.monthTooltipBuilder,
   });
@@ -185,13 +176,12 @@ class _SingleYearRow extends StatelessWidget {
   final YearRow yearRow;
   final double monthSize;
   final double monthSpacing;
-  final WidgetRef ref;
-  final void Function(int year, int month, int messageCount)? onMonthTap;
+  final void Function(int year, int month, int messageCount) onMonthTap;
   final String? selectedMonthKey;
   final String? Function(MonthData monthData)? monthTooltipBuilder;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final typography = ref.watch(themeTypographyProvider);
 
     return Row(
@@ -217,7 +207,6 @@ class _SingleYearRow extends StatelessWidget {
             onMonthTap: onMonthTap,
             isSelected: _isMonthSelected(yearRow.months[i]),
             monthTooltipBuilder: monthTooltipBuilder,
-            ref: ref,
           ),
         ],
       ],
@@ -238,16 +227,14 @@ class _MonthCell extends StatelessWidget {
   const _MonthCell({
     required this.monthData,
     required this.size,
-    required this.ref,
-    this.onMonthTap,
+    required this.onMonthTap,
     this.isSelected = false,
     this.monthTooltipBuilder,
   });
 
   final MonthData monthData;
   final double size;
-  final WidgetRef ref;
-  final void Function(int year, int month, int messageCount)? onMonthTap;
+  final void Function(int year, int month, int messageCount) onMonthTap;
   final bool isSelected;
   final String? Function(MonthData monthData)? monthTooltipBuilder;
 
@@ -257,37 +244,7 @@ class _MonthCell extends StatelessWidget {
       return;
     }
 
-    // If custom tap handler provided, use it
-    if (onMonthTap != null) {
-      onMonthTap!(monthData.year, monthData.month, monthData.messageCount);
-      return;
-    }
-
-    // Default behavior: navigate to chat in date range
-    final startDate = DateTime(monthData.year, monthData.month, 1);
-    final endDate = DateTime(
-      monthData.year,
-      monthData.month + 1,
-      0,
-      23,
-      59,
-      59,
-    );
-
-    // Always navigate with forChatInDateRange
-    // The view will detect if it's the same chat and just scroll instead of reloading
-    ref
-        .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-        .show(
-          panel: WindowPanel.center,
-          spec: ViewSpec.messages(
-            MessagesSpec.forChatInDateRange(
-              chatId: monthData.chatId,
-              startDate: startDate,
-              endDate: endDate,
-            ),
-          ),
-        );
+    onMonthTap(monthData.year, monthData.month, monthData.messageCount);
   }
 
   @override

@@ -1,5 +1,13 @@
 # Living Attachments Archive Design Notes
 
+## Current Conformance Note (2026-06-06)
+
+These notes remain conceptually current for archive ownership: archive metadata
+is overlay-owned and files live in the app-controlled archive. The runtime data
+path has moved from retained working attachment rows to source-scoped graph
+attachment evidence. Read old import/working examples below as historical
+implementation context, not as authority for new ordinary projection work.
+
 ## Summary
 
 The living attachments archive introduces a durable, app-controlled copy of
@@ -173,6 +181,14 @@ widget that displays them. The provider's natural Riverpod caching
 is re-read (e.g., after an import cycle invalidates working data).
 
 ## Archiving Service
+
+> Current graph-era note (2026-06-14): this section describes the original
+> implementation concept. The active architecture keeps
+> `AttachmentArchiveService` as orchestration/policy flow only. Graph candidate
+> reads, overlay archive writes, sweep state, and filesystem operations live
+> behind named attachment-feature ports. Live sync archives newly imported graph
+> source ranges and runs periodic graph attachment sweeps; it does not run a
+> retained `working.db` migration hook.
 
 ### Import-Time Archiving
 

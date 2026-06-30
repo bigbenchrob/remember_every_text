@@ -1,20 +1,50 @@
-import 'dart:io';
-
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart';
-import '../../logging/application/app_logger.dart';
+import '../../db/app_database_files.dart';
+import '../../db/feature_level_providers.dart'
+    show
+        dbMaintenanceLockProvider,
+        driftConversationGraphDatabaseProvider,
+        sourceScopedImportDatabaseProvider;
+import '../../db/feature_level_providers/message_data_version_provider.dart'
+    show messageDataVersionProvider;
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/application/app_navigator_key.dart';
+import '../domain/onboarding_environment_report.dart';
+import '../domain/onboarding_status.dart';
+import 'derived_message_data_file_store.dart';
+import 'derived_message_data_file_store_provider.dart';
 import 'onboarding_environment_report_provider.dart';
 import 'onboarding_gate_provider.dart';
 
 part 'message_data_reset_service.g.dart';
 
 const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
+
+const _retiredDatabaseCleanupFiles = <AppDatabaseFile>[
+  AppDatabaseFile.retiredMacosImport,
+  AppDatabaseFile.retiredWorking,
+];
+
+const _activeGraphDerivedDatabaseFiles = <AppDatabaseFile>[
+  AppDatabaseFile.sourceScopedImport,
+  AppDatabaseFile.conversationGraph,
+];
+
+List<String> get _retiredDatabaseCleanupBaseNames =>
+    appDatabaseFileNames(_retiredDatabaseCleanupFiles);
+
+List<String> get _activeGraphDerivedDatabaseBaseNames =>
+    appDatabaseFileNames(_activeGraphDerivedDatabaseFiles);
+
+List<String> get _messageDataResetPostCleanupCheckBaseNames =>
+    appDatabaseFileNames(<AppDatabaseFile>[
+      ..._activeGraphDerivedDatabaseFiles,
+      ..._retiredDatabaseCleanupFiles,
+    ]);
 
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
@@ -23,54 +53,80 @@ abstract interface class MessageDataResetService {
 }
 
 final class MessageDataResetServiceImpl implements MessageDataResetService {
-  MessageDataResetServiceImpl(this._ref);
+  MessageDataResetServiceImpl(this._dependencies);
 
-  final Ref _ref;
+  final _MessageDataResetDependencies _dependencies;
 
   @override
   Future<void> resetDerivedData() async {
-    final logger = _ref.read(appLoggerProvider.notifier);
+    final logger = _dependencies.logger;
     logger.warn(
       'Reset Message Data requested',
       source: 'MessageDataResetService',
     );
 
-    _ref.read(dbMaintenanceLockProvider.notifier).begin();
+    _dependencies.beginMaintenance();
     try {
       logger.info(
-        'Closing import database before reset',
+        'Closing source-scoped import database before reset',
         source: 'MessageDataResetService',
       );
-      await _closeImportDatabase();
+      await _closeSourceScopedImportDatabase();
       logger.info(
-        'Closing working database before reset',
+        'Closing source-scoped graph database before reset',
         source: 'MessageDataResetService',
       );
-      await _closeWorkingDatabase();
+      await _closeConversationGraphDatabase();
 
-      final deletedFilePaths = await _deleteDerivedDatabaseFiles();
+      final fileStore = _dependencies.fileStore;
+      final deletedActiveGraphFilePaths = await fileStore
+          .deleteDatabaseBaseFiles(_activeGraphDerivedDatabaseBaseNames);
       logger.info(
-        'Deleted derived database files',
+        'Deleted active graph derived database files',
         source: 'MessageDataResetService',
         context: {
-          'deletedCount': deletedFilePaths.length,
-          'deletedFiles': deletedFilePaths,
+          'deletedCount': deletedActiveGraphFilePaths.length,
+          'deletedFiles': deletedActiveGraphFilePaths,
+        },
+      );
+      final deletedRetiredCleanupFilePaths = await fileStore
+          .deleteDatabaseBaseFiles(_retiredDatabaseCleanupBaseNames);
+      logger.info(
+        'Deleted retired database cleanup files',
+        source: 'MessageDataResetService',
+        context: {
+          'deletedCount': deletedRetiredCleanupFilePaths.length,
+          'deletedFiles': deletedRetiredCleanupFilePaths,
         },
       );
 
-      _ref.invalidate(sqfliteImportDatabaseProvider);
-      _ref.invalidate(driftWorkingDatabaseProvider);
-      _ref.read(messageDataVersionProvider.notifier).bump();
+      _dependencies.invalidateDerivedMessageDataProviders();
+      _dependencies.bumpMessageDataVersion();
 
-      final importDbPath = path.join(databaseDirectoryPath, 'macos_import.db');
-      final workingDbPath = path.join(databaseDirectoryPath, 'working.db');
+      final databaseExistsAfterReset = fileStore.databaseExistenceByBaseName(
+        _messageDataResetPostCleanupCheckBaseNames,
+      );
 
       logger.info(
-        'Invalidated import and working database providers after reset',
+        'Invalidated graph database providers and checked retired file cleanup',
         source: 'MessageDataResetService',
         context: {
-          'importDbExistsAfterReset': File(importDbPath).existsSync(),
-          'workingDbExistsAfterReset': File(workingDbPath).existsSync(),
+          'retiredMacosImportCleanupFileExistsAfterReset':
+              databaseExistsAfterReset[appDatabaseFileName(
+                AppDatabaseFile.retiredMacosImport,
+              )],
+          'retiredWorkingCleanupFileExistsAfterReset':
+              databaseExistsAfterReset[appDatabaseFileName(
+                AppDatabaseFile.retiredWorking,
+              )],
+          'sourceScopedImportDbExistsAfterReset':
+              databaseExistsAfterReset[appDatabaseFileName(
+                AppDatabaseFile.sourceScopedImport,
+              )],
+          'conversationGraphDbExistsAfterReset':
+              databaseExistsAfterReset[appDatabaseFileName(
+                AppDatabaseFile.conversationGraph,
+              )],
         },
       );
 
@@ -92,13 +148,13 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       );
       rethrow;
     } finally {
-      _ref.read(dbMaintenanceLockProvider.notifier).end();
+      _dependencies.endMaintenance();
     }
   }
 
   @override
   Future<void> confirmResetAndPrepareReimport() async {
-    final logger = _ref.read(appLoggerProvider.notifier);
+    final logger = _dependencies.logger;
     final proceedDialogContext = appNavigatorKey.currentContext;
 
     if (proceedDialogContext == null || !proceedDialogContext.mounted) {
@@ -134,10 +190,8 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
     await resetDerivedData();
 
-    final onboardingStatusBeforeDialog = _ref.read(onboardingGateProvider);
-    final environmentReportAsync = _ref.read(
-      onboardingEnvironmentReportProvider,
-    );
+    final onboardingStatusBeforeDialog = _dependencies.readOnboardingStatus();
+    final environmentReportAsync = _dependencies.readEnvironmentReport();
     final environmentReport = environmentReportAsync.valueOrNull;
 
     logger.info(
@@ -149,10 +203,13 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         'environmentState': environmentReport?.state.name,
         'environmentBlocker': environmentReport?.blockerKind.name,
         'hasPopulatedAppDatabases': environmentReport?.hasPopulatedAppDatabases,
-        'importDbExists': environmentReport?.importDatabase.exists,
-        'importDbRowCount': environmentReport?.importDatabase.rowCount,
-        'workingDbExists': environmentReport?.workingDatabase.exists,
-        'workingDbRowCount': environmentReport?.workingDatabase.rowCount,
+        'sourceScopedImportDbExists':
+            environmentReport?.sourceScopedImportDatabase.exists,
+        'sourceScopedImportDbRowCount':
+            environmentReport?.sourceScopedImportDatabase.rowCount,
+        'conversationGraphExists': environmentReport?.conversationGraph.exists,
+        'conversationGraphRowCount':
+            environmentReport?.conversationGraph.rowCount,
       },
     );
 
@@ -187,41 +244,58 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       'Refreshing onboarding environment after message data reset',
       source: 'MessageDataResetService',
     );
-    _ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+    _dependencies.refreshOnboardingEnvironment();
   }
 
-  Future<void> _closeImportDatabase() async {
-    try {
-      final ledgerDb = await _ref.read(sqfliteImportDatabaseProvider.future);
-      await ledgerDb.close();
-    } catch (_) {}
-  }
-
-  Future<void> _closeWorkingDatabase() async {
-    try {
-      final workingDb = await _ref.read(driftWorkingDatabaseProvider.future);
-      await workingDb.close();
-    } catch (_) {}
-  }
-
-  Future<List<String>> _deleteDerivedDatabaseFiles() async {
-    final deletedFilePaths = <String>[];
-    for (final baseName in <String>['macos_import.db', 'working.db']) {
-      final basePath = path.join(databaseDirectoryPath, baseName);
-      for (final filePath in <String>[
-        basePath,
-        '$basePath-wal',
-        '$basePath-shm',
-      ]) {
-        final file = File(filePath);
-        if (file.existsSync()) {
-          await file.delete();
-          deletedFilePaths.add(filePath);
-        }
-      }
+  Future<void> _closeSourceScopedImportDatabase() async {
+    final fileStore = _dependencies.fileStore;
+    if (!fileStore.databaseBaseFileExists(
+      appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
+    )) {
+      return;
     }
+    try {
+      await _dependencies.closeSourceScopedImportDatabase();
+    } catch (error, stackTrace) {
+      _logResetCloseWarning(
+        message: 'Failed to close source-scoped import database before reset',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
 
-    return deletedFilePaths;
+  Future<void> _closeConversationGraphDatabase() async {
+    final fileStore = _dependencies.fileStore;
+    if (!fileStore.databaseBaseFileExists(
+      appDatabaseFileName(AppDatabaseFile.conversationGraph),
+    )) {
+      return;
+    }
+    try {
+      await _dependencies.closeConversationGraphDatabase();
+    } catch (error, stackTrace) {
+      _logResetCloseWarning(
+        message: 'Failed to close conversation graph database before reset',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _logResetCloseWarning({
+    required String message,
+    required Object error,
+    required StackTrace stackTrace,
+  }) {
+    _dependencies.logger.warn(
+      message,
+      source: 'MessageDataResetService',
+      context: {
+        'error': error.toString(),
+        'stack': stackTrace.toString().split('\n').take(5).join('\n'),
+      },
+    );
   }
 
   Future<bool> _showResetProceedDialog(BuildContext context) async {
@@ -280,7 +354,105 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   }
 }
 
+final class _MessageDataResetDependencies {
+  const _MessageDataResetDependencies({
+    required this.logger,
+    required this.fileStore,
+    required this.beginMaintenance,
+    required this.endMaintenance,
+    required this.bumpMessageDataVersion,
+    required this.invalidateDerivedMessageDataProviders,
+    required this.closeSourceScopedImportDatabase,
+    required this.closeConversationGraphDatabase,
+    required this.readOnboardingStatus,
+    required this.readEnvironmentReport,
+    required this.refreshOnboardingEnvironment,
+  });
+
+  final _MessageDataResetLogSink logger;
+  final DerivedMessageDataFileStore fileStore;
+  final VoidCallback beginMaintenance;
+  final VoidCallback endMaintenance;
+  final VoidCallback bumpMessageDataVersion;
+  final VoidCallback invalidateDerivedMessageDataProviders;
+  final Future<void> Function() closeSourceScopedImportDatabase;
+  final Future<void> Function() closeConversationGraphDatabase;
+  final OnboardingStatus Function() readOnboardingStatus;
+  final AsyncValue<OnboardingEnvironmentReport> Function()
+  readEnvironmentReport;
+  final VoidCallback refreshOnboardingEnvironment;
+}
+
+final class _MessageDataResetLogSink {
+  const _MessageDataResetLogSink({
+    required this.info,
+    required this.warn,
+    required this.error,
+  });
+
+  final void Function(
+    String message, {
+    String? source,
+    Map<String, dynamic>? context,
+  })
+  info;
+
+  final void Function(
+    String message, {
+    String? source,
+    Map<String, dynamic>? context,
+  })
+  warn;
+
+  final void Function(
+    String message, {
+    String? source,
+    Map<String, dynamic>? context,
+  })
+  error;
+}
+
 @riverpod
 MessageDataResetService messageDataResetService(Ref ref) {
-  return MessageDataResetServiceImpl(ref);
+  final logger = ref.read(appLoggerProvider.notifier);
+  return MessageDataResetServiceImpl(
+    _MessageDataResetDependencies(
+      logger: _MessageDataResetLogSink(
+        info: logger.info,
+        warn: logger.warn,
+        error: logger.error,
+      ),
+      fileStore: ref.read(derivedMessageDataFileStoreProvider),
+      beginMaintenance: ref.read(dbMaintenanceLockProvider.notifier).begin,
+      endMaintenance: ref.read(dbMaintenanceLockProvider.notifier).end,
+      bumpMessageDataVersion: ref
+          .read(messageDataVersionProvider.notifier)
+          .bump,
+      invalidateDerivedMessageDataProviders: () {
+        ref.invalidate(sourceScopedImportDatabaseProvider);
+        ref.invalidate(driftConversationGraphDatabaseProvider);
+      },
+      closeSourceScopedImportDatabase: () async {
+        final ledgerDb = await ref.read(
+          sourceScopedImportDatabaseProvider.future,
+        );
+        await ledgerDb.close();
+      },
+      closeConversationGraphDatabase: () async {
+        final graphDb = await ref.read(
+          driftConversationGraphDatabaseProvider.future,
+        );
+        await graphDb.close();
+      },
+      readOnboardingStatus: () {
+        return ref.read(onboardingGateProvider);
+      },
+      readEnvironmentReport: () {
+        return ref.read(onboardingEnvironmentReportProvider);
+      },
+      refreshOnboardingEnvironment: () {
+        ref.read(onboardingGateProvider.notifier).refreshEnvironment();
+      },
+    ),
+  );
 }

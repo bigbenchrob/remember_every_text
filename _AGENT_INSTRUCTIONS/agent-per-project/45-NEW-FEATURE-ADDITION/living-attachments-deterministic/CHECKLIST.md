@@ -1,5 +1,12 @@
 # Deterministic Historical Attachment Recovery Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Future deterministic recovery implementation
+should target source-scoped graph attachment identity and the current archive
+recovery identity plan. Do not implement new retained `working.db` attachment
+mapping steps from this checklist without explicit archive/recovery review.
+
 ## Phase 0 — Remove Heuristic Historical Importer
 
 - [ ] DELETE `lib/features/attachments/application/historical_import_provider.dart`
@@ -28,14 +35,17 @@
 ## Phase 2 — Build Cross-Snapshot Mapper
 
 - [ ] CREATE `lib/features/attachments/application/cross_snapshot_mapper.dart`
-- [ ] Implement precondition check: current import DB must be populated
-- [ ] Implement message-side mapping: historical `message_guid` → current working DB `message_guid`
-- [ ] Implement Step 1 — Primary match: `attachment.guid` lookup in current import DB → `import_attachment_id`
-- [ ] Verify matched attachment belongs to correct message in working DB
+- [ ] Implement precondition check: source-scoped import facts and graph
+      message/attachment edges must be populated for the selected source
+- [ ] Implement message-side mapping: historical source message fact →
+      graph `message_ss_id`
+- [ ] Implement Step 1 — Primary match: historical attachment source fact →
+      graph `attachment_ss_id`
+- [ ] Verify matched attachment belongs to the correct graph message edge
 - [ ] Implement Step 2 — Fallback (NULL GUID only): three conditions must ALL hold
   - [ ] `hist_attachment_guid` IS NULL
   - [ ] Historical message has EXACTLY ONE attachment
-  - [ ] Current working DB has EXACTLY ONE attachment for that `message_guid`
+  - [ ] Current graph has EXACTLY ONE attachment for that message scope
 - [ ] Implement Step 3 — No further fallback (classify as UNMAPPED)
 - [ ] Return `MappedAttachmentRecord` structs with `match_method` field
 - [ ] Return unmapped records with specific `unmapped_reason` enum values
@@ -47,10 +57,12 @@
 - [ ] Reuse existing content-addressable archive infrastructure
 - [ ] SHA-256 hash source files
 - [ ] Store files at `{sha256_prefix}/{sha256_hex}{extension}` in archive directory
-- [ ] Idempotency check: skip if `(message_guid, import_attachment_id)` already in overlay
+- [ ] Idempotency check: skip if graph-native or retained overlay-compatible
+      archive key already exists
 - [ ] Insert overlay row with provenance `imported_historical_snapshot`
 - [ ] Verify integrity after copy (re-hash and compare)
-- [ ] Access databases only through centralized providers (overlay, working, import)
+- [ ] Access databases only through centralized graph/source-scoped/overlay
+      providers and named retained compatibility bridges
 - [ ] Report progress: files archived, skipped, failed, bytes archived
 - [ ] Return final archive report
 
@@ -61,7 +73,8 @@
 - [ ] Implement "Select Historical Attachments Folder…" folder picker
 - [ ] Require both inputs before enabling import button
 - [ ] Auto-detect WAL/SHM alongside selected chat.db
-- [ ] Pre-import validation: chat.db valid, Attachments folder exists, import DB populated
+- [ ] Pre-import validation: chat.db valid, Attachments folder exists,
+      source-scoped graph attachment facts populated
 - [ ] Display WAL/SHM absence warning when applicable
 - [ ] Phase indicator during import (reading snapshot / mapping / archiving)
 - [ ] Progress count within each phase
@@ -79,7 +92,7 @@
 
 - [ ] Test 1: Deterministic happy path — clean match, archive, resolve
 - [ ] Test 2: Historical file missing — reported correctly, no overlay row
-- [ ] Test 3: Message not in current working DB — unmapped, reported
+- [ ] Test 3: Message not in current graph — unmapped, reported
 - [ ] Test 4: Attachment GUID mismatch — unmapped, no fallback
 - [ ] Test 5: GUID NULL + single attachment — fallback exercised correctly
 - [ ] Test 6: GUID NULL + multi attachment — fallback rejected, unmapped

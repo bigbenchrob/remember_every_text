@@ -2,8 +2,8 @@ final class MessageHistoryCoverageReport {
   const MessageHistoryCoverageReport({
     required this.status,
     required this.chatDbTotalCount,
-    required this.workingDbVisibleCount,
-    required this.workingDbRecoveredCount,
+    required this.graphConversationLinkedCount,
+    required this.graphRecoveredOrphanCount,
     required this.earliestMessageDate,
     required this.latestMessageDate,
     this.generatedAt,
@@ -12,16 +12,16 @@ final class MessageHistoryCoverageReport {
 
   final MessageHistoryCoverageStatus status;
   final int? chatDbTotalCount;
-  final int? workingDbVisibleCount;
-  final int? workingDbRecoveredCount;
+  final int? graphConversationLinkedCount;
+  final int? graphRecoveredOrphanCount;
   final DateTime? earliestMessageDate;
   final DateTime? latestMessageDate;
   final DateTime? generatedAt;
   final String? detail;
 
-  int? get workingDbTotalAccountedCount {
-    final visibleCount = workingDbVisibleCount;
-    final recoveredCount = workingDbRecoveredCount;
+  int? get graphTotalAccountedCount {
+    final visibleCount = graphConversationLinkedCount;
+    final recoveredCount = graphRecoveredOrphanCount;
     if (visibleCount == null || recoveredCount == null) {
       return null;
     }
@@ -30,7 +30,7 @@ final class MessageHistoryCoverageReport {
 
   int? get missingCount {
     final sourceCount = chatDbTotalCount;
-    final accountedCount = workingDbTotalAccountedCount;
+    final accountedCount = graphTotalAccountedCount;
     if (sourceCount == null || accountedCount == null) {
       return null;
     }
@@ -44,9 +44,9 @@ final class MessageHistoryCoverageReport {
   Map<String, Object?> toJson() {
     return {
       'chatDbTotal': chatDbTotalCount,
-      'visible': workingDbVisibleCount,
-      'recovered': workingDbRecoveredCount,
-      'accounted': workingDbTotalAccountedCount,
+      'visible': graphConversationLinkedCount,
+      'recovered': graphRecoveredOrphanCount,
+      'accounted': graphTotalAccountedCount,
       'missing': missingCount,
       'earliest': earliestMessageDate?.toUtc().toIso8601String(),
       'latest': latestMessageDate?.toUtc().toIso8601String(),

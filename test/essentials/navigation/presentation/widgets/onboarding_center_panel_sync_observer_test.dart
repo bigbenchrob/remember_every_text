@@ -10,7 +10,6 @@ import 'package:remember_this_text/essentials/navigation/domain/navigation_const
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
-import 'package:remember_this_text/essentials/onboarding/domain/import_spec.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
 import 'package:remember_this_text/features/environment_readiness/domain/spec_classes/environment_readiness_view_spec.dart';
 
@@ -132,50 +131,6 @@ void main() {
       final panelState = panelsSubscription.read();
 
       expect(panelState[WindowPanel.center]?.isEmpty, isTrue);
-      await tester.pump();
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-      container.dispose();
-    });
-
-    testWidgets('keeps import panel visible during awaiting user action', (
-      tester,
-    ) async {
-      final container = ProviderContainer(
-        overrides: [
-          onboardingGateProvider.overrideWith(_AwaitingUserActionGate.new),
-        ],
-      );
-      final panelsSubscription = container.listen(
-        panelsViewStateProvider(SidebarMode.messages),
-        (_, __) {},
-        fireImmediately: true,
-      );
-
-      container
-          .read(panelsViewStateProvider(SidebarMode.messages).notifier)
-          .show(
-            panel: WindowPanel.center,
-            spec: const ViewSpec.import(ImportSpec.forImport()),
-          );
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const Directionality(
-            textDirection: TextDirection.ltr,
-            child: OnboardingCenterPanelSyncObserver(),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      expect(
-        panelsSubscription.read()[WindowPanel.center]?.activePage?.spec,
-        const ViewSpec.import(ImportSpec.forImport()),
-      );
       await tester.pump();
 
       await tester.pumpWidget(const SizedBox.shrink());

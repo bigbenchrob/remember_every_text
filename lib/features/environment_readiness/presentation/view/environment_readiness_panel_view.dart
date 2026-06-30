@@ -4,18 +4,16 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/db/application/database_health_audit/database_health_audit_service.dart';
-import '../../../../essentials/logging/application/app_logger.dart';
 import '../../../../essentials/logging/application/diagnostic_report_actions.dart';
-import '../../../../essentials/logging/infrastructure/log_export_service.dart';
-import '../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
-import '../../../../essentials/onboarding/application/onboarding_gate_provider.dart';
+import '../../../../essentials/logging/domain/diagnostic_report_presentation_result.dart';
+import '../../../../essentials/logging/feature_level_providers.dart'
+    show diagnosticReportExporterProvider;
 import '../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
+import '../../../../essentials/onboarding/feature_level_providers.dart'
+    show onboardingDevOverridesProvider, onboardingEnvironmentReportProvider;
+import '../../application/environment_readiness_actions_provider.dart';
 import '../../application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import '../../domain/entities/environment_readiness_surface_view_model.dart';
-
-const _kReadinessWarning = Color(0xFFFF9500);
-const _kReadinessSuccess = Color(0xFF34C759);
 
 class EnvironmentReadinessPanelView extends ConsumerStatefulWidget {
   const EnvironmentReadinessPanelView({super.key});
@@ -221,15 +219,14 @@ class _StepTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final background = switch (step.status) {
-      EnvironmentReadinessStepStatus.success => _kReadinessSuccess.withValues(
-        alpha: 0.12,
-      ),
+      EnvironmentReadinessStepStatus.success =>
+        colors.status.success.withValues(alpha: 0.12),
       EnvironmentReadinessStepStatus.active =>
         colors.accents.primary.withValues(alpha: 0.14),
       EnvironmentReadinessStepStatus.pending => colors.surfaces.control,
     };
     final foreground = switch (step.status) {
-      EnvironmentReadinessStepStatus.success => _kReadinessSuccess,
+      EnvironmentReadinessStepStatus.success => colors.status.success,
       EnvironmentReadinessStepStatus.active => colors.accents.primary,
       EnvironmentReadinessStepStatus.pending => colors.content.textTertiary,
     };
@@ -305,7 +302,6 @@ class _DetailPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final devOverrides = ref.watch(onboardingDevOverridesProvider);
-    final overridesNotifier = ref.read(onboardingDevOverridesProvider.notifier);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -439,10 +435,9 @@ class _DetailPane extends ConsumerWidget {
                     const SizedBox(height: 12),
                     OutlinedButton(
                       onPressed: () {
-                        overridesNotifier.clearAll();
                         ref
-                            .read(onboardingGateProvider.notifier)
-                            .refreshEnvironment();
+                            .read(environmentReadinessActionsProvider.notifier)
+                            .clearSimulationsAndRefresh();
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: colors.content.textPrimary,
@@ -464,7 +459,7 @@ class _DetailPane extends ConsumerWidget {
                     EnvironmentReadinessActionKind.openSettings => FilledButton(
                       onPressed: () {
                         ref
-                            .read(onboardingGateProvider.notifier)
+                            .read(environmentReadinessActionsProvider.notifier)
                             .openFdaSettings();
                       },
                       style: FilledButton.styleFrom(
@@ -476,7 +471,7 @@ class _DetailPane extends ConsumerWidget {
                     EnvironmentReadinessActionKind.recheck => OutlinedButton(
                       onPressed: () {
                         ref
-                            .read(onboardingGateProvider.notifier)
+                            .read(environmentReadinessActionsProvider.notifier)
                             .refreshEnvironment();
                       },
                       style: OutlinedButton.styleFrom(
@@ -488,8 +483,8 @@ class _DetailPane extends ConsumerWidget {
                     EnvironmentReadinessActionKind.startImport => FilledButton(
                       onPressed: () {
                         ref
-                            .read(onboardingGateProvider.notifier)
-                            .startImportAndMigration();
+                            .read(environmentReadinessActionsProvider.notifier)
+                            .startImportAndGraphBuild();
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: colors.buttons.primaryBackground,
@@ -501,18 +496,13 @@ class _DetailPane extends ConsumerWidget {
                       onPressed: report == null
                           ? null
                           : () async {
-                              final writer = ref
-                                  .read(appLoggerProvider.notifier)
-                                  .writer;
-                              final databaseHealthAuditService = await ref.read(
-                                databaseHealthAuditServiceProvider.future,
+                              final diagnosticReportExporter = await ref.read(
+                                diagnosticReportExporterProvider.future,
                               );
                               final result =
                                   await exportOnboardingFailureDiagnosticReport(
-                                    writer,
+                                    diagnosticReportExporter,
                                     report: report!,
-                                    databaseHealthAuditService:
-                                        databaseHealthAuditService,
                                   );
                               if (!context.mounted) {
                                 return;
@@ -640,6 +630,13 @@ class _EvidenceCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _EvidenceRow(
+            label: 'MessageLens status',
+            value: _messageLensStatusValue(report),
+            colors: colors,
+            typography: typography,
+          ),
+          const SizedBox(height: 6),
+          _EvidenceRow(
             label: 'Full Disk Access',
             value: report.hasFullDiskAccess
                 ? 'Available'
@@ -668,16 +665,50 @@ class _EvidenceCard extends StatelessWidget {
             typography: typography,
           ),
           _EvidenceRow(
-            label: 'Import database',
-            value: report.importDatabase.hasData ? 'Ready' : 'Not prepared yet',
+            label: 'Imported message data',
+            value: report.sourceScopedImportDatabase.hasData
+                ? 'Ready'
+                : 'Not prepared yet',
             colors: colors,
             typography: typography,
           ),
           _EvidenceRow(
-            label: 'Working database',
-            value: report.workingDatabase.hasData
+            label: 'User settings and archive metadata',
+            value: report.overlayDatabase.readable
+                ? 'Available'
+                : report.overlayDatabase.exists
+                ? 'Present but blocked'
+                : 'Not created yet',
+            colors: colors,
+            typography: typography,
+          ),
+          _EvidenceRow(
+            label: 'Conversation browsing data',
+            value: report.conversationGraph.hasData
                 ? 'Ready'
                 : 'Not prepared yet',
+            colors: colors,
+            typography: typography,
+          ),
+          _EvidenceRow(
+            label: 'Last graph build',
+            value: _graphBuildValue(report),
+            colors: colors,
+            typography: typography,
+          ),
+          _EvidenceRow(
+            label: 'Live message updates',
+            value: _liveUpdateValue(report),
+            colors: colors,
+            typography: typography,
+          ),
+          _EvidenceRow(
+            label: 'Attachment archive',
+            value: report.attachmentArchiveDirectory.readable
+                ? 'Available'
+                : report.attachmentArchiveDirectory.exists
+                ? 'Present but blocked'
+                : 'Not created yet',
             colors: colors,
             typography: typography,
           ),
@@ -685,6 +716,67 @@ class _EvidenceCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _messageLensStatusValue(OnboardingEnvironmentReport report) {
+  return switch (report.state) {
+    OnboardingEnvironmentState.ready =>
+      'Ready to use; ordinary browsing can run from local app data',
+    OnboardingEnvironmentState.readyToImport =>
+      'Ready to import; setup has the required local access',
+    OnboardingEnvironmentState.permissionBlocked =>
+      'Blocked until Full Disk Access is granted',
+    OnboardingEnvironmentState.sourceUnavailable =>
+      'Blocked until local Messages or Contacts data is available',
+    OnboardingEnvironmentState.sourceSparseOrUnsynced =>
+      'Waiting for local Messages history to sync',
+    OnboardingEnvironmentState.importFailed ||
+    OnboardingEnvironmentState.graphProjectionFailed =>
+      'Setup needs retry; the last import or browsing-data build failed',
+  };
+}
+
+String _graphBuildValue(OnboardingEnvironmentReport report) {
+  final error = report.graphBuildLastError;
+  if (error != null && error.isNotEmpty) {
+    return 'Error: $error';
+  }
+
+  final finishedAt = report.graphBuildFinishedAt;
+  if (finishedAt != null) {
+    return '${report.graphBuildStatusLabel} at ${_formatReadinessTimestamp(finishedAt)}';
+  }
+
+  return report.graphBuildStatusLabel;
+}
+
+String _liveUpdateValue(OnboardingEnvironmentReport report) {
+  final error = report.liveUpdateLastError;
+  if (error != null && error.isNotEmpty) {
+    return 'Error: $error';
+  }
+
+  final lastChangeDetected = report.liveUpdateLastChangeDetectedAt;
+  if (lastChangeDetected != null) {
+    return 'Last change ${_formatReadinessTimestamp(lastChangeDetected)}';
+  }
+
+  final cursorRowId = report.liveUpdateCursorRowId;
+  if (cursorRowId != null) {
+    return 'Watching source row $cursorRowId';
+  }
+
+  return 'Waiting for source changes';
+}
+
+String _formatReadinessTimestamp(DateTime timestamp) {
+  final local = timestamp.toLocal();
+  final year = local.year.toString().padLeft(4, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$year-$month-$day $hour:$minute';
 }
 
 class _EvidenceRow extends StatelessWidget {
@@ -743,7 +835,7 @@ Color _accentColorFor(
 }) {
   return switch (tone) {
     EnvironmentReadinessTone.primary => colors.accents.primary,
-    EnvironmentReadinessTone.warning => _kReadinessWarning,
-    EnvironmentReadinessTone.success => _kReadinessSuccess,
+    EnvironmentReadinessTone.warning => colors.status.warning,
+    EnvironmentReadinessTone.success => colors.status.success,
   };
 }

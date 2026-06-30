@@ -27,7 +27,7 @@ final activeBlockingPipelineIncidentProvider =
 typedef ActiveBlockingPipelineIncidentRef =
     AutoDisposeFutureProviderRef<PipelineIncidentReport?>;
 String _$pipelineIncidentTrackerHash() =>
-    r'db47583f54b2a880c3010d0887bb856009c3725f';
+    r'2a1fa7b07c00ab7b5d39214ceff51af61b760c65';
 
 /// See also [PipelineIncidentTracker].
 @ProviderFor(PipelineIncidentTracker)

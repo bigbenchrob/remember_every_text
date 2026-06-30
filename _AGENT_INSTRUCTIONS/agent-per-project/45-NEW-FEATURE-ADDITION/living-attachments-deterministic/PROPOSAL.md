@@ -1,5 +1,17 @@
 # Deterministic Historical Attachment Recovery Proposal
 
+## Current Conformance Note (2026-06-06)
+
+This proposal is historical-but-related. The deterministic recovery principle
+remains correct: use database relationships from an intact Messages snapshot,
+not filename/path heuristics. The identity bridge has changed.
+
+Current recovery mapping should flow through source-scoped import attachment
+identity and graph `message_to_attachment` topology where possible. Retained
+import/working DB attachment IDs are compatibility references only. Archive
+metadata remains overlay-owned, and historical recovery must never write to
+graph projection tables or retained working tables.
+
 ## Problem
 
 The heuristic historical recovery flow — matching backup Attachments files to

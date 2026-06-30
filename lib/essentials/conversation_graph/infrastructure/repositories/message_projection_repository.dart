@@ -1,19 +1,40 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/messages/message_projection_repository.dart';
 
 class SqliteMessageProjectionRepository implements MessageProjectionRepository {
   const SqliteMessageProjectionRepository({
-    required this.importDatabase,
-    required this.workingDatabase,
+    required this.importLedgerDatabase,
+    required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ImportLedger importLedgerDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<MessageProjectionResult> projectMessages() async {
-    final rows = await importDatabase.database.query(
+    return _projectMessagesWhere(
+      whereClause: null,
+      whereArgs: const <Object?>[],
+    );
+  }
+
+  @override
+  Future<MessageProjectionResult> projectMessagesAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _projectMessagesWhere(
+      whereClause: 'source_id = ? AND source_rowid > ?',
+      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    );
+  }
+
+  Future<MessageProjectionResult> _projectMessagesWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
+    final rows = await importLedgerDatabase.queryTable(
       'messages',
       columns: <String>[
         'ss_id',
@@ -32,11 +53,13 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
         'has_message_summary_info',
         'has_payload_data_source',
       ],
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'ss_id ASC',
     );
 
     var insertedMessageCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
         final associatedMessageSsId = await _resolveAssociatedMessageSsId(row);
         final senderCanonicalHandleSsId =
@@ -60,7 +83,7 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
           'has_payload_data_source': _boolInt(row['has_payload_data_source']),
           'error_code': row['error_code'],
         };
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO messages (
             ss_id,
@@ -102,7 +125,7 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
         );
 
         if (insertedCount == 0) {
-          await workingDatabase.executeSql(
+          await graphDatabase.executeSql(
             '''
             UPDATE messages
             SET
@@ -167,7 +190,7 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
       return null;
     }
 
-    final rows = await importDatabase.database.query(
+    final rows = await importLedgerDatabase.queryTable(
       'messages',
       columns: <String>['ss_id'],
       where: 'source_id = ? AND guid = ?',
@@ -190,7 +213,7 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
       return null;
     }
 
-    final rows = await workingDatabase.selectRows(
+    final rows = await graphDatabase.selectRows(
       '''
       SELECT canonical_handle_ss_id
       FROM handle_aliases

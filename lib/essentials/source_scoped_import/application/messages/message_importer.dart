@@ -1,11 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:sqflite/sqflite.dart';
-
 import '../../../../core/util/date_converter.dart';
 import '../../domain/known_sources.dart';
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
-import '../../infrastructure/import_database_provider.dart';
 
 class MessageImportResult {
   const MessageImportResult({
@@ -22,23 +21,21 @@ class MessageImportResult {
 class MessageImporter {
   const MessageImporter({
     required this.chatDbPath,
-    required this.importDatabase,
+    required this.importLedger,
+    required this.sourceDatabaseOpener,
     this.sourceId = liveChatDbSourceId,
   });
 
   final String chatDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
+  final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
   Future<MessageImportResult> importNewMessages() async {
     final startedAfterSourceRowId =
-        await importDatabase.maxMessageSourceRowIdForSource(sourceId) ?? 0;
+        await importLedger.maxMessageSourceRowIdForSource(sourceId) ?? 0;
 
-    final sourceDb = await openDatabase(
-      chatDbPath,
-      readOnly: true,
-      singleInstance: false,
-    );
+    final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
     try {
       final rows = await sourceDb.rawQuery(
@@ -55,7 +52,7 @@ class MessageImporter {
         );
       }
 
-      final batchId = await importDatabase.insertImportBatch(
+      final batchId = await importLedger.insertImportBatch(
         sourceId: sourceId,
         startedAtUtc: DateTime.now().toUtc().toIso8601String(),
       );
@@ -63,7 +60,7 @@ class MessageImporter {
       var insertedMessageCount = 0;
       int? lastImportedSourceRowId;
 
-      await importDatabase.database.transaction((txn) async {
+      await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
           lastImportedSourceRowId = sourceRowId;
@@ -71,43 +68,46 @@ class MessageImporter {
           final messageSummaryInfo = _nullableBlob(row, 'message_summary_info');
           final payloadData = _nullableBlob(row, 'payload_data');
 
-          final insertedId = await txn.insert('messages', <String, Object?>{
-            'ss_id': SourceScopedRowKey.pack(
-              sourceId: sourceId,
-              sourceRowId: sourceRowId,
-            ),
-            'source_id': sourceId,
-            'source_rowid': sourceRowId,
-            'guid': _requiredString(row, 'guid'),
-            'sender_handle_ss_id': _senderHandleSsId(row),
-            'is_from_me': _boolInt(row, 'is_from_me'),
-            'date_utc': DateConverter.appleToIsoString(row['date']),
-            'date_read_utc': DateConverter.appleToIsoString(row['date_read']),
-            'date_delivered_utc': DateConverter.appleToIsoString(
-              row['date_delivered'],
-            ),
-            'text': _nullableString(row, 'text'),
-            'attributed_body_blob': attributedBody,
-            'associated_message_guid': _nullableString(
-              row,
-              'associated_message_guid',
-            ),
-            'raw_item_type': _nullableInt(row, 'item_type'),
-            'raw_associated_message_type': _nullableInt(
-              row,
-              'associated_message_type',
-            ),
-            'thread_originator_guid': _nullableString(
-              row,
-              'thread_originator_guid',
-            ),
-            'error_code': _nullableInt(row, 'error'),
-            'is_system_message': _boolIntOrZero(row, 'is_system_message'),
-            'has_attributed_body_source': attributedBody == null ? 0 : 1,
-            'has_message_summary_info': messageSummaryInfo == null ? 0 : 1,
-            'has_payload_data_source': payloadData == null ? 0 : 1,
-            'batch_id': batchId,
-          }, conflictAlgorithm: ConflictAlgorithm.ignore);
+          final insertedId = await txn.insertIgnore(
+            'messages',
+            <String, Object?>{
+              'ss_id': SourceScopedRowKey.pack(
+                sourceId: sourceId,
+                sourceRowId: sourceRowId,
+              ),
+              'source_id': sourceId,
+              'source_rowid': sourceRowId,
+              'guid': _requiredString(row, 'guid'),
+              'sender_handle_ss_id': _senderHandleSsId(row),
+              'is_from_me': _boolInt(row, 'is_from_me'),
+              'date_utc': DateConverter.appleToIsoString(row['date']),
+              'date_read_utc': DateConverter.appleToIsoString(row['date_read']),
+              'date_delivered_utc': DateConverter.appleToIsoString(
+                row['date_delivered'],
+              ),
+              'text': _nullableString(row, 'text'),
+              'attributed_body_blob': attributedBody,
+              'associated_message_guid': _nullableString(
+                row,
+                'associated_message_guid',
+              ),
+              'raw_item_type': _nullableInt(row, 'item_type'),
+              'raw_associated_message_type': _nullableInt(
+                row,
+                'associated_message_type',
+              ),
+              'thread_originator_guid': _nullableString(
+                row,
+                'thread_originator_guid',
+              ),
+              'error_code': _nullableInt(row, 'error'),
+              'is_system_message': _boolIntOrZero(row, 'is_system_message'),
+              'has_attributed_body_source': attributedBody == null ? 0 : 1,
+              'has_message_summary_info': messageSummaryInfo == null ? 0 : 1,
+              'has_payload_data_source': payloadData == null ? 0 : 1,
+              'batch_id': batchId,
+            },
+          );
 
           if (insertedId != 0) {
             insertedMessageCount += 1;

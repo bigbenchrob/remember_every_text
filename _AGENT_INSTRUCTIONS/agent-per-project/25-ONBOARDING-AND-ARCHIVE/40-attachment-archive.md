@@ -66,15 +66,16 @@ Table: `archived_attachments` in `user_overlays.db`
 
 **Unique constraint:** `(message_guid, import_attachment_id)`
 
-**Why overlay, not working:** The decision to archive is user intent, not
-source data. The working database is a pure projection of `chat.db`, rebuilt
-on every migration cycle. Archive metadata must survive migration rebuilds.
+**Why overlay, not projection:** The decision to archive is user intent, not
+source data. `working_ss.db` is a derived graph projection, and retired
+`working.db` files are cleanup/diagnostic inventory only. Archive metadata
+must survive graph rebuilds and must not depend on retired files.
 
 ### Provenance Values
 
 | Value | Meaning |
 |-------|---------|
-| `archived` | Copied from live Messages Attachments during import/migration |
+| `archived` | Copied from live Messages Attachments during graph sync or archive compatibility lookup |
 | `imported_historical_snapshot` | Recovered from a Time Machine or backup snapshot |
 
 ### Current Caveat: Attachment Provenance Naming
@@ -104,7 +105,7 @@ AttachmentResolverProvider(attachment)
   │       ├─ YES → available (provenance: archived)
   │       └─ NO → continue
   │
-  ├─ 2. Expand live localPath from working DB
+  ├─ 2. Expand live localPath from graph attachment evidence
   │   └─ Check file exists at ~/Library/Messages/Attachments/...
   │       ├─ YES + import_attachment_id → trigger archive ingestion,
   │       │   return pendingArchive
@@ -134,11 +135,19 @@ The record renders with an appropriate availability state. See
 
 ## Archive Service
 
-### Import-Time (Bulk) Archiving
+### Import-Time and Graph-Sync Archiving
 
-After a successful full migration, `DbImportControlViewModel` launches
-`AttachmentArchiveService.archiveAllAvailable()` fire-and-forget. It processes
-working attachments with local paths when the archive is enabled.
+In the graph-era app path, `ChatDbChangeMonitor` archives newly imported live
+graph source ranges and runs bounded graph attachment sweeps. Explicit
+full/manual graph archive sweeps may still call
+`AttachmentArchiveService.archiveAllAvailable()`. It processes graph attachment
+facts with local paths when the archive is enabled.
+
+`AttachmentArchiveService` is an orchestration boundary. It may decide when to
+archive and report progress, but it should not own database queries or
+filesystem mechanics directly. Graph candidate selection, archive record
+persistence, recovery hints, archive directory resolution, and file copying are
+behind named attachments feature ports.
 
 For each attachment where:
 - File exists at `localPath`
@@ -154,10 +163,10 @@ Actions:
 
 ### Ongoing Archiving
 
-The `ChatDbChangeMonitor` auto-sync cycle archives newly imported batches before
-incremental migration by calling `archiveImportedBatch(batchId:)`. It also runs
-a bounded working-attachment sweep every 5 minutes via
-`archiveNextWorkingSweepChunk()` so files that appear later can be ingested.
+The `ChatDbChangeMonitor` auto-sync cycle archives newly imported live graph
+source ranges by calling `archiveGraphMessageSourceRange(...)`. It also runs
+a bounded graph attachment sweep every 5 minutes via
+`archiveNextGraphSweepChunk()` so files that appear later can be ingested.
 
 The resolver can also trigger on-demand archive ingestion when archive mode is
 enabled and it sees a live file that is not yet archived.
@@ -172,20 +181,25 @@ boundary unless current code introduces one.
 
 | File | Role |
 |------|------|
-| `lib/features/attachments/application/attachment_archive_service_provider.dart` | Archive copy, hash, overlay write |
+| `lib/features/attachments/application/attachment_archive_service_provider.dart` | Archive orchestration, progress, and policy flow |
+| `lib/features/attachments/application/attachment_archive_file_store.dart` | File-copy, hash, home-expansion, and archive integrity file boundary |
+| `lib/features/attachments/application/attachment_archive_write_store.dart` | Archive record, recovery hint, and integrity-row persistence boundary |
+| `lib/features/attachments/application/graph_attachment_archive_candidate_reader.dart` | Graph attachment candidate selection boundary |
 | `lib/features/attachments/application/attachment_resolver_provider.dart` | Multi-source resolution pipeline |
 | `lib/features/attachments/application/archive_settings_provider.dart` | Archive directory, retention config |
 | `lib/features/attachments/domain/entities/resolved_attachment.dart` | Resolution result with availability + provenance |
 | `lib/features/attachments/domain/constants/attachment_provenance.dart` | Provenance enum |
 | `lib/features/attachments/domain/constants/resolved_attachment_availability.dart` | Runtime display availability enum |
+| `lib/features/attachments/infrastructure/repositories/overlay_attachment_archive_write_store.dart` | Overlay-backed archive write-store implementation |
 | `lib/essentials/db/infrastructure/.../overlay_database.dart` | `archived_attachments` table schema |
 
 ## Invariants
 
-1. Archive metadata lives in overlay DB only — never in working DB.
-2. Working DB `attachments` table is unchanged — pure `chat.db` projection.
-3. `archiveAllAvailable()` is launched after successful full migrations; incremental sync uses batch archiving plus periodic sweeps.
+1. Archive metadata lives in overlay DB only — never in `working_ss.db` or retired `working.db`.
+2. Graph `attachments` rows remain source projections — not durable file-store records.
+3. Graph incremental sync uses source-range archiving plus periodic graph attachment sweeps; explicit full/manual graph archive sweeps may still call `archiveAllAvailable()`.
 4. The Messages Attachments folder is never written to.
 5. Content-addressable naming provides natural deduplication.
-6. The archive is additive — entries survive re-import and migration rebuilds.
+6. The archive is additive — entries survive re-import and graph rebuilds.
 7. Archive-enabled resolution displays from the archive and treats live Messages paths as ingestion sources.
+8. Archive service code must use feature ports for graph candidates, archive writes, settings, directory paths, and file work; Drift/overlay SQL belongs in infrastructure repositories.

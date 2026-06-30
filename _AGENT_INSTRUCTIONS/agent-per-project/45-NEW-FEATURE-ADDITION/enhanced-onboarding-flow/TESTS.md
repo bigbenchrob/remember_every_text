@@ -1,5 +1,12 @@
 # Enhanced Onboarding Flow Tests
 
+## Current Conformance Note (2026-06-06)
+
+This test plan is historical. Current tests should prove graph readiness and
+source-scoped build failure reporting for ordinary setup; retained
+import/projection failure tests belong only to archive/recovery compatibility
+surfaces.
+
 ## Unit Tests
 
 ### Classification Tests
@@ -8,8 +15,9 @@
 - Messages DB readable, AddressBook unresolved -> classify as source unavailable or degraded
 - Messages DB readable with extremely low row counts -> classify as sparse or likely unsynced
 - Messages DB and AddressBook readable with meaningful row counts, app DBs absent -> classify as ready to import
-- import database populated, working database empty after failed migration -> classify as migration failed
-- import result error present -> classify as import failed
+- source-scoped import database populated, graph database empty after failed
+  projection -> classify as graph build failed
+- source-scoped import result error present -> classify as import failed
 - all checks healthy -> classify as ready
 
 ### Inference Tests
@@ -58,9 +66,9 @@ Expected:
 - app identifies the degraded source state clearly
 - guidance separates contact-readiness issues from Messages-readiness issues
 
-### Import Failure
+### Source-Scoped Import Failure
 
-- Trigger a known import failure path
+- Trigger a known source-scoped import failure path
 
 Expected:
 
@@ -68,13 +76,13 @@ Expected:
 - app does not fall back to generic FDA or "setup incomplete" language
 - retry path remains available when appropriate
 
-### Migration Failure
+### Graph Build Failure
 
-- Trigger a known migration failure path
+- Trigger a known graph build/projection failure path
 
 Expected:
 
-- app reports migration as the blocker
+- app reports graph build/projection as the blocker
 - app distinguishes this from source-data issues
 
 ### Healthy First Run
@@ -84,7 +92,7 @@ Expected:
 Expected:
 
 - app reports readiness accurately
-- import and migration proceed through clear progress phases
+- source-scoped import and graph build proceed through clear progress phases
 
 ### Healthy But Sparse Archive
 
@@ -97,7 +105,9 @@ Expected:
 
 ## Regression Checks
 
-- existing import/migration ownership boundaries remain intact
+- existing source-scoped import / graph-build ownership boundaries remain intact
 - onboarding does not bypass centralized DB providers
-- overlay/working DB separation is not violated by diagnostics code
+- overlay / graph projection separation is not violated by diagnostics code
+- retained compatibility database diagnostics do not become ordinary readiness
+  authority
 - onboarding UI still blocks the app safely during required bootstrap states

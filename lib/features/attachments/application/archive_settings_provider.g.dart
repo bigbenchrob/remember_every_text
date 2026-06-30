@@ -6,12 +6,12 @@ part of 'archive_settings_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$archiveSettingsHash() => r'036d60c534cdcc90b2e110539e6ed5e6c59463fc';
+String _$archiveSettingsHash() => r'c2866df33814c9f412cdd47e64a64e4b9ca162aa';
 
 /// Manages the attachment archive user preferences.
 ///
 /// The archive-enabled flag is persisted in the overlay DB's
-/// `overlay_settings` key-value table so it survives migrations.
+/// `overlay_settings` key-value table so it survives derived-data rebuilds.
 ///
 /// Copied from [ArchiveSettings].
 @ProviderFor(ArchiveSettings)

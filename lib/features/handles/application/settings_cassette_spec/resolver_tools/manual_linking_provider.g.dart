@@ -6,13 +6,13 @@ part of 'manual_linking_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$unlinkedHandlesHash() => r'0eafcb0cd9fa71b771b08a10c5174d72d6d767cc';
+String _$unlinkedHandlesHash() => r'972f0d2c19b616c28fd15c3323eb5e8c698c537a';
 
 /// Provider that finds handles not linked to any participant.
 ///
-/// A handle is considered linked if it has a working-DB addressbook link OR an
-/// overlay manual link (participant or virtual participant). Overlay visibility
-/// overrides (blacklisted) are also merged here.
+/// A handle is considered linked if it has a graph contact link OR an overlay
+/// manual link (participant or virtual participant). Overlay visibility
+/// overrides (blacklisted) are also applied by the read repository.
 ///
 /// Copied from [unlinkedHandles].
 @ProviderFor(unlinkedHandles)
@@ -31,11 +31,11 @@ final unlinkedHandlesProvider =
 // ignore: unused_element
 typedef UnlinkedHandlesRef = AutoDisposeFutureProviderRef<List<UnlinkedHandle>>;
 String _$availableParticipantsHash() =>
-    r'a6567b296a2f81a6c7462a8692ec562156b908d7';
+    r'48f85f661ada58447cc10e10c51a758c2dace953';
 
 /// Provider that gets all available participants for linking.
 ///
-/// Handle counts merge working-DB addressbook links with overlay manual links.
+/// Handle counts merge graph contact links with overlay manual links.
 ///
 /// Copied from [availableParticipants].
 @ProviderFor(availableParticipants)
@@ -54,7 +54,7 @@ final availableParticipantsProvider =
 // ignore: unused_element
 typedef AvailableParticipantsRef =
     AutoDisposeFutureProviderRef<List<AvailableParticipant>>;
-String _$manualLinkingHash() => r'7add33d6eb97507c3c4189b96702c08a1a52fc46';
+String _$manualLinkingHash() => r'6d3394330c60bd83efceba89c3b68425a40e91c5';
 
 /// Provider for manual linking operations
 ///

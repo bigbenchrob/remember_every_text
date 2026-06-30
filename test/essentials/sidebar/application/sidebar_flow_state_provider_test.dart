@@ -1,8 +1,12 @@
+import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/db/feature_level_providers/working_db_populated_provider.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
+    show overlayDatabaseProvider;
+import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
 import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
@@ -103,38 +107,91 @@ void main() {
     );
   });
 
+  group('SidebarFlowNavigationPreference', () {
+    test('serializes restorable contact navigation context', () {
+      final preference = SidebarFlowNavigationPreference.fromState(
+        SidebarFlowState(
+          topMenuChoice: TopChatMenuChoice.contacts,
+          chosenContactId: 42,
+          selectedHandleId: 7,
+          scrollToDate: DateTime(2026, 6, 1),
+        ),
+      );
+      final restored = SidebarFlowNavigationPreference.fromStorage(
+        preference.storageValue,
+      );
+
+      expect(restored?.state.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(restored?.state.chosenContactId, 42);
+      expect(restored?.state.selectedHandleId, 7);
+      expect(restored?.state.scrollToDate, isNull);
+      expect(
+        restored?.state.contactProjection,
+        SidebarFlowContactProjection.allMessages,
+      );
+    });
+
+    test('serializes restorable conversation navigation context', () {
+      final preference = SidebarFlowNavigationPreference.fromState(
+        const SidebarFlowState(
+          topMenuChoice: TopChatMenuChoice.conversations,
+          selectedConversationId: 8796093022216,
+          selectedConversationAnchorMessageId: 8796093170832,
+          selectedConversationSearchQuery: 'flower',
+        ),
+      );
+      final restored = SidebarFlowNavigationPreference.fromStorage(
+        preference.storageValue,
+      );
+
+      expect(restored?.state.topMenuChoice, TopChatMenuChoice.conversations);
+      expect(restored?.state.selectedConversationId, 8796093022216);
+      expect(restored?.state.selectedConversationAnchorMessageId, isNull);
+      expect(restored?.state.selectedConversationSearchQuery, isNull);
+    });
+  });
+
   group('sidebarFlowProvider', () {
     late ProviderContainer container;
+    late OverlayDatabase overlayDb;
 
     setUp(() {
+      overlayDb = OverlayDatabase(NativeDatabase.memory());
       container = ProviderContainer(
         overrides: [
-          workingDbPopulatedProvider.overrideWith(
-            _AlwaysPopulatedWorkingDb.new,
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
           ),
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
         ],
       );
     });
 
-    tearDown(() {
+    tearDown(() async {
       container.dispose();
+      await overlayDb.close();
     });
 
-    test('default state projects the conversation browser', () {
+    test('default conversations state waits for sidebar selection', () {
       final flowState = container.read(sidebarFlowProvider);
       final rack = container.read(
         cassetteRackStateProvider(SidebarMode.messages),
       );
 
       expect(flowState.topMenuChoice, defaultTopChatMenuChoice);
-      expect(
-        flowState.projectedCenterSpec,
-        const ViewSpec.messages(MessagesSpec.conversationBrowser()),
-      );
+      expect(flowState.projectedCenterSpec, isNull);
       expect(
         rack.cassettes.first,
         const CassetteSpec.sidebarUtility(
           SidebarUtilityCassetteSpec.topChatMenu(),
+        ),
+      );
+      expect(
+        rack.cassettes,
+        contains(
+          const CassetteSpec.messages(
+            MessagesCassetteSpec.conversationSignatures(),
+          ),
         ),
       );
     });
@@ -174,16 +231,26 @@ void main() {
           rack.cassettes,
           const ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
         );
-        final chosenInfoIndex = _contactsInfoSpecIndex(
+        final messageScopeIndex = _contactSpecIndex(
           rack.cassettes,
-          const ContactsInfoCassetteSpec.infoCard(
-            key: ContactsInfoKey.chosenContact,
-            chosenContactId: 42,
-          ),
+          const ContactsCassetteSpec.messageScopeToggle(contactId: 42),
         );
 
         expect(selectionControlIndex, lessThan(heroIndex));
-        expect(heroIndex, lessThan(chosenInfoIndex));
+        expect(heroIndex, lessThan(messageScopeIndex));
+        expect(
+          rack.cassettes,
+          isNot(
+            contains(
+              const CassetteSpec.contactsInfo(
+                ContactsInfoCassetteSpec.infoCard(
+                  key: ContactsInfoKey.chosenContact,
+                  chosenContactId: 42,
+                ),
+              ),
+            ),
+          ),
+        );
         expect(
           rack.cassettes,
           contains(
@@ -228,7 +295,7 @@ void main() {
       );
     });
 
-    test('conversations top menu projects conversation browser', () {
+    test('conversations top menu waits for sidebar selection', () {
       container
           .read(sidebarFlowProvider.notifier)
           .topMenuChanged(
@@ -236,9 +303,169 @@ void main() {
             cassetteIndex: 0,
           );
 
+      expect(container.read(sidebarFlowProvider).projectedCenterSpec, isNull);
+    });
+
+    test(
+      'contacts top menu restores persisted contact and projection context',
+      () async {
+        await overlayDb.writeOverlaySetting(
+          settingKey: sidebarContactContextOverlaySettingKey,
+          settingValue: const SidebarContactContextPreference(
+            contactId: 42,
+            projection: SidebarFlowContactProjection.conversations,
+          ).storageValue,
+        );
+
+        await container
+            .read(sidebarFlowProvider.notifier)
+            .topMenuChangedRestoringContactContext(
+              choice: TopChatMenuChoice.contacts,
+              cassetteIndex: 0,
+            );
+
+        final flowState = container.read(sidebarFlowProvider);
+        final rack = container.read(
+          cassetteRackStateProvider(SidebarMode.messages),
+        );
+
+        expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+        expect(flowState.chosenContactId, 42);
+        expect(
+          flowState.contactProjection,
+          SidebarFlowContactProjection.conversations,
+        );
+        expect(
+          rack.cassettes,
+          contains(
+            const CassetteSpec.contacts(
+              ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
+            ),
+          ),
+        );
+        expect(
+          rack.cassettes,
+          contains(
+            const CassetteSpec.messages(
+              MessagesCassetteSpec.heatMap(contactId: 42),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('contact projection changes persist contact context', () async {
+      final flow = container.read(sidebarFlowProvider.notifier);
+
+      flow.showContactConversationNavigator(contactId: 42);
+      await _expectOverlaySetting(
+        overlayDb,
+        sidebarContactContextOverlaySettingKey,
+        '42|conversations',
+      );
+
+      flow.showContactTimelineAt(contactId: 42);
+      await _expectOverlaySetting(
+        overlayDb,
+        sidebarContactContextOverlaySettingKey,
+        '42|all_messages',
+      );
+    });
+
+    testWidgets('startup restores persisted sidebar flow navigation context', (
+      tester,
+    ) async {
+      await overlayDb.writeOverlaySetting(
+        settingKey: sidebarFlowNavigationOverlaySettingKey,
+        settingValue: SidebarFlowNavigationPreference.fromState(
+          const SidebarFlowState(
+            topMenuChoice: TopChatMenuChoice.contacts,
+            chosenContactId: 42,
+            selectedHandleId: 7,
+          ),
+        ).storageValue,
+      );
+      await _mountMessagesPanelReconciliation(tester, container);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+
+      final flowState = container.read(sidebarFlowProvider);
+      final rack = container.read(
+        cassetteRackStateProvider(SidebarMode.messages),
+      );
+
+      expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(flowState.chosenContactId, 42);
+      expect(flowState.selectedHandleId, 7);
       expect(
-        container.read(sidebarFlowProvider).projectedCenterSpec,
-        equals(const ViewSpec.messages(MessagesSpec.conversationBrowser())),
+        flowState.projectedCenterSpec,
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.forContact(contactId: 42, filterHandleId: 7),
+          ),
+        ),
+      );
+      expect(
+        rack.cassettes.first,
+        const CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(
+            selectedChoice: TopChatMenuChoice.contacts,
+          ),
+        ),
+      );
+      expect(
+        rack.cassettes,
+        contains(
+          const CassetteSpec.contacts(
+            ContactsCassetteSpec.contactSelectionControl(chosenContactId: 42),
+          ),
+        ),
+      );
+    });
+
+    test('selected conversation derives conversation center spec', () {
+      container
+          .read(sidebarFlowProvider.notifier)
+          .selectConversation(conversationId: 8796093022216);
+
+      final flowState = container.read(sidebarFlowProvider);
+
+      expect(flowState.topMenuChoice, TopChatMenuChoice.conversations);
+      expect(flowState.selectedConversationId, 8796093022216);
+      expect(
+        flowState.projectedCenterSpec,
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.forConversation(conversationId: 8796093022216),
+          ),
+        ),
+      );
+    });
+
+    test('selected contact conversation derives center spec', () {
+      container
+          .read(sidebarFlowProvider.notifier)
+          .selectContactConversation(
+            contactId: 42,
+            conversationId: 8796093022216,
+          );
+
+      final flowState = container.read(sidebarFlowProvider);
+
+      expect(flowState.topMenuChoice, TopChatMenuChoice.contacts);
+      expect(flowState.chosenContactId, 42);
+      expect(
+        flowState.contactProjection,
+        SidebarFlowContactProjection.conversations,
+      );
+      expect(flowState.selectedConversationId, 8796093022216);
+      expect(
+        flowState.projectedCenterSpec,
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.forConversation(conversationId: 8796093022216),
+          ),
+        ),
       );
     });
 
@@ -409,7 +636,7 @@ void main() {
     );
 
     testWidgets(
-      'contactChosen removes stale hero, info, and filter specs when replacing contact',
+      'contactChosen removes obsolete hero and filter specs when replacing contact',
       (tester) async {
         await _mountMessagesPanelReconciliation(tester, container);
 
@@ -417,7 +644,7 @@ void main() {
 
         _switchToContacts(container);
         flow.contactChosen(contactId: 41, infoCardIndex: 1);
-        flow.handleSelected(contactId: 41, handleId: 7, cassetteIndex: 5);
+        flow.handleSelected(contactId: 41, handleId: 7, cassetteIndex: 4);
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
 
         await _flushMessagesPanelReconciliation(tester);
@@ -439,17 +666,6 @@ void main() {
           contains(
             const CassetteSpec.contacts(
               ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
-            ),
-          ),
-        );
-        expect(
-          rack.cassettes,
-          contains(
-            const CassetteSpec.contactsInfo(
-              ContactsInfoCassetteSpec.infoCard(
-                key: ContactsInfoKey.chosenContact,
-                chosenContactId: 42,
-              ),
             ),
           ),
         );
@@ -528,7 +744,7 @@ void main() {
 
       _switchToContacts(container);
       flow.contactChosen(contactId: 42, infoCardIndex: 1);
-      flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 5);
+      flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 4);
 
       await _flushMessagesPanelReconciliation(tester);
 
@@ -542,7 +758,7 @@ void main() {
       expect(flowState.selectedHandleId, 7);
       expect(flowState.messageScope, SidebarFlowMessageScope.regular);
       expect(
-        rack.cassettes[5],
+        rack.cassettes[4],
         equals(
           const CassetteSpec.contacts(
             ContactsCassetteSpec.handleFilter(
@@ -574,7 +790,7 @@ void main() {
         flow.setContactMessageScope(
           contactId: 42,
           messageScope: SidebarFlowMessageScope.recoveredDeleted,
-          cassetteIndex: 4,
+          cassetteIndex: 3,
         );
 
         await _flushMessagesPanelReconciliation(tester);
@@ -596,7 +812,7 @@ void main() {
         flow.setContactMessageScope(
           contactId: 42,
           messageScope: SidebarFlowMessageScope.regular,
-          cassetteIndex: 4,
+          cassetteIndex: 3,
         );
 
         await _flushMessagesPanelReconciliation(tester);
@@ -624,7 +840,7 @@ void main() {
 
         _switchToContacts(container);
         flow.contactChosen(contactId: 42, infoCardIndex: 1);
-        flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 5);
+        flow.handleSelected(contactId: 42, handleId: 7, cassetteIndex: 4);
         flow.showContactTimelineAt(contactId: 42, scrollToDate: anchorDate);
 
         await _flushMessagesPanelReconciliation(tester);
@@ -741,6 +957,54 @@ void main() {
       );
     });
 
+    testWidgets('stray handle lens derives handle lens center spec', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .openStrayHandleLens(handleId: 7);
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      final flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.strayHandles);
+      expect(flowState.selectedHandleEvidenceId, 7);
+      expect(
+        flowState.selectedHandleEvidenceKind,
+        SidebarFlowHandleEvidenceKind.lens,
+      );
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(const ViewSpec.messages(MessagesSpec.handleLens(handleId: 7))),
+      );
+    });
+
+    testWidgets('handle messages derive standalone handle center spec', (
+      tester,
+    ) async {
+      await _mountMessagesPanelReconciliation(tester, container);
+
+      container
+          .read(sidebarFlowProvider.notifier)
+          .openHandleMessages(handleId: 9001);
+
+      await _flushMessagesPanelReconciliation(tester);
+
+      final flowState = container.read(sidebarFlowProvider);
+      expect(flowState.topMenuChoice, TopChatMenuChoice.strayHandles);
+      expect(flowState.selectedHandleEvidenceId, 9001);
+      expect(
+        flowState.selectedHandleEvidenceKind,
+        SidebarFlowHandleEvidenceKind.messages,
+      );
+      expect(
+        _activeSpec(container, WindowPanel.center),
+        equals(const ViewSpec.messages(MessagesSpec.forHandle(handleId: 9001))),
+      );
+    });
+
     testWidgets(
       'showRecoveredDeletedAt stores month anchor in projected center spec',
       (tester) async {
@@ -840,16 +1104,23 @@ int _contactSpecIndex(List<CassetteSpec> cassettes, ContactsCassetteSpec spec) {
   return index;
 }
 
-int _contactsInfoSpecIndex(
-  List<CassetteSpec> cassettes,
-  ContactsInfoCassetteSpec spec,
-) {
-  final index = cassettes.indexOf(CassetteSpec.contactsInfo(spec));
-  expect(index, greaterThanOrEqualTo(0));
-  return index;
+Future<void> _expectOverlaySetting(
+  OverlayDatabase overlayDb,
+  String key,
+  String expectedValue,
+) async {
+  for (var attempt = 0; attempt < 10; attempt += 1) {
+    final value = await overlayDb.readOverlaySetting(key);
+    if (value == expectedValue) {
+      expect(value, expectedValue);
+      return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+  }
+  expect(await overlayDb.readOverlaySetting(key), expectedValue);
 }
 
-class _AlwaysPopulatedWorkingDb extends WorkingDbPopulated {
+class _AlwaysPopulatedGraph extends ConversationGraphPopulated {
   @override
   bool build() {
     return true;

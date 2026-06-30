@@ -33,6 +33,7 @@ class ConversationMessage {
     this.senderHandleId,
     this.senderCanonicalHandleId,
     this.senderDisplayHandle,
+    this.senderRawHandleLabel,
     this.semanticKind,
     this.itemKind,
     this.isSystemMessage = false,
@@ -52,6 +53,7 @@ class ConversationMessage {
   final int? senderHandleId;
   final int? senderCanonicalHandleId;
   final String? senderDisplayHandle;
+  final String? senderRawHandleLabel;
   final String? semanticKind;
   final String? itemKind;
   final bool isSystemMessage;
@@ -60,6 +62,18 @@ class ConversationMessage {
   final bool hasMessageSummaryInfo;
   final bool hasPayloadDataSource;
   final int? errorCode;
+}
+
+class ConversationMessageTimelineEntry {
+  const ConversationMessageTimelineEntry({
+    required this.messageId,
+    required this.dateUtc,
+    required this.monthKey,
+  });
+
+  final int messageId;
+  final String? dateUtc;
+  final String? monthKey;
 }
 
 class ConversationMessageTextMatch {
@@ -86,4 +100,26 @@ class ConversationMessageTextSnippet {
   final int messageId;
   final String? dateUtc;
   final String text;
+}
+
+class ConversationActivityTrace {
+  const ConversationActivityTrace({
+    required this.conversationId,
+    required this.months,
+  });
+
+  final int conversationId;
+  final List<ConversationActivityMonth> months;
+}
+
+class ConversationActivityMonth {
+  const ConversationActivityMonth({
+    required this.year,
+    required this.month,
+    required this.messageCount,
+  });
+
+  final int year;
+  final int month;
+  final int messageCount;
 }

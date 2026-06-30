@@ -40,7 +40,8 @@ Feature Coordinators
 Wrap any widget with `TooltipWrapper`:
 
 ```dart
-import 'package:remember_this_text/essentials/tooltips/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/tooltips/feature_level_providers.dart'
+    show TooltipSpec, TooltipWrapper;
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_tooltip_spec.dart';
 
 TooltipWrapper(
@@ -176,4 +177,4 @@ lib/
 ## Planning Documents
 
 Development planning artifacts are in:
-`_AGENT_INSTRUCTIONS/agent-per-project/30-NEW-FEATURE-ADDITION/tooltips/`
+`_AGENT_INSTRUCTIONS/agent-per-project/45-NEW-FEATURE-ADDITION/tooltips/`

@@ -44,10 +44,10 @@ class SettingsCassetteCoordinator extends _$SettingsCassetteCoordinator {
       resetMessageDataPanel: () => ref
           .read(resetMessageDataSettingsResolverProvider.notifier)
           .resolve(cassetteIndex: cassetteIndex),
-      textSizePlaceholder: () => ref
+      textSizeInfo: () => ref
           .read(settingsInfoResolverProvider.notifier)
           .resolve(title: 'Text Size', bodyText: 'Coming soon'),
-      imageSizePlaceholder: () => ref
+      imageSizeInfo: () => ref
           .read(settingsInfoResolverProvider.notifier)
           .resolve(title: 'Image Size', bodyText: 'Coming soon'),
       attachmentArchive: () => ref

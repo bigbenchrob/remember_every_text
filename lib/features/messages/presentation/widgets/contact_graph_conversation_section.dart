@@ -1,18 +1,15 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart';
-import '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
-import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
-import '../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../essentials/navigation/feature_level_providers.dart';
-import '../../domain/spec_classes/messages_view_spec.dart';
+import '../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
+import '../../../../essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/contact_conversation_navigation_actions_provider.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/contact_conversation_signatures_provider.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
+import '../../domain/calendar_heatmap_timeline_data.dart';
+import 'calendar_heatmap_timeline_widget.dart';
 
 class ContactGraphConversationSection extends ConsumerWidget {
   const ContactGraphConversationSection({
@@ -28,13 +25,13 @@ class ContactGraphConversationSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final snapshotAsync = ref.watch(
-      contactPageGraphSnapshotProvider(contactId: contactId),
+    final signaturesAsync = ref.watch(
+      contactConversationSignaturesProvider(contactId: contactId),
     );
 
-    return snapshotAsync.when(
-      data: (snapshot) {
-        if (snapshot.conversations.isEmpty) {
+    return signaturesAsync.when(
+      data: (signatureDisplays) {
+        if (signatureDisplays.isEmpty) {
           return _ContactGraphConversationNotice(
             padding: padding,
             title: 'No conversations found',
@@ -44,7 +41,8 @@ class ContactGraphConversationSection extends ConsumerWidget {
         }
 
         return _ContactGraphConversationContent(
-          snapshot: snapshot,
+          contactId: contactId,
+          signatureDisplays: signatureDisplays,
           padding: padding,
           maxHeight: maxHeight,
         );
@@ -106,12 +104,14 @@ class _ContactGraphConversationNotice extends ConsumerWidget {
 
 class _ContactGraphConversationContent extends ConsumerStatefulWidget {
   const _ContactGraphConversationContent({
-    required this.snapshot,
+    required this.contactId,
+    required this.signatureDisplays,
     required this.padding,
     required this.maxHeight,
   });
 
-  final ContactGraphSnapshot snapshot;
+  final int contactId;
+  final List<ConversationSignatureDisplayModel> signatureDisplays;
   final EdgeInsetsGeometry padding;
   final double maxHeight;
 
@@ -122,120 +122,46 @@ class _ContactGraphConversationContent extends ConsumerStatefulWidget {
 
 class _ContactGraphConversationContentState
     extends ConsumerState<_ContactGraphConversationContent> {
-  var _showInfo = false;
-
   @override
   Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final conversations = widget.snapshot.conversations;
-    final totalMessages = conversations.fold<int>(
-      0,
-      (total, conversation) => total + conversation.messageCount,
-    );
-    final totalAttachments = conversations.fold<int>(
-      0,
-      (total, conversation) => total + conversation.attachmentCount,
-    );
-    final activity = widget.snapshot.messageActivity;
+    final cardStyle = _conversationSignatureCardStyle(colors, typography);
+    final signatureDisplays = widget.signatureDisplays;
 
     return Padding(
       padding: widget.padding,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.messagePanels.supportSurface,
-          border: Border.all(color: colors.messagePanels.cardBorder),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('Conversations', style: typography.title3),
-                  ),
-                  CupertinoButton(
-                    minimumSize: const Size.square(22),
-                    padding: EdgeInsets.zero,
-                    onPressed: () {
-                      setState(() {
-                        _showInfo = !_showInfo;
-                      });
-                    },
-                    child: Icon(
-                      _showInfo
-                          ? CupertinoIcons.info_circle_fill
-                          : CupertinoIcons.info_circle,
-                      size: 16,
-                      color: colors.content.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              if (_showInfo) ...[
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
-                  children: [
-                    Text(
-                      '${_formatCount(conversations.length)} conversations',
-                      style: typography.caption1,
-                    ),
-                    Text(
-                      '${_formatCount(totalMessages)} messages',
-                      style: typography.caption1,
-                    ),
-                    if (totalAttachments > 0)
-                      Text(
-                        '${_formatCount(totalAttachments)} attachments',
-                        style: typography.caption1,
-                      ),
-                    if (activity != null)
-                      Text(
-                        _formatDateRange(activity),
-                        style: typography.caption1,
-                      ),
-                  ],
+      child: SizedBox(
+        width: double.infinity,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: widget.maxHeight),
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: signatureDisplays.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final signature = signatureDisplays[index];
+              return ConversationSignatureCard(
+                signature: _toCardData(signature),
+                style: cardStyle,
+                monthColorForMessageCount:
+                    _conversationMonthColorForMessageCount,
+                trailing: ConversationFavouriteButton(
+                  conversationId: signature.conversationId,
                 ),
-              ],
-              const SizedBox(height: 10),
-              ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: widget.maxHeight),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: conversations.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final conversation = conversations[index];
-                    return _ContactConversationRow(
-                      conversation: conversation,
-                      onPressed: () {
-                        ref
-                            .read(
-                              panelsViewStateProvider(
-                                SidebarMode.messages,
-                              ).notifier,
-                            )
-                            .show(
-                              panel: WindowPanel.center,
-                              spec: ViewSpec.messages(
-                                MessagesSpec.forConversation(
-                                  conversationId: conversation.conversationId,
-                                ),
-                              ),
-                            );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+                onPressed: () {
+                  ref
+                      .read(
+                        contactConversationNavigationActionsProvider.notifier,
+                      )
+                      .selectContactConversation(
+                        contactId: widget.contactId,
+                        conversationId: signature.conversationId,
+                      );
+                },
+              );
+            },
           ),
         ),
       ),
@@ -243,110 +169,52 @@ class _ContactGraphConversationContentState
   }
 }
 
-class _ContactConversationRow extends ConsumerWidget {
-  const _ContactConversationRow({
-    required this.conversation,
-    required this.onPressed,
-  });
-
-  final ConversationOverview conversation;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-    final participants = conversation.participantHandles.isEmpty
-        ? 'Unknown participants'
-        : conversation.participantHandles.join(' | ');
-    final latest = _formatDate(conversation.lastMessageAtUtc);
-    final preview = _previewText(conversation.lastMessageText);
-
-    return GestureDetector(
-      onTap: onPressed,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.messagePanels.card,
-          border: Border.all(color: colors.messagePanels.cardBorder),
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                participants,
-                style: typography.headline,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 10,
-                runSpacing: 3,
-                children: [
-                  Text(
-                    conversation.isGroup ? 'group' : 'single',
-                    style: typography.caption2,
-                  ),
-                  Text(
-                    '${conversation.participantCount} participants',
-                    style: typography.caption2,
-                  ),
-                  Text(
-                    '${_formatCount(conversation.messageCount)} messages',
-                    style: typography.caption2,
-                  ),
-                  if (conversation.attachmentCount > 0)
-                    Text(
-                      '${_formatCount(conversation.attachmentCount)} attachments',
-                      style: typography.caption2,
-                    ),
-                  Text('latest: $latest', style: typography.caption2),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                preview,
-                style: typography.caption1,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+ConversationSignatureCardData _toCardData(
+  ConversationSignatureDisplayModel signature,
+) {
+  return ConversationSignatureCardData(
+    conversationId: signature.conversationId,
+    title: signature.title,
+    participantCount: signature.participantCount,
+    messageCount: signature.messageCount,
+    firstMessageAtUtc: signature.firstMessageAtUtc,
+    lastMessageAtUtc: signature.lastMessageAtUtc,
+    activityMonths: signature.activityMonths,
+  );
 }
 
-String _formatCount(int count) {
-  return NumberFormat.decimalPattern().format(count);
+Color _conversationMonthColorForMessageCount(int messageCount) {
+  return calendarHeatmapColorForIntensity(
+    MonthIntensity.fromMessageCount(messageCount),
+  );
 }
 
-String _formatDateRange(ContactMessageActivity activity) {
-  final first = _formatDate(activity.firstMessageAtUtc);
-  final last = _formatDate(activity.lastMessageAtUtc);
-  return '$first to $last';
-}
-
-String _formatDate(String? value) {
-  if (value == null || value.isEmpty) {
-    return 'no date';
-  }
-  final parsed = DateTime.tryParse(value);
-  if (parsed == null) {
-    return value;
-  }
-  return DateFormat.yMMMd().format(parsed.toLocal());
-}
-
-String _previewText(String? value) {
-  final trimmed = value?.trim();
-  if (trimmed == null || trimmed.isEmpty) {
-    return 'preview: no text';
-  }
-  return 'preview: $trimmed';
+ConversationSignatureCardStyle _conversationSignatureCardStyle(
+  ThemeColors colors,
+  ThemeTypography typography,
+) {
+  return ConversationSignatureCardStyle(
+    backgroundColor: colors.surfaces.surface.withValues(alpha: 0.14),
+    hoverBackgroundColor: colors.surfaces.hover,
+    selectedBackgroundColor: colors.surfaces.selected,
+    borderColor: colors.lines.borderSubtle.withValues(alpha: 0),
+    hoverBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.38),
+    selectedBorderColor: colors.accents.selection.withValues(alpha: 0.58),
+    titleStyle: typography.callout.copyWith(
+      color: colors.content.textPrimary,
+      fontWeight: FontWeight.w600,
+    ),
+    selectedTitleStyle: typography.callout.copyWith(
+      color: colors.content.textPrimary,
+      fontWeight: FontWeight.w600,
+    ),
+    participantSuffixStyle: typography.caption.copyWith(
+      color: colors.content.textTertiary.withValues(alpha: 0.68),
+      fontWeight: FontWeight.w500,
+    ),
+    summaryStyle: typography.caption.copyWith(
+      color: colors.content.textTertiary.withValues(alpha: 0.78),
+    ),
+    emptyMonthBorderColor: colors.lines.borderSubtle,
+  );
 }

@@ -2,7 +2,7 @@
 tier: project
 scope: data
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-08
 source_of_truth: code
 links:
   - ../10-DATABASES/00-all-databases-accessed.md
@@ -32,12 +32,13 @@ Current app-owned files/directories include:
 
 | Data | Path | Owner |
 | --- | --- | --- |
-| Import ledger | `macos_import.db` | `sqfliteImportDatabaseProvider`, import pipeline |
-| Working projection | `working.db` | `driftWorkingDatabaseProvider`, migration pipeline |
-| Overlay database | `user_overlays.db` | `overlayDatabaseProvider`, user-intent services |
+| Source-scoped import ledger | `macos_import_ss.db` | Physical construction: `sourceScopedImportDatabaseProvider` in `essentials/db`; ordinary import semantics: `sourceScopedImportLedgerProvider` |
+| Conversation graph projection | `working_ss.db` | `driftConversationGraphDatabaseProvider`, graph projection/readers |
+| Retired import cleanup file | `macos_import.db` | Transitional cleanup file only; no central app provider |
+| Retired working cleanup file | `working.db` | Transitional cleanup file only; no central app provider |
+| Overlay database | `user_overlays.db` | `overlayDatabaseProvider`, user-intent and archive-source metadata services |
 | Attachment archive | `attachment_archive/` | Attachment archive service |
-| Import audit log | `import_log` | Import audit writer |
-| Migration audit log | `migrate_log` | Migration audit writer |
+| Historical import/projection audit logs | `import_log`, `migrate_log` | Historical retired diagnostics; source-scoped graph status is reported through graph lifecycle/health surfaces |
 
 The repository folder may still be named `remember_every_text`; do not confuse
 the repo path with runtime storage paths.
@@ -64,12 +65,19 @@ deployment automation in this repository owns that behavior.
 - Shut down the Flutter app and any tooling before opening SQLite files manually.
 - Use the centralized providers from app code; direct extra SQLite connections
   can lock files.
-- Never manually mutate `macos_import.db`, `working.db`, or `user_overlays.db`
-  as a substitute for importer, migrator, or overlay service behavior.
+- Never manually mutate `macos_import_ss.db`, `working_ss.db`,
+  `macos_import.db`, `working.db`, or `user_overlays.db` as a substitute for
+  source import, graph projection, retired-file cleanup diagnostics, or
+  overlay service behavior.
 
 ## Schema References
 
-- Import DB: `lib/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart`
-- Working DB: `lib/essentials/db/infrastructure/data_sources/local/working/working_database.dart`
+- Physical app database filenames: `lib/essentials/db/app_database_files.dart`
+- Source-scoped import DB provider: `lib/essentials/db/feature_level_providers.dart`
+- Source-scoped import DB implementation: `lib/essentials/source_scoped_import/infrastructure/import_database_provider.dart`
+- Conversation graph DB: `lib/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart`
+- Retired import/working DBs: no live providers or schemas remain; existing
+  `macos_import.db` and `working.db` files are transitional cleanup storage only
+  and may be inspected read-only by diagnostics or removed by reset cleanup.
 - Overlay DB: `lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`
 - High-level summaries: `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md`

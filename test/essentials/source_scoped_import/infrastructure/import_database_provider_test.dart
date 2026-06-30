@@ -114,6 +114,87 @@ void main() {
     expect(rows.single['source_kind'], liveAddressBookSourceKind);
   });
 
+  test('registers historical Messages archive source identity', () async {
+    final sourceId = await importDatabase.getOrCreateSource(
+      sourceKey: '${historicalMessagesArchiveSourceKeyPrefix}archive-a',
+      sourceKind: historicalMessagesArchiveSourceKind,
+      sourceLabel: 'Archive A',
+    );
+
+    expect(sourceId, greaterThan(liveAddressBookSourceId));
+
+    final rows = await importDatabase.database.query(
+      'source_registry',
+      where: 'source_id = ?',
+      whereArgs: <Object?>[sourceId],
+    );
+
+    expect(rows, hasLength(1));
+    expect(
+      rows.single['source_key'],
+      '${historicalMessagesArchiveSourceKeyPrefix}archive-a',
+    );
+    expect(rows.single['source_kind'], historicalMessagesArchiveSourceKind);
+    expect(rows.single['source_label'], 'Archive A');
+  });
+
+  test('reuses existing source id for the same source key', () async {
+    final firstSourceId = await importDatabase.getOrCreateSource(
+      sourceKey: '${historicalMessagesArchiveSourceKeyPrefix}archive-a',
+      sourceKind: historicalMessagesArchiveSourceKind,
+      sourceLabel: 'Archive A',
+    );
+    final secondSourceId = await importDatabase.getOrCreateSource(
+      sourceKey: '${historicalMessagesArchiveSourceKeyPrefix}archive-a',
+      sourceKind: historicalMessagesArchiveSourceKind,
+      sourceLabel: 'Renamed Archive A',
+    );
+
+    expect(secondSourceId, firstSourceId);
+
+    final rows = await importDatabase.database.query(
+      'source_registry',
+      where: 'source_key = ?',
+      whereArgs: <Object?>[
+        '${historicalMessagesArchiveSourceKeyPrefix}archive-a',
+      ],
+    );
+
+    expect(rows, hasLength(1));
+    expect(rows.single['source_label'], 'Archive A');
+  });
+
+  test('allocates distinct source ids for distinct archive sources', () async {
+    final firstSourceId = await importDatabase.getOrCreateSource(
+      sourceKey: '${historicalMessagesArchiveSourceKeyPrefix}archive-a',
+      sourceKind: historicalMessagesArchiveSourceKind,
+    );
+    final secondSourceId = await importDatabase.getOrCreateSource(
+      sourceKey: '${historicalMessagesArchiveSourceKeyPrefix}archive-b',
+      sourceKind: historicalMessagesArchiveSourceKind,
+    );
+
+    expect(firstSourceId, greaterThan(liveAddressBookSourceId));
+    expect(secondSourceId, firstSourceId + 1);
+  });
+
+  test('rejects blank source registration identity', () async {
+    expect(
+      () => importDatabase.getOrCreateSource(
+        sourceKey: ' ',
+        sourceKind: historicalMessagesArchiveSourceKind,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => importDatabase.getOrCreateSource(
+        sourceKey: '${historicalMessagesArchiveSourceKeyPrefix}archive-a',
+        sourceKind: ' ',
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('allows duplicate GUIDs across different source ids', () async {
     final liveBatchId = await importDatabase.insertImportBatch(
       sourceId: liveChatDbSourceId,
@@ -186,6 +267,115 @@ void main() {
     expect(guidIndex['unique'], 0);
   });
 
+  test('reports message cursor and count for one source only', () async {
+    final liveBatchId = await importDatabase.insertImportBatch(
+      sourceId: liveChatDbSourceId,
+      startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    );
+    await _insertSource(importDatabase, sourceId: 3);
+    final archiveBatchId = await importDatabase.insertImportBatch(
+      sourceId: 3,
+      startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    );
+
+    await _insertMessage(
+      importDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 10,
+      guid: 'live-10',
+      batchId: liveBatchId,
+    );
+    await _insertMessage(
+      importDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 20,
+      guid: 'live-20',
+      batchId: liveBatchId,
+    );
+    await _insertMessage(
+      importDatabase,
+      sourceId: 3,
+      sourceRowId: 999,
+      guid: 'archive-999',
+      batchId: archiveBatchId,
+    );
+
+    expect(
+      await importDatabase.maxMessageSourceRowIdForSource(liveChatDbSourceId),
+      20,
+    );
+    expect(await importDatabase.messageCountForSource(liveChatDbSourceId), 2);
+  });
+
+  test('deletes source facts and topology rows for one source only', () async {
+    await _insertSource(importDatabase, sourceId: 3);
+    await _insertSource(importDatabase, sourceId: 4);
+    final archiveBatchId = await importDatabase.insertImportBatch(
+      sourceId: 3,
+      startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    );
+    final otherBatchId = await importDatabase.insertImportBatch(
+      sourceId: 4,
+      startedAtUtc: DateTime.now().toUtc().toIso8601String(),
+    );
+
+    await _insertFullSourceSlice(
+      importDatabase,
+      sourceId: 3,
+      batchId: archiveBatchId,
+    );
+    await _insertFullSourceSlice(
+      importDatabase,
+      sourceId: 4,
+      batchId: otherBatchId,
+    );
+
+    expect(await importDatabase.sourceIdForKey('source-3'), 3);
+
+    final deletionResult = await importDatabase.deleteRowsForSource(
+      sourceId: 3,
+    );
+
+    expect(deletionResult.messages, 1);
+    expect(deletionResult.chats, 1);
+    expect(deletionResult.handles, 1);
+    expect(deletionResult.contacts, 1);
+    expect(deletionResult.contactChannels, 1);
+    expect(deletionResult.attachments, 1);
+    expect(deletionResult.chatMessageEdges, 1);
+    expect(deletionResult.chatHandleEdges, 1);
+    expect(deletionResult.messageAttachmentEdges, 1);
+    expect(deletionResult.importBatches, 1);
+    expect(deletionResult.deletedSourceFactCount, 6);
+    expect(deletionResult.deletedTopologyEdgeCount, 3);
+
+    for (final tableName in <String>[
+      'messages',
+      'chats',
+      'handles',
+      'contacts',
+      'contact_channels',
+      'attachments',
+      'chat_to_message',
+      'chat_to_handle',
+      'message_to_attachment',
+      'import_batches',
+    ]) {
+      expect(
+        await _countRowsForSource(importDatabase, tableName, sourceId: 3),
+        0,
+        reason: '$tableName should be deleted for source 3',
+      );
+      expect(
+        await _countRowsForSource(importDatabase, tableName, sourceId: 4),
+        1,
+        reason: '$tableName should remain for source 4',
+      );
+    }
+
+    expect(await importDatabase.sourceIdForKey('source-3'), 3);
+  });
+
   test('creates chats and chat_to_message topology schema', () async {
     final handleColumns = await importDatabase.database.rawQuery(
       'PRAGMA table_info(handles)',
@@ -255,7 +445,6 @@ void main() {
       'source_id',
       'source_rowid',
       'display_name',
-      'short_name',
       'first_name',
       'last_name',
       'organization',
@@ -304,6 +493,24 @@ void main() {
     );
 
     expect(guidIndex['unique'], 0);
+  });
+
+  test('creates incremental topology projection cursor indexes', () async {
+    final chatMessageIndexes = await importDatabase.database.rawQuery(
+      'PRAGMA index_list(chat_to_message)',
+    );
+    final attachmentIndexes = await importDatabase.database.rawQuery(
+      'PRAGMA index_list(message_to_attachment)',
+    );
+
+    expect(
+      chatMessageIndexes.map((row) => row['name']),
+      contains('idx_chat_to_message_source_message_cursor'),
+    );
+    expect(
+      attachmentIndexes.map((row) => row['name']),
+      contains('idx_message_to_attachment_source_message_cursor'),
+    );
   });
 
   test('allows duplicate chat GUIDs across different source ids', () async {
@@ -477,4 +684,123 @@ Future<void> _insertAttachment(
     'guid': guid,
     'batch_id': batchId,
   });
+}
+
+Future<void> _insertFullSourceSlice(
+  ImportDatabase importDatabase, {
+  required int sourceId,
+  required int batchId,
+}) async {
+  const sourceRowId = 10;
+  const chatRowId = 20;
+  const handleRowId = 30;
+  const contactRowId = 40;
+  const attachmentRowId = 50;
+  final messageSsId = SourceScopedRowKey.pack(
+    sourceId: sourceId,
+    sourceRowId: sourceRowId,
+  );
+  final chatSsId = SourceScopedRowKey.pack(
+    sourceId: sourceId,
+    sourceRowId: chatRowId,
+  );
+  final handleSsId = SourceScopedRowKey.pack(
+    sourceId: sourceId,
+    sourceRowId: handleRowId,
+  );
+  final contactSsId = SourceScopedRowKey.pack(
+    sourceId: sourceId,
+    sourceRowId: contactRowId,
+  );
+  final attachmentSsId = SourceScopedRowKey.pack(
+    sourceId: sourceId,
+    sourceRowId: attachmentRowId,
+  );
+
+  await _insertMessage(
+    importDatabase,
+    sourceId: sourceId,
+    sourceRowId: sourceRowId,
+    guid: 'message-$sourceId',
+    batchId: batchId,
+  );
+  await _insertChat(
+    importDatabase,
+    sourceId: sourceId,
+    sourceRowId: chatRowId,
+    guid: 'chat-$sourceId',
+    batchId: batchId,
+  );
+  await importDatabase.database.insert('handles', <String, Object?>{
+    'ss_id': handleSsId,
+    'source_id': sourceId,
+    'source_rowid': handleRowId,
+    'id': 'handle-$sourceId',
+    'batch_id': batchId,
+  });
+  await importDatabase.database.insert('contacts', <String, Object?>{
+    'ss_id': contactSsId,
+    'source_id': sourceId,
+    'source_rowid': contactRowId,
+    'display_name': 'Contact $sourceId',
+    'batch_id': batchId,
+  });
+  await importDatabase.database.insert('contact_channels', <String, Object?>{
+    'source_id': sourceId,
+    'source_contact_rowid': contactRowId,
+    'contact_ss_id': contactSsId,
+    'kind': 'phone',
+    'value': 'handle-$sourceId',
+    'batch_id': batchId,
+  });
+  await _insertAttachment(
+    importDatabase,
+    sourceId: sourceId,
+    sourceRowId: attachmentRowId,
+    guid: 'attachment-$sourceId',
+    batchId: batchId,
+  );
+  await importDatabase.database.insert('chat_to_message', <String, Object?>{
+    'ss_id': SourceScopedRowKey.pack(sourceId: sourceId, sourceRowId: 60),
+    'source_id': sourceId,
+    'source_rowid': 60,
+    'source_chat_rowid': chatRowId,
+    'source_message_rowid': sourceRowId,
+    'chat_ss_id': chatSsId,
+    'message_ss_id': messageSsId,
+  });
+  await importDatabase.database.insert('chat_to_handle', <String, Object?>{
+    'source_id': sourceId,
+    'source_chat_rowid': chatRowId,
+    'source_handle_rowid': handleRowId,
+    'chat_ss_id': chatSsId,
+    'handle_ss_id': handleSsId,
+    'batch_id': batchId,
+  });
+  await importDatabase.database
+      .insert('message_to_attachment', <String, Object?>{
+        'message_source_id': sourceId,
+        'attachment_source_id': sourceId,
+        'source_message_rowid': sourceRowId,
+        'source_attachment_rowid': attachmentRowId,
+        'message_ss_id': messageSsId,
+        'attachment_ss_id': attachmentSsId,
+        'batch_id': batchId,
+      });
+}
+
+Future<int> _countRowsForSource(
+  ImportDatabase importDatabase,
+  String tableName, {
+  required int sourceId,
+}) async {
+  final whereColumn = switch (tableName) {
+    'message_to_attachment' => 'message_source_id',
+    _ => 'source_id',
+  };
+  final rows = await importDatabase.database.rawQuery(
+    'SELECT COUNT(*) AS row_count FROM $tableName WHERE $whereColumn = ?',
+    <Object?>[sourceId],
+  );
+  return rows.single['row_count'] as int? ?? 0;
 }

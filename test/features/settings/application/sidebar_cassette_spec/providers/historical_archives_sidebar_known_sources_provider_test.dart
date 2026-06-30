@@ -1,45 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import 'package:remember_this_text/features/settings/application/historical_archive_sources.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/providers/historical_archives_sidebar_known_sources_provider.dart';
 
 void main() {
   group('buildHistoricalArchiveSidebarKnownSources', () {
     test('returns empty when no persisted archive source exists', () {
       final summaries = buildHistoricalArchiveSidebarKnownSources(
-        records: const [],
+        sources: const [],
       );
 
       expect(summaries, isEmpty);
     });
 
     test('builds a sidebar summary from persisted archive source metadata', () {
-      const records = [
-        HistoricalArchiveSourceRecord(
-          sourceChatDb: '/tmp/Archive-2017/chat.db',
-          folderPath: '/tmp/Archive-2017',
+      const sources = [
+        HistoricalArchiveSourceMetadata(
           sourceLabel: 'Archive-2017',
-          chatDbStatusLabel: 'Found and readable',
-          attachmentsStatusLabel: 'Found',
           preflightStatusLabel: 'Preflight complete',
-          preflightDetail: 'Source checks succeeded.',
           totalMessages: 42,
-          totalChats: 2,
-          totalHandles: 10,
-          missingGuids: 1,
           earliestMessageUtc: '2017-01-03T00:00:00.000Z',
           latestMessageUtc: '2017-01-05T00:00:00.000Z',
           dryRunNewMessages: 10,
           dryRunDuplicateMessages: 32,
-          lastImportBatchId: 8,
           lastImportFinishedAtUtc: '2026-04-29T18:30:00.000Z',
           lastImportSuccess: true,
+          lastImportError: null,
           lastImportedMessageCount: 10,
-          updatedAtUtc: '2026-04-29T18:30:00.000Z',
         ),
       ];
 
       final summaries = buildHistoricalArchiveSidebarKnownSources(
-        records: records,
+        sources: sources,
       );
 
       expect(summaries, hasLength(1));

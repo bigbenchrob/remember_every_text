@@ -7,7 +7,7 @@ part of 'chat_handle_join_importer_provider.dart';
 // **************************************************************************
 
 String _$chatHandleJoinImporterHash() =>
-    r'2a23ef00688dfc5352898a6afa7dabfa8d02ff66';
+    r'9bc4d2b3d51034ff4f0cbd43fe7170ddab6672bd';
 
 /// See also [chatHandleJoinImporter].
 @ProviderFor(chatHandleJoinImporter)

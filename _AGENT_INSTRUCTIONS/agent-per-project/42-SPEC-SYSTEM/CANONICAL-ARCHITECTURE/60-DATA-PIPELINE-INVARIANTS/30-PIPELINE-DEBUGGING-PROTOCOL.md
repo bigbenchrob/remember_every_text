@@ -2,7 +2,8 @@
 
 ## Purpose
 
-This document defines the required step-by-step process for diagnosing and fixing pipeline issues.
+This document defines the required step-by-step process for diagnosing and
+fixing source-scoped graph pipeline issues.
 
 Agents MUST follow this protocol.
 
@@ -14,43 +15,48 @@ Do not modify data before understanding the failure.
 
 ## 1. Guiding Principles
 
-- The system is invariant-driven
-- Most bugs are invariant violations
-- Symptoms are not root causes
-- Data is evidence, not something to “fix”
+- The system is invariant-driven.
+- Most bugs are invariant violations.
+- Symptoms are not root causes.
+- Data is evidence, not something to "fix".
+- Retired cleanup/diagnostic compatibility paths are not ordinary app authority.
 
 ---
 
 ## 2. High-Level Flow
 
-1. Observe the symptom
-2. Classify the failure mode
-3. Identify violated invariant
-4. Locate the responsible layer
-5. Gather evidence (read-only)
-6. Form hypothesis
-7. Confirm hypothesis
-8. Implement minimal fix
-9. Add regression test
+1. Observe the symptom.
+2. Classify the failure mode.
+3. Identify the violated invariant.
+4. Locate the responsible layer.
+5. Gather evidence read-only.
+6. Form a hypothesis.
+7. Confirm the hypothesis.
+8. Implement the minimal fix.
+9. Add a regression test.
 
 ---
 
-## 3. Step 1 — Observe the Symptom
+## 3. Step 1 — Observe The Symptom
 
 Examples:
 
-- migration failed
-- UI missing data
-- duplicate data visible
-- system appears idle
-- repeated failure loop
+- graph build failed.
+- UI missing data.
+- duplicate data visible.
+- system appears idle after source change.
+- search/heatmap/timeline navigation disagrees with visible rows.
+- attachment evidence missing even though source/graph rows exist.
+- retired storage path appears in an ordinary app surface.
 
 Record:
 
-- exact error message
-- logs
-- timestamps
-- triggering action (startup, poll, import)
+- exact error message.
+- logs.
+- graph status panel values.
+- timestamps.
+- triggering action: startup, poll, import, graph build, archive/recovery,
+  search, or UI navigation.
 
 ---
 
@@ -58,17 +64,19 @@ Record:
 
 Use:
 
-PIPELINE-FAILURE-MODES.md
+`20-PIPELINE-FAILURE-MODES.md`
 
 Select one or more:
 
-- ledger incompleteness
-- projection inconsistency (stale / missing / duplicate)
-- cursor false no-op
-- trigger/orchestration failure
-- authority boundary violation
-- silent tolerance failure
-- recovery gap
+- source-scoped ledger incompleteness.
+- graph projection inconsistency.
+- cursor false no-op.
+- trigger/orchestration failure.
+- authority boundary violation.
+- overlay authority violation.
+- evidence spine violation.
+- retired storage leakage.
+- silent tolerance failure.
 
 Do NOT proceed without classification.
 
@@ -78,33 +86,36 @@ Do NOT proceed without classification.
 
 Use:
 
-PIPELINE-INVARIANTS-CORE.md
+`10-PIPELINE-INVARIANTS-CORE.md`
 
 Examples:
 
-- projection must match source set
-- working.db is derived only
-- migration is sole writer
-- cursor is not sufficient signal
+- `working_ss.db` must match graph projection rules.
+- graph relationships use canonical `ss_id` endpoints.
+- overlay user intent is not projection data.
+- timeline-like evidence scopes use full skeletons, not pagination.
+- source-scoped import is the ordinary source-fact boundary.
 
 State explicitly:
 
-> “Invariant violated: …”
+> "Invariant violated: ..."
 
 ---
 
-## 6. Step 4 — Locate the Layer
+## 6. Step 4 — Locate The Layer
 
 Determine where the problem originates:
 
-- source (chat.db)
-- ledger (macos_import.db)
-- migration
-- projection (working.db)
+- source (`chat.db`, AddressBook, Apple attachment paths)
+- source-scoped ledger (`macos_import_ss.db`)
+- graph projection (`working_ss.db`)
+- overlay merge (`user_overlays.db`)
+- evidence spine scope/skeleton/hydration
+- explicit archive/storage bridge (`macos_import.db`, `working.db`)
 - orchestration / monitor
-- UI
+- UI rendering
 
-Do not guess—verify with evidence.
+Do not guess. Verify with evidence.
 
 ---
 
@@ -114,47 +125,58 @@ This is the most important step.
 
 ### 7.1 Database Inspection
 
-Use SQL only. No writes.
+Use read-only SQL only. No writes.
 
 Typical checks:
 
-- row counts (working vs source)
-- MAX(rowid) vs imported cursor
-- anti-joins to find orphans
-- duplicate detection queries
-- null/invalid identity checks
+- source/import/graph row counts.
+- `MAX(source_rowid)` versus source cursor.
+- graph endpoint anti-joins.
+- duplicate edge detection.
+- missing `ss_id` / invalid identity checks.
+- overlay key form and merge precedence.
 
-### 7.2 Logs
+### 7.2 Logs And Status
 
 Look for:
 
-- startup decisions
-- monitor activity
-- migration start/stop
-- validator failures
+- `ChatDbChangeMonitor` decisions.
+- graph build start/stop/stage timing.
+- source-scoped import counts.
+- graph projection counts.
+- graph health diagnostics.
+- evidence spine scope/skeleton size.
+- explicit archive/storage bridge usage.
 
 ### 7.3 Code Path Tracing
 
 Identify:
 
-- where decisions are made
-- where migration runs
-- where validation occurs
+- where decisions are made.
+- where graph build or explicit archive/storage bridge logic runs.
+- where validation occurs.
+- where evidence scopes are composed.
+- where row hydration is performed.
 
 ---
 
 ## 8. Step 6 — Form Hypothesis
 
-Example:
+Examples:
 
-- “working.db contains stale rows not present in ledger”
-- “startup incorrectly concluded no work due to cursor equality”
-- “migration inserts but does not delete”
+- "`working_ss.db.chat_to_message` is missing edges for imported source rows."
+- "Startup concluded graph was ready from cursor equality, but import count is
+  lower than source count."
+- "A recovered surface is still using retired `working.db` as ordinary
+  authority."
+- "A message-bearing surface uses latest-N hydration instead of a full
+  skeleton."
 
 Hypothesis MUST:
 
-- explain all observed symptoms
-- map to a known failure mode
+- explain all observed symptoms.
+- map to a known failure mode.
+- identify the layer that owns the fix.
 
 ---
 
@@ -162,9 +184,11 @@ Hypothesis MUST:
 
 Confirm using additional read-only checks:
 
-- targeted SQL queries
-- reproducing condition
-- verifying mismatch
+- targeted SQL queries.
+- graph health report.
+- evidence scope/skeleton inspection.
+- focused reproduction.
+- provider dependency tracing.
 
 Do not proceed to fix until confirmed.
 
@@ -174,36 +198,44 @@ Do not proceed to fix until confirmed.
 
 Rules:
 
-- fix logic, not data
-- preserve invariants
-- keep change minimal and localized
+- fix logic, not data.
+- preserve invariants.
+- keep change localized to the owning layer.
 
 Typical fix locations:
 
-- migrator logic
-- trigger/monitor logic
-- validator logic (strengthening only)
+- source-scoped importer.
+- graph projector/build service.
+- graph readiness/health checker.
+- evidence scope/skeleton/hydration provider.
+- overlay merge repository.
+- explicit archive/storage bridge.
+- lifecycle/orchestration service.
 
 DO NOT:
 
-- delete data as a “solution”
-- weaken validation
-- add fallback paths
+- delete data as a "solution".
+- weaken validation.
+- add fallback paths.
+- patch `working_ss.db` or retired `working.db` as the real fix.
+- put SQL/semantic policy in widgets.
 
 ---
 
 ## 11. Step 9 — Add Regression Test
 
-Every fix MUST include a test that:
+Every fix SHOULD include a test that:
 
-- reproduces the failure condition
-- verifies correct behavior after fix
+- reproduces the failure condition.
+- verifies correct behavior after the fix.
 
 Examples:
 
-- stale row removed during migration
-- equal cursor + count mismatch triggers import
-- duplicates prevented
+- graph edge projected after source topology import.
+- equal cursor + count mismatch triggers graph rebuild.
+- duplicate graph edge prevented.
+- overlay display name wins over graph/imported name.
+- evidence scope search matches full skeleton, not visible rows only.
 
 ---
 
@@ -211,19 +243,20 @@ Examples:
 
 Allowed only when:
 
-- user is blocked
-- root cause is already understood
-- fix is being implemented separately
+- user is blocked.
+- root cause is already understood.
+- fix is being implemented separately.
 
 Examples:
 
-- deleting a single stale projection row
+- clearing one corrupt local derived database before a graph rebuild.
 
 Requirements:
 
-- must not touch macos_import.db
-- must be documented
-- must not replace proper fix
+- must not touch Apple source data.
+- must not touch overlay user intent unless user explicitly requests it.
+- must be documented.
+- must not replace the proper fix.
 
 ---
 
@@ -231,39 +264,44 @@ Requirements:
 
 Agents MUST NOT:
 
-- jump to fixes without classification
-- modify DB before understanding issue
-- weaken validators
-- introduce new data paths
-- rely on “seems to work” behavior
+- jump to fixes without classification.
+- modify DB before understanding issue.
+- weaken validators.
+- introduce new data paths.
+- rely on "seems to work" behavior.
+- treat retired cleanup/diagnostic DB files as the ordinary app source.
+- create source-specific message renderers.
 
 ---
 
-## 14. Example (Real Case)
+## 14. Example
 
 Symptom:
 
-- ATTACHMENTS_ROW_MISMATCH (+1 row)
+- Contact heatmap shows full date range, but handle-filtered messages jump to
+  seemingly random months.
 
 Classification:
 
-- projection inconsistency (stale row)
+- evidence spine violation.
 
 Invariant violated:
 
-- projection must match authoritative source set
+- timeline-like scopes must use the full logical selected message universe;
+  pagination is not timeline navigation.
 
 Evidence:
 
-- working.attachments contained row not present in import ledger
+- heatmap used all-contact skeleton while message list used handle-filtered
+  hydration.
 
 Root cause:
 
-- incremental migration did not delete stale rows
+- selected handle was not included in the evidence skeleton scope.
 
 Fix:
 
-- add stale-row cleanup to migrator
+- compose handle-filtered `MessageEvidenceScope` before skeleton construction.
 
 ---
 
@@ -271,11 +309,11 @@ Fix:
 
 Debugging is not:
 
-> “fix the bug”
+> "fix the bug"
 
 It is:
 
-> “identify the violated invariant and restore it”
+> "identify the violated invariant and restore it"
 
 ---
 

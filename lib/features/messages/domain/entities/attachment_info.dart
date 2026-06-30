@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 
 class AttachmentInfo {
   const AttachmentInfo({
@@ -6,8 +6,7 @@ class AttachmentInfo {
     required this.localPath,
     required this.mimeType,
     required this.transferName,
-    this.importAttachmentId,
-    this.messageGuid,
+    this.archiveCompatibilityKey,
     this.mediaWidth,
     this.mediaHeight,
   });
@@ -16,12 +15,18 @@ class AttachmentInfo {
   final String? localPath;
   final String? mimeType;
   final String? transferName;
-  final int? importAttachmentId;
-  final String? messageGuid;
+
+  /// Current archive compatibility key.
+  ///
+  /// This is archive compatibility identity for existing archive records, not
+  /// canonical graph attachment identity.
+  final ArchiveCompatibilityKey? archiveCompatibilityKey;
   final double? mediaWidth;
   final double? mediaHeight;
 
   bool get hasLocalFile => localPath != null && localPath!.isNotEmpty;
+
+  bool get hasArchiveCompatibilityKey => archiveCompatibilityKey != null;
 
   bool get hasDimensions =>
       mediaWidth != null &&
@@ -74,22 +79,5 @@ class AttachmentInfo {
       return false;
     }
     return localPath!.toLowerCase().endsWith('.pluginpayloadattachment');
-  }
-
-  /// Returns the expanded absolute path if the [localPath] begins with `~/`.
-  /// Otherwise, returns [localPath] unchanged.
-  String? resolvedLocalPath() {
-    if (!hasLocalFile) {
-      return null;
-    }
-    final rawPath = localPath!;
-    if (rawPath.startsWith('~/')) {
-      final home = Platform.environment['HOME'] ?? '';
-      if (home.isEmpty) {
-        return rawPath;
-      }
-      return rawPath.replaceFirst('~', home);
-    }
-    return rawPath;
   }
 }

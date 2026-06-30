@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-20
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -10,15 +10,19 @@ links:
   - ./11-rust-message-extractor.md
   - ./02-import-migration-schema-reference.md
   - ../10-DATABASES/01-db-import.md
-  - lib/essentials/db_importers/infrastructure/sqlite/import_context_sqlite.dart
-  - lib/essentials/db_importers/application/importers/messages_importer.dart
-  - lib/essentials/db_importers/domain/base_table_importer.dart
-  - lib/essentials/db_importers/domain/i_importers.dart/table_importer.dart
+  - lib/essentials/source_scoped_import/
 ---
 
-# Table Importers Guide
+# Retired Table Importers Guide
 
-Reference for authoring and maintaining the ledger importers that populate `macos_import.db`. Use this when touching `MessagesImporter`, `ContactsImporter`, or any importer registered with `ImportOrchestrator`.
+Historical reference for the deleted retired ledger importer framework
+that populated `macos_import.db`. Use this only to interpret old logs, old docs,
+or old user data folders.
+
+> Current conformance note (2026-06-08): new ordinary import work must target
+> the source-scoped import spine (`macos_import_ss.db`) and conversation graph
+> build lifecycle. The retired `ImportOrchestrator`, `ImportContext`, and
+> `TableImporter` framework are not present in the current source tree.
 
 ## Importer Anatomy
 
@@ -30,12 +34,13 @@ Each importer must implement `TableImporter` (prefer extending `BaseTableImporte
 - **copy(ctx)**: Transactional `INSERT` work that stages new data in the ledger.
 - **postValidate(ctx)**: Ensures the copy produced correct row counts and referential integrity.
 
-Importers are constructed with the shared `ImportContext` supplied by `ImportOrchestrator.run(...)`.
+Historically, importers were constructed with the shared `ImportContext`
+supplied by `ImportOrchestrator.run(...)`.
 
 ## ImportContext Summary
 
-`ImportContext` (see `import_context_sqlite.dart`) bundles:
-- `importDb`: `SqfliteImportDatabase` handle that exposes ledger helper methods.
+The retired `ImportContext` bundled:
+- `importDb`: `SqfliteImportDatabase` handle that exposes retired ledger helper methods.
 - `messagesDb`, `messagesDbPath`: Live `chat.db` connection and absolute path for shelling out to the Rust extractor.
 - `addressBookDb`: Live AddressBook connection for contact importers.
 - `batchId`: Primary key from `import_batches` for current run.
@@ -44,7 +49,7 @@ Importers are constructed with the shared `ImportContext` supplied by `ImportOrc
 - `extractor`: `MessageExtractorPort` for rich text decoding.
 - `rustExtractionLimit`: Upper bound for extractor batch size (default 200000).
 - `previousMax*RowId` fields: High-water marks that incremental importers can consult.
-- `hasExistingLedgerData`: Signals whether tables already contain rows (important for first-run heuristics).
+- `hasExistingLedgerData`: Signals whether retired tables already contain rows.
 - `scratchpad`: Mutable `Map<String, Object?>` for passing stats between phases (e.g., `messages.richTextApplied`).
 
 ### Convenience Helpers
@@ -54,7 +59,8 @@ Importers are constructed with the shared `ImportContext` supplied by `ImportOrc
 
 ## Execution Lifecycle
 
-When `ImportOrchestrator` runs, each importer goes through three phases:
+When the retired `ImportOrchestrator` ran, each importer went through three
+phases:
 1. **validatePrereqs**
    - Must not mutate data.
    - Verify source row availability, detect duplicate primary keys, check foreign keys.
@@ -84,15 +90,16 @@ When `ImportOrchestrator` runs, each importer goes through three phases:
 
 ## Adding or Modifying Importers
 
-1. Create a new class extending `BaseTableImporter`, implement required methods, and register it in the registry used by `ImportOrchestrator`.
-2. Update unit or integration coverage to exercise `validatePrereqs`, `copy`, and `postValidate` branches.
-3. Document any new ledger tables or columns in `02-import-migration-schema-reference.md`.
-4. Ensure migration counterparts exist so data flows all the way into `working.db` (`migration_orchestrator.dart`).
-5. Run `dart run build_runner build --delete-conflicting-outputs` if annotations are introduced, and execute the import control panel in dry-run mode to validate logs before committing.
+Do not add retired-era importers for ordinary app behavior. New source
+facts belong in `lib/essentials/source_scoped_import/` and should project into
+the conversation graph. If old `macos_import.db` contents matter for
+archive/recovery, treat them as cleanup/audit evidence to migrate, export,
+or intentionally discard. Do not recreate the retired importer framework.
 
 ## Related References
 
 - `./10-import-orchestrator.md` for orchestration details.
 - `./11-rust-message-extractor.md` for the rich text helper binary contract.
 - `../10-DATABASES/10-group-import-working.md` for cross-database responsibilities.
-- `lib/essentials/db_importers/application/importers/messages_importer.dart` as the canonical example importer.
+- Source-scoped importers under `lib/essentials/source_scoped_import/` are the current production examples for new graph-era work.
+- Retired importer descriptions remain historical examples only.

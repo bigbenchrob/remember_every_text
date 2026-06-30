@@ -7,12 +7,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../../../essentials/sidebar/application/sidebar_action_dispatcher.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/presentation/view/sidebar_menu_section_header.dart';
 import '../../../domain/settings_top_menu_row.dart';
 import '../payloads/settings_top_menu_cassette_payload.dart';
+import '../resolver_tools/sidebar_top_menu_actions_provider.dart';
 
 class SettingsTopMenuWidget extends HookConsumerWidget {
   const SettingsTopMenuWidget({super.key, required this.payload});
@@ -25,7 +24,6 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final dispatcher = ref.read(sidebarActionDispatcherProvider.notifier);
     final borderRadius = BorderRadius.circular(8);
     final selectedLabel =
         payload.persistentContextActionId?.label ?? payload.promptLabel;
@@ -42,13 +40,12 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
     Future<void> handleActionSelected(SettingsTopMenuActionRow row) async {
       isOpen.value = false;
 
-      await dispatcher.dispatch(
-        intent: row.intent,
-        context: SidebarActionDispatchContext(
-          sidebarMode: SidebarMode.settings,
-          cassetteIndex: payload.cassetteIndex,
-        ),
-      );
+      await ref
+          .read(sidebarTopMenuActionsProvider.notifier)
+          .selectSettingsMenuRow(
+            row: row,
+            cassetteIndex: payload.cassetteIndex,
+          );
     }
 
     return Column(

@@ -6,16 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
-import '../../../../providers.dart';
-import '../../../debug/application/developer_mode_provider.dart';
-import '../../../incremental_update/application/messages/integrators/import_decision_provider.dart';
-import '../../../incremental_update/application/messages/orchestrators/sync_state_polling_orchestrator_provider.dart';
-import '../../../incremental_update/domain/sealed_unions/import_decision.dart';
-import '../../../incremental_update_ss/presentation/incremental_update_status_sheet.dart';
-import '../../../onboarding/application/onboarding_gate_provider.dart';
+import '../../../app_mode/feature_level_providers.dart'
+    show switchableDarkModeProvider;
+import '../../../conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
+import '../../../debug/feature_level_providers.dart'
+    show DeveloperModeValue, developerModeProvider;
 import '../../../onboarding/domain/onboarding_status.dart';
+import '../../../onboarding/feature_level_providers.dart'
+    show onboardingGateProvider;
 import '../../../onboarding/presentation/onboarding_overlay.dart';
-import '../../../window_state/feature_level_providers.dart';
+import '../../application/app_shell_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/sidebar_mode.dart';
@@ -39,69 +39,29 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   DateTime _lastFrameSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _pendingTrailingFrameSave = false;
 
-  late final ProviderSubscription<AsyncValue<ImportDecision>>
-  _importDecisionSubscription;
-  ImportDecision? _lastImportDecision;
-
   @override
   void initState() {
     super.initState();
-
-    _importDecisionSubscription = ref.listenManual<AsyncValue<ImportDecision>>(
-      importDecisionProvider,
-      (previous, next) {
-        next.when(
-          data: (decision) {
-            if (decision == _lastImportDecision) {
-              return;
-            }
-
-            _lastImportDecision = decision;
-            debugPrint('Shadow import decision changed: $decision');
-          },
-          loading: () {},
-          error: (error, stackTrace) {
-            debugPrint('Shadow import decision failed: $error');
-            debugPrint(stackTrace.toString());
-          },
-        );
-      },
-    );
   }
 
   @override
   void dispose() {
-    _importDecisionSubscription.close();
     _windowFrameDebounce?.cancel();
     super.dispose();
   }
 
-  void _startMessageSnapshotDeltaPolling() {
-    ref.read(deltaRefreshOrchestratorProvider).startPolling();
-  }
-
-  void _stopMessageSnapshotDeltaPolling() {
-    ref.read(deltaRefreshOrchestratorProvider).stopPolling();
-  }
-
-  void _refreshMessageSnapshotDeltaOnce() {
-    unawaited(ref.read(deltaRefreshOrchestratorProvider).refreshOnce());
-  }
-
-  void _showIncrementalUpdateStatus() {
+  void _showConversationGraphStatus() {
     unawaited(
       showMacosSheet<void>(
         context: context,
         barrierDismissible: true,
-        builder: (context) => const IncrementalUpdateStatusSheet(),
+        builder: (context) => const ConversationGraphStatusSheet(),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final windowSvc = ref.watch(windowStateServiceProvider);
-
     // Capture window size/position after each frame (debounced)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final now = DateTime.now();
@@ -110,7 +70,11 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       // Throttle: only allow an immediate save if > 1500ms since last save
       if (elapsed > 1500) {
         _lastFrameSave = now;
-        windowSvc.saveCurrentWindowState(includeSize: false);
+        unawaited(
+          ref
+              .read(appShellActionsProvider.notifier)
+              .saveCurrentWindowState(includeSize: false),
+        );
         _pendingTrailingFrameSave = false;
       } else {
         // Schedule a trailing save 1600ms after last immediate save
@@ -121,7 +85,11 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
           if (_pendingTrailingFrameSave) {
             _lastFrameSave = DateTime.now();
             _pendingTrailingFrameSave = false;
-            windowSvc.saveCurrentWindowState(includeSize: false);
+            unawaited(
+              ref
+                  .read(appShellActionsProvider.notifier)
+                  .saveCurrentWindowState(includeSize: false),
+            );
           }
         });
       }
@@ -131,10 +99,10 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     final showOnboardingOverlay = switch (onboardingStatus) {
       OnboardingStatus.recoveringFailedAttempt ||
       OnboardingStatus.importing ||
-      OnboardingStatus.migrating ||
+      OnboardingStatus.buildingGraph ||
       OnboardingStatus.complete ||
       OnboardingStatus.reimporting ||
-      OnboardingStatus.reimportMigrating ||
+      OnboardingStatus.reimportBuildingGraph ||
       OnboardingStatus.reimportComplete => true,
       _ => false,
     };
@@ -168,30 +136,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               actions: [
                 if (kDebugMode)
                   ToolBarIconButton(
-                    label: 'Start message snapshot polling',
-                    icon: const MacosIcon(CupertinoIcons.play_fill),
-                    onPressed: _startMessageSnapshotDeltaPolling,
-                    showLabel: false,
-                  ),
-                if (kDebugMode)
-                  ToolBarIconButton(
-                    label: 'Stop message snapshot polling',
-                    icon: const MacosIcon(CupertinoIcons.stop_fill),
-                    onPressed: _stopMessageSnapshotDeltaPolling,
-                    showLabel: false,
-                  ),
-                if (kDebugMode)
-                  ToolBarIconButton(
-                    label: 'Refresh shadow incremental update once',
-                    icon: const MacosIcon(CupertinoIcons.arrow_clockwise),
-                    onPressed: _refreshMessageSnapshotDeltaOnce,
-                    showLabel: false,
-                  ),
-                if (kDebugMode)
-                  ToolBarIconButton(
-                    label: 'Source-scoped incremental update status',
+                    label: 'Conversation graph status',
                     icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
-                    onPressed: _showIncrementalUpdateStatus,
+                    onPressed: _showConversationGraphStatus,
                     showLabel: false,
                   ),
                 if (kDebugMode)
@@ -211,7 +158,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                       ),
                       onPressed: () {
                         unawaited(
-                          ref.read(developerModeProvider.notifier).toggleMode(),
+                          ref
+                              .read(appShellActionsProvider.notifier)
+                              .toggleDeveloperMode(),
                         );
                       },
                       showLabel: false,
@@ -237,7 +186,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                     label: tooltip,
                     icon: MacosIcon(icon),
                     onPressed: () {
-                      ref.read(switchableDarkModeProvider.notifier).cycle();
+                      ref
+                          .read(appShellActionsProvider.notifier)
+                          .cycleThemeMode();
                     },
                     showLabel: false,
                   );
@@ -271,8 +222,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   }
 }
 
-// Legacy placeholder widgets removed; dynamic providers now supply content.
-
 class _EndSidebarSyncObserver extends ConsumerWidget {
   const _EndSidebarSyncObserver({required this.mode});
 
@@ -292,7 +241,7 @@ class _EndSidebarSyncObserver extends ConsumerWidget {
         scope.toggleEndSidebar();
         unawaited(
           ref
-              .read(windowStateServiceProvider)
+              .read(appShellActionsProvider.notifier)
               .animateEndSidebarWindowWidth(
                 showing: shouldShow,
                 sidebarWidth: _MacosAppShellState._defaultEndSidebarWidth,

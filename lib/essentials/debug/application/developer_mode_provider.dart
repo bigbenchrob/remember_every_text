@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers.dart';
+import 'developer_mode_store_provider.dart';
 
 part 'developer_mode_provider.g.dart';
 
@@ -26,16 +26,14 @@ enum DeveloperModeValue {
 
 @riverpod
 class DeveloperMode extends _$DeveloperMode {
-  static const String _settingKey = 'developer_mode';
-
   @override
   Future<DeveloperModeValue> build() async {
     if (kReleaseMode) {
       return DeveloperModeValue.user;
     }
 
-    final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-    final rawValue = await overlayDb.readOverlaySetting(_settingKey);
+    final store = await ref.watch(developerModeStoreProvider.future);
+    final rawValue = await store.readMode();
     if (rawValue == null) {
       return DeveloperModeValue.developer;
     }
@@ -50,11 +48,8 @@ class DeveloperMode extends _$DeveloperMode {
     }
 
     state = await AsyncValue.guard(() async {
-      final overlayDb = await ref.read(overlayDatabaseProvider.future);
-      await overlayDb.writeOverlaySetting(
-        settingKey: _settingKey,
-        settingValue: mode.storageValue,
-      );
+      final store = await ref.read(developerModeStoreProvider.future);
+      await store.writeMode(mode.storageValue);
       return mode;
     });
   }

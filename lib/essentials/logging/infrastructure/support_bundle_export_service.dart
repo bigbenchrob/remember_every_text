@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
+
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
-import '../../db/feature_level_providers.dart' show databaseDirectoryPath;
+import '../../db/database_directory.dart';
 import 'log_file_writer.dart';
 
 class SupportBundleExportResult {
@@ -47,14 +49,16 @@ class SupportBundleExportService {
     final diagnosticLogFile = File(
       '${bundleDirectory.path}/diagnostic_report.log',
     );
+    final pipelineAuditLogFiles = _pipelineAuditLogFiles();
     await _writeDiagnosticLog(
       diagnosticLogFile,
       now: now,
       headerLines: headerLines,
+      pipelineAuditLogFiles: pipelineAuditLogFiles,
     );
     attachmentFiles.add(diagnosticLogFile);
 
-    for (final auditLog in _pipelineAuditLogFiles()) {
+    for (final auditLog in pipelineAuditLogFiles.files) {
       final copied = await _copyIfPresent(
         source: auditLog.$2,
         destinationPath:
@@ -70,22 +74,31 @@ class SupportBundleExportService {
       final auditOutput = await _databaseHealthAuditService.writePhase1Report(
         outputDirectoryPath: bundleDirectory.path,
       );
-      attachmentFiles.add(File(auditOutput.reportPath));
-      databaseHealthIncluded = true;
-    } catch (error) {
-      final errorFile = File(
-        '${bundleDirectory.path}/database_health_error.json',
+      final reportFile = File(auditOutput.reportPath);
+      if (_isSafeBundleDiagnosticAttachment(
+        bundleDirectory: bundleDirectory,
+        file: reportFile,
+      )) {
+        attachmentFiles.add(reportFile);
+        databaseHealthIncluded = true;
+      } else {
+        attachmentFiles.add(
+          await _writeDatabaseHealthErrorFile(
+            bundleDirectory: bundleDirectory,
+            message:
+                'Database health report path was rejected because support '
+                'bundles may include only bundle-local diagnostic artifacts.',
+          ),
+        );
+      }
+    } catch (error, stackTrace) {
+      attachmentFiles.add(
+        await _writeDatabaseHealthErrorFile(
+          bundleDirectory: bundleDirectory,
+          message: error.toString(),
+          stackTrace: stackTrace.toString(),
+        ),
       );
-      await errorFile.writeAsString(
-        '${const JsonEncoder.withIndent('  ').convert(<String, Object?>{
-          'generated_at': DateTime.now().toUtc().toIso8601String(),
-          'artifact': 'database_health.json',
-          'status': 'failed',
-          'message': error.toString(),
-          'notes': <String>['Support bundle export continued after database health generation failed.', 'No raw database copies were exported.'],
-        })}\n',
-      );
-      attachmentFiles.add(errorFile);
     }
 
     return SupportBundleExportResult(
@@ -101,6 +114,7 @@ class SupportBundleExportService {
     File exportFile, {
     required DateTime now,
     required List<String> headerLines,
+    required _PipelineAuditLogFiles pipelineAuditLogFiles,
   }) async {
     final sink = exportFile.openWrite();
     sink.write(_buildHeader(now, headerLines: headerLines));
@@ -115,7 +129,11 @@ class SupportBundleExportService {
       file: _writer.prevLogFile,
       title: 'Application Log (Previous Session)',
     );
-    for (final auditLog in _pipelineAuditLogFiles()) {
+    if (pipelineAuditLogFiles.unavailableReason case final reason?) {
+      sink.write('--- Pipeline Audit Logs ---\n');
+      sink.write('$reason\n\n');
+    }
+    for (final auditLog in pipelineAuditLogFiles.files) {
       await _appendFileIfPresent(sink, file: auditLog.$2, title: auditLog.$1);
     }
 
@@ -130,13 +148,58 @@ class SupportBundleExportService {
       ..writeln('macOS: $macosVersion')
       ..writeln('Exported: ${now.toUtc().toIso8601String()}')
       ..writeln(
-        'Contains: diagnostic_report.log, database_health.json when available',
+        'Contains: diagnostic_report.log, active graph health, and retired cleanup inventory when available',
       )
+      ..writeln('No raw database files are included.')
       ..writeln('====================================');
 
     headerLines.forEach(buffer.writeln);
     buffer.writeln();
     return buffer.toString();
+  }
+
+  Future<File> _writeDatabaseHealthErrorFile({
+    required Directory bundleDirectory,
+    required String message,
+    String? stackTrace,
+  }) async {
+    final errorFile = File(
+      '${bundleDirectory.path}/database_health_error.json',
+    );
+    await errorFile.writeAsString(
+      '${const JsonEncoder.withIndent('  ').convert(<String, Object?>{
+        'generated_at': DateTime.now().toUtc().toIso8601String(),
+        'artifact': 'database_health.json',
+        'status': 'failed',
+        'message': message,
+        if (stackTrace != null) 'stack_trace': stackTrace,
+        'notes': <String>['Support bundle export continued after database health generation failed.', 'No raw database copies were exported.'],
+      })}\n',
+    );
+    return errorFile;
+  }
+
+  bool _isSafeBundleDiagnosticAttachment({
+    required Directory bundleDirectory,
+    required File file,
+  }) {
+    if (!_isSafeDiagnosticSourceFile(file)) {
+      return false;
+    }
+
+    final bundleRoot = path.normalize(path.absolute(bundleDirectory.path));
+    final filePath = path.normalize(path.absolute(file.path));
+    final isInsideBundle =
+        path.equals(bundleRoot, path.dirname(filePath)) ||
+        path.isWithin(bundleRoot, filePath);
+    if (!isInsideBundle) {
+      return false;
+    }
+
+    final basename = path.basename(filePath).toLowerCase();
+    return !(basename.endsWith('.db') ||
+        basename.endsWith('.db-wal') ||
+        basename.endsWith('.db-shm'));
   }
 
   Future<void> _appendFileIfPresent(
@@ -147,30 +210,39 @@ class SupportBundleExportService {
     if (!file.existsSync()) {
       return;
     }
+    if (!_isSafeDiagnosticSourceFile(file)) {
+      return;
+    }
 
     sink.write('--- $title ---\n');
     sink.write(await file.readAsString());
     sink.write('\n');
   }
 
-  List<(String, File)> _pipelineAuditLogFiles() {
+  _PipelineAuditLogFiles _pipelineAuditLogFiles() {
     try {
-      return [
-        (
-          'Import Pipeline Audit Log',
-          File('$databaseDirectoryPath/import_log'),
-        ),
-        (
-          'Migration Pipeline Audit Log',
-          File('$databaseDirectoryPath/migrate_log'),
-        ),
-        (
-          'Pipeline Incident Log',
-          File('$databaseDirectoryPath/pipeline_incident_log'),
-        ),
-      ];
-    } catch (_) {
-      return const <(String, File)>[];
+      return _PipelineAuditLogFiles(
+        files: [
+          (
+            'Retired Import Audit Log',
+            File(path.join(databaseDirectoryPath, 'import_log')),
+          ),
+          (
+            'Retired Projection Audit Log',
+            File(path.join(databaseDirectoryPath, 'migrate_log')),
+          ),
+          (
+            'Pipeline Incident Log',
+            File(path.join(databaseDirectoryPath, 'pipeline_incident_log')),
+          ),
+        ],
+      );
+    } catch (error) {
+      return _PipelineAuditLogFiles(
+        files: const <(String, File)>[],
+        unavailableReason:
+            'Pipeline audit log paths could not be resolved: $error',
+      );
     }
   }
 
@@ -181,8 +253,30 @@ class SupportBundleExportService {
     if (!source.existsSync()) {
       return null;
     }
+    if (!_isSafeDiagnosticSourceFile(source)) {
+      return null;
+    }
     return source.copy(destinationPath);
   }
 
+  bool _isSafeDiagnosticSourceFile(File source) {
+    if (FileSystemEntity.typeSync(source.path, followLinks: false) !=
+        FileSystemEntityType.file) {
+      return false;
+    }
+
+    final basename = path.basename(source.path).toLowerCase();
+    return !(basename.endsWith('.db') ||
+        basename.endsWith('.db-wal') ||
+        basename.endsWith('.db-shm'));
+  }
+
   String _pad(int n) => n.toString().padLeft(2, '0');
+}
+
+class _PipelineAuditLogFiles {
+  const _PipelineAuditLogFiles({required this.files, this.unavailableReason});
+
+  final List<(String, File)> files;
+  final String? unavailableReason;
 }

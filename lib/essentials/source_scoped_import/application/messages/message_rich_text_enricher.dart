@@ -1,5 +1,7 @@
-import '../../../db_importers/domain/ports/message_extractor_port.dart';
-import '../../infrastructure/import_database_provider.dart';
+import 'dart:typed_data';
+
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/message_extractor_port.dart';
 
 class MessageRichTextEnrichmentResult {
   const MessageRichTextEnrichmentResult({
@@ -18,22 +20,46 @@ class MessageRichTextEnrichmentResult {
 class MessageRichTextEnricher {
   const MessageRichTextEnricher({
     required this.chatDbPath,
-    required this.importDatabase,
+    required this.importLedger,
     required this.extractor,
     this.extractionLimit = 200000,
   });
 
   final String chatDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
   final MessageExtractorPort extractor;
   final int extractionLimit;
 
   Future<MessageRichTextEnrichmentResult> enrichMissingText() async {
-    final candidates = await importDatabase.database.query(
-      'messages',
-      columns: <String>['ss_id', 'source_rowid'],
-      where: 'text IS NULL AND attributed_body_blob IS NOT NULL',
-      orderBy: 'source_rowid ASC',
+    return _enrichMissingText(sourceId: null, startedAfterSourceRowId: null);
+  }
+
+  Future<MessageRichTextEnrichmentResult> enrichMissingTextAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _enrichMissingText(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
+    );
+  }
+
+  Future<MessageRichTextEnrichmentResult> enrichMissingTextForSource({
+    required int sourceId,
+  }) {
+    return _enrichMissingText(
+      sourceId: sourceId,
+      startedAfterSourceRowId: null,
+    );
+  }
+
+  Future<MessageRichTextEnrichmentResult> _enrichMissingText({
+    required int? sourceId,
+    required int? startedAfterSourceRowId,
+  }) async {
+    final candidates = await importLedger.findMessagesNeedingTextEnrichment(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
     );
 
     if (candidates.isEmpty) {
@@ -45,7 +71,7 @@ class MessageRichTextEnricher {
       );
     }
 
-    final extractorAvailable = await extractor.isAvailable();
+    final extractorAvailable = await extractor.isBlobExtractionAvailable();
     if (!extractorAvailable) {
       return MessageRichTextEnrichmentResult(
         candidateMessageCount: candidates.length,
@@ -55,18 +81,20 @@ class MessageRichTextEnricher {
       );
     }
 
-    final extracted = await extractor.extractAllMessageTexts(
-      limit: extractionLimit,
-      dbPath: chatDbPath,
+    final blobsBySourceRowId = <int, Uint8List>{};
+    for (final candidate in candidates) {
+      blobsBySourceRowId[candidate.sourceRowId] = candidate.attributedBodyBlob;
+    }
+
+    final extracted = await extractor.extractMessageTextsFromBlobs(
+      blobsBySourceRowId,
     );
 
     var enrichedMessageCount = 0;
     var missingExtractionCount = 0;
-    await importDatabase.database.transaction((txn) async {
+    await importLedger.writeTransaction((txn) async {
       for (final candidate in candidates) {
-        final sourceRowId = _readRequiredInt(candidate, 'source_rowid');
-        final ssId = _readRequiredInt(candidate, 'ss_id');
-        final normalized = extracted[sourceRowId]?.trim();
+        final normalized = extracted[candidate.sourceRowId]?.trim();
         if (normalized == null || normalized.isEmpty) {
           missingExtractionCount += 1;
           continue;
@@ -75,7 +103,7 @@ class MessageRichTextEnricher {
           'messages',
           <String, Object?>{'text': normalized},
           where: 'ss_id = ? AND text IS NULL',
-          whereArgs: <Object?>[ssId],
+          whereArgs: <Object?>[candidate.ssId],
         );
         if (updated > 0) {
           enrichedMessageCount += 1;
@@ -89,16 +117,5 @@ class MessageRichTextEnricher {
       missingExtractionCount: missingExtractionCount,
       extractorAvailable: true,
     );
-  }
-
-  static int _readRequiredInt(Map<String, Object?> row, String field) {
-    final value = row[field];
-    if (value is int) {
-      return value;
-    }
-    if (value is num) {
-      return value.toInt();
-    }
-    throw StateError('messages.$field is required');
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import '../../../db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../domain/entities/window_state_entity.dart';
 import '../../domain/ports/window_storage_port.dart';
@@ -50,7 +52,8 @@ class OverlayWindowStorage implements WindowStoragePort {
         isMinimized: isMinimized ?? false,
         sidebarWidth: sidebarWidth ?? WindowStateEntity.defaultSidebarWidth,
       );
-    } catch (_) {
+    } catch (e, stackTrace) {
+      _debugStorageFailure('load window state', e, stackTrace);
       return null;
     }
   }
@@ -70,8 +73,8 @@ class OverlayWindowStorage implements WindowStoragePort {
           'sidebarWidth': state.sidebarWidth,
         }),
       );
-    } catch (_) {
-      // Fail silently - window state persistence is non-critical.
+    } catch (e, stackTrace) {
+      _debugStorageFailure('save window state', e, stackTrace);
     }
   }
 
@@ -83,8 +86,21 @@ class OverlayWindowStorage implements WindowStoragePort {
         settingKey: _settingKey,
         settingValue: '',
       );
-    } catch (_) {
-      // Fail silently - window state persistence is non-critical.
+    } catch (e, stackTrace) {
+      _debugStorageFailure('clear window state', e, stackTrace);
     }
+  }
+
+  void _debugStorageFailure(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    if (!kDebugMode) {
+      return;
+    }
+
+    debugPrint('Overlay window storage could not $operation: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 }

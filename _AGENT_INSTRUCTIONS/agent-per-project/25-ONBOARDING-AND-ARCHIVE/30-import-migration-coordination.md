@@ -1,94 +1,74 @@
-# Import and Migration Coordination
+# Graph Build Coordination
 
 ## Purpose
 
-Onboarding orchestrates the startup pipeline but does not own the import or
-migration systems. This document describes how the three systems interact.
+Onboarding coordinates startup/retry lifecycle but does not own source-scoped
+import, projection, or graph query systems. This document describes the current
+graph-first setup flow and the retired cleanup-storage boundary.
 
 ## Ownership Boundaries
 
 | System | Owner | Location |
 |--------|-------|----------|
 | Bootstrap gate and user-facing status | Onboarding | `lib/essentials/onboarding/` |
-| Table importers and import orchestration | db_importers | `lib/essentials/db_importers/` |
-| Table migrators and migration orchestration | db_migrate | `lib/essentials/db_migrate/` |
+| Source-scoped import ledger | source_scoped_import | `lib/essentials/source_scoped_import/` |
+| Conversation graph build/projection/readiness | conversation_graph | `lib/essentials/conversation_graph/` |
+| Archive metadata and historical cleanup storage | overlay / db / database health / reset infrastructure | Overlay metadata plus explicit diagnostics and reset boundaries only |
 | Attachment archiving and recovery | attachments feature | `lib/features/attachments/` |
 
-**Rule:** `OnboardingGate` delegates to `DbImportControlViewModel`, which
-triggers the import and migration services. Onboarding does not implement
-those pipelines.
+**Rule:** `OnboardingGate` delegates cleanup to `MessageDataResetService` and
+graph build/rebuild to `ConversationGraphBuildController`. It must not call
+`DbImportControlViewModel`, `runImportAndMigration()`, or retired
+legacy migration paths as the app-facing setup path.
 
 ## Pipeline Sequence
 
 ```
-OnboardingGate.startImportAndMigration()
+OnboardingGate.startImportAndGraphBuild()
   │
-  ├─ 1. Import Phase
-  │   └─ ImportOrchestrator.run()
-  │       Topological order (Kahn's algorithm):
-  │       Derived from TableImporter.dependsOn at runtime.
-  │       Current importer set:
-  │       prepare_sources, clear_ledger, handles, chats,
-  │       chat_to_handle, contacts, contact_phone_email,
-  │       contact_to_chat_handle, messages, message_rich_text,
-  │       chat_to_message, attachments, message_attachments
+  ├─ 1. Cleanup / reset if needed
+  │   └─ MessageDataResetService removes derived graph/import data
   │
-  │       Each importer: validatePrereqs → copy → postValidate
+  ├─ 2. Source-scoped graph build
+  │   └─ ConversationGraphBuildController.runOnce(...)
   │       Source: ~/Library/Messages/chat.db (FDA-gated)
-  │       Target: ./macos_import.db
+  │       Import ledger: ./macos_import_ss.db
+  │       Working graph: ./working_ss.db
+  │       Builds messages, chats, handles, topology, attachments,
+  │       text enrichment, and graph indexes/readiness state.
   │
-  ├─ 2. Migration Phase
-  │   └─ MigrationOrchestrator.run()
-  │       Topological order:
-  │       Derived from TableMigrator.dependsOn at runtime.
-  │       Current migrator set:
-  │       handles, chats, chat_to_handle, participants,
-  │       handle_to_participant, messages,
-  │       recovered_unlinked_messages, attachments,
-  │       recovered_unlinked_attachments, reactions,
-  │       reaction_counts, message_read_marks, read_state
-  │
-  │       Each migrator: validatePrereqs → copy → postValidate
-  │       Source: ./macos_import.db
-  │       Target: ./working.db
-  │
-  │       Post-orchestrator synthetic steps rebuild working indexes
-  │       and search indexes.
-  │
-  ├─ 3. Archive Maintenance
-  │   └─ DbImportControlViewModel launches
-  │       AttachmentArchiveService.archiveAllAvailable()
-  │       after successful full migration. It is fire-and-forget
-  │       and respects the archive-enabled setting.
-  │
-  └─ 4. Completion
+  └─ 3. Completion
       └─ OnboardingGate sets status = complete
-          Import/migration results are persisted by DbImportControlViewModel
+          Graph build results and failures are persisted by onboarding-owned
+          failure/report boundaries
           Overlay shows summary
 ```
 
 ## Progress Reporting
 
-The import and migration orchestrators report progress via callbacks that
-onboarding maps to its UI:
+Onboarding progress is graph-lifecycle progress. Retired database files may
+still be reset or inspected by diagnostics, but onboarding does not consume
+`DbImportControlViewModel`, `runImportAndMigration()`, or retired
+projection paths.
+
+The graph build lifecycle reports enough status for onboarding to show:
 
 - Current table name and phase (validating/copying/verifying)
 - Row counts per table
 - Duration per table
 - Overall progress percentage
 
-The `DbImportControlProvider` exposes a `UiStageProgress` list that the
-onboarding progress view consumes directly.
+The app-facing setup path is `MessageDataResetService` for cleanup/reset plus
+`ConversationGraphBuildController` for source-scoped graph build/rebuild.
 
 ## Failure Handling
 
 | Failure | Behavior |
 |---------|----------|
-| Import table fails validation | Import aborts, result persisted, status → `awaitingUserAction` |
-| Import succeeds, migration fails | Migration result persisted, status → `awaitingUserAction` |
-| User clicks retry | Full pipeline re-runs from import phase |
+| Source-scoped graph build fails | Failure is persisted, status → `awaitingUserAction` |
+| User clicks retry | Derived data is prepared and graph build re-runs |
 | App crashes mid-pipeline | On next launch, failure history detected, user sees retry option |
-| Stale partial import/working DB state detected | `OnboardingGate` enters `recoveringFailedAttempt`, resets app-owned DBs, then returns to `awaitingUserAction` |
+| Stale partial source-scoped import/graph DB state detected | `OnboardingGate` enters `recoveringFailedAttempt`, resets app-owned derived DBs, then returns to `awaitingUserAction` |
 
 **Persistence:** Results are stored as JSON in the overlay DB `OverlaySettings`
 table, surviving app restarts.
@@ -96,42 +76,42 @@ table, surviving app restarts.
 ## Database Topology
 
 ```
-Source (read-only)         App-owned (read/write)        App-owned (user intent)
-─────────────────          ──────────────────────        ───────────────────────
-~/Library/Messages/        ./macos_import.db             ./user_overlays.db
-  chat.db            ───→    (import target)        ───→   (overlay DB)
-                               │                           │
-~/Library/Application          │                           │
-  Support/.../                 ▼                           │
-  AddressBook-*        ──→  ./working.db            ◄──────┘
-    (contacts)              (migration target)        (merged at read time)
+Source (read-only)         Source-scoped graph          App-owned user intent
+─────────────────          ──────────────────────       ─────────────────────
+~/Library/Messages/        ./macos_import_ss.db         ./user_overlays.db
+  chat.db            ───→    (source facts)        ───→  (overlay DB)
+                               │                          │
+~/Library/Application          ▼                          │
+  Support/.../          ./working_ss.db           ◄──────┘
+  AddressBook-*          (conversation graph)       (merged at read time)
 ```
 
-**Key:** Import writes to `import.db`. Migration reads `import.db`, writes
-`working.db`. Archive service writes to `overlay.db` and the filesystem
-archive folder. Providers merge `working + overlay` at read time.
+**Key:** Source-scoped import preserves source facts/provenance. Graph
+projection writes canonical app graph rows keyed by `ss_id`. Archive service
+writes to `overlay.db` and the filesystem archive folder. Providers merge
+graph + overlay at read time.
 
 ## Re-Import Flow
 
 When a user triggers re-import from Settings:
 
 1. `OnboardingGate.startReimport()` is called
-2. Status transitions: `reimporting` → `reimportMigrating` → `reimportComplete`
-3. The same import/migration control pipeline runs with reimport-specific overlay status
-4. The import ledger is deleted first; full migration rebuilds working tables from the import projection
+2. Status transitions: `reimporting` → `reimportBuildingGraph` → `reimportComplete`
+3. `MessageDataResetService` clears derived data while preserving overlay intent
+4. `ConversationGraphBuildController` rebuilds the source-scoped graph
 5. Archive rows in overlay are additive — existing entries survive
 
 ## Auto-Sync Integration
 
 After initial onboarding completes, `ChatDbChangeMonitor` keeps the app current:
 
-- Primes from the max imported message ROWID and checks startup catch-up.
+- Primes from the graph/source-scoped import cursor and checks startup catch-up.
 - Polls `MAX(ROWID)` in `~/Library/Messages/chat.db` every 15 seconds.
-- On change: runs incremental import.
-- Archives the imported batch before incremental migration.
-- Runs incremental migration and bumps `messageDataVersionProvider` on success.
-- Runs a periodic working-attachment sweep every 5 minutes for attachments
-  that become locally available later.
+- On change: runs the source-scoped graph build lifecycle.
+- Archives newly imported live graph source ranges.
+- Bumps graph/message data version providers on success.
+- Runs a periodic graph-attachment sweep every 5 minutes for attachments that
+  become locally available later.
 - No user interaction required
 
 See [`60-reimport-and-ongoing-sync.md`](60-reimport-and-ongoing-sync.md) for

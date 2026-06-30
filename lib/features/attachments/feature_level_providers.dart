@@ -1,87 +1,16 @@
-import 'package:flutter/widgets.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-import '../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-
-part 'feature_level_providers.g.dart';
-
-// =============================================================================
-// PLACEHOLDER SPECS - Replace with actual Freezed specs when implemented
-// =============================================================================
-
-/// Placeholder for AttachmentsSpec (ViewSpec for center panel).
-/// Replace with: import '../../essentials/navigation/domain/entities/features/attachments_spec.dart';
-typedef AttachmentsSpec = void;
-
-/// Placeholder for AttachmentsCassetteSpec (sidebar cassettes in messages mode).
-/// Replace with: import '../../essentials/sidebar/domain/entities/features/attachments_cassette_spec.dart';
-typedef AttachmentsCassetteSpec = void;
-
-/// Placeholder for AttachmentsSettingsSpec (sidebar cassettes in settings mode).
-/// Replace with: import '../../essentials/sidebar/domain/entities/features/attachments_settings_spec.dart';
-typedef AttachmentsSettingsSpec = void;
-
-// =============================================================================
-// COORDINATORS
-// =============================================================================
-
-/// Coordinator that maps [AttachmentsSpec] to rendered widgets for the center panel.
-@riverpod
-class ViewSpecCoordinator extends _$ViewSpecCoordinator {
-  @override
-  void build() {
-    // Stateless coordinator
-  }
-
-  /// Build a widget for the given [AttachmentsSpec].
-  Widget buildForSpec(AttachmentsSpec spec) {
-    // TODO: Implement when AttachmentsSpec is defined
-    return _buildPlaceholder('Attachments view coming soon');
-  }
-
-  Widget _buildPlaceholder(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(message, textAlign: TextAlign.center),
-      ),
-    );
-  }
-}
-
-/// Coordinator that maps [AttachmentsCassetteSpec] to cassette widgets.
-@riverpod
-class FeatureCassetteSpecCoordinator extends _$FeatureCassetteSpecCoordinator {
-  @override
-  void build() {
-    // Stateless coordinator
-  }
-
-  /// Build a cassette view model for the given [AttachmentsCassetteSpec].
-  SidebarCassettePayload buildForSpec(AttachmentsCassetteSpec spec) {
-    // TODO: Implement when AttachmentsCassetteSpec is defined
-    return const StaticFeatureInfoSidebarCassettePayload(
-      title: 'Attachments',
-      bodyText: 'Coming soon',
-    );
-  }
-}
-
-/// Coordinator that maps [AttachmentsSettingsSpec] to cassette widgets.
-@riverpod
-class SettingsCassetteSpecCoordinator
-    extends _$SettingsCassetteSpecCoordinator {
-  @override
-  void build() {
-    // Stateless coordinator
-  }
-
-  /// Build a cassette view model for the given [AttachmentsSettingsSpec].
-  SidebarCassettePayload buildForSpec(AttachmentsSettingsSpec spec) {
-    // TODO: Implement when AttachmentsSettingsSpec is defined
-    return const StaticFeatureInfoSidebarCassettePayload(
-      title: 'Attachment Settings',
-      bodyText: 'Coming soon',
-    );
-  }
-}
+export '../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+export 'application/archive_settings_provider.dart';
+export 'application/attachment_archive_runtime_providers.dart';
+export 'application/attachment_archive_service_provider.dart';
+export 'application/attachment_archive_store_providers.dart';
+export 'application/attachment_archive_write_store.dart';
+export 'application/attachment_file_access.dart';
+export 'application/attachment_recovery_actions_provider.dart';
+export 'application/attachment_resolver_provider.dart';
+export 'application/deterministic_recovery_provider.dart';
+export 'application/deterministic_recovery_runtime_providers.dart';
+export 'application/graph_attachment_archive_candidate_reader.dart';
+export 'application/graph_attachment_archive_lookup.dart';
+export 'application/graph_attachment_archive_providers.dart';
+export 'application/video_thumbnail_cache.dart';
+export 'application/video_thumbnail_cache_provider.dart';

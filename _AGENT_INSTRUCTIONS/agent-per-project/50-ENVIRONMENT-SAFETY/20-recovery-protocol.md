@@ -41,8 +41,11 @@ cp -R \
 After relaunch:
 
 - app starts normally
-- expected message count present
-- no migration errors
+- source-scoped graph message counts are plausible
+- overlay intent such as favourites and contact display-name overrides is present
+- retired cleanup/diagnostic files are present if they existed in the snapshot
+- no graph build, retired-file diagnostic, or overlay recovery errors are
+  shown
 - UI behaves correctly
 
 ---

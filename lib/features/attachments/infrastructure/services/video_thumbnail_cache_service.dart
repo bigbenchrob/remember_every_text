@@ -3,12 +3,10 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:fc_native_video_thumbnail/fc_native_video_thumbnail.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'video_thumbnail_cache_service.g.dart';
+import '../../application/video_thumbnail_cache.dart';
 
 typedef VideoThumbnailFileGenerator =
     Future<bool> Function({
@@ -18,12 +16,7 @@ typedef VideoThumbnailFileGenerator =
       required int height,
     });
 
-@Riverpod(keepAlive: true)
-VideoThumbnailCacheService videoThumbnailCacheService(Ref ref) {
-  return VideoThumbnailCacheService();
-}
-
-class VideoThumbnailCacheService {
+class VideoThumbnailCacheService implements VideoThumbnailCache {
   VideoThumbnailCacheService({
     VideoThumbnailFileGenerator? thumbnailGenerator,
     Future<Directory> Function()? cacheDirectoryLoader,
@@ -35,10 +28,24 @@ class VideoThumbnailCacheService {
   final Future<Directory> Function() _cacheDirectoryLoader;
   final Map<String, Future<File?>> _inFlight = <String, Future<File?>>{};
 
-  Future<File?> getOrCreateThumbnail({
+  @override
+  Future<String?> getOrCreateThumbnailPath({
     required String videoPath,
     int width = 640,
     int height = 640,
+  }) async {
+    final file = await _getOrCreateThumbnail(
+      videoPath: videoPath,
+      width: width,
+      height: height,
+    );
+    return file?.path;
+  }
+
+  Future<File?> _getOrCreateThumbnail({
+    required String videoPath,
+    required int width,
+    required int height,
   }) async {
     final normalizedVideoPath = p.normalize(videoPath);
     final inFlightKey = '$normalizedVideoPath|$width|$height';
@@ -67,7 +74,7 @@ class VideoThumbnailCacheService {
     required int height,
   }) async {
     final sourceFile = File(videoPath);
-    if (!sourceFile.existsSync()) {
+    if (!_isRegularFile(sourceFile.path)) {
       return null;
     }
 
@@ -77,6 +84,9 @@ class VideoThumbnailCacheService {
     }
 
     final cacheDir = await _cacheDirectoryLoader();
+    if (_isSymlink(cacheDir.path)) {
+      return null;
+    }
     await cacheDir.create(recursive: true);
 
     final cacheKey = sha1
@@ -87,7 +97,10 @@ class VideoThumbnailCacheService {
         )
         .toString();
     final thumbnailFile = File(p.join(cacheDir.path, '$cacheKey.jpg'));
-    if (thumbnailFile.existsSync()) {
+    if (_isSymlink(thumbnailFile.path)) {
+      return null;
+    }
+    if (_isRegularFile(thumbnailFile.path)) {
       return thumbnailFile;
     }
 
@@ -97,11 +110,21 @@ class VideoThumbnailCacheService {
       width: width,
       height: height,
     );
-    if (!created || !thumbnailFile.existsSync()) {
+    if (!created || !_isRegularFile(thumbnailFile.path)) {
       return null;
     }
 
     return thumbnailFile;
+  }
+
+  static bool _isRegularFile(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.file;
+  }
+
+  static bool _isSymlink(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.link;
   }
 
   static Future<bool> _defaultGenerateThumbnail({

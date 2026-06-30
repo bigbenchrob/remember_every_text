@@ -10,4 +10,9 @@ class AttachmentProjectionResult {
 
 abstract interface class AttachmentProjectionRepository {
   Future<AttachmentProjectionResult> projectAttachments();
+
+  Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  });
 }

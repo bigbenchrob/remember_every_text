@@ -1,8 +1,7 @@
-import 'package:sqflite/sqflite.dart';
-
 import '../../domain/known_sources.dart';
+import '../../domain/ports/import_ledger_port.dart';
+import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
-import '../../infrastructure/import_database_provider.dart';
 
 class MessageAttachmentJoinImportResult {
   const MessageAttachmentJoinImportResult({
@@ -17,26 +16,42 @@ class MessageAttachmentJoinImportResult {
 class MessageAttachmentJoinImporter {
   const MessageAttachmentJoinImporter({
     required this.chatDbPath,
-    required this.importDatabase,
+    required this.importLedger,
+    required this.sourceDatabaseOpener,
     this.sourceId = liveChatDbSourceId,
   });
 
   final String chatDbPath;
-  final ImportDatabase importDatabase;
+  final ImportLedger importLedger;
+  final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
   Future<MessageAttachmentJoinImportResult> importJoins() async {
-    final sourceDb = await openDatabase(
-      chatDbPath,
-      readOnly: true,
-      singleInstance: false,
+    return _importJoinsWhere(whereClause: null, whereArgs: const <Object?>[]);
+  }
+
+  Future<MessageAttachmentJoinImportResult> importJoinsAfterSourceMessageRowId({
+    required int startedAfterSourceRowId,
+  }) {
+    return _importJoinsWhere(
+      whereClause: 'WHERE message_id > ?',
+      whereArgs: <Object?>[startedAfterSourceRowId],
     );
+  }
+
+  Future<MessageAttachmentJoinImportResult> _importJoinsWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
+    final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
     try {
       final rows = await sourceDb.rawQuery(
         'SELECT message_id, attachment_id '
         'FROM message_attachment_join '
+        '${whereClause ?? ''} '
         'ORDER BY message_id ASC, attachment_id ASC',
+        whereArgs,
       );
 
       if (rows.isEmpty) {
@@ -46,18 +61,18 @@ class MessageAttachmentJoinImporter {
         );
       }
 
-      final batchId = await importDatabase.insertImportBatch(
+      final batchId = await importLedger.insertImportBatch(
         sourceId: sourceId,
         startedAtUtc: DateTime.now().toUtc().toIso8601String(),
       );
 
       var insertedJoinCount = 0;
-      await importDatabase.database.transaction((txn) async {
+      await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceMessageRowId = _requiredInt(row, 'message_id');
           final sourceAttachmentRowId = _requiredInt(row, 'attachment_id');
           final insertedId = await txn
-              .insert('message_to_attachment', <String, Object?>{
+              .insertIgnore('message_to_attachment', <String, Object?>{
                 'message_source_id': sourceId,
                 'attachment_source_id': sourceId,
                 'source_message_rowid': sourceMessageRowId,
@@ -71,7 +86,7 @@ class MessageAttachmentJoinImporter {
                   sourceRowId: sourceAttachmentRowId,
                 ),
                 'batch_id': batchId,
-              }, conflictAlgorithm: ConflictAlgorithm.ignore);
+              });
 
           if (insertedId != 0) {
             insertedJoinCount += 1;

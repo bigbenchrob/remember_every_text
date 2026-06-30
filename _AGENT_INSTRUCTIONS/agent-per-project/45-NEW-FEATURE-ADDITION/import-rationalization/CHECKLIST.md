@@ -1,5 +1,14 @@
 # Import Rationalization Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Do not treat it as an active request to reorganize
+or expand legacy import/migration packages. The `db_importers` and `db_migrate`
+source folders have been retired from active code. Current ordinary graph work
+should happen in source-scoped import and conversation graph boundaries; any
+archive/recovery compatibility work needs a separately reviewed boundary rather
+than reviving these folders.
+
 ## Phase 1: Folder Reorganization
 
 ### db_importers Base Class

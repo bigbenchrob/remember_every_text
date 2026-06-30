@@ -1,8 +1,12 @@
 # Rationalize Message Views — Implementation Checklist
 
-**Status**: ✅ COMPLETE — Merged to main
+**Status**: SUPERSEDED HISTORICAL CHECKLIST
 
-> Historical context note (2026-04-21): this checklist describes completed migration work. Do not treat old path references as current missing work without checking current code.
+> Historical context note (2026-06-06): this checklist describes completed
+> intermediate migration work. Do not treat old `MessageTimelineScope`,
+> strategy, ordinal-provider, or `working.db` path references as current missing
+> work. Current message evidence surfaces use the graph-backed Message Evidence
+> Spine documented under `../messages/`.
 
 ## Phase 1: Foundation — Sealed Class & Strategies ✅
 

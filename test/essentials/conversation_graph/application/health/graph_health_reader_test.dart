@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:remember_this_text/essentials/conversation_graph/application/health/graph_health_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
@@ -13,7 +14,7 @@ void main() {
     final database = await openConversationGraphTestDatabase();
     addTearDown(database.close);
     final reader = GraphHealthReader(
-      repository: SqliteGraphHealthRepository(workingDatabase: database),
+      repository: SqliteGraphHealthRepository(graphDatabase: database),
     );
 
     await database.database.insert('messages', {
@@ -138,7 +139,34 @@ void main() {
     expect(report.messageToAttachmentEdgesMissingAttachmentCount, 1);
     expect(report.contactToHandleEdgesMissingContactCount, 1);
     expect(report.contactToHandleEdgesMissingHandleCount, 1);
+    expect(report.archiveFileAuditIncluded, isFalse);
+    expect(report.attachmentRecoveryAuditIncluded, isFalse);
   });
+
+  test(
+    'recovery audit uses unavailable defaults without external sources',
+    () async {
+      final database = await openConversationGraphTestDatabase();
+      addTearDown(database.close);
+      final reader = GraphHealthReader(
+        repository: SqliteGraphHealthRepository(graphDatabase: database),
+      );
+
+      final report = await reader.readHealthReport(includeRecoveryAudit: true);
+
+      expect(report.attachmentRecoveryAuditIncluded, isTrue);
+      expect(report.historicalArchiveAvailable, isFalse);
+      expect(report.historicalArchiveRecordCount, 0);
+      expect(report.historicalArchiveFilesAvailableCount, 0);
+      expect(report.historicalArchiveFilesMissingCount, 0);
+      expect(report.attachmentsRecoverableFromHistoricalArchiveCount, 0);
+      expect(report.recoveredMessagesSourceAvailable, isFalse);
+      expect(report.recoveredMessagesAttachmentKeyCount, 0);
+      expect(report.attachmentsRecoverableFromRecoveredMessagesCount, 0);
+      expect(report.attachmentsRecoverableFromBothRecoverySourcesCount, 0);
+      expect(report.attachmentsStillMissingFromKnownRecoverySourcesCount, 0);
+    },
+  );
 
   test('reports archive record and archive file readiness', () async {
     final database = await openConversationGraphTestDatabase();
@@ -156,9 +184,26 @@ void main() {
     final archiveFile = File('${tempDir.path}/ab/archived-image.jpg');
     archiveFile.parent.createSync(recursive: true);
     archiveFile.writeAsStringSync('archived bytes');
+    final symlinkTarget = File('${tempDir.path}/outside-linked-image.jpg');
+    symlinkTarget.writeAsStringSync('outside bytes');
+    final symlinkedArchivePath = Link('${tempDir.path}/ab/linked-image.jpg');
+    symlinkedArchivePath.createSync(symlinkTarget.path);
+    final escapedArchiveFile = File(
+      p.join(tempDir.parent.path, '${p.basename(tempDir.path)}_escaped.jpg'),
+    );
+    final escapedArchiveRelativePath = p.relative(
+      escapedArchiveFile.path,
+      from: tempDir.path,
+    );
+    escapedArchiveFile.writeAsStringSync('escaped bytes');
+    addTearDown(() {
+      if (escapedArchiveFile.existsSync()) {
+        escapedArchiveFile.deleteSync();
+      }
+    });
     final reader = GraphHealthReader(
       repository: SqliteGraphHealthRepository(
-        workingDatabase: database,
+        graphDatabase: database,
         overlayDatabase: overlayDatabase,
         attachmentArchiveDirectory: tempDir.path,
       ),
@@ -225,14 +270,55 @@ void main() {
         'archived',
       ],
     );
+    await overlayDatabase.customStatement(
+      '''
+      INSERT INTO archived_attachments (
+        message_guid,
+        import_attachment_id,
+        archive_relative_path,
+        archived_at_utc,
+        file_size_bytes,
+        provenance
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ''',
+      <Object?>[
+        'message-3',
+        100,
+        'ab/linked-image.jpg',
+        '2026-05-23T00:00:00.000Z',
+        20,
+        'archived',
+      ],
+    );
+    await overlayDatabase.customStatement(
+      '''
+      INSERT INTO archived_attachments (
+        message_guid,
+        import_attachment_id,
+        archive_relative_path,
+        archived_at_utc,
+        file_size_bytes,
+        provenance
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ''',
+      <Object?>[
+        'message-4',
+        101,
+        escapedArchiveRelativePath,
+        '2026-05-23T00:00:00.000Z',
+        20,
+        'archived',
+      ],
+    );
 
-    final report = await reader.readHealthReport();
+    final report = await reader.readHealthReport(includeFileAudits: true);
 
-    expect(report.archiveRecordCount, 2);
+    expect(report.archiveFileAuditIncluded, isTrue);
+    expect(report.archiveRecordCount, 4);
     expect(report.attachmentsWithArchiveRecordCount, 1);
     expect(report.attachmentsMissingArchiveRecordCount, 1);
     expect(report.archiveFilesAvailableCount, 1);
-    expect(report.archiveFilesMissingCount, 1);
-    expect(report.archiveRecordsWithoutWorkingAttachmentCount, 1);
+    expect(report.archiveFilesMissingCount, 3);
+    expect(report.archiveRecordsWithoutGraphAttachmentCount, 3);
   });
 }

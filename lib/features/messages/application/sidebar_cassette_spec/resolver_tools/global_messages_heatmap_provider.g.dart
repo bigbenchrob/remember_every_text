@@ -7,7 +7,7 @@ part of 'global_messages_heatmap_provider.dart';
 // **************************************************************************
 
 String _$globalMessagesHeatmapHash() =>
-    r'9326f8e9dac78c829d518bfe33d952a9df7282e8';
+    r'cf8cac588ad3e06246f69a6d55be127c8dfba6df';
 
 /// Provides a calendar heatmap timeline spanning the entire message archive.
 ///

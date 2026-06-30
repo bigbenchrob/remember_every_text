@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../logging/application/app_logger.dart';
+import '../../../../config/theme/colors/theme_colors.dart';
+import '../../../../config/theme/theme_typography.dart';
+import '../../application/panel_actions_provider.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/entities/panel_stack.dart';
 import '../../domain/navigation_constants.dart';
-import '../../feature_level_providers.dart';
 
 typedef PanelViewBuilder = Widget Function(PanelPage page);
 
@@ -32,18 +33,8 @@ class PanelStackSurface extends ConsumerWidget {
       }
 
       ref
-          .read(appLoggerProvider.notifier)
-          .debug(
-            'Panel stack surface build',
-            source: 'PanelStackSurface',
-            context: {
-              'panel': panel.name,
-              'isEmpty': stack.isEmpty,
-              'activeIndex': stack.activeIndex,
-              'pageCount': stack.pages.length,
-              'activeSpec': '${stack.activePage?.spec}',
-            },
-          );
+          .read(panelActionsProvider.notifier)
+          .recordPanelStackBuilt(panel: panel, stack: stack);
     });
 
     if (stack.isEmpty) {
@@ -89,12 +80,13 @@ class _PanelTabStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
     final tabs = stack.pages;
     final mode = ref.watch(activeSidebarModeProvider);
 
     return Material(
-      color: theme.colorScheme.surface,
+      color: colors.surfaces.surface,
       elevation: 1,
       child: SizedBox(
         height: 36,
@@ -110,14 +102,14 @@ class _PanelTabStrip extends ConsumerWidget {
               closable: page.isClosable,
               onSelect: () {
                 ref
-                    .read(panelsViewStateProvider(mode).notifier)
-                    .activate(panel: panel, index: index);
+                    .read(panelActionsProvider.notifier)
+                    .activateTab(mode: mode, panel: panel, index: index);
               },
               onClose: page.isClosable
                   ? () {
                       ref
-                          .read(panelsViewStateProvider(mode).notifier)
-                          .closeAt(panel: panel, index: index);
+                          .read(panelActionsProvider.notifier)
+                          .closeTab(mode: mode, panel: panel, index: index);
                     }
                   : null,
             );
@@ -130,7 +122,7 @@ class _PanelTabStrip extends ConsumerWidget {
   }
 }
 
-class _TabChip extends StatelessWidget {
+class _TabChip extends ConsumerWidget {
   const _TabChip({
     required this.title,
     required this.selected,
@@ -146,14 +138,16 @@ class _TabChip extends StatelessWidget {
   final VoidCallback? onClose;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
     final color = selected
-        ? theme.colorScheme.primary.withValues(alpha: 0.12)
-        : theme.colorScheme.surfaceContainerHighest;
+        ? colors.accents.primary.withValues(alpha: 0.12)
+        : colors.surfaces.control;
     final borderColor = selected
-        ? theme.colorScheme.primary
-        : theme.dividerColor;
+        ? colors.accents.primary
+        : colors.lines.borderSubtle;
 
     return InkWell(
       onTap: onSelect,
@@ -170,7 +164,7 @@ class _TabChip extends StatelessWidget {
           children: <Widget>[
             Text(
               title,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: typography.caption.copyWith(
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),

@@ -18,6 +18,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/h
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -26,8 +27,8 @@ import '../../conversation_graph_test_database.dart';
 void main() {
   late Directory tempDir;
   late String chatDbPath;
-  late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ImportDatabase importLedgerDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -51,17 +52,17 @@ void main() {
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('ss_chat_topology_test_');
     chatDbPath = '${tempDir.path}/chat.db';
-    importDatabase = await ImportDatabase.open(
+    importLedgerDatabase = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
     await _createSourceTables(chatDbPath);
   });
 
   tearDown(() async {
-    await workingDatabase.close();
-    await importDatabase.close();
+    await graphDatabase.close();
+    await importLedgerDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -95,32 +96,35 @@ void main() {
 
     final importResult = await ChatImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importChats();
     await HandleImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importNewHandles();
     await ChatHandleJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoins();
     await HandleProjector(
       repository: SqliteHandleProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectHandles();
     await ChatToHandleProjector(
       repository: SqliteChatToHandleProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectEdges();
     final projectionResult = await ChatProjector(
       repository: SqliteChatProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectChats();
 
@@ -128,8 +132,8 @@ void main() {
       sourceId: liveChatDbSourceId,
       sourceRowId: 7,
     );
-    final importRows = await importDatabase.database.query('chats');
-    final workingRows = await workingDatabase.database.query('chats');
+    final importRows = await importLedgerDatabase.database.query('chats');
+    final workingRows = await graphDatabase.database.query('chats');
 
     expect(importResult.insertedChatCount, 1);
     expect(projectionResult.insertedChatCount, 1);
@@ -186,38 +190,41 @@ void main() {
 
     await ChatImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importChats();
     await HandleImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importNewHandles();
     await ChatHandleJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoins();
     await HandleProjector(
       repository: SqliteHandleProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectHandles();
     await ChatToHandleProjector(
       repository: SqliteChatToHandleProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectEdges();
 
     final projector = ChatProjector(
       repository: SqliteChatProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final first = await projector.projectChats();
     final second = await projector.projectChats();
-    final rows = await workingDatabase.database.query(
+    final rows = await graphDatabase.database.query(
       'chats',
       orderBy: 'ss_id ASC',
     );
@@ -232,9 +239,10 @@ void main() {
 
     final result = await ChatMessageJoinImporter(
       chatDbPath: chatDbPath,
-      importDatabase: importDatabase,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
     ).importJoins();
-    final rows = await importDatabase.database.query('chat_to_message');
+    final rows = await importLedgerDatabase.database.query('chat_to_message');
 
     expect(result.insertedJoinCount, 1);
     expect(rows.single['source_chat_rowid'], 7);
@@ -249,39 +257,117 @@ void main() {
     );
   });
 
+  test('imports topology after source message rowid', () async {
+    await _insertSourceJoin(chatDbPath, rowId: 98, chatId: 7, messageId: 40);
+    await _insertSourceJoin(chatDbPath, rowId: 99, chatId: 7, messageId: 42);
+
+    final result = await ChatMessageJoinImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importJoinsAfterSourceMessageRowId(startedAfterSourceRowId: 40);
+    final rows = await importLedgerDatabase.database.query('chat_to_message');
+
+    expect(result.examinedJoinCount, 1);
+    expect(result.insertedJoinCount, 1);
+    expect(rows.single['source_message_rowid'], 42);
+  });
+
   test('projects topology edges idempotently', () async {
-    await importDatabase.database.insert('chat_to_message', <String, Object?>{
-      'ss_id': SourceScopedRowKey.pack(
-        sourceId: liveChatDbSourceId,
-        sourceRowId: 99,
-      ),
-      'source_id': liveChatDbSourceId,
-      'source_rowid': 99,
-      'source_chat_rowid': 7,
-      'source_message_rowid': 42,
-      'chat_ss_id': SourceScopedRowKey.pack(
-        sourceId: liveChatDbSourceId,
-        sourceRowId: 7,
-      ),
-      'message_ss_id': SourceScopedRowKey.pack(
-        sourceId: liveChatDbSourceId,
-        sourceRowId: 42,
-      ),
-    });
+    await importLedgerDatabase.database
+        .insert('chat_to_message', <String, Object?>{
+          'ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 99,
+          ),
+          'source_id': liveChatDbSourceId,
+          'source_rowid': 99,
+          'source_chat_rowid': 7,
+          'source_message_rowid': 42,
+          'chat_ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 7,
+          ),
+          'message_ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 42,
+          ),
+        });
 
     final projector = ChatToMessageProjector(
       repository: SqliteChatToMessageProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final first = await projector.projectEdges();
     final second = await projector.projectEdges();
-    final rows = await workingDatabase.database.query('chat_to_message');
+    final rows = await graphDatabase.database.query('chat_to_message');
 
     expect(first.insertedEdgeCount, 1);
     expect(second.insertedEdgeCount, 0);
     expect(rows, hasLength(1));
+  });
+
+  test('projects topology edges after source message rowid', () async {
+    await importLedgerDatabase.database
+        .insert('chat_to_message', <String, Object?>{
+          'ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 98,
+          ),
+          'source_id': liveChatDbSourceId,
+          'source_rowid': 98,
+          'source_chat_rowid': 7,
+          'source_message_rowid': 40,
+          'chat_ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 7,
+          ),
+          'message_ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 40,
+          ),
+        });
+    await importLedgerDatabase.database
+        .insert('chat_to_message', <String, Object?>{
+          'ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 99,
+          ),
+          'source_id': liveChatDbSourceId,
+          'source_rowid': 99,
+          'source_chat_rowid': 7,
+          'source_message_rowid': 42,
+          'chat_ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 7,
+          ),
+          'message_ss_id': SourceScopedRowKey.pack(
+            sourceId: liveChatDbSourceId,
+            sourceRowId: 42,
+          ),
+        });
+
+    final projector = ChatToMessageProjector(
+      repository: SqliteChatToMessageProjectionRepository(
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
+      ),
+    );
+    final result = await projector.projectEdgesAfterSourceMessageRowId(
+      sourceId: liveChatDbSourceId,
+      startedAfterSourceRowId: 40,
+    );
+    final rows = await graphDatabase.database.query('chat_to_message');
+
+    expect(result.examinedEdgeCount, 1);
+    expect(result.insertedEdgeCount, 1);
+    expect(rows, hasLength(1));
+    expect(
+      rows.single['message_ss_id'],
+      SourceScopedRowKey.pack(sourceId: liveChatDbSourceId, sourceRowId: 42),
+    );
   });
 
   test('working topology primary key prevents duplicate edges', () async {
@@ -294,13 +380,13 @@ void main() {
       sourceRowId: 42,
     );
 
-    await workingDatabase.database.insert('chat_to_message', <String, Object?>{
+    await graphDatabase.database.insert('chat_to_message', <String, Object?>{
       'chat_ss_id': chatSsId,
       'message_ss_id': messageSsId,
     });
 
     await expectLater(
-      workingDatabase.database.insert('chat_to_message', <String, Object?>{
+      graphDatabase.database.insert('chat_to_message', <String, Object?>{
         'chat_ss_id': chatSsId,
         'message_ss_id': messageSsId,
       }),

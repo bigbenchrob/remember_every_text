@@ -1,37 +1,14 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../db/feature_level_providers.dart';
-import '../../infrastructure/repositories/graph_health_repository.dart';
 import 'graph_health_reader.dart';
 import 'graph_health_report.dart';
+import 'graph_health_repository_provider.dart';
 
 part 'graph_health_provider.g.dart';
 
-const _recoveredMessagesFolderPath =
-    '/Volumes/WD_ELEMENTS/DO_NOT_LOSE/iMessages_backup/'
-    'Messages-bkp-2026-03-29';
-const _recoveredMessagesAttachmentsFolderName = 'Attachments-2026-03-29';
-const _historicalMessageLensDataFolderPath =
-    '/Volumes/WD_ELEMENTS/DATA_FOLDER_WITH_ALL_RECENT_IMAGES_WAS_RENAMED/'
-    'com.bigbenchsoftware.MessageLens';
-
 @riverpod
 Future<GraphHealthReport> graphHealthReport(Ref ref) async {
-  final workingDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
-  return GraphHealthReader(
-    repository: SqliteGraphHealthRepository(
-      workingDatabase: workingDatabase,
-      overlayDatabase: overlayDatabase,
-      attachmentArchiveDirectory: archiveDirectory,
-      historicalMessageLensDataFolderPath: _historicalMessageLensDataFolderPath,
-      recoveredMessagesFolderPath: _recoveredMessagesFolderPath,
-      recoveredMessagesAttachmentsFolderName:
-          _recoveredMessagesAttachmentsFolderName,
-    ),
-  ).readHealthReport();
+  final repository = await ref.watch(graphHealthRepositoryProvider.future);
+  return GraphHealthReader(repository: repository).readHealthReport();
 }

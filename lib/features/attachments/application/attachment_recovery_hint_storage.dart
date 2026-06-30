@@ -1,14 +1,18 @@
 import 'dart:convert';
 
+import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
 
 const _kAttachmentRecoveryHintSettingPrefix = 'attachment_recovery_hint';
 
+/// Builds a recovery-hint key using the current archive compatibility key.
+///
+/// The pair mirrors existing archive storage and is not canonical graph
+/// identity.
 String attachmentRecoveryHintSettingKey({
-  required String messageGuid,
-  required int importAttachmentId,
+  required ArchiveCompatibilityKey archiveKey,
 }) {
-  return '$_kAttachmentRecoveryHintSettingPrefix::$messageGuid::$importAttachmentId';
+  return '$_kAttachmentRecoveryHintSettingPrefix::${archiveKey.storageKeySegment}';
 }
 
 AttachmentRecoveryMetadata? decodeAttachmentRecoveryHint(String? rawValue) {
@@ -52,34 +56,6 @@ String encodeAttachmentRecoveryHint(AttachmentRecoveryMetadata metadata) {
     'lastRecoveryErrorSummary': metadata.lastRecoveryErrorSummary,
     'isNonRecoverable': metadata.isNonRecoverable,
   });
-}
-
-AttachmentRecoveryMetadata mergeAttachmentRecoveryMetadata({
-  required AttachmentRecoveryMetadata base,
-  AttachmentRecoveryMetadata? persistedHint,
-}) {
-  if (persistedHint == null) {
-    return base;
-  }
-
-  return AttachmentRecoveryMetadata(
-    lastRecoveryAttemptAt:
-        base.lastRecoveryAttemptAt ?? persistedHint.lastRecoveryAttemptAt,
-    nextRecoveryAttemptAt:
-        base.nextRecoveryAttemptAt ?? persistedHint.nextRecoveryAttemptAt,
-    recoveryAttemptCount:
-        base.recoveryAttemptCount >= persistedHint.recoveryAttemptCount
-        ? base.recoveryAttemptCount
-        : persistedHint.recoveryAttemptCount,
-    recoveryPriority: base.recoveryPriority >= persistedHint.recoveryPriority
-        ? base.recoveryPriority
-        : persistedHint.recoveryPriority,
-    userInterestRaisedAt:
-        persistedHint.userInterestRaisedAt ?? base.userInterestRaisedAt,
-    lastRecoveryErrorSummary:
-        base.lastRecoveryErrorSummary ?? persistedHint.lastRecoveryErrorSummary,
-    isNonRecoverable: base.isNonRecoverable || persistedHint.isNonRecoverable,
-  );
 }
 
 DateTime? _readDateTime(Map<String, dynamic> decoded, String key) {

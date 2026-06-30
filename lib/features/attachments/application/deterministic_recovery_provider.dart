@@ -1,15 +1,12 @@
-import 'dart:io';
-
-import 'package:crypto/crypto.dart';
-import 'package:drift/drift.dart';
-import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/db/feature_level_providers.dart';
-import '../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../essentials/logging/application/app_logger.dart';
-import 'cross_snapshot_mapper.dart';
-import 'historical_snapshot_reader.dart';
+import '../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
+import 'deterministic_recovery_runtime_providers.dart'
+    show
+        crossSnapshotMapperProvider,
+        historicalSnapshotReaderFactoryProvider,
+        recoveredAttachmentArchiveWriterProvider;
 
 part 'deterministic_recovery_provider.g.dart';
 
@@ -136,7 +133,8 @@ class DeterministicRecovery extends _$DeterministicRecovery {
       phase: DeterministicRecoveryPhase.validating,
     );
 
-    final reader = HistoricalSnapshotReader(
+    final readerFactory = ref.read(historicalSnapshotReaderFactoryProvider);
+    final reader = readerFactory.create(
       chatDbPath: chatDbPath,
       attachmentsFolderPath: attachmentsFolderPath,
     );
@@ -150,21 +148,14 @@ class DeterministicRecovery extends _$DeterministicRecovery {
       return;
     }
 
-    // Check import DB precondition.
-    final importDb = await ref.read(sqfliteImportDatabaseProvider.future);
-    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-
-    final mapper = CrossSnapshotMapper(
-      importDb: importDb,
-      workingDb: workingDb,
-    );
-
-    final isPopulated = await mapper.isImportDbPopulated();
-    if (!isPopulated) {
+    final mapper = await ref.read(crossSnapshotMapperProvider.future);
+    final hasCurrentAttachmentSnapshot = await mapper
+        .hasCurrentAttachmentSnapshot();
+    if (!hasCurrentAttachmentSnapshot) {
       state = const DeterministicRecoveryState(
         phase: DeterministicRecoveryPhase.error,
         errorMessage:
-            'Current import data must be populated first. '
+            'Current attachment snapshot must be populated first. '
             'Run a normal import before historical recovery.',
       );
       return;
@@ -237,8 +228,9 @@ class DeterministicRecovery extends _$DeterministicRecovery {
       phaseTotal: mappingResult.mapped.length,
     );
 
-    final overlayDb = await ref.read(overlayDatabaseProvider.future);
-    final archiveDir = ref.read(attachmentArchiveDirectoryProvider);
+    final archiveWriter = await ref.read(
+      recoveredAttachmentArchiveWriterProvider.future,
+    );
 
     var archivedNew = 0;
     var skippedAlreadyArchived = 0;
@@ -253,11 +245,7 @@ class DeterministicRecovery extends _$DeterministicRecovery {
       final record = mappingResult.mapped[i];
 
       try {
-        final archived = await _archiveFile(
-          record: record,
-          overlayDb: overlayDb,
-          archiveDir: archiveDir,
-        );
+        final archived = await archiveWriter.archive(record);
 
         if (archived == null) {
           skippedAlreadyArchived++;
@@ -265,11 +253,11 @@ class DeterministicRecovery extends _$DeterministicRecovery {
           archivedNew++;
           totalBytesArchived += archived;
         }
-      } on Exception catch (e) {
+      } on Exception catch (error) {
         archiveFailed++;
         logger.warn(
           'Deterministic recovery: failed to archive '
-          '${record.resolvedFilePath}: $e',
+          '${record.resolvedFilePath}: $error',
           source: 'DeterministicRecovery',
         );
       }
@@ -310,74 +298,6 @@ class DeterministicRecovery extends _$DeterministicRecovery {
         shmDetected: enumerationResult.shmDetected,
       ),
     );
-  }
-
-  /// Archive a single mapped file to the content-addressable store.
-  /// Returns file size in bytes if newly archived, null if already exists.
-  Future<int?> _archiveFile({
-    required MappedAttachmentRecord record,
-    required OverlayDatabase overlayDb,
-    required String archiveDir,
-  }) async {
-    // Idempotency check.
-    final existing =
-        await (overlayDb.select(overlayDb.archivedAttachments)..where(
-              (t) =>
-                  t.messageGuid.equals(record.currentMessageGuid) &
-                  t.importAttachmentId.equals(record.currentImportAttachmentId),
-            ))
-            .getSingleOrNull();
-
-    if (existing != null) {
-      return null;
-    }
-
-    // Hash the source file.
-    final sourceFile = File(record.resolvedFilePath);
-    final bytes = await sourceFile.readAsBytes();
-    final contentHash = sha256.convert(bytes).toString();
-
-    // Content-addressable path.
-    final ext = p.extension(record.resolvedFilePath).toLowerCase();
-    final prefix = contentHash.substring(0, 2);
-    final relativePath = '$prefix/$contentHash$ext';
-    final destFile = File('$archiveDir/$relativePath');
-
-    // Copy (only once per hash — subsequent records reuse same file).
-    if (!destFile.existsSync()) {
-      await destFile.parent.create(recursive: true);
-      await sourceFile.copy(destFile.path);
-
-      // Verify integrity.
-      final verifyBytes = await destFile.readAsBytes();
-      final verifyHash = sha256.convert(verifyBytes).toString();
-      if (verifyHash != contentHash) {
-        await destFile.delete();
-        throw StateError(
-          'Archive integrity check failed: hash mismatch after copy',
-        );
-      }
-    }
-
-    final fileSize = await destFile.length();
-
-    // Insert overlay row.
-    await overlayDb
-        .into(overlayDb.archivedAttachments)
-        .insert(
-          ArchivedAttachmentsCompanion.insert(
-            messageGuid: record.currentMessageGuid,
-            importAttachmentId: record.currentImportAttachmentId,
-            archiveRelativePath: relativePath,
-            archivedAtUtc: DateTime.now().toUtc().toIso8601String(),
-            fileSizeBytes: fileSize,
-            contentHash: Value(contentHash),
-            provenance: const Value('imported_historical_snapshot'),
-            originalLocalPath: Value(record.histLocalPath ?? ''),
-          ),
-        );
-
-    return fileSize;
   }
 
   /// Request cooperative cancellation.

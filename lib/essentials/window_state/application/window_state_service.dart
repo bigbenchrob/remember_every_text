@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/animation.dart';
+import 'package:flutter/foundation.dart';
 
 import '../domain/entities/window_state_entity.dart';
 import '../domain/ports/window_manager_port.dart';
@@ -53,7 +54,8 @@ class WindowStateService {
       }
 
       return _cachedState!;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _debugWindowStateFailure('load window state', e, stackTrace);
       _cachedState = _normalizeLoadedState(WindowStateEntity.defaultState());
       _baseWindowWidthBeforeEndSidebar = _cachedState!.width;
       _isEndSidebarExpanded = false;
@@ -69,8 +71,8 @@ class WindowStateService {
       if (!_isEndSidebarExpanded) {
         _baseWindowWidthBeforeEndSidebar = state.width;
       }
-    } catch (e) {
-      // Silently fail - window state is not critical
+    } catch (e, stackTrace) {
+      _debugWindowStateFailure('save window state', e, stackTrace);
     }
   }
 
@@ -92,8 +94,8 @@ class WindowStateService {
       if (state.isMinimized) {
         await _windowManager.minimize();
       }
-    } catch (e) {
-      // Silently fail - window positioning is not critical
+    } catch (e, stackTrace) {
+      _debugWindowStateFailure('apply window state', e, stackTrace);
     }
   }
 
@@ -113,7 +115,8 @@ class WindowStateService {
         isMinimized: isMinimized,
         sidebarWidth: sidebarWidth ?? 320.0,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _debugWindowStateFailure('read current window state', e, stackTrace);
       return WindowStateEntity.defaultState();
     }
   }
@@ -165,8 +168,9 @@ class WindowStateService {
       }
 
       await saveWindowState(currentState);
-    } catch (e) {
-      // If anything fails, fall back to the old method
+    } catch (e, stackTrace) {
+      _debugWindowStateFailure('save current window state', e, stackTrace);
+      // If decorated-frame capture fails, fall back to direct window capture.
       final currentState = await getCurrentWindowState();
       await saveWindowState(currentState);
     }
@@ -262,8 +266,8 @@ class WindowStateService {
       );
 
       await saveWindowState(updatedState);
-    } catch (e) {
-      // Silently ignore reconciliation failures.
+    } catch (e, stackTrace) {
+      _debugWindowStateFailure('reconcile after screen change', e, stackTrace);
     }
   }
 
@@ -293,8 +297,8 @@ class WindowStateService {
           height: targetHeight,
         );
       }
-    } catch (_) {
-      // Silently ignore; sizing not critical.
+    } catch (e, stackTrace) {
+      _debugWindowStateFailure('enforce minimum size', e, stackTrace);
     }
   }
 
@@ -349,8 +353,12 @@ class WindowStateService {
         endWidth: targetWidth,
       );
       await saveCurrentWindowState();
-    } catch (_) {
-      // Silently ignore animation failures.
+    } catch (e, stackTrace) {
+      _debugWindowStateFailure(
+        'animate end-sidebar window width',
+        e,
+        stackTrace,
+      );
     }
   }
 
@@ -425,5 +433,18 @@ class WindowStateService {
     }
 
     return true;
+  }
+
+  void _debugWindowStateFailure(
+    String operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    if (!kDebugMode) {
+      return;
+    }
+
+    debugPrint('Window state service could not $operation: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 }

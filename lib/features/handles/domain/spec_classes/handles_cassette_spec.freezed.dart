@@ -55,13 +55,10 @@ extension HandlesCassetteSpecPatterns on HandlesCassetteSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _HandlesListUnmatchedSpec value)?  unmatchedHandlesList,TResult Function( _HandlesStrayPhoneNumbersSpec value)?  strayPhoneNumbers,TResult Function( _HandlesStrayEmailsSpec value)?  strayEmails,TResult Function( _HandlesStrayReviewSpec value)?  strayHandlesReview,TResult Function( _HandlesModeSwitcherSpec value)?  strayHandlesModeSwitcher,TResult Function( _HandlesTypeSwitcherSpec value)?  strayHandlesTypeSwitcher,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _HandlesStrayReviewSpec value)?  strayHandlesReview,TResult Function( _HandlesModeSwitcherSpec value)?  strayHandlesModeSwitcher,TResult Function( _HandlesTypeSwitcherSpec value)?  strayHandlesTypeSwitcher,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _HandlesListUnmatchedSpec() when unmatchedHandlesList != null:
-return unmatchedHandlesList(_that);case _HandlesStrayPhoneNumbersSpec() when strayPhoneNumbers != null:
-return strayPhoneNumbers(_that);case _HandlesStrayEmailsSpec() when strayEmails != null:
-return strayEmails(_that);case _HandlesStrayReviewSpec() when strayHandlesReview != null:
+case _HandlesStrayReviewSpec() when strayHandlesReview != null:
 return strayHandlesReview(_that);case _HandlesModeSwitcherSpec() when strayHandlesModeSwitcher != null:
 return strayHandlesModeSwitcher(_that);case _HandlesTypeSwitcherSpec() when strayHandlesTypeSwitcher != null:
 return strayHandlesTypeSwitcher(_that);case _:
@@ -82,13 +79,10 @@ return strayHandlesTypeSwitcher(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _HandlesListUnmatchedSpec value)  unmatchedHandlesList,required TResult Function( _HandlesStrayPhoneNumbersSpec value)  strayPhoneNumbers,required TResult Function( _HandlesStrayEmailsSpec value)  strayEmails,required TResult Function( _HandlesStrayReviewSpec value)  strayHandlesReview,required TResult Function( _HandlesModeSwitcherSpec value)  strayHandlesModeSwitcher,required TResult Function( _HandlesTypeSwitcherSpec value)  strayHandlesTypeSwitcher,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _HandlesStrayReviewSpec value)  strayHandlesReview,required TResult Function( _HandlesModeSwitcherSpec value)  strayHandlesModeSwitcher,required TResult Function( _HandlesTypeSwitcherSpec value)  strayHandlesTypeSwitcher,}){
 final _that = this;
 switch (_that) {
-case _HandlesListUnmatchedSpec():
-return unmatchedHandlesList(_that);case _HandlesStrayPhoneNumbersSpec():
-return strayPhoneNumbers(_that);case _HandlesStrayEmailsSpec():
-return strayEmails(_that);case _HandlesStrayReviewSpec():
+case _HandlesStrayReviewSpec():
 return strayHandlesReview(_that);case _HandlesModeSwitcherSpec():
 return strayHandlesModeSwitcher(_that);case _HandlesTypeSwitcherSpec():
 return strayHandlesTypeSwitcher(_that);case _:
@@ -108,13 +102,10 @@ return strayHandlesTypeSwitcher(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _HandlesListUnmatchedSpec value)?  unmatchedHandlesList,TResult? Function( _HandlesStrayPhoneNumbersSpec value)?  strayPhoneNumbers,TResult? Function( _HandlesStrayEmailsSpec value)?  strayEmails,TResult? Function( _HandlesStrayReviewSpec value)?  strayHandlesReview,TResult? Function( _HandlesModeSwitcherSpec value)?  strayHandlesModeSwitcher,TResult? Function( _HandlesTypeSwitcherSpec value)?  strayHandlesTypeSwitcher,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _HandlesStrayReviewSpec value)?  strayHandlesReview,TResult? Function( _HandlesModeSwitcherSpec value)?  strayHandlesModeSwitcher,TResult? Function( _HandlesTypeSwitcherSpec value)?  strayHandlesTypeSwitcher,}){
 final _that = this;
 switch (_that) {
-case _HandlesListUnmatchedSpec() when unmatchedHandlesList != null:
-return unmatchedHandlesList(_that);case _HandlesStrayPhoneNumbersSpec() when strayPhoneNumbers != null:
-return strayPhoneNumbers(_that);case _HandlesStrayEmailsSpec() when strayEmails != null:
-return strayEmails(_that);case _HandlesStrayReviewSpec() when strayHandlesReview != null:
+case _HandlesStrayReviewSpec() when strayHandlesReview != null:
 return strayHandlesReview(_that);case _HandlesModeSwitcherSpec() when strayHandlesModeSwitcher != null:
 return strayHandlesModeSwitcher(_that);case _HandlesTypeSwitcherSpec() when strayHandlesTypeSwitcher != null:
 return strayHandlesTypeSwitcher(_that);case _:
@@ -134,12 +125,9 @@ return strayHandlesTypeSwitcher(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int? chosenContactId)?  unmatchedHandlesList,TResult Function()?  strayPhoneNumbers,TResult Function()?  strayEmails,TResult Function( StrayHandleFilter filter,  StrayHandleMode mode)?  strayHandlesReview,TResult Function( StrayHandleFilter filter)?  strayHandlesModeSwitcher,TResult Function( StrayHandleFilter selectedFilter)?  strayHandlesTypeSwitcher,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( StrayHandleFilter filter,  StrayHandleMode mode)?  strayHandlesReview,TResult Function( StrayHandleFilter filter)?  strayHandlesModeSwitcher,TResult Function( StrayHandleFilter selectedFilter)?  strayHandlesTypeSwitcher,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _HandlesListUnmatchedSpec() when unmatchedHandlesList != null:
-return unmatchedHandlesList(_that.chosenContactId);case _HandlesStrayPhoneNumbersSpec() when strayPhoneNumbers != null:
-return strayPhoneNumbers();case _HandlesStrayEmailsSpec() when strayEmails != null:
-return strayEmails();case _HandlesStrayReviewSpec() when strayHandlesReview != null:
+case _HandlesStrayReviewSpec() when strayHandlesReview != null:
 return strayHandlesReview(_that.filter,_that.mode);case _HandlesModeSwitcherSpec() when strayHandlesModeSwitcher != null:
 return strayHandlesModeSwitcher(_that.filter);case _HandlesTypeSwitcherSpec() when strayHandlesTypeSwitcher != null:
 return strayHandlesTypeSwitcher(_that.selectedFilter);case _:
@@ -160,12 +148,9 @@ return strayHandlesTypeSwitcher(_that.selectedFilter);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int? chosenContactId)  unmatchedHandlesList,required TResult Function()  strayPhoneNumbers,required TResult Function()  strayEmails,required TResult Function( StrayHandleFilter filter,  StrayHandleMode mode)  strayHandlesReview,required TResult Function( StrayHandleFilter filter)  strayHandlesModeSwitcher,required TResult Function( StrayHandleFilter selectedFilter)  strayHandlesTypeSwitcher,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( StrayHandleFilter filter,  StrayHandleMode mode)  strayHandlesReview,required TResult Function( StrayHandleFilter filter)  strayHandlesModeSwitcher,required TResult Function( StrayHandleFilter selectedFilter)  strayHandlesTypeSwitcher,}) {final _that = this;
 switch (_that) {
-case _HandlesListUnmatchedSpec():
-return unmatchedHandlesList(_that.chosenContactId);case _HandlesStrayPhoneNumbersSpec():
-return strayPhoneNumbers();case _HandlesStrayEmailsSpec():
-return strayEmails();case _HandlesStrayReviewSpec():
+case _HandlesStrayReviewSpec():
 return strayHandlesReview(_that.filter,_that.mode);case _HandlesModeSwitcherSpec():
 return strayHandlesModeSwitcher(_that.filter);case _HandlesTypeSwitcherSpec():
 return strayHandlesTypeSwitcher(_that.selectedFilter);case _:
@@ -185,12 +170,9 @@ return strayHandlesTypeSwitcher(_that.selectedFilter);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int? chosenContactId)?  unmatchedHandlesList,TResult? Function()?  strayPhoneNumbers,TResult? Function()?  strayEmails,TResult? Function( StrayHandleFilter filter,  StrayHandleMode mode)?  strayHandlesReview,TResult? Function( StrayHandleFilter filter)?  strayHandlesModeSwitcher,TResult? Function( StrayHandleFilter selectedFilter)?  strayHandlesTypeSwitcher,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( StrayHandleFilter filter,  StrayHandleMode mode)?  strayHandlesReview,TResult? Function( StrayHandleFilter filter)?  strayHandlesModeSwitcher,TResult? Function( StrayHandleFilter selectedFilter)?  strayHandlesTypeSwitcher,}) {final _that = this;
 switch (_that) {
-case _HandlesListUnmatchedSpec() when unmatchedHandlesList != null:
-return unmatchedHandlesList(_that.chosenContactId);case _HandlesStrayPhoneNumbersSpec() when strayPhoneNumbers != null:
-return strayPhoneNumbers();case _HandlesStrayEmailsSpec() when strayEmails != null:
-return strayEmails();case _HandlesStrayReviewSpec() when strayHandlesReview != null:
+case _HandlesStrayReviewSpec() when strayHandlesReview != null:
 return strayHandlesReview(_that.filter,_that.mode);case _HandlesModeSwitcherSpec() when strayHandlesModeSwitcher != null:
 return strayHandlesModeSwitcher(_that.filter);case _HandlesTypeSwitcherSpec() when strayHandlesTypeSwitcher != null:
 return strayHandlesTypeSwitcher(_that.selectedFilter);case _:
@@ -200,136 +182,6 @@ return strayHandlesTypeSwitcher(_that.selectedFilter);case _:
 }
 
 }
-
-/// @nodoc
-
-
-class _HandlesListUnmatchedSpec implements HandlesCassetteSpec {
-  const _HandlesListUnmatchedSpec({this.chosenContactId});
-  
-
- final  int? chosenContactId;
-
-/// Create a copy of HandlesCassetteSpec
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$HandlesListUnmatchedSpecCopyWith<_HandlesListUnmatchedSpec> get copyWith => __$HandlesListUnmatchedSpecCopyWithImpl<_HandlesListUnmatchedSpec>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HandlesListUnmatchedSpec&&(identical(other.chosenContactId, chosenContactId) || other.chosenContactId == chosenContactId));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,chosenContactId);
-
-@override
-String toString() {
-  return 'HandlesCassetteSpec.unmatchedHandlesList(chosenContactId: $chosenContactId)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$HandlesListUnmatchedSpecCopyWith<$Res> implements $HandlesCassetteSpecCopyWith<$Res> {
-  factory _$HandlesListUnmatchedSpecCopyWith(_HandlesListUnmatchedSpec value, $Res Function(_HandlesListUnmatchedSpec) _then) = __$HandlesListUnmatchedSpecCopyWithImpl;
-@useResult
-$Res call({
- int? chosenContactId
-});
-
-
-
-
-}
-/// @nodoc
-class __$HandlesListUnmatchedSpecCopyWithImpl<$Res>
-    implements _$HandlesListUnmatchedSpecCopyWith<$Res> {
-  __$HandlesListUnmatchedSpecCopyWithImpl(this._self, this._then);
-
-  final _HandlesListUnmatchedSpec _self;
-  final $Res Function(_HandlesListUnmatchedSpec) _then;
-
-/// Create a copy of HandlesCassetteSpec
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? chosenContactId = freezed,}) {
-  return _then(_HandlesListUnmatchedSpec(
-chosenContactId: freezed == chosenContactId ? _self.chosenContactId : chosenContactId // ignore: cast_nullable_to_non_nullable
-as int?,
-  ));
-}
-
-
-}
-
-/// @nodoc
-
-
-class _HandlesStrayPhoneNumbersSpec implements HandlesCassetteSpec {
-  const _HandlesStrayPhoneNumbersSpec();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HandlesStrayPhoneNumbersSpec);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'HandlesCassetteSpec.strayPhoneNumbers()';
-}
-
-
-}
-
-
-
-
-/// @nodoc
-
-
-class _HandlesStrayEmailsSpec implements HandlesCassetteSpec {
-  const _HandlesStrayEmailsSpec();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HandlesStrayEmailsSpec);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'HandlesCassetteSpec.strayEmails()';
-}
-
-
-}
-
-
-
 
 /// @nodoc
 

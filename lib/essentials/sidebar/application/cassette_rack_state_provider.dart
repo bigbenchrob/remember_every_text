@@ -1,9 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../db/feature_level_providers/working_db_populated_provider.dart';
+import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
+import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
+import '../../db/feature_level_providers/conversation_graph_readiness_provider.dart'
+    show conversationGraphPopulatedProvider;
 import '../../navigation/domain/sidebar_mode.dart';
-import '../feature_level_providers.dart';
+import '../domain/entities/cassette_spec.dart';
 import './sidebar_flow_state_provider.dart';
 
 part 'cassette_rack_state_provider.freezed.dart';
@@ -31,7 +34,7 @@ List<CassetteSpec> _cascadeFromSpec(
 /// It uses the `freezed` package to generate the immutable data class
 /// implementation along with copyWith, equality, and debugging utilities.  A
 /// convenience factory [CassetteRack.initial] is provided to generate the
-/// tracer‑bullet default containing a single top chat menu cassette.
+/// default top chat menu cascade.
 @freezed
 abstract class CassetteRack with _$CassetteRack {
   /// Creates a new [CassetteRack] with the given list of [cassettes].  The
@@ -46,7 +49,7 @@ abstract class CassetteRack with _$CassetteRack {
   const CassetteRack._();
 
   /// Returns a fresh [CassetteRack] containing a single top chat menu
-  /// cassette.  This is the initial tracer‑bullet state used by
+  /// cassette.  This is the initial messages sidebar state used by
   /// [CassetteRackState.build].
   factory CassetteRack.initial() {
     const topMenu = CassetteSpec.sidebarUtility(
@@ -69,7 +72,7 @@ abstract class CassetteRack with _$CassetteRack {
 class CassetteRackState extends _$CassetteRackState {
   @override
   CassetteRack build(SidebarMode mode) {
-    final isPopulated = ref.watch(workingDbPopulatedProvider);
+    final isPopulated = ref.watch(conversationGraphPopulatedProvider);
     switch (mode) {
       case SidebarMode.messages:
         if (!isPopulated) {
@@ -87,7 +90,7 @@ class CassetteRackState extends _$CassetteRackState {
     }
   }
 
-  /// Reset to the simple single top‑menu tracer bullet state.
+  /// Reset to the current default sidebar cascade.
   void resetToInitial() {
     switch (mode) {
       case SidebarMode.messages:
@@ -122,21 +125,6 @@ class CassetteRackState extends _$CassetteRackState {
     return _cascadeFromSpec(root, topologyContext: _stableTopologyContext());
   }
 
-  /// Convenience for just updating the top chat menu cassette.  The
-  /// [chosenMenuIndex] parameter determines which option is selected; if null
-  /// it defaults to whatever the factory uses by default.  This is used by
-  /// UI interactions in the tracer‑bullet phase.
-  // void setTopChatMenu({TopChatMenuChoice chosenTopMenuChoice}) {
-  //   final topMenu = const CassetteSpec.sidebarUtility(
-  //     SidebarUtilityCassetteSpec.topChatMenu(
-  //       selectedChoice:
-  //           selectedChoice ??
-  //           SidebarUtilityCassetteSpec.topChatMenu().chosenMenuIndex,
-  //     ),
-  //   );
-  //   state = state.copyWith(cassettes: _cascadeFromSpec(topMenu));
-  // }
-
   /// Replace the cassette at [index] with [newSpec] and re-cascade children.
   ///
   /// This is the preferred method for widgets to update their cassette spec
@@ -144,8 +132,8 @@ class CassetteRackState extends _$CassetteRackState {
   /// the resolver (which received it from the coordinator), constructs the
   /// new spec locally, and calls this method.
   ///
-  /// This approach avoids requiring widgets to hold the old spec in state,
-  /// which would violate the cross-surface spec system rules.
+  /// The rack owns the previous spec; widgets provide only the replacement
+  /// spec for their current index.
   ///
   /// If the index is out of bounds, this is a no-op.
   void replaceAtIndexAndCascade(int index, CassetteSpec newSpec) {
@@ -154,7 +142,7 @@ class CassetteRackState extends _$CassetteRackState {
     }
 
     final preserved = state.cassettes.take(index).toList(growable: false);
-    final isPopulated = ref.read(workingDbPopulatedProvider);
+    final isPopulated = ref.read(conversationGraphPopulatedProvider);
     final cascaded = isPopulated
         ? _cascadeForCurrentMode(newSpec)
         : <CassetteSpec>[newSpec];

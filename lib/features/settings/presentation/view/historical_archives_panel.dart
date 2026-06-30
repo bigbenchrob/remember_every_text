@@ -3,7 +3,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../view_model/historical_archives_workflow_panel_model_provider.dart';
+import '../../../../essentials/debug/feature_level_providers.dart'
+    show DeveloperModeValue, developerModeProvider;
+import '../../application/historical_archives_workflow_actions_provider.dart';
+import '../../application/historical_archives_workflow_panel_model_provider.dart';
 
 class HistoricalArchivesPanel extends ConsumerWidget {
   const HistoricalArchivesPanel({super.key});
@@ -14,6 +17,9 @@ class HistoricalArchivesPanel extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final panelModel = ref.watch(historicalArchivesWorkflowPanelModelProvider);
+    final developerMode = ref.watch(developerModeProvider);
+    final showDeveloperControls =
+        developerMode.valueOrNull == DeveloperModeValue.developer;
 
     return ColoredBox(
       color: colors.surfaces.canvas,
@@ -41,18 +47,19 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                         spacing: 10,
                         runSpacing: 10,
                         children: [
-                          _PlaceholderButton(
+                          _HistoricalArchiveActionButton(
                             label: 'Choose Messages Folder...',
                             enabled: true,
                             onPressed: () {
                               ref
                                   .read(
-                                    historicalArchivesWorkflowProvider.notifier,
+                                    historicalArchivesWorkflowActionsProvider
+                                        .notifier,
                                   )
                                   .chooseMessagesFolder();
                             },
                           ),
-                          _PlaceholderButton(
+                          _HistoricalArchiveActionButton(
                             label: 'Clear Selected Folder',
                             enabled: panelModel.selectedFolderPath != null,
                             onPressed: panelModel.selectedFolderPath == null
@@ -60,7 +67,7 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                                 : () {
                                     ref
                                         .read(
-                                          historicalArchivesWorkflowProvider
+                                          historicalArchivesWorkflowActionsProvider
                                               .notifier,
                                         )
                                         .clearSelection();
@@ -107,7 +114,10 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                         title: 'Preflight State',
                         statusLabel: panelModel.preflight.statusLabel,
                         detail: panelModel.preflight.detail,
-                        tone: _preflightTone(panelModel.preflight.status),
+                        tone: _preflightTone(
+                          panelModel.preflight.status,
+                          colors: colors,
+                        ),
                       ),
                       const SizedBox(height: 14),
                       for (final line in panelModel.preflightSummaryLines) ...[
@@ -145,14 +155,14 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _PlaceholderButton(
+                      _HistoricalArchiveActionButton(
                         label: 'Begin Import',
                         enabled: panelModel.importButtonEnabled,
                         onPressed: panelModel.importButtonEnabled
                             ? () {
                                 ref
                                     .read(
-                                      historicalArchivesWorkflowProvider
+                                      historicalArchivesWorkflowActionsProvider
                                           .notifier,
                                     )
                                     .beginImportForSelectedSource();
@@ -166,45 +176,16 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                           color: colors.content.textSecondary,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _ShellSectionCard(
-                  title: 'Developer Testing Controls',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _PlaceholderButton(
-                        label: 'Clear Imported Archive Data for This Source',
-                        enabled: panelModel.removeImportedArchiveDataEnabled,
-                        onPressed: panelModel.removeImportedArchiveDataEnabled
-                            ? () {
-                                _showRemoveImportedArchiveDataConfirmationDialog(
-                                  context: context,
-                                  ref: ref,
-                                  panelModel: panelModel,
-                                );
-                              }
-                            : null,
-                      ),
                       const SizedBox(height: 12),
                       Text(
-                        'Developer/testing only. This deletes previously imported archive records from MessageLens for the selected archive source, then rebuilds the app timeline.',
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
+                        'Import safety',
+                        style: typography.controlValue.copyWith(
+                          color: colors.content.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'It does not delete or modify the source archive folder. It does not reset overlay or user-intent data. Live current_mac data must remain untouched.',
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       for (final line
-                          in panelModel.archiveManagementSummaryLines) ...[
+                          in panelModel.importSafetySummaryLines) ...[
                         Text(
                           line,
                           style: typography.body.copyWith(
@@ -213,16 +194,65 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                       ],
-                      const SizedBox(height: 4),
-                      Text(
-                        panelModel.removeImportedArchiveDataDetail,
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
-                        ),
-                      ),
                     ],
                   ),
                 ),
+                if (showDeveloperControls) ...[
+                  const SizedBox(height: 16),
+                  _ShellSectionCard(
+                    title: 'Developer Testing Controls',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _HistoricalArchiveActionButton(
+                          label: 'Clear Imported Archive Data for This Source',
+                          enabled: panelModel.removeImportedArchiveDataEnabled,
+                          onPressed: panelModel.removeImportedArchiveDataEnabled
+                              ? () {
+                                  _showRemoveImportedArchiveDataConfirmationDialog(
+                                    context: context,
+                                    ref: ref,
+                                    panelModel: panelModel,
+                                  );
+                                }
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Developer/testing only. This deletes source-scoped import rows from MessageLens for the selected archive source, then reprojects the conversation graph.',
+                          style: typography.body.copyWith(
+                            color: colors.content.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'It does not delete or modify the source archive folder. It does not reset overlay or user-intent data. Live current_mac data must remain untouched.',
+                          style: typography.body.copyWith(
+                            color: colors.content.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        for (final line
+                            in panelModel.archiveManagementSummaryLines) ...[
+                          Text(
+                            line,
+                            style: typography.body.copyWith(
+                              color: colors.content.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          panelModel.removeImportedArchiveDataDetail,
+                          style: typography.body.copyWith(
+                            color: colors.content.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 _ShellSectionCard(
                   title: 'Activity Log',
@@ -292,8 +322,7 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
   required HistoricalArchivesWorkflowPanelViewModel panelModel,
 }) async {
   final targetPath = panelModel.archiveRemovalTargetChatDbPath;
-  final batchCount = panelModel.matchedImportedArchiveBatchCount;
-  if (targetPath == null || batchCount == null || batchCount <= 0) {
+  if (targetPath == null) {
     return;
   }
 
@@ -304,8 +333,7 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
         title: const Text('Remove Imported Archive Data?'),
         content: Text(
           'Removal target chat.db: $targetPath\n\n'
-          'Matched imported archive batches in db-import: $batchCount\n\n'
-          'This deletes previously imported archive records from MessageLens for this selected source, then rebuilds the app timeline. It does not delete or modify the source archive folder, and it does not reset overlay or user-intent data.',
+          'This deletes source-scoped import rows from MessageLens for this selected source, then reprojects the conversation graph from the remaining import facts. It does not delete or modify the source archive folder, and it does not reset overlay or user-intent data.',
         ),
         actions: [
           CupertinoDialogAction(
@@ -328,7 +356,7 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
 
   if (confirmed == true) {
     await ref
-        .read(historicalArchivesWorkflowProvider.notifier)
+        .read(historicalArchivesWorkflowActionsProvider.notifier)
         .removeImportedArchiveDataForSelectedSource();
   }
 }
@@ -394,7 +422,7 @@ class _ShellHeroCard extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'This shell makes the historical archive workflow visible before real import wiring is enabled.',
+              'Import historical Messages folders without replacing current message data.',
               style: typography.title1.copyWith(
                 color: colors.content.textPrimary,
               ),
@@ -415,7 +443,10 @@ class _ShellHeroCard extends ConsumerWidget {
                     title: 'Execution Gate',
                     statusLabel: executionGate.statusLabel,
                     detail: executionGate.detail,
-                    tone: _executionGateTone(executionGate.status),
+                    tone: _executionGateTone(
+                      executionGate.status,
+                      colors: colors,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -424,7 +455,7 @@ class _ShellHeroCard extends ConsumerWidget {
                     title: 'Preflight',
                     statusLabel: preflight.statusLabel,
                     detail: preflight.detail,
-                    tone: _preflightTone(preflight.status),
+                    tone: _preflightTone(preflight.status, colors: colors),
                   ),
                 ),
               ],
@@ -474,8 +505,8 @@ class _ShellSectionCard extends ConsumerWidget {
   }
 }
 
-class _PlaceholderButton extends ConsumerWidget {
-  const _PlaceholderButton({
+class _HistoricalArchiveActionButton extends ConsumerWidget {
+  const _HistoricalArchiveActionButton({
     required this.label,
     this.enabled = false,
     this.onPressed,
@@ -768,23 +799,27 @@ class _PhaseRow extends ConsumerWidget {
   }
 }
 
-Color _executionGateTone(HistoricalArchivesExecutionGateStatus status) {
+Color _executionGateTone(
+  HistoricalArchivesExecutionGateStatus status, {
+  required ThemeColors colors,
+}) {
   return switch (status) {
-    HistoricalArchivesExecutionGateStatus.available => const Color(0xFF1F8A52),
-    HistoricalArchivesExecutionGateStatus.busy => const Color(0xFFB36A00),
-    HistoricalArchivesExecutionGateStatus.blocked => const Color(0xFFC03A2B),
+    HistoricalArchivesExecutionGateStatus.available => colors.status.success,
+    HistoricalArchivesExecutionGateStatus.busy => colors.status.warning,
+    HistoricalArchivesExecutionGateStatus.blocked => colors.status.error,
   };
 }
 
-Color _preflightTone(HistoricalArchivesPreflightStatus status) {
+Color _preflightTone(
+  HistoricalArchivesPreflightStatus status, {
+  required ThemeColors colors,
+}) {
   return switch (status) {
-    HistoricalArchivesPreflightStatus.waitingForFolder => const Color(
-      0xFF7A7D84,
-    ),
-    HistoricalArchivesPreflightStatus.running => const Color(0xFFB36A00),
-    HistoricalArchivesPreflightStatus.completeReadyToImport => const Color(
-      0xFF1F8A52,
-    ),
-    HistoricalArchivesPreflightStatus.failed => const Color(0xFFC03A2B),
+    HistoricalArchivesPreflightStatus.waitingForFolder =>
+      colors.content.textTertiary,
+    HistoricalArchivesPreflightStatus.running => colors.status.warning,
+    HistoricalArchivesPreflightStatus.completeReadyToImport =>
+      colors.status.success,
+    HistoricalArchivesPreflightStatus.failed => colors.status.error,
   };
 }

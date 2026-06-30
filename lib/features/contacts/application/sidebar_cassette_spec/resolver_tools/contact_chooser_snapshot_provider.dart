@@ -2,7 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../constants/domain/contact_constants.dart';
-import '../../../infrastructure/repositories/contacts_list_repository.dart';
+import '../../read_models/contacts_list_repository_provider.dart';
 import '../payloads/contact_chooser_cassette_payload.dart';
 import 'filtered_picker_sections_provider.dart';
 import 'picker_filter_mode_provider.dart';

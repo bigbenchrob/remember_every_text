@@ -17,7 +17,9 @@ Build the token infrastructure before touching existing widgets.
     - Named sizes: `xs`, `sm`, `md`, `lg`, `xl`, `xxl`
     - Semantic aliases: `gutter`, `sectionGap`, `panelPadding`, `cardPadding`, `cassetteGap`
 
-- [ ] **1.1.2** Export from barrel: `lib/config/theme/theme.dart`
+- [x] **1.1.2** Superseded: the old `lib/config/theme/theme.dart` barrel has
+  been retired. Current callers import spacing/widgets/tokens directly and use
+  `themeColorsProvider` / `themeTypographyProvider`.
 
 ### 1.2 Structural Wrappers
 

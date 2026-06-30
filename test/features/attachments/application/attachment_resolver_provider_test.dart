@@ -4,7 +4,9 @@ import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
+    show attachmentArchiveDirectoryProvider, overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_recovery_hint_storage.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_resolver_provider.dart';
@@ -63,18 +65,20 @@ void main() {
         attachmentResolverProvider(
           AttachmentInfo(
             id: 1,
+            archiveCompatibilityKey: const ArchiveCompatibilityKey(
+              messageGuid: 'm1',
+              importAttachmentId: 11,
+            ),
             localPath: liveFile.path,
             mimeType: 'image/jpeg',
             transferName: 'photo.jpg',
           ),
-          messageGuid: 'm1',
-          importAttachmentId: 11,
         ).future,
       );
 
       expect(result.availability, ResolvedAttachmentAvailability.available);
       expect(result.provenance, AttachmentProvenance.messagesLive);
-      expect(result.resolvedFile?.path, liveFile.path);
+      expect(result.resolvedFilePath, liveFile.path);
     });
 
     test('archive enabled resolves archived file first', () async {
@@ -102,18 +106,20 @@ void main() {
         attachmentResolverProvider(
           const AttachmentInfo(
             id: 2,
+            archiveCompatibilityKey: ArchiveCompatibilityKey(
+              messageGuid: 'm2',
+              importAttachmentId: 22,
+            ),
             localPath: '/tmp/does-not-exist.jpg',
             mimeType: 'image/jpeg',
             transferName: 'archived.jpg',
           ),
-          messageGuid: 'm2',
-          importAttachmentId: 22,
         ).future,
       );
 
       expect(result.availability, ResolvedAttachmentAvailability.available);
       expect(result.provenance, AttachmentProvenance.archived);
-      expect(result.resolvedFile?.path, archiveFile.path);
+      expect(result.resolvedFilePath, archiveFile.path);
     });
 
     test(
@@ -129,12 +135,14 @@ void main() {
           attachmentResolverProvider(
             AttachmentInfo(
               id: 3,
+              archiveCompatibilityKey: const ArchiveCompatibilityKey(
+                messageGuid: 'm3',
+                importAttachmentId: 33,
+              ),
               localPath: liveFile.path,
               mimeType: 'image/png',
               transferName: 'pending.png',
             ),
-            messageGuid: 'm3',
-            importAttachmentId: 33,
           ).future,
         );
 
@@ -142,7 +150,7 @@ void main() {
           result.availability,
           ResolvedAttachmentAvailability.pendingArchive,
         );
-        expect(result.resolvedFile, isNull);
+        expect(result.resolvedFilePath, isNull);
         expect(result.recoveryMetadata?.recoveryPriority, 1);
 
         var archiveCreated = false;
@@ -174,12 +182,14 @@ void main() {
           attachmentResolverProvider(
             const AttachmentInfo(
               id: 4,
+              archiveCompatibilityKey: ArchiveCompatibilityKey(
+                messageGuid: 'm4',
+                importAttachmentId: 44,
+              ),
               localPath: '/tmp/evicted.mov',
               mimeType: 'video/quicktime',
               transferName: 'evicted.mov',
             ),
-            messageGuid: 'm4',
-            importAttachmentId: 44,
           ).future,
         );
 
@@ -188,7 +198,7 @@ void main() {
           ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
         );
         expect(result.recoveryMetadata?.isNonRecoverable, isFalse);
-        expect(result.resolvedFile, isNull);
+        expect(result.resolvedFilePath, isNull);
       },
     );
 
@@ -202,8 +212,10 @@ void main() {
 
         await overlayDb.writeOverlaySetting(
           settingKey: attachmentRecoveryHintSettingKey(
-            messageGuid: 'm-priority',
-            importAttachmentId: 55,
+            archiveKey: const ArchiveCompatibilityKey(
+              messageGuid: 'm-priority',
+              importAttachmentId: 55,
+            ),
           ),
           settingValue: encodeAttachmentRecoveryHint(
             AttachmentRecoveryMetadata(
@@ -219,12 +231,14 @@ void main() {
           attachmentResolverProvider(
             const AttachmentInfo(
               id: 6,
+              archiveCompatibilityKey: ArchiveCompatibilityKey(
+                messageGuid: 'm-priority',
+                importAttachmentId: 55,
+              ),
               localPath: '/tmp/missing-priority.jpg',
               mimeType: 'image/jpeg',
               transferName: 'missing-priority.jpg',
             ),
-            messageGuid: 'm-priority',
-            importAttachmentId: 55,
           ).future,
         );
 
@@ -253,8 +267,6 @@ void main() {
               mimeType: 'application/octet-stream',
               transferName: 'unknown.bin',
             ),
-            messageGuid: 'm5',
-            importAttachmentId: null,
           ).future,
         );
 

@@ -2,7 +2,7 @@
 tier: project
 scope: macos-source-databases
 owner: agent-per-project
-last_reviewed: 2026-05-15
+last_reviewed: 2026-06-06
 source_of_truth: live-source-db-analysis
 links:
   - ./00-overview.md
@@ -23,7 +23,8 @@ This document is intentionally not an exhaustive schema dump. It records the app
 
 - Treat `chat.db` as read-only external source data.
 - Verify source fields and relationship ownership before using them in importer logic.
-- Do not infer source columns from `macos_import.db`, `working.db`, or Drift entities.
+- Do not infer source columns from MessageLens import ledgers, graph
+  projection, retired cleanup databases, or Drift entities.
 - Preserve source-local row identity as provenance, not canonical app identity.
 - For multi-source/archive support, source provenance should include `source_id + source_table + source_rowid`.
 
@@ -82,7 +83,9 @@ App-relevant fields include:
 | `service` | Service context for the handle when present. |
 | `country` | Region hint when present. |
 
-Handle identity is source-local. Canonical participant/contact identity is resolved later through import/migration and AddressBook matching.
+Handle identity is source-local. Canonical contact/display identity is resolved
+later through source-scoped import, graph projection, handle canonicalization,
+overlay user intent, and AddressBook matching.
 
 ## `chat`
 
@@ -124,7 +127,9 @@ App-relevant fields include:
 | `chat_id` | Source-local `chat.ROWID`. |
 | `handle_id` | Source-local `handle.ROWID`. |
 
-This relationship is prerequisite data for any future importer that wants to preserve chat participants before canonical projection.
+This relationship is the source fact for chat participant topology. Preserve it
+through source-scoped import and project it as canonical `chat_to_handle`
+graph edges; do not infer participants from chat rows or handle rows alone.
 
 ## `attachment`
 
@@ -165,4 +170,7 @@ Before adding or changing a `chat.db` reader/importer:
 4. Keep source relationship identity separate from canonical app identity.
 5. Add focused tests that would fail if an inferred source column is used.
 
-Recommended follow-up for the current `MessageImporter`: replace any attempted `message.chat_id` read with explicit observation of `chat_message_join` when preserving message-to-chat source relationship identity. Until a real chat importer exists, continue keeping canonical chat resolution out of the message importer.
+Current graph-era invariant: message rows do not own chat membership. Preserve
+message facts in the message importer, preserve chat/message topology from
+`chat_message_join`, and keep canonical chat resolution out of message-row
+import logic.

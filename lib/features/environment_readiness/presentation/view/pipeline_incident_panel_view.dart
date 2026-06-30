@@ -3,17 +3,17 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/db/application/database_health_audit/database_health_audit_service.dart';
-import '../../../../essentials/logging/application/app_logger.dart';
 import '../../../../essentials/logging/application/diagnostic_report_actions.dart';
-import '../../../../essentials/logging/application/pipeline_incident_tracker_provider.dart';
+import '../../../../essentials/logging/domain/diagnostic_report_presentation_result.dart';
 import '../../../../essentials/logging/domain/pipeline_incident_report.dart';
-import '../../../../essentials/logging/infrastructure/log_export_service.dart';
-import '../../../../essentials/onboarding/application/onboarding_gate_provider.dart';
+import '../../../../essentials/logging/feature_level_providers.dart'
+    show
+        diagnosticReportExporterProvider,
+        activeBlockingPipelineIncidentProvider;
 import '../../../../essentials/onboarding/domain/onboarding_status.dart';
-
-const _kIncidentError = Color(0xFFFF3B30);
-const _kIncidentWarning = Color(0xFFFF9500);
+import '../../../../essentials/onboarding/feature_level_providers.dart'
+    show onboardingGateProvider;
+import '../../application/pipeline_incident_actions_provider.dart';
 
 class PipelineIncidentPanelView extends ConsumerWidget {
   const PipelineIncidentPanelView({super.key});
@@ -83,7 +83,7 @@ class _PipelineIncidentBody extends ConsumerWidget {
               color: colors.surfaces.surfaceRaised,
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: _kIncidentError.withValues(alpha: 0.35),
+                color: colors.status.error.withValues(alpha: 0.35),
                 width: 1,
               ),
             ),
@@ -93,12 +93,12 @@ class _PipelineIncidentBody extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _kIncidentError.withValues(alpha: 0.12),
+                    color: colors.status.error.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.error_outline_rounded,
-                    color: _kIncidentError,
+                    color: colors.status.error,
                     size: 28,
                   ),
                 ),
@@ -122,7 +122,7 @@ class _PipelineIncidentBody extends ConsumerWidget {
                   runSpacing: 10,
                   children: [
                     _MetaChip(
-                      label: 'Stage: ${report.stage.name}',
+                      label: 'Stage: ${report.stage.displayLabel}',
                       colors: colors,
                       typography: typography,
                     ),
@@ -182,25 +182,23 @@ class _PipelineIncidentBody extends ConsumerWidget {
                 FilledButton(
                   onPressed: () {
                     ref
-                        .read(onboardingGateProvider.notifier)
-                        .startImportAndMigration();
+                        .read(pipelineIncidentActionsProvider.notifier)
+                        .retryImportAndGraphBuild();
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.buttons.primaryBackground,
                     foregroundColor: colors.buttons.primaryForeground,
                   ),
-                  child: const Text('Retry Import and Migration'),
+                  child: const Text('Retry Import and Graph Build'),
                 ),
               OutlinedButton(
                 onPressed: () async {
-                  final writer = ref.read(appLoggerProvider.notifier).writer;
-                  final databaseHealthAuditService = await ref.read(
-                    databaseHealthAuditServiceProvider.future,
+                  final diagnosticReportExporter = await ref.read(
+                    diagnosticReportExporterProvider.future,
                   );
                   final result = await exportPipelineIncidentDiagnosticReport(
-                    writer,
+                    diagnosticReportExporter,
                     report: report,
-                    databaseHealthAuditService: databaseHealthAuditService,
                   );
                   if (!context.mounted) {
                     return;
@@ -217,7 +215,7 @@ class _PipelineIncidentBody extends ConsumerWidget {
                 OutlinedButton(
                   onPressed: () {
                     ref
-                        .read(pipelineIncidentTrackerProvider.notifier)
+                        .read(pipelineIncidentActionsProvider.notifier)
                         .dismissActiveReport();
                   },
                   style: OutlinedButton.styleFrom(
@@ -317,8 +315,8 @@ class _IncidentEntryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = switch (entry.severity) {
-      PipelineIncidentSeverity.blocking => _kIncidentError,
-      PipelineIncidentSeverity.warning => _kIncidentWarning,
+      PipelineIncidentSeverity.blocking => colors.status.error,
+      PipelineIncidentSeverity.warning => colors.status.warning,
       PipelineIncidentSeverity.context => colors.accents.primary,
     };
 

@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/messages/feature_level_providers.dart'
-    as messages_feature;
+    as messages_feature show recoveredMessagesSidebarProvider;
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
-import '../../logging/application/app_logger.dart';
+import '../../logging/feature_level_providers.dart' show appLoggerProvider;
+import '../../sidebar/application/cassette_rack_state_provider.dart';
+import '../../sidebar/application/cassette_widget_coordinator_provider.dart';
+import '../../sidebar/application/sidebar_cassette_render_router.dart';
 import '../../sidebar/application/sidebar_cassette_sectioning.dart';
-import '../../sidebar/feature_level_providers.dart';
+import '../../sidebar/application/sidebar_flow_state_provider.dart';
 import '../../sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
 import '../../sidebar/presentation/view/sidebar_primary_context_section_surface.dart';
 import '../../sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
@@ -16,11 +20,8 @@ import '../domain/entities/panel_stack.dart';
 import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';
 import '../domain/sidebar_mode.dart';
-import '../feature_level_providers.dart';
 import './panel_coordinator_provider.dart';
-
-// Import the sidebar feature barrel for rack state, cassette resolution, and
-// render helpers used to compose the left panel surface.
+import 'panels_view_state_provider.dart';
 
 part 'panel_widget_providers.g.dart';
 
@@ -81,7 +82,6 @@ PanelStack effectiveRightPanelStack(Ref ref, SidebarMode mode) {
   final flowState = ref.watch(sidebarFlowProvider);
   final effectiveCenterSpec = ref.watch(effectiveCenterPanelSpecProvider(mode));
   if (_shouldHideStoredRightPanel(
-    ref: ref,
     flowState: flowState,
     centerSpec: effectiveCenterSpec,
     rightStack: rightStack,
@@ -99,7 +99,7 @@ ViewSpec? effectiveRightPanelSpec(Ref ref, SidebarMode mode) {
 }
 
 /// Whether the center panel is showing content that operates independently
-/// of the sidebar (e.g. import/migration, workbench).
+/// of the sidebar (e.g. maintenance, diagnostics, workbench).
 ///
 /// When true, the sidebar should display a contextual overlay with a
 /// dismiss action rather than the cassette rack.
@@ -180,7 +180,6 @@ Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
       );
     },
     settings: (_) => null,
-    import: (_) => null,
     environmentReadiness: (_) => null,
     onboarding: (_) => null,
   );
@@ -195,7 +194,6 @@ bool _supportsRecoveredAttachmentSidebar(ViewSpec? spec) {
     messages: (messagesSpec) {
       return messagesSpec.maybeWhen(
         forContact: (_, __, ___) => true,
-        conversationBrowser: () => true,
         globalTimeline: (_) => true,
         recoveredUnlinkedMessages: (_, __) => true,
         recoveredNoHandleFromMeMessages: (_) => true,
@@ -219,7 +217,6 @@ bool _shouldShowRecoveredContextFor(SidebarFlowState flowState) {
 }
 
 bool _shouldHideStoredRightPanel({
-  required Ref ref,
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
   required PanelStack rightStack,
@@ -234,22 +231,9 @@ bool _shouldHideStoredRightPanel({
   }
 
   return !_isCenterSpecCompatibleWithSidebar(
-    ref: ref,
     flowState: flowState,
     centerSpec: rightSpec,
   );
-}
-
-bool _isContactTimelineSearchActive(Ref ref, {required int contactId}) {
-  final contactTimelineViewModel = ref.watch(
-    messages_feature.messageTimelineViewModelProvider(
-      scope: messages_feature.MessageTimelineScope.contact(
-        contactId: contactId,
-      ),
-    ),
-  );
-
-  return contactTimelineViewModel.isSearching;
 }
 
 PanelStack _resolveEffectiveCenterStack({
@@ -314,7 +298,6 @@ String _defaultPanelTitle(ViewSpec spec) {
   return spec.map(
     messages: (_) => 'Messages',
     settings: (_) => 'Settings',
-    import: (_) => 'Import',
     environmentReadiness: (_) => 'Environment Readiness',
     onboarding: (_) => 'Onboarding',
   );
@@ -340,7 +323,6 @@ bool _shouldHideStoredCenterPanel({
     }
 
     return !_isCenterSpecCompatibleWithSidebar(
-      ref: ref,
       flowState: flowState,
       centerSpec: centerSpec,
     );
@@ -355,7 +337,6 @@ bool _shouldHideStoredCenterPanel({
   }
 
   return !_isCenterSpecCompatibleWithSidebar(
-    ref: ref,
     flowState: flowState,
     centerSpec: centerSpec,
   );
@@ -365,7 +346,6 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
   return spec.maybeWhen(
     messages: (messagesSpec) {
       return messagesSpec.maybeWhen(
-        conversationBrowser: () => true,
         forContact: (_, __, ___) => true,
         globalTimeline: (_) => true,
         recoveredUnlinkedMessages: (_, __) => true,
@@ -385,7 +365,6 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
 }
 
 bool _isCenterSpecCompatibleWithSidebar({
-  required Ref ref,
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
 }) {
@@ -396,12 +375,9 @@ bool _isCenterSpecCompatibleWithSidebar({
   return centerSpec.when(
     messages: (messagesSpec) {
       return messagesSpec.when(
-        conversationBrowser: () {
-          return flowState.topMenuChoice == TopChatMenuChoice.conversations;
-        },
-        forChat: (_) => true,
-        forConversation: (_, _, _) {
-          return flowState.topMenuChoice == TopChatMenuChoice.conversations ||
+        forConversation: (conversationId, _, _) {
+          return (flowState.topMenuChoice == TopChatMenuChoice.conversations &&
+                  flowState.selectedConversationId == conversationId) ||
               (flowState.topMenuChoice == TopChatMenuChoice.contacts &&
                   flowState.messageScope == SidebarFlowMessageScope.regular &&
                   flowState.contactProjection ==
@@ -436,26 +412,11 @@ bool _isCenterSpecCompatibleWithSidebar({
         },
         recoveredAttachmentViewer: (_, __) => true,
         searchResultContext: (_, __, ___, ____) {
-          if (flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages) {
-            return _isGlobalTimelineSearchActive(ref);
-          }
-
-          final chosenContactId = flowState.chosenContactId;
-          if (flowState.topMenuChoice == TopChatMenuChoice.contacts &&
-              flowState.messageScope == SidebarFlowMessageScope.regular &&
-              chosenContactId != null) {
-            return _isContactTimelineSearchActive(
-              ref,
-              contactId: chosenContactId,
-            );
-          }
-
-          return false;
+          return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
         },
         handleLens: (_) {
           return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
         },
-        forChatInDateRange: (_, __, ___) => true,
       );
     },
     settings: (settingsSpec) {
@@ -470,20 +431,9 @@ bool _isCenterSpecCompatibleWithSidebar({
         },
       );
     },
-    import: (_) => true,
     environmentReadiness: (_) => true,
     onboarding: (_) => true,
   );
-}
-
-bool _isGlobalTimelineSearchActive(Ref ref) {
-  final globalTimelineViewModel = ref.watch(
-    messages_feature.messageTimelineViewModelProvider(
-      scope: const messages_feature.MessageTimelineScope.global(),
-    ),
-  );
-
-  return globalTimelineViewModel.isSearching;
 }
 
 /// Widget provider for the left sidebar surface.
@@ -563,13 +513,10 @@ Widget _buildLeftPanelSurface({
           ),
       ];
 
-  // Log errors for debugging but don't disrupt the UI.
-  //
-  // Future enhancement: Consider surfacing errors via a toast, badge, or
-
-  // subtle inline indicator rather than silently swallowing them.
+  // Log sidebar resolution errors without disrupting the currently rendered
+  // panel. User-visible incident surfacing belongs to a named diagnostics
+  // surface, not imperative repair inside the panel projection path.
   for (final error in resolutionState.errors) {
-    // TODO(sidebar): Add user-visible error indicator or recovery UI.
     logError(error.error, error.stackTrace);
   }
 
@@ -577,7 +524,7 @@ Widget _buildLeftPanelSurface({
     return const Center(child: CircularProgressIndicator.adaptive());
   }
 
-  // Render the sidebar surface with the current (possibly stale) cassette list.
+  // Render the sidebar surface with the current derived cassette list.
   //
   // The MouseRegion wrapper supports future hover-based interactions
   // (e.g., showing cassette actions on hover).

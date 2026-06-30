@@ -7,4 +7,14 @@ class ChatToMessageProjector {
 
   Future<ChatToMessageProjectionResult> projectEdges() =>
       repository.projectEdges();
+
+  Future<ChatToMessageProjectionResult> projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return repository.projectEdgesAfterSourceMessageRowId(
+      sourceId: sourceId,
+      startedAfterSourceRowId: startedAfterSourceRowId,
+    );
+  }
 }

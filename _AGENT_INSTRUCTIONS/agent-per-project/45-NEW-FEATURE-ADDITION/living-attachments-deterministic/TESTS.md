@@ -1,5 +1,11 @@
 # Deterministic Historical Attachment Recovery Tests
 
+## Current Conformance Note (2026-06-06)
+
+This test plan is historical. Current tests should prove source-scoped
+attachment identity mapping, graph `message_to_attachment` endpoint integrity,
+overlay archive idempotence, and no heuristic path-tail matching.
+
 ## Unit Tests
 
 ### Historical Snapshot Reader
@@ -55,9 +61,9 @@
 
 #### Message-Side Mapping
 
-- Historical message_guid present in current working DB → message matched
-- Historical message_guid absent from current working DB → message_not_in_working
-- Message present but has zero attachments in current DB → reported correctly
+- Historical message fact present in current graph → message matched
+- Historical message fact absent from current graph → message_not_in_graph
+- Message present but has zero attachments in current graph → reported correctly
 
 #### Summary Output
 
@@ -90,9 +96,11 @@
 ### Cross-Snapshot Mapper Provider
 
 - Consumes Phase 1 output correctly
-- Import DB access via sqfliteImportDatabaseProvider
-- Working DB access via driftWorkingDatabaseProvider
-- Precondition check uses actual import DB state
+- Source-scoped import/graph access uses the graph-era database providers and
+  read boundaries.
+- Retained overlay-compatible archive keys, if still needed, are resolved
+  through a named compatibility bridge rather than a retained import provider.
+- Precondition check uses actual source-scoped import/graph attachment state.
 
 ### Archive Writer Provider
 
@@ -106,7 +114,8 @@
 
 - Provide historical chat.db with known messages and attachments
 - Provide matching Attachments folder with all files present
-- Ensure current import DB + working DB contain matching records
+- Ensure source-scoped import facts and graph message/attachment edges contain
+  matching records
 - Run full pipeline: reader → mapper → writer
 - Verify: all files archived, all overlay rows created, resolver serves correctly
 
@@ -116,14 +125,15 @@
 - File absent from Attachments folder
 - Verify: files_missing reported correctly, no overlay row for missing file
 
-### Test 3: Message Not in Current Working DB
+### Test 3: Message Not in Current Graph
 
-- Historical message_guid has no match in current working DB
-- Verify: record classified as unmapped with message_not_in_working reason
+- Historical message has no match in the current conversation graph
+- Verify: record classified as unmapped with message_not_in_graph reason
 
 ### Test 4: Attachment GUID Mismatch
 
-- Historical attachment GUID exists but does not match any import DB row
+- Historical attachment GUID exists but does not match any source-scoped import
+  or graph attachment row
 - Verify: record classified as unmapped, no fallback attempted
 
 ### Test 5: GUID NULL — Single Attachment (Fallback Exercised)
@@ -156,9 +166,9 @@
 - Provide chat.db + chat.db-wal + chat.db-shm → WAL-only rows included
 - Provide chat.db without WAL/SHM → import proceeds with warning
 
-### Test 10: Import DB Empty Precondition
+### Test 10: Graph Attachment Facts Missing Precondition
 
-- Current import DB has no rows
+- Source-scoped import/graph attachment facts have no rows
 - Verify: historical recovery refuses to start, diagnostic message displayed
 
 ### Test 11: Live Archive Regression

@@ -25,7 +25,7 @@ abstract class AddressBookFolderEntity with _$AddressBookFolderEntity {
     final splitPath = p.split(path);
     final shortPath = splitPath[7];
 
-    // dumbass varying apple date formats:
+    // Apple stores related timestamps in several different epoch/unit formats:
     //  Apple: nanoseconds since 2001-01-01
     //  Unix: seconds since 1970-01-01
     //  Apple Core Time Stamp: seconds since 2001=01-01 == this db

@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../chats/presentation/view/conversation_browser_view.dart';
 import '../../../domain/spec_classes/messages_view_spec.dart';
 import '../../../presentation/view/conversation_messages_preview_view.dart';
 import '../resolvers/global_timeline_resolver.dart';
@@ -28,16 +27,6 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
   /// Build a center-panel widget for the given [MessagesSpec].
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
-      conversationBrowser: () => const ConversationBrowserView(),
-      forChat: (chatId) => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Messages for chat view is coming soon.',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
       forConversation: (conversationId, anchorMessageId, searchQuery) =>
           ConversationMessagesPreviewView(
             conversationId: conversationId,
@@ -78,15 +67,6 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
           ),
       handleLens: (handleId) =>
           HandleLensResolver().resolve(handleId: handleId),
-      forChatInDateRange: (chatId, startDate, endDate) => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Messages for chat in date range view is coming soon.',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
     );
   }
 }

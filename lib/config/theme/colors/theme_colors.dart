@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/navigation/application/sidebar_mode_provider.dart';
-import '../../../essentials/navigation/domain/sidebar_mode.dart';
-import '../../../providers.dart'
+import '../../../essentials/app_mode/feature_level_providers.dart'
     show platformBrightnessProvider, switchableDarkModeProvider;
+import '../../../essentials/navigation/feature_level_providers.dart'
+    show SidebarMode, activeSidebarModeProvider;
 
 part 'theme_colors.g.dart';
 
@@ -354,6 +354,10 @@ class MessagePanels {
   Color get contextAnchorGlow =>
       _t.accents.primary.withValues(alpha: _t.isDark ? 0.28 : 0.18);
 
+  /// Bottom-edge glow indicating new evidence exists beyond the viewport.
+  Color get pendingEvidenceGlow =>
+      _t.accents.primary.withValues(alpha: _t.isDark ? 0.58 : 0.46);
+
   /// Neutral muted border.
   Color get mutedBorder => _t.content.textTertiary.withValues(alpha: 0.24);
 
@@ -416,6 +420,20 @@ class ButtonColors {
   Color get destructiveBorder => _r(
     const ColorPair(Color(0xFFFF3B30), Color(0xFFFF453A)),
   ).withValues(alpha: 0.30);
+}
+
+/// Semantic status tokens for system health, readiness, and incident surfaces.
+class StatusColors {
+  const StatusColors(this._t);
+  final ThemeColors _t;
+
+  Color _r(ColorPair p) => _t.resolvePair(p);
+
+  Color get success =>
+      _r(const ColorPair(Color(0xFF34C759), Color(0xFF30D158)));
+  Color get warning =>
+      _r(const ColorPair(Color(0xFFFF9500), Color(0xFFFF9F0A)));
+  Color get error => _r(const ColorPair(Color(0xFFFF3B30), Color(0xFFFF453A)));
 }
 
 /// Interactive hint tokens for subtle hover/focus affordances.
@@ -489,18 +507,17 @@ class InteractiveHints {
   /// Recommended vertical padding for hover hitbox.
   double get paddingVertical => 5.0;
 
-  // -- Favorite star (hero card) ----------------------------------------
+  // -- Favorite stars ----------------------------------------------------
 
-  /// Filled-star color when favorited and at rest (muted, non-competing).
-  ///
-  /// Uses the warm amber from the system star glyph at reduced saturation
-  /// so it reads as "active but secondary" next to the display name.
-  Color get starFavoritedResting =>
-      const Color(0xFFFFC107).withValues(alpha: 0.55);
+  /// Filled-star color for user favourite markers across contacts and
+  /// conversations.
+  Color get favoriteStar => _t.accents.primary;
+
+  /// Filled-star color when favorited and at rest.
+  Color get starFavoritedResting => favoriteStar;
 
   /// Filled-star color when favorited and hovered (crisp feedback).
-  Color get starFavoritedHover =>
-      const Color(0xFFFFC107).withValues(alpha: 0.90);
+  Color get starFavoritedHover => favoriteStar;
 }
 
 enum GrayTone {
@@ -765,6 +782,7 @@ class ThemeColors extends _$ThemeColors {
   Overlays get overlays => Overlays(this);
   MessagePanels get messagePanels => MessagePanels(this);
   ButtonColors get buttons => ButtonColors(this);
+  StatusColors get status => StatusColors(this);
   InteractiveHints get interactiveHints => InteractiveHints(this);
   ContactBadge get contactBadge => ContactBadge(this);
 

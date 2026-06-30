@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-20
 source_of_truth: code
 links:
   - ./01-overview.md
@@ -12,34 +12,45 @@ links:
   - ../10-DATABASES/02-db-working.md
 ---
 
-# Migration Orchestrator
+# Retired Migration Orchestrator
+
+> Current conformance note (2026-06-08): this document describes the historical
+> retired `db_migrate` projection path from `macos_import.db` to legacy
+> `working.db`. The old implementation has been removed from active app code.
+> Ordinary app reads and live sync now use the source-scoped conversation graph.
+> Do not treat this orchestrator as the production data spine for new feature
+> work.
 
 ## Purpose
-- Project staged ledger data (`macos_import.db`) into the UI-ready projection (`working.db`).
-- Delegate work to focused migrators so validation, data movement, and error reporting stay table-specific.
-- Preserve all source identifiers created during import (chat ROWIDs, handle ROWIDs, message ROWIDs, AddressBook `Z_PK` values).
-- Preserve recovered unlinked source records as a separate projection path instead of coercing them into the normal chat model.
+- Preserve the historical retired projection mechanics for interpreting old
+  logs and old `working.db` files.
+- Document the ID-preservation rules that shaped old retired storage.
+- Make clear that recovered/orphan evidence now belongs to the source-scoped
+  graph path rather than a live retired projection.
 
 ## Entry Points
-- Orchestrator: `lib/essentials/db_migrate/application/orchestrator/migration_orchestrator.dart`
-- Service wrapper: `lib/essentials/db_migrate/application/orchestrator/handles_migration_service.dart`
-- Base migrator helpers: `lib/essentials/db_migrate/domain/base_table_migrator.dart`
-- Migrator contract: `lib/essentials/db_migrate/domain/i_migrators.dart/table_migrator.dart`
-- Progress events: `lib/essentials/db_migrate/domain/states/table_migration_progress.dart`
+- Retired orchestrator: `lib/essentials/db_migrate/application/orchestrator/migration_orchestrator.dart`
+- Retired service wrapper: `lib/essentials/db_migrate/application/orchestrator/handles_migration_service.dart`
+- Retired base migrator helpers: `lib/essentials/db_migrate/domain/base_table_migrator.dart`
+- Retired migrator contract: `lib/essentials/db_migrate/domain/i_migrators.dart/table_migrator.dart`
+- Retired progress events: `lib/essentials/db_migrate/domain/states/table_migration_progress.dart`
 
-## Execution Model
-1. **HandlesMigrationService** assembles the registered migrators and instantiates `MigrationOrchestrator`. The current registry includes handles, chats, chat membership, participants, handle-to-participant links, messages, recovered unlinked messages, attachments, recovered unlinked attachments, reactions, reaction counts, message read marks, and read state.
-2. **Preparation** - `MigrationOrchestrator._prepareWorking()` enables foreign keys. In full mode it truncates each migrator's target tables in reverse target-table order; in incremental mode it skips truncation. User-managed overrides remain in `user_overlays.db` and are never copied into `working.db`.
+These retired paths are intentionally not present in the current source tree.
+Current projection code is source-scoped and graph-backed.
+
+## Historical Execution Model
+1. **HandlesMigrationService** assembled the registered migrators and instantiated `MigrationOrchestrator`. The historical registry included handles, chats, chat membership, participants, handle-to-participant links, messages, recovered unlinked messages, attachments, recovered unlinked attachments, reactions, reaction counts, message read marks, and read state.
+2. **Preparation** - `MigrationOrchestrator._prepareWorking()` enabled foreign keys. In full mode it truncated each migrator's target tables in reverse target-table order; in incremental mode it skipped truncation. User-managed overrides remained in `user_overlays.db` and were never copied into `working.db`.
 3. **Dependency sorting** - `_sorted()` runs a Kahn algorithm across every migrator's `dependsOn`. Cycles throw immediately.
-4. **Phase lifecycle** - For each migrator the orchestrator executes:
+4. **Phase lifecycle** - For each migrator the orchestrator executed:
   - `validatePrereqs(ctx)` - no writes allowed; run anti-joins, integrity checks, duplicate detection.
   - `copy(ctx)` - deterministic projection SQL from the ledger into `working.db`. Skipped automatically in dry-run mode.
   - `postValidate(ctx)` - verify row counts, FK integrity, and canonical-map expectations.
 5. **Health checks** - `ctx.ensureImportReady()` and `ctx.ensureImportClean()` guard each phase to catch lingering `ATTACH` statements or locked sqlite handles.
-6. **Progress reporting** - `TableMigrationProgressEvent`s surface clear phase names to the import/migration panels.
-7. **Post-orchestrator synthetic steps** - `HandlesMigrationService` rebuilds working message indexes, recreates message-index triggers, then calls `searchIndexOrchestrator.rebuildAll()`.
+6. **Progress reporting** - `TableMigrationProgressEvent`s surfaced clear phase names to retired diagnostic/compatibility surfaces.
+7. **Post-orchestrator synthetic steps** - `HandlesMigrationService` rebuilt working message indexes, recreated message-index triggers, then called `searchIndexOrchestrator.rebuildAll()`.
 
-## Migrator Responsibilities
+## Historical Migrator Responsibilities
 - Move rows only from the corresponding ledger table to the working table(s). Migration may canonicalize identity/participant projections, but it must not invent source facts or user intent.
 - Use canonical ID maps supplied by `MigrationContext` (e.g., `handleIdCanonicalMap`) rather than recalculating merges.
 - Keep copy logic idempotent across full and incremental runs so reruns do not duplicate projection rows.
@@ -57,9 +68,9 @@ links:
 - `HandlesMigrationService` catches the failure, writes a best-effort `migrate_log`, and returns a failed `DbMigrationResult`.
 
 ## When Adding Migrators
-1. Implement the `TableMigrator` contract (prefer extending `BaseTableMigrator`).
-2. Declare every parent table in `dependsOn` so topological sort enforces a valid order.
-3. Use `MigrationContext.ensureImportReady()` / `ensureImportClean()` boundaries when using custom SQL helpers; do not leave attached import aliases behind.
-4. Update `../10-DATABASES/10-group-import-working.md` if stage ordering changes.
-5. Confirm whether the migrator requires a post-orchestrator index/search rebuild or can rely on the existing synthetic steps.
-6. Verify the change preserves overlay independence: migration must not read from or write to `user_overlays.db`, and provider-layer merges must continue to surface overlay values after rebuilds.
+
+Do not add retired migrators for ordinary app behavior. New ordinary
+projection belongs in the source-scoped graph import/projector path. If old
+`working.db` contents matter for archive/recovery, treat them as
+cleanup/audit evidence to migrate, export, or intentionally discard. Do not
+recreate the retired migrator/orchestrator framework.

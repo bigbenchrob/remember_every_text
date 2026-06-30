@@ -13,8 +13,8 @@ import '../../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ImportDatabase importLedgerDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -37,20 +37,40 @@ void main() {
     expect(result.insertedEdgeCount, 2);
   });
 
+  test('delegates bounded edge projection to repository', () async {
+    final repository = _FakeMessageToAttachmentProjectionRepository(
+      result: const MessageToAttachmentProjectionResult(
+        examinedEdgeCount: 1,
+        insertedEdgeCount: 1,
+      ),
+    );
+    final result = await MessageToAttachmentProjector(repository: repository)
+        .projectEdgesAfterSourceMessageRowId(
+          sourceId: 7,
+          startedAfterSourceRowId: 40,
+        );
+
+    expect(repository.boundedCallCount, 1);
+    expect(repository.lastSourceId, 7);
+    expect(repository.lastStartedAfterSourceRowId, 40);
+    expect(result.examinedEdgeCount, 1);
+    expect(result.insertedEdgeCount, 1);
+  });
+
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp(
       'message_to_attachment_projector_test_',
     );
-    importDatabase = await ImportDatabase.open(
+    importLedgerDatabase = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await workingDatabase.close();
-    await importDatabase.close();
+    await graphDatabase.close();
+    await importLedgerDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -66,18 +86,18 @@ void main() {
       sourceRowId: 22,
     );
     await _insertImportEdge(
-      importDatabase,
+      importLedgerDatabase,
       sourceMessageRowId: 11,
       sourceAttachmentRowId: 22,
     );
 
     final result = await MessageToAttachmentProjector(
       repository: SqliteMessageToAttachmentProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectEdges();
-    final rows = await workingDatabase.database.query('message_to_attachment');
+    final rows = await graphDatabase.database.query('message_to_attachment');
 
     expect(result.examinedEdgeCount, 1);
     expect(result.insertedEdgeCount, 1);
@@ -87,25 +107,61 @@ void main() {
 
   test('is idempotent', () async {
     await _insertImportEdge(
-      importDatabase,
+      importLedgerDatabase,
       sourceMessageRowId: 11,
       sourceAttachmentRowId: 22,
     );
 
     final projector = MessageToAttachmentProjector(
       repository: SqliteMessageToAttachmentProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     );
     final firstResult = await projector.projectEdges();
     final secondResult = await projector.projectEdges();
-    final rows = await workingDatabase.database.query('message_to_attachment');
+    final rows = await graphDatabase.database.query('message_to_attachment');
 
     expect(firstResult.insertedEdgeCount, 1);
     expect(secondResult.insertedEdgeCount, 0);
     expect(rows, hasLength(1));
   });
+
+  test(
+    'projects message-to-attachment edges after source message rowid',
+    () async {
+      await _insertImportEdge(
+        importLedgerDatabase,
+        sourceMessageRowId: 40,
+        sourceAttachmentRowId: 21,
+      );
+      await _insertImportEdge(
+        importLedgerDatabase,
+        sourceMessageRowId: 42,
+        sourceAttachmentRowId: 22,
+      );
+
+      final result =
+          await MessageToAttachmentProjector(
+            repository: SqliteMessageToAttachmentProjectionRepository(
+              importLedgerDatabase: importLedgerDatabase,
+              graphDatabase: graphDatabase,
+            ),
+          ).projectEdgesAfterSourceMessageRowId(
+            sourceId: liveChatDbSourceId,
+            startedAfterSourceRowId: 40,
+          );
+      final rows = await graphDatabase.database.query('message_to_attachment');
+
+      expect(result.examinedEdgeCount, 1);
+      expect(result.insertedEdgeCount, 1);
+      expect(rows, hasLength(1));
+      expect(
+        rows.single['message_ss_id'],
+        SourceScopedRowKey.pack(sourceId: liveChatDbSourceId, sourceRowId: 42),
+      );
+    },
+  );
 }
 
 class _FakeMessageToAttachmentProjectionRepository
@@ -114,24 +170,39 @@ class _FakeMessageToAttachmentProjectionRepository
 
   final MessageToAttachmentProjectionResult result;
   int callCount = 0;
+  int boundedCallCount = 0;
+  int? lastSourceId;
+  int? lastStartedAfterSourceRowId;
 
   @override
   Future<MessageToAttachmentProjectionResult> projectEdges() async {
     callCount += 1;
     return result;
   }
+
+  @override
+  Future<MessageToAttachmentProjectionResult>
+  projectEdgesAfterSourceMessageRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) async {
+    boundedCallCount += 1;
+    lastSourceId = sourceId;
+    lastStartedAfterSourceRowId = startedAfterSourceRowId;
+    return result;
+  }
 }
 
 Future<void> _insertImportEdge(
-  ImportDatabase importDatabase, {
+  ImportDatabase importLedgerDatabase, {
   required int sourceMessageRowId,
   required int sourceAttachmentRowId,
 }) async {
-  final batchId = await importDatabase.insertImportBatch(
+  final batchId = await importLedgerDatabase.insertImportBatch(
     sourceId: liveChatDbSourceId,
     startedAtUtc: DateTime.now().toUtc().toIso8601String(),
   );
-  await importDatabase.database
+  await importLedgerDatabase.database
       .insert('message_to_attachment', <String, Object?>{
         'message_source_id': liveChatDbSourceId,
         'attachment_source_id': liveChatDbSourceId,

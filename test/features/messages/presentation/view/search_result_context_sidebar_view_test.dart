@@ -2,66 +2,88 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:remember_this_text/features/messages/application/view_spec/resolver_tools/message_context_anchor_provider.dart';
-import 'package:remember_this_text/features/messages/application/view_spec/resolver_tools/search_result_context_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_repository.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_row_data.dart';
+import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
 import 'package:remember_this_text/features/messages/presentation/view/search_result_context_sidebar_view.dart';
-import 'package:remember_this_text/features/messages/presentation/view_model/shared/hydration/messages_for_handle_provider.dart';
 
 void main() {
-  testWidgets('scrolls the anchor away from the top and shows anchor chrome', (
+  testWidgets('renders search result context through message evidence spine', (
     tester,
   ) async {
     const messageId = 500;
     const chatId = 12;
-    final state = SearchResultContextState(
-      selectedMessage: _message(
-        id: messageId,
-        chatId: chatId,
-        text: 'Anchor message',
-      ),
-      beforeMessages: <MessageListItem>[
-        _message(id: 490, chatId: chatId, text: 'Before 1'),
-        _message(id: 491, chatId: chatId, text: 'Before 2'),
-        _message(id: 492, chatId: chatId, text: 'Before 3'),
-        _message(id: 493, chatId: chatId, text: 'Before 4'),
-        _message(id: 494, chatId: chatId, text: 'Before 5'),
-        _message(id: 495, chatId: chatId, text: 'Before 6'),
+    final anchorGraphId = _liveChatGraphId(messageId);
+    const evidenceScope = SearchResultContextEvidenceScope(
+      messageId: messageId,
+      chatId: chatId,
+      beforeCount: 10,
+      afterCount: 10,
+    );
+    final beforeMessage = _message(
+      id: _liveChatGraphId(498),
+      text: 'Before context',
+    );
+    final anchorMessage = _message(id: anchorGraphId, text: 'Anchor message');
+    final afterMessage = _message(
+      id: _liveChatGraphId(502),
+      text: 'After context',
+    );
+    final repository = _FakeMessageGraphRepository(
+      contextTimeline: [
+        ConversationMessageTimelineEntry(
+          messageId: beforeMessage.messageId,
+          dateUtc: '2026-04-11T11:58:00.000Z',
+          monthKey: '2026-04',
+        ),
+        ConversationMessageTimelineEntry(
+          messageId: anchorGraphId,
+          dateUtc: '2026-04-11T12:00:00.000Z',
+          monthKey: '2026-04',
+        ),
+        ConversationMessageTimelineEntry(
+          messageId: afterMessage.messageId,
+          dateUtc: '2026-04-11T12:02:00.000Z',
+          monthKey: '2026-04',
+        ),
       ],
-      afterMessages: <MessageListItem>[
-        _message(id: 501, chatId: chatId, text: 'After 1'),
-        _message(id: 502, chatId: chatId, text: 'After 2'),
-        _message(id: 503, chatId: chatId, text: 'After 3'),
-        _message(id: 504, chatId: chatId, text: 'After 4'),
-        _message(id: 505, chatId: chatId, text: 'After 5'),
-        _message(id: 506, chatId: chatId, text: 'After 6'),
-      ],
-      hasMoreBefore: true,
-      hasMoreAfter: true,
+      messagesById: {
+        beforeMessage.messageId: beforeMessage,
+        anchorMessage.messageId: anchorMessage,
+        afterMessage.messageId: afterMessage,
+      },
     );
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          messageContextAnchorProvider.overrideWith(
-            (ref) => const MessageContextAnchor(
-              messageId: messageId,
-              chatId: chatId,
-              beforeCount: 10,
-              afterCount: 10,
-            ),
-          ),
-          searchResultContextProvider(
-            messageId: messageId,
-            chatId: chatId,
-            beforeCount: 10,
-            afterCount: 10,
-          ).overrideWith((ref) async => state),
+          messageGraphReaderProvider.overrideWith((ref) async {
+            return MessageGraphReader(repository: repository);
+          }),
+          messageEvidenceRowProvider(
+            scope: evidenceScope,
+            messageId: beforeMessage.messageId,
+          ).overrideWith((ref) async => _rowData(beforeMessage)),
+          messageEvidenceRowProvider(
+            scope: evidenceScope,
+            messageId: anchorMessage.messageId,
+          ).overrideWith((ref) async => _rowData(anchorMessage)),
+          messageEvidenceRowProvider(
+            scope: evidenceScope,
+            messageId: afterMessage.messageId,
+          ).overrideWith((ref) async => _rowData(afterMessage)),
         ],
         child: const MacosApp(
           home: MacosWindow(
             child: SizedBox(
-              width: 360,
-              height: 520,
+              width: 420,
+              height: 620,
               child: SearchResultContextSidebarView(
                 messageId: messageId,
                 chatId: chatId,
@@ -74,46 +96,110 @@ void main() {
       ),
     );
 
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
-    final listTop = tester.getTopLeft(
-      find.byKey(const ValueKey<String>('search-result-context-list')),
-    );
-    final anchorTop = tester.getTopLeft(
-      find.byKey(
-        const ValueKey<String>(
-          'message-context-anchor-card-search-context-500',
-        ),
-      ),
-    );
-
+    expect(find.text('Message context'), findsOneWidget);
     expect(find.text('Anchor message'), findsOneWidget);
-    expect(
-      find.byKey(
-        const ValueKey<String>(
-          'message-context-anchor-badge-search-context-500',
-        ),
-      ),
-      findsOneWidget,
-    );
-    expect(anchorTop.dy, greaterThan(listTop.dy + 40));
+    expect(find.text('Before context'), findsOneWidget);
+    expect(find.text('After context'), findsOneWidget);
+    expect(repository.contextRequest, const (messageId, chatId, 10, 10));
   });
 }
 
-MessageListItem _message({
-  required int id,
-  required int chatId,
-  required String text,
-}) {
-  return MessageListItem(
-    id: id,
-    chatId: chatId,
-    guid: 'guid-$id',
-    senderName: 'Alex',
-    text: text,
-    isFromMe: false,
-    sentAt: DateTime(2026, 4, 11, 12, id % 60),
-    hasAttachments: false,
+MessageEvidenceRowData _rowData(ConversationMessage message) {
+  return MessageEvidenceRowData(
+    messageId: message.messageId,
+    dateUtc: message.dateUtc,
+    isFromMe: message.isFromMe,
+    text: message.text,
+    associatedMessageId: message.associatedMessageId,
+    attachmentCount: message.attachmentCount,
+    senderDisplayHandle: message.senderDisplayHandle,
   );
+}
+
+ConversationMessage _message({required int id, required String text}) {
+  return ConversationMessage(
+    messageId: id,
+    dateUtc: '2026-04-11T12:00:00.000Z',
+    isFromMe: false,
+    text: text,
+    associatedMessageId: null,
+    attachmentCount: 0,
+    senderDisplayHandle: 'Alex',
+  );
+}
+
+int _liveChatGraphId(int value) {
+  return SourceScopedRowKey.pack(
+    sourceId: liveChatDbSourceId,
+    sourceRowId: value,
+  );
+}
+
+class _FakeMessageGraphRepository implements MessageGraphRepository {
+  _FakeMessageGraphRepository({
+    required this.contextTimeline,
+    required this.messagesById,
+  });
+
+  final List<ConversationMessageTimelineEntry> contextTimeline;
+  final Map<int, ConversationMessage> messagesById;
+  (int, int, int, int)? contextRequest;
+
+  @override
+  Future<List<ConversationMessageTimelineEntry>>
+  readGlobalMessageTimeline() async {
+    return const <ConversationMessageTimelineEntry>[];
+  }
+
+  @override
+  Future<ConversationMessage?> readGlobalMessageById({
+    required int messageId,
+  }) async {
+    return messagesById[messageId];
+  }
+
+  @override
+  Future<List<int>> readGlobalMessageIdsMatchingText({
+    required String query,
+    bool matchAnyTerm = false,
+  }) async {
+    return const <int>[];
+  }
+
+  @override
+  Future<List<ConversationMessageTimelineEntry>> readHandleMessageTimeline({
+    required int handleId,
+  }) async {
+    return const <ConversationMessageTimelineEntry>[];
+  }
+
+  @override
+  Future<ConversationMessage?> readHandleMessageById({
+    required int handleId,
+    required int messageId,
+  }) async {
+    return null;
+  }
+
+  @override
+  Future<List<int>> readHandleMessageIdsMatchingText({
+    required int handleId,
+    required String query,
+    bool matchAnyTerm = false,
+  }) async {
+    return const <int>[];
+  }
+
+  @override
+  Future<List<ConversationMessageTimelineEntry>> readMessageContextTimeline({
+    required int messageId,
+    required int chatId,
+    required int beforeCount,
+    required int afterCount,
+  }) async {
+    contextRequest = (messageId, chatId, beforeCount, afterCount);
+    return contextTimeline;
+  }
 }

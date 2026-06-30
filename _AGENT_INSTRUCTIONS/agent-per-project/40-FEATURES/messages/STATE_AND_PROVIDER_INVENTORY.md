@@ -2,49 +2,56 @@
 tier: feature
 scope: state-provider-inventory
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-14
 links:
-	- ./CHARTER.md
-	- ./DOMAIN_AND_DATA_MAP.md
+  - ./CHARTER.md
+  - ./DOMAIN_AND_DATA_MAP.md
 tests: []
 feature: messages
 doc_type: state-provider-inventory
-status: draft
-last_updated: 2026-04-21
+status: current
+last_updated: 2026-06-14
 ---
 
-# State & Provider Inventory — Messages
+# State & Provider Inventory - Messages
 
-This inventory is authoritative for the current unified message timeline path. Older `contact_messages/` and `global_messages/` provider folders were removed by the rationalized message views work.
+This inventory is authoritative for the graph-backed Message Evidence Spine.
+Older `contact_messages/`, `global_messages/`, and ordinal `working.db`
+timeline provider folders were retired by the graph migration.
 
-If you want the “how it works” narrative first, start here:
-- `./message-display-flow-walkthrough.md`
+## Active Providers And Boundaries
 
-| Provider / State | Kind | Location | Parameters | Responsibility |
-| --- | --- | --- | --- | --- |
-| `messageTimelineViewModelProvider` | `@riverpod` notifier | `lib/features/messages/presentation/view_model/timeline/message_timeline_view_model_provider.dart` | `MessageTimelineScope`, optional `scrollToDate` | Orchestrates timeline UI state: search controller, debounce, search mode/results, and jump methods.
-| `messageTimelineOrdinalProvider` | `@riverpod` async notifier | `lib/features/messages/application/timeline/ordinal/message_timeline_ordinal_provider.dart` | `MessageTimelineScope` | Computes `totalCount`, owns scroll controllers/listeners, and provides jump helpers. Short-circuits during DB maintenance.
-| `messageTimelineIndexCoordinatorProvider` | `@riverpod` provider | `lib/features/messages/presentation/view_model/timeline/ordinal/message_timeline_index_coordinator_provider.dart` | — | Chooses the appropriate ordinal strategy for the active `MessageTimelineScope`.
-| `messageByOrdinalProvider` | `@riverpod` future family | `lib/features/messages/presentation/view_model/timeline/hydration/message_by_ordinal_provider.dart` | `MessageTimelineScope`, `ordinal` | Hydrates a single message row by mapping `ordinal → messageId → message joins → MessageListItem`.
-| `messageByIdProvider` | `@riverpod` future family | `lib/features/messages/presentation/view_model/timeline/hydration/message_by_id_provider.dart` | `messageId` | Hydrates direct message IDs for search and context views.
-| `timelineMetadataProvider` | `@riverpod` future family | `lib/features/messages/presentation/view_model/timeline/timeline_metadata_provider.dart` | `MessageTimelineScope` | Computes scope metadata such as counts and date ranges.
-| `searchServiceProvider` | provider | `lib/essentials/search/feature_level_providers.dart` | — | Exposes `SearchService` to message timeline search.
-| `dbMaintenanceLockProvider` | provider | `lib/essentials/db/feature_level_providers.dart` | — | Guards destructive DB maintenance; prevents providers from opening DB during reset.
-| `driftWorkingDatabaseProvider` | provider | `lib/essentials/db/feature_level_providers.dart` | — | Single source of truth for opening `working.db` (avoids multiple connections/locking).
+| Provider / Boundary | Kind | Location | Responsibility |
+| --- | --- | --- | --- |
+| Message evidence spine providers | `@riverpod` evidence boundary | `lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart` | Build full-scope skeletons, resolve search matches, hydrate visible graph evidence rows, and expose timeline navigation facts. |
+| Message evidence views | widgets/composers | `lib/features/messages/presentation/view/` | Compose source-specific headers/specs, then delegate evidence rows to the shared evidence presentation widgets. |
+| Shared evidence widgets | widgets | `lib/features/messages/presentation/widgets/message_evidence/` | Render the shared center-panel evidence surface. Widgets do not query databases or decide graph semantics. |
+| Graph search providers | graph repository/provider | `lib/essentials/search/` | Search graph messages and return graph `message_ss_id` evidence scopes. |
+| Graph message repositories | infrastructure repositories | `lib/essentials/conversation_graph/infrastructure/repositories/` | Own graph SQL/read queries behind named repository methods. |
+| `dbMaintenanceLockProvider` | provider | `lib/essentials/db/feature_level_providers.dart` | Guards destructive DB maintenance and rebuild/reset flows. |
 
-## State Objects & Caches
-- `MessageTimelineViewModelState` (immutable): search text + debounced query + results + search mode.
-- `MessageTimelineOrdinalState`: `totalCount` + `ItemScrollController` + `ItemPositionsListener` + strategy.
-- `MessageTimelineScope`: scope discriminator for global, contact, chat, and recovered timelines.
+## State Objects
 
-Notes on lifecycle:
-- Riverpod Notifier `build()` may run multiple times; stateful objects must be initialized idempotently.
-- `MessageTimelineViewModel` owns a single `TextEditingController` and `Timer` debounce and disposes them via `ref.onDispose`.
+- `MessageEvidenceScope`: selected logical message universe.
+- Evidence skeleton rows: full selected-scope ids/timestamps/navigation facts.
+- Hydrated evidence rows: visible message text, sender identity, semantics,
+  badges, attachments, URL previews, and overlay metadata.
+- Header models: title, metrics, scope details, search config, and action row.
 
-## Invalidations & Triggers
-- ViewSpec selection drives the `MessageTimelineScope`; changing scope creates new provider instances.
-- Search updates originate from the VM-owned `TextEditingController` listener.
-- DB maintenance lock causes ordinal provider to immediately return empty state (prevents “infinite loading”).
+## Lifecycle Rules
 
-## TODO
-- Continue reducing duplicated legacy shared/timeline hydration paths where safe.
+- Timeline-like scopes preserve the full logical selected message universe even
+  when visible rows and media hydrate incrementally.
+- Search operates against the selected logical scope, not just currently
+  hydrated rows.
+- ViewSpec/sidebar flow produces typed message evidence scopes.
+- Graph build completion invalidates graph/evidence readers.
+- Search/header controls update evidence-scope search state; matching remains
+  in the evidence spine, not the header widget.
+
+## Open Stewardship Items
+
+- Continue retiring dead ordinal/timeline docs and tests only after reference
+  scans prove no active graph evidence dependency.
+- Keep visual changes centralized in shared evidence widgets rather than
+  source-specific message views.

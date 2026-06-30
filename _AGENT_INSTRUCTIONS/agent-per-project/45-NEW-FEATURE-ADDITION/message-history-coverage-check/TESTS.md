@@ -1,5 +1,10 @@
 # Tests: Message History Coverage Check
 
+> Current conformance note (2026-06-06): this test plan is historical. Active
+> tests should verify source `chat.db` counts against graph-accounted
+> MessageLens evidence and should not require retained `working.db` timeline or
+> recovered-table reads for ordinary coverage behavior.
+
 ## Phase 1 Unit Coverage
 
 ### Report Classification

@@ -1,14 +1,19 @@
 import 'dart:async';
-import 'dart:core';
 import 'dart:io';
+
 import 'package:path/path.dart';
 
 import '../../../../../core/util/paths_helper.dart';
 
 class AddressBookFolderPathsFinder {
   final PathsHelper pathsHelper;
+  final void Function(String dirPath, Object error, StackTrace stackTrace)?
+  onDirectoryReadFailure;
 
-  AddressBookFolderPathsFinder({required this.pathsHelper});
+  AddressBookFolderPathsFinder({
+    required this.pathsHelper,
+    this.onDirectoryReadFailure,
+  });
 
   Future<List<String>> getAddressBookPaths() async {
     final dirList = await getAddressBookDirectories();
@@ -35,8 +40,9 @@ class AddressBookFolderPathsFinder {
     lister.listen(
       (entity) {
         if (entity is! File) {
-          if (directoryAtPathContainsAddressBookDB(entity.path))
+          if (directoryAtPathContainsAddressBookDB(entity.path)) {
             directories.add(Directory(entity.path));
+          }
         }
       },
       onDone: () => completer.complete(directories),
@@ -58,8 +64,9 @@ class AddressBookFolderPathsFinder {
           }
         }
       }
-    } catch (e) {
-      // print(e);
+    } catch (error, stackTrace) {
+      onDirectoryReadFailure?.call(dirPath, error, stackTrace);
+      return false;
     }
 
     return hasDB;

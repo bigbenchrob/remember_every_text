@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../domain/log_entry.dart';
@@ -13,6 +14,9 @@ class MacosUnifiedLogBridge {
 
   Future<void> log(LogEntry entry) async {
     if (_pluginUnavailable) {
+      return;
+    }
+    if (kDebugMode && BindingBase.debugBindingType() == null) {
       return;
     }
 

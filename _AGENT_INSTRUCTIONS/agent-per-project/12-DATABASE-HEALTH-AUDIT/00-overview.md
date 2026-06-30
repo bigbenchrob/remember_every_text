@@ -2,7 +2,7 @@
 tier: project
 scope: database-health-audit
 owner: agent-per-project
-last_reviewed: 2026-04-16
+last_reviewed: 2026-06-22
 source_of_truth: code
 links:
   - ./README.md
@@ -27,17 +27,24 @@ The output is currently a single Phase 1 artifact:
 
 The current implementation audits these app-owned databases:
 
-- `db-import` (`macos_import.db`)
-- `db-working` (`working.db`)
+- `db-import-ss` (`macos_import_ss.db`)
+- `db-graph-working` (`working_ss.db`)
 - `db-overlay` (`user_overlays.db`)
+- retired cleanup `db-import` (`macos_import.db`)
+- retired cleanup `db-working` (`working.db`)
 
-It does **not** open new ad-hoc SQLite connections. It uses the existing provider-managed database instances:
+It does **not** create retired database files as a side effect. It uses
+provider-managed instances for active graph/overlay/source-scoped databases
+and read-only file inspection for retired cleanup/diagnostic databases:
 
-- `sqfliteImportDatabaseProvider`
-- `driftWorkingDatabaseProvider`
+- provider-managed source-scoped import ledger access from `essentials/db`
+- `driftConversationGraphDatabaseProvider`
 - `overlayDatabaseProvider`
+- read-only file inspection for retired `macos_import.db`
+- read-only file inspection for retired `working.db`
 
-This preserves the project rule against opening competing connections to the same files.
+This preserves the project rule against competing writable connections while
+also preventing diagnostics from recreating retired cleanup storage.
 
 ## Service Entry Point
 
@@ -84,11 +91,15 @@ Shared abstraction:
 
 Concrete adapters:
 
-- `ImportDatabaseHealthQueryLayer`
-- `WorkingDatabaseHealthQueryLayer`
+- `SourceScopedImportDatabaseHealthQueryLayer`
+- `ConversationGraphDatabaseHealthQueryLayer`
 - `OverlayDatabaseHealthQueryLayer`
+- read-only retired SQLite file query layers for `macos_import.db` and
+  `working.db`
 
-These adapters normalize query execution across sqflite and drift while keeping orchestration out of the query layer.
+These adapters normalize query execution across source-scoped import,
+conversation-graph Drift, overlay Drift, and retired read-only SQLite files
+while keeping orchestration out of the query layer.
 
 Shared query-layer responsibilities include:
 
@@ -119,7 +130,15 @@ The report includes:
 - `summary`
 - `errors`
 
-Phase 1 relationship checks currently include counts plus percentages where applicable:
+The top-level `summary` is intentionally **active-health scoped**. Its
+`overall_status`, warning/fail/error counts, headline findings, and `table_count`
+describe active app databases only: source-scoped import, conversation graph,
+and overlay. Retired `macos_import.db` / `working.db` cleanup files may still
+appear in detailed `databases`, `table_inventory`, relationship checks, or
+invariant checks, but they must not make app health look degraded merely because
+old cleanup tables are absent or empty.
+
+Phase 1 relationship checks currently include source-scoped graph checks, retired cleanup/diagnostic checks, and counts plus percentages where applicable:
 
 - `matched_percentage`
 - `unmatched_parent_percentage`
@@ -191,7 +210,7 @@ This appears as an invariant with:
 - check key: `overlay_cross_database_relationship_checks_deferred`
 - status: `not_applicable`
 
-That limitation is intentional. Phase 1 inventories overlay tables, but does not perform overlay-to-working cross-database relationship diagnostics.
+That limitation is intentional. Phase 1 inventories overlay tables, but does not perform overlay-to-graph or overlay-to-retired-working cross-database relationship diagnostics.
 
 ## Privacy and Safety Model
 

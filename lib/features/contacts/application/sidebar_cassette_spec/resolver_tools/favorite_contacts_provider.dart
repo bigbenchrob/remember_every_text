@@ -1,18 +1,20 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../infrastructure/repositories/contacts_list_repository.dart';
-import 'favorite_contacts_repository_provider.dart';
+import '../../favorites/favorite_contacts_repository_provider.dart';
+import '../../read_models/contact_summary.dart';
+import '../../read_models/contact_summary_identity.dart';
+import '../../read_models/contacts_list_repository_provider.dart';
 
 part 'favorite_contacts_provider.freezed.dart';
 part 'favorite_contacts_provider.g.dart';
 
-/// Favorite contact resolved with display metadata from the working dataset.
+/// Favorite contact resolved with display metadata from graph contact facts.
 @freezed
 abstract class FavoriteContactEntry with _$FavoriteContactEntry {
   const factory FavoriteContactEntry({
     required ContactSummary contact,
-    required DateTime pinnedAt,
+    required DateTime favoritedAt,
     DateTime? lastInteractionAt,
     required DateTime updatedAt,
   }) = _FavoriteContactEntry;
@@ -30,26 +32,27 @@ Future<List<FavoriteContactEntry>> favoriteContacts(
   }
 
   final contacts = await ref.watch(contactsListRepositoryProvider.future);
-  final contactsById = {
-    for (final contact in contacts) contact.participantId: contact,
-  };
 
-  final resolved = <FavoriteContactEntry>[];
+  final resolvedByContactId = <int, FavoriteContactEntry>{};
   for (final favorite in favorites) {
-    final contact = contactsById[favorite.participantId];
+    final contact = findContactSummaryById(contacts, favorite.participantId);
     if (contact == null) {
       continue;
     }
 
-    resolved.add(
-      FavoriteContactEntry(
-        contact: contact,
-        pinnedAt: favorite.pinnedAt,
-        lastInteractionAt: favorite.lastInteractionAt,
-        updatedAt: favorite.updatedAt,
-      ),
+    final entry = FavoriteContactEntry(
+      contact: contact,
+      favoritedAt: favorite.favoritedAt,
+      lastInteractionAt: favorite.lastInteractionAt,
+      updatedAt: favorite.updatedAt,
     );
+    final existing = resolvedByContactId[contact.participantId];
+    if (existing == null ||
+        favorite.participantId == contact.participantId ||
+        existing.favoritedAt.isBefore(entry.favoritedAt)) {
+      resolvedByContactId[contact.participantId] = entry;
+    }
   }
 
-  return resolved;
+  return resolvedByContactId.values.toList(growable: false);
 }

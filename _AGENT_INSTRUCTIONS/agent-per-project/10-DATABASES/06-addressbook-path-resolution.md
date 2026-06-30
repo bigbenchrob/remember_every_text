@@ -6,7 +6,7 @@ last_reviewed: 2026-04-21
 source_of_truth: doc
 links:
   - ./03-db-address-book.md
-  - ../00-PROJECT/01-aggregate-boundaries.md
+  - ../01-PROJECT/01-aggregate-boundaries.md
   - ../20-DATA-IMPORT-MIGRATION/20-migration-orchestrator.md
   - ../20-DATA-IMPORT-MIGRATION/10-import-orchestrator.md
 tests:
@@ -79,7 +79,9 @@ final aggregateEither = await ref.read(
 );
 
 final aggregate = aggregateEither.getOrElse(
-  (failure) => throw Exception('AddressBook folder resolution failed: ${failure.message}'),
+  (failure) => throw StateError(
+    'AddressBook folder resolution failed: ${failure.message}',
+  ),
 );
 
 final activeDbPath = aggregate.mostRecentFolderPath.value;
@@ -131,5 +133,5 @@ Avoid replicating the provider chain in tests. Override once, supply fixture dat
 ## Related Documentation
 
 - `03-db-address-book.md` — Source database overview.
-- `01-db-import.md` — Ledger staging after AddressBook data is copied.
-- `10-group-import-working.md` — Guarantees that `Z_PK` identifiers propagate into `db-working.participants`.
+- `00-all-databases-accessed.md` — Current source-scoped import and graph database entry points.
+- `03-db-address-book.md` — How AddressBook contact facts flow into graph-era contact identity.

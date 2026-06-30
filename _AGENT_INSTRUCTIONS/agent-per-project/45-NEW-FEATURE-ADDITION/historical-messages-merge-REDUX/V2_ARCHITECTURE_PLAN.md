@@ -2,8 +2,8 @@
 tier: feature
 scope: architecture-plan
 owner: agent-per-project
-last_reviewed: 2026-04-29
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ./SPIKE_RETROSPECTIVE.md
   - ./CHECKLIST.md
@@ -11,11 +11,34 @@ links:
   - ../../20-DATA-IMPORT-MIGRATION/01-overview.md
 tests: []
 feature: historical-messages-merge-redux
-status: proposed
+status: historical-plan-superseded-by-source-scoped-graph-recovery
 created: 2026-04-29
 ---
 
 # V2 Architecture Plan — Historical Messages Merge
+
+## Current Conformance Note (2026-06-06)
+
+This plan is preserved as historical architecture research. Its strongest
+lesson remains binding: historical archive data is a second source, not a
+parallel presentation or projection architecture. However, the canonical
+pipeline has changed since this plan was written.
+
+Current target:
+
+```text
+historical source
+  -> source-scoped import/provenance
+  -> conversation graph projection
+  -> Message Evidence Spine
+```
+
+The old `db-import` -> migration -> `working.db` visibility language below is
+retained for historical accuracy only. This includes the older "Core
+Guardrail" section immediately below; it is not current implementation
+guidance. New archive/recovery work should follow the source-scoped graph
+identity plans and deterministic recovery docs, using retained legacy
+projection only as an explicitly named archive/recovery compatibility bridge.
 
 This document turns the spike retrospective into a v2 architecture plan.
 

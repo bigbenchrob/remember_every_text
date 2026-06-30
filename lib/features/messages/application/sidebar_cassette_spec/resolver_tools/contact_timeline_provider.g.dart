@@ -6,7 +6,7 @@ part of 'contact_timeline_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$contactTimelineHash() => r'eba6b9042c0915b838ced4231c08578d51e725c3';
+String _$contactTimelineHash() => r'29f5c585d1a77ecd19a6273f8331985fc78246e8';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -33,8 +33,7 @@ class _SystemHash {
 /// across all their chats/handles.
 ///
 /// This is a resolver tool: a data-fetching provider used by resolvers and
-/// widget builders. It queries date bounds from `contact_message_index` then
-/// delegates computation to [calculateContactCalendarHeatmapTimeline].
+/// widget builders. It derives the timeline from graph contact activity.
 ///
 /// Copied from [contactTimeline].
 @ProviderFor(contactTimeline)
@@ -44,8 +43,7 @@ const contactTimelineProvider = ContactTimelineFamily();
 /// across all their chats/handles.
 ///
 /// This is a resolver tool: a data-fetching provider used by resolvers and
-/// widget builders. It queries date bounds from `contact_message_index` then
-/// delegates computation to [calculateContactCalendarHeatmapTimeline].
+/// widget builders. It derives the timeline from graph contact activity.
 ///
 /// Copied from [contactTimeline].
 class ContactTimelineFamily
@@ -54,8 +52,7 @@ class ContactTimelineFamily
   /// across all their chats/handles.
   ///
   /// This is a resolver tool: a data-fetching provider used by resolvers and
-  /// widget builders. It queries date bounds from `contact_message_index` then
-  /// delegates computation to [calculateContactCalendarHeatmapTimeline].
+  /// widget builders. It derives the timeline from graph contact activity.
   ///
   /// Copied from [contactTimeline].
   const ContactTimelineFamily();
@@ -64,19 +61,24 @@ class ContactTimelineFamily
   /// across all their chats/handles.
   ///
   /// This is a resolver tool: a data-fetching provider used by resolvers and
-  /// widget builders. It queries date bounds from `contact_message_index` then
-  /// delegates computation to [calculateContactCalendarHeatmapTimeline].
+  /// widget builders. It derives the timeline from graph contact activity.
   ///
   /// Copied from [contactTimeline].
-  ContactTimelineProvider call({required int contactId}) {
-    return ContactTimelineProvider(contactId: contactId);
+  ContactTimelineProvider call({required int contactId, int? filterHandleId}) {
+    return ContactTimelineProvider(
+      contactId: contactId,
+      filterHandleId: filterHandleId,
+    );
   }
 
   @override
   ContactTimelineProvider getProviderOverride(
     covariant ContactTimelineProvider provider,
   ) {
-    return call(contactId: provider.contactId);
+    return call(
+      contactId: provider.contactId,
+      filterHandleId: provider.filterHandleId,
+    );
   }
 
   static const Iterable<ProviderOrFamily>? _dependencies = null;
@@ -98,8 +100,7 @@ class ContactTimelineFamily
 /// across all their chats/handles.
 ///
 /// This is a resolver tool: a data-fetching provider used by resolvers and
-/// widget builders. It queries date bounds from `contact_message_index` then
-/// delegates computation to [calculateContactCalendarHeatmapTimeline].
+/// widget builders. It derives the timeline from graph contact activity.
 ///
 /// Copied from [contactTimeline].
 class ContactTimelineProvider
@@ -108,14 +109,16 @@ class ContactTimelineProvider
   /// across all their chats/handles.
   ///
   /// This is a resolver tool: a data-fetching provider used by resolvers and
-  /// widget builders. It queries date bounds from `contact_message_index` then
-  /// delegates computation to [calculateContactCalendarHeatmapTimeline].
+  /// widget builders. It derives the timeline from graph contact activity.
   ///
   /// Copied from [contactTimeline].
-  ContactTimelineProvider({required int contactId})
+  ContactTimelineProvider({required int contactId, int? filterHandleId})
     : this._internal(
-        (ref) =>
-            contactTimeline(ref as ContactTimelineRef, contactId: contactId),
+        (ref) => contactTimeline(
+          ref as ContactTimelineRef,
+          contactId: contactId,
+          filterHandleId: filterHandleId,
+        ),
         from: contactTimelineProvider,
         name: r'contactTimelineProvider',
         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -125,6 +128,7 @@ class ContactTimelineProvider
         allTransitiveDependencies:
             ContactTimelineFamily._allTransitiveDependencies,
         contactId: contactId,
+        filterHandleId: filterHandleId,
       );
 
   ContactTimelineProvider._internal(
@@ -135,9 +139,11 @@ class ContactTimelineProvider
     required super.debugGetCreateSourceHash,
     required super.from,
     required this.contactId,
+    required this.filterHandleId,
   }) : super.internal();
 
   final int contactId;
+  final int? filterHandleId;
 
   @override
   Override overrideWith(
@@ -154,6 +160,7 @@ class ContactTimelineProvider
         allTransitiveDependencies: null,
         debugGetCreateSourceHash: null,
         contactId: contactId,
+        filterHandleId: filterHandleId,
       ),
     );
   }
@@ -166,13 +173,16 @@ class ContactTimelineProvider
 
   @override
   bool operator ==(Object other) {
-    return other is ContactTimelineProvider && other.contactId == contactId;
+    return other is ContactTimelineProvider &&
+        other.contactId == contactId &&
+        other.filterHandleId == filterHandleId;
   }
 
   @override
   int get hashCode {
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, contactId.hashCode);
+    hash = _SystemHash.combine(hash, filterHandleId.hashCode);
 
     return _SystemHash.finish(hash);
   }
@@ -184,6 +194,9 @@ mixin ContactTimelineRef
     on AutoDisposeFutureProviderRef<CalendarHeatmapTimelineData?> {
   /// The parameter `contactId` of this provider.
   int get contactId;
+
+  /// The parameter `filterHandleId` of this provider.
+  int? get filterHandleId;
 }
 
 class _ContactTimelineProviderElement
@@ -193,6 +206,8 @@ class _ContactTimelineProviderElement
 
   @override
   int get contactId => (origin as ContactTimelineProvider).contactId;
+  @override
+  int? get filterHandleId => (origin as ContactTimelineProvider).filterHandleId;
 }
 
 // ignore_for_file: type=lint

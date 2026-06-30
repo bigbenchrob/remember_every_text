@@ -7,9 +7,11 @@ Define the required procedure for creating a safe, restorable snapshot of Messag
 This protocol MUST be followed before:
 
 - schema changes
-- import/migration changes
+- source-scoped import, graph projection, retired file cleanup storage,
+  or overlay schema changes
 - archival import experiments
-- any operation that may mutate macos_import.db or working.db
+- any operation that may mutate `macos_import_ss.db`, `working_ss.db`,
+  `macos_import.db`, `working.db`, or `user_overlays.db`
 
 ---
 
@@ -33,9 +35,12 @@ Application data folder:
 
 Includes:
 
-- macos_import.db (authoritative ledger)
-- working.db (projection)
+- macos_import_ss.db (source-scoped import ledger)
+- working_ss.db (conversation graph projection)
+- macos_import.db (retired import cleanup file, if present)
+- working.db (retired cleanup/diagnostic file, if present)
 - user_overlays.db
+- any matching SQLite sidecar files (`*.db-wal`, `*.db-shm`) if present
 - logs
 
 ---
@@ -47,9 +52,11 @@ The attachments archive is large and does not need to be copied for every snapsh
 Default behavior:
 
 - Snapshot MUST include all database files
-- Attachments folder SHOULD NOT be copied unless explicitly required
+- The app-owned attachment archive SHOULD NOT be copied unless explicitly
+  required
 
-Attachments are assumed to be stored separately and persist across snapshots.
+Archived attachment files are assumed to be stored separately and persist
+across snapshots.
 
 If attachment integrity is being tested, a full snapshot including attachments may be required.
 
@@ -71,7 +78,7 @@ Note:
 
 Routine snapshots intentionally exclude the attachments archive.
 
-Attachments are managed separately via external backup.
+Archived attachments are managed separately via external backup.
 
 ---
 
@@ -85,18 +92,23 @@ Attachments are managed separately via external backup.
 
 3. Execute:
 
-rsync -a --exclude 'Attachments' \
+rsync -a --exclude 'attachment_archive' \
  ~/Library/Application\ Support/com.bigbenchsoftware.MessageLens/ \
  ~/Desktop/MessageLens-backups/MessageLens-$(date +%Y-%m-%d-%H%M)
 
 Note:
 
-The Attachments directory is explicitly excluded from routine snapshots.
+The app-owned `attachment_archive` directory is explicitly excluded from
+routine database snapshots.
 
 4. Verify snapshot exists and contains:
 
+- macos_import_ss.db
+- working_ss.db
 - macos_import.db
 - working.db
+- user_overlays.db
+- any copied SQLite sidecar files if they existed at snapshot time
 - expected file sizes (non-zero)
 
 ---

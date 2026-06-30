@@ -27,6 +27,10 @@ Code that compiles but violates the constitution is defective.
 
 MessageLens is a semantic, projection-oriented, graph-based communication exploration system.
 
+When a bug appears, fix derivation, invalidation, ownership, or projection.
+
+Do NOT add imperative repair.
+
 The architecture evolved through repeated encounters with:
 
 - stale state
@@ -82,6 +86,16 @@ If your implementation introduces:
 STOP.
 
 You are probably repairing symptoms instead of fixing the architectural violation.
+
+The correct response is to repair the semantic path that should have made the
+state correct in the first place:
+
+- derivation
+- invalidation
+- ownership
+- projection
+
+not a compensating command after the fact.
 
 
 ---

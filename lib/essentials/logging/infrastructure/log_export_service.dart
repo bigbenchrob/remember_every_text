@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../domain/diagnostic_report_presentation_result.dart';
 import 'support_bundle_export_service.dart';
 
 const _defaultDiagnosticRecipientEmail = 'messagelens@gmail.com';
@@ -17,16 +18,6 @@ const _defaultManualAttachmentEmailBodyLines = <String>[
   '',
   'Describe the issue here:',
 ];
-
-class DiagnosticReportPresentationResult {
-  const DiagnosticReportPresentationResult({
-    required this.exportPath,
-    required this.attachedToMailDraft,
-  });
-
-  final String? exportPath;
-  final bool attachedToMailDraft;
-}
 
 /// Collects log files, prepends a system info header, and presents the
 /// exported log to the user via email (mailto:) and Finder reveal.
@@ -92,8 +83,8 @@ class LogExportService {
         exportPath: exportPath,
         attachedToMailDraft: false,
       );
-    } catch (e) {
-      debugPrint('LogExportService: export failed: $e');
+    } catch (error) {
+      debugPrint('LogExportService: export failed: $error');
       return const DiagnosticReportPresentationResult(
         exportPath: null,
         attachedToMailDraft: false,
@@ -132,8 +123,8 @@ class LogExportService {
         'LogExportService: Apple Mail compose failed: ${result.stderr}',
       );
       return false;
-    } catch (e) {
-      debugPrint('LogExportService: Apple Mail compose threw: $e');
+    } catch (error) {
+      debugPrint('LogExportService: Apple Mail compose threw: $error');
       return false;
     }
   }
@@ -143,11 +134,17 @@ Future<File?> createSupportBundleMailArchive(Directory bundleDirectory) async {
   if (!Platform.isMacOS) {
     return null;
   }
+  if (!await _isSafeSupportBundleDirectory(bundleDirectory)) {
+    return null;
+  }
 
   final bundleName = bundleDirectory.uri.pathSegments
       .where((segment) => segment.isNotEmpty)
       .last;
   final archiveFile = File('${bundleDirectory.parent.path}/$bundleName.zip');
+  if (!_isSafeSupportBundleArchiveTarget(archiveFile)) {
+    return null;
+  }
 
   try {
     if (archiveFile.existsSync()) {
@@ -175,6 +172,50 @@ Future<File?> createSupportBundleMailArchive(Directory bundleDirectory) async {
     debugPrint('LogExportService: support bundle archive threw: $error');
     return null;
   }
+}
+
+Future<bool> _isSafeSupportBundleDirectory(Directory bundleDirectory) async {
+  if (!bundleDirectory.existsSync()) {
+    return false;
+  }
+  if (FileSystemEntity.typeSync(bundleDirectory.path, followLinks: false) ==
+      FileSystemEntityType.link) {
+    return false;
+  }
+
+  final bundleName = bundleDirectory.uri.pathSegments
+      .where((segment) => segment.isNotEmpty)
+      .toList(growable: false);
+  if (bundleName.isEmpty || !bundleName.last.startsWith('support_bundle_')) {
+    return false;
+  }
+
+  await for (final entity in bundleDirectory.list(
+    recursive: true,
+    followLinks: false,
+  )) {
+    if (entity is Link) {
+      return false;
+    }
+    if (entity is! File) {
+      continue;
+    }
+
+    final basename = entity.uri.pathSegments.last.toLowerCase();
+    if (basename.endsWith('.db') ||
+        basename.endsWith('.db-wal') ||
+        basename.endsWith('.db-shm')) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool _isSafeSupportBundleArchiveTarget(File archiveFile) {
+  final type = FileSystemEntity.typeSync(archiveFile.path, followLinks: false);
+  return type == FileSystemEntityType.notFound ||
+      type == FileSystemEntityType.file;
 }
 
 List<String> buildAppleMailComposeScriptArgs({

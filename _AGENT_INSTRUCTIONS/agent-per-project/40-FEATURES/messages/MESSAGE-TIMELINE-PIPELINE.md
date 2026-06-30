@@ -2,317 +2,131 @@
 tier: feature
 scope: message-timeline-pipeline
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-05
 source_of_truth: doc
 links:
   - ./DOMAIN_AND_DATA_MAP.md
   - ./STATE_AND_PROVIDER_INVENTORY.md
   - ./INTERACTIONS_AND_NAVIGATION.md
   - ./message-display-flow-walkthrough.md
-  - ../../10-DATABASES/02-db-working.md
-  - ../../10-DATABASES/12-identity-model-contacts-handles-participants.md
-  - ../../20-DATA-IMPORT-MIGRATION/01-overview.md
-  - ../../25-ONBOARDING-AND-ARCHIVE/70-attachments-end-to-end.md
-  - ../../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md
+  - ../../55-READERS-INTEGRATORS-ORCHESTRATORS/69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md
 tests: []
 feature: messages
 doc_type: pipeline
-status: active
+status: current
 ---
 
-# Message Timeline Pipeline
+# Message Evidence Pipeline
 
-## TL;DR
+The active message presentation path is the Message Evidence Spine. This
+document replaces the older `working.db` ordinal-timeline pipeline notes.
 
-- Messages are rendered through a spec-driven pipeline.
-- Timeline ordering is based on ordinal indexes, not raw timestamps alone.
-- Identity and attachments are resolved before rendering.
-- UI renders from payloads/view models such as `MessageListItem`, not raw database rows.
+## Canonical Pipeline
 
-The current unified timeline path is:
+```text
+MessageEvidenceScope
+  -> full selected-scope skeleton
+  -> viewport/search-window hydration
+  -> hydrated evidence row data
+  -> shared header and message evidence widgets
+```
 
-`ViewSpec.messages(MessagesSpec...)` -> `MessageTimelineScope` -> ordinal strategy -> per-row hydration -> `MessageListItem` -> `MessageCard`.
+Different sources may create different scopes. Once a scope says “show these
+messages,” rendering converges.
 
-## Timeline Authority Rule
+## Timeline Navigation Invariant
 
-The message timeline must be derived only from:
+Pagination is not timeline navigation.
 
-- ordinal ordering
-- participant identity resolution
-- attachment availability state
-- resolved payload/view model
+For any timeline-like MessageLens surface, the selected message scope must be
+represented by a full lightweight skeleton before the user navigates it. The
+skeleton must cover the full logical selected message universe even when row
+hydration and media loading are windowed or incremental.
 
-It must not be derived from:
+The skeleton is also:
 
-- raw timestamps
-- raw database rows
-- file system state
-- UI reconstruction
+- semantic timeline infrastructure
+- heatmap coordination infrastructure
+- jump/navigation infrastructure
+- temporal orientation infrastructure
 
-## 1. Message Source (Working DB)
+Hard rules:
 
-The message timeline reads from `working.db`, not directly from `chat.db` or `macos_import.db`.
+- Heatmaps coordinate with the full skeleton, not with a latest page.
+- Jumps target skeleton indices, not ad hoc message batches.
+- Row bodies/media hydrate near the viewport.
+- Limits apply to hydration windows, not to the selected message scope.
+- Source-specific scopes are allowed; source-specific evidence presentation is
+  not.
 
-Core working data:
+## Message Source
 
-| Working data | Purpose |
-| --- | --- |
-| `workingMessages` / SQL `messages` | Projected message rows consumed by timeline hydration. |
-| `participants` / Drift `WorkingParticipants` | Resolved participant rows joined for sender identity. |
-| `handles_canonical` and `handle_to_participant` | Canonical handle and participant linkage used during sender resolution. |
-| `attachments` / Drift `workingAttachments` | Projected attachment metadata loaded by message GUID. |
-| `global_message_index` | Global ordinal ordering across messages. |
-| `message_index` | Chat-scoped ordinal ordering. |
-| `contact_message_index` | Contact-scoped ordinal ordering. |
-| `read_state`, `message_read_marks`, `reaction_counts`, `reactions` | Supporting presentation and state projection. |
+Current ordinary message evidence reads from the source-scoped graph:
 
-Raw rows are not rendered directly. The hydration layer joins and transforms working data into `MessageListItem` objects before widgets are built.
+- `macos_import_ss.db.messages` preserves source facts/provenance.
+- `working_ss.db.messages` stores lean app graph rows.
+- `working_ss.chat_to_message` and related topology tables define graph
+  membership.
+- `user_overlays.db` stores durable user intent and merges at read time.
 
-## 2. Ordering Model
+Retired `working.db` may remain as historical cleanup / diagnostic storage,
+but it is not ordinary app-facing message evidence truth.
 
-Timeline ordering is ordinal-based.
+## Identity
 
-An ordinal is a stable position within a `MessageTimelineScope`. The scope decides which index or list owns the ordering:
+Message rows use canonical `message_ss_id` / `ss_id`. GUIDs are metadata or
+bridge fields, not canonical identity.
 
-| Scope | Ordering source |
-| --- | --- |
-| `MessageTimelineScope.global()` | `global_message_index` |
-| `MessageTimelineScope.contact(...)` | `contact_message_index` |
-| `MessageTimelineScope.chat(...)` | `message_index` |
-| `MessageTimelineScope.recovered(...)` | recovered message list strategy |
+Display identity is semantic, not relational. The resolver answers “what should
+the user see?” and follows the current precedence:
 
-The ordinal model exists so the UI can:
+1. user-assigned app display name / override
+2. app-known contact identity
+3. imported AddressBook/contact name
+4. stable participant/conversation label
+5. raw handle fallback only
 
-- build a fast skeleton list from `totalCount`
-- jump to latest or month positions deterministically
-- hydrate only visible rows
-- avoid offset paging across large datasets
-- preserve scroll behavior when new rows arrive
+Known contacts should not be primarily labeled by raw handles except in
+explicit handle-scope controls or unknown-handle surfaces.
 
-Relationship of identifiers:
+## Attachment Evidence
 
-- Source ROWIDs are preserved through import/projection for traceability.
-- Working message IDs identify projected message rows.
-- Ordinals identify a message's position within a specific timeline scope.
-- A message can have different ordinals in different scopes.
+Attachment rendering follows archive-first graph evidence hydration:
 
-UI must not infer ordering from timestamps alone. Timestamps are index inputs and display data; the ordinal index is the timeline ordering contract.
+1. Graph message/attachment edges identify attachment facts by `ss_id`.
+2. Attachment evidence hydration resolves archive/source availability outside
+   widgets.
+3. Shared image/video/link/fallback tiles render typed evidence.
 
-## 3. Incremental Update Flow
+Widgets must not render directly from live Apple file paths and must not hide a
+message because attachment hydration is incomplete.
 
-Automatic sync is driven by `ChatDbChangeMonitor`.
+## Search
 
-Current sequence:
+Intra-view search is part of the evidence header grammar. Search must operate
+against the selected logical scope, not just hydrated rows.
 
-1. `ChatDbChangeMonitor` polls `MAX(ROWID)` from `~/Library/Messages/chat.db`.
-2. On increase, it runs `orchestratedLedgerImportServiceProvider.runImport()`.
-3. On successful import, it calls `attachmentArchiveServiceProvider.archiveImportedBatch(batchId: importResult.batchId)`.
-4. It then calls `handlesMigrationServiceProvider.run(incrementalMode: true)`.
-5. On successful migration, it calls `messageDataVersionProvider.bump()`.
+Search result counts, next/previous match, matching-only filters, and term
+highlighting belong to the evidence scope/resolver layer and shared evidence
+widgets, not source-specific renderers.
 
-The timeline reacts to provider invalidation/version signals, not direct source database polling.
+## Incremental Updates
 
-Current scope refresh behavior:
+`ChatDbChangeMonitor` polls `chat.db`, then runs the source-scoped graph build
+lifecycle. On success it invalidates graph/evidence readers and archives
+attachments for the graph source range.
 
-- global and chat scopes watch `messageDataVersionProvider`
-- contact scopes watch `contactTimelineDisplayVersionProvider(scope: ...)`
-- recovered scopes watch `recoveredUnlinkedMessagesProvider(contactId: ...)`
-
-Do not close or invalidate `driftWorkingDatabaseProvider` from the incremental path. The current contract is to preserve the Drift connection and signal UI refresh through versioned providers.
-
-## 4. Identity Resolution
-
-Identity must follow the participant model documented in `../../10-DATABASES/12-identity-model-contacts-handles-participants.md`.
-
-Message hydration joins:
-
-`workingMessages.senderHandleId` -> `handles_canonical` -> `handle_to_participant` -> `workingParticipants`
-
-Display name resolution order is:
-
-1. overlay override
-2. contact/participant name
-3. fallback handle
-
-The UI must not derive identity from raw handle strings or display-name text. Raw handles are endpoint identifiers; participants are the app identity unit.
-
-Recovered timelines may have uncertain sender identity. They must preserve that uncertainty with recovered sender labels or `Unknown sender` rather than inventing contact membership.
-
-## 5. Attachment Resolution
-
-Attachment rendering follows the archive-first model documented in `../../25-ONBOARDING-AND-ARCHIVE/70-attachments-end-to-end.md`.
-
-Timeline hydration:
-
-1. loads projected attachments from `workingAttachments` by `messageGuid`
-2. converts them into attachment hydration data
-3. resolves display availability through `attachmentResolverProvider`
-4. attaches resolved state to `MessageListItem`
-
-Attachment availability states:
-
-| State | Meaning |
-| --- | --- |
-| `pendingArchive` | A live file exists and archive ingestion has been triggered. |
-| `available` | A displayable file is available under the current source policy. |
-| `unavailableAwaitingRecovery` | The attachment is known but not displayable now. |
-| `nonRecoverable` | No viable display or recovery path is known. |
-
-The timeline renders from resolved attachment state. It must never render directly from live Apple file paths or assume file existence from `local_path`.
-
-## 6. Hydration Model
-
-The timeline is intentionally staged.
-
-Lightweight stage:
-
-- `messageTimelineOrdinalProvider(scope: ...)` computes `totalCount`
-- the view builds a `ScrollablePositionedList` skeleton
-- rows exist by ordinal before their content is loaded
-
-Per-row hydration stage:
-
-- visible rows watch `messageByTimelineOrdinalProvider(scope: ..., ordinal: ...)`
-- hydration maps `ordinal -> messageId -> working row joins -> MessageListItem`
-- search and pending-message contexts can hydrate direct IDs through `messageByIdProvider(messageId: ...)`
-
-Content cost differs by type:
-
-- text and timestamps are lightweight
-- identity joins and overlay metadata are moderate
-- attachments, media availability, and previews are heavier
-
-Hydration must avoid loading an entire large timeline at once. Visible rows hydrate independently so scrolling remains responsive under large datasets.
-
-Rendering placeholders should keep row height stable enough to avoid scroll jumps when richer content arrives.
-
-## 7. View Model / Payload Layer
-
-The view model and hydration providers are the payload layer for message timelines.
-
-Key providers:
-
-| Provider | Responsibility |
-| --- | --- |
-| `messageTimelineViewModelProvider(scope: ...)` | Timeline UI state facade: search controller, debounce, search results, ordinal state, jump methods. |
-| `messageTimelineOrdinalProvider(scope: ...)` | Total count, scroll controllers, ordinal strategy, jump operations. |
-| `messageTimelineIndexCoordinatorProvider(scope: ...)` | Coordinates active scope index behavior. |
-| `messageByTimelineOrdinalProvider(scope: ..., ordinal: ...)` | Current unified per-row hydration provider. |
-| `messageByIdProvider(messageId: ...)` | Direct ID hydration for search and pending/context rows. |
-| `timelineMetadataProvider(scope: ...)` | Scope metadata such as counts and date ranges. |
-
-This layer combines:
-
-- message row data
-- participant/display-name resolution
-- overlay user metadata
-- attachment state
-- recovered-message metadata where applicable
-
-It produces UI-ready data. It must not create widgets.
-
-## 8. Spec-System Integration
-
-Panel message timelines are selected by `ViewSpec.messages(MessagesSpec...)`.
-
-Examples:
-
-- `MessagesSpec.globalTimeline(...)`
-- `MessagesSpec.forContact(...)`
-- `MessagesSpec.forHandle(...)`
-- `MessagesSpec.recoveredUnlinkedMessages(...)`
-- `MessagesSpec.searchResultContext(...)`
-
-The canonical rendering pipeline is:
-
-Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
-
-Current panel code still has a legacy/current-state boundary where `ViewSpecCoordinator.buildForSpec(...)` returns widgets through feature resolvers. That is documented in `42-SPEC-SYSTEM` as a migration boundary, not an approved pattern for new work.
-
-New message timeline work must keep selection, resolution, hydration, payload/view model construction, and rendering distinguishable even when existing panel code still returns widgets.
-
-## 9. Rendering Layer
-
-Rendering builds widgets from `MessageListItem`.
-
-Current render path:
-
-- `MessagesTimelineView` chooses timeline/search/recovered layout for the active `MessageTimelineScope`.
-- `_MessageRow` watches row hydration and handles loading/error/null states.
-- `MessageCard` chooses text, image, video, or link-preview presentation from `MessageListItem`.
-- `MessageUserMetadataCardDecorator` applies saved/tag metadata affordances around cards.
-
-Layout behavior:
-
-- analysis-style timelines use full-width message cards
-- chat-style timelines use bubble layout
-- sender/receiver styling comes from `isFromMe`, sender name, card layout, and grouping metadata
-- grouping decisions are computed from adjacent hydrated metadata, not from raw SQL in the widget tree
-
-Rendering must not:
-
-- re-query source or working databases directly
-- infer missing identity, ordering, or attachment state
-- bypass the payload/hydration layer
-- treat a missing attachment file as a reason to suppress the message
-
-## 10. Failure Modes / Edge Cases
-
-| Case | Handling |
-| --- | --- |
-| Missing attachments | Attachment resolver returns an unavailable state; message remains visible. |
-| Delayed archive availability | Resolver can return `pendingArchive`; later archive availability refreshes resolved display state. |
-| Identity ambiguity | Participant/handle joins and overlay resolution provide best available label; recovered timelines preserve uncertainty instead of fabricating identity. |
-| Multiple handles for one person | Participant model and handle-to-participant links group identity; UI must not collapse based on strings. |
-| Out-of-order ingestion | Migration/index rebuild owns final ordinal ordering; UI must trust indexes, not arrival order or timestamps alone. |
-| Partial hydration during scroll | Rows show skeleton/loading states until `MessageListItem` is available. |
-| Missing projected row for ordinal | Hydration returns null; UI shows skeleton/empty row state rather than crashing. |
-| DB maintenance/reset | `messageTimelineOrdinalProvider` short-circuits to an empty state while `dbMaintenanceLockProvider` is true. |
-
-## 11. Performance Constraints
-
-Message timelines can be large.
-
-Performance rules:
-
-- Build the skeleton list from counts and ordinals.
-- Hydrate visible rows only.
-- Keep heavy work out of scroll callbacks and widget build methods.
-- Use providers/strategies for DB work.
-- Keep placeholder dimensions stable enough to avoid scroll jitter.
-- Preserve stable ordering so jumps and current position remain meaningful after updates.
-
-Staged hydration exists to avoid blocking the UI thread with large message, identity, attachment, and preview work.
-
-## 12. Non-Negotiable Rules
-
-- Do not render directly from DB rows.
-- Do not derive ordering from timestamps alone.
-- Do not bypass the ordinal strategy for timeline ordering.
-- Do not bypass the participant identity model.
-- Do not derive identity from raw handle strings or display names.
-- Do not render attachments from live Apple file paths.
-- Do not perform heavy work during scroll or directly in widget build methods.
-- Do not bypass the spec pipeline for panel navigation.
-- Do not transport widgets through new coordinator patterns.
-- Do not hide messages because identity, attachment, or preview hydration is incomplete.
-
-## 13. Current Caveats
-
-Known current-state caveats:
-
-- Current unified row hydration provider is `messageByTimelineOrdinalProvider`; some older shared hydration files and docs still reference `messageByOrdinalProvider`.
-- Panel `ViewSpecCoordinator` currently returns widgets for `MessagesSpec` variants. Treat this as a legacy/current-state migration boundary, not a pattern to spread.
-- `MessagesSpec.forChat(...)` and `MessagesSpec.forChatInDateRange(...)` currently route to placeholder panels in `ViewSpecCoordinator`.
-- Current `MessageRowMapper` applies overlay display-name overrides and participant display names for normal timelines. Verify handle fallback behavior before assuming every unlinked sender can display a handle in the unified timeline.
-- Recovered timelines use a list-backed ordinal strategy and recovered repositories rather than the normal working index tables. They are not backed by the same indexing guarantees as normal working timelines.
-  As a result, recovered timelines may differ in ordering stability, performance characteristics, and provider behavior compared to normal working timelines, and must not be assumed to share identical guarantees.
-
-## References
-
-- `./message-display-flow-walkthrough.md` - step-by-step current timeline walkthrough.
-- `./STATE_AND_PROVIDER_INVENTORY.md` - current provider inventory.
-- `../../10-DATABASES/12-identity-model-contacts-handles-participants.md` - identity model.
-- `../../25-ONBOARDING-AND-ARCHIVE/70-attachments-end-to-end.md` - attachment pipeline.
-- `../../20-DATA-IMPORT-MIGRATION/01-overview.md` - import/migration and incremental update flow.
-- `../../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md` - panel/spec boundaries.
+The message view should preserve the user’s reading position. If new evidence
+arrives below the visible window, use the pending-new-message affordance rather
+than forcing a scroll.
+
+## Non-Negotiable Rules
+
+- Do not render directly from database rows.
+- Do not create source-specific message renderers.
+- Do not infer identity from raw handle strings when a known contact identity
+  exists.
+- Do not derive timeline navigation from pagination.
+- Do not hide messages because identity, attachment, text, or preview hydration
+  is incomplete.
+- Do not put SQL/query work in widgets.

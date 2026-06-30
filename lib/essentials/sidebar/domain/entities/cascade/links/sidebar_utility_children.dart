@@ -55,12 +55,12 @@ CassetteSpec sidebarUtilitySettingsChildMessageHistoryCoveragePanel() {
 
 CassetteSpec sidebarUtilitySettingsChildTextSizeInfo() {
   return const CassetteSpec.settings(
-    SettingsCassetteSpec.textSizePlaceholder(),
+    SettingsCassetteSpec.textSizeInfo(),
   );
 }
 
 CassetteSpec sidebarUtilitySettingsChildImageSizeInfo() {
   return const CassetteSpec.settings(
-    SettingsCassetteSpec.imageSizePlaceholder(),
+    SettingsCassetteSpec.imageSizeInfo(),
   );
 }

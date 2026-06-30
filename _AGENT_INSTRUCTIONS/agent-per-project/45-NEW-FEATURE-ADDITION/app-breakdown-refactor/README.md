@@ -1,6 +1,15 @@
 # App Breakdown Refactor
 
-This folder is the working control center for the architectural refactor of the
+> Current conformance note (2026-06-06): this folder is a historical refactor
+> control record, not the current working control center. Its core lesson -
+> one semantic state, deterministic projection, inert payload transport, no
+> hidden repair logic - remains valid. Current implementation guidance lives in
+> the Architectural Constitution, `42-SPEC-SYSTEM/`, the source-scoped graph
+> migration docs, and the Message Evidence Spine invariant. Do not use older
+> references in this folder to recreate `MessageTimelineScope`,
+> `MessagesTimelineView`, `working.db` timeline paths, or panel repair hooks.
+
+This folder was the working control center for an architectural refactor of the
 MessageLens sidebar, panel, and message-surface system.
 
 The attached text documents are authoritative on verdict, target shape, and

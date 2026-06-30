@@ -12,11 +12,14 @@ SHA-256 hash — was proven fundamentally broken by forensic analysis:
 | Failure mode | Impact |
 |-------------|--------|
 | Sent-attachment directory conventions change (`at_0_` GUID prefix) | Path-tail matching breaks |
-| `sha256_hex` frequently NULL in working DB | Hash matching disabled |
+| `sha256_hex` frequently NULL in retired working projection rows | Hash matching disabled there |
 | Common filenames (`IMG_1234.jpeg`) | False-positive ambiguity |
 | **Observed success rate** | **~40%** |
 
 The heuristic system was replaced with a deterministic three-layer mapping flow.
+The current implementation maps through source-scoped graph identity first.
+Retired `macos_import.db` / `working.db` identity is historical cleanup
+context only, not the ordinary recovery direction.
 
 ## Three-Layer Read Topology
 
@@ -26,40 +29,53 @@ Layer 1: Historical snapshot DB (user-provided)
   ├─ Source of: attachment.guid, message.guid, message↔attachment joins
   └─ Provides authoritative relationships from the era of the backup
 
-Layer 2: Current import DB (via sqfliteImportDatabaseProvider)
-  ├─ Source of: attachments.guid → attachments.id bridge
-  ├─ ONLY layer holding BOTH Apple's attachment.guid
-  │   AND the id that becomes import_attachment_id in working DB
-  └─ Must be populated from at least one live import cycle
+Layer 2: Current source-scoped import DB (via approved source-scoped import
+         ledger provider/diagnostic boundary)
+  ├─ Source of: attachments.guid → attachment ss_id bridge
+  ├─ Preserves Apple's attachment.guid plus source_id/source_rowid
+  └─ Must be populated from at least one source-scoped graph build
 
-Layer 3: Current working DB + overlay
-  ├─ Source of: (message_guid, import_attachment_id) runtime identity
+Layer 3: Current conversation graph + overlay
+  ├─ Source of: message ss_id, attachment ss_id, and message_to_attachment edges
   └─ Target of: overlay archived_attachments row insertion
 ```
 
-**Precondition:** The current import DB must contain data from at least one
-live import/migration cycle. If empty or absent, recovery refuses with a
-diagnostic explaining why.
+**Precondition:** The current source-scoped import DB and conversation graph
+must contain data from at least one graph build. If empty or absent, recovery
+refuses with a diagnostic explaining why.
 
 ## Identity Mapping
 
 ### The Problem
 
-Apple's `attachment.guid` is preserved in the import DB but is NOT projected
-into the working DB. The working DB uses `import_attachment_id` (= import DB
-`attachments.id`). The overlay keys on `(message_guid, import_attachment_id)`.
+Apple's `attachment.guid` is preserved in the source-scoped import DB.
+The conversation graph uses canonical `ss_id` endpoints and
+`message_to_attachment` topology. The overlay archive table still keys on the
+existing compatibility pair `(message_guid, import_attachment_id)`, where
+`import_attachment_id` is currently the live-source attachment ROWID unpacked
+from the attachment `ss_id`.
 
-Mapping a historical attachment to its current overlay key requires bridging
-through the import DB.
+Mapping a historical attachment to its current overlay key therefore bridges:
+
+```
+historical message/attachment GUIDs
+  -> source-scoped import attachment ss_id
+  -> graph message_to_attachment edge
+  -> overlay-compatible (message_guid, import_attachment_id)
+```
+
+This keeps current recovery aligned with graph topology while preserving
+existing archive metadata compatibility.
 
 ### Step 1: GUID Match (Primary)
 
 For each `(hist_message_guid, hist_attachment_guid)` pair from the snapshot:
 
-1. Query import DB: `SELECT id FROM attachments WHERE guid = :hist_attachment_guid`
-2. If exactly one row → candidate `import_attachment_id`
-3. Verify the pair in working DB:
-   `SELECT 1 FROM attachments WHERE message_guid = :hist_message_guid AND import_attachment_id = :id`
+1. Query source-scoped import DB for attachment `ss_id` by
+   `(source_id, hist_attachment_guid)`
+2. Query the conversation graph for current message `ss_id` by source-scoped
+   message GUID
+3. Verify the pair in graph topology through `message_to_attachment`
 4. Confirmed → **MAPPED** with `match_method = 'guid_match'`
 
 ### Step 2: Single-Attachment Fallback
@@ -68,7 +84,7 @@ Permitted ONLY when ALL three conditions hold:
 
 1. `hist_attachment_guid` IS NULL (not different — specifically NULL)
 2. Historical message has exactly ONE attachment (from `message_attachment_join`)
-3. Current working DB has exactly ONE attachment for that `message_guid`
+3. Current graph topology has exactly ONE attachment for that message
 
 If all three → the single `import_attachment_id` is the match.
 `match_method = 'single_attachment_fallback'`
@@ -92,9 +108,9 @@ with a specific reason.
 
 | Reason | Cause |
 |--------|-------|
-| `message_not_in_working` | Historical `message.guid` not found in current working DB |
-| `guid_mismatch` | GUID doesn't match any import DB record |
-| `guid_message_mismatch` | GUID matched import DB, but belongs to a different current message |
+| `message_not_in_working` | Historical `message.guid` not found in the current graph. The enum name is retained for compatibility. |
+| `guid_mismatch` | GUID doesn't match any source-scoped import attachment record |
+| `guid_message_mismatch` | GUID matched an import row, but graph topology does not connect it to the expected current message |
 | `guid_null_multi_attachment` | NULL GUID + multiple attachments (ambiguous) |
 | `guid_null_no_current_attachment` | NULL GUID + no current attachment for that message |
 | `file_not_found` | Mapped successfully but file missing from backup folder |
@@ -172,13 +188,15 @@ DeterministicRecoveryResult:
 |------|------|
 | `lib/features/attachments/application/deterministic_recovery_provider.dart` | Multi-phase recovery orchestration |
 | `lib/features/attachments/application/historical_snapshot_reader.dart` | Read-only historical `chat.db` enumeration |
+| `lib/features/attachments/application/graph_cross_snapshot_mapper.dart` | Historical snapshot → source-scoped import → graph topology mapper |
 | `lib/features/attachments/application/attachment_archive_service_provider.dart` | Shared archive write infrastructure |
 
 ## Invariants
 
 1. Historical snapshot is opened `SQLITE_OPEN_READONLY` — never mutated.
 2. Historical ROWIDs are join-traversal-only — they never escape into overlay or runtime identity.
-3. Working DB is never written to by recovery.
+3. Conversation graph projection and retired working files are never written
+   to by recovery.
 4. Overlay receives archive metadata only — no structural schema changes.
 5. No heuristic fallback exists.
 6. Unmapped records are counted and reported, never silently dropped.

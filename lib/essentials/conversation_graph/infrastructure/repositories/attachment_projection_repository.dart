@@ -1,20 +1,41 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/attachments/attachment_projection_repository.dart';
 
 class SqliteAttachmentProjectionRepository
     implements AttachmentProjectionRepository {
   const SqliteAttachmentProjectionRepository({
-    required this.importDatabase,
-    required this.workingDatabase,
+    required this.importLedgerDatabase,
+    required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ImportLedger importLedgerDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<AttachmentProjectionResult> projectAttachments() async {
-    final rows = await importDatabase.database.query(
+    return _projectAttachmentsWhere(
+      whereClause: null,
+      whereArgs: const <Object?>[],
+    );
+  }
+
+  @override
+  Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  }) {
+    return _projectAttachmentsWhere(
+      whereClause: 'source_id = ? AND source_rowid > ?',
+      whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+    );
+  }
+
+  Future<AttachmentProjectionResult> _projectAttachmentsWhere({
+    required String? whereClause,
+    required List<Object?> whereArgs,
+  }) async {
+    final rows = await importLedgerDatabase.queryTable(
       'attachments',
       columns: <String>[
         'ss_id',
@@ -26,13 +47,15 @@ class SqliteAttachmentProjectionRepository
         'total_bytes',
         'created_at_utc',
       ],
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'ss_id ASC',
     );
 
     var insertedAttachmentCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO attachments (
             ss_id,
@@ -57,7 +80,7 @@ class SqliteAttachmentProjectionRepository
           ],
         );
         if (insertedCount == 0) {
-          await workingDatabase.executeSql(
+          await graphDatabase.executeSql(
             '''
             UPDATE attachments
             SET

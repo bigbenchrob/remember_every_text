@@ -3,7 +3,7 @@ tier: project
 scope: checklist
 owner: agent-per-project
 last_reviewed: 2025-12-24
-source_of_truth: doc
+source_of_truth: historical-record
 links:
   - ./PROPOSAL.md
   - ./PHASES.md
@@ -12,19 +12,25 @@ tests: []
 
 # Checklist — Global Messages Timeline
 
+> Current conformance note (2026-06-19): this checklist records the original
+> global timeline implementation target. Future work must use a graph-backed
+> `MessageEvidenceScope` with a full logical skeleton and shared evidence-row
+> hydration. Do not restore retained `working.db` ordinal/index providers as
+> the ordinary global timeline authority.
+
 ## Proposal / Scope
 - [x] Confirm v1 scope choice: A / B / C. _(Chose B: filters framework only for now)_
 - [x] Confirm entry point in UI/navigation. _(Added `TopChatMenuChoice.globalTimeline` + `MessagesSpec.globalTimelineV2()`)_
 - [ ] Confirm required correspondent label fields (name vs handle). _(TODO in hydration provider; using senderName for now)_
 
 ## Data & Index
-- [x] Verify `message_index` has monthKey support and required lookup methods. _(GlobalMessageIndexDataSource has monthKey, getByOrdinal, firstOrdinalOnOrAfter)_
-- [x] Verify mapping for "jump to search hit" (messageId → ordinal). _(Data source supports this; VM jump helper not yet wired)_
+- [x] Historical target: verify `message_index` has monthKey support and required lookup methods. _(Superseded by graph evidence skeletons.)_
+- [x] Historical target: verify mapping for "jump to search hit" (messageId → ordinal). _(Superseded by graph `message_ss_id` evidence scopes.)_
 - [x] Confirm DB maintenance lock behavior for global providers. _(Ordinal provider short-circuits with totalCount=0 during lock)_
 
 ## Providers & View Model
 - [x] Create `global_messages` view model module with VM + `jump/` + `hydration/`. _(All created: VM, ordinal provider, hydration provider)_
-- [x] Ensure all DB access goes through centralized providers. _(Uses `driftWorkingDatabaseProvider`)_
+- [x] Graph-era target: ensure all DB access goes through graph evidence spine/repository boundaries. _(Do not use retained `driftWorkingDatabaseProvider`.)_
 - [x] Ensure controller/timer lifecycle is idempotent in VM. _(Search controller properly disposed; listener attached only once)_
 
 ## UI

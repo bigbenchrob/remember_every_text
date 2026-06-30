@@ -1,208 +1,173 @@
 # Message Display Pipeline
 
-## Why this document exists
+## Why This Document Exists
 
 The message surface is easy to misunderstand if it is described only as
 "messages are rendered from a view." In reality there are multiple layers, and
-they have to stay coordinated if the timeline is going to be fast, stable, and
-correct.
+they have to stay coordinated if evidence reading is going to be fast, stable,
+and correct.
 
-The cleanest way to think about the message surface is as a three-layer model.
+The current message surface is graph-backed and routes through the Message
+Evidence Spine.
 
-## The three layers
+## The Four Layers
 
-### Layer 1: Semantic scope layer
+### Layer 1: Semantic Scope Layer
 
-This layer answers the question:
+This layer answers:
 
-`Which message set should exist on screen at all?`
+`Which logical message universe should exist on screen at all?`
 
-Its main inputs are:
+Inputs include:
 
 - center-panel `ViewSpec`
 - `MessagesSpec` meaning
-- `MessageTimelineScope`
+- sidebar flow state
+- selected contact / conversation / handle / search / recovered scope
 
-Current scope variants are:
+Output:
 
-- global timeline
-- contact timeline with optional handle filter
-- chat timeline
-- recovered timeline
+- typed `MessageEvidenceScope`
 
-This layer should be driven by semantic navigation, not widget state.
-
-Examples:
-
-- `MessagesSpec.forContact(contactId: 42, filterHandleId: 7)` means the scope
-  is contact 42 with handle 7 filter
-- `MessagesSpec.recoveredUnlinkedMessages(contactId: 42)` means the scope is
-  recovered-deleted candidates for contact 42
-- `MessagesSpec.globalTimeline(...)` means a global scope regardless of contact
+The scope layer is driven by semantic navigation, not widget state.
 
 If the scope layer is wrong, every downstream layer is wrong.
 
-### Layer 2: Ordinal access layer
+### Layer 2: Full Skeleton Layer
 
-This layer answers the question:
+This layer answers:
 
-`Given the current scope, what is the stable ordering of messages and how do we jump around it?`
+`What is the full stable ordered message universe for this scope?`
 
-This layer exists because the timeline cannot depend on fragile page windows or
-shifting offsets.
+The skeleton exists because timeline-like navigation cannot depend on fragile
+page windows, latest-N batches, or shifting offsets.
 
 Its job is:
 
-- provide stable ordinals inside a scope
-- give total item count
-- support `jumpToLatest()`, `jumpToMonth(...)`, and `jumpToDate(...)`
-- keep viewport anchoring stable while the user navigates
+- preserve the full selected logical message universe.
+- provide stable graph `message_ss_id` ordering.
+- support heatmaps, search matches, month/date jumps, latest positioning, and
+  viewport anchoring.
+- remain lightweight: no full-scope text/media hydration.
 
-For normal scopes, this is provided by scope-specific ordinal strategies such
-as:
+Hard rule:
 
-- global ordinal strategy
-- contact ordinal strategy
-- filtered contact ordinal strategy
-- chat ordinal strategy
+> Pagination is not timeline navigation.
 
-Recovered timelines are currently a special case:
+### Layer 3: Hydration, Provenance, And Attachment Evidence
 
-- they do not use the working DB ordinal strategy path directly
-- they are turned into an in-memory `RecoveredListOrdinalStrategy`
+This layer answers:
 
-That means recovered timelines are functionally integrated into the same
-timeline API, but not yet fully unified underneath.
+`Given a stable graph message id near the viewport, what evidence row should be rendered?`
 
-### Layer 3: Hydration, provenance, and row rendering layer
+Hydration resolves:
 
-This layer answers the question:
+- message text and semantic flags.
+- sender/display identity.
+- attachment evidence.
+- archive/live/missing availability state.
+- search match highlights.
+- developer diagnostics when enabled.
 
-`Given a scope and an ordinal, what concrete message row do we render, with what attachments, and from what file provenance?`
+Hydration happens near the visible viewport or selected evidence window. Limits
+apply to hydration windows, not to the selected logical scope.
 
-This is where a timeline row becomes a `MessageListItem` and eventually a
-`MessageCard`.
+### Layer 4: Shared Rendering Layer
 
-The current shape is:
+This layer renders:
 
-1. The UI asks for a row by scope and ordinal
-2. The ordinal strategy resolves the message ID for that ordinal
-3. A joined query loads the message and participant rows
-4. `MessageRowMapper` constructs a `MessageListItem`
-5. Attachments are loaded and enriched with archive resolution information
-6. The row is rendered as a `MessageCard`
+- `MessageEvidenceHeader`
+- `MessageEvidenceTimelineView`
+- shared evidence rows/media/link/fallback tiles
 
-This layer should not decide what timeline the user is in. It should only
-hydrate and render the row for the scope it is given.
+Rendering must not decide graph semantics, query databases directly, or repair
+data. Source-specific scopes are allowed; source-specific evidence renderers
+are not.
 
-## Search as a side lane, not a different architecture
+## Search As Scope Refinement
 
-Search does not replace the timeline architecture. It uses a side lane.
+Search does not replace the evidence architecture.
 
-Current flow:
+Search returns graph message matches for the selected scope and feeds the same
+skeleton/hydration/rendering path. The user should not experience search
+results as a different species of message object.
 
-- search queries return message IDs quickly
-- individual result rows are then hydrated by message ID
+## Attachment Handling Inside Evidence Hydration
 
-That means search is a different retrieval path, but it should converge on the
-same hydrated message-row semantics.
+Attachment availability is part of evidence hydration, not a UI hack.
 
-The user should not experience search results as a different species of message
-object.
+Attachment evidence may carry:
 
-## Attachment handling inside message hydration
+- source path hints.
+- source attachment identity.
+- graph attachment identity.
+- message/attachment graph edge identity.
+- archive-resolved path when available.
+- missing/unavailable state when not.
+- media dimensions or link-preview metadata when available.
 
-Attachment availability is part of message hydration, not a separate UI hack.
+Widgets render resolved attachment evidence. They do not read Apple paths
+directly or decide archive policy.
 
-The current model already points in the right direction.
+## Live And Archived Files Must Be The Same Message Semantically
 
-`AttachmentInfo` can carry:
+An attachment message should remain the same evidence row whether its file is
+currently sourced from:
 
-- the original Messages local path
-- the import attachment ID
-- the message GUID
-- an archive-resolved path when available
-- media dimensions
+- the live `~/Library/Messages/Attachments` path.
+- the MessageLens archive.
+- a deterministic historical import written into the archive.
 
-That means attachment provenance can be folded into the same message row.
+The message meaning does not change. Only file provenance changes.
 
-## Live and archived images must be the same message semantically
+## Resolution Ownership
 
-This is a critical objective.
+Attachment source policy belongs to the attachment resolver/archive layer.
 
-An image message should remain the same message whether its file currently comes
-from:
+The evidence row should expose a render-ready result such as:
 
-- the live `~/Library/Messages/Attachments` path
-- the MessageLens archive
-- a deterministic historical import written into the archive
+- archive-backed available media.
+- live-file pending archive ingestion.
+- unavailable awaiting recovery.
+- non-recoverable.
 
-The message meaning does not change. Only the file provenance changes.
+No attachment record may disappear merely because the file is unavailable.
 
-## Provenance resolution order
+## What Row Rendering Should Guarantee
 
-The runtime attachment resolver currently follows the correct high-level order:
+A hydrated evidence row should guarantee:
 
-1. Try the live Messages local path
-2. Try the MessageLens archive using overlay metadata plus archive directory
-3. If neither exists, report `cloudOnly` or `missing`
+- every message record still renders, even if text or attachment files are
+  unavailable.
+- attachment availability changes do not change which message row is displayed.
+- grouping decisions depend on message semantics, not attachment lookup side
+  effects.
+- a row with a live image and a row with an archived image are equivalent at the
+  evidence/timeline level.
 
-That order matters.
-
-It preserves these semantics:
-
-- use the freshest live file when available
-- fall back to the app-owned archive when Apple has evicted the original file
-- never pretend an attachment is absent just because the live path vanished
-
-## On-demand archive reinforcement
-
-One subtle but important behavior in the current implementation is on-demand
-archiving.
-
-If a file reappears at the live Messages path and has not yet been archived,
-the resolver can trigger archive capture in the background.
-
-That means the system can recover from Apple re-downloading an attachment later.
-
-This is a good fit for the target model because it keeps archive durability as a
-side effect of file availability, not as a separate manual rescue step.
-
-## What row rendering should guarantee
-
-A hydrated message row should guarantee:
-
-- every message record still renders as a message row, even if attachment files
-  are unavailable
-- attachment availability changes do not change which message row is being
-  displayed
-- message grouping decisions depend on message semantics, not attachment lookup
-  side effects
-- a row with a live image and a row with an archived image are equivalent at
-  the timeline level
-
-## What should never happen
+## Architectural Violations
 
 These failures should be considered architectural violations, not mere UI bugs:
 
-- a message row disappearing because the live attachment file is missing
-- a recovered row being omitted because it does not fit the "normal" hydration
-  path
-- a timeline switching semantic meaning because a widget held onto stale scope
-  assumptions
-- a contact timeline and recovered-deleted timeline sharing enough plumbing to
-  reuse stale rows while still meaning different things
+- a message row disappearing because the live attachment file is missing.
+- a graph-orphan/recovered row being omitted because it does not fit the normal
+  conversation path.
+- a timeline switching semantic meaning because a widget held stale scope
+  assumptions.
+- a source-specific message renderer that bypasses shared header/row/media
+  evidence presentation.
+- a timeline-like scope capped to latest-N rows instead of building a full
+  skeleton.
 
-## The long-term unified message-surface goal
+## Unified Message-Surface Goal
 
-The ideal system is:
+The target system is:
 
-- one semantic scope layer
-- one ordinal contract
-- one hydration contract
-- one attachment provenance contract
+- one semantic scope model.
+- one full-skeleton contract.
+- one hydration contract.
+- one attachment provenance contract.
+- one shared evidence renderer.
 
-Under that model, recovered timelines are not a bespoke side universe. They are
-just another scope with a different upstream source of ordered message IDs.
-
-That is not fully true yet, but it is the right evaluation standard.
+Different sources can select different scopes. Once the app is showing message
+evidence, the presentation path must converge.

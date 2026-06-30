@@ -173,6 +173,10 @@ Projection systems must derive naturally from semantic state.
 
 ### Constitutional Reminder
 
+When a bug appears, fix derivation, invalidation, ownership, or projection.
+
+Do NOT add imperative repair.
+
 Correct repair fixes:
 
 - derivation

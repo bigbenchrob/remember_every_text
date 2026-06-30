@@ -1,5 +1,12 @@
 # Enhanced Onboarding Flow Checklist
 
+## Current Conformance Note (2026-06-06)
+
+This checklist is historical. Current onboarding work should verify
+source-scoped import, conversation graph build/readiness, overlay failure
+persistence, and centralized reset/maintenance locks. Do not add new ordinary
+setup steps that depend on retained `working.db` migration completion.
+
 ## Phase 0 — Planning
 
 - [x] Write proposal
@@ -19,10 +26,11 @@
 - [ ] Reuse existing FDA check as one evidence source
 - [ ] Add Messages source evidence beyond simple readability
 - [ ] Add AddressBook readiness evidence via approved path resolution
-- [ ] Add import database readiness evidence
-- [ ] Add working database readiness evidence
-- [ ] Add import failure summary evidence
-- [ ] Add migration failure summary evidence
+- [ ] Add source-scoped import database readiness evidence
+- [ ] Add conversation graph database readiness evidence
+- [ ] Add source-scoped import failure summary evidence
+- [ ] Add graph build/projection failure summary evidence
+- [ ] Keep retained import/migration evidence diagnostic-only
 
 ## Phase 3 — Classification
 
@@ -36,7 +44,8 @@
 - [ ] Upgrade onboarding UI to render the richer diagnosis
 - [ ] Add clear next-step actions per blocker type
 - [ ] Add an optional advanced-details disclosure
-- [ ] Keep import and migration progress comprehensible and user-safe
+- [ ] Keep source-scoped import and graph-build progress comprehensible and
+  user-safe
 
 ## Phase 5 — Resilience
 

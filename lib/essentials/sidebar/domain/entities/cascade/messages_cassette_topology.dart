@@ -6,7 +6,7 @@ part of '../cassette_spec.dart';
 // See cassette_child_resolver.dart for full contract.
 
 CassetteSpec? resolveMessagesChild(MessagesCassetteSpec spec) {
-  return spec.when(heatMap: (_) => null);
+  return spec.when(conversationSignatures: () => null, heatMap: (_) => null);
 }
 
 extension MessagesCassetteSpecX on MessagesCassetteSpec {

@@ -10,11 +10,11 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 
+import '../../application/read_models/contact_summary.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/contact_sidebar_refresh_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/filtered_picker_sections_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/unified_picker_sections_provider.dart';
-import '../../infrastructure/repositories/contacts_list_repository.dart'
-    show ContactSummary;
 import 'contact_highlight_row.dart';
 import 'picker_filter_toggle.dart';
 
@@ -115,7 +115,9 @@ class FullContactPicker extends ConsumerWidget {
           error: (error, _) => _GroupedSelectorError(
             message: '$error',
             onRetry: () {
-              ref.invalidate(filteredPickerSectionsProvider);
+              ref
+                  .read(contactSidebarRefreshActionsProvider.notifier)
+                  .refreshFilteredPickerSections();
             },
           ),
         );
@@ -254,65 +256,6 @@ class ContactLozenge extends ConsumerWidget {
     );
   }
 }
-
-// /// Compact lozenge shown when the header is collapsed (Phase 4).
-// class ContactLozenge extends StatelessWidget {
-//   const ContactLozenge({
-//     super.key,
-//     required this.label,
-//     this.onTap,
-//   });
-
-//   final String label;
-//   final VoidCallback? onTap;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final theme = MacosTheme.of(context);
-//     return GestureDetector(
-//       onTap: onTap,
-//       behavior: HitTestBehavior.opaque,
-//       child: Container(
-//         margin: const EdgeInsets.symmetric(horizontal: 12),
-//         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-//         decoration: BoxDecoration(
-//           color: theme.canvasColor,
-//           borderRadius: BorderRadius.circular(12),
-//           border: Border.all(
-//             color: theme.dividerColor.withValues(alpha: 0.6),
-//           ),
-//           boxShadow: const [
-//             BoxShadow(
-//               color: Color(0x26000000),
-//               offset: Offset(0, 2),
-//               blurRadius: 6,
-//             ),
-//           ],
-//         ),
-//         child: Row(
-//           children: [
-//             const MacosIcon(
-//               CupertinoIcons.person_crop_circle,
-//               size: 16,
-//               color: CupertinoColors.secondaryLabel,
-//             ),
-//             const SizedBox(width: 8),
-//             Expanded(
-//               child: Text(
-//                 label,
-//                 maxLines: 1,
-//                 overflow: TextOverflow.ellipsis,
-//                 style: theme.typography.body.copyWith(
-//                   fontWeight: FontWeight.w600,
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
 
 const double _kLetterSlotHeight = 18;
 const double _kPickerMinHeight = 160;
@@ -676,9 +619,9 @@ class _GroupedSelectorError extends ConsumerWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const MacosIcon(
+        MacosIcon(
           CupertinoIcons.exclamationmark_triangle,
-          color: CupertinoColors.systemYellow,
+          color: colors.status.warning,
           size: 28,
         ),
         const SizedBox(height: 8),
@@ -781,7 +724,6 @@ class _ContactListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ContactHighlightRow(
       displayName: contact.displayName,
-      shortName: contact.shortName,
       showFavoriteIndicator: showFavoriteIndicator,
       onHoverStart: onHoverStart,
       onTap: onTap,

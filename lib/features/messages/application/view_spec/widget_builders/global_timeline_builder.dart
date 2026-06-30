@@ -1,15 +1,13 @@
 import 'package:flutter/widgets.dart';
 
-import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../../presentation/view/messages_timeline_view.dart';
+import '../../../presentation/view/global_messages_evidence_view.dart';
 
 /// Widget builder for the global timeline center panel view.
 Widget buildGlobalTimelineView({DateTime? scrollToDate}) {
-  return MessagesTimelineView(
+  return GlobalMessagesEvidenceView(
     key: ValueKey<String>(
-      'messages-global:${scrollToDate?.toIso8601String() ?? 'latest'}',
+      'evidence-messages-global:${scrollToDate?.toIso8601String() ?? 'latest'}',
     ),
-    scope: const MessageTimelineScope.global(),
-    scrollToDate: scrollToDate,
+    monthAnchor: scrollToDate,
   );
 }

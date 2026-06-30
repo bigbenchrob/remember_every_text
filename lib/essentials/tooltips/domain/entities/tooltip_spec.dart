@@ -29,8 +29,4 @@ sealed class TooltipSpec with _$TooltipSpec {
   /// Contacts feature tooltips (hero card edit, etc.)
   const factory TooltipSpec.contacts(ContactsTooltipSpec spec) =
       ContactsTooltip;
-
-  // Future variants:
-  // const factory TooltipSpec.messages(MessagesTooltipSpec spec) = MessagesTooltip;
-  // const factory TooltipSpec.handles(HandlesTooltipSpec spec) = HandlesTooltip;
 }

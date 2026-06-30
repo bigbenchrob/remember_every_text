@@ -1,16 +1,24 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'favorite_contacts_repository_provider.dart';
+import '../../favorites/favorite_contacts_repository_provider.dart';
+import '../../read_models/contact_summary_identity.dart';
 
 part 'contact_is_favorite_provider.g.dart';
 
 /// Whether [participantId] is currently in the user's favorites.
 ///
 /// Reactivity is driven by explicit invalidation: after add/remove mutations
-/// the caller must `ref.invalidate(contactIsFavoriteProvider(participantId))`.
+/// `ContactFavoriteActions` invalidates this provider and dependent picker
+/// projections.
 @riverpod
 Future<bool> contactIsFavorite(Ref ref, {required int participantId}) async {
   final repository = await ref.watch(favoriteContactsRepositoryProvider.future);
-  return repository.isFavorite(participantId);
+  final favorites = await repository.getAllFavorites();
+  for (final favorite in favorites) {
+    if (contactIdentityIdsMatch(favorite.participantId, participantId)) {
+      return true;
+    }
+  }
+  return false;
 }

@@ -1,6 +1,8 @@
 # Onboarding — Interactions & Navigation
 
-> Legacy note (2026-04-21): the blocking overlay still exists outside normal user navigation, but current code also uses `ViewSpec.onboarding(OnboardingSpec.devPanel())` for the developer panel and `ViewSpec.environmentReadiness(EnvironmentReadinessSpec.readinessPanel())` for readiness surfaces. Do not use the V1 statements below to argue that onboarding has no ViewSpec participation.
+> Legacy note (2026-04-21, updated 2026-06-03): the blocking overlay still exists outside normal user navigation, but current code also uses `ViewSpec.onboarding(OnboardingSpec.devPanel())` for the developer panel and `ViewSpec.environmentReadiness(EnvironmentReadinessSpec.readinessPanel())` for readiness surfaces. Do not use the V1 statements below to argue that onboarding has no ViewSpec participation.
+>
+> Current lifecycle rule: onboarding does not call `DbImportControlProvider` and does not use `runImportAndMigration()`. First-run/setup and reimport flows use `MessageDataResetService` plus `ConversationGraphBuildController`; readiness is reported through onboarding/environment readiness providers.
 
 ## Integration Point
 
@@ -57,7 +59,7 @@ OnboardingOverlay (ConsumerWidget)
         └── Card / Container with rounded corners
             └── switch (onboardingStatus) {
                   awaitingUserAction → WelcomeContent(onStart: ...)
-                  importing / migrating → ProgressContent(stages: ..., phase: ...)
+                  importing / buildingGraph → ProgressContent(stages: ..., phase: ...)
                   complete → CompleteContent(result: ..., onDismiss: ...)
                 }
 ```
@@ -69,8 +71,9 @@ OnboardingOverlay
   watches → onboardingGateProvider (OnboardingStatus)
   
 OnboardingGateProvider
-  reads → file system (DB existence check) on build()
-  reads → dbImportControlProvider (to call runImportAndMigration and observe progress)
+  reads → file system/source database probes and graph readiness
+  reads → MessageDataResetService for reset/reimport cleanup
+  reads → ConversationGraphBuildController for graph build/rebuild
   exposes → OnboardingStatus enum
 
 MacosAppShell
@@ -84,8 +87,8 @@ MacosAppShell
 - Does not modify the sidebar or cassette system
 - Does not add toolbar buttons
 - Does not touch the overlay database
-- Does not add any new table importers or migrators
-- Does not alter orchestrator execution flow
+- Does not add any new table importers, graph importers, migrators, or projectors
+- Does not alter graph build orchestration flow
 - Does not handle errors (V1)
 - Does not handle early dismissal (V1)
 - Does not handle re-onboarding after DB deletion (V1)
@@ -96,7 +99,8 @@ _To be defined during planning._
 
 ## Cross-Feature Touchpoints
 
-- Import orchestrator
-- Migration orchestrator
+- Source-scoped graph build controller
+- Message data reset service
+- Environment readiness providers
 - Sidebar rack state (must not be disrupted)
 - Window state / panel management

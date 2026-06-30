@@ -2,9 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db_importers/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -53,7 +53,7 @@ void main() {
 
       final result = await MessageRichTextEnricher(
         chatDbPath: '/fake/chat.db',
-        importDatabase: importDatabase,
+        importLedger: importDatabase,
         extractor: const _FakeExtractor(<int, String>{100: ' decoded text '}),
       ).enrichMissingText();
 
@@ -84,7 +84,7 @@ void main() {
 
     final enricher = MessageRichTextEnricher(
       chatDbPath: '/fake/chat.db',
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
       extractor: const _FakeExtractor(<int, String>{100: 'decoded text'}),
     );
 
@@ -96,6 +96,46 @@ void main() {
     expect(second.enrichedMessageCount, 0);
   });
 
+  test(
+    'enriches only messages after source rowid for incremental builds',
+    () async {
+      await _insertImportMessage(
+        importDatabase,
+        sourceRowId: 100,
+        text: null,
+        attributedBodyBlob: Uint8List.fromList(<int>[1, 2, 3]),
+      );
+      await _insertImportMessage(
+        importDatabase,
+        sourceRowId: 101,
+        text: null,
+        attributedBodyBlob: Uint8List.fromList(<int>[4, 5, 6]),
+      );
+
+      final result =
+          await MessageRichTextEnricher(
+            chatDbPath: '/fake/chat.db',
+            importLedger: importDatabase,
+            extractor: const _FakeExtractor(<int, String>{
+              100: 'previous decoded text',
+              101: 'new decoded text',
+            }),
+          ).enrichMissingTextAfterSourceRowId(
+            sourceId: liveChatDbSourceId,
+            startedAfterSourceRowId: 100,
+          );
+      final rows = await importDatabase.database.query(
+        'messages',
+        columns: <String>['source_rowid', 'text'],
+        orderBy: 'source_rowid ASC',
+      );
+
+      expect(result.candidateMessageCount, 1);
+      expect(result.enrichedMessageCount, 1);
+      expect(rows.map((row) => row['text']), [null, 'new decoded text']);
+    },
+  );
+
   test('reports unavailable extractor without mutating rows', () async {
     await _insertImportMessage(
       importDatabase,
@@ -106,7 +146,7 @@ void main() {
 
     final result = await MessageRichTextEnricher(
       chatDbPath: '/fake/chat.db',
-      importDatabase: importDatabase,
+      importLedger: importDatabase,
       extractor: const _FakeExtractor(<int, String>{
         100: 'decoded',
       }, available: false),
@@ -131,11 +171,27 @@ class _FakeExtractor implements MessageExtractorPort {
     int? limit,
     String? dbPath,
   }) async {
-    return extracted;
+    throw StateError('SS rich text enrichment must decode import blobs');
+  }
+
+  @override
+  Future<Map<int, String>> extractMessageTextsFromBlobs(
+    Map<int, Uint8List> attributedBodyBlobsByRowId,
+  ) async {
+    return Map<int, String>.fromEntries(
+      extracted.entries.where(
+        (entry) => attributedBodyBlobsByRowId.containsKey(entry.key),
+      ),
+    );
   }
 
   @override
   Future<bool> isAvailable() async {
+    return available;
+  }
+
+  @override
+  Future<bool> isBlobExtractionAvailable() async {
     return available;
   }
 }

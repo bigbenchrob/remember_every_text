@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../../essentials/db/infrastructure/data_sources/local/import/sqflite_import_database.dart';
+import '../../historical_archive_sources.dart';
+import '../../historical_archive_sources_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
 
 part 'historical_archives_sidebar_known_sources_provider.g.dart';
@@ -11,33 +11,34 @@ Future<List<HistoricalArchiveSidebarSourceSummary>>
 historicalArchivesSidebarKnownSources(
   HistoricalArchivesSidebarKnownSourcesRef ref,
 ) async {
-  final importDb = await ref.watch(sqfliteImportDatabaseProvider.future);
-  final records = await importDb.listHistoricalArchiveSources();
-  return buildHistoricalArchiveSidebarKnownSources(records: records);
+  final sources = await ref.watch(
+    historicalArchiveSourceMetadataProvider.future,
+  );
+  return buildHistoricalArchiveSidebarKnownSources(sources: sources);
 }
 
 List<HistoricalArchiveSidebarSourceSummary>
 buildHistoricalArchiveSidebarKnownSources({
-  required List<HistoricalArchiveSourceRecord> records,
+  required List<HistoricalArchiveSourceMetadata> sources,
 }) {
   return <HistoricalArchiveSidebarSourceSummary>[
-    for (final record in records)
+    for (final source in sources)
       HistoricalArchiveSidebarSourceSummary(
-        label: record.sourceLabel,
-        dateRangeLabel: _buildDateRangeLabel(record),
-        messageCountLabel: record.totalMessages == null
+        label: source.sourceLabel,
+        dateRangeLabel: _buildDateRangeLabel(source),
+        messageCountLabel: source.totalMessages == null
             ? 'Total messages: unavailable'
-            : 'Total messages: ${record.totalMessages}',
-        statusLabel: _buildStatusLabel(record),
-        lastRunSummaryLabel: _buildLastRunSummaryLabel(record),
-        lastImportedLabel: _buildLastImportedLabel(record),
+            : 'Total messages: ${source.totalMessages}',
+        statusLabel: _buildStatusLabel(source),
+        lastRunSummaryLabel: _buildLastRunSummaryLabel(source),
+        lastImportedLabel: _buildLastImportedLabel(source),
       ),
   ];
 }
 
-String _buildDateRangeLabel(HistoricalArchiveSourceRecord record) {
-  final earliest = _formatDate(record.earliestMessageUtc);
-  final latest = _formatDate(record.latestMessageUtc);
+String _buildDateRangeLabel(HistoricalArchiveSourceMetadata source) {
+  final earliest = _formatDate(source.earliestMessageUtc);
+  final latest = _formatDate(source.latestMessageUtc);
   if (earliest == null || latest == null) {
     return 'Date range: unavailable';
   }
@@ -49,32 +50,32 @@ String _buildDateRangeLabel(HistoricalArchiveSourceRecord record) {
   return 'Date range: $earliest to $latest';
 }
 
-String _buildStatusLabel(HistoricalArchiveSourceRecord record) {
-  if (record.lastImportSuccess == true) {
+String _buildStatusLabel(HistoricalArchiveSourceMetadata source) {
+  if (source.lastImportSuccess == true) {
     return 'Current status: Imported successfully';
   }
-  if (record.lastImportSuccess == false) {
-    return 'Current status: ${record.lastImportError ?? 'Import failed'}';
+  if (source.lastImportSuccess == false) {
+    return 'Current status: ${source.lastImportError ?? 'Import failed'}';
   }
-  return 'Current status: ${record.preflightStatusLabel}';
+  return 'Current status: ${source.preflightStatusLabel}';
 }
 
-String _buildLastRunSummaryLabel(HistoricalArchiveSourceRecord record) {
-  if (record.lastImportSuccess == true &&
-      record.lastImportedMessageCount != null) {
-    return 'Last run: imported ${record.lastImportedMessageCount} messages';
+String _buildLastRunSummaryLabel(HistoricalArchiveSourceMetadata source) {
+  if (source.lastImportSuccess == true &&
+      source.lastImportedMessageCount != null) {
+    return 'Last run: imported ${source.lastImportedMessageCount} messages';
   }
 
-  if (record.dryRunNewMessages != null &&
-      record.dryRunDuplicateMessages != null) {
-    return 'Last dry run: new ${record.dryRunNewMessages} | duplicates ${record.dryRunDuplicateMessages}';
+  if (source.dryRunNewMessages != null &&
+      source.dryRunDuplicateMessages != null) {
+    return 'Last dry run: new ${source.dryRunNewMessages} | duplicates ${source.dryRunDuplicateMessages}';
   }
 
   return 'Last dry run: unavailable';
 }
 
-String _buildLastImportedLabel(HistoricalArchiveSourceRecord record) {
-  final formatted = _formatTimestamp(record.lastImportFinishedAtUtc);
+String _buildLastImportedLabel(HistoricalArchiveSourceMetadata source) {
+  final formatted = _formatTimestamp(source.lastImportFinishedAtUtc);
   if (formatted == null) {
     return 'Last imported: not yet imported';
   }

@@ -2,8 +2,8 @@
 tier: project
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2025-12-24
-source_of_truth: doc
+last_reviewed: 2026-06-06
+source_of_truth: historical-record
 links:
   - ../../40-FEATURES/messages/message-display-flow-walkthrough.md
   - ../ordinal-index-all-messages/PROPOSAL.md
@@ -13,13 +13,28 @@ tests: []
 
 # Feature Proposal: Global Messages Timeline (All Messages)
 
+## Current Conformance Note (2026-06-06)
+
+This proposal captured the original global timeline ambition. Its UX goal
+remains relevant, but its `working.db: message_index` mechanics are superseded
+by the graph-backed Message Evidence Spine. Any future global timeline must be
+implemented as a typed graph `MessageEvidenceScope` with a full logical
+skeleton and viewport hydration. Pagination is not timeline navigation.
+
+Do not introduce a global-timeline-specific renderer. Once the scope resolves
+to message evidence, it must use the shared evidence header, skeleton,
+hydration, attachment evidence, and row rendering path.
+
 ## Summary
 Add a **Global Messages** experience: “every message I have ever sent to or received from anyone”, browsable as a single chronological timeline with:
 - **Search-first** workflows (most important)
 - **Heatmap/month jump** (second)
 - **Smooth browsing** via ordinal-skeleton + hydration (same core architecture as contact messages)
 
-This feature reuses the existing index strategy (global `message_index`) so the UI can scale to very large datasets without loading full message payloads upfront.
+Graph-era implementation must use the Message Evidence Spine's full-scope
+skeleton and viewport hydration so the UI can scale to very large datasets
+without loading full message payloads upfront. The original `message_index`
+strategy is historical context only.
 
 ## User Motivation / Use Cases
 
@@ -82,14 +97,16 @@ Key constraint: **the view depends on the view model**, not on scattered provide
 
 ## Data & Indexing
 
-Expected backing index:
-- `working.db: message_index` (global ordering)
-
-We already have:
-- `lib/features/messages/infrastructure/data_sources/message_index_data_source.dart`
+Expected graph-era backing:
+- graph `MessageEvidenceScope` for the full selected logical message universe
+- source-scoped `message_ss_id` skeleton rows for timeline/jump coordination
+- shared evidence-row hydration for visible rows and media
 
 Open questions:
-- Confirm whether we should use `message_index.monthKey` for global month jump or compute month keys on the fly.
+- Confirm which graph repository boundary should own global timeline skeleton
+  construction.
+- Confirm whether month keys should be read from the graph skeleton query or
+  derived during skeleton construction.
 
 ## Risks
 - Performance at scale: global dataset could be 10x contact scope.

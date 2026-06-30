@@ -1,7 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/contacts/feature_level_providers.dart'
-    as contacts_feature;
+    as contacts_feature
+    show contactsTooltipCoordinatorProvider;
 import '../domain/entities/tooltip_spec.dart';
 
 part 'tooltip_coordinator.g.dart';
@@ -42,9 +43,6 @@ class TooltipCoordinator extends _$TooltipCoordinator {
         );
         return coordinator.resolve(contactsSpec);
       },
-      // Future handlers:
-      // messages: (messagesSpec) => ...
-      // handles: (handlesSpec) => ...
     );
   }
 }

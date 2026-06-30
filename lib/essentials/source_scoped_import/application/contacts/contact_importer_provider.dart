@@ -1,35 +1,30 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../../features/address_book_folders/feature_level_providers.dart';
-import '../../../../features/address_book_folders/infrastructure/repositories/chosen_address_folder_repository.dart';
-import '../../../../providers.dart';
-import '../../infrastructure/import_database_provider.dart';
+import '../../../../features/address_book_folders/feature_level_providers.dart'
+    show addressBookFolderRepositoryProvider;
+import '../source_database_opener_provider.dart';
+import '../source_scoped_import_ledger_provider.dart';
 import 'contact_importer.dart';
 
 part 'contact_importer_provider.g.dart';
 
 @riverpod
 Future<ContactImporter> contactImporter(Ref ref) async {
-  final sharedPreferences = await ref.watch(sharedPreferencesProvider.future);
-  final storedAddressBookPath = sharedPreferences.getString(
-    FOLDER_PATH_FAVOURITE_KEY,
-  );
-  final addressBookDbPath =
-      storedAddressBookPath == null || storedAddressBookPath.isEmpty
-      ? await _mostRecentAddressBookPath(ref)
-      : storedAddressBookPath;
-  final importDatabase = await ref.watch(importDatabaseProvider.future);
+  final addressBookDbPath = await _mostRecentAddressBookPath(ref);
+  final importLedger = await ref.watch(sourceScopedImportLedgerProvider.future);
+  final sourceDatabaseOpener = ref.watch(sourceDatabaseOpenerProvider);
 
   return ContactImporter(
     addressBookDbPath: addressBookDbPath,
-    importDatabase: importDatabase,
+    importLedger: importLedger,
+    sourceDatabaseOpener: sourceDatabaseOpener,
   );
 }
 
 Future<String> _mostRecentAddressBookPath(Ref ref) async {
   final repository = await ref.watch(
-    addressFolderListDataSourceProvider.future,
+    addressBookFolderRepositoryProvider.future,
   );
   final aggregateEither = await repository.getFinalFolderAggregate();
   return aggregateEither.fold(

@@ -1,29 +1,29 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
-import '../../../source_scoped_import/infrastructure/import_database_provider.dart';
+import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/chat_handle_joins/chat_to_handle_projection_repository.dart';
 
 class SqliteChatToHandleProjectionRepository
     implements ChatToHandleProjectionRepository {
   const SqliteChatToHandleProjectionRepository({
-    required this.importDatabase,
-    required this.workingDatabase,
+    required this.importLedgerDatabase,
+    required this.graphDatabase,
   });
 
-  final ImportDatabase importDatabase;
-  final ConversationGraphDatabase workingDatabase;
+  final ImportLedger importLedgerDatabase;
+  final ConversationGraphDatabase graphDatabase;
 
   @override
   Future<ChatToHandleProjectionResult> projectEdges() async {
-    final rows = await importDatabase.database.query(
+    final rows = await importLedgerDatabase.queryTable(
       'chat_to_handle',
       columns: <String>['chat_ss_id', 'handle_ss_id'],
       orderBy: 'chat_ss_id ASC, handle_ss_id ASC',
     );
 
     var insertedEdgeCount = 0;
-    await workingDatabase.transaction(() async {
+    await graphDatabase.transaction(() async {
       for (final row in rows) {
-        final insertedCount = await workingDatabase.executeAndReadChanges(
+        final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO chat_to_handle (
             chat_ss_id,

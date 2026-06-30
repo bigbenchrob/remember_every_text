@@ -2,37 +2,36 @@
 tier: feature
 scope: state-provider-inventory
 owner: agent-per-project
-last_reviewed: 2025-11-06
+last_reviewed: 2026-06-14
 links:
 	- ./CHARTER.md
 	- ./DOMAIN_AND_DATA_MAP.md
 tests: []
 feature: search
 doc_type: state-provider-inventory
-status: draft
-last_updated: 2025-11-06
+status: current
+last_updated: 2026-06-14
 ---
 
 # State & Provider Inventory — Search
 
-> Legacy note (2026-04-21): provider names below are planning names, not current code. Current public providers include `searchServiceProvider`, `searchIndexMetricsRepositoryProvider`, `searchIndexersProvider`, `useFtsSearchByDefaultProvider`, and `searchIndexOrchestratorProvider` from `lib/essentials/search/feature_level_providers.dart`.
+> Current conformance note (2026-06-06): current public providers are `searchServiceProvider` and `graphSearchRepositoryProvider` from `lib/essentials/search/feature_level_providers.dart`. Planned FTS/index providers are retired as ordinary app architecture unless reintroduced behind the graph repository contract.
 
 | Provider | Type | Parameters | Description | Downstream Users |
 | --- | --- | --- | --- | --- |
-| `searchQueryStateProvider` | @riverpod notifier | N/A | Holds active query string, filters, sorting state. | Search UI components.
-| `searchResultsProvider` | @riverpod stream | query params | Streams paginated search results. | Result list view, quick jump features.
-| `searchIndexStatusProvider` | @riverpod future | N/A | Reports index freshness and rebuild progress. | Settings/diagnostics UI.
-| `searchRecentQueriesProvider` | @riverpod future | limit | Returns recent user queries. | UI suggestions, analytics.
+| `searchServiceProvider` | `@riverpod` service | graph search scope + query | Facade used by message evidence/search surfaces. | Message Evidence Spine, search result context surfaces. |
+| `graphSearchRepositoryProvider` | `@riverpod` repository | graph DB + overlay DB | Executes graph-backed text, saved, and tag searches by `message_ss_id`. | `SearchService`. |
 
 ## State Objects & Caches
-- In-memory query cache keyed by normalized query.
-- Index rebuild progress state persisted to overlay or local cache.
+- `GraphMessageSearchScope`: global, conversation, handle, or contact-canonical-handle scope.
+- Graph search result ids keyed by `message_ss_id`.
+- Overlay saved/tag matches merged at read time.
 
 ## Invalidations & Triggers
-- Data imports/migrations trigger index update tasks.
-- Manual handle or chat title overrides should invalidate associated index segments.
-- Query state changes drive result provider recomputation.
+- Source-scoped graph builds and graph/message data-version bumps refresh searchable evidence.
+- Overlay saved/tag/manual-link changes invalidate relevant evidence/search readers.
+- Query state changes recompute graph repository searches for the selected logical scope.
 
-## TODO
+## Open Stewardship Items
 - Do not add new search providers under `features/search/application` without first deciding to move search out of `essentials/search`.
-- Investigate streaming results for long-running queries.
+- Investigate graph-native acceleration only behind `GraphSearchRepository`, not as a parallel search spine.

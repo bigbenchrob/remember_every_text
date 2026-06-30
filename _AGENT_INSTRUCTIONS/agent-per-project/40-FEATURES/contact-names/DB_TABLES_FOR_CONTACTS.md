@@ -1,74 +1,49 @@
-# Contact Name Data Storage Analysis
+# Contact Display Identity Storage
 
-> Current conformance note (2026-04-21): this document reflects the current overlay/working split for participant naming. The old recommendation to add a generic `displayName` override column is superseded; `participant_overrides.display_name_override` already exists and is the current full-name override field.
+> Current conformance note (2026-06-05): display identity is semantic, not relational. The resolver answers "what should the user see?", not "which database row owns this label?" User-authored names live only in overlay storage and win everywhere.
 
-## 1. Primary Storage: `working.db` (Projection)
-This database stores the "source of truth" data projected from macOS AddressBook and Messages. It is generally treated as **read-only** by the UI, as it is overwritten during imports.
+## 1. Canonical Display Precedence
 
-### Table: `participants` (`WorkingParticipants`)
-*   **Purpose:** Stores contact details imported from the system AddressBook.
-*   **Key Columns:**
-    *   `id` (PK): Matches the AddressBook `Z_PK`.
-    *   `originalName`: The raw name from the source.
-    *   `displayName`: The calculated display name (e.g., combined First + Last).
-    *   `shortName`: A derived short version (e.g., "Rob B.").
-    *   `givenName`, `familyName`: Structured name components.
-    *   `organization`: Company name.
+Every contact, participant, conversation title, sender label, and handle fallback should use the same precedence:
 
-### Table: `handles_canonical` (`HandlesCanonical`)
-*   **Purpose:** Stores raw handles (phone numbers/emails) and their fallback display names when no contact exists.
-*   **Key Columns:**
-    *   `displayName`: Formatted phone number or email (e.g., "+1 (555) 000-0000").
+1. User-edited display name from the app's single name-override path.
+2. App-known contact identity from graph/contact read models.
+3. Imported AddressBook display name.
+4. Stable participant/conversation label derived from known participants.
+5. Raw phone/email/handle only when no known identity exists, or when the UI is explicitly showing a handle scope.
 
-## 2. User Overrides: `user_overlays.db` (Mutable)
-This database stores user-specific customizations that persist across imports. This is where user-modifiable names should live.
+Handles remain useful metadata. They must not become the primary label for a known person outside explicit handle-scoped controls.
 
-### Table: `participant_overrides` (`ParticipantOverrides`)
-*   **Purpose:** Stores user edits that override the system data (naming preferences, custom labels).
-*   **Key Columns:**
-    *   `participantId` (PK): Foreign key to `working.participants.id`.
-    *   `nameMode`: Nullable; when null the participant inherits global naming defaults, otherwise the stored enum value drives display.
-    *   `nickname`: User-provided short form name. If present it is used for every “short name” lookup; otherwise the UI falls back to the working projection’s auto-derived short name so users still get initials without extra setup.
-    *   `displayNameOverride`: Optional full display name override (e.g. “Dad (Mobile)”).
-    *   `createdAtUtc` / `updatedAtUtc`: ISO8601 audit fields maintained by `insertOnConflictUpdate` helpers.
+## 2. Graph Projection: `working_ss.db`
 
-### Table: `virtual_participants` (`VirtualParticipants`)
-*   **Purpose:** Contacts created manually by the user (not in AddressBook).
-*   **Key Columns:**
-    *   `displayName`: Full name set by the user.
-    *   `shortName`: Short name set by the user.
+The source-scoped graph is the current app-facing read spine for ordinary contacts, conversations, handles, and message evidence.
 
-## 3. Drift Functions for Editing & Persisting
+Relevant graph data:
 
-These functions are located in `OverlayDatabase` (`lib/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart`).
+- `working_ss.contacts`: imported contact identity projected from AddressBook.
+- `working_ss.handles`: source-scoped handle identities.
+- canonical handle alias tables: normalized traversal endpoints for equivalent handle variants.
+- `working_ss.contact_to_handle`: contact/handle graph linkage.
+- `working_ss.chat_to_handle`: conversation participant topology.
 
-### Existing Functions (for naming overrides)
+Graph projection is rebuilt from source facts. It is not the home of user-authored names.
 
-*   **`setParticipantNickname(int participantId, String? nickname)`**
-    *   **Action:** Inserts or updates `participant_overrides` with the user’s preferred short name.
-    *   **Logic:** Uses `insertOnConflictUpdate` so timestamps stay current and null clears the nickname.
-*   **`setParticipantDisplayNameOverride(int participantId, String? displayName)`**
-    *   **Action:** Persists a full-name override while keeping the row sparse when cleared.
-*   **`setParticipantNameMode(int participantId, ParticipantNameMode? mode)`**
-    *   **Action:** Controls whether a participant follows global name rules or a custom mode.
-*   **`getAllNicknamesByKey()`**
-    *   **Action:** Retrieves all stored nicknames for fast overlay/working merge.
-    *   **Return:** `Map<String, String>` (Key: `participant:<id>`, Value: `nickname`).
+## 3. User Overrides: `user_overlays.db`
 
-### For Virtual Participants
+Overlay storage owns user intent and must survive graph rebuilds.
 
-*   **`createVirtualParticipant({required String displayName, ...})`**
-    *   **Action:** Creates a new purely local contact.
+The contact hero-card pencil is the only app-facing entry point for an existing contact's user-edited display name. That override is sparse: clearing it returns the contact to the graph/imported fallback name.
 
-## 4. Current Pattern for User-Modifiable Display Names
+Do not add a second display-name override column. Do not write user-authored names into `working_ss.db` or retired `working.db`.
 
-User-modifiable display names for existing contacts are already implemented through `participant_overrides.display_name_override`.
+## 4. Virtual Contacts
 
-Current implementation:
+Virtual contacts are user-created identities stored in overlay storage. Their app-facing name is their display name.
 
-1.  **Schema:** `ParticipantOverrides.displayNameOverride` stores the sparse user override.
-2.  **Accessor:** `OverlayDatabase.setParticipantDisplayNameOverride(int participantId, String? displayName)` persists or clears the override.
-3.  **UI:** contact name editing writes to the overlay DB only.
-4.  **Read model:** contacts repositories merge working participants with overlay overrides at read time; overlay values win.
+If legacy compatibility columns such as `short_name`, `name_mode`, or `nickname` remain in old tables, they are not display precedence inputs. Do not restore short-name or nickname as app-facing identity concepts.
 
-Do not add a second display-name override column or write name overrides into `working.db`.
+## 5. Legacy Compatibility
+
+Retired `working.db.participants` and `working.db.handles_canonical` may remain useful historical cleanup inputs while recovery/archive paths still need old-file interpretation, but they are not the production naming authority for ordinary graph-backed surfaces.
+
+If a retired cleanup path must bridge into the graph era, it should resolve display names through the shared display identity resolver rather than reading retired participant columns directly.

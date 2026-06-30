@@ -2,57 +2,72 @@
 tier: feature
 scope: interactions
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-05
 links:
-	- ./CHARTER.md
-	- ../../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md
+  - ./CHARTER.md
+  - ../../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md
 tests: []
 feature: messages
 doc_type: interactions
-status: draft
-last_updated: 2026-04-21
+status: current
+last_updated: 2026-06-05
 ---
 
-# Interactions & Navigation — Messages
+# Interactions & Navigation - Messages
 
-This document describes the current messages panel flows. Panel entry points are selected by `ViewSpec.messages(MessagesSpec...)`; app-level panel stack ownership and cross-surface reconciliation remain in essentials.
+Panel entry points are selected by `ViewSpec.messages(MessagesSpec...)` and
+sidebar flow state. The messages feature resolves approved message specs into
+typed evidence scopes; app-level panel stack ownership remains in essentials.
 
 ## Primary Entry Points
-- Global messages in the center panel via `MessagesSpec.globalTimeline(...)`.
-- Contact messages in the center panel via `MessagesSpec.forContact(...)`, with optional `filterHandleId`.
-- Chat/handle messages via `MessagesSpec.forChat(...)` and `MessagesSpec.forHandle(...)` where routed.
-- Recovered-message surfaces via `MessagesSpec.recoveredUnlinkedMessages(...)`, `recoveredNoHandleFromMeMessages(...)`, `recoveredAttachmentViewer(...)`, and `searchResultContext(...)`.
-- Handle Lens via `MessagesSpec.handleLens(...)`.
-- The view is intentionally “dumb”: it renders state and delegates behaviors (search debounce, jump) to the view model.
+
+- Global messages.
+- Contact messages, optionally handle-filtered.
+- Conversation messages.
+- Handle / unfamiliar-source messages.
+- Recovered/orphan message evidence.
+- Search result context surfaces.
+- Handle Lens surfaces.
 
 ## User Flows
-1. **Select Timeline Scope** → center panel shows `MessagesTimelineView(scope: ...)`.
-	- “Skeleton”: ordinal provider loads `totalCount` and builds a fixed-height list.
-	- “Hydration”: each row loads `messageByOrdinalProvider(scope, ordinal)`.
-2. **Initial positioning**
-	- Default: jump to latest message.
-	- If `scrollToDate` is provided, VM jumps to the month bucket for that date.
-3. **Search messages**
-	- Typing updates VM controller → debounce → scope-specific search in `messageTimelineViewModelProvider`.
-	- UI switches from ordinal timeline to a search results list.
-4. **Jump by month (heatmap)**
-	- Heatmap chooses a month.
-	- VM invokes `messageTimelineOrdinalProvider(...).notifier.jumpToMonth(monthKey)`.
-5. **View rich content**
-	- URL previews use `MessageLinkPreviewCard` when appropriate.
-	- Image/video tiles render for first matching attachment.
+
+1. **Select message scope**
+   - Sidebar or ViewSpec produces a typed `MessageEvidenceScope`.
+   - Center panel renders shared header + evidence timeline.
+2. **Build skeleton**
+   - Evidence spine builds full lightweight skeleton for timeline-like scopes.
+3. **Hydrate visible evidence**
+   - Visible rows hydrate text, sender display, attachments, URL previews, and
+     overlay state.
+4. **Search within scope**
+   - Header search controls update evidence search state.
+   - Matching is computed against the selected logical scope, not just visible
+     rows.
+5. **Jump by heatmap/month**
+   - Heatmap selects a month.
+   - Evidence view jumps to the skeleton index for that month.
+6. **Receive new messages**
+   - Graph update invalidates evidence readers.
+   - If the user is not at the bottom, preserve reading position and show the
+     pending-new-message affordance.
 
 ## Cross-Feature Touchpoints
-- Contacts feature selects a `contactId` and drives `MessagesSpec.forContact` navigation.
-- Essentials search provides `SearchService`, used by message timeline search.
-- DB maintenance/reset feature toggles `dbMaintenanceLockProvider`.
+
+- Contacts feature selects contact scopes and handle filters.
+- Conversation/sidebar signature surfaces select conversation scopes.
+- Search returns graph evidence scopes.
+- Attachments feature resolves archive/media evidence.
+- Display identity resolver supplies user-facing contact/participant labels.
 
 ## Navigation Guardrails
-- Always rely on ViewSpec variants for navigation; avoid manual route pushes.
-- Prefer `MessagesSpec.forContact(contactId: ..., scrollToDate: ...)` for contact-scoped browsing.
-- Features do not own app-level panel orchestration. They interpret their approved spec variants and return current surface output through the existing panel migration boundary.
-- Ensure timeline gracefully handles missing message records (row hydration may return null).
+
+- Always rely on ViewSpec/sidebar state for center-panel message selection.
+- Features do not imperatively clear or push center-panel content.
+- Widgets render typed evidence data; they do not query or convert identities.
+- Source-specific scopes are allowed; source-specific message renderers are not.
 
 ## Outstanding Decisions
-- Whether to add “jump to specific day” (today: month-level jump is supported).
-- How far recovered timelines should be unified with normal working-DB ordinal strategy storage.
+
+- Whether additional semantic overlays belong in headers, badges, or search
+  facets.
+- When to retire the remaining diagnostic/reference conversation browser.

@@ -1,31 +1,28 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../db/feature_level_providers.dart';
-import '../../infrastructure/repositories/chat_summary_repository.dart';
+import '../../../db/feature_level_providers/message_data_version_provider.dart'
+    show messageDataVersionProvider;
 import 'chat_summary.dart';
 import 'chat_summary_reader.dart';
+import 'chat_summary_repository_provider.dart';
 
 part 'chat_summary_provider.g.dart';
 
 @riverpod
 Future<List<ChatSummary>> chatSummaries(Ref ref) async {
-  final workingDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
-  ).readSummaries(limit: 1000000);
+  ref.watch(messageDataVersionProvider);
+
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
+  return ChatSummaryReader(repository: repository).readSummaries(limit: null);
 }
 
 @riverpod
 Future<ChatSummarySanityCounts> chatSummarySanityCounts(Ref ref) async {
-  final workingDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
-  ).readSanityCounts();
+  ref.watch(messageDataVersionProvider);
+
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
+  return ChatSummaryReader(repository: repository).readSanityCounts();
 }
 
 @riverpod
@@ -33,11 +30,11 @@ Future<List<RecentChatMessage>> recentChatMessages(
   Ref ref,
   int chatSsId,
 ) async {
-  final workingDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
+  ref.watch(messageDataVersionProvider);
+
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    repository: repository,
   ).readRecentMessages(chatSsId: chatSsId);
 }
 
@@ -46,37 +43,31 @@ Future<List<RecentChatMessage>> recentTextChatMessages(
   Ref ref,
   int chatSsId,
 ) async {
-  final workingDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
+  ref.watch(messageDataVersionProvider);
+
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    repository: repository,
   ).readRecentTextMessages(chatSsId: chatSsId);
 }
 
 @riverpod
 Future<ChatMessageTextStats> chatMessageTextStats(Ref ref, int chatSsId) async {
-  final workingDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
+  ref.watch(messageDataVersionProvider);
+
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(workingDatabase: workingDatabase),
+    repository: repository,
   ).readMessageTextStats(chatSsId: chatSsId);
 }
 
 @riverpod
 Future<ChatAttachmentStats> chatAttachmentStats(Ref ref, int chatSsId) async {
-  final workingDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
+  ref.watch(messageDataVersionProvider);
+
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(
-      workingDatabase: workingDatabase,
-      overlayDatabase: overlayDatabase,
-      attachmentArchiveDirectory: archiveDirectory,
-    ),
+    repository: repository,
   ).readAttachmentStats(chatSsId: chatSsId);
 }
 
@@ -85,16 +76,8 @@ Future<List<MessageAttachment>> messageAttachments(
   Ref ref,
   int messageSsId,
 ) async {
-  final workingDatabase = await ref.watch(
-    driftConversationGraphDatabaseProvider.future,
-  );
-  final overlayDatabase = await ref.watch(overlayDatabaseProvider.future);
-  final archiveDirectory = ref.watch(attachmentArchiveDirectoryProvider);
+  final repository = await ref.watch(chatSummaryRepositoryProvider.future);
   return ChatSummaryReader(
-    repository: SqliteChatSummaryRepository(
-      workingDatabase: workingDatabase,
-      overlayDatabase: overlayDatabase,
-      attachmentArchiveDirectory: archiveDirectory,
-    ),
+    repository: repository,
   ).readMessageAttachments(messageSsId: messageSsId);
 }

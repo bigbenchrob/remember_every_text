@@ -1,5 +1,13 @@
 # Environment Readiness Center Panel Proposal
 
+## Current Conformance Note (2026-06-06)
+
+This proposal remains directionally current: readiness belongs in a calm,
+durable center-panel surface rather than chained failure dialogs. The checks
+should now describe graph-era setup: source readability, AddressBook readiness,
+source-scoped import, conversation graph build/readiness, overlay failure
+state, and retired cleanup diagnostics only where clearly labeled.
+
 ## Problem
 
 The current onboarding implementation has outgrown the dialog/overlay shape.
@@ -10,9 +18,10 @@ The app now performs materially richer environment analysis, including:
 - Messages database availability and readability
 - Contacts / AddressBook readiness
 - source sparsity and likely-local-history gaps
-- import failure evidence
-- migration failure evidence
-- app-owned database readiness
+- source-scoped import failure evidence
+- conversation graph build/projection failure evidence
+- graph-era app-owned database readiness
+- retired cleanup diagnostics when explicitly labeled
 
 That breadth is useful, but it no longer fits cleanly into a sequence of modal
 or overlay-style failure panels. The result is increasing UI density,
@@ -35,7 +44,7 @@ Introduce a first-class center-panel environment-readiness surface that:
 
 ## Non-Goals
 
-- replacing the underlying import or migration pipelines
+- replacing the underlying source-scoped import or graph-build pipelines
 - embedding raw environment checks directly into widgets
 - inventing a wizard with manually persisted step position
 - using tabs as the primary control metaphor
@@ -85,7 +94,8 @@ Recommended initial steps:
 1. Full Disk Access
 2. Local Messages database readiness
 3. Contacts database readiness
-4. Import readiness
+4. Source-scoped import readiness
+5. Conversation graph readiness
 
 Each step should support these stable statuses:
 

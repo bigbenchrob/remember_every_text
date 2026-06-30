@@ -3,32 +3,24 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../../../config/theme/colors/theme_colors.dart';
-import '../../../../../../essentials/debug/application/developer_mode_provider.dart';
-import '../../../../../attachments/application/attachment_archive_service_provider.dart';
+import '../../../../../../essentials/debug/feature_level_providers.dart'
+    show DeveloperModeValue, developerModeProvider;
+import '../../../../../../essentials/external_links/feature_level_providers.dart'
+    show externalLinkActionsProvider;
 import '../../../../../attachments/domain/constants/attachment_provenance.dart';
 import '../../../../../attachments/domain/constants/resolved_attachment_availability.dart';
-import '../../../../../attachments/infrastructure/services/video_thumbnail_cache_service.dart';
-import '../../../debug/contact_timeline_scroll_probe.dart';
-import '../hydration/attachment_info.dart';
-
-// ignore: avoid_classes_with_only_static_members
-class MsgTheme {
-  static const maxBubbleWidth = 520.0;
-  static const bubblePadding = EdgeInsets.symmetric(
-    horizontal: 12,
-    vertical: 10,
-  );
-  static const mediaRadius = BorderRadius.all(Radius.circular(14));
-  static const textRadius = BorderRadius.all(Radius.circular(16));
-  static const gapXS = SizedBox(height: 4);
-  static const gapMD = SizedBox(height: 12);
-
-  static EdgeInsets convoHPad() => const EdgeInsets.symmetric(horizontal: 14);
-}
+import '../../../../../attachments/feature_level_providers.dart'
+    show
+        AttachmentFileAccess,
+        attachmentFileAccessProvider,
+        attachmentRecoveryActionsProvider,
+        videoThumbnailCacheProvider;
+import '../../../../application/actions/message_media_diagnostics_provider.dart';
+import '../../../widgets/message_evidence/media_tile_attachment.dart';
+import 'message_display_metrics.dart';
 
 enum MessageLayout { bubble, fullWidth }
 
@@ -70,7 +62,7 @@ Widget _alignMediaForLayout({
   return Align(
     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: MsgTheme.maxBubbleWidth),
+      constraints: const BoxConstraints(maxWidth: messageMaxBubbleWidth),
       child: child,
     ),
   );
@@ -88,7 +80,7 @@ Widget _alignMetadataForLayout({
   return Align(
     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
     child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: MsgTheme.maxBubbleWidth),
+      constraints: const BoxConstraints(maxWidth: messageMaxBubbleWidth),
       child: child,
     ),
   );
@@ -207,9 +199,7 @@ class MessageShell extends StatelessWidget {
             : MainAxisAlignment.start,
         children: [
           ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: MsgTheme.maxBubbleWidth,
-            ),
+            constraints: const BoxConstraints(maxWidth: messageMaxBubbleWidth),
             child: child,
           ),
         ],
@@ -236,7 +226,7 @@ class MessageShell extends StatelessWidget {
         },
         children: [
           bubbleRow,
-          if (metadata != null) ...[MsgTheme.gapXS, metadata!],
+          if (metadata != null) ...[messageGapXS, metadata!],
         ],
       ),
     );
@@ -379,7 +369,7 @@ class TextMessageTile extends ConsumerWidget {
       backgroundColor: layout == MessageLayout.fullWidth
           ? isMe
                 ? colors.messagePanels.selectionTint
-                : colors.messagePanels.supportSurface
+                : colors.messageBubble(MessageBubble.receivedHighlight)
           : isMe
           ? colors.messageBubble(MessageBubble.sentHighlight)
           : colors.messageBubble(MessageBubble.receivedHighlight),
@@ -398,17 +388,17 @@ class TextMessageTile extends ConsumerWidget {
       grouping: grouping,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: MsgTheme.bubblePadding.horizontal / 2,
+          horizontal: messageBubblePadding.horizontal / 2,
           vertical:
               layout == MessageLayout.fullWidth && grouping.compactTopSpacing
               ? 4
-              : MsgTheme.bubblePadding.vertical / 2,
+              : messageBubblePadding.vertical / 2,
         ),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: layout == MessageLayout.fullWidth
               ? _textBorderRadiusForRole(grouping.role)
-              : MsgTheme.textRadius,
+              : messageTextRadius,
           border: borderColor == null
               ? null
               : layout == MessageLayout.fullWidth
@@ -654,7 +644,7 @@ class _MediaUnavailablePlaceholder extends ConsumerWidget {
             key: cardKey,
             decoration: BoxDecoration(
               color: colors.surfaces.surface,
-              borderRadius: MsgTheme.mediaRadius,
+              borderRadius: messageMediaRadius,
               border: Border.all(color: colors.lines.borderSubtle),
             ),
             child: Padding(
@@ -802,7 +792,9 @@ class _AttachmentSourceBadge extends ConsumerWidget {
   }
 }
 
-AttachmentProvenance? _placeholderSourceProvenance(AttachmentInfo attachment) {
+AttachmentProvenance? _placeholderSourceProvenance(
+  MediaTileAttachment attachment,
+) {
   final provenance = attachment.provenance;
   if (provenance != null) {
     return provenance;
@@ -813,6 +805,24 @@ AttachmentProvenance? _placeholderSourceProvenance(AttachmentInfo attachment) {
   }
 
   return null;
+}
+
+File? _displayableMediaFile(
+  MediaTileAttachment attachment,
+  AttachmentFileAccess fileAccess,
+) {
+  final explicitPath = attachment.resolvedDisplayPath;
+  if (explicitPath != null && explicitPath.isNotEmpty) {
+    final existingPath = fileAccess.existingExpandedPath(explicitPath);
+    return existingPath == null ? null : File(existingPath);
+  }
+
+  if (attachment.availability != null) {
+    return null;
+  }
+
+  final existingPath = fileAccess.existingExpandedPath(attachment.localPath);
+  return existingPath == null ? null : File(existingPath);
 }
 
 class ImageMessageTile extends ConsumerWidget {
@@ -830,7 +840,7 @@ class ImageMessageTile extends ConsumerWidget {
   });
 
   final bool isMe;
-  final AttachmentInfo attachment;
+  final MediaTileAttachment attachment;
   final String sender;
   final DateTime sentAt;
   final int messageId;
@@ -841,16 +851,12 @@ class ImageMessageTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ContactTimelineScrollProbe.count('media.image.build');
-    final file = attachment.displayableFile();
-    final exists = file != null;
-    ContactTimelineScrollProbe.count(
-      exists ? 'media.image.available' : 'media.image.unavailable',
-    );
+    final fileAccess = ref.watch(attachmentFileAccessProvider);
+    final file = _displayableMediaFile(attachment, fileAccess);
     final aspectRatio = attachment.aspectRatio ?? 4 / 3;
+    final archiveKey = attachment.archiveCompatibilityKey;
     final canPrioritizeRecovery =
-        attachment.messageGuid != null &&
-        attachment.importAttachmentId != null &&
+        archiveKey != null &&
         attachment.availability !=
             ResolvedAttachmentAvailability.pendingArchive;
     final provenance = attachment.provenance;
@@ -877,9 +883,9 @@ class ImageMessageTile extends ConsumerWidget {
           _alignMediaForLayout(
             layout: layout,
             isMe: isMe,
-            child: exists
+            child: file != null
                 ? ClipRRect(
-                    borderRadius: MsgTheme.mediaRadius,
+                    borderRadius: messageMediaRadius,
                     child: _IntrinsicSizedMedia(
                       child: AspectRatio(
                         aspectRatio: aspectRatio,
@@ -908,20 +914,21 @@ class ImageMessageTile extends ConsumerWidget {
                     onPrioritizeRecoveryTap: canPrioritizeRecovery
                         ? () {
                             ref
-                                .read(attachmentArchiveServiceProvider.notifier)
+                                .read(
+                                  attachmentRecoveryActionsProvider.notifier,
+                                )
                                 .prioritizeRecovery(
-                                  messageGuid: attachment.messageGuid!,
-                                  importAttachmentId:
-                                      attachment.importAttachmentId!,
-                                  resolvedLocalPath: attachment
-                                      .resolvedLocalPath(),
+                                  archiveKey: archiveKey,
+                                  resolvedLocalPath: fileAccess.expandPath(
+                                    attachment.localPath,
+                                  ),
                                   mimeType: attachment.mimeType,
                                 );
                           }
                         : null,
                   ),
           ),
-          if (exists)
+          if (file != null)
             if (provenance case final attachmentProvenance?) ...[
               const SizedBox(height: 8),
               _alignMediaForLayout(
@@ -936,7 +943,7 @@ class ImageMessageTile extends ConsumerWidget {
               ),
             ],
           if (captionText != null) ...[
-            MsgTheme.gapMD,
+            messageGapMD,
             _AttachedTextBubble(
               isMe: isMe,
               text: captionText!,
@@ -965,7 +972,7 @@ class VideoMessageTile extends ConsumerStatefulWidget {
   });
 
   final bool isMe;
-  final AttachmentInfo attachment;
+  final MediaTileAttachment attachment;
   final String sender;
   final DateTime sentAt;
   final int messageId;
@@ -1002,8 +1009,15 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
   void didUpdateWidget(covariant VideoMessageTile oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final previousVideoPath = oldWidget.attachment.displayableFile()?.path;
-    final currentVideoPath = widget.attachment.displayableFile()?.path;
+    final fileAccess = ref.read(attachmentFileAccessProvider);
+    final previousVideoPath = _displayableMediaFile(
+      oldWidget.attachment,
+      fileAccess,
+    )?.path;
+    final currentVideoPath = _displayableMediaFile(
+      widget.attachment,
+      fileAccess,
+    )?.path;
     if (previousVideoPath == currentVideoPath) {
       if (_thumbnailFile == null && currentVideoPath != null) {
         _scheduleThumbnailEnrichment();
@@ -1044,11 +1058,23 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
         if (controller.value.isPlaying) {
           await controller.pause();
         }
-      } catch (_) {}
+      } catch (error, stackTrace) {
+        _logVideoFailure(
+          stage: 'pauseDuringDispose',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
 
       try {
         await controller.dispose();
-      } catch (_) {}
+      } catch (error, stackTrace) {
+        _logVideoFailure(
+          stage: 'disposeController',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
     }());
   }
 
@@ -1075,7 +1101,10 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
       return;
     }
 
-    final videoFile = widget.attachment.displayableFile();
+    final videoFile = _displayableMediaFile(
+      widget.attachment,
+      ref.read(attachmentFileAccessProvider),
+    );
     if (videoFile == null) {
       return;
     }
@@ -1086,7 +1115,6 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
       return;
     }
 
-    ContactTimelineScrollProbe.count('media.video.thumbnail.schedule');
     _thumbnailEnrichmentTimer = Timer(_thumbnailEnrichmentDelay, () {
       _thumbnailEnrichmentTimer = null;
       unawaited(_loadThumbnail(videoFile));
@@ -1099,29 +1127,27 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
     }
 
     final requestGeneration = ++_thumbnailRequestGeneration;
-    final thumbnailService = ref.read(videoThumbnailCacheServiceProvider);
+    final thumbnailCache = ref.read(videoThumbnailCacheProvider);
 
     try {
-      final thumbnailFile = await ContactTimelineScrollProbe.traceAsync(
-        'media.video.thumbnail.resolve',
-        () => thumbnailService.getOrCreateThumbnail(videoPath: videoFile.path),
+      final thumbnailPath = await thumbnailCache.getOrCreateThumbnailPath(
+        videoPath: videoFile.path,
       );
       if (!mounted || requestGeneration != _thumbnailRequestGeneration) {
         return;
       }
 
-      if (thumbnailFile != null) {
-        ContactTimelineScrollProbe.count('media.video.thumbnail.ready');
-      } else {
-        ContactTimelineScrollProbe.count('media.video.thumbnail.miss');
-      }
-
       setState(() {
-        _thumbnailFile = thumbnailFile;
+        _thumbnailFile = thumbnailPath == null ? null : File(thumbnailPath);
         _thumbnailSourcePath = videoFile.path;
       });
-    } catch (_) {
-      ContactTimelineScrollProbe.count('media.video.thumbnail.failed');
+    } catch (error, stackTrace) {
+      _logVideoFailure(
+        stage: 'loadThumbnail',
+        error: error,
+        stackTrace: stackTrace,
+        filePath: videoFile.path,
+      );
       if (!mounted || requestGeneration != _thumbnailRequestGeneration) {
         return;
       }
@@ -1163,13 +1189,14 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
       return;
     }
 
-    final file = widget.attachment.displayableFile();
+    final file = _displayableMediaFile(
+      widget.attachment,
+      ref.read(attachmentFileAccessProvider),
+    );
     if (file == null) {
-      ContactTimelineScrollProbe.count('media.video.unavailable');
       return;
     }
 
-    ContactTimelineScrollProbe.count('media.video.activation_request');
     setState(() {
       _isActivating = true;
       _activationFailed = false;
@@ -1179,16 +1206,10 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
     _thumbnailRequestGeneration++;
     final activationGeneration = ++_activationGeneration;
 
-    final controller = ContactTimelineScrollProbe.traceSync(
-      'media.video.controller_create',
-      () => VideoPlayerController.file(file),
-    );
+    final controller = VideoPlayerController.file(file);
 
     try {
-      await ContactTimelineScrollProbe.traceAsync(
-        'media.video.initialize',
-        controller.initialize,
-      );
+      await controller.initialize();
 
       if (!mounted || activationGeneration != _activationGeneration) {
         await controller.dispose();
@@ -1213,9 +1234,14 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
           return;
         }
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _logVideoFailure(
+        stage: 'activateVideo',
+        error: error,
+        stackTrace: stackTrace,
+        filePath: file.path,
+      );
       await controller.dispose();
-      ContactTimelineScrollProbe.count('media.video.activation_failed');
       if (!mounted || activationGeneration != _activationGeneration) {
         return;
       }
@@ -1227,17 +1253,36 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
     }
   }
 
+  void _logVideoFailure({
+    required String stage,
+    required Object error,
+    required StackTrace stackTrace,
+    String? filePath,
+  }) {
+    ref
+        .read(messageMediaDiagnosticsProvider.notifier)
+        .reportVideoTileFailure(
+          stage: stage,
+          error: error,
+          stackTrace: stackTrace,
+          filePath: filePath,
+          attachmentLocalPath: widget.attachment.localPath,
+          attachmentResolvedDisplayPath: widget.attachment.resolvedDisplayPath,
+          mimeType: widget.attachment.mimeType,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
-    ContactTimelineScrollProbe.count('media.video.build');
     ref.watch(themeColorsProvider);
     final aspectRatio = _effectiveAspectRatio();
-    final file = widget.attachment.displayableFile();
+    final fileAccess = ref.watch(attachmentFileAccessProvider);
+    final file = _displayableMediaFile(widget.attachment, fileAccess);
     final hasPlayableVideo = file != null;
     final hasVideoController = _controller != null;
+    final archiveKey = widget.attachment.archiveCompatibilityKey;
     final canPrioritizeRecovery =
-        widget.attachment.messageGuid != null &&
-        widget.attachment.importAttachmentId != null &&
+        archiveKey != null &&
         widget.attachment.availability !=
             ResolvedAttachmentAvailability.pendingArchive;
     final provenance = widget.attachment.provenance;
@@ -1296,13 +1341,14 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
                     onPrioritizeRecoveryTap: canPrioritizeRecovery
                         ? () {
                             ref
-                                .read(attachmentArchiveServiceProvider.notifier)
+                                .read(
+                                  attachmentRecoveryActionsProvider.notifier,
+                                )
                                 .prioritizeRecovery(
-                                  messageGuid: widget.attachment.messageGuid!,
-                                  importAttachmentId:
-                                      widget.attachment.importAttachmentId!,
-                                  resolvedLocalPath: widget.attachment
-                                      .resolvedLocalPath(),
+                                  archiveKey: archiveKey,
+                                  resolvedLocalPath: fileAccess.expandPath(
+                                    widget.attachment.localPath,
+                                  ),
                                   mimeType: widget.attachment.mimeType,
                                 );
                           }
@@ -1324,7 +1370,7 @@ class _VideoMessageTileState extends ConsumerState<VideoMessageTile> {
               ),
             ],
           if (widget.captionText != null) ...[
-            MsgTheme.gapMD,
+            messageGapMD,
             _AttachedTextBubble(
               isMe: widget.isMe,
               text: widget.captionText!,
@@ -1359,11 +1405,11 @@ class _ActivatedVideoPlayer extends ConsumerWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaces.surface,
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         border: Border.all(color: colors.lines.borderSubtle),
       ),
       child: ClipRRect(
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         child: _IntrinsicSizedMedia(
           child: ValueListenableBuilder<VideoPlayerValue>(
             valueListenable: controller,
@@ -1514,7 +1560,6 @@ class VideoActivationShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ContactTimelineScrollProbe.count('media.video.shell.build');
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
 
@@ -1528,11 +1573,11 @@ class VideoActivationShell extends ConsumerWidget {
       key: const ValueKey<String>('video-activation-shell-card'),
       decoration: BoxDecoration(
         color: colors.surfaces.surface,
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         border: Border.all(color: colors.lines.borderSubtle),
       ),
       child: ClipRRect(
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         child: _IntrinsicSizedMedia(
           child: AspectRatio(
             aspectRatio: aspectRatio,
@@ -1694,12 +1739,12 @@ class _AttachedTextBubble extends ConsumerWidget {
       width: double.infinity,
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: MsgTheme.bubblePadding.horizontal / 2,
-          vertical: MsgTheme.bubblePadding.vertical / 2,
+          horizontal: messageBubblePadding.horizontal / 2,
+          vertical: messageBubblePadding.vertical / 2,
         ),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: MsgTheme.textRadius,
+          borderRadius: messageTextRadius,
           border: borderColor == null
               ? null
               : Border.all(color: borderColor, width: 1),
@@ -1760,11 +1805,11 @@ class LinkPreviewTile extends ConsumerWidget {
     final card = DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surfaces.surface,
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         border: Border.all(color: colors.lines.borderSubtle),
       ),
       child: ClipRRect(
-        borderRadius: MsgTheme.mediaRadius,
+        borderRadius: messageMediaRadius,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1815,15 +1860,13 @@ class LinkPreviewTile extends ConsumerWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(onTap: () => _launch(url), child: card),
+        child: InkWell(onTap: () => _launch(ref, url), child: card),
       ),
     );
   }
 
-  Future<void> _launch(Uri target) async {
-    if (!await launchUrl(target, mode: LaunchMode.externalApplication)) {
-      // Optional: surface failure to caller.
-    }
+  Future<void> _launch(WidgetRef ref, Uri target) async {
+    await ref.read(externalLinkActionsProvider.notifier).open(target);
   }
 }
 
@@ -1885,7 +1928,7 @@ class DemoConversationList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: MsgTheme.convoHPad(),
+      padding: conversationHorizontalPadding(),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final message = items[index];
@@ -1901,7 +1944,7 @@ class DemoConversationList extends StatelessWidget {
           case MsgType.image:
             return ImageMessageTile(
               isMe: message.isMe,
-              attachment: AttachmentInfo(
+              attachment: MediaTileAttachment(
                 id: message.messageId,
                 localPath: message.file?.path,
                 mimeType: 'image/*',
@@ -1914,7 +1957,7 @@ class DemoConversationList extends StatelessWidget {
           case MsgType.video:
             return VideoMessageTile(
               isMe: message.isMe,
-              attachment: AttachmentInfo(
+              attachment: MediaTileAttachment(
                 id: message.messageId,
                 localPath: message.file?.path,
                 mimeType: 'video/*',

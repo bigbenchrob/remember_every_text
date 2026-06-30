@@ -47,8 +47,9 @@ HARD INVARIANTS
 
 5. Identity isolation:
    - Historical traversal identity: historical ROWIDs for join walking
-   - Current runtime identity: (message_guid, import_attachment_id) for overlay keys
-   - The mapper bridges these via attachment GUID lookup in the current import DB
+   - Current runtime identity: graph message_ss_id / attachment_ss_id
+   - Retained overlay-compatible archive keys may still be resolved by a named
+     compatibility bridge, but they are not ordinary graph identity
 
 6. No heuristic fallback in the deterministic flow:
    - No path-tail guessing, no basename matching, no filename+size inference
@@ -65,18 +66,20 @@ data layers (all read-only during the mapping phase):
     Source of: attachment.guid, message.guid, attachment.filename,
               message_attachment_join relationships
 
-  Layer 2: Current import DB (via sqfliteImportDatabaseProvider)
-    Source of: attachments.guid → attachments.id bridge
-    This is the ONLY layer that holds both Apple's attachment.guid AND the
-    id that becomes import_attachment_id in the working DB
+  Layer 2: Current source-scoped import DB / graph attachment facts
+    Source of: attachment source facts and source-scoped attachment identity
+    Supersedes the retired import DB bridge once graph attachment projection is
+    available for the selected source
 
-  Layer 3: Current working DB + overlay (via existing providers)
-    Source of: (message_guid, import_attachment_id) runtime identity
+  Layer 3: Current conversation graph + overlay
+    Source of: canonical message_ss_id / attachment_ss_id runtime identity, plus
+    retained overlay-compatible archive keys during the transition
     Target of: overlay archived_attachments row insertion
 
-Precondition: The current import DB must be populated from at least one
-live import+migration cycle. If the import DB is empty or absent,
-historical recovery must refuse to proceed with a clear diagnostic.
+Precondition: the source-scoped import DB and conversation graph must be
+populated for the selected source. If source-scoped attachment facts or graph
+message/attachment edges are absent, historical recovery must refuse to proceed
+with a clear diagnostic.
 
 =========================================================================
 PHASE 0 — REMOVE HEURISTIC HISTORICAL IMPORTER
@@ -217,36 +220,33 @@ Goal: Map historical records to current MessageLens runtime identity so
 overlay rows can be written with the correct (message_guid,
 import_attachment_id) key.
 
-This is the crux of the deterministic design.
+This older plan originally treated retained import/working IDs as the runtime
+hinge. In the graph era, the deterministic hinge is source-scoped
+message/attachment identity plus explicit retained overlay compatibility only
+where existing archive metadata still requires it.
 
 NEW FILE:
   lib/features/attachments/application/
     cross_snapshot_mapper.dart
 
 PRECONDITION:
-  Current import DB must be populated (at least one live import+migration
-  cycle completed). If empty, refuse with diagnostic.
+  Source-scoped import facts and graph message/attachment edges must be
+  populated for the selected source. If absent, refuse with diagnostic.
 
 --- MESSAGE-SIDE MAPPING ---
 
-  Match: historical message GUID → current working DB message GUID
+  Match: historical message source fact → graph message_ss_id
 
-  These are the same Apple-assigned message GUID. If a message exists in
-  both the historical snapshot and the current live Messages, the GUID is
-  identical.
+  GUID may remain a useful bridge/source fact when it is unique within the
+  relevant source, but it is not canonical graph identity.
 
-  Query current working DB:
-    SELECT DISTINCT message_guid FROM attachments
-    WHERE message_guid = ?
-
-  If the message_guid from the historical snapshot is not present in the
-  current working DB's attachments table, the record is UNMAPPED.
-  Report it. Do not archive it. Do not create an orphan.
+  If the historical message cannot resolve to a graph message occurrence, the
+  record is UNMAPPED. Report it. Do not archive it. Do not create an orphan.
 
 --- ATTACHMENT-SIDE MAPPING (THE HINGE POINT) ---
 
   This section defines exactly how a historical attachment row maps to a
-  current import_attachment_id. This is the critical discriminator that
+  current graph attachment occurrence. This is the critical discriminator that
   separates "deterministic" from "quietly heuristic."
 
   FIELD PROVENANCE — HISTORICAL SIDE:
@@ -259,38 +259,25 @@ PRECONDITION:
 
   FIELD PROVENANCE — CURRENT SIDE:
 
-    Column: attachments.guid
-    Source: Current import DB (lib/essentials/db_importers/)
-    Origin: Copied verbatim from Apple's live chat.db attachment.guid
-            during the live import pass (attachments_importer.dart)
-    Location: import DB table 'attachments', column 'guid'
-    Relation: import DB attachments.id = working DB
-              attachments.import_attachment_id
+    Source: source-scoped import attachment facts and conversation graph
+            attachment projection
+    Identity: attachment_ss_id, with parent message_ss_id edge
 
-    The current import DB is the ONLY data layer that holds both:
-      (a) Apple's attachment.guid (preserved from live chat.db)
-      (b) attachments.id (which becomes working.import_attachment_id)
-
-    The working DB does NOT carry attachment.guid — it was not projected
-    during migration. Therefore the import DB is the required bridge.
+    Retained `(message_guid, import_attachment_id)` keys may still exist in
+    overlay archive metadata. Resolve them only through the named archive
+    compatibility bridge.
 
   MAPPING STRATEGY:
 
-    Step 1 — PRIMARY MATCH (attachment GUID):
+    Step 1 — PRIMARY MATCH (source-scoped attachment occurrence):
 
       For a given (hist_message_guid, hist_attachment_guid) pair:
 
-      Query current import DB:
-        SELECT id FROM attachments WHERE guid = :hist_attachment_guid
-
-      If exactly one row matches → import_attachment_id = that row's id
+      Resolve the historical source attachment to a source-scoped graph
+      attachment occurrence.
 
       Verify the matched attachment belongs to the correct message by
-      confirming the (message_guid, import_attachment_id) pair exists
-      in the current working DB:
-        SELECT 1 FROM attachments
-        WHERE message_guid = :hist_message_guid
-          AND import_attachment_id = :matched_id
+      confirming the graph message/attachment edge exists.
 
       If confirmed → MAPPED. Proceed to Phase 3.
       If not confirmed → attachment exists in import DB under a different
@@ -304,13 +291,11 @@ PRECONDITION:
       (b) The historical message has EXACTLY ONE attachment in the
           historical snapshot (verified by counting rows in
           message_attachment_join for that message_id)
-      (c) The current working DB has EXACTLY ONE attachment for that
-          message_guid (verified by counting rows in working
-          attachments table for that message_guid)
+      (c) The current graph has EXACTLY ONE attachment for that message scope
+          (verified by graph message/attachment edges)
 
       If all three conditions are satisfied:
-        The single current import_attachment_id for that message_guid
-        is the match.
+        The single current graph attachment occurrence is the match.
 
       If any condition fails:
         The record is UNMAPPED. Report it. Do not guess.
@@ -415,8 +400,10 @@ IMPLEMENTATION:
 
   DATABASE ACCESS:
     - Overlay DB: via existing Drift overlay database provider
-    - Working DB: read-only queries via driftWorkingDatabaseProvider
-    - Import DB: read-only queries via sqfliteImportDatabaseProvider
+    - Conversation graph: read-only queries via graph database providers
+    - Source-scoped import DB: read-only queries via source-scoped import
+      boundaries
+    - Retained overlay-compatible archive keys: named compatibility bridge only
     - NEVER instantiate direct DB connections
 
   PROGRESS REPORTING:
@@ -462,7 +449,7 @@ UI REQUIREMENTS:
      Before import begins:
        - Verify chat.db exists and is a valid SQLite database
        - Verify Attachments folder exists
-       - Verify current import DB is populated (precondition)
+       - Verify source-scoped graph attachment facts are populated
        - Display WAL/SHM detection status
        - If WAL/SHM absent, show informational warning:
          "WAL/SHM not found. Some recently-written data from the backup
@@ -521,14 +508,14 @@ TEST CATEGORIES:
      No overlay row created for missing file.
 
   3. MESSAGE NOT IN CURRENT WORKING DB
-     Historical message GUID has no match in current working.
+     Historical message has no match in the current graph.
      Record classified as unmapped.
      No overlay row created.
      Count reported accurately.
 
   4. ATTACHMENT GUID MISMATCH
-     Historical attachment GUID exists but does not match any row
-     in current import DB.
+     Historical attachment GUID exists but does not match any source-scoped
+     import or graph attachment row.
      Record classified as unmapped.
      No fallback attempted.
 
@@ -562,8 +549,8 @@ TEST CATEGORIES:
      Provide chat.db WITHOUT wal/shm.
      Verify import proceeds with warning.
 
-  10. IMPORT DB EMPTY PRECONDITION
-      Current import DB has no rows.
+  10. GRAPH ATTACHMENT FACTS MISSING PRECONDITION
+      Source-scoped import/graph attachment facts have no rows.
       Historical recovery refuses to start.
       Diagnostic message displayed.
 
@@ -652,8 +639,8 @@ RISKS
    this), the GUID-based mapping would fail for affected records.
    Mitigation: They would be reported as unmapped, not silently wrong.
 
-2. If the user's current import DB was built from a different iCloud
-   account or device than the historical snapshot, GUIDs will not match.
+2. If the user's current source-scoped graph was built from a different iCloud
+   account or device than the historical snapshot, source facts may not match.
    Mitigation: Most records reported as unmapped; user sees clear count.
 
 3. NULL-GUID attachments on multi-attachment messages are unmappable.

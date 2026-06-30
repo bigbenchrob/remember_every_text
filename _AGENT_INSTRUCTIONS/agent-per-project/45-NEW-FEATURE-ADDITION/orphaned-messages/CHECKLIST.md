@@ -2,7 +2,7 @@
 tier: feature
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2026-03-13
+last_reviewed: 2026-06-06
 source_of_truth: doc
 links:
   - ./PROPOSAL.md
@@ -13,6 +13,12 @@ tests: []
 ---
 
 # Checklist — Orphaned Messages / Unlinked Source Content
+
+## Current Conformance Note (2026-06-06)
+
+This checklist records completed retained-legacy v1 work. It is historical
+evidence, not a mandate to extend `working.db` recovered tables. Current
+follow-up work belongs to the graph recovered-message parity/cutover plan.
 
 ## Proposal / Scope
 - [x] Confirm user-facing label for v1. _(Chose `Recovered Unlinked Messages`.)_

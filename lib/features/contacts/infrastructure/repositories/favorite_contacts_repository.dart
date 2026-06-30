@@ -13,7 +13,7 @@ class FavoriteContactsRepository {
       participantId: row.participantId,
       sortOrder: row.sortOrder,
       isFavorited: row.isFavorited,
-      pinnedAt: DateTime.parse(row.createdAtUtc).toUtc(),
+      favoritedAt: DateTime.parse(row.createdAtUtc).toUtc(),
       lastInteractionAt: row.lastInteractionUtc != null
           ? DateTime.parse(row.lastInteractionUtc!).toUtc()
           : null,

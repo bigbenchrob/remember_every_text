@@ -12,8 +12,8 @@ import '../../conversation_graph_test_database.dart';
 
 void main() {
   late Directory tempDir;
-  late ImportDatabase importDatabase;
-  late ConversationGraphDatabase workingDatabase;
+  late ImportDatabase importLedgerDatabase;
+  late ConversationGraphDatabase graphDatabase;
 
   setUpAll(() {
     sqfliteFfiInit();
@@ -22,16 +22,16 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('contact_projector_test_');
-    importDatabase = await ImportDatabase.open(
+    importLedgerDatabase = await ImportDatabase.open(
       databaseDirectory: tempDir.path,
       databaseName: 'macos_import_ss_test.db',
     );
-    workingDatabase = await openConversationGraphTestDatabase();
+    graphDatabase = await openConversationGraphTestDatabase();
   });
 
   tearDown(() async {
-    await importDatabase.close();
-    await workingDatabase.close();
+    await importLedgerDatabase.close();
+    await graphDatabase.close();
     if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
@@ -39,20 +39,19 @@ void main() {
 
   test('projects meaningful contacts and source-scoped handle edges', () async {
     final handleSsId = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 12);
-    await workingDatabase.database.insert('handles', <String, Object?>{
+    await graphDatabase.database.insert('handles', <String, Object?>{
       'ss_id': handleSsId,
       'id': '+16049995969',
       'service': 'iMessage',
     });
-    await workingDatabase.database
-        .insert('canonical_handles', <String, Object?>{
-          'canonical_handle_ss_id': handleSsId,
-          'display_handle': '+16049995969',
-          'normalized_identifier': '6049995969',
-          'service': 'iMessage',
-          'alias_count': 1,
-        });
-    await workingDatabase.database.insert('handle_aliases', <String, Object?>{
+    await graphDatabase.database.insert('canonical_handles', <String, Object?>{
+      'canonical_handle_ss_id': handleSsId,
+      'display_handle': '+16049995969',
+      'normalized_identifier': '6049995969',
+      'service': 'iMessage',
+      'alias_count': 1,
+    });
+    await graphDatabase.database.insert('handle_aliases', <String, Object?>{
       'handle_ss_id': handleSsId,
       'canonical_handle_ss_id': handleSsId,
       'raw_identifier': '+16049995969',
@@ -61,28 +60,28 @@ void main() {
     });
 
     final contactSsId = await _insertImportContact(
-      importDatabase,
+      importLedgerDatabase,
       sourceRowId: 24,
       displayName: 'Cathie Campbell',
       firstName: 'Cathie',
       lastName: 'Campbell',
     );
     await _insertImportContactChannel(
-      importDatabase,
+      importLedgerDatabase,
       contactSsId: contactSsId,
       sourceContactRowId: 24,
       value: '6049995969',
     );
     await _insertImportContact(
-      importDatabase,
+      importLedgerDatabase,
       sourceRowId: 25,
       displayName: 'Unknown Contact',
     );
 
     final result = await ContactProjector(
       repository: SqliteContactProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectContacts();
 
@@ -90,20 +89,20 @@ void main() {
     expect(result.insertedContactCount, 1);
     expect(result.insertedContactHandleEdgeCount, 1);
 
-    final contacts = await workingDatabase.database.query('contacts');
+    final contacts = await graphDatabase.database.query('contacts');
     expect(contacts.single['contact_id'], contactSsId);
     expect(contacts.single['display_name'], 'Cathie Campbell');
     expect(contacts.single.containsKey('source_id'), isFalse);
 
-    final edges = await workingDatabase.database.query('contact_to_handle');
+    final edges = await graphDatabase.database.query('contact_to_handle');
     expect(edges.single['contact_id'], contactSsId);
     expect(edges.single['handle_ss_id'], handleSsId);
     expect(edges.single['handle_value'], '6049995969');
 
     final secondResult = await ContactProjector(
       repository: SqliteContactProjectionRepository(
-        importDatabase: importDatabase,
-        workingDatabase: workingDatabase,
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
       ),
     ).projectContacts();
     expect(secondResult.insertedContactCount, 0);
@@ -114,7 +113,7 @@ void main() {
     'projects meaningful contacts even when no graph handle currently matches',
     () async {
       final contactSsId = await _insertImportContact(
-        importDatabase,
+        importLedgerDatabase,
         sourceRowId: 31,
         displayName: 'Future Sender',
         firstName: 'Future',
@@ -123,8 +122,8 @@ void main() {
 
       final result = await ContactProjector(
         repository: SqliteContactProjectionRepository(
-          importDatabase: importDatabase,
-          workingDatabase: workingDatabase,
+          importLedgerDatabase: importLedgerDatabase,
+          graphDatabase: graphDatabase,
         ),
       ).projectContacts();
 
@@ -132,18 +131,18 @@ void main() {
       expect(result.insertedContactCount, 1);
       expect(result.insertedContactHandleEdgeCount, 0);
 
-      final contacts = await workingDatabase.database.query('contacts');
+      final contacts = await graphDatabase.database.query('contacts');
       expect(contacts.single['contact_id'], contactSsId);
       expect(contacts.single['display_name'], 'Future Sender');
 
-      final edges = await workingDatabase.database.query('contact_to_handle');
+      final edges = await graphDatabase.database.query('contact_to_handle');
       expect(edges, isEmpty);
     },
   );
 }
 
 Future<int> _insertImportContact(
-  ImportDatabase importDatabase, {
+  ImportDatabase importLedgerDatabase, {
   required int sourceRowId,
   required String displayName,
   String? firstName,
@@ -153,11 +152,11 @@ Future<int> _insertImportContact(
     sourceId: liveAddressBookSourceId,
     sourceRowId: sourceRowId,
   );
-  final batchId = await importDatabase.insertImportBatch(
+  final batchId = await importLedgerDatabase.insertImportBatch(
     sourceId: liveAddressBookSourceId,
     startedAtUtc: '2026-05-21T00:00:00.000Z',
   );
-  await importDatabase.database.insert('contacts', <String, Object?>{
+  await importLedgerDatabase.database.insert('contacts', <String, Object?>{
     'ss_id': contactSsId,
     'source_id': liveAddressBookSourceId,
     'source_rowid': sourceRowId,
@@ -170,21 +169,22 @@ Future<int> _insertImportContact(
 }
 
 Future<void> _insertImportContactChannel(
-  ImportDatabase importDatabase, {
+  ImportDatabase importLedgerDatabase, {
   required int contactSsId,
   required int sourceContactRowId,
   required String value,
 }) async {
-  final batchId = await importDatabase.insertImportBatch(
+  final batchId = await importLedgerDatabase.insertImportBatch(
     sourceId: liveAddressBookSourceId,
     startedAtUtc: '2026-05-21T00:00:00.000Z',
   );
-  await importDatabase.database.insert('contact_channels', <String, Object?>{
-    'source_id': liveAddressBookSourceId,
-    'source_contact_rowid': sourceContactRowId,
-    'contact_ss_id': contactSsId,
-    'kind': 'phone',
-    'value': value,
-    'batch_id': batchId,
-  });
+  await importLedgerDatabase.database
+      .insert('contact_channels', <String, Object?>{
+        'source_id': liveAddressBookSourceId,
+        'source_contact_rowid': sourceContactRowId,
+        'contact_ss_id': contactSsId,
+        'kind': 'phone',
+        'value': value,
+        'batch_id': batchId,
+      });
 }

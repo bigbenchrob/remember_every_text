@@ -2,7 +2,7 @@
 tier: project
 scope: macos-source-databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-06-06
 source_of_truth: live-source-db-analysis
 links:
   - ./00-overview.md
@@ -19,17 +19,29 @@ This document records direct read-only analysis of `~/Library/Messages/chat.db` 
 
 ## Interpretation Boundary
 
-The counts and patterns in this document are source observations from one inspected database. They are useful for diagnostics and for explaining why the importer preserves recovered-unlinked records, but they are not durable guarantees about Apple behavior. Only the import pipeline defines the durable MessageLens semantics for normal messages, recovered-unlinked messages, attachment joins, and working projection.
+The counts and patterns in this document are source observations from one
+inspected database. They are useful for diagnostics and for explaining why the
+source-scoped importer preserves graph-orphan/recovered records, but they are
+not durable guarantees about Apple behavior. Only the source-scoped import,
+conversation graph projection, and Message Evidence Spine define durable
+MessageLens semantics for ordinary messages, graph-orphan/recovered evidence,
+attachment joins, and UI presentation.
 
 ## Current Status
 
-This is no longer a future-only finding. Current import and migration code preserve these source rows on a dedicated recovered-unlinked path:
+This is no longer a future-only finding. Current source-scoped import and graph
+projection preserve these source rows as graph-orphan/recovered evidence:
 
-- source `message` + `chat_message_join` mapping -> import `messages` -> working `messages`
-- source `message` without `chat_message_join` mapping -> import `recovered_unlinked_messages` -> working `recovered_unlinked_messages`
-- source `message_attachment_join` rows follow the same split into `message_attachments` or `recovered_unlinked_message_attachments`, then working `attachments` or `recovered_unlinked_attachments`
+- source `message` + `chat_message_join` mapping -> `macos_import_ss.messages`
+  + topology facts -> graph `messages` + `chat_to_message`
+- source `message` without `chat_message_join` mapping -> source-scoped import
+  row preserved without ordinary conversation topology
+- source `message_attachment_join` rows preserve attachment topology where
+  present and project into graph `message_to_attachment` edges
 
-The architectural rule remains: do not fabricate normal chat membership for rows that lack source topology. Recovered-unlinked records must remain distinguishable in import data, working projection, diagnostics, and UI surfaces.
+The architectural rule remains: do not fabricate normal chat membership for
+rows that lack source topology. Graph-orphan/recovered records must remain
+distinguishable in import data, graph projection, diagnostics, and UI surfaces.
 
 ## Definition
 
@@ -186,8 +198,9 @@ The app has now been restructured to preserve and surface this previously hidden
 
 Current behavior:
 
-- import preserves source orphan rows into dedicated recovered tables
-- migration projects them into dedicated working-db recovered tables
+- source-scoped import preserves orphan source rows with provenance
+- graph projection keeps them out of ordinary conversation topology unless
+  source topology or an explicit future migration boundary justifies otherwise
 - the UI exposes them through a separate recovered-deleted-messages surface
 - contact-scoped browsing can match rows by surviving sender identity and, conservatively, infer nearby outgoing no-handle replies to restore conversation context
 

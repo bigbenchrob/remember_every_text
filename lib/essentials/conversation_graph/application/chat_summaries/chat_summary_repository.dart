@@ -4,7 +4,7 @@ abstract interface class ChatSummaryRepository {
   Future<List<ChatSummary>> readSummaries({
     ChatSummaryFilter filter = ChatSummaryFilter.all,
     ChatSummarySort sort = ChatSummarySort.mostRecentMessage,
-    int limit = 50,
+    int? limit = 50,
   });
 
   Future<ChatSummarySanityCounts> readSanityCounts();

@@ -22,7 +22,6 @@ void main() {
 
       expect(participant.id, greaterThanOrEqualTo(1000000000));
       expect(participant.displayName, equals('Example Contact'));
-      expect(participant.shortName, equals('EC'));
       expect(participant.createdAtUtc, isNotEmpty);
       expect(participant.updatedAtUtc, isNotEmpty);
     });
@@ -36,22 +35,6 @@ void main() {
       );
 
       expect(second.id, greaterThan(first.id));
-    });
-
-    test('short name falls back gracefully for single token names', () async {
-      final participant = await db.createVirtualParticipant(
-        displayName: 'Plato',
-      );
-
-      expect(participant.shortName, equals('PL'));
-    });
-
-    test('short name handles emoji names', () async {
-      final participant = await db.createVirtualParticipant(
-        displayName: '😀 Friend',
-      );
-
-      expect(participant.shortName, equals('😀F'));
     });
 
     test('created rows are returned alphabetically', () async {

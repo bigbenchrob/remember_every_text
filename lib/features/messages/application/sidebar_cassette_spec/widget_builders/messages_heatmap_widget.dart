@@ -6,19 +6,22 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
-import '../../../../../essentials/sidebar/feature_level_providers.dart';
+import '../../../../../essentials/sidebar/feature_level_providers.dart'
+    show SidebarFlowContactProjection, sidebarFlowProvider;
+import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
+import '../../../application/message_evidence/current_visible_month_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
-import '../../../domain/value_objects/message_timeline_scope.dart';
-import '../../../presentation/view_model/timeline/ordinal/current_visible_month_provider.dart';
+import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
 import '../../../presentation/widgets/contact_graph_conversation_section.dart';
+import '../resolver_tools/contact_context_identity.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
 import '../resolver_tools/global_messages_heatmap_provider.dart';
+import '../resolver_tools/message_heatmap_navigation_actions_provider.dart';
+import '../resolver_tools/message_heatmap_refresh_actions_provider.dart';
 
 /// Widget builder for the messages heatmap cassette.
 ///
@@ -30,7 +33,7 @@ import '../resolver_tools/global_messages_heatmap_provider.dart';
 /// Widget builders:
 /// - Accept fully-decided inputs (not specs)
 /// - May use `ref.watch()` for reactive updates
-/// - Construct specs only on user interaction (output, not interpretation)
+/// - Dispatch semantic actions on user interaction; do not construct panel specs
 /// - Never make branching decisions about which UI to show
 class MessagesHeatmapWidget extends ConsumerWidget {
   const MessagesHeatmapWidget({this.contactId, super.key});
@@ -46,6 +49,8 @@ class MessagesHeatmapWidget extends ConsumerWidget {
     final timelineAsync = ref.watch(globalMessagesHeatmapProvider);
 
     return timelineAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (timeline) {
         return _GlobalHeatmapContent(data: timeline);
       },
@@ -53,7 +58,9 @@ class MessagesHeatmapWidget extends ConsumerWidget {
       error: (error, _) => _HeatmapErrorCard(
         message: 'Unable to load heatmap data. $error',
         onRetry: () {
-          ref.invalidate(globalMessagesHeatmapProvider);
+          ref
+              .read(messageHeatmapRefreshActionsProvider.notifier)
+              .refreshGlobalHeatmap();
         },
       ),
     );
@@ -76,14 +83,14 @@ class _GlobalHeatmapContent extends ConsumerWidget {
 
     final timeline = data!;
 
-    final selectedMonthAsync = ref.watch(
+    final selectedMonthKey = ref.watch(
       currentVisibleMonthForScopeProvider(
-        scope: const MessageTimelineScope.global(),
+        scope: const GlobalMessagesEvidenceScope(),
       ),
     );
     return MessageHeatmapContent(
       data: timeline,
-      selectedMonthKey: selectedMonthAsync.valueOrNull,
+      selectedMonthKey: selectedMonthKey,
       onMonthTap: (year, month, count) {
         if (count <= 0) {
           return;
@@ -92,15 +99,10 @@ class _GlobalHeatmapContent extends ConsumerWidget {
         final isLastMonth =
             year == timeline.lastMessageDate.year &&
             month == timeline.lastMessageDate.month;
-        final monthAnchor = isLastMonth ? null : DateTime(year, month, 1);
-
         ref
-            .read(sidebarActionDispatcherProvider.notifier)
-            .dispatch(
-              intent: HeatMapMonthFocused(monthAnchor: monthAnchor),
-              context: const SidebarActionDispatchContext(
-                sidebarMode: SidebarMode.messages,
-              ),
+            .read(messageHeatmapNavigationActionsProvider.notifier)
+            .focusMonth(
+              monthAnchor: isLastMonth ? null : DateTime(year, month, 1),
             );
       },
     );
@@ -119,7 +121,7 @@ class _ContactEvidenceContent extends ConsumerWidget {
     final flowState = ref.watch(sidebarFlowProvider);
     final mode =
         flowState.topMenuChoice == TopChatMenuChoice.contacts &&
-            _isSameContactContext(flowState.chosenContactId, contactId) &&
+            isSameContactContext(flowState.chosenContactId, contactId) &&
             flowState.contactProjection ==
                 SidebarFlowContactProjection.conversations
         ? _ContactEvidenceMode.conversations
@@ -142,33 +144,26 @@ class _ContactEvidenceContent extends ConsumerWidget {
         _ContactEvidenceModeToggle(
           mode: mode,
           onChanged: (mode) {
-            if (mode == _ContactEvidenceMode.allMessages) {
-              ref
-                  .read(sidebarFlowProvider.notifier)
-                  .showContactTimelineAt(contactId: contactId);
-            } else {
-              ref
-                  .read(sidebarFlowProvider.notifier)
-                  .showContactConversationNavigator(contactId: contactId);
-            }
+            final projection = switch (mode) {
+              _ContactEvidenceMode.allMessages =>
+                SidebarContactProjection.allMessages,
+              _ContactEvidenceMode.conversations =>
+                SidebarContactProjection.conversations,
+            };
+
+            ref
+                .read(messageHeatmapNavigationActionsProvider.notifier)
+                .selectContactProjection(
+                  contactId: contactId,
+                  projection: projection,
+                );
           },
         ),
         const SizedBox(height: AppSpacing.md),
-        body,
+        SizedBox(width: double.infinity, child: body),
       ],
     );
   }
-}
-
-bool _isSameContactContext(int? selectedContactId, int cassetteContactId) {
-  if (selectedContactId == null) {
-    return false;
-  }
-  return selectedContactId == cassetteContactId ||
-      graphContactIdForContactPage(selectedContactId) == cassetteContactId ||
-      graphContactIdForContactPage(cassetteContactId) == selectedContactId ||
-      graphContactIdForContactPage(selectedContactId) ==
-          graphContactIdForContactPage(cassetteContactId);
 }
 
 class _ContactAllMessagesEvidence extends ConsumerWidget {
@@ -178,11 +173,20 @@ class _ContactAllMessagesEvidence extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final flowState = ref.watch(sidebarFlowProvider);
+    final selectedHandleId = flowState.chosenContactId == contactId
+        ? flowState.selectedHandleId
+        : null;
     final timelineAsync = ref.watch(
-      contactTimelineProvider(contactId: contactId),
+      contactTimelineProvider(
+        contactId: contactId,
+        filterHandleId: selectedHandleId,
+      ),
     );
 
     return timelineAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (timeline) {
         if (timeline == null) {
           return const _EmptyHeatmapCard(
@@ -200,7 +204,12 @@ class _ContactAllMessagesEvidence extends ConsumerWidget {
       error: (error, _) => _HeatmapErrorCard(
         message: 'Unable to load heatmap data. $error',
         onRetry: () {
-          ref.invalidate(contactTimelineProvider(contactId: contactId));
+          ref
+              .read(messageHeatmapRefreshActionsProvider.notifier)
+              .refreshContactTimeline(
+                contactId: contactId,
+                filterHandleId: selectedHandleId,
+              );
         },
       ),
     );
@@ -218,15 +227,22 @@ class _ContactAllMessagesHeatmap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedMonthAsync = ref.watch(
+    final flowState = ref.watch(sidebarFlowProvider);
+    final selectedHandleId = flowState.chosenContactId == contactId
+        ? flowState.selectedHandleId
+        : null;
+    final selectedMonthKey = ref.watch(
       currentVisibleMonthForScopeProvider(
-        scope: MessageTimelineScope.contact(contactId: contactId),
+        scope: _contactEvidenceScope(
+          contactId: contactId,
+          selectedHandleId: selectedHandleId,
+        ),
       ),
     );
 
     return MessageHeatmapContent(
       data: timeline,
-      selectedMonthKey: selectedMonthAsync.valueOrNull,
+      selectedMonthKey: selectedMonthKey,
       onMonthTap: (year, month, count) {
         if (count <= 0) {
           return;
@@ -237,19 +253,27 @@ class _ContactAllMessagesHeatmap extends ConsumerWidget {
             month == timeline.lastMessageDate.month;
 
         ref
-            .read(sidebarActionDispatcherProvider.notifier)
-            .dispatch(
-              intent: HeatMapMonthFocused(
-                contactId: contactId,
-                monthAnchor: isLastMonth ? null : DateTime(year, month, 1),
-              ),
-              context: const SidebarActionDispatchContext(
-                sidebarMode: SidebarMode.messages,
-              ),
+            .read(messageHeatmapNavigationActionsProvider.notifier)
+            .focusMonth(
+              contactId: contactId,
+              monthAnchor: isLastMonth ? null : DateTime(year, month, 1),
             );
       },
     );
   }
+}
+
+MessageEvidenceScope _contactEvidenceScope({
+  required int contactId,
+  required int? selectedHandleId,
+}) {
+  if (selectedHandleId == null) {
+    return ContactAllMessagesEvidenceScope(contactId: contactId);
+  }
+  return ContactHandleMessagesEvidenceScope(
+    contactId: contactId,
+    handleId: selectedHandleId,
+  );
 }
 
 class _ContactEvidenceModeToggle extends ConsumerWidget {
@@ -319,49 +343,105 @@ class MessageHeatmapContent extends ConsumerWidget {
         '${NumberFormat.decimalPattern().format(data.totalMessages)} messages '
         '• ${_formatDateRange(data.firstMessageDate, data.lastMessageDate)}';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(summaryText, style: typography.vizMeta),
-        SizedBox(height: visualizationGap),
-        CalendarHeatmapTimelineWidget(
-          data: data,
-          monthSize: 12,
-          monthSpacing: 2,
-          selectedMonthKey: selectedMonthKey,
-          monthTooltipBuilder: monthTooltipBuilder,
-          onMonthTap: onMonthTap,
-        ),
-        if (legend != null) ...[SizedBox(height: visualizationGap), legend!],
-        Padding(
-          padding: const EdgeInsets.only(top: AppSpacing.cassetteHintGap),
-          child: Text(hintText, style: typography.caption, softWrap: true),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final railWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth.clamp(
+                0.0,
+                _messageHeatmapVisualizationRailWidth,
+              )
+            : _messageHeatmapVisualizationRailWidth;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: railWidth,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(summaryText, style: typography.vizMeta),
+                SizedBox(height: visualizationGap),
+                SizedBox(
+                  width: double.infinity,
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: CalendarHeatmapTimelineWidget(
+                      data: data,
+                      monthSize: 12,
+                      monthSpacing: 2,
+                      selectedMonthKey: selectedMonthKey,
+                      monthTooltipBuilder: monthTooltipBuilder,
+                      onMonthTap: onMonthTap,
+                    ),
+                  ),
+                ),
+                if (legend != null) ...[
+                  SizedBox(height: visualizationGap),
+                  legend!,
+                ],
+                Padding(
+                  padding: const EdgeInsets.only(
+                    top: AppSpacing.cassetteHintGap,
+                  ),
+                  child: Text(
+                    hintText,
+                    style: typography.caption,
+                    softWrap: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
+
+const double _messageHeatmapVisualizationRailWidth = 252;
 
 class MessageHeatmapLegend extends ConsumerWidget {
   const MessageHeatmapLegend({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Wrap(
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    return Wrap(
       spacing: AppSpacing.md,
       runSpacing: AppSpacing.xs,
       children: [
-        _LegendItem(label: '1-3', swatch: _DotLegendSwatch()),
-        _LegendItem(label: '4-10', intensity: MonthIntensity.lightGray),
-        _LegendItem(label: '11-30', intensity: MonthIntensity.mediumGray),
-        _LegendItem(label: '31-50', intensity: MonthIntensity.darkGray),
-        _LegendItem(label: '51-75', intensity: MonthIntensity.paleYellow),
-        _LegendItem(label: '76-100', intensity: MonthIntensity.lightYellow),
-        _LegendItem(label: '101-150', intensity: MonthIntensity.mediumYellow),
-        _LegendItem(label: '151-200', intensity: MonthIntensity.darkYellow),
-        _LegendItem(label: '201-500', intensity: MonthIntensity.lightGreen),
-        _LegendItem(label: '501-1K', intensity: MonthIntensity.mediumGreen),
-        _LegendItem(label: '1K-2K', intensity: MonthIntensity.darkGreen),
+        _LegendItem(
+          label: '1-3',
+          swatch: _DotLegendSwatch(color: colors.content.textTertiary),
+        ),
+        const _LegendItem(label: '4-10', intensity: MonthIntensity.lightGray),
+        const _LegendItem(label: '11-30', intensity: MonthIntensity.mediumGray),
+        const _LegendItem(label: '31-50', intensity: MonthIntensity.darkGray),
+        const _LegendItem(label: '51-75', intensity: MonthIntensity.paleYellow),
+        const _LegendItem(
+          label: '76-100',
+          intensity: MonthIntensity.lightYellow,
+        ),
+        const _LegendItem(
+          label: '101-150',
+          intensity: MonthIntensity.mediumYellow,
+        ),
+        const _LegendItem(
+          label: '151-200',
+          intensity: MonthIntensity.darkYellow,
+        ),
+        const _LegendItem(
+          label: '201-500',
+          intensity: MonthIntensity.lightGreen,
+        ),
+        const _LegendItem(
+          label: '501-1K',
+          intensity: MonthIntensity.mediumGreen,
+        ),
+        const _LegendItem(label: '1K-2K', intensity: MonthIntensity.darkGreen),
       ],
     );
   }
@@ -407,17 +487,19 @@ class _ColorLegendSwatch extends StatelessWidget {
 }
 
 class _DotLegendSwatch extends StatelessWidget {
-  const _DotLegendSwatch();
+  const _DotLegendSwatch({required this.color});
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       width: 10,
       height: 10,
       child: Center(
         child: Text(
           '...',
-          style: TextStyle(fontSize: 8, height: 1, color: Color(0xFF999999)),
+          style: TextStyle(fontSize: 8, height: 1, color: color),
         ),
       ),
     );
@@ -447,15 +529,17 @@ class _HeatmapErrorCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(themeTypographyProvider);
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             CupertinoIcons.exclamationmark_triangle,
-            color: CupertinoColors.systemRed,
+            color: colors.status.error,
             size: 18,
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -465,7 +549,7 @@ class _HeatmapErrorCard extends ConsumerWidget {
               children: [
                 Text(
                   message,
-                  style: t.caption.copyWith(color: CupertinoColors.systemRed),
+                  style: t.caption.copyWith(color: colors.status.error),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 PushButton(

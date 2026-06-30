@@ -6,7 +6,7 @@ part of 'contact_is_favorite_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$contactIsFavoriteHash() => r'd6ad55593caf44725bf896d47044eb383ce06c1a';
+String _$contactIsFavoriteHash() => r'8ccb203b2e929eb3100287b06452fc867d1ebe4a';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -32,7 +32,8 @@ class _SystemHash {
 /// Whether [participantId] is currently in the user's favorites.
 ///
 /// Reactivity is driven by explicit invalidation: after add/remove mutations
-/// the caller must `ref.invalidate(contactIsFavoriteProvider(participantId))`.
+/// `ContactFavoriteActions` invalidates this provider and dependent picker
+/// projections.
 ///
 /// Copied from [contactIsFavorite].
 @ProviderFor(contactIsFavorite)
@@ -41,14 +42,16 @@ const contactIsFavoriteProvider = ContactIsFavoriteFamily();
 /// Whether [participantId] is currently in the user's favorites.
 ///
 /// Reactivity is driven by explicit invalidation: after add/remove mutations
-/// the caller must `ref.invalidate(contactIsFavoriteProvider(participantId))`.
+/// `ContactFavoriteActions` invalidates this provider and dependent picker
+/// projections.
 ///
 /// Copied from [contactIsFavorite].
 class ContactIsFavoriteFamily extends Family<AsyncValue<bool>> {
   /// Whether [participantId] is currently in the user's favorites.
   ///
   /// Reactivity is driven by explicit invalidation: after add/remove mutations
-  /// the caller must `ref.invalidate(contactIsFavoriteProvider(participantId))`.
+  /// `ContactFavoriteActions` invalidates this provider and dependent picker
+  /// projections.
   ///
   /// Copied from [contactIsFavorite].
   const ContactIsFavoriteFamily();
@@ -56,7 +59,8 @@ class ContactIsFavoriteFamily extends Family<AsyncValue<bool>> {
   /// Whether [participantId] is currently in the user's favorites.
   ///
   /// Reactivity is driven by explicit invalidation: after add/remove mutations
-  /// the caller must `ref.invalidate(contactIsFavoriteProvider(participantId))`.
+  /// `ContactFavoriteActions` invalidates this provider and dependent picker
+  /// projections.
   ///
   /// Copied from [contactIsFavorite].
   ContactIsFavoriteProvider call({required int participantId}) {
@@ -88,14 +92,16 @@ class ContactIsFavoriteFamily extends Family<AsyncValue<bool>> {
 /// Whether [participantId] is currently in the user's favorites.
 ///
 /// Reactivity is driven by explicit invalidation: after add/remove mutations
-/// the caller must `ref.invalidate(contactIsFavoriteProvider(participantId))`.
+/// `ContactFavoriteActions` invalidates this provider and dependent picker
+/// projections.
 ///
 /// Copied from [contactIsFavorite].
 class ContactIsFavoriteProvider extends AutoDisposeFutureProvider<bool> {
   /// Whether [participantId] is currently in the user's favorites.
   ///
   /// Reactivity is driven by explicit invalidation: after add/remove mutations
-  /// the caller must `ref.invalidate(contactIsFavoriteProvider(participantId))`.
+  /// `ContactFavoriteActions` invalidates this provider and dependent picker
+  /// projections.
   ///
   /// Copied from [contactIsFavorite].
   ContactIsFavoriteProvider({required int participantId})

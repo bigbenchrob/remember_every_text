@@ -1,18 +1,21 @@
-import 'dart:io';
+import 'dart:async';
 
-import 'package:drift/drift.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../essentials/db/feature_level_providers.dart';
+import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
 import '../../messages/domain/entities/attachment_info.dart';
-import '../../messages/presentation/debug/contact_timeline_scroll_probe.dart';
 import '../domain/constants/attachment_provenance.dart';
 import '../domain/constants/resolved_attachment_availability.dart';
 import '../domain/entities/attachment_recovery_metadata.dart';
 import '../domain/entities/resolved_attachment.dart';
 import 'archive_settings_provider.dart';
 import 'attachment_archive_service_provider.dart';
-import 'attachment_recovery_hint_storage.dart';
+import 'attachment_archive_store_providers.dart'
+    show attachmentArchiveReadStoreProvider, attachmentFileAccessProvider;
+import 'attachment_file_access.dart';
+import 'attachment_recovery_metadata_merge.dart';
 
 part 'attachment_resolver_provider.g.dart';
 
@@ -29,201 +32,148 @@ part 'attachment_resolver_provider.g.dart';
 @riverpod
 Future<ResolvedAttachment> attachmentResolver(
   AttachmentResolverRef ref,
-  AttachmentInfo attachmentInfo, {
-  required String messageGuid,
-  required int? importAttachmentId,
-}) async {
-  ContactTimelineScrollProbe.count('attachment_resolver.calls');
+  AttachmentInfo attachmentInfo,
+) async {
+  final settings = await ref.watch(archiveSettingsProvider.future);
+  final fileAccess = ref.watch(attachmentFileAccessProvider);
 
-  return ContactTimelineScrollProbe.traceAsync('attachment_resolver', () async {
-    final settings = await ref.watch(archiveSettingsProvider.future);
-
-    if (!settings.isEnabled) {
-      return _resolveForLiveOnlyMode(attachmentInfo: attachmentInfo);
-    }
-
-    return _resolveForArchiveEnabledMode(
-      ref,
+  if (!settings.isEnabled) {
+    return _resolveForLiveOnlyMode(
       attachmentInfo: attachmentInfo,
-      messageGuid: messageGuid,
-      importAttachmentId: importAttachmentId,
+      fileAccess: fileAccess,
     );
-  });
+  }
+
+  return _resolveForArchiveEnabledMode(
+    ref,
+    attachmentInfo: attachmentInfo,
+    archiveKey: attachmentInfo.archiveCompatibilityKey,
+    fileAccess: fileAccess,
+  );
 }
 
 Future<ResolvedAttachment> _resolveForArchiveEnabledMode(
   AttachmentResolverRef ref, {
   required AttachmentInfo attachmentInfo,
-  required String messageGuid,
-  required int? importAttachmentId,
+  required ArchiveCompatibilityKey? archiveKey,
+  required AttachmentFileAccess fileAccess,
 }) async {
-  return ContactTimelineScrollProbe.traceAsync(
-    'attachment_resolver.archive_mode',
-    () async {
-      final resolvedPath = attachmentInfo.resolvedLocalPath();
-      final liveFile = resolvedPath == null ? null : File(resolvedPath);
-      final liveFileExists =
-          liveFile != null &&
-          ContactTimelineScrollProbe.traceSync(
-            'attachment_resolver.live_exists_sync',
-            liveFile.existsSync,
-          );
-      AttachmentRecoveryMetadata? persistedRecoveryHint;
+  final resolvedPath = fileAccess.expandPath(attachmentInfo.localPath);
+  final liveFileExists = fileAccess.existingExpandedPath(resolvedPath) != null;
+  AttachmentRecoveryMetadata? persistedRecoveryHint;
 
-      if (importAttachmentId != null) {
-        final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-        final archiveDir = ref.watch(attachmentArchiveDirectoryProvider);
-        persistedRecoveryHint = decodeAttachmentRecoveryHint(
-          await overlayDb.readOverlaySetting(
-            attachmentRecoveryHintSettingKey(
-              messageGuid: messageGuid,
-              importAttachmentId: importAttachmentId,
-            ),
-          ),
-        );
+  if (archiveKey != null) {
+    final archiveReadStore = await ref.watch(
+      attachmentArchiveReadStoreProvider.future,
+    );
+    persistedRecoveryHint = await archiveReadStore.readRecoveryHint(archiveKey);
 
-        final archiveRecord =
-            await (overlayDb.select(overlayDb.archivedAttachments)..where(
-                  (t) =>
-                      t.messageGuid.equals(messageGuid) &
-                      t.importAttachmentId.equals(importAttachmentId),
-                ))
-                .getSingleOrNull();
+    final archiveRecord = await archiveReadStore.readArchiveRecord(archiveKey);
 
-        if (archiveRecord != null) {
-          final archivePath =
-              '$archiveDir/${archiveRecord.archiveRelativePath}';
-          final archiveFile = File(archivePath);
-          final archiveFileExists = ContactTimelineScrollProbe.traceSync(
-            'attachment_resolver.archive_exists_sync',
-            archiveFile.existsSync,
-          );
-          if (archiveFileExists) {
-            final provenance = switch (archiveRecord.provenance) {
-              'imported_historical' => AttachmentProvenance.importedHistorical,
-              _ => AttachmentProvenance.archived,
-            };
-
-            return ResolvedAttachment(
-              attachmentInfo: attachmentInfo,
-              availability: ResolvedAttachmentAvailability.available,
-              provenance: provenance,
-              resolvedFile: archiveFile,
-            );
-          }
-        }
-      }
-
-      if (liveFileExists &&
-          resolvedPath != null &&
-          importAttachmentId != null) {
-        ContactTimelineScrollProbe.count('attachment_resolver.trigger_archive');
-        _triggerOnDemandArchive(
-          ref,
-          messageGuid: messageGuid,
-          importAttachmentId: importAttachmentId,
-          resolvedLocalPath: resolvedPath,
-          mimeType: attachmentInfo.mimeType,
-        );
-
-        return ResolvedAttachment(
-          attachmentInfo: attachmentInfo,
-          availability: ResolvedAttachmentAvailability.pendingArchive,
-          recoveryMetadata: mergeAttachmentRecoveryMetadata(
-            base: AttachmentRecoveryMetadata(
-              nextRecoveryAttemptAt: DateTime.now().toUtc(),
-              recoveryPriority: 1,
-            ),
-            persistedHint: persistedRecoveryHint,
-          ),
-        );
-      }
-
-      if (liveFileExists) {
-        return ResolvedAttachment(
-          attachmentInfo: attachmentInfo,
-          availability:
-              ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
-          recoveryMetadata: mergeAttachmentRecoveryMetadata(
-            base: AttachmentRecoveryMetadata(
-              nextRecoveryAttemptAt: DateTime.now().toUtc(),
-              lastRecoveryErrorSummary:
-                  'Live attachment is present but cannot be archived yet.',
-            ),
-            persistedHint: persistedRecoveryHint,
-          ),
-        );
-      }
-
-      final isRecoverable =
-          attachmentInfo.hasLocalFile || importAttachmentId != null;
+    if (archiveRecord != null && archiveRecord.archiveFileExists) {
+      final provenance = switch (archiveRecord.provenance) {
+        'imported_historical' => AttachmentProvenance.importedHistorical,
+        _ => AttachmentProvenance.archived,
+      };
 
       return ResolvedAttachment(
         attachmentInfo: attachmentInfo,
-        availability: isRecoverable
-            ? ResolvedAttachmentAvailability.unavailableAwaitingRecovery
-            : ResolvedAttachmentAvailability.nonRecoverable,
-        recoveryMetadata: mergeAttachmentRecoveryMetadata(
-          base: AttachmentRecoveryMetadata(
-            nextRecoveryAttemptAt: isRecoverable
-                ? DateTime.now().toUtc()
-                : null,
-            lastRecoveryErrorSummary: isRecoverable
-                ? null
-                : 'Attachment has no viable live or archive recovery key.',
-            isNonRecoverable: !isRecoverable,
-          ),
-          persistedHint: persistedRecoveryHint,
-        ),
+        availability: ResolvedAttachmentAvailability.available,
+        provenance: provenance,
+        resolvedFilePath: archiveRecord.archiveAbsolutePath,
       );
-    },
+    }
+  }
+
+  if (liveFileExists && resolvedPath != null && archiveKey != null) {
+    _triggerOnDemandArchive(
+      ref,
+      archiveKey: archiveKey,
+      resolvedLocalPath: resolvedPath,
+      mimeType: attachmentInfo.mimeType,
+    );
+
+    return ResolvedAttachment(
+      attachmentInfo: attachmentInfo,
+      availability: ResolvedAttachmentAvailability.pendingArchive,
+      recoveryMetadata: mergeAttachmentRecoveryMetadata(
+        base: AttachmentRecoveryMetadata(
+          nextRecoveryAttemptAt: DateTime.now().toUtc(),
+          recoveryPriority: 1,
+        ),
+        persistedHint: persistedRecoveryHint,
+      ),
+    );
+  }
+
+  if (liveFileExists) {
+    return ResolvedAttachment(
+      attachmentInfo: attachmentInfo,
+      availability: ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
+      recoveryMetadata: mergeAttachmentRecoveryMetadata(
+        base: AttachmentRecoveryMetadata(
+          nextRecoveryAttemptAt: DateTime.now().toUtc(),
+          lastRecoveryErrorSummary:
+              'Live attachment is present but cannot be archived yet.',
+        ),
+        persistedHint: persistedRecoveryHint,
+      ),
+    );
+  }
+
+  final isRecoverable = attachmentInfo.hasLocalFile || archiveKey != null;
+
+  return ResolvedAttachment(
+    attachmentInfo: attachmentInfo,
+    availability: isRecoverable
+        ? ResolvedAttachmentAvailability.unavailableAwaitingRecovery
+        : ResolvedAttachmentAvailability.nonRecoverable,
+    recoveryMetadata: mergeAttachmentRecoveryMetadata(
+      base: AttachmentRecoveryMetadata(
+        nextRecoveryAttemptAt: isRecoverable ? DateTime.now().toUtc() : null,
+        lastRecoveryErrorSummary: isRecoverable
+            ? null
+            : 'Attachment has no viable live or archive recovery key.',
+        isNonRecoverable: !isRecoverable,
+      ),
+      persistedHint: persistedRecoveryHint,
+    ),
   );
 }
 
 ResolvedAttachment _resolveForLiveOnlyMode({
   required AttachmentInfo attachmentInfo,
+  required AttachmentFileAccess fileAccess,
 }) {
-  return ContactTimelineScrollProbe.traceSync(
-    'attachment_resolver.live_only_mode',
-    () {
-      final resolvedPath = attachmentInfo.resolvedLocalPath();
-      if (resolvedPath != null) {
-        final file = File(resolvedPath);
-        final exists = ContactTimelineScrollProbe.traceSync(
-          'attachment_resolver.live_exists_sync',
-          file.existsSync,
-        );
-        if (exists) {
-          return ResolvedAttachment(
-            attachmentInfo: attachmentInfo,
-            availability: ResolvedAttachmentAvailability.available,
-            provenance: AttachmentProvenance.messagesLive,
-            resolvedFile: file,
-          );
-        }
-      }
+  final resolvedPath = fileAccess.expandPath(attachmentInfo.localPath);
+  final resolvedFilePath = fileAccess.existingExpandedPath(resolvedPath);
+  if (resolvedFilePath != null) {
+    return ResolvedAttachment(
+      attachmentInfo: attachmentInfo,
+      availability: ResolvedAttachmentAvailability.available,
+      provenance: AttachmentProvenance.messagesLive,
+      resolvedFilePath: resolvedFilePath,
+    );
+  }
 
-      if (attachmentInfo.hasLocalFile) {
-        return ResolvedAttachment(
-          attachmentInfo: attachmentInfo,
-          availability:
-              ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
-          recoveryMetadata: AttachmentRecoveryMetadata(
-            nextRecoveryAttemptAt: DateTime.now().toUtc(),
-          ),
-        );
-      }
+  if (attachmentInfo.hasLocalFile) {
+    return ResolvedAttachment(
+      attachmentInfo: attachmentInfo,
+      availability: ResolvedAttachmentAvailability.unavailableAwaitingRecovery,
+      recoveryMetadata: AttachmentRecoveryMetadata(
+        nextRecoveryAttemptAt: DateTime.now().toUtc(),
+      ),
+    );
+  }
 
-      return ResolvedAttachment(
-        attachmentInfo: attachmentInfo,
-        availability: ResolvedAttachmentAvailability.nonRecoverable,
-        recoveryMetadata: const AttachmentRecoveryMetadata(
-          isNonRecoverable: true,
-          lastRecoveryErrorSummary:
-              'Attachment has no local path for live-only resolution.',
-        ),
-      );
-    },
+  return ResolvedAttachment(
+    attachmentInfo: attachmentInfo,
+    availability: ResolvedAttachmentAvailability.nonRecoverable,
+    recoveryMetadata: const AttachmentRecoveryMetadata(
+      isNonRecoverable: true,
+      lastRecoveryErrorSummary:
+          'Attachment has no local path for live-only resolution.',
+    ),
   );
 }
 
@@ -231,8 +181,7 @@ ResolvedAttachment _resolveForLiveOnlyMode({
 /// in the archive. Checks settings to respect the user's preference.
 void _triggerOnDemandArchive(
   AttachmentResolverRef ref, {
-  required String messageGuid,
-  required int importAttachmentId,
+  required ArchiveCompatibilityKey archiveKey,
   required String resolvedLocalPath,
   required String? mimeType,
 }) {
@@ -243,14 +192,43 @@ void _triggerOnDemandArchive(
     return;
   }
 
-  // Fire-and-forget archive call.
-  ref
-      .read(attachmentArchiveServiceProvider.notifier)
-      .archiveAttachment(
-        messageGuid: messageGuid,
-        importAttachmentId: importAttachmentId,
-        resolvedLocalPath: resolvedLocalPath,
-        mimeType: mimeType,
-        sha256Hex: null,
-      );
+  unawaited(
+    _archiveOnDemand(
+      ref,
+      archiveKey: archiveKey,
+      resolvedLocalPath: resolvedLocalPath,
+      mimeType: mimeType,
+    ),
+  );
+}
+
+Future<void> _archiveOnDemand(
+  AttachmentResolverRef ref, {
+  required ArchiveCompatibilityKey archiveKey,
+  required String resolvedLocalPath,
+  required String? mimeType,
+}) async {
+  try {
+    await ref
+        .read(attachmentArchiveServiceProvider.notifier)
+        .archiveAttachment(
+          archiveKey: archiveKey,
+          resolvedLocalPath: resolvedLocalPath,
+          mimeType: mimeType,
+          sha256Hex: null,
+        );
+  } catch (error, stackTrace) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'On-demand attachment archive failed',
+          source: 'AttachmentResolver',
+          context: <String, Object?>{
+            'archiveKey': archiveKey.storageKeySegment,
+            'resolvedLocalPath': resolvedLocalPath,
+            'error': error.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+        );
+  }
 }

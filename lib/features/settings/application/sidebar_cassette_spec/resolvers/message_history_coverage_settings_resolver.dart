@@ -1,14 +1,13 @@
-import 'dart:io';
-
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sqlite3/sqlite3.dart';
 
-import '../../../../../core/util/date_converter.dart';
-import '../../../../../essentials/db/feature_level_providers.dart';
-import '../../../../../essentials/db/infrastructure/data_sources/local/working/working_database.dart';
-import '../../../../../essentials/onboarding/application/fda_checker.dart';
-import '../../../../../essentials/onboarding/application/onboarding_environment_report_provider.dart';
+import '../../../../../essentials/logging/feature_level_providers.dart'
+    show appLoggerProvider;
+import '../../../../../essentials/onboarding/feature_level_providers.dart'
+    show
+        onboardingFullDiskAccessProvider,
+        onboardingMessagesDatabasePathProvider;
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../../message_history_coverage_repository_provider.dart';
 import '../entities/message_history_coverage_report.dart';
 import '../entities/message_history_coverage_report_logic.dart';
 
@@ -35,12 +34,12 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
 ) async {
   final generatedAt = DateTime.now().toUtc();
   final chatDbPath = ref.read(onboardingMessagesDatabasePathProvider);
-  if (!const FdaChecker().canReadMessagesDatabase()) {
+  if (!ref.read(onboardingFullDiskAccessProvider)) {
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
       chatDbTotalCount: null,
-      workingDbVisibleCount: null,
-      workingDbRecoveredCount: null,
+      graphConversationLinkedCount: null,
+      graphRecoveredOrphanCount: null,
       earliestMessageDate: null,
       latestMessageDate: null,
       generatedAt: generatedAt,
@@ -49,13 +48,16 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
     );
   }
 
-  final sourceSummary = _readChatDbSummary(chatDbPath);
+  final repository = await ref.read(
+    messageHistoryCoverageRepositoryProvider.future,
+  );
+  final sourceSummary = repository.readChatDbSummary(chatDbPath);
   if (sourceSummary == null) {
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
       chatDbTotalCount: null,
-      workingDbVisibleCount: null,
-      workingDbRecoveredCount: null,
+      graphConversationLinkedCount: null,
+      graphRecoveredOrphanCount: null,
       earliestMessageDate: null,
       latestMessageDate: null,
       generatedAt: generatedAt,
@@ -65,34 +67,43 @@ Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
   }
 
   try {
-    final workingDb = await ref.read(driftWorkingDatabaseProvider.future);
-    final visibleCount = await _readVisibleCount(workingDb);
-    final recoveredCount = await _readRecoveredCount(workingDb);
+    final graphSummary = await repository.readGraphSummary();
     final status = classifyMessageHistoryCoverageReport(
       sourceCount: sourceSummary.totalCount,
-      accountedCount: visibleCount + recoveredCount,
+      accountedCount: graphSummary.totalAccountedCount,
       earliestMessageDate: sourceSummary.earliestMessageDate,
     );
 
     return MessageHistoryCoverageReport(
       status: status,
       chatDbTotalCount: sourceSummary.totalCount,
-      workingDbVisibleCount: visibleCount,
-      workingDbRecoveredCount: recoveredCount,
+      graphConversationLinkedCount: graphSummary.conversationLinkedCount,
+      graphRecoveredOrphanCount: graphSummary.recoveredOrphanCount,
       earliestMessageDate: sourceSummary.earliestMessageDate,
       latestMessageDate: sourceSummary.latestMessageDate,
       generatedAt: generatedAt,
     );
-  } catch (error) {
+  } catch (error, stackTrace) {
+    ref
+        .read(appLoggerProvider.notifier)
+        .warn(
+          'MessageHistoryCoverage: failed to read graph summary',
+          source: 'MessageHistoryCoverageSettingsResolver',
+          context: <String, Object?>{
+            'error': error.toString(),
+            'stackTrace': stackTrace.toString(),
+          },
+        );
     return MessageHistoryCoverageReport(
       status: MessageHistoryCoverageStatus.unknown,
       chatDbTotalCount: sourceSummary.totalCount,
-      workingDbVisibleCount: null,
-      workingDbRecoveredCount: null,
+      graphConversationLinkedCount: null,
+      graphRecoveredOrphanCount: null,
       earliestMessageDate: sourceSummary.earliestMessageDate,
       latestMessageDate: sourceSummary.latestMessageDate,
       generatedAt: generatedAt,
-      detail: 'MessageLens could not safely read the working database: $error',
+      detail:
+          'MessageLens could not safely read the conversation graph database: $error',
     );
   }
 }
@@ -131,95 +142,4 @@ class MessageHistoryCoverageSettingsResolver
       topSpacing: 16,
     );
   }
-}
-
-_ChatDbSummary? _readChatDbSummary(String dbPath) {
-  final file = File(dbPath);
-  if (!file.existsSync()) {
-    return null;
-  }
-
-  try {
-    final database = sqlite3.open(dbPath, mode: OpenMode.readOnly);
-    try {
-      database.execute('PRAGMA query_only = ON;');
-      database.execute('PRAGMA busy_timeout = 3000;');
-
-      final result = database.select('''
-        SELECT
-          COUNT(*) AS total_count,
-          MIN(CASE WHEN date IS NOT NULL AND date != 0 THEN date END) AS first_date,
-          MAX(CASE WHEN date IS NOT NULL AND date != 0 THEN date END) AS last_date
-        FROM message
-      ''');
-      if (result.isEmpty) {
-        return null;
-      }
-
-      final row = result.first;
-      final totalCount = _asInt(row['total_count']);
-      if (totalCount == null) {
-        return null;
-      }
-
-      return _ChatDbSummary(
-        totalCount: totalCount,
-        earliestMessageDate: DateConverter.appleToDateTime(
-          row['first_date'],
-        )?.toUtc(),
-        latestMessageDate: DateConverter.appleToDateTime(
-          row['last_date'],
-        )?.toUtc(),
-      );
-    } finally {
-      database.dispose();
-    }
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<int> _readVisibleCount(WorkingDatabase workingDb) async {
-  final result = await workingDb
-      .customSelect(
-        'SELECT COUNT(*) AS total_count FROM global_message_index',
-        readsFrom: {workingDb.globalMessageIndex},
-      )
-      .getSingle();
-  return result.read<int?>('total_count') ?? 0;
-}
-
-Future<int> _readRecoveredCount(WorkingDatabase workingDb) async {
-  final result = await workingDb
-      .customSelect(
-        'SELECT COUNT(*) AS total_count FROM recovered_unlinked_messages',
-        readsFrom: {workingDb.recoveredUnlinkedMessages},
-      )
-      .getSingle();
-  return result.read<int?>('total_count') ?? 0;
-}
-
-int? _asInt(Object? value) {
-  if (value == null) {
-    return null;
-  }
-  if (value is int) {
-    return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  return int.tryParse('$value');
-}
-
-final class _ChatDbSummary {
-  const _ChatDbSummary({
-    required this.totalCount,
-    required this.earliestMessageDate,
-    required this.latestMessageDate,
-  });
-
-  final int totalCount;
-  final DateTime? earliestMessageDate;
-  final DateTime? latestMessageDate;
 }

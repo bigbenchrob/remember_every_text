@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -8,13 +9,17 @@ import '../../source_scoped_import/application/chats/chat_importer_provider.dart
 import '../../source_scoped_import/application/contacts/contact_importer_provider.dart';
 import '../../source_scoped_import/application/handles/handle_importer_provider.dart';
 import '../../source_scoped_import/application/message_attachment_joins/message_attachment_join_importer_provider.dart';
+import '../../source_scoped_import/application/messages/message_importer.dart';
 import '../../source_scoped_import/application/messages/message_importer_provider.dart';
+import '../../source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import '../../source_scoped_import/application/messages/message_rich_text_enricher_provider.dart';
+import '../../source_scoped_import/domain/known_sources.dart';
 import 'attachments/attachment_projector_provider.dart';
 import 'chat_handle_joins/chat_to_handle_projector_provider.dart';
 import 'chat_message_joins/chat_to_message_projector_provider.dart';
 import 'chats/chat_projector_provider.dart';
 import 'contacts/contact_projector_provider.dart';
+import 'conversation_graph_build_report.dart';
 import 'handles/handle_projector_provider.dart';
 import 'message_attachment_joins/message_to_attachment_projector_provider.dart';
 import 'messages/message_projector_provider.dart';
@@ -32,6 +37,26 @@ class ConversationGraphBuildService {
   Future<ConversationGraphBuildReport> runOnce() {
     return _orchestrator.runOnce();
   }
+}
+
+@visibleForTesting
+Future<MessageRichTextEnrichmentResult> runGraphBuildRichTextEnrichment({
+  required MessageImportResult messageImportResult,
+  required Future<MessageRichTextEnrichmentResult> Function()
+  enrichAllMissingText,
+  required Future<MessageRichTextEnrichmentResult> Function({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+  })
+  enrichMissingTextAfterSourceRowId,
+}) {
+  if (messageImportResult.insertedMessageCount == 0) {
+    return enrichAllMissingText();
+  }
+  return enrichMissingTextAfterSourceRowId(
+    sourceId: liveChatDbSourceId,
+    startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+  );
 }
 
 @riverpod
@@ -84,18 +109,35 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
         await contactImporter.importContacts();
       },
       importMessages: messageImporter.importNewMessages,
-      enrichMissingText: richTextEnricher.enrichMissingText,
-      importAttachments: () async {
-        await attachmentImporter.importAttachments();
+      enrichMissingText: (messageImportResult) {
+        return runGraphBuildRichTextEnrichment(
+          messageImportResult: messageImportResult,
+          enrichAllMissingText: richTextEnricher.enrichMissingText,
+          enrichMissingTextAfterSourceRowId:
+              richTextEnricher.enrichMissingTextAfterSourceRowId,
+        );
       },
-      importChatMessageJoins: () async {
-        await chatMessageJoinImporter.importJoins();
+      importAttachments: attachmentImporter.importAttachments,
+      importChatMessageJoins: (messageImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await chatMessageJoinImporter.importJoins();
+          return;
+        }
+        await chatMessageJoinImporter.importJoinsAfterSourceMessageRowId(
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
       },
       importChatHandleJoins: () async {
         await chatHandleJoinImporter.importJoins();
       },
-      importMessageAttachmentJoins: () async {
-        await messageAttachmentJoinImporter.importJoins();
+      importMessageAttachmentJoins: (messageImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await messageAttachmentJoinImporter.importJoins();
+          return;
+        }
+        await messageAttachmentJoinImporter.importJoinsAfterSourceMessageRowId(
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
       },
       projectHandles: () async {
         await handleProjector.projectHandles();
@@ -107,15 +149,48 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
       projectChats: () async {
         await chatProjector.projectChats();
       },
-      projectMessages: messageProjector.projectMessages,
-      projectAttachments: () async {
-        await attachmentProjector.projectAttachments();
+      projectMessages: (messageImportResult) {
+        if (messageImportResult.insertedMessageCount == 0) {
+          return messageProjector.projectMessages();
+        }
+        return messageProjector.projectMessagesAfterSourceRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
       },
-      projectChatMessageEdges: () async {
-        await chatToMessageProjector.projectEdges();
+      projectAttachments: (messageImportResult, attachmentImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await attachmentProjector.projectAttachments();
+          return;
+        }
+        if (attachmentImportResult.insertedAttachmentCount == 0) {
+          return;
+        }
+        await attachmentProjector.projectAttachmentsAfterSourceRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId:
+              attachmentImportResult.startedAfterSourceRowId,
+        );
       },
-      projectMessageAttachmentEdges: () async {
-        await messageToAttachmentProjector.projectEdges();
+      projectChatMessageEdges: (messageImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await chatToMessageProjector.projectEdges();
+          return;
+        }
+        await chatToMessageProjector.projectEdgesAfterSourceMessageRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
+      },
+      projectMessageAttachmentEdges: (messageImportResult) async {
+        if (messageImportResult.insertedMessageCount == 0) {
+          await messageToAttachmentProjector.projectEdges();
+          return;
+        }
+        await messageToAttachmentProjector.projectEdgesAfterSourceMessageRowId(
+          sourceId: liveChatDbSourceId,
+          startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+        );
       },
     ),
   );

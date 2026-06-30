@@ -13,6 +13,14 @@ tests: []
 
 # Feature Proposal: Contacts Cassette Cross-Surface Migration
 
+## Current Conformance Note (2026-06-06)
+
+The coordinator/resolver/widget-builder separation remains binding. The current
+graph migration adds one more invariant: contact cassette resolvers may compose
+graph facts with overlay intent, but widgets must not perform identity
+resolution or database reads. All contact labels should arrive as typed display
+identity data; raw handles are fallback/metadata only.
+
 ## Summary
 
 Migrate the Contacts feature's cassette system from the legacy `FeatureCassetteSpecCoordinator` pattern to the new cross-surface spec architecture documented in `90-CROSS-SURFACE-SPEC-SYSTEMS/`.

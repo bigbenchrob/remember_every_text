@@ -1,0 +1,27 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'handle_filter_actions_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$handleFilterActionsHash() =>
+    r'0812544e38de1d26050f9c1114c27896c82d816f';
+
+/// See also [HandleFilterActions].
+@ProviderFor(HandleFilterActions)
+final handleFilterActionsProvider =
+    AutoDisposeAsyncNotifierProvider<HandleFilterActions, void>.internal(
+      HandleFilterActions.new,
+      name: r'handleFilterActionsProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$handleFilterActionsHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$HandleFilterActions = AutoDisposeAsyncNotifier<void>;
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

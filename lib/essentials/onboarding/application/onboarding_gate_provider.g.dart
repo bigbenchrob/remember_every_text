@@ -6,7 +6,7 @@ part of 'onboarding_gate_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$onboardingGateHash() => r'7ed8ce5c3c22884c9227481d0afc7a1d23a9bb31';
+String _$onboardingGateHash() => r'5cb140dd4743d6be82f228f5987ab467f1546281';
 
 /// Controls the onboarding overlay lifecycle.
 ///
@@ -16,12 +16,13 @@ String _$onboardingGateHash() => r'7ed8ce5c3c22884c9227481d0afc7a1d23a9bb31';
 /// screen is shown.  Nothing else can proceed until FDA is confirmed.
 ///
 /// Gate 2 — Data import:
-/// Once FDA is confirmed, checks whether both import and working databases
-/// exist with data.  If not, exposes [OnboardingStatus.awaitingUserAction]
-/// so the import overlay appears.
+/// Once FDA is confirmed, checks whether the source-scoped import ledger and
+/// app-facing conversation graph exist with data. If not, exposes
+/// [OnboardingStatus.awaitingUserAction] so the import overlay appears.
 ///
-/// [startImportAndMigration] delegates to [DbImportControlViewModel] and
-/// watches its state to transition through importing → migrating → complete.
+/// [startImportAndGraphBuild] builds the source-scoped conversation graph
+/// directly. Retired database files are cleanup/diagnostic inventory only
+/// and are not the app-facing setup path.
 ///
 /// Copied from [OnboardingGate].
 @ProviderFor(OnboardingGate)

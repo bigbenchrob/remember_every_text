@@ -106,9 +106,9 @@ MessageCoveragePanelViewModel buildMessageCoveragePanelViewModel(
   MessageHistoryCoverageReport report,
 ) {
   final chatDbTotal = report.chatDbTotalCount;
-  final visibleCount = report.workingDbVisibleCount;
-  final recoveredCount = report.workingDbRecoveredCount;
-  final accountedCount = report.workingDbTotalAccountedCount;
+  final visibleCount = report.graphConversationLinkedCount;
+  final recoveredCount = report.graphRecoveredOrphanCount;
+  final accountedCount = report.graphTotalAccountedCount;
   final missingCount = report.missingCount;
   final notes = _notesFor(report);
 
@@ -266,7 +266,7 @@ String? _timelineCoverageDetail(MessageHistoryCoverageReport report) {
 }
 
 String _recoveredExplanation(MessageHistoryCoverageReport report) {
-  final recoveredCount = report.workingDbRecoveredCount;
+  final recoveredCount = report.graphRecoveredOrphanCount;
   if (recoveredCount == null) {
     return 'Recovered-message details are unavailable until the coverage check can complete.';
   }
@@ -282,8 +282,8 @@ List<CoverageSegmentViewModel> _segmentsFor(
   MessageHistoryCoverageReport report,
 ) {
   final chatDbTotal = report.chatDbTotalCount;
-  final visibleCount = report.workingDbVisibleCount;
-  final recoveredCount = report.workingDbRecoveredCount;
+  final visibleCount = report.graphConversationLinkedCount;
+  final recoveredCount = report.graphRecoveredOrphanCount;
   final missingCount = report.missingCount;
 
   if (chatDbTotal == null || chatDbTotal <= 0) {
@@ -384,8 +384,8 @@ List<String> _notesFor(MessageHistoryCoverageReport report) {
 
 bool _hasAccountingOverlap(MessageHistoryCoverageReport report) {
   final chatDbTotal = report.chatDbTotalCount;
-  final visibleCount = report.workingDbVisibleCount;
-  final recoveredCount = report.workingDbRecoveredCount;
+  final visibleCount = report.graphConversationLinkedCount;
+  final recoveredCount = report.graphRecoveredOrphanCount;
   final missingCount = report.missingCount;
 
   if (chatDbTotal == null || visibleCount == null || recoveredCount == null) {
