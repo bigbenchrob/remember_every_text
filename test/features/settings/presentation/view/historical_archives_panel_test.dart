@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/presentation/view/historical_archives_panel.dart';
 
@@ -81,6 +82,9 @@ void main() {
           historicalArchivesWorkflowPanelModelProvider.overrideWith(
             (ref) => model,
           ),
+          developerModeProvider.overrideWith(
+            () => _FakeDeveloperMode(DeveloperModeValue.user),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -108,7 +112,7 @@ void main() {
       expect(find.text('Clear Selected Folder'), findsOneWidget);
       expect(
         find.text('Clear Imported Archive Data for This Source'),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.text(
@@ -120,23 +124,23 @@ void main() {
         find.text(
           'Developer/testing only. This deletes source-scoped import rows from MessageLens for the selected archive source, then reprojects the conversation graph.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.text(
           'Removal target chat.db: /Users/rob/Library/Messages/Archive-2017/messages/chat.db',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.text('Source-scoped archive removal: available after preflight'),
-        findsOneWidget,
+        findsNothing,
       );
       expect(
         find.text(
           'Removing imported archive data will delete source-scoped import rows for this selected source, then reproject the conversation graph from the remaining import facts.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.text('Activity Log'), findsOneWidget);
       expect(find.text('Reading archive…'), findsOneWidget);
@@ -197,6 +201,9 @@ void main() {
           historicalArchivesWorkflowPanelModelProvider.overrideWith(
             (ref) => model,
           ),
+          developerModeProvider.overrideWith(
+            () => _FakeDeveloperMode(DeveloperModeValue.developer),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -241,4 +248,13 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
     });
   });
+}
+
+final class _FakeDeveloperMode extends DeveloperMode {
+  _FakeDeveloperMode(this._value);
+
+  final DeveloperModeValue _value;
+
+  @override
+  Future<DeveloperModeValue> build() async => _value;
 }

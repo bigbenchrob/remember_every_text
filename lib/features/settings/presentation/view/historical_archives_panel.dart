@@ -3,6 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../essentials/debug/feature_level_providers.dart'
+    show DeveloperModeValue, developerModeProvider;
 import '../../application/historical_archives_workflow_actions_provider.dart';
 import '../../application/historical_archives_workflow_panel_model_provider.dart';
 
@@ -15,6 +17,9 @@ class HistoricalArchivesPanel extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final panelModel = ref.watch(historicalArchivesWorkflowPanelModelProvider);
+    final developerMode = ref.watch(developerModeProvider);
+    final showDeveloperControls =
+        developerMode.valueOrNull == DeveloperModeValue.developer;
 
     return ColoredBox(
       color: colors.surfaces.canvas,
@@ -174,60 +179,62 @@ class HistoricalArchivesPanel extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                _ShellSectionCard(
-                  title: 'Developer Testing Controls',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _HistoricalArchiveActionButton(
-                        label: 'Clear Imported Archive Data for This Source',
-                        enabled: panelModel.removeImportedArchiveDataEnabled,
-                        onPressed: panelModel.removeImportedArchiveDataEnabled
-                            ? () {
-                                _showRemoveImportedArchiveDataConfirmationDialog(
-                                  context: context,
-                                  ref: ref,
-                                  panelModel: panelModel,
-                                );
-                              }
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Developer/testing only. This deletes source-scoped import rows from MessageLens for the selected archive source, then reprojects the conversation graph.',
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
+                if (showDeveloperControls) ...[
+                  const SizedBox(height: 16),
+                  _ShellSectionCard(
+                    title: 'Developer Testing Controls',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _HistoricalArchiveActionButton(
+                          label: 'Clear Imported Archive Data for This Source',
+                          enabled: panelModel.removeImportedArchiveDataEnabled,
+                          onPressed: panelModel.removeImportedArchiveDataEnabled
+                              ? () {
+                                  _showRemoveImportedArchiveDataConfirmationDialog(
+                                    context: context,
+                                    ref: ref,
+                                    panelModel: panelModel,
+                                  );
+                                }
+                              : null,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'It does not delete or modify the source archive folder. It does not reset overlay or user-intent data. Live current_mac data must remain untouched.',
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      for (final line
-                          in panelModel.archiveManagementSummaryLines) ...[
+                        const SizedBox(height: 12),
                         Text(
-                          line,
+                          'Developer/testing only. This deletes source-scoped import rows from MessageLens for the selected archive source, then reprojects the conversation graph.',
                           style: typography.body.copyWith(
                             color: colors.content.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 8),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        panelModel.removeImportedArchiveDataDetail,
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
+                        Text(
+                          'It does not delete or modify the source archive folder. It does not reset overlay or user-intent data. Live current_mac data must remain untouched.',
+                          style: typography.body.copyWith(
+                            color: colors.content.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        for (final line
+                            in panelModel.archiveManagementSummaryLines) ...[
+                          Text(
+                            line,
+                            style: typography.body.copyWith(
+                              color: colors.content.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          panelModel.removeImportedArchiveDataDetail,
+                          style: typography.body.copyWith(
+                            color: colors.content.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
                 const SizedBox(height: 16),
                 _ShellSectionCard(
                   title: 'Activity Log',
