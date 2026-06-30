@@ -55,7 +55,7 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
     return AttachmentArchiveLookupRecord(
       archiveRelativePath: relativePath,
       archiveAbsolutePath: absolutePath,
-      archiveFileExists: File(absolutePath).existsSync(),
+      archiveFileExists: _regularFileExists(absolutePath),
       provenance: row.readNullable<String>('provenance'),
     );
   }
@@ -88,5 +88,10 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
     }
 
     return absolutePath;
+  }
+
+  static bool _regularFileExists(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.file;
   }
 }

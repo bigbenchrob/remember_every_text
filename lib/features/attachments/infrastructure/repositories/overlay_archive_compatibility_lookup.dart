@@ -100,7 +100,12 @@ class OverlayArchiveCompatibilityLookup
     return GraphAttachmentArchiveRecord(
       archiveRelativePath: relativePath,
       archiveAbsolutePath: absolutePath,
-      archiveFileExists: File(absolutePath).existsSync(),
+      archiveFileExists: _regularFileExists(absolutePath),
     );
+  }
+
+  static bool _regularFileExists(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.file;
   }
 }

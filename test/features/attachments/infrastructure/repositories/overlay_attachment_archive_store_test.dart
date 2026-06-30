@@ -109,6 +109,31 @@ void main() {
     },
   );
 
+  test('does not report symlinked archive paths as available files', () async {
+    final archiveKey = _archiveKey();
+    final protectedFile = File(path.join(tempDir.path, 'protected.jpg'));
+    await protectedFile.writeAsString('outside archive');
+    final archiveLink = Link(path.join(archiveDir.path, 'linked.jpg'));
+    await archiveLink.create(protectedFile.path);
+    await writeStore.writeArchiveRecord(
+      ArchivedAttachmentWrite(
+        archiveKey: archiveKey,
+        archiveRelativePath: 'linked.jpg',
+        archivedAtUtc: '2026-06-19T10:00:00.000Z',
+        fileSizeBytes: 15,
+        contentHash: null,
+        originalLocalPath: null,
+      ),
+    );
+
+    final record = await readStore.readArchiveRecord(archiveKey);
+
+    expect(record, isNotNull);
+    expect(record!.archiveRelativePath, 'linked.jpg');
+    expect(record.archiveFileExists, isFalse);
+    expect(await protectedFile.readAsString(), 'outside archive');
+  });
+
   test(
     'does not resolve archive records that escape the archive root',
     () async {

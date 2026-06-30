@@ -112,6 +112,44 @@ void main() {
     },
   );
 
+  test('does not report symlinked archive paths as available files', () async {
+    final messageSsId = _ss(100);
+    final attachmentSsId = _ss(200);
+    final protectedFile = File(path.join(tempDir.path, 'protected.jpg'));
+    await protectedFile.writeAsString('outside archive');
+    final archiveLink = Link(path.join(archiveDir.path, 'linked.jpg'));
+    await archiveLink.create(protectedFile.path);
+
+    await _insertGraphAttachment(
+      graphDatabase,
+      messageSsId: messageSsId,
+      attachmentSsId: attachmentSsId,
+      messageGuid: 'message-guid-1',
+    );
+    await _insertArchiveRow(
+      overlayDatabase,
+      messageGuid: 'message-guid-1',
+      importAttachmentId: 200,
+      archiveRelativePath: 'linked.jpg',
+    );
+
+    final lookup = OverlayArchiveCompatibilityLookup(
+      graphDatabase: graphDatabase,
+      overlayDatabase: overlayDatabase,
+      archiveDirectory: archiveDir.path,
+    );
+
+    final record = await lookup.readArchiveRecord(
+      messageSsId: messageSsId,
+      attachmentSsId: attachmentSsId,
+    );
+
+    expect(record, isNotNull);
+    expect(record!.archiveRelativePath, 'linked.jpg');
+    expect(record.archiveFileExists, isFalse);
+    expect(await protectedFile.readAsString(), 'outside archive');
+  });
+
   test(
     'does not resolve compatibility-key archive rows for mixed-source endpoints',
     () async {
