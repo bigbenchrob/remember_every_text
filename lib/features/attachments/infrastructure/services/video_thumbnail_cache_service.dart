@@ -74,7 +74,7 @@ class VideoThumbnailCacheService implements VideoThumbnailCache {
     required int height,
   }) async {
     final sourceFile = File(videoPath);
-    if (!sourceFile.existsSync()) {
+    if (!_isRegularFile(sourceFile.path)) {
       return null;
     }
 
@@ -84,6 +84,9 @@ class VideoThumbnailCacheService implements VideoThumbnailCache {
     }
 
     final cacheDir = await _cacheDirectoryLoader();
+    if (_isSymlink(cacheDir.path)) {
+      return null;
+    }
     await cacheDir.create(recursive: true);
 
     final cacheKey = sha1
@@ -94,7 +97,10 @@ class VideoThumbnailCacheService implements VideoThumbnailCache {
         )
         .toString();
     final thumbnailFile = File(p.join(cacheDir.path, '$cacheKey.jpg'));
-    if (thumbnailFile.existsSync()) {
+    if (_isSymlink(thumbnailFile.path)) {
+      return null;
+    }
+    if (_isRegularFile(thumbnailFile.path)) {
       return thumbnailFile;
     }
 
@@ -104,11 +110,21 @@ class VideoThumbnailCacheService implements VideoThumbnailCache {
       width: width,
       height: height,
     );
-    if (!created || !thumbnailFile.existsSync()) {
+    if (!created || !_isRegularFile(thumbnailFile.path)) {
       return null;
     }
 
     return thumbnailFile;
+  }
+
+  static bool _isRegularFile(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.file;
+  }
+
+  static bool _isSymlink(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.link;
   }
 
   static Future<bool> _defaultGenerateThumbnail({
