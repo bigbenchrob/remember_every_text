@@ -395,6 +395,8 @@ release candidate.
 #### Build Readiness
 
 - Run `tool/release_smoke.sh`.
+- Record the real-data manual smoke run in
+  `tool/release_manual_smoke_checklist.md` or a copied dated checklist.
 - Run any additional focused tests for release areas touched after the smoke
   script was last updated.
 - Build macOS only when ready to produce a release candidate, preserving the
