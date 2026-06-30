@@ -630,6 +630,13 @@ class _EvidenceCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _EvidenceRow(
+            label: 'MessageLens status',
+            value: _messageLensStatusValue(report),
+            colors: colors,
+            typography: typography,
+          ),
+          const SizedBox(height: 6),
+          _EvidenceRow(
             label: 'Full Disk Access',
             value: report.hasFullDiskAccess
                 ? 'Available'
@@ -709,6 +716,24 @@ class _EvidenceCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _messageLensStatusValue(OnboardingEnvironmentReport report) {
+  return switch (report.state) {
+    OnboardingEnvironmentState.ready =>
+      'Ready to use; ordinary browsing can run from local app data',
+    OnboardingEnvironmentState.readyToImport =>
+      'Ready to import; setup has the required local access',
+    OnboardingEnvironmentState.permissionBlocked =>
+      'Blocked until Full Disk Access is granted',
+    OnboardingEnvironmentState.sourceUnavailable =>
+      'Blocked until local Messages or Contacts data is available',
+    OnboardingEnvironmentState.sourceSparseOrUnsynced =>
+      'Waiting for local Messages history to sync',
+    OnboardingEnvironmentState.importFailed ||
+    OnboardingEnvironmentState.graphProjectionFailed =>
+      'Setup needs retry; the last import or browsing-data build failed',
+  };
 }
 
 String _graphBuildValue(OnboardingEnvironmentReport report) {
