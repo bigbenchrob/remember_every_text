@@ -16,9 +16,9 @@ final class FilesystemDerivedMessageDataFileStore
 
   @override
   bool databaseBaseFileExists(String baseName) {
-    return File(
+    return _isRegularFile(
       path.join(databaseDirectory, _validatedDatabaseBaseName(baseName)),
-    ).existsSync();
+    );
   }
 
   @override
@@ -42,9 +42,8 @@ final class FilesystemDerivedMessageDataFileStore
         '$basePath-wal',
         '$basePath-shm',
       ]) {
-        final file = File(filePath);
-        if (file.existsSync()) {
-          await file.delete();
+        if (_isRegularFile(filePath)) {
+          await File(filePath).delete();
           deletedFilePaths.add(filePath);
         }
       }
@@ -65,5 +64,10 @@ final class FilesystemDerivedMessageDataFileStore
       );
     }
     return baseName;
+  }
+
+  bool _isRegularFile(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.file;
   }
 }

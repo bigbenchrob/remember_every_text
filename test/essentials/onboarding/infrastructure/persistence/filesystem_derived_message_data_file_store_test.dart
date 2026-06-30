@@ -67,5 +67,26 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test(
+      'ignores symlinked database base files during reset cleanup',
+      () async {
+        final store = FilesystemDerivedMessageDataFileStore(
+          databaseDirectory: tempDir.path,
+        );
+        final outsideFile = File(path.join(tempDir.path, 'outside.db'));
+        await outsideFile.writeAsString('do not delete');
+        final dbLink = Link(path.join(tempDir.path, 'working_ss.db'));
+        await dbLink.create(outsideFile.path);
+
+        expect(store.databaseBaseFileExists('working_ss.db'), isFalse);
+
+        final deleted = await store.deleteDatabaseBaseFiles(['working_ss.db']);
+
+        expect(deleted, isEmpty);
+        expect(dbLink.existsSync(), isTrue);
+        expect(await outsideFile.readAsString(), 'do not delete');
+      },
+    );
   });
 }
