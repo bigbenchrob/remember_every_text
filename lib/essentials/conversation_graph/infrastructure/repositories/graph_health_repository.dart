@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 import '../../../archive_compatibility/domain/archive_compatibility_key.dart';
@@ -282,7 +283,10 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
         archiveDirectory.isNotEmpty) {
       for (final entry in archiveByKey.entries) {
         final relativePath = entry.value;
-        if (File('$archiveDirectory/$relativePath').existsSync()) {
+        if (_archiveRegularFileExists(
+          archiveDirectoryPath: archiveDirectory,
+          archiveRelativePath: relativePath,
+        )) {
           archiveFilesAvailableCount += 1;
           currentAvailableArchiveKeys.add(entry.key);
         } else {
@@ -587,7 +591,10 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
           importAttachmentId: archiveCompatibilityAttachmentId,
         );
         allKeys.add(key);
-        if (File('${archiveDirectory.path}/$relativePath').existsSync()) {
+        if (_archiveRegularFileExists(
+          archiveDirectoryPath: archiveDirectory.path,
+          archiveRelativePath: relativePath,
+        )) {
           availableKeys.add(key);
         } else {
           filesMissingCount += 1;
@@ -684,7 +691,7 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
       messagesFolderPath: messagesFolderPath,
       filename: filename,
     );
-    return candidate != null && File(candidate).existsSync();
+    return candidate != null && _regularFileExists(candidate);
   }
 
   String? _recoveredAttachmentCandidatePath({
@@ -725,6 +732,25 @@ class SqliteGraphHealthRepository implements GraphHealthRepository {
     }
     final path = _expandHome(pathHint);
     return File(path).existsSync();
+  }
+
+  static bool _archiveRegularFileExists({
+    required String archiveDirectoryPath,
+    required String archiveRelativePath,
+  }) {
+    final rootPath = path.normalize(path.absolute(archiveDirectoryPath));
+    final candidatePath = path.normalize(
+      path.absolute(path.join(rootPath, archiveRelativePath)),
+    );
+    if (!path.isWithin(rootPath, candidatePath)) {
+      return false;
+    }
+    return _regularFileExists(candidatePath);
+  }
+
+  static bool _regularFileExists(String filePath) {
+    return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+        FileSystemEntityType.file;
   }
 
   static String _expandHome(String path) {
