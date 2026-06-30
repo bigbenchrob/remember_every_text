@@ -30,6 +30,9 @@ run_flutter_tests \
 
 echo "== MessageLens release smoke: message evidence and attachments =="
 run_flutter_tests \
+  test/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup_test.dart \
+  test/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader_test.dart \
+  test/essentials/conversation_graph/application/chat_summaries/chat_summary_reader_test.dart \
   test/features/messages/application/message_evidence/message_evidence_spine_provider_test.dart \
   test/features/messages/application/message_evidence/message_attachment_evidence_test.dart \
   test/features/messages/presentation/widgets/message_evidence/message_evidence_header_test.dart \
