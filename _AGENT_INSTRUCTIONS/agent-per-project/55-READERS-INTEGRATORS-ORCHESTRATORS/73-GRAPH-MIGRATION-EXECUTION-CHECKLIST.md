@@ -4075,6 +4075,9 @@ retention criteria.
 - Hardened application log writes so the app log directory and rotating
   `app.log` targets cannot be symlink redirects or directory targets before
   initialization or rotation.
+- Hardened derived-message-data reset cleanup so database base-file existence
+  and deletion only consider regular files, leaving symlinked database-looking
+  paths untouched.
 
 ### Vocabulary Note
 
