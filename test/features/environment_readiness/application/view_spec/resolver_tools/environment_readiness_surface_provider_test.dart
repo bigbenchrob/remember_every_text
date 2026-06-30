@@ -103,6 +103,34 @@ void main() {
       ]);
       expect(surface.detail.tone, EnvironmentReadinessTone.warning);
     });
+
+    test('shows normal-use readiness when graph is already ready', () async {
+      container = ProviderContainer(
+        overrides: [
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _report(
+              state: OnboardingEnvironmentState.ready,
+              blockerKind: OnboardingBlockerKind.none,
+            ),
+          ),
+        ],
+      );
+
+      await container.read(onboardingEnvironmentReportProvider.future);
+      final surface = container.read(environmentReadinessSurfaceProvider);
+
+      expect(
+        surface.detail.stepKey,
+        EnvironmentReadinessStepKey.importReadiness,
+      );
+      expect(surface.detail.title, 'Ready To Use');
+      expect(surface.detail.actions.map((action) => action.kind), [
+        EnvironmentReadinessActionKind.recheck,
+      ]);
+      expect(surface.steps.map((step) => step.status).toSet(), {
+        EnvironmentReadinessStepStatus.success,
+      });
+    });
   });
 }
 

@@ -14,6 +14,7 @@ EnvironmentReadinessSurfaceViewModel environmentReadinessSurface(Ref ref) {
   final status = ref.watch(onboardingGateProvider);
   final report = ref.watch(onboardingEnvironmentReportProvider).valueOrNull;
   final activeStep = _activeStepFor(status: status, report: report);
+  final isReady = report?.state == OnboardingEnvironmentState.ready;
   final detailsByStep = {
     for (final step in EnvironmentReadinessStepKey.values)
       step: _detailFor(activeStep: step, report: report),
@@ -21,7 +22,7 @@ EnvironmentReadinessSurfaceViewModel environmentReadinessSurface(Ref ref) {
 
   return EnvironmentReadinessSurfaceViewModel(
     activeStepKey: activeStep,
-    steps: _buildSteps(activeStep),
+    steps: _buildSteps(activeStep, allSucceeded: isReady),
     detailsByStep: detailsByStep,
     detail: detailsByStep[activeStep]!,
   );
@@ -52,15 +53,18 @@ EnvironmentReadinessStepKey _activeStepFor({
 }
 
 List<EnvironmentReadinessStepViewModel> _buildSteps(
-  EnvironmentReadinessStepKey activeStep,
-) {
+  EnvironmentReadinessStepKey activeStep, {
+  required bool allSucceeded,
+}) {
   const orderedKeys = EnvironmentReadinessStepKey.values;
   final activeIndex = orderedKeys.indexOf(activeStep);
 
   return orderedKeys.indexed.map((entry) {
     final index = entry.$1;
     final key = entry.$2;
-    final status = index < activeIndex
+    final status = allSucceeded
+        ? EnvironmentReadinessStepStatus.success
+        : index < activeIndex
         ? EnvironmentReadinessStepStatus.success
         : index == activeIndex
         ? EnvironmentReadinessStepStatus.active
@@ -170,6 +174,7 @@ EnvironmentReadinessDetailViewModel _detailFor({
         tone: EnvironmentReadinessTone.warning,
       );
     case EnvironmentReadinessStepKey.importReadiness:
+      final isReady = report?.state == OnboardingEnvironmentState.ready;
       final isGraphProjectionRetry =
           report?.state == OnboardingEnvironmentState.graphProjectionFailed ||
           report?.blockerKind == OnboardingBlockerKind.graphProjectionFailed;
@@ -185,11 +190,22 @@ EnvironmentReadinessDetailViewModel _detailFor({
 
       return EnvironmentReadinessDetailViewModel(
         stepKey: EnvironmentReadinessStepKey.importReadiness,
-        title: isRetry ? 'Retry Setup' : 'Ready To Import',
-        body: isRetry
+        title: isReady
+            ? 'Ready To Use'
+            : isRetry
+            ? 'Retry Setup'
+            : 'Ready To Import',
+        body: isReady
+            ? 'MessageLens can read the required local sources and the conversation graph is available for normal browsing.'
+            : isRetry
             ? 'MessageLens reached the import pipeline, but the last setup attempt did not finish cleanly. You can retry from here or send a report to the developer with diagnostic logs.'
             : 'The required local permissions and sources appear ready. The next step is importing your Messages and Contacts data into the app.',
-        instructions: isRetry
+        instructions: isReady
+            ? [
+                'Continue using MessageLens normally.',
+                'If new messages do not appear, re-check this panel and then use the graph status panel for live-update details.',
+              ]
+            : isRetry
             ? [
                 'Review the machine view below to confirm the local sources still look healthy.',
                 'Start setup again to retry import and graph build.',
@@ -201,10 +217,11 @@ EnvironmentReadinessDetailViewModel _detailFor({
                 'When setup finishes, the app will move into the normal browsing experience.',
               ],
         actions: [
-          EnvironmentReadinessAction(
-            kind: EnvironmentReadinessActionKind.startImport,
-            label: label,
-          ),
+          if (!isReady)
+            EnvironmentReadinessAction(
+              kind: EnvironmentReadinessActionKind.startImport,
+              label: label,
+            ),
           if (isRetry)
             const EnvironmentReadinessAction(
               kind: EnvironmentReadinessActionKind.sendReport,
