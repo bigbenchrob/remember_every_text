@@ -196,19 +196,19 @@ EnvironmentReadinessDetailViewModel _detailFor({
             ? 'Retry Setup'
             : 'Ready To Import',
         body: isReady
-            ? 'MessageLens can read the required local sources and the conversation graph is available for normal browsing.'
+            ? 'MessageLens can read the required local sources and its conversation browsing data is ready.'
             : isRetry
             ? 'MessageLens reached the import pipeline, but the last setup attempt did not finish cleanly. You can retry from here or send a report to the developer with diagnostic logs.'
             : 'The required local permissions and sources appear ready. The next step is importing your Messages and Contacts data into the app.',
         instructions: isReady
             ? [
                 'Continue using MessageLens normally.',
-                'If new messages do not appear, re-check this panel and then use the graph status panel for live-update details.',
+                'If new messages do not appear, re-check this panel and then use the status panel for live-update details.',
               ]
             : isRetry
             ? [
                 'Review the machine view below to confirm the local sources still look healthy.',
-                'Start setup again to retry import and graph build.',
+                'Start setup again to retry import and browsing-data preparation.',
                 'If the problem repeats, use Send Report To Developer to have MessageLens prepare an email with the diagnostic report attached when possible.',
               ]
             : [

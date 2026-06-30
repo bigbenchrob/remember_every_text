@@ -658,7 +658,7 @@ class _EvidenceCard extends StatelessWidget {
             typography: typography,
           ),
           _EvidenceRow(
-            label: 'Source-scoped import ledger',
+            label: 'Imported message data',
             value: report.sourceScopedImportDatabase.hasData
                 ? 'Ready'
                 : 'Not prepared yet',
@@ -676,7 +676,7 @@ class _EvidenceCard extends StatelessWidget {
             typography: typography,
           ),
           _EvidenceRow(
-            label: 'Conversation graph',
+            label: 'Conversation browsing data',
             value: report.conversationGraph.hasData
                 ? 'Ready'
                 : 'Not prepared yet',

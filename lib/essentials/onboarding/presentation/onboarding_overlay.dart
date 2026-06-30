@@ -520,14 +520,14 @@ class _EnvironmentSummaryCard extends StatelessWidget {
             isGood: report.addressBookDatabase?.readable ?? false,
           ),
           _DiagnosticRow(
-            label: 'Source-scoped import ledger',
+            label: 'Imported message data',
             value: _appDbValue(report.sourceScopedImportDatabase),
             colors: colors,
             typography: typography,
             isGood: report.sourceScopedImportDatabase.hasData,
           ),
           _DiagnosticRow(
-            label: 'Conversation graph',
+            label: 'Conversation browsing data',
             value: _appDbValue(report.conversationGraph),
             colors: colors,
             typography: typography,
@@ -757,7 +757,7 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
       );
     case OnboardingEnvironmentState.graphProjectionFailed:
       return _AwaitingUserActionPresentation(
-        title: 'Imported Data Could Not Be Prepared',
+        title: 'Messages Could Not Be Prepared',
         body:
             'MessageLens imported source data, but the app could not finish '
             'preparing it for use. You can retry now or send a report to the '
@@ -828,7 +828,7 @@ List<String> _importFailureNotes(OnboardingEnvironmentReport report) {
   if (!report.sourceScopedImportDatabase.exists ||
       !report.sourceScopedImportDatabase.hasData) {
     notes.add(
-      'No usable import ledger was left behind, so the next retry will start from a clean import pass.',
+      'No usable imported message data was left behind, so the next retry will start from a clean import pass.',
     );
   }
 
@@ -856,13 +856,13 @@ List<String> _graphProjectionFailureNotes(OnboardingEnvironmentReport report) {
 
   if (report.sourceScopedImportDatabase.hasData) {
     notes.add(
-      'The import ledger contains data, so the failure happened while preparing app-facing tables.',
+      'The imported message data exists, so the failure happened while preparing it for browsing.',
     );
   }
 
   if (!report.conversationGraph.hasData) {
     notes.add(
-      'The conversation graph is still empty or incomplete. Retrying will rerun the full import and graph build.',
+      'The conversation browsing data is still empty or incomplete. Retrying will rerun setup.',
     );
   }
 
@@ -1102,8 +1102,8 @@ class _ProgressContent extends ConsumerWidget {
         const SizedBox(height: 16),
         Text(
           isReimport
-              ? 'MessageLens is rebuilding the source-scoped import ledger and conversation graph from Messages.'
-              : 'MessageLens is building the source-scoped import ledger and conversation graph from Messages.',
+              ? 'MessageLens is rebuilding its local browsing data from Messages.'
+              : 'MessageLens is building its local browsing data from Messages.',
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -1137,15 +1137,14 @@ String _progressStatusMessage({
 }) {
   return switch (graphBuildState.status) {
     ConversationGraphBuildStatus.running =>
-      isReimport
-          ? 'Rebuilding conversation graph…'
-          : 'Building conversation graph…',
+      isReimport ? 'Rebuilding browsing data…' : 'Building browsing data…',
     ConversationGraphBuildStatus.succeeded =>
-      isReimport ? 'Conversation graph rebuilt' : 'Conversation graph built',
+      isReimport ? 'Browsing data rebuilt' : 'Browsing data ready',
     ConversationGraphBuildStatus.failed =>
-      graphBuildState.lastError ?? 'Conversation graph build failed',
+      graphBuildState.lastError ??
+          'MessageLens could not prepare browsing data',
     ConversationGraphBuildStatus.idle =>
-      isReimport ? 'Preparing graph rebuild…' : 'Preparing graph build…',
+      isReimport ? 'Preparing rebuild…' : 'Preparing setup…',
   };
 }
 
@@ -1242,7 +1241,7 @@ class _RecoveryContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'MessageLens detected signs that an earlier import or graph build left incomplete app databases. It is deleting the app databases now so setup can restart from a clean slate.',
+          'MessageLens detected signs that an earlier setup attempt left incomplete local data. It is clearing that data now so setup can restart cleanly.',
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -1278,7 +1277,7 @@ class _RecoveryContent extends ConsumerWidget {
   }
 }
 
-/// Displays key counts from the source-scoped graph build result.
+/// Displays key counts from setup.
 class _GraphBuildSummaryMetrics extends StatelessWidget {
   const _GraphBuildSummaryMetrics({
     required this.report,
