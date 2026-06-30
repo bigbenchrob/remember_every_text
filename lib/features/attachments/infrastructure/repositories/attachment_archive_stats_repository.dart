@@ -18,10 +18,13 @@ final class AttachmentArchiveStatsRepository
   @override
   Future<AttachmentArchiveStats> readStats() async {
     var sizeBytes = 0;
-    final dir = Directory(_archiveDirectoryPath);
-    if (dir.existsSync()) {
-      await for (final entity in dir.list(recursive: true)) {
-        if (entity is File) {
+    if (_isDirectory(_archiveDirectoryPath)) {
+      final dir = Directory(_archiveDirectoryPath);
+      await for (final entity in dir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        if (entity is File && _isRegularFile(entity.path)) {
           sizeBytes += await entity.length();
         }
       }
@@ -35,5 +38,15 @@ final class AttachmentArchiveStatsRepository
       recordCount: countResult.read<int>('cnt'),
       sizeBytes: sizeBytes,
     );
+  }
+
+  static bool _isDirectory(String path) {
+    return FileSystemEntity.typeSync(path, followLinks: false) ==
+        FileSystemEntityType.directory;
+  }
+
+  static bool _isRegularFile(String path) {
+    return FileSystemEntity.typeSync(path, followLinks: false) ==
+        FileSystemEntityType.file;
   }
 }

@@ -73,5 +73,47 @@ void main() {
       expect(stats.recordCount, 0);
       expect(stats.sizeBytes, 0);
     });
+
+    test('does not count symlinked archive contents', () async {
+      await File('${tempDir.path}/a.bin').writeAsString('hello');
+      final externalFile = File('${tempDir.path}_outside.bin');
+      await externalFile.writeAsString('outside bytes');
+      addTearDown(() {
+        if (externalFile.existsSync()) {
+          externalFile.deleteSync();
+        }
+      });
+      await Link('${tempDir.path}/linked.bin').create(externalFile.path);
+
+      final stats = await AttachmentArchiveStatsRepository(
+        archiveDirectoryPath: tempDir.path,
+        overlayDatabase: overlayDb,
+      ).readStats();
+
+      expect(stats.recordCount, 0);
+      expect(stats.sizeBytes, 5);
+    });
+
+    test('does not walk a symlinked archive root', () async {
+      final realArchiveDir = await Directory.systemTemp.createTemp(
+        'attachment_archive_stats_real_',
+      );
+      addTearDown(() async {
+        if (realArchiveDir.existsSync()) {
+          await realArchiveDir.delete(recursive: true);
+        }
+      });
+      await File('${realArchiveDir.path}/a.bin').writeAsString('hello');
+      final archiveLink = Link('${tempDir.path}/archive_link');
+      await archiveLink.create(realArchiveDir.path);
+
+      final stats = await AttachmentArchiveStatsRepository(
+        archiveDirectoryPath: archiveLink.path,
+        overlayDatabase: overlayDb,
+      ).readStats();
+
+      expect(stats.recordCount, 0);
+      expect(stats.sizeBytes, 0);
+    });
   });
 }
