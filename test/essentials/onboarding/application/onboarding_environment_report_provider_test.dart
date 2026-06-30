@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
+import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show
@@ -66,6 +67,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            ..._lifecycleOverrides(),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
@@ -112,6 +114,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            ..._lifecycleOverrides(),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
@@ -160,6 +163,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          ..._lifecycleOverrides(),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           onboardingFullDiskAccessProvider.overrideWith((ref) => true),
           onboardingMessagesDatabasePathProvider.overrideWith(
@@ -216,6 +220,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            ..._lifecycleOverrides(),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
@@ -265,6 +270,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          ..._lifecycleOverrides(),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           onboardingFullDiskAccessProvider.overrideWith((ref) => true),
           onboardingMessagesDatabasePathProvider.overrideWith(
@@ -314,6 +320,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            ..._lifecycleOverrides(),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
@@ -363,6 +370,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            ..._lifecycleOverrides(),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
@@ -410,6 +418,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            ..._lifecycleOverrides(),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
@@ -468,6 +477,7 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            ..._lifecycleOverrides(),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
@@ -603,4 +613,28 @@ AddressBookFolderAggregate _addressBookAggregate(String addressBookPath) {
       recordCount: NonZeroInt(12),
     ),
   ]);
+}
+
+List<Override> _lifecycleOverrides() {
+  return [
+    conversationGraphBuildControllerProvider.overrideWith(
+      _FakeConversationGraphBuildController.new,
+    ),
+    chatDbChangeMonitorProvider.overrideWith(_FakeChatDbChangeMonitor.new),
+  ];
+}
+
+final class _FakeConversationGraphBuildController
+    extends ConversationGraphBuildController {
+  @override
+  ConversationGraphBuildState build() {
+    return const ConversationGraphBuildState.idle();
+  }
+}
+
+final class _FakeChatDbChangeMonitor extends ChatDbChangeMonitor {
+  @override
+  ChatDbChangeMonitorState build() {
+    return const ChatDbChangeMonitorState(lastMaxRowId: 149359);
+  }
 }

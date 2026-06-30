@@ -684,6 +684,18 @@ class _EvidenceCard extends StatelessWidget {
             typography: typography,
           ),
           _EvidenceRow(
+            label: 'Last graph build',
+            value: _graphBuildValue(report),
+            colors: colors,
+            typography: typography,
+          ),
+          _EvidenceRow(
+            label: 'Live message updates',
+            value: _liveUpdateValue(report),
+            colors: colors,
+            typography: typography,
+          ),
+          _EvidenceRow(
             label: 'Attachment archive',
             value: report.attachmentArchiveDirectory.readable
                 ? 'Available'
@@ -697,6 +709,49 @@ class _EvidenceCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _graphBuildValue(OnboardingEnvironmentReport report) {
+  final error = report.graphBuildLastError;
+  if (error != null && error.isNotEmpty) {
+    return 'Error: $error';
+  }
+
+  final finishedAt = report.graphBuildFinishedAt;
+  if (finishedAt != null) {
+    return '${report.graphBuildStatusLabel} at ${_formatReadinessTimestamp(finishedAt)}';
+  }
+
+  return report.graphBuildStatusLabel;
+}
+
+String _liveUpdateValue(OnboardingEnvironmentReport report) {
+  final error = report.liveUpdateLastError;
+  if (error != null && error.isNotEmpty) {
+    return 'Error: $error';
+  }
+
+  final lastChangeDetected = report.liveUpdateLastChangeDetectedAt;
+  if (lastChangeDetected != null) {
+    return 'Last change ${_formatReadinessTimestamp(lastChangeDetected)}';
+  }
+
+  final cursorRowId = report.liveUpdateCursorRowId;
+  if (cursorRowId != null) {
+    return 'Watching source row $cursorRowId';
+  }
+
+  return 'Waiting for source changes';
+}
+
+String _formatReadinessTimestamp(DateTime timestamp) {
+  final local = timestamp.toLocal();
+  final year = local.year.toString().padLeft(4, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$year-$month-$day $hour:$minute';
 }
 
 class _EvidenceRow extends StatelessWidget {

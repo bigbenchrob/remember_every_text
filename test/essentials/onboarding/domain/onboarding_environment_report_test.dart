@@ -100,6 +100,26 @@ void main() {
         );
       },
     );
+
+    test(
+      'release readiness status carries graph build and live update signals',
+      () {
+        final graphBuildFinishedAt = DateTime.utc(2026, 06, 29, 12, 30);
+        final liveUpdateDetectedAt = DateTime.utc(2026, 06, 29, 12, 45);
+
+        final report = _report(
+          graphBuildStatusLabel: 'succeeded',
+          graphBuildFinishedAt: graphBuildFinishedAt,
+          liveUpdateCursorRowId: 149359,
+          liveUpdateLastChangeDetectedAt: liveUpdateDetectedAt,
+        );
+
+        expect(report.graphBuildStatusLabel, 'succeeded');
+        expect(report.graphBuildFinishedAt, graphBuildFinishedAt);
+        expect(report.liveUpdateCursorRowId, 149359);
+        expect(report.liveUpdateLastChangeDetectedAt, liveUpdateDetectedAt);
+      },
+    );
   });
 }
 
@@ -108,6 +128,10 @@ OnboardingEnvironmentReport _report({
   OnboardingPipelineFailure? lastGraphProjectionFailure,
   DateTime? lastImportFailureRecordedAt,
   DateTime? lastGraphProjectionFailureRecordedAt,
+  String graphBuildStatusLabel = 'unknown',
+  DateTime? graphBuildFinishedAt,
+  int? liveUpdateCursorRowId,
+  DateTime? liveUpdateLastChangeDetectedAt,
 }) {
   return OnboardingEnvironmentReport(
     state: OnboardingEnvironmentState.ready,
@@ -152,5 +176,9 @@ OnboardingEnvironmentReport _report({
     lastGraphProjectionFailure: lastGraphProjectionFailure,
     lastImportFailureRecordedAt: lastImportFailureRecordedAt,
     lastGraphProjectionFailureRecordedAt: lastGraphProjectionFailureRecordedAt,
+    graphBuildStatusLabel: graphBuildStatusLabel,
+    graphBuildFinishedAt: graphBuildFinishedAt,
+    liveUpdateCursorRowId: liveUpdateCursorRowId,
+    liveUpdateLastChangeDetectedAt: liveUpdateLastChangeDetectedAt,
   );
 }

@@ -8,6 +8,12 @@ import '../../../features/address_book_folders/domain/entities/address_book_fold
 import '../../../features/address_book_folders/domain/failures/folder_retrieval_failure.dart';
 import '../../../features/address_book_folders/feature_level_providers.dart'
     show futureGetFolderAggregateProvider;
+import '../../conversation_graph/feature_level_providers.dart'
+    show
+        ChatDbChangeMonitorState,
+        ConversationGraphBuildState,
+        chatDbChangeMonitorProvider,
+        conversationGraphBuildControllerProvider;
 import '../../db/app_database_files.dart';
 import '../../db/application/conversation_graph_readiness.dart';
 import '../../db/database_directory.dart';
@@ -143,6 +149,8 @@ Future<OnboardingEnvironmentReport> onboardingEnvironmentReport(Ref ref) async {
       attachmentArchiveDirectoryProvider,
     ),
     isMaintenanceLocked: ref.watch(dbMaintenanceLockProvider),
+    graphBuildState: ref.watch(conversationGraphBuildControllerProvider),
+    liveUpdateMonitorState: ref.watch(chatDbChangeMonitorProvider),
   );
   final evaluator = _OnboardingEnvironmentEvaluator(inputs);
   return evaluator.evaluate();
@@ -159,6 +167,8 @@ class _OnboardingEnvironmentInputs {
     required this.databaseDirectoryPath,
     required this.attachmentArchiveDirectoryPath,
     required this.isMaintenanceLocked,
+    required this.graphBuildState,
+    required this.liveUpdateMonitorState,
   });
 
   final OnboardingDevOverridesState devOverrides;
@@ -171,6 +181,8 @@ class _OnboardingEnvironmentInputs {
   final String databaseDirectoryPath;
   final String attachmentArchiveDirectoryPath;
   final bool isMaintenanceLocked;
+  final ConversationGraphBuildState graphBuildState;
+  final ChatDbChangeMonitorState liveUpdateMonitorState;
 }
 
 class _OnboardingEnvironmentEvaluator {
@@ -371,6 +383,13 @@ class _OnboardingEnvironmentEvaluator {
           usingPersistedGraphProjectionFailure,
       shouldResetAppDatabasesBeforeImport: resetAppDatabasesReason != null,
       resetAppDatabasesReason: resetAppDatabasesReason,
+      graphBuildStatusLabel: inputs.graphBuildState.status.name,
+      graphBuildFinishedAt: inputs.graphBuildState.finishedAt,
+      graphBuildLastError: inputs.graphBuildState.lastError,
+      liveUpdateCursorRowId: inputs.liveUpdateMonitorState.lastMaxRowId,
+      liveUpdateLastChangeDetectedAt:
+          inputs.liveUpdateMonitorState.lastChangeDetected,
+      liveUpdateLastError: inputs.liveUpdateMonitorState.lastError,
     );
   }
 

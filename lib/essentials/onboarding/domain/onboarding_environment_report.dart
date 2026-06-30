@@ -88,6 +88,12 @@ class OnboardingEnvironmentReport {
     this.usingPersistedGraphProjectionFailure = false,
     this.shouldResetAppDatabasesBeforeImport = false,
     this.resetAppDatabasesReason,
+    this.graphBuildStatusLabel = 'unknown',
+    this.graphBuildFinishedAt,
+    this.graphBuildLastError,
+    this.liveUpdateCursorRowId,
+    this.liveUpdateLastChangeDetectedAt,
+    this.liveUpdateLastError,
   });
 
   final OnboardingEnvironmentState state;
@@ -110,6 +116,12 @@ class OnboardingEnvironmentReport {
   final bool usingPersistedGraphProjectionFailure;
   final bool shouldResetAppDatabasesBeforeImport;
   final String? resetAppDatabasesReason;
+  final String graphBuildStatusLabel;
+  final DateTime? graphBuildFinishedAt;
+  final String? graphBuildLastError;
+  final int? liveUpdateCursorRowId;
+  final DateTime? liveUpdateLastChangeDetectedAt;
+  final String? liveUpdateLastError;
 
   bool get hasPopulatedAppDatabases {
     return sourceScopedImportDatabase.hasData && conversationGraph.hasData;
