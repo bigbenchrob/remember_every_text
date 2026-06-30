@@ -58,7 +58,7 @@ void main() {
         expect(model.statusLabel, 'Execution Gate Busy');
         expect(
           model.summaryText,
-          contains('source-scoped import pipeline is currently busy'),
+          contains('already importing or preparing message data'),
         );
         expect(
           model.importButtonDetail,
@@ -126,7 +126,7 @@ void main() {
       expect(model.importButtonEnabled, isTrue);
       expect(
         model.importButtonDetail,
-        contains('Source IDs keep archive rows isolated'),
+        contains('Archive rows remain isolated'),
       );
       expect(
         model.archiveManagementSummaryLines,
@@ -208,24 +208,22 @@ void main() {
       );
       expect(
         result.preflightSummaryLines,
-        contains(
-          'Likely duplicates already in conversation graph: 1 GUID-backed source rows',
-        ),
+        contains('Likely already imported: 1 comparable source rows'),
       );
       expect(
         result.preflightSummaryLines,
-        contains('Likely new rows: 1 GUID-backed source rows'),
+        contains('Likely new rows: 1 comparable source rows'),
       );
       expect(
         result.dryRunSummaryLines,
         contains(
-          'Estimated new messages: 1 GUID-backed source rows not present in conversation graph',
+          'Estimated new messages: 1 comparable source rows not already imported',
         ),
       );
       expect(
         result.dryRunSummaryLines,
         contains(
-          'Estimated duplicates: 1 GUID-backed source rows already projected',
+          'Estimated duplicates: 1 comparable source rows already imported',
         ),
       );
       expect(result.activityLog[1].label, 'Dry run ready');

@@ -23,11 +23,11 @@ final class HistoricalArchivesSettingsCassettePayload
   const HistoricalArchivesSettingsCassettePayload({
     super.title = 'Historical Archives',
     super.bodyText =
-        'Older Messages folders may contain message records that are not present on this Mac today. MessageLens imports those records into source-scoped provenance, then projects them into the conversation graph and shared message evidence surfaces. Historical archive import is additive and does not replace current message data.',
+        'Older Messages folders may contain message records that are not present on this Mac today. MessageLens can add those messages to its browsing data without replacing current message data.',
     super.role = SidebarCassetteRole.contextSecondary,
     super.topSpacing = 0,
     super.footnote =
-        'Archive import adds historical Messages folders to the source-scoped graph without replacing current message data.',
+        'Archive import is additive and keeps current message data intact.',
     this.knownSources = const [],
   });
 

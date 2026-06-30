@@ -278,7 +278,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
       'Rows with missing GUIDs: waiting for folder selection',
       'Earliest message: waiting for folder selection',
       'Latest message: waiting for folder selection',
-      'Likely duplicates already in conversation graph: waiting for folder selection',
+      'Likely already imported: waiting for folder selection',
       'Likely new rows: waiting for folder selection',
     ],
     dryRunSummaryLines: [
@@ -287,7 +287,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
     ],
     resultSummaryLines: [
       'No archive import has run yet.',
-      'User-facing success appears after source-scoped archive import and graph projection complete.',
+      'Imported archive messages will become visible after MessageLens finishes preparing them.',
     ],
     activityLog: [
       HistoricalArchivesLogEntryViewModel(
@@ -308,20 +308,19 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
         detail: 'Waiting for a folder to be selected.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Normalizing records for source-scoped import',
+        label: 'Preparing archive records',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
         detail: 'No archive source has started yet.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Writing archive rows to source-scoped import',
+        label: 'Importing archive messages',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-        detail:
-            'Source-scoped import ingestion starts after you run archive import.',
+        detail: 'Archive import starts after you run Begin Import.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Projecting archive rows into conversation graph',
+        label: 'Preparing messages for browsing',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-        detail: 'Graph projection begins only after successful archive import.',
+        detail: 'Browsing preparation begins after archive import succeeds.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
         label: 'Rebuilding indexes/search/heatmap support tables',
@@ -373,7 +372,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       attachmentsStatusLabel: 'Checking...',
       resultSummaryLines: const [
         'No archive import has run yet.',
-        'User-facing success appears after source-scoped archive import and graph projection complete.',
+        'Imported archive messages will become visible after MessageLens finishes preparing them.',
       ],
       activityLog: [
         HistoricalArchivesLogEntryViewModel(
@@ -600,20 +599,20 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         status: HistoricalArchivesPreflightStatus.running,
         statusLabel: 'Import running',
         detail:
-            'Running source-scoped archive import for the selected source, then projecting it into the conversation graph.',
+            'Importing archive messages from the selected folder, then preparing them for browsing.',
       ),
       activityLog: [
         HistoricalArchivesLogEntryViewModel(
           label: 'Beginning import…',
           message:
-              'Starting source-scoped import for ${path.basename(selectedFolderPath)}.',
+              'Starting archive import for ${path.basename(selectedFolderPath)}.',
         ),
         ...state.activityLog,
       ],
       phases: _runningArchiveImportPhases(),
       resultSummaryLines: const [
         'Archive import is running.',
-        'Source-scoped import and graph projection must both finish before imported archive messages become visible in shared message evidence surfaces.',
+        'Imported archive messages will become visible after MessageLens finishes preparing them.',
       ],
     );
 
@@ -661,7 +660,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
           attachmentsStatusLabel: refreshedResult.attachmentsStatusLabel,
           preflightStatusLabel: 'Imported successfully',
           preflightDetail:
-              'Source-scoped archive import and graph projection completed successfully.',
+              'Archive import completed and messages were prepared for browsing.',
           totalMessages: refreshedResult.totalMessages,
           totalChats: refreshedResult.totalChats,
           totalHandles: refreshedResult.totalHandles,
@@ -683,7 +682,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
           HistoricalArchivesLogEntryViewModel(
             label: 'Import complete',
             message:
-                'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)} and refreshed graph-visible data.',
+                'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)} and refreshed browsing data.',
           ),
           ...refreshedState.activityLog,
         ],
@@ -692,7 +691,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         ),
         resultSummaryLines: [
           'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)}.',
-          'Source-scoped import and graph projection completed successfully.',
+          'Archive messages are ready to browse in MessageLens.',
         ],
       );
     } catch (error) {
@@ -755,7 +754,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         ],
         phases: _failedArchiveImportPhases(detail: detail),
         resultSummaryLines: [
-          'Archive import failed before graph projection completed.',
+          'Archive import failed before messages were ready to browse.',
           detail,
         ],
       );
@@ -847,7 +846,7 @@ buildHistoricalArchivesWorkflowPanelModel({
       workflowState,
     ),
     HistoricalArchivesExecutionGateStatus.busy =>
-      'The source-scoped import pipeline is currently busy. Historical Archives stays visible so you can inspect the workflow, but import cannot begin until the current pipeline owner releases the execution gate.',
+      'MessageLens is already importing or preparing message data. Historical Archives stays visible so you can inspect the workflow, but import cannot begin until the current task finishes.',
     HistoricalArchivesExecutionGateStatus.blocked =>
       'Message data maintenance is currently blocking new archive work. Historical Archives remains visible, but import cannot begin until maintenance completes and the execution gate becomes available again.',
   };
@@ -932,8 +931,7 @@ HistoricalArchivesExecutionGateViewModel _buildExecutionGateViewModel({
   return const HistoricalArchivesExecutionGateViewModel(
     status: HistoricalArchivesExecutionGateStatus.available,
     statusLabel: 'Available',
-    detail:
-        'No source import, graph projection, or reset flow currently owns the execution gate.',
+    detail: 'No other import, preparation, or reset task is running.',
   );
 }
 
@@ -980,7 +978,7 @@ String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
 String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
   return switch (workflowState.preflight.status) {
     HistoricalArchivesPreflightStatus.waitingForFolder =>
-      'Historical archive import is a durable, step-by-step workflow. Choose an older Messages folder, review preflight evidence, then run source-scoped import and graph projection before messages become visible in shared message evidence surfaces.',
+      'Historical archive import is a durable, step-by-step workflow. Choose an older Messages folder, review preflight evidence, then import it before messages become visible in MessageLens.',
     HistoricalArchivesPreflightStatus.running =>
       'Historical Archives is reading the selected source folder now. The workflow remains visible while source checks gather basic message, chat, handle, and GUID evidence.',
     HistoricalArchivesPreflightStatus.completeReadyToImport =>
@@ -1013,7 +1011,7 @@ String _availableImportButtonDetail(
     HistoricalArchivesPreflightStatus.running =>
       'Import stays disabled while Historical Archives is reading source structure and counts.',
     HistoricalArchivesPreflightStatus.completeReadyToImport =>
-      'Source checks are complete. Begin Import will run source-scoped archive import and refresh the conversation graph. Source IDs keep archive rows isolated from the live Messages source.',
+      'Source checks are complete. Begin Import will add archive messages and refresh browsing data. Archive rows remain isolated from the live Messages source.',
     HistoricalArchivesPreflightStatus.failed =>
       'Import stays disabled until the selected folder passes source preflight.',
   };
@@ -1170,23 +1168,23 @@ preflightHistoricalArchivesFolder({
       if (inspection.dateRangeUnavailableReason case final reason?)
         'Date range diagnostic: $reason',
       if (dryRunEstimate.isAvailable)
-        'Likely duplicates already in conversation graph: ${dryRunEstimate.duplicateGuidCount} GUID-backed source rows'
+        'Likely already imported: ${dryRunEstimate.duplicateGuidCount} comparable source rows'
       else
-        'Likely duplicates already in conversation graph: unavailable',
+        'Likely already imported: unavailable',
       if (dryRunEstimate.isAvailable)
-        'Likely new rows: ${dryRunEstimate.newGuidCount} GUID-backed source rows'
+        'Likely new rows: ${dryRunEstimate.newGuidCount} comparable source rows'
       else
         'Likely new rows: unavailable',
     ],
     dryRunSummaryLines: [
       if (dryRunEstimate.isAvailable)
-        'Estimated new messages: ${dryRunEstimate.newGuidCount} GUID-backed source rows not present in conversation graph'
+        'Estimated new messages: ${dryRunEstimate.newGuidCount} comparable source rows not already imported'
       else
-        'Estimated new messages: conversation graph comparison unavailable',
+        'Estimated new messages: comparison unavailable',
       if (dryRunEstimate.isAvailable)
-        'Estimated duplicates: ${dryRunEstimate.duplicateGuidCount} GUID-backed source rows already projected'
+        'Estimated duplicates: ${dryRunEstimate.duplicateGuidCount} comparable source rows already imported'
       else
-        'Estimated duplicates: conversation graph comparison unavailable',
+        'Estimated duplicates: comparison unavailable',
     ],
     activityLog: [
       HistoricalArchivesLogEntryViewModel(
@@ -1198,7 +1196,7 @@ preflightHistoricalArchivesFolder({
             ? 'Dry run ready'
             : 'Dry run unavailable',
         message: dryRunEstimate.isAvailable
-            ? 'Compared ${dryRunEstimate.comparableGuidCount} GUID-backed source rows against the conversation graph.'
+            ? 'Compared ${dryRunEstimate.comparableGuidCount} source rows against existing imported messages.'
             : dryRunEstimate.unavailableReason!,
       ),
       const HistoricalArchivesLogEntryViewModel(
@@ -1214,18 +1212,17 @@ preflightHistoricalArchivesFolder({
         detail: 'Archive source metadata and counts were read successfully.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Normalizing records for source-scoped import',
+        label: 'Preparing archive records',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
         detail: 'Normalization begins when you run archive import.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Writing archive rows to source-scoped import',
+        label: 'Importing archive messages',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-        detail:
-            'Source-scoped import ingestion begins when you run archive import.',
+        detail: 'Archive import begins when you run Begin Import.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Projecting archive rows into conversation graph',
+        label: 'Preparing messages for browsing',
         status: HistoricalArchivesWorkflowPhaseStatus.waiting,
         detail: 'Graph projection begins only after successful archive import.',
       ),
@@ -1326,7 +1323,7 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
       'Rows with missing GUIDs: unavailable',
       'Earliest message: unavailable',
       'Latest message: unavailable',
-      'Likely duplicates already in conversation graph: unavailable',
+      'Likely already imported: unavailable',
       'Likely new rows: unavailable',
     ],
     dryRunSummaryLines: const [
@@ -1346,17 +1343,17 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
         detail: 'Archive source validation failed.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Normalizing records for source-scoped import',
+        label: 'Preparing archive records',
         status: HistoricalArchivesWorkflowPhaseStatus.skipped,
         detail: 'Skipped until source preflight succeeds.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Writing archive rows to source-scoped import',
+        label: 'Importing archive messages',
         status: HistoricalArchivesWorkflowPhaseStatus.skipped,
         detail: 'Skipped until source preflight succeeds.',
       ),
       HistoricalArchivesWorkflowPhaseViewModel(
-        label: 'Projecting archive rows into conversation graph',
+        label: 'Preparing messages for browsing',
         status: HistoricalArchivesWorkflowPhaseStatus.skipped,
         detail: 'Skipped until source preflight succeeds.',
       ),
@@ -1430,17 +1427,17 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningPreflightPhases() {
       detail: 'Inspecting folder structure and source counts.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records for source-scoped import',
+      label: 'Preparing archive records',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Waiting for source checks to complete.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Writing archive rows to source-scoped import',
+      label: 'Importing archive messages',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Waiting for source checks to complete.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Projecting archive rows into conversation graph',
+      label: 'Preparing messages for browsing',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
       detail: 'Waiting for source checks to complete.',
     ),
@@ -1526,30 +1523,29 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveImportPhases() {
       detail: 'Selected archive metadata was already validated in preflight.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records for source-scoped import',
+      label: 'Preparing archive records',
       status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'Source-scoped importers are reading archive source tables now.',
+      detail: 'MessageLens is reading archive source tables now.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Writing archive rows to source-scoped import',
+      label: 'Importing archive messages',
       status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail:
-          'Archive rows are being written into the source-scoped import ledger.',
+      detail: 'Archive messages are being imported into MessageLens.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Projecting archive rows into conversation graph',
+      label: 'Preparing messages for browsing',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Graph projection starts after source-scoped import succeeds.',
+      detail: 'Browsing preparation starts after archive import succeeds.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Rebuilding indexes/search/heatmap support tables',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Waiting for graph projection to complete.',
+      detail: 'Waiting for browsing preparation to complete.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Refreshing shared evidence surfaces',
       status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Waiting for graph projection to complete.',
+      detail: 'Waiting for browsing preparation to complete.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Complete',
@@ -1569,17 +1565,17 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveImportPhases({
       detail: 'Selected archive metadata was already validated in preflight.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records for source-scoped import',
+      label: 'Preparing archive records',
       status: HistoricalArchivesWorkflowPhaseStatus.failed,
       detail: detail,
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Writing archive rows to source-scoped import',
+      label: 'Importing archive messages',
       status: HistoricalArchivesWorkflowPhaseStatus.skipped,
       detail: 'Skipped because archive import did not complete successfully.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Projecting archive rows into conversation graph',
+      label: 'Preparing messages for browsing',
       status: HistoricalArchivesWorkflowPhaseStatus.skipped,
       detail: 'Skipped because archive import did not complete successfully.',
     ),
@@ -1611,20 +1607,20 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _completedArchiveImportPhases({
       detail: 'Selected archive metadata was validated successfully.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Normalizing records for source-scoped import',
+      label: 'Preparing archive records',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Source-scoped importers normalized archive rows successfully.',
+      detail: 'Archive records were prepared successfully.',
     ),
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Writing archive rows to source-scoped import',
+      label: 'Importing archive messages',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
       detail:
-          'Source-scoped import completed and wrote $importedMessageCount messages for this archive source.',
+          'Archive import wrote $importedMessageCount messages for this archive source.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Projecting archive rows into conversation graph',
+      label: 'Preparing messages for browsing',
       status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Conversation graph projection completed successfully.',
+      detail: 'Messages were prepared for browsing successfully.',
     ),
     const HistoricalArchivesWorkflowPhaseViewModel(
       label: 'Rebuilding indexes/search/heatmap support tables',

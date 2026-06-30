@@ -404,7 +404,7 @@ class _ShellHeroCard extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Import historical Messages folders into the source-scoped graph without replacing current message data.',
+              'Import historical Messages folders without replacing current message data.',
               style: typography.title1.copyWith(
                 color: colors.content.textPrimary,
               ),

@@ -99,7 +99,7 @@ void main() {
 
       expect(
         find.text(
-          'Import historical Messages folders into the source-scoped graph without replacing current message data.',
+          'Import historical Messages folders without replacing current message data.',
         ),
         findsOneWidget,
       );
