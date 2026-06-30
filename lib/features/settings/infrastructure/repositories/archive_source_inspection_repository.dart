@@ -35,13 +35,12 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
   Future<ArchiveSourceInspection> inspectFolder({
     required String folderPath,
   }) async {
-    final selectedDirectory = Directory(folderPath);
     final sourceLabel = path.basename(folderPath);
     final chatDbPath = path.join(folderPath, 'chat.db');
     final attachmentsPath = path.join(folderPath, 'Attachments');
     final attachmentsDirectory = Directory(attachmentsPath);
 
-    if (!selectedDirectory.existsSync()) {
+    if (!_isDirectory(folderPath)) {
       return ArchiveSourceInspection(
         folderPath: folderPath,
         sourceLabel: sourceLabel,
@@ -56,13 +55,13 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
       );
     }
 
-    if (!File(chatDbPath).existsSync()) {
+    if (!_isRegularFile(chatDbPath)) {
       return ArchiveSourceInspection(
         folderPath: folderPath,
         sourceLabel: sourceLabel,
         chatDbPath: chatDbPath,
         chatDbStatusLabel: 'Missing',
-        attachmentsStatusLabel: attachmentsDirectory.existsSync()
+        attachmentsStatusLabel: _isDirectory(attachmentsDirectory.path)
             ? 'Found'
             : 'Not found',
         isReadable: false,
@@ -106,7 +105,7 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
           sourceLabel: sourceLabel,
           chatDbPath: chatDbPath,
           chatDbStatusLabel: 'Found and readable',
-          attachmentsStatusLabel: attachmentsDirectory.existsSync()
+          attachmentsStatusLabel: _isDirectory(attachmentsDirectory.path)
               ? 'Found'
               : 'Not found',
           isReadable: true,
@@ -132,7 +131,7 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
         sourceLabel: sourceLabel,
         chatDbPath: chatDbPath,
         chatDbStatusLabel: 'Read failed',
-        attachmentsStatusLabel: attachmentsDirectory.existsSync()
+        attachmentsStatusLabel: _isDirectory(attachmentsDirectory.path)
             ? 'Found'
             : 'Not found',
         isReadable: false,
@@ -143,6 +142,16 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
       );
     }
   }
+}
+
+bool _isDirectory(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.directory;
+}
+
+bool _isRegularFile(String filePath) {
+  return FileSystemEntity.typeSync(filePath, followLinks: false) ==
+      FileSystemEntityType.file;
 }
 
 int _readCount(Database database, String sql) {
