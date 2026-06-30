@@ -4087,6 +4087,9 @@ retention criteria.
 - Hardened archive stats reads so physical archive-size totals walk the archive
   directory without following symlinks and ignore symlinked archive roots or
   nested link entries.
+- Hardened video thumbnail cache reads/writes so thumbnail generation refuses
+  symlinked source media, symlinked cache roots, and symlinked thumbnail
+  targets instead of treating redirected files as cache evidence.
 
 ### Vocabulary Note
 
