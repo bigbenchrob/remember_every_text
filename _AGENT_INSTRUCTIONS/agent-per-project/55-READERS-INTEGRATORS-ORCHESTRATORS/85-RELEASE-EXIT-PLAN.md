@@ -306,6 +306,99 @@ Verification:
 - manual smoke checklist
 - `flutter build macos` when ready for release candidate
 
+### Manual Smoke Checklist
+
+Run this checklist against the real development install before declaring a
+release candidate.
+
+#### Startup And Readiness
+
+- Launch MessageLens from a closed app state.
+- Confirm the app opens without a developer panel or manual import requirement.
+- Open the readiness/status surface and confirm:
+  - source Messages access is available;
+  - AddressBook access is available;
+  - imported message data is ready;
+  - conversation browsing data is ready;
+  - overlay/user settings storage is available;
+  - attachment archive directory is available.
+- Confirm retired `macos_import.db` / `working.db` presence or absence does not
+  affect readiness.
+
+#### Ordinary Browsing
+
+- Open Conversations from the top menu.
+- Confirm conversation signatures load and selecting one opens messages.
+- Confirm Favorites display consistently where present.
+- Open Contacts from the top menu.
+- Select a known contact with multiple handles.
+- Confirm All Messages shows the full heatmap and message evidence.
+- Switch to By Conversation and confirm the contact's conversations load.
+- Select a specific handle and confirm:
+  - heatmap reflects only that handle scope;
+  - message header names the contact and selected handle clearly;
+  - messages remain responsive.
+
+#### Search
+
+- Search within a contact message scope for a known recent term.
+- Confirm matching terms highlight visibly.
+- Confirm match navigation scrolls to the selected match.
+- Search within a conversation scope for a known term.
+- Confirm the list scopes to matching evidence and the header reports matches.
+- Run global/search-all if exposed and confirm results open through the same
+  message evidence presentation.
+
+#### Live Updates
+
+- Send a plain text message to a known contact.
+- Wait for the automatic update cycle.
+- Confirm the new message appears without pressing the manual import button.
+- If scrolled away from the end, confirm the viewport does not jump and the new
+  message indicator appears.
+- Send a message with an attachment.
+- Confirm the message appears and the attachment evidence renders or shows a
+  calm unavailable/pending state.
+
+#### Attachments And Archive
+
+- Open a known conversation containing archived images.
+- Confirm image previews render from the app-owned archive.
+- Open a known video attachment if available.
+- Open a known URL/plugin payload preview.
+- Confirm missing/unavailable attachments remain visible as evidence rather than
+  disappearing.
+- Open graph/status health and confirm attachment archive readiness has no
+  release-blocking unexplained issue.
+
+#### Historical Archives
+
+- Open Historical Archives.
+- Confirm normal user mode shows choose/preflight/import controls but does not
+  show destructive developer removal controls.
+- Choose a known historical Messages folder if one is part of the release test.
+- Confirm preflight reads source counts and dry-run estimates.
+- Run archive import only against a safe selected test source.
+- Confirm imported archive messages become searchable/browsable through normal
+  message evidence surfaces.
+
+#### Recovery And Diagnostics
+
+- Open unfamiliar/recovered message surfaces if still exposed.
+- Confirm they render through the shared message evidence surface.
+- Open diagnostic/status panels.
+- Confirm no panel spins indefinitely.
+- Confirm report language explains warnings without requiring graph-migration
+  knowledge.
+
+#### Build Readiness
+
+- Run `flutter analyze`.
+- Run focused tests for touched release areas.
+- Run the architecture tripwire test once before release candidate.
+- Build macOS only when ready to produce a release candidate, preserving the
+  bundle id and signing path required for Full Disk Access continuity.
+
 ## Recommended Execution Order
 
 1. Readiness evaluation.
