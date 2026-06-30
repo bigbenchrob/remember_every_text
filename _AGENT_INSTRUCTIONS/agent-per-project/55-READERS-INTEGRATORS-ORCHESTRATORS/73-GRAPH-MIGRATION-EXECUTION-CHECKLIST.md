@@ -4090,6 +4090,9 @@ retention criteria.
 - Hardened video thumbnail cache reads/writes so thumbnail generation refuses
   symlinked source media, symlinked cache roots, and symlinked thumbnail
   targets instead of treating redirected files as cache evidence.
+- Hardened Historical Archives source inspection so candidate source folders,
+  `chat.db`, and `Attachments` are classified using non-following filesystem
+  checks; symlinked sources no longer masquerade as import-ready archives.
 
 ### Vocabulary Note
 
