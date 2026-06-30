@@ -4078,6 +4078,9 @@ retention criteria.
 - Hardened derived-message-data reset cleanup so database base-file existence
   and deletion only consider regular files, leaving symlinked database-looking
   paths untouched.
+- Hardened archive availability reads so overlay/archive compatibility records
+  only report `archiveFileExists` for regular files and do not treat symlinked
+  archive paths as available attachment evidence.
 
 ### Vocabulary Note
 
