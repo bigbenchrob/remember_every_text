@@ -4084,6 +4084,9 @@ retention criteria.
 - Hardened graph-health archive file audits so current/historical archive
   availability counts require bounded archive-relative paths and regular files;
   symlinked or parent-escaping archive rows no longer inflate recovery counts.
+- Hardened archive stats reads so physical archive-size totals walk the archive
+  directory without following symlinks and ignore symlinked archive roots or
+  nested link entries.
 
 ### Vocabulary Note
 
