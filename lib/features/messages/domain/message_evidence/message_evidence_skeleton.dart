@@ -1,3 +1,5 @@
+import '../../../../core/util/date_label_formatter.dart';
+
 class MessageEvidenceSkeletonEntry {
   const MessageEvidenceSkeletonEntry({
     required this.messageId,
@@ -64,6 +66,5 @@ class MessageEvidenceTimelineSkeleton {
 }
 
 String _monthKey(DateTime value) {
-  return '${value.year.toString().padLeft(4, '0')}-'
-      '${value.month.toString().padLeft(2, '0')}';
+  return DateLabelFormatter.monthKey(value);
 }

@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
+import '../../../../../config/theme/widgets/buttons/app_header_action_button.dart';
 import '../../../../../essentials/debug/feature_level_providers.dart'
     show DeveloperModeValue, developerModeProvider;
 import '../../../application/message_evidence/message_evidence_spine_provider.dart';
@@ -9,64 +11,133 @@ import '../../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../view_model/shared/display_widgets/new_display_widgets.dart';
 import 'message_attachment_evidence_tiles.dart';
-import 'message_evidence_badges.dart';
 
-class MessageEvidenceRow extends ConsumerWidget {
+class MessageEvidenceRow extends ConsumerStatefulWidget {
   const MessageEvidenceRow({
     required this.message,
     required this.evidenceScope,
     this.isAnchorMessage = false,
+    this.correspondencePulseId = 0,
     this.searchQuery = '',
+    this.onOpenConversationContext,
     super.key,
   });
 
   final MessageEvidenceRowData message;
   final MessageEvidenceScope evidenceScope;
   final bool isAnchorMessage;
+  final int correspondencePulseId;
   final String searchQuery;
+  final VoidCallback? onOpenConversationContext;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MessageEvidenceRow> createState() => _MessageEvidenceRowState();
+}
+
+class _MessageEvidenceRowState extends ConsumerState<MessageEvidenceRow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 760),
+  );
+  late final Animation<double> _pulse = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 0,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)),
+      weight: 150,
+    ),
+    TweenSequenceItem(tween: ConstantTween<double>(1), weight: 360),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: 0,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)),
+      weight: 250,
+    ),
+  ]).animate(_pulseController);
+  int _lastPulseId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastPulseId = widget.correspondencePulseId;
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageEvidenceRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.isAnchorMessage) {
+      _pulseController.stop();
+      _pulseController.value = 0;
+      _lastPulseId = widget.correspondencePulseId;
+      return;
+    }
+
+    if (widget.correspondencePulseId != _lastPulseId) {
+      _lastPulseId = widget.correspondencePulseId;
+      if (_motionDisabled(context)) {
+        _pulseController.value = 0;
+        return;
+      }
+      _pulseController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final developerMode = ref.watch(developerModeProvider).valueOrNull;
     final isDeveloperMode = developerMode == DeveloperModeValue.developer;
-    final senderLabel = _conversationMessageSenderLabel(message);
+    final senderLabel = _conversationMessageSenderLabel(widget.message);
     final senderHandleLabel = _senderHandleLabelForScope(
-      scope: evidenceScope,
-      message: message,
+      scope: widget.evidenceScope,
+      message: widget.message,
       isDeveloperMode: isDeveloperMode,
     );
-    final associatedMessageId = message.associatedMessageId;
-    final semanticBadges = <String>[
-      if (associatedMessageId != null) 'associated $associatedMessageId',
-      ..._messageSemanticBadges(message),
-    ];
     final row = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TextMessageTile(
-          isMe: message.isFromMe,
-          text: _messageDisplayText(message.text),
+          isMe: widget.message.isFromMe,
+          text: _messageDisplayText(widget.message.text),
           sender: senderLabel,
           senderHandleLabel: senderHandleLabel,
-          sentAt: _messageDate(message.dateUtc),
-          messageId: message.messageId,
-          highlight: searchQuery,
+          sentAt: _messageDate(widget.message.dateUtc),
+          messageId: widget.message.messageId,
+          highlight: widget.searchQuery,
           layout: MessageLayout.fullWidth,
         ),
-        MessageEvidenceBadgeStrip(labels: semanticBadges),
-        if (message.attachmentCount > 0) ...[
+        if (widget.message.attachmentCount > 0) ...[
           const SizedBox(height: 2),
           _MessageAttachments(
-            evidenceScope: evidenceScope,
-            messageId: message.messageId,
-            expectedAttachmentCount: message.attachmentCount,
-            isFromMe: message.isFromMe,
+            evidenceScope: widget.evidenceScope,
+            messageId: widget.message.messageId,
+            expectedAttachmentCount: widget.message.attachmentCount,
+            isFromMe: widget.message.isFromMe,
             sender: senderLabel,
             senderHandleLabel: senderHandleLabel,
-            sentAt: _messageDate(message.dateUtc),
-            messageText: message.text,
+            sentAt: _messageDate(widget.message.dateUtc),
+            messageText: widget.message.text,
+          ),
+        ],
+        if (widget.onOpenConversationContext != null) ...[
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerRight,
+            child: AppHeaderActionButton(
+              icon: CupertinoIcons.arrowshape_turn_up_right,
+              label: 'In conversation',
+              onPressed: widget.onOpenConversationContext!,
+            ),
           ),
         ],
       ],
@@ -74,19 +145,53 @@ class MessageEvidenceRow extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: isAnchorMessage
-              ? Border.all(color: colors.accents.primary, width: 2)
-              : null,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(isAnchorMessage ? 4 : 0),
-          child: row,
-        ),
+      child: AnimatedBuilder(
+        animation: _pulse,
+        builder: (context, child) {
+          final pulse = widget.isAnchorMessage ? _pulse.value : 0.0;
+          final persistentAlpha = widget.isAnchorMessage ? 1.0 : 0.0;
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              color: widget.isAnchorMessage
+                  ? colors.messagePanels.contextAnchorBackground.withValues(
+                      alpha: 0.10 + (0.12 * pulse),
+                    )
+                  : null,
+              border: widget.isAnchorMessage
+                  ? Border.all(
+                      color: colors.messagePanels.contextAnchorBorder
+                          .withValues(alpha: 0.55 + (0.35 * pulse)),
+                      width: 1.25 + (1.15 * pulse),
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: widget.isAnchorMessage
+                  ? [
+                      BoxShadow(
+                        color: colors.messagePanels.contextAnchorGlow
+                            .withValues(
+                              alpha: (0.18 * persistentAlpha) + (0.44 * pulse),
+                            ),
+                        blurRadius: 5 + (12 * pulse),
+                        spreadRadius: 0.5 + (1.8 * pulse),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(widget.isAnchorMessage ? 4 : 0),
+              child: child,
+            ),
+          );
+        },
+        child: row,
       ),
     );
+  }
+
+  bool _motionDisabled(BuildContext context) {
+    final mediaQuery = MediaQuery.maybeOf(context);
+    return mediaQuery?.disableAnimations ?? false;
   }
 }
 
@@ -199,35 +304,4 @@ String _messageSenderLabel(MessageEvidenceRowData message) {
     return 'handle ${message.senderHandleId}';
   }
   return 'unknown sender';
-}
-
-List<String> _messageSemanticBadges(MessageEvidenceRowData message) {
-  final badges = <String>[];
-  final semanticKind = message.semanticKind?.trim();
-  if (semanticKind != null && semanticKind.isNotEmpty) {
-    badges.add(semanticKind);
-  }
-  final itemKind = message.itemKind?.trim();
-  if (itemKind != null && itemKind.isNotEmpty) {
-    badges.add(itemKind);
-  }
-  if (message.isSystemMessage) {
-    badges.add('system');
-  }
-  if (message.isSparseArtifact) {
-    badges.add('sparse');
-  }
-  if (message.hasAttributedBodySource) {
-    badges.add('attributed body');
-  }
-  if (message.hasMessageSummaryInfo) {
-    badges.add('summary info');
-  }
-  if (message.hasPayloadDataSource) {
-    badges.add('payload');
-  }
-  if (message.errorCode != null) {
-    badges.add('error ${message.errorCode}');
-  }
-  return badges;
 }

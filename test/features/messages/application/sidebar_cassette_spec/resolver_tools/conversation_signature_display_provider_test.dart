@@ -146,7 +146,7 @@ void main() {
     final groupMatches = await container.read(
       conversationSignatureDisplayProvider(
         filter: ConversationSignatureFilter.groups,
-        sort: ConversationSignatureSort.mostActiveRecently,
+        sort: ConversationSignatureSort.mostRecentlyUpdated,
       ).future,
     );
     expect(groupMatches.map((signature) => signature.conversationId), [2, 3]);
@@ -169,6 +169,90 @@ void main() {
       1,
       3,
     ]);
+  });
+
+  test('applies revised conversation sort semantics', () async {
+    final container = ProviderContainer(
+      overrides: [
+        conversationSignaturesProvider(limit: 500).overrideWith((ref) async {
+          return const [
+            ConversationSignature(
+              conversationId: 1,
+              title: 'recent short',
+              participantLabels: ['+15551'],
+              participantCount: 1,
+              isGroup: false,
+              messageCount: 20,
+              attachmentCount: 0,
+              firstMessageAtUtc: '2026-05-01T10:00:00.000Z',
+              lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+              lastMessageText: 'recent',
+              activityMonths: [],
+            ),
+            ConversationSignature(
+              conversationId: 2,
+              title: 'long large',
+              participantLabels: ['+15552'],
+              participantCount: 1,
+              isGroup: false,
+              messageCount: 1500,
+              attachmentCount: 0,
+              firstMessageAtUtc: '2024-01-01T10:00:00.000Z',
+              lastMessageAtUtc: '2026-05-19T10:00:00.000Z',
+              lastMessageText: 'long',
+              activityMonths: [],
+            ),
+            ConversationSignature(
+              conversationId: 3,
+              title: 'old dormant',
+              participantLabels: ['+15553'],
+              participantCount: 1,
+              isGroup: false,
+              messageCount: 800,
+              attachmentCount: 0,
+              firstMessageAtUtc: '2025-01-01T10:00:00.000Z',
+              lastMessageAtUtc: '2025-01-02T10:00:00.000Z',
+              lastMessageText: 'old',
+              activityMonths: [],
+            ),
+          ];
+        }),
+        displayIdentityResolverProvider.overrideWith((ref) async {
+          return const DisplayIdentityResolver(identitiesByHandleKey: {});
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    Future<List<int>> orderFor(ConversationSignatureSort sort) async {
+      final signatures = await container.read(
+        conversationSignatureDisplayProvider(sort: sort).future,
+      );
+      return signatures.map((signature) => signature.conversationId).toList();
+    }
+
+    expect(await orderFor(ConversationSignatureSort.mostRecentlyUpdated), [
+      1,
+      2,
+      3,
+    ]);
+    expect(await orderFor(ConversationSignatureSort.mostTotalMessages), [
+      2,
+      3,
+      1,
+    ]);
+    expect(await orderFor(ConversationSignatureSort.byDateOfCreation), [
+      2,
+      3,
+      1,
+    ]);
+    expect(await orderFor(ConversationSignatureSort.startedMostRecently), [
+      1,
+      3,
+      2,
+    ]);
+    expect(await orderFor(ConversationSignatureSort.longestRunning), [2, 1, 3]);
+    expect(await orderFor(ConversationSignatureSort.dormant), [3, 2, 1]);
   });
 
   test(

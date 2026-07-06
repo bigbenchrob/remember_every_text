@@ -7,6 +7,8 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
+import '../../../../../core/util/count_label_formatter.dart';
+import '../../../../../core/util/date_label_formatter.dart';
 import '../../../../../essentials/conversation_graph/feature_level_providers.dart'
     show conversationFavouritesControllerProvider;
 import '../../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
@@ -14,8 +16,7 @@ import '../../../../../essentials/conversation_graph/presentation/widgets/conver
 import '../../../../../essentials/sidebar/feature_level_providers.dart'
     show sidebarFlowProvider;
 import '../../../../../essentials/sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
-import '../../../domain/calendar_heatmap_timeline_data.dart';
-import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
+import '../../../presentation/widgets/conversation_signature_card_presentation.dart';
 import '../resolver_tools/conversation_navigation_actions_provider.dart';
 import '../resolver_tools/conversation_signature_display_provider.dart';
 import '../resolver_tools/conversation_signature_preferences_actions_provider.dart';
@@ -51,139 +52,121 @@ class _ConversationSignaturesWidgetState
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final cardStyle = _conversationSignatureCardStyle(colors, typography);
+    final cardStyle = conversationSignatureCardStyle(colors, typography);
     final preferences = ref.watch(
       conversationSignaturePreferencesControllerProvider,
     );
     final favourites = ref.watch(conversationFavouritesControllerProvider);
     final favouriteConversationIds = favourites.coreConversationIds;
-    final favouriteSignaturesAsync = ref.watch(
-      favouriteConversationSignatureDisplayProvider(
-        conversationIds: favouriteConversationIds,
-      ),
-    );
-    final signaturesAsync = ref.watch(
-      conversationSignatureDisplayProvider(
-        searchQuery: _searchQuery,
-        filter: preferences.filter,
-        sort: preferences.sort,
-        excludedFavouriteConversationIds: favouriteConversationIds,
-      ),
-    );
     final selectedConversationId = ref.watch(
       sidebarFlowProvider.select((state) => state.selectedConversationId),
     );
+    final browseSignaturesAsync =
+        preferences.mode == ConversationSignatureMode.browse
+        ? ref.watch(
+            conversationSignatureDisplayProvider(
+              searchQuery: _searchQuery,
+              filter: preferences.filter,
+              sort: preferences.sort,
+            ),
+          )
+        : null;
+    final isSortEnabled =
+        browseSignaturesAsync?.maybeWhen(
+          data: (signatures) => signatures.length > 6,
+          orElse: () => true,
+        ) ??
+        true;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        favouriteSignaturesAsync.when(
-          data: (favouriteSignatures) {
-            if (favouriteSignatures.isEmpty) {
-              return const SizedBox.shrink();
-            }
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: _conversationSignatureListInset,
-              ),
-              child: _FavouriteConversationSection(
-                signatures: favouriteSignatures,
-                selectedConversationId: selectedConversationId,
-              ),
-            );
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (error, _) => Padding(
-            padding: const EdgeInsets.fromLTRB(
-              _conversationSignatureListInset,
-              0,
-              _conversationSignatureListInset,
-              AppSpacing.lg,
-            ),
-            child: _ConversationSignatureStatus(
-              message: 'Unable to load favourites. $error',
-              colors: colors,
-              typography: typography,
-            ),
-          ),
-        ),
-        _ConversationSignatureControls(
-          searchController: _searchController,
-          filter: preferences.filter,
-          sort: preferences.sort,
-          onSearchChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-            });
-          },
-          onFilterChanged: (value) {
+        _ConversationSignatureModeToggle(
+          mode: preferences.mode,
+          onChanged: (mode) {
             unawaited(
               ref
                   .read(
                     conversationSignaturePreferencesActionsProvider.notifier,
                   )
-                  .setFilter(value),
-            );
-          },
-          onSortChanged: (value) {
-            unawaited(
-              ref
-                  .read(
-                    conversationSignaturePreferencesActionsProvider.notifier,
-                  )
-                  .setSort(value),
+                  .setMode(mode),
             );
           },
         ),
         const SizedBox(height: AppSpacing.lg),
+        if (preferences.mode == ConversationSignatureMode.browse) ...[
+          _ConversationSignatureControls(
+            searchController: _searchController,
+            filter: preferences.filter,
+            sort: preferences.sort,
+            isSortEnabled: isSortEnabled,
+            onSearchChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+            onFilterChanged: (value) {
+              unawaited(
+                ref
+                    .read(
+                      conversationSignaturePreferencesActionsProvider.notifier,
+                    )
+                    .setFilter(value),
+              );
+            },
+            onSortChanged: (value) {
+              unawaited(
+                ref
+                    .read(
+                      conversationSignaturePreferencesActionsProvider.notifier,
+                    )
+                    .setSort(value),
+              );
+            },
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: _conversationSignatureListInset,
             ),
-            child: signaturesAsync.when(
-              data: (signatures) {
-                if (signatures.isEmpty) {
-                  return const Center(
-                    child: Text('No matching conversations.'),
-                  );
-                }
-
-                return ListView.separated(
-                  itemCount: signatures.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 7),
-                  itemBuilder: (context, index) {
-                    final signature = signatures[index];
-                    return ConversationSignatureCard(
-                      signature: _toCardData(signature),
-                      style: cardStyle,
-                      monthColorForMessageCount:
-                          _conversationMonthColorForMessageCount,
-                      isSelected:
-                          signature.conversationId == selectedConversationId,
-                      trailing: ConversationFavouriteButton(
-                        conversationId: signature.conversationId,
+            child: preferences.mode == ConversationSignatureMode.favourites
+                ? _ConversationSignatureListAsync(
+                    signaturesAsync: ref.watch(
+                      favouriteConversationSignatureDisplayProvider(
+                        conversationIds: favouriteConversationIds,
                       ),
-                      onPressed: () {
-                        ref
-                            .read(
-                              conversationNavigationActionsProvider.notifier,
-                            )
-                            .selectConversation(
-                              conversationId: signature.conversationId,
-                            );
-                      },
-                    );
-                  },
-                );
-              },
-              loading: () =>
-                  const Center(child: Text('Loading conversations...')),
-              error: (error, _) => Center(
-                child: Text('Unable to load conversation signatures. $error'),
-              ),
-            ),
+                    ),
+                    emptyMessage:
+                        'No favourite conversations yet.\n'
+                        'Click the star beside a conversation to add it here.',
+                    loadingMessage: 'Loading favourites...',
+                    errorMessagePrefix: 'Unable to load favourites.',
+                    selectedConversationId: selectedConversationId,
+                    cardStyle: favouriteConversationSignatureCardStyle(
+                      colors,
+                      typography,
+                    ),
+                  )
+                : _ConversationSignatureListAsync(
+                    signaturesAsync: browseSignaturesAsync!,
+                    titleContextForSignature: _titleContextForSort(
+                      preferences.sort,
+                    ),
+                    summaryHighlightForSignature: _summaryHighlightForSort(
+                      preferences.sort,
+                    ),
+                    highlightedMonthForSignature: _highlightedMonthForSort(
+                      preferences.sort,
+                    ),
+                    emptyMessage: 'No matching conversations.',
+                    loadingMessage: 'Loading conversations...',
+                    errorMessagePrefix:
+                        'Unable to load conversation signatures.',
+                    selectedConversationId: selectedConversationId,
+                    cardStyle: cardStyle,
+                  ),
           ),
         ),
       ],
@@ -214,74 +197,129 @@ class _ConversationSignatureStatus extends StatelessWidget {
   }
 }
 
-class _FavouriteConversationSection extends ConsumerWidget {
-  const _FavouriteConversationSection({
-    required this.signatures,
+class _ConversationSignatureListAsync extends ConsumerWidget {
+  const _ConversationSignatureListAsync({
+    required this.signaturesAsync,
+    required this.emptyMessage,
+    required this.loadingMessage,
+    required this.errorMessagePrefix,
     required this.selectedConversationId,
+    required this.cardStyle,
+    this.summaryHighlightForSignature,
+    this.highlightedMonthForSignature,
+    this.titleContextForSignature,
   });
 
-  final List<ConversationSignatureDisplayModel> signatures;
+  final AsyncValue<List<ConversationSignatureDisplayModel>> signaturesAsync;
+  final String emptyMessage;
+  final String loadingMessage;
+  final String errorMessagePrefix;
   final int? selectedConversationId;
+  final ConversationSignatureCardStyle cardStyle;
+  final ConversationSignatureSummaryHighlight Function(
+    ConversationSignatureDisplayModel signature,
+  )?
+  summaryHighlightForSignature;
+  final ConversationSignatureMonthMarker? Function(
+    ConversationSignatureDisplayModel signature,
+  )?
+  highlightedMonthForSignature;
+  final String? Function(ConversationSignatureDisplayModel signature)?
+  titleContextForSignature;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final cardStyle = _favouriteConversationSignatureCardStyle(
-      colors,
-      typography,
-    );
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 2, bottom: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Favourites',
-                    style: typography.caption.copyWith(
-                      color: colors.content.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Text(
-                  'Core',
-                  style: typography.caption.copyWith(
-                    color: colors.content.textTertiary.withValues(alpha: 0.68),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+    return signaturesAsync.when(
+      data: (signatures) {
+        if (signatures.isEmpty) {
+          return Center(
+            child: _ConversationSignatureStatus(
+              message: emptyMessage,
+              colors: colors,
+              typography: typography,
             ),
-          ),
-          for (var index = 0; index < signatures.length; index++) ...[
-            if (index > 0) const SizedBox(height: 5),
-            ConversationSignatureCard(
-              signature: _toCardData(signatures[index]),
+          );
+        }
+
+        return ListView.separated(
+          itemCount: signatures.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 7),
+          itemBuilder: (context, index) {
+            final signature = signatures[index];
+            return ConversationSignatureCard(
+              signature: conversationSignatureCardDataFromDisplay(
+                signature,
+                titleContextLabel: titleContextForSignature?.call(signature),
+                summaryHighlight:
+                    summaryHighlightForSignature?.call(signature) ??
+                    ConversationSignatureSummaryHighlight.none,
+                highlightedMonth: highlightedMonthForSignature?.call(signature),
+              ),
               style: cardStyle,
-              monthColorForMessageCount: _conversationMonthColorForMessageCount,
-              isSelected:
-                  signatures[index].conversationId == selectedConversationId,
+              monthColorForMessageCount:
+                  conversationSignatureMonthColorForMessageCount,
+              isSelected: signature.conversationId == selectedConversationId,
               trailing: ConversationFavouriteButton(
-                conversationId: signatures[index].conversationId,
+                conversationId: signature.conversationId,
               ),
               onPressed: () {
                 ref
                     .read(conversationNavigationActionsProvider.notifier)
                     .selectConversation(
-                      conversationId: signatures[index].conversationId,
+                      conversationId: signature.conversationId,
                     );
               },
-            ),
-          ],
-        ],
+            );
+          },
+        );
+      },
+      loading: () => Center(
+        child: _ConversationSignatureStatus(
+          message: loadingMessage,
+          colors: colors,
+          typography: typography,
+        ),
+      ),
+      error: (error, _) => Center(
+        child: _ConversationSignatureStatus(
+          message: '$errorMessagePrefix $error',
+          colors: colors,
+          typography: typography,
+        ),
+      ),
+    );
+  }
+}
+
+class _ConversationSignatureModeToggle extends ConsumerWidget {
+  const _ConversationSignatureModeToggle({
+    required this.mode,
+    required this.onChanged,
+  });
+
+  final ConversationSignatureMode mode;
+  final ValueChanged<ConversationSignatureMode> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: _conversationSignatureControlInset,
+      ),
+      child: AppSegmentedModeControl<ConversationSignatureMode>(
+        options: ConversationSignatureMode.values,
+        selectedOption: mode,
+        onSelected: onChanged,
+        labelBuilder: (option) {
+          return switch (option) {
+            ConversationSignatureMode.favourites => 'Favourites',
+            ConversationSignatureMode.browse => 'Browse',
+          };
+        },
       ),
     );
   }
@@ -292,6 +330,7 @@ class _ConversationSignatureControls extends ConsumerWidget {
     required this.searchController,
     required this.filter,
     required this.sort,
+    required this.isSortEnabled,
     required this.onSearchChanged,
     required this.onFilterChanged,
     required this.onSortChanged,
@@ -300,6 +339,7 @@ class _ConversationSignatureControls extends ConsumerWidget {
   final TextEditingController searchController;
   final ConversationSignatureFilter filter;
   final ConversationSignatureSort sort;
+  final bool isSortEnabled;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<ConversationSignatureFilter> onFilterChanged;
   final ValueChanged<ConversationSignatureSort> onSortChanged;
@@ -388,6 +428,7 @@ class _ConversationSignatureControls extends ConsumerWidget {
                 onSelected: onSortChanged,
                 optionLabelBuilder: conversationSignatureSortLabel,
                 leadingLabel: 'Sort',
+                isEnabled: isSortEnabled,
                 triggerPadding: const EdgeInsets.symmetric(
                   horizontal: 9,
                   vertical: 7,
@@ -410,82 +451,87 @@ class _ConversationSignatureControls extends ConsumerWidget {
   }
 }
 
-ConversationSignatureCardData _toCardData(
+String? Function(ConversationSignatureDisplayModel signature)?
+_titleContextForSort(ConversationSignatureSort sort) {
+  return switch (sort) {
+    ConversationSignatureSort.mostRecentlyUpdated => _todayLastUpdatedTime,
+    ConversationSignatureSort.longestRunning => _firstToLastSpanContext,
+    _ => null,
+  };
+}
+
+ConversationSignatureSummaryHighlight Function(
+  ConversationSignatureDisplayModel signature,
+)
+_summaryHighlightForSort(ConversationSignatureSort sort) {
+  return switch (sort) {
+    ConversationSignatureSort.mostRecentlyUpdated =>
+      _recentUpdateSummaryHighlight,
+    ConversationSignatureSort.mostTotalMessages =>
+      (_) => ConversationSignatureSummaryHighlight.messageCount,
+    ConversationSignatureSort.byDateOfCreation =>
+      (_) => ConversationSignatureSummaryHighlight.firstDate,
+    ConversationSignatureSort.startedMostRecently =>
+      (_) => ConversationSignatureSummaryHighlight.firstDate,
+    ConversationSignatureSort.longestRunning =>
+      (_) => ConversationSignatureSummaryHighlight.dateRange,
+    ConversationSignatureSort.dormant =>
+      (_) => ConversationSignatureSummaryHighlight.none,
+  };
+}
+
+ConversationSignatureSummaryHighlight _recentUpdateSummaryHighlight(
   ConversationSignatureDisplayModel signature,
 ) {
-  return ConversationSignatureCardData(
-    conversationId: signature.conversationId,
-    title: signature.title,
-    participantCount: signature.participantCount,
-    messageCount: signature.messageCount,
-    firstMessageAtUtc: signature.firstMessageAtUtc,
-    lastMessageAtUtc: signature.lastMessageAtUtc,
-    activityMonths: signature.activityMonths,
-  );
+  if (_todayLastUpdatedTime(signature) != null) {
+    return ConversationSignatureSummaryHighlight.none;
+  }
+  return ConversationSignatureSummaryHighlight.lastDate;
 }
 
-Color _conversationMonthColorForMessageCount(int messageCount) {
-  return calendarHeatmapColorForIntensity(
-    MonthIntensity.fromMessageCount(messageCount),
-  );
+ConversationSignatureMonthMarker? Function(
+  ConversationSignatureDisplayModel signature,
+)?
+_highlightedMonthForSort(ConversationSignatureSort sort) {
+  return switch (sort) {
+    ConversationSignatureSort.dormant => _lastMessageMonthMarker,
+    _ => null,
+  };
 }
 
-ConversationSignatureCardStyle _conversationSignatureCardStyle(
-  ThemeColors colors,
-  ThemeTypography typography,
+ConversationSignatureMonthMarker? _lastMessageMonthMarker(
+  ConversationSignatureDisplayModel signature,
 ) {
-  return ConversationSignatureCardStyle(
-    backgroundColor: colors.surfaces.surface.withValues(alpha: 0.14),
-    hoverBackgroundColor: colors.surfaces.hover,
-    selectedBackgroundColor: colors.surfaces.selected,
-    borderColor: colors.lines.borderSubtle.withValues(alpha: 0),
-    hoverBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.38),
-    selectedBorderColor: colors.accents.selection.withValues(alpha: 0.58),
-    titleStyle: typography.callout.copyWith(
-      color: colors.content.textPrimary,
-      fontWeight: FontWeight.w600,
-    ),
-    selectedTitleStyle: typography.callout.copyWith(
-      color: colors.content.textPrimary,
-      fontWeight: FontWeight.w600,
-    ),
-    participantSuffixStyle: typography.caption.copyWith(
-      color: colors.content.textTertiary.withValues(alpha: 0.68),
-      fontWeight: FontWeight.w500,
-    ),
-    summaryStyle: typography.caption.copyWith(
-      color: colors.content.textTertiary.withValues(alpha: 0.78),
-    ),
-    emptyMonthBorderColor: colors.lines.borderSubtle,
+  final parsed = DateLabelFormatter.parseIso(
+    signature.lastMessageAtUtc,
+  )?.toLocal();
+  if (parsed == null) {
+    return null;
+  }
+  return ConversationSignatureMonthMarker(
+    year: parsed.year,
+    month: parsed.month,
   );
 }
 
-ConversationSignatureCardStyle _favouriteConversationSignatureCardStyle(
-  ThemeColors colors,
-  ThemeTypography typography,
-) {
-  return ConversationSignatureCardStyle(
-    backgroundColor: colors.surfaces.surface.withValues(alpha: 0.38),
-    hoverBackgroundColor: colors.surfaces.hover,
-    selectedBackgroundColor: colors.surfaces.selected,
-    borderColor: colors.lines.borderSubtle.withValues(alpha: 0.18),
-    hoverBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.42),
-    selectedBorderColor: colors.accents.selection.withValues(alpha: 0.6),
-    titleStyle: typography.callout.copyWith(
-      color: colors.content.textPrimary,
-      fontWeight: FontWeight.w600,
-    ),
-    selectedTitleStyle: typography.callout.copyWith(
-      color: colors.content.textPrimary,
-      fontWeight: FontWeight.w700,
-    ),
-    participantSuffixStyle: typography.caption.copyWith(
-      color: colors.content.textTertiary.withValues(alpha: 0.72),
-      fontWeight: FontWeight.w500,
-    ),
-    summaryStyle: typography.caption.copyWith(
-      color: colors.content.textTertiary.withValues(alpha: 0.8),
-    ),
-    emptyMonthBorderColor: colors.lines.borderSubtle,
+String? _todayLastUpdatedTime(ConversationSignatureDisplayModel signature) {
+  return DateLabelFormatter.localTimeIfTodayFromIso(signature.lastMessageAtUtc);
+}
+
+String? _firstToLastSpanContext(ConversationSignatureDisplayModel signature) {
+  final first = DateLabelFormatter.parseIso(
+    signature.firstMessageAtUtc,
+  )?.toLocal();
+  final last = DateLabelFormatter.parseIso(
+    signature.lastMessageAtUtc,
+  )?.toLocal();
+  if (first == null || last == null || last.isBefore(first)) {
+    return null;
+  }
+  final months = (last.year - first.year) * 12 + last.month - first.month;
+  return CountLabelFormatter.formatNoun(
+    count: months,
+    singular: 'month',
+    plural: 'months',
   );
 }

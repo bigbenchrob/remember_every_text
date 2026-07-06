@@ -36,6 +36,19 @@ Active review folders should stay numbered by application area, for example:
 - `10-Messages-Sidebar/Conversations/`
 - `10-Messages-Sidebar/Contacts/`
 
+Cross-column layout grammar lives in `15-X-COLUMN-LAYOUT/`. Use that folder
+when a UI issue concerns page-level vertical rhythm across peer panels rather
+than the presentation of one widget or one sidebar surface.
+
+Cross-review registers live in `00-Registers/`. Use these registers for
+deferred implementation decisions, future design concepts, and cleanup items
+that should remain visible after the originating review is complete.
+
+When a review identifies work that belongs to a later review area, record it in
+`00-Registers/IMPLEMENTATION_DEBT.md` and add a short pending-implementation
+note in the target review folder. This keeps the current review focused while
+preserving the future work in the place that should own the design.
+
 Completed and verified reviews move to `99-IMPLEMENTED/` so the active review
 queue remains short. Preserve the same folder hierarchy inside
 `99-IMPLEMENTED/`.

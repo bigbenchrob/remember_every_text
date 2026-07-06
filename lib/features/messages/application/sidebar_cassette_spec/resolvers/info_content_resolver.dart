@@ -45,10 +45,7 @@ class MessagesInfoContentResolver extends _$MessagesInfoContentResolver {
         return const MessagesInfoContent(
           body:
               'The heatmap below represents all the messages in your database, '
-              'regardless of who you were texting with. Messages are shown at '
-              'right, listed by date. Clicking on a square in the heatmap '
-              'will bring you to that month. You can enter search terms in the '
-              'list header.',
+              'regardless of who you were texting with.',
         );
       case MessagesInfoKey.recoveredDeletedMessages:
         return const MessagesInfoContent(

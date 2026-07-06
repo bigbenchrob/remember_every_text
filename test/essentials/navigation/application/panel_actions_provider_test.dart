@@ -8,6 +8,29 @@ import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dar
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 
 void main() {
+  test('showRightPanel opens right panel stack', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    const spec = ViewSpec.messages(
+      MessagesSpec.searchResultContext(messageId: 100, chatId: 200),
+    );
+
+    container
+        .read(panelActionsProvider.notifier)
+        .showRightPanel(mode: SidebarMode.messages, spec: spec);
+
+    expect(
+      container
+          .read(
+            panelsViewStateProvider(SidebarMode.messages),
+          )[WindowPanel.right]
+          ?.activePage
+          ?.spec,
+      spec,
+    );
+  });
+
   test('activateTab and closeTab delegate to panel stack state', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);

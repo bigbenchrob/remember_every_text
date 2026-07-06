@@ -4,6 +4,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../core/util/count_label_formatter.dart';
+import '../../../../core/util/date_label_formatter.dart';
+import '../../../../core/util/date_range_formatter.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
@@ -175,12 +178,13 @@ String _countLabel({
   required bool isMatching,
 }) {
   if (query.isEmpty) {
-    return '$totalCount recovered messages';
+    return CountLabelFormatter.recoveredMessages(totalCount);
   }
   if (!isMatching) {
     return 'matching recovered messages...';
   }
-  return '$visibleCount of $totalCount recovered messages match "$query"';
+  return '${CountLabelFormatter.formatCount(visibleCount)} of '
+      '${CountLabelFormatter.recoveredMessages(totalCount)} match "$query"';
 }
 
 String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
@@ -192,12 +196,12 @@ String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
     return 'No dated messages';
   }
   dates.sort();
-  final first = _formatDateLabel(dates.first);
-  final last = _formatDateLabel(dates.last);
-  if (first == last) {
-    return first;
-  }
-  return '$first to $last';
+  return DateRangeFormatter.formatMessageEvidenceRange(
+    start: dates.first,
+    end: dates.last,
+    itemCount: entries.length,
+    emptyLabel: 'No dated messages',
+  );
 }
 
 DateTime? _parseDate(String? value) {
@@ -205,11 +209,6 @@ DateTime? _parseDate(String? value) {
     return null;
   }
   return DateTime.tryParse(value);
-}
-
-String _formatDateLabel(DateTime value) {
-  return '${value.year}-${value.month.toString().padLeft(2, '0')}-'
-      '${value.day.toString().padLeft(2, '0')}';
 }
 
 class _RecoveredEvidencePresentation {
@@ -262,9 +261,7 @@ class _RecoveredScrollIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: AppSpacing.sm),
-      child: Text(
-        '${scrollToDate.year}-${scrollToDate.month.toString().padLeft(2, '0')}',
-      ),
+      child: Text(DateLabelFormatter.monthKey(scrollToDate)),
     );
   }
 }

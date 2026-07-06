@@ -12,7 +12,9 @@ export 'actions/actions.dart';
 export 'buttons/buttons.dart';
 export 'cassette_chrome.dart';
 export 'content_plane.dart';
+export 'layout/app_panel_bands.dart';
 export 'menus/menus.dart';
+export 'segmented/segmented.dart';
 export 'sidebar_plane.dart';
 
 /// Catalog of reusable widgets that adhere to the shared app theme.
@@ -28,6 +30,7 @@ abstract class AppThemeWidgets {
     String? leadingLabel,
     AppDropdownItemBuilder<T>? itemBuilder,
     bool Function(T a, T b)? equals,
+    bool isEnabled = true,
     EdgeInsetsGeometry outerPadding = const EdgeInsets.symmetric(vertical: 2.0),
     EdgeInsetsGeometry panelMargin = const EdgeInsets.only(top: 6.0),
     EdgeInsetsGeometry triggerPadding = const EdgeInsets.symmetric(
@@ -66,6 +69,7 @@ abstract class AppThemeWidgets {
       leadingLabel: leadingLabel,
       itemBuilder: itemBuilder,
       equals: equals,
+      isEnabled: isEnabled,
       outerPadding: outerPadding,
       panelMargin: panelMargin,
       triggerPadding: triggerPadding,

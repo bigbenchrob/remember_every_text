@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/util/date_label_formatter.dart';
 import '../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../essentials/conversation_graph/feature_level_providers.dart'
     show
@@ -199,6 +200,7 @@ MessageEvidenceRowData _messageEvidenceRowDataFromGraphMessage(
     text: message.text,
     associatedMessageId: message.associatedMessageId,
     attachmentCount: message.attachmentCount,
+    sourceConversationId: message.conversationId,
     senderHandleId: message.senderHandleId,
     senderCanonicalHandleId: message.senderCanonicalHandleId,
     senderDisplayHandle: senderIdentity.primaryLabel,
@@ -224,6 +226,7 @@ MessageEvidenceRowData _messageEvidenceRowDataFromConversationMessage(
     text: message.text,
     associatedMessageId: message.associatedMessageId,
     attachmentCount: message.attachmentCount,
+    sourceConversationId: message.conversationId,
     senderHandleId: message.senderHandleId,
     senderCanonicalHandleId: message.senderCanonicalHandleId,
     senderDisplayHandle: message.senderDisplayHandle,
@@ -924,9 +927,5 @@ String? _dateUtcString(DateTime? value) {
 }
 
 String? _monthKey(DateTime? value) {
-  if (value == null) {
-    return null;
-  }
-  return '${value.year.toString().padLeft(4, '0')}-'
-      '${value.month.toString().padLeft(2, '0')}';
+  return DateLabelFormatter.monthKeyOrNull(value);
 }

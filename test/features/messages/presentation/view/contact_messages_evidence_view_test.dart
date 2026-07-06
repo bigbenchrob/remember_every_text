@@ -125,7 +125,7 @@ void main() {
       find.text('Selected handle: clairemc@gmail.com (iMessage)'),
       findsOneWidget,
     );
-    expect(find.text('1 messages'), findsOneWidget);
+    expect(find.text('1 message'), findsOneWidget);
   });
 
   testWidgets(
@@ -176,7 +176,7 @@ void main() {
   );
 
   testWidgets(
-    'contact search overlays matching count without removing nonmatching rows',
+    'contact search filters rendered rows to the matching evidence scope',
     (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -216,7 +216,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('settlement message'), findsOneWidget);
-      expect(find.text('other message'), findsOneWidget);
+      expect(find.text('other message'), findsNothing);
       expect(find.text('1 of 2 messages match "settlement"'), findsOneWidget);
     },
   );

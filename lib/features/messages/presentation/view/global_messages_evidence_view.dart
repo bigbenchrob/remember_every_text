@@ -1,12 +1,20 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/util/count_label_formatter.dart';
+import '../../../../core/util/date_label_formatter.dart';
+import '../../../../core/util/date_range_formatter.dart';
+import '../../../../essentials/conversation_graph/application/identity/live_chat_graph_identity.dart';
+import '../../../../essentials/navigation/domain/entities/view_spec.dart';
+import '../../../../essentials/navigation/domain/sidebar_mode.dart';
+import '../../../../essentials/navigation/feature_level_providers.dart'
+    show effectiveRightPanelSpecProvider;
 import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../../domain/spec_classes/messages_view_spec.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
@@ -48,6 +56,7 @@ class _GlobalMessagesEvidenceViewState
   @override
   Widget build(BuildContext context) {
     const allMessagesScope = GlobalMessagesEvidenceScope();
+    final activeContextMessageId = _activeContextMessageId(ref);
     final normalizedQuery = _query.trim();
     final evidenceScope = normalizedQuery.isEmpty
         ? allMessagesScope
@@ -87,7 +96,6 @@ class _GlobalMessagesEvidenceViewState
               hasMatchesLoaded: hasMatchesLoaded,
             ),
             activeScopeLabel: _activeScopeLabel(normalizedQuery),
-            statusLine: _statusLine(normalizedQuery),
             searchConfig: MessageEvidenceHeaderSearchConfig(
               controller: _searchController,
               placeholder: 'Search these messages',
@@ -105,6 +113,7 @@ class _GlobalMessagesEvidenceViewState
             error: visibleSkeletonAsync.error,
           ),
           monthAnchor: widget.monthAnchor,
+          anchorMessageId: activeContextMessageId,
           highlightQuery: normalizedQuery,
           onVisibleMonthChanged: (monthKey) {
             ref
@@ -120,6 +129,25 @@ class _GlobalMessagesEvidenceViewState
       loading: () => const Center(child: Text('Loading message timeline...')),
       error: (error, stackTrace) =>
           Center(child: Text('Evidence timeline failed: $error')),
+    );
+  }
+
+  int? _activeContextMessageId(WidgetRef ref) {
+    final rightSpec = ref.watch(
+      effectiveRightPanelSpecProvider(SidebarMode.messages),
+    );
+    return rightSpec?.when(
+      messages: (messagesSpec) {
+        return messagesSpec.maybeWhen(
+          searchResultContext: (messageId, _, __, ___) {
+            return canonicalLiveChatGraphId(messageId);
+          },
+          orElse: () => null,
+        );
+      },
+      settings: (_) => null,
+      environmentReadiness: (_) => null,
+      onboarding: (_) => null,
     );
   }
 
@@ -149,7 +177,7 @@ class _GlobalMessagesEvidenceViewState
     if (query.isNotEmpty) {
       if (hasMatchesLoaded) {
         return '${_formatCount(visibleSkeleton.totalCount)} of '
-            '${_formatCount(skeleton.totalCount)} messages match "$query"';
+            '${CountLabelFormatter.messages(skeleton.totalCount)} match "$query"';
       }
       return 'matching messages...';
     }
@@ -160,10 +188,10 @@ class _GlobalMessagesEvidenceViewState
       final count = skeleton.entries.where((entry) {
         return entry.monthKey == monthKey;
       }).length;
-      return '${_formatCount(count)} messages this month';
+      return '${CountLabelFormatter.messages(count)} this month';
     }
 
-    return '${_formatCount(skeleton.totalCount)} messages';
+    return CountLabelFormatter.messages(skeleton.totalCount);
   }
 
   String? _activeScopeLabel(String query) {
@@ -174,16 +202,6 @@ class _GlobalMessagesEvidenceViewState
       return 'Selected month';
     }
     return null;
-  }
-
-  String _statusLine(String query) {
-    if (query.isNotEmpty) {
-      return 'evidence skeleton • text match overlay • hydrate visible rows';
-    }
-    if (widget.monthAnchor != null) {
-      return 'selected month • evidence skeleton • hydrate visible rows';
-    }
-    return 'evidence skeleton • latest position • hydrate visible rows';
   }
 }
 
@@ -213,37 +231,29 @@ String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
     return 'No dated messages';
   }
   dates.sort();
-  final first = _formatDateLabel(dates.first);
-  final last = _formatDateLabel(dates.last);
-  if (first == last) {
-    return first;
-  }
-  return '$first to $last';
+  return DateRangeFormatter.formatMessageEvidenceRange(
+    start: dates.first,
+    end: dates.last,
+    itemCount: entries.length,
+    emptyLabel: 'No dated messages',
+  );
 }
 
 DateTime? _parseDate(String? value) {
-  if (value == null || value.isEmpty) {
-    return null;
-  }
-  return DateTime.tryParse(value);
+  return DateLabelFormatter.parseIso(value);
 }
 
 String? _monthLabel(DateTime? value) {
   if (value == null) {
     return null;
   }
-  return DateFormat.yMMMM().format(value);
+  return DateLabelFormatter.longMonthYear(value);
 }
 
 String _monthKey(DateTime value) {
-  return '${value.year.toString().padLeft(4, '0')}-'
-      '${value.month.toString().padLeft(2, '0')}';
-}
-
-String _formatDateLabel(DateTime value) {
-  return DateFormat.yMMMd().format(value.toLocal());
+  return DateLabelFormatter.monthKey(value);
 }
 
 String _formatCount(int count) {
-  return NumberFormat.decimalPattern().format(count);
+  return CountLabelFormatter.formatCount(count);
 }

@@ -24,4 +24,10 @@ class ConversationSignaturePreferencesActions
         .read(conversationSignaturePreferencesControllerProvider.notifier)
         .setSort(sort);
   }
+
+  Future<void> setMode(ConversationSignatureMode mode) async {
+    await ref
+        .read(conversationSignaturePreferencesControllerProvider.notifier)
+        .setMode(mode);
+  }
 }

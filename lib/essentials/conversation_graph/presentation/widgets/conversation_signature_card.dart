@@ -3,12 +3,16 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
+import '../../../../core/util/date_label_formatter.dart';
 import '../../application/conversation_signatures/conversation_signature.dart';
 
 class ConversationSignatureCardData {
   const ConversationSignatureCardData({
     required this.conversationId,
     required this.title,
+    this.titleContextLabel,
+    this.summaryHighlight = ConversationSignatureSummaryHighlight.none,
+    this.highlightedMonth,
     required this.participantCount,
     required this.messageCount,
     required this.firstMessageAtUtc,
@@ -18,11 +22,36 @@ class ConversationSignatureCardData {
 
   final int conversationId;
   final String title;
+  final String? titleContextLabel;
+  final ConversationSignatureSummaryHighlight summaryHighlight;
+  final ConversationSignatureMonthMarker? highlightedMonth;
   final int participantCount;
   final int messageCount;
   final String? firstMessageAtUtc;
   final String? lastMessageAtUtc;
   final List<ConversationSignatureMonth> activityMonths;
+}
+
+class ConversationSignatureMonthMarker {
+  const ConversationSignatureMonthMarker({
+    required this.year,
+    required this.month,
+  });
+
+  final int year;
+  final int month;
+
+  bool matches(ConversationSignatureMonth candidate) {
+    return candidate.year == year && candidate.month == month;
+  }
+}
+
+enum ConversationSignatureSummaryHighlight {
+  none,
+  messageCount,
+  firstDate,
+  lastDate,
+  dateRange,
 }
 
 class ConversationSignatureCardStyle {
@@ -35,8 +64,11 @@ class ConversationSignatureCardStyle {
     required this.selectedBorderColor,
     required this.titleStyle,
     required this.selectedTitleStyle,
+    this.titleContextStyle,
     required this.participantSuffixStyle,
     required this.summaryStyle,
+    this.summaryHighlightStyle,
+    this.monthHighlightColor,
     required this.emptyMonthBorderColor,
   });
 
@@ -48,8 +80,11 @@ class ConversationSignatureCardStyle {
   final Color selectedBorderColor;
   final TextStyle titleStyle;
   final TextStyle selectedTitleStyle;
+  final TextStyle? titleContextStyle;
   final TextStyle participantSuffixStyle;
   final TextStyle summaryStyle;
+  final TextStyle? summaryHighlightStyle;
+  final Color? monthHighlightColor;
   final Color emptyMonthBorderColor;
 }
 
@@ -58,7 +93,7 @@ class ConversationSignatureCard extends StatefulWidget {
     required this.signature,
     required this.style,
     required this.monthColorForMessageCount,
-    required this.onPressed,
+    this.onPressed,
     this.isSelected = false,
     this.trailing,
     super.key,
@@ -67,7 +102,7 @@ class ConversationSignatureCard extends StatefulWidget {
   final ConversationSignatureCardData signature;
   final ConversationSignatureCardStyle style;
   final Color Function(int messageCount) monthColorForMessageCount;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isSelected;
   final Widget? trailing;
 
@@ -93,21 +128,30 @@ class _ConversationSignatureCardState extends State<ConversationSignatureCard> {
         ? widget.style.hoverBorderColor
         : widget.style.borderColor;
 
+    final onPressed = widget.onPressed;
+    final isInteractive = onPressed != null;
+
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: isInteractive ? SystemMouseCursors.click : MouseCursor.defer,
       onEnter: (_) {
+        if (!isInteractive) {
+          return;
+        }
         setState(() {
           _isHovered = true;
         });
       },
       onExit: (_) {
+        if (!isInteractive) {
+          return;
+        }
         setState(() {
           _isHovered = false;
         });
       },
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.onPressed,
+        onTap: onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
@@ -146,6 +190,17 @@ class _ConversationSignatureCardState extends State<ConversationSignatureCard> {
                             : widget.style.titleStyle,
                       ),
                     ),
+                    if (signature.titleContextLabel != null) ...[
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        signature.titleContextLabel!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            widget.style.titleContextStyle ??
+                            widget.style.participantSuffixStyle,
+                      ),
+                    ],
                     if (widget.trailing != null) ...[
                       const SizedBox(width: AppSpacing.xs),
                       widget.trailing!,
@@ -155,15 +210,26 @@ class _ConversationSignatureCardState extends State<ConversationSignatureCard> {
                 const SizedBox(height: 7),
                 _ConversationMonthGlyph(
                   months: signature.activityMonths,
+                  highlightedMonth: signature.highlightedMonth,
                   monthColorForMessageCount: widget.monthColorForMessageCount,
+                  monthHighlightColor:
+                      widget.style.monthHighlightColor ??
+                      widget.style.emptyMonthBorderColor,
                   emptyMonthBorderColor: widget.style.emptyMonthBorderColor,
                 ),
                 const SizedBox(height: 5),
-                Text(
-                  _signatureSummary(signature),
+                Text.rich(
+                  _signatureSummarySpan(
+                    signature,
+                    baseStyle: widget.style.summaryStyle,
+                    highlightStyle:
+                        widget.style.summaryHighlightStyle ??
+                        widget.style.summaryStyle.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: widget.style.summaryStyle,
                 ),
               ],
             ),
@@ -177,12 +243,16 @@ class _ConversationSignatureCardState extends State<ConversationSignatureCard> {
 class _ConversationMonthGlyph extends StatelessWidget {
   const _ConversationMonthGlyph({
     required this.months,
+    required this.highlightedMonth,
     required this.monthColorForMessageCount,
+    required this.monthHighlightColor,
     required this.emptyMonthBorderColor,
   });
 
   final List<ConversationSignatureMonth> months;
+  final ConversationSignatureMonthMarker? highlightedMonth;
   final Color Function(int messageCount) monthColorForMessageCount;
+  final Color monthHighlightColor;
   final Color emptyMonthBorderColor;
 
   @override
@@ -210,7 +280,10 @@ class _ConversationMonthGlyph extends StatelessWidget {
                       if (index > 0) const SizedBox(width: _glyphSpacing),
                       _MonthGlyphDot(
                         month: row[index],
+                        isHighlighted:
+                            highlightedMonth?.matches(row[index]) ?? false,
                         emptyColor: emptyMonthBorderColor,
+                        highlightColor: monthHighlightColor,
                         monthColorForMessageCount: monthColorForMessageCount,
                       ),
                     ],
@@ -229,34 +302,48 @@ class _ConversationMonthGlyph extends StatelessWidget {
 class _MonthGlyphDot extends StatelessWidget {
   const _MonthGlyphDot({
     required this.month,
+    required this.isHighlighted,
     required this.emptyColor,
+    required this.highlightColor,
     required this.monthColorForMessageCount,
   });
 
   final ConversationSignatureMonth month;
+  final bool isHighlighted;
   final Color emptyColor;
+  final Color highlightColor;
   final Color Function(int messageCount) monthColorForMessageCount;
 
   @override
   Widget build(BuildContext context) {
     final size = month.messageCount <= 0 ? _emptyGlyphDotSize : _glyphDotSize;
+    final fillColor = month.messageCount <= 0
+        ? null
+        : monthColorForMessageCount(month.messageCount);
+    final dot = DecoratedBox(
+      decoration: BoxDecoration(
+        color: fillColor,
+        shape: BoxShape.circle,
+        border: month.messageCount <= 0
+            ? Border.all(color: emptyColor.withValues(alpha: 0.38))
+            : null,
+      ),
+      child: SizedBox(width: size, height: size),
+    );
 
-    if (month.messageCount <= 0) {
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: emptyColor.withValues(alpha: 0.38)),
-        ),
-        child: SizedBox(width: size, height: size),
-      );
+    if (!isHighlighted) {
+      return dot;
     }
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: monthColorForMessageCount(month.messageCount),
-        shape: BoxShape.circle,
+      key: ValueKey(
+        'conversation-signature-highlighted-month-${month.year}-${month.month}',
       ),
-      child: SizedBox(width: size, height: size),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: highlightColor, width: 1),
+      ),
+      child: Padding(padding: const EdgeInsets.all(1.5), child: dot),
     );
   }
 }
@@ -310,13 +397,74 @@ List<List<ConversationSignatureMonth>> _chunkMonthsFromNewest(
   return rowsNewestFirst.reversed.toList(growable: false);
 }
 
-String _signatureSummary(ConversationSignatureCardData signature) {
+TextSpan _signatureSummarySpan(
+  ConversationSignatureCardData signature, {
+  required TextStyle baseStyle,
+  required TextStyle highlightStyle,
+}) {
+  TextSpan span(String text, {required bool isHighlighted}) {
+    return TextSpan(
+      text: text,
+      style: isHighlighted ? highlightStyle : baseStyle,
+    );
+  }
+
   final messageCount = _formatCount(signature.messageCount);
-  final range = _formatDateRange(
-    signature.firstMessageAtUtc,
-    signature.lastMessageAtUtc,
-  );
-  return '$messageCount messages • $range';
+  final firstDate = _formatDate(signature.firstMessageAtUtc);
+  final lastDate = _formatDate(signature.lastMessageAtUtc);
+  final highlight = signature.summaryHighlight;
+
+  final children = <TextSpan>[
+    span(
+      '$messageCount ${signature.messageCount == 1 ? 'message' : 'messages'}',
+      isHighlighted:
+          highlight == ConversationSignatureSummaryHighlight.messageCount,
+    ),
+    span(' • ', isHighlighted: false),
+    ..._dateRangeSpans(
+      firstDate: firstDate,
+      lastDate: lastDate,
+      highlight: highlight,
+      span: span,
+    ),
+  ];
+  return TextSpan(children: children);
+}
+
+List<TextSpan> _dateRangeSpans({
+  required String firstDate,
+  required String lastDate,
+  required ConversationSignatureSummaryHighlight highlight,
+  required TextSpan Function(String text, {required bool isHighlighted}) span,
+}) {
+  final highlightFirst =
+      highlight == ConversationSignatureSummaryHighlight.firstDate ||
+      highlight == ConversationSignatureSummaryHighlight.dateRange;
+  final highlightLast =
+      highlight == ConversationSignatureSummaryHighlight.lastDate ||
+      highlight == ConversationSignatureSummaryHighlight.dateRange;
+
+  if (firstDate.isEmpty && lastDate.isEmpty) {
+    return [span('no dated messages', isHighlighted: false)];
+  }
+  if (firstDate.isEmpty) {
+    return [
+      span('through ', isHighlighted: false),
+      span(lastDate, isHighlighted: highlightLast),
+    ];
+  }
+  if (lastDate.isEmpty || firstDate == lastDate) {
+    return [span(firstDate, isHighlighted: highlightFirst || highlightLast)];
+  }
+  return [
+    span(firstDate, isHighlighted: highlightFirst),
+    span(
+      ' - ',
+      isHighlighted:
+          highlight == ConversationSignatureSummaryHighlight.dateRange,
+    ),
+    span(lastDate, isHighlighted: highlightLast),
+  ];
 }
 
 String _formatCount(int value) {
@@ -330,37 +478,11 @@ String _formatCount(int value) {
 }
 
 String _formatDate(String? value) {
-  if (value == null || value.isEmpty) {
-    return '';
-  }
-  final parsed = DateTime.tryParse(value)?.toLocal();
-  if (parsed == null) {
-    return value;
-  }
-  return '${parsed.year}-${_twoDigits(parsed.month)}-${_twoDigits(parsed.day)}';
-}
-
-String _formatDateRange(String? firstValue, String? lastValue) {
-  final first = _formatDate(firstValue);
-  final last = _formatDate(lastValue);
-  if (first.isEmpty && last.isEmpty) {
-    return 'no dated messages';
-  }
-  if (first.isEmpty) {
-    return 'through $last';
-  }
-  if (last.isEmpty || first == last) {
-    return first;
-  }
-  return '$first - $last';
+  return DateLabelFormatter.sortableDateFromIso(value, fallback: value) ?? '';
 }
 
 String _monthKey(int year, int month) {
-  return '$year-${month.toString().padLeft(2, '0')}';
-}
-
-String _twoDigits(int value) {
-  return value.toString().padLeft(2, '0');
+  return DateLabelFormatter.monthKey(DateTime(year, month));
 }
 
 const int _fallbackGlyphColumns = 24;

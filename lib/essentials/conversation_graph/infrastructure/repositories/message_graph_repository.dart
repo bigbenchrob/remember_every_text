@@ -58,6 +58,13 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
         m.has_payload_data_source,
         m.error_code,
         (
+          SELECT ctm.chat_ss_id
+          FROM chat_to_message ctm
+          WHERE ctm.message_ss_id = m.ss_id
+          ORDER BY ctm.chat_ss_id ASC
+          LIMIT 1
+        ) AS conversation_id,
+        (
           SELECT COUNT(*)
           FROM message_to_attachment mta
           WHERE mta.message_ss_id = m.ss_id
@@ -193,6 +200,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
         m.has_message_summary_info,
         m.has_payload_data_source,
         m.error_code,
+        ctm.chat_ss_id AS conversation_id,
         (
           SELECT COUNT(*)
           FROM message_to_attachment mta
@@ -426,6 +434,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       text: row['text'] as String?,
       associatedMessageId: _readNullableInt(row['associated_message_ss_id']),
       attachmentCount: _readInt(row['attachment_count']),
+      conversationId: _readNullableInt(row['conversation_id']),
       senderHandleId: _readNullableInt(row['sender_handle_ss_id']),
       senderCanonicalHandleId: _readNullableInt(
         row['sender_canonical_handle_ss_id'],

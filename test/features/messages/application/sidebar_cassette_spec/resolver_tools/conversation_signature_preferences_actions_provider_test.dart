@@ -10,7 +10,7 @@ import 'package:remember_this_text/features/messages/application/sidebar_cassett
 
 void main() {
   test(
-    'actions delegate filter and sort mutation to preferences controller',
+    'actions delegate filter, sort, and mode mutation to controller',
     () async {
       final overlayDb = OverlayDatabase(NativeDatabase.memory());
       addTearDown(overlayDb.close);
@@ -24,21 +24,26 @@ void main() {
       final initial = container.read(
         conversationSignaturePreferencesControllerProvider,
       );
-      expect(initial.filter, ConversationSignatureFilter.recent);
-      expect(initial.sort, ConversationSignatureSort.recent);
+      expect(initial.filter, ConversationSignatureFilter.all);
+      expect(initial.sort, ConversationSignatureSort.mostRecentlyUpdated);
+      expect(initial.mode, ConversationSignatureMode.browse);
 
       await container
           .read(conversationSignaturePreferencesActionsProvider.notifier)
           .setFilter(ConversationSignatureFilter.highActivity);
       await container
           .read(conversationSignaturePreferencesActionsProvider.notifier)
-          .setSort(ConversationSignatureSort.largest);
+          .setSort(ConversationSignatureSort.mostTotalMessages);
+      await container
+          .read(conversationSignaturePreferencesActionsProvider.notifier)
+          .setMode(ConversationSignatureMode.favourites);
 
       final updated = container.read(
         conversationSignaturePreferencesControllerProvider,
       );
       expect(updated.filter, ConversationSignatureFilter.highActivity);
-      expect(updated.sort, ConversationSignatureSort.largest);
+      expect(updated.sort, ConversationSignatureSort.mostTotalMessages);
+      expect(updated.mode, ConversationSignatureMode.favourites);
     },
   );
 }

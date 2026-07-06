@@ -1,13 +1,20 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
+import '../../../../../core/util/date_label_formatter.dart';
+import '../../../../../essentials/conversation_graph/application/identity/live_chat_graph_identity.dart';
+import '../../../../../essentials/navigation/application/panel_actions_provider.dart';
+import '../../../../../essentials/navigation/application/panels_view_state_provider.dart';
+import '../../../../../essentials/navigation/domain/entities/view_spec.dart';
+import '../../../../../essentials/navigation/domain/navigation_constants.dart';
+import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../../../domain/spec_classes/messages_view_spec.dart';
 import 'message_evidence_fade_overlay.dart';
 import 'message_evidence_header.dart';
 import 'message_evidence_row.dart';
@@ -23,6 +30,7 @@ class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
     this.highlightQuery = '',
     this.initialRows = const <int, MessageEvidenceRowData>{},
     this.isInitialRowsLoading = false,
+    this.showHeader = true,
     this.onVisibleMonthChanged,
     super.key,
   });
@@ -36,6 +44,7 @@ class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
   final String highlightQuery;
   final Map<int, MessageEvidenceRowData> initialRows;
   final bool isInitialRowsLoading;
+  final bool showHeader;
   final ValueChanged<String?>? onVisibleMonthChanged;
 
   @override
@@ -54,6 +63,7 @@ class _MessageEvidenceTimelineViewState
   String? _listInitialRequestKey;
   int? _listInitialScrollIndex;
   var _pendingNewEvidenceCount = 0;
+  var _anchorPulseId = 0;
 
   @override
   void initState() {
@@ -115,7 +125,7 @@ class _MessageEvidenceTimelineViewState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MessageEvidenceHeader(data: widget.headerData),
+          if (widget.showHeader) MessageEvidenceHeader(data: widget.headerData),
           Expanded(
             child: Stack(
               children: [
@@ -147,6 +157,7 @@ class _MessageEvidenceTimelineViewState
                                   widget.initialRows[entry.messageId],
                               isAnchorMessage:
                                   entry.messageId == widget.anchorMessageId,
+                              correspondencePulseId: _anchorPulseId,
                               highlightQuery: widget.highlightQuery,
                               showDayDivider:
                                   previousEntry == null ||
@@ -191,6 +202,22 @@ class _MessageEvidenceTimelineViewState
         _itemScrollController.jumpTo(index: targetIndex);
       }
       _publishVisibleMonth(monthKey);
+      _scheduleAnchorPulse(requestKey);
+    });
+  }
+
+  void _scheduleAnchorPulse(String requestKey) {
+    if (widget.anchorMessageId == null) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _lastJumpRequestKey != requestKey) {
+        return;
+      }
+      setState(() {
+        _anchorPulseId += 1;
+      });
     });
   }
 
@@ -387,6 +414,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
     required this.entry,
     required this.initialMessage,
     required this.isAnchorMessage,
+    required this.correspondencePulseId,
     required this.highlightQuery,
     required this.showDayDivider,
   });
@@ -395,6 +423,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
   final MessageEvidenceSkeletonEntry entry;
   final MessageEvidenceRowData? initialMessage;
   final bool isAnchorMessage;
+  final int correspondencePulseId;
   final String highlightQuery;
   final bool showDayDivider;
 
@@ -407,6 +436,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
         entry: entry,
         message: initialMessage,
         isAnchorMessage: isAnchorMessage,
+        correspondencePulseId: correspondencePulseId,
         highlightQuery: highlightQuery,
         showDayDivider: showDayDivider,
       );
@@ -434,7 +464,14 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
               message: message,
               evidenceScope: evidenceScope,
               isAnchorMessage: isAnchorMessage,
+              correspondencePulseId: correspondencePulseId,
               searchQuery: highlightQuery,
+              onOpenConversationContext: _openConversationContextAction(
+                ref: ref,
+                evidenceScope: evidenceScope,
+                message: message,
+                highlightQuery: highlightQuery,
+              ),
             );
           },
           loading: () => const _GraphMessageSkeleton(label: 'Loading message'),
@@ -446,12 +483,13 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
   }
 }
 
-class _ResolvedMessageEvidenceTimelineRow extends StatelessWidget {
+class _ResolvedMessageEvidenceTimelineRow extends ConsumerWidget {
   const _ResolvedMessageEvidenceTimelineRow({
     required this.evidenceScope,
     required this.entry,
     required this.message,
     required this.isAnchorMessage,
+    required this.correspondencePulseId,
     required this.highlightQuery,
     required this.showDayDivider,
   });
@@ -460,11 +498,12 @@ class _ResolvedMessageEvidenceTimelineRow extends StatelessWidget {
   final MessageEvidenceSkeletonEntry entry;
   final MessageEvidenceRowData message;
   final bool isAnchorMessage;
+  final int correspondencePulseId;
   final String highlightQuery;
   final bool showDayDivider;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -473,11 +512,65 @@ class _ResolvedMessageEvidenceTimelineRow extends StatelessWidget {
           message: message,
           evidenceScope: evidenceScope,
           isAnchorMessage: isAnchorMessage,
+          correspondencePulseId: correspondencePulseId,
           searchQuery: highlightQuery,
+          onOpenConversationContext: _openConversationContextAction(
+            ref: ref,
+            evidenceScope: evidenceScope,
+            message: message,
+            highlightQuery: highlightQuery,
+          ),
         ),
       ],
     );
   }
+}
+
+VoidCallback? _openConversationContextAction({
+  required WidgetRef ref,
+  required MessageEvidenceScope evidenceScope,
+  required MessageEvidenceRowData message,
+  required String highlightQuery,
+}) {
+  final query = highlightQuery.trim();
+  if (query.isEmpty) {
+    return null;
+  }
+
+  if (evidenceScope is! MessageSearchEvidenceScope) {
+    return null;
+  }
+
+  final conversationId = message.sourceConversationId;
+  if (conversationId == null) {
+    return null;
+  }
+
+  final sourceMessageId = liveChatSourceRowIdForGraphId(message.messageId);
+  final sourceChatId = liveChatSourceRowIdForGraphId(conversationId);
+  if (sourceMessageId == null || sourceChatId == null) {
+    return null;
+  }
+  final targetSpec = ViewSpec.messages(
+    MessagesSpec.searchResultContext(
+      messageId: sourceMessageId,
+      chatId: sourceChatId,
+    ),
+  );
+  final rightPanelStack = ref.watch(
+    panelsViewStateProvider(
+      SidebarMode.messages,
+    ).select((stacks) => stacks[WindowPanel.right]),
+  );
+  if (rightPanelStack?.activePage?.spec == targetSpec) {
+    return null;
+  }
+
+  return () {
+    ref
+        .read(panelActionsProvider.notifier)
+        .showRightPanel(mode: SidebarMode.messages, spec: targetSpec);
+  };
 }
 
 class _GraphMessageSkeleton extends StatelessWidget {
@@ -520,9 +613,6 @@ class _DayDivider extends StatelessWidget {
 }
 
 String _dayLabel(String? value) {
-  final parsed = value == null ? null : DateTime.tryParse(value);
-  if (parsed == null) {
-    return 'No date';
-  }
-  return DateFormat.yMMMd().format(parsed.toLocal());
+  return DateLabelFormatter.fullDateFromIso(value, fallback: 'No date') ??
+      'No date';
 }

@@ -3910,7 +3910,7 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'ConversationSignaturesWidget may render filter/sort controls, '
+            'ConversationSignaturesWidget may render mode/filter/sort controls, '
             'but persisted preference mutation belongs behind '
             'ConversationSignaturePreferencesActions.\n'
             'Actual offenders:\n${offenders.join('\n')}',
@@ -3931,7 +3931,7 @@ void main() {
           ),
           reason:
               'conversationSignaturePreferencesActionsProvider should be '
-              'consumed only by the conversation signature list controls. '
+              'consumed only by the conversation signature mode/list controls. '
               'Other surfaces should receive resolved preferences or dispatch '
               'through their own named action seam.\n'
               'Actual users:\n${offenders.join('\n')}',

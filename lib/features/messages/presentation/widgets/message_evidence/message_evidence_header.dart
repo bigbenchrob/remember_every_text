@@ -5,8 +5,7 @@ import 'package:macos_ui/macos_ui.dart' as macos_ui;
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../essentials/debug/feature_level_providers.dart'
-    show DeveloperModeValue, developerModeProvider;
+import '../../../../../config/theme/widgets/layout/app_panel_bands.dart';
 import '../../../domain/message_evidence/message_evidence_search_mode.dart';
 
 class MessageEvidenceHeaderModel {
@@ -18,7 +17,6 @@ class MessageEvidenceHeaderModel {
     this.countLabel,
     this.scopeNote,
     this.activeScopeLabel,
-    this.statusLine,
     this.activeScopeIndicator,
     this.searchConfig,
     this.actions,
@@ -33,7 +31,6 @@ class MessageEvidenceHeaderModel {
   final String? countLabel;
   final String? scopeNote;
   final String? activeScopeLabel;
-  final String? statusLine;
   final Widget? activeScopeIndicator;
   final MessageEvidenceHeaderSearchConfig? searchConfig;
   final Widget? actions;
@@ -59,7 +56,7 @@ class MessageEvidenceHeader extends ConsumerWidget {
   const MessageEvidenceHeader({
     required this.data,
     this.details,
-    this.padding = const EdgeInsets.fromLTRB(32, 24, 32, 28),
+    this.padding = AppPanelBands.centerPanelPadding,
     super.key,
   });
 
@@ -76,12 +73,6 @@ class MessageEvidenceHeader extends ConsumerWidget {
     final scopeContextLine = data.scopeContextLine?.trim();
     final scopeNote = data.scopeNote?.trim();
     final activeScopeLabel = data.activeScopeLabel?.trim();
-    final developerMode = ref.watch(developerModeProvider).valueOrNull;
-    final shouldShowDeveloperStatus =
-        developerMode == DeveloperModeValue.developer;
-    final statusLine = shouldShowDeveloperStatus
-        ? data.statusLine?.trim()
-        : null;
     final hasIdentityContext =
         identityContextLine != null && identityContextLine.isNotEmpty;
     final metricParts =
@@ -146,15 +137,6 @@ class MessageEvidenceHeader extends ConsumerWidget {
               const SizedBox(height: 8),
               Text(
                 activeScopeLabel,
-                style: typography.caption.copyWith(
-                  color: colors.content.textSecondary,
-                ),
-              ),
-            ],
-            if (statusLine != null && statusLine.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                statusLine,
                 style: typography.caption.copyWith(
                   color: colors.content.textSecondary,
                 ),

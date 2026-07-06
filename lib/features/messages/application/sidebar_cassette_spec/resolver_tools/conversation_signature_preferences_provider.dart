@@ -11,44 +11,59 @@ part 'conversation_signature_preferences_provider.g.dart';
 
 class ConversationSignaturePreferences {
   const ConversationSignaturePreferences({
-    this.filter = ConversationSignatureFilter.recent,
-    this.sort = ConversationSignatureSort.recent,
+    this.filter = ConversationSignatureFilter.all,
+    this.sort = ConversationSignatureSort.mostRecentlyUpdated,
+    this.mode = ConversationSignatureMode.browse,
   });
 
   final ConversationSignatureFilter filter;
   final ConversationSignatureSort sort;
+  final ConversationSignatureMode mode;
 
   static ConversationSignaturePreferences fromStorage(String? rawValue) {
     final parts = rawValue?.split('|') ?? const <String>[];
     return ConversationSignaturePreferences(
       filter: _filterFromStorage(parts.isEmpty ? null : parts[0]),
       sort: _sortFromStorage(parts.length < 2 ? null : parts[1]),
+      mode: _modeFromStorage(parts.length < 3 ? null : parts[2]),
     );
   }
 
   String get storageValue {
-    return '${filter.storageValue}|${sort.storageValue}';
+    return '${filter.storageValue}|${sort.storageValue}|${mode.storageValue}';
   }
 
   ConversationSignaturePreferences copyWith({
     ConversationSignatureFilter? filter,
     ConversationSignatureSort? sort,
+    ConversationSignatureMode? mode,
   }) {
     return ConversationSignaturePreferences(
       filter: filter ?? this.filter,
       sort: sort ?? this.sort,
+      mode: mode ?? this.mode,
     );
+  }
+}
+
+enum ConversationSignatureMode { favourites, browse }
+
+extension ConversationSignatureModeStorage on ConversationSignatureMode {
+  String get storageValue {
+    return switch (this) {
+      ConversationSignatureMode.favourites => 'favourites',
+      ConversationSignatureMode.browse => 'browse',
+    };
   }
 }
 
 extension ConversationSignatureFilterStorage on ConversationSignatureFilter {
   String get storageValue {
     return switch (this) {
-      ConversationSignatureFilter.recent => 'recent',
+      ConversationSignatureFilter.all => 'all',
       ConversationSignatureFilter.groups => 'groups',
       ConversationSignatureFilter.oneToOne => 'one_to_one',
       ConversationSignatureFilter.highActivity => 'high_activity',
-      ConversationSignatureFilter.dormantRevived => 'dormant_revived',
     };
   }
 }
@@ -56,30 +71,48 @@ extension ConversationSignatureFilterStorage on ConversationSignatureFilter {
 extension ConversationSignatureSortStorage on ConversationSignatureSort {
   String get storageValue {
     return switch (this) {
-      ConversationSignatureSort.recent => 'recent',
-      ConversationSignatureSort.largest => 'largest',
+      ConversationSignatureSort.byDateOfCreation => 'by_date_of_creation',
+      ConversationSignatureSort.mostRecentlyUpdated => 'most_recently_updated',
+      ConversationSignatureSort.mostTotalMessages => 'most_total_messages',
+      ConversationSignatureSort.startedMostRecently => 'started_most_recently',
       ConversationSignatureSort.longestRunning => 'longest_running',
-      ConversationSignatureSort.mostActiveRecently => 'most_active_recently',
+      ConversationSignatureSort.dormant => 'dormant',
     };
   }
 }
 
 ConversationSignatureFilter _filterFromStorage(String? rawValue) {
   return switch (rawValue) {
+    'recent' || 'all' => ConversationSignatureFilter.all,
     'groups' => ConversationSignatureFilter.groups,
     'one_to_one' => ConversationSignatureFilter.oneToOne,
     'high_activity' => ConversationSignatureFilter.highActivity,
-    'dormant_revived' => ConversationSignatureFilter.dormantRevived,
-    _ => ConversationSignatureFilter.recent,
+    'dormant_revived' => ConversationSignatureFilter.all,
+    _ => ConversationSignatureFilter.all,
   };
 }
 
 ConversationSignatureSort _sortFromStorage(String? rawValue) {
   return switch (rawValue) {
-    'largest' => ConversationSignatureSort.largest,
+    'recent' ||
+    'most_active_recently' ||
+    'most_recently_updated' => ConversationSignatureSort.mostRecentlyUpdated,
+    'largest' ||
+    'most_total_messages' => ConversationSignatureSort.mostTotalMessages,
     'longest_running' => ConversationSignatureSort.longestRunning,
-    'most_active_recently' => ConversationSignatureSort.mostActiveRecently,
-    _ => ConversationSignatureSort.recent,
+    'recently_started' ||
+    'started_most_recently' => ConversationSignatureSort.startedMostRecently,
+    'started_longest_ago' ||
+    'by_date_of_creation' => ConversationSignatureSort.byDateOfCreation,
+    'dormant' => ConversationSignatureSort.dormant,
+    _ => ConversationSignatureSort.mostRecentlyUpdated,
+  };
+}
+
+ConversationSignatureMode _modeFromStorage(String? rawValue) {
+  return switch (rawValue) {
+    'favourites' => ConversationSignatureMode.favourites,
+    _ => ConversationSignatureMode.browse,
   };
 }
 
@@ -114,6 +147,15 @@ class ConversationSignaturePreferencesController
     await _persistPreferences(
       operation: 'setSort',
       attemptedValue: sort.storageValue,
+    );
+  }
+
+  Future<void> setMode(ConversationSignatureMode mode) async {
+    _hasLocalMutation = true;
+    state = state.copyWith(mode: mode);
+    await _persistPreferences(
+      operation: 'setMode',
+      attemptedValue: mode.storageValue,
     );
   }
 

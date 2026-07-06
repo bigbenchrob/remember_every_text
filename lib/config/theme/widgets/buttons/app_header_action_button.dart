@@ -71,6 +71,7 @@ class _AppHeaderActionButtonState extends ConsumerState<AppHeaderActionButton> {
       },
       child: GestureDetector(
         onTap: isInteractive ? widget.onPressed : null,
+        behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOutCubic,

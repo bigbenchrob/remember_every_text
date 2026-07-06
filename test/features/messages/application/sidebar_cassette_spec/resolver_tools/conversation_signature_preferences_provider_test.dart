@@ -28,19 +28,23 @@ void main() {
       await overlayDb.close();
     });
 
-    test('defaults to recent filter and recent sort', () {
-      final container = buildContainer();
-      addTearDown(container.dispose);
+    test(
+      'defaults to all filter, most recently updated sort, and browse mode',
+      () {
+        final container = buildContainer();
+        addTearDown(container.dispose);
 
-      final preferences = container.read(
-        conversationSignaturePreferencesControllerProvider,
-      );
+        final preferences = container.read(
+          conversationSignaturePreferencesControllerProvider,
+        );
 
-      expect(preferences.filter, ConversationSignatureFilter.recent);
-      expect(preferences.sort, ConversationSignatureSort.recent);
-    });
+        expect(preferences.filter, ConversationSignatureFilter.all);
+        expect(preferences.sort, ConversationSignatureSort.mostRecentlyUpdated);
+        expect(preferences.mode, ConversationSignatureMode.browse);
+      },
+    );
 
-    test('persists filter and sort choices in the overlay database', () async {
+    test('persists filter, sort, and mode choices in overlay', () async {
       final firstContainer = buildContainer();
       addTearDown(firstContainer.dispose);
 
@@ -49,7 +53,10 @@ void main() {
           .setFilter(ConversationSignatureFilter.highActivity);
       await firstContainer
           .read(conversationSignaturePreferencesControllerProvider.notifier)
-          .setSort(ConversationSignatureSort.largest);
+          .setSort(ConversationSignatureSort.mostTotalMessages);
+      await firstContainer
+          .read(conversationSignaturePreferencesControllerProvider.notifier)
+          .setMode(ConversationSignatureMode.favourites);
 
       final restoredContainer = buildContainer();
       addTearDown(restoredContainer.dispose);
@@ -57,8 +64,12 @@ void main() {
       final initialRestored = restoredContainer.read(
         conversationSignaturePreferencesControllerProvider,
       );
-      expect(initialRestored.filter, ConversationSignatureFilter.recent);
-      expect(initialRestored.sort, ConversationSignatureSort.recent);
+      expect(initialRestored.filter, ConversationSignatureFilter.all);
+      expect(
+        initialRestored.sort,
+        ConversationSignatureSort.mostRecentlyUpdated,
+      );
+      expect(initialRestored.mode, ConversationSignatureMode.browse);
 
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
@@ -67,16 +78,45 @@ void main() {
       );
 
       expect(restored.filter, ConversationSignatureFilter.highActivity);
-      expect(restored.sort, ConversationSignatureSort.largest);
+      expect(restored.sort, ConversationSignatureSort.mostTotalMessages);
+      expect(restored.mode, ConversationSignatureMode.favourites);
     });
 
     test('falls back to safe defaults for unknown stored values', () {
       final restored = ConversationSignaturePreferences.fromStorage(
-        'unknown|also_unknown',
+        'unknown|also_unknown|still_unknown',
       );
 
-      expect(restored.filter, ConversationSignatureFilter.recent);
-      expect(restored.sort, ConversationSignatureSort.recent);
+      expect(restored.filter, ConversationSignatureFilter.all);
+      expect(restored.sort, ConversationSignatureSort.mostRecentlyUpdated);
+      expect(restored.mode, ConversationSignatureMode.browse);
+    });
+
+    test('restores old two-part storage as browse mode with renamed sort', () {
+      final restored = ConversationSignaturePreferences.fromStorage(
+        'groups|largest',
+      );
+
+      expect(restored.filter, ConversationSignatureFilter.groups);
+      expect(restored.sort, ConversationSignatureSort.mostTotalMessages);
+      expect(restored.mode, ConversationSignatureMode.browse);
+    });
+
+    test('maps retired recent and dormant filters to current defaults', () {
+      final recent = ConversationSignaturePreferences.fromStorage(
+        'recent|most_active_recently',
+      );
+      final dormantRevived = ConversationSignaturePreferences.fromStorage(
+        'dormant_revived|recent',
+      );
+
+      expect(recent.filter, ConversationSignatureFilter.all);
+      expect(recent.sort, ConversationSignatureSort.mostRecentlyUpdated);
+      expect(dormantRevived.filter, ConversationSignatureFilter.all);
+      expect(
+        dormantRevived.sort,
+        ConversationSignatureSort.mostRecentlyUpdated,
+      );
     });
 
     test('does not let delayed restore overwrite local choices', () async {
@@ -88,7 +128,7 @@ void main() {
           .setFilter(ConversationSignatureFilter.groups);
       await firstContainer
           .read(conversationSignaturePreferencesControllerProvider.notifier)
-          .setSort(ConversationSignatureSort.largest);
+          .setSort(ConversationSignatureSort.mostTotalMessages);
 
       final restoredContainer = buildContainer();
       addTearDown(restoredContainer.dispose);
@@ -101,7 +141,10 @@ void main() {
           .setFilter(ConversationSignatureFilter.oneToOne);
       await restoredContainer
           .read(conversationSignaturePreferencesControllerProvider.notifier)
-          .setSort(ConversationSignatureSort.mostActiveRecently);
+          .setSort(ConversationSignatureSort.dormant);
+      await restoredContainer
+          .read(conversationSignaturePreferencesControllerProvider.notifier)
+          .setMode(ConversationSignatureMode.favourites);
 
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
@@ -109,7 +152,8 @@ void main() {
         conversationSignaturePreferencesControllerProvider,
       );
       expect(preferences.filter, ConversationSignatureFilter.oneToOne);
-      expect(preferences.sort, ConversationSignatureSort.mostActiveRecently);
+      expect(preferences.sort, ConversationSignatureSort.dormant);
+      expect(preferences.mode, ConversationSignatureMode.favourites);
     });
   });
 }

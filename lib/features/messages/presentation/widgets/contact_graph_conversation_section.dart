@@ -8,8 +8,7 @@ import '../../../../essentials/conversation_graph/presentation/widgets/conversat
 import '../../application/sidebar_cassette_spec/resolver_tools/contact_conversation_navigation_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/contact_conversation_signatures_provider.dart';
 import '../../application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
-import '../../domain/calendar_heatmap_timeline_data.dart';
-import 'calendar_heatmap_timeline_widget.dart';
+import 'conversation_signature_card_presentation.dart';
 
 class ContactGraphConversationSection extends ConsumerWidget {
   const ContactGraphConversationSection({
@@ -127,7 +126,7 @@ class _ContactGraphConversationContentState
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final cardStyle = _conversationSignatureCardStyle(colors, typography);
+    final cardStyle = conversationSignatureCardStyle(colors, typography);
     final signatureDisplays = widget.signatureDisplays;
 
     return Padding(
@@ -143,10 +142,10 @@ class _ContactGraphConversationContentState
             itemBuilder: (context, index) {
               final signature = signatureDisplays[index];
               return ConversationSignatureCard(
-                signature: _toCardData(signature),
+                signature: conversationSignatureCardDataFromDisplay(signature),
                 style: cardStyle,
                 monthColorForMessageCount:
-                    _conversationMonthColorForMessageCount,
+                    conversationSignatureMonthColorForMessageCount,
                 trailing: ConversationFavouriteButton(
                   conversationId: signature.conversationId,
                 ),
@@ -167,54 +166,4 @@ class _ContactGraphConversationContentState
       ),
     );
   }
-}
-
-ConversationSignatureCardData _toCardData(
-  ConversationSignatureDisplayModel signature,
-) {
-  return ConversationSignatureCardData(
-    conversationId: signature.conversationId,
-    title: signature.title,
-    participantCount: signature.participantCount,
-    messageCount: signature.messageCount,
-    firstMessageAtUtc: signature.firstMessageAtUtc,
-    lastMessageAtUtc: signature.lastMessageAtUtc,
-    activityMonths: signature.activityMonths,
-  );
-}
-
-Color _conversationMonthColorForMessageCount(int messageCount) {
-  return calendarHeatmapColorForIntensity(
-    MonthIntensity.fromMessageCount(messageCount),
-  );
-}
-
-ConversationSignatureCardStyle _conversationSignatureCardStyle(
-  ThemeColors colors,
-  ThemeTypography typography,
-) {
-  return ConversationSignatureCardStyle(
-    backgroundColor: colors.surfaces.surface.withValues(alpha: 0.14),
-    hoverBackgroundColor: colors.surfaces.hover,
-    selectedBackgroundColor: colors.surfaces.selected,
-    borderColor: colors.lines.borderSubtle.withValues(alpha: 0),
-    hoverBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.38),
-    selectedBorderColor: colors.accents.selection.withValues(alpha: 0.58),
-    titleStyle: typography.callout.copyWith(
-      color: colors.content.textPrimary,
-      fontWeight: FontWeight.w600,
-    ),
-    selectedTitleStyle: typography.callout.copyWith(
-      color: colors.content.textPrimary,
-      fontWeight: FontWeight.w600,
-    ),
-    participantSuffixStyle: typography.caption.copyWith(
-      color: colors.content.textTertiary.withValues(alpha: 0.68),
-      fontWeight: FontWeight.w500,
-    ),
-    summaryStyle: typography.caption.copyWith(
-      color: colors.content.textTertiary.withValues(alpha: 0.78),
-    ),
-    emptyMonthBorderColor: colors.lines.borderSubtle,
-  );
 }

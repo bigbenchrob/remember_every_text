@@ -11,19 +11,15 @@ import '../../../../contacts/feature_level_providers.dart'
 
 part 'conversation_signature_display_provider.g.dart';
 
-enum ConversationSignatureFilter {
-  recent,
-  groups,
-  oneToOne,
-  highActivity,
-  dormantRevived,
-}
+enum ConversationSignatureFilter { all, groups, oneToOne, highActivity }
 
 enum ConversationSignatureSort {
-  recent,
-  largest,
+  byDateOfCreation,
+  mostRecentlyUpdated,
+  mostTotalMessages,
+  startedMostRecently,
   longestRunning,
-  mostActiveRecently,
+  dormant,
 }
 
 class ConversationSignatureDisplayModel {
@@ -79,8 +75,9 @@ Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
   Ref ref, {
   int limit = 500,
   String searchQuery = '',
-  ConversationSignatureFilter filter = ConversationSignatureFilter.recent,
-  ConversationSignatureSort sort = ConversationSignatureSort.recent,
+  ConversationSignatureFilter filter = ConversationSignatureFilter.all,
+  ConversationSignatureSort sort =
+      ConversationSignatureSort.mostRecentlyUpdated,
   List<int> excludedFavouriteConversationIds = const <int>[],
 }) async {
   final signatures = await ref.watch(
@@ -185,20 +182,21 @@ ConversationSignatureDisplayModel _toDisplayModel(
 
 String conversationSignatureFilterLabel(ConversationSignatureFilter filter) {
   return switch (filter) {
-    ConversationSignatureFilter.recent => 'Recent',
+    ConversationSignatureFilter.all => 'All',
     ConversationSignatureFilter.groups => 'Groups',
     ConversationSignatureFilter.oneToOne => 'One-to-one',
     ConversationSignatureFilter.highActivity => 'High activity',
-    ConversationSignatureFilter.dormantRevived => 'Dormant/revived',
   };
 }
 
 String conversationSignatureSortLabel(ConversationSignatureSort sort) {
   return switch (sort) {
-    ConversationSignatureSort.recent => 'Recent',
-    ConversationSignatureSort.largest => 'Largest',
-    ConversationSignatureSort.longestRunning => 'Longest-running',
-    ConversationSignatureSort.mostActiveRecently => 'Most active recently',
+    ConversationSignatureSort.mostRecentlyUpdated => 'Most recently updated',
+    ConversationSignatureSort.mostTotalMessages => 'Most total messages',
+    ConversationSignatureSort.byDateOfCreation => 'By date of creation',
+    ConversationSignatureSort.startedMostRecently => 'Started most recently',
+    ConversationSignatureSort.longestRunning => 'Longest first-to-last span',
+    ConversationSignatureSort.dormant => 'Dormant',
   };
 }
 
@@ -223,25 +221,11 @@ bool _matchesFilter(
   ConversationSignatureFilter filter,
 ) {
   return switch (filter) {
-    ConversationSignatureFilter.recent => true,
+    ConversationSignatureFilter.all => true,
     ConversationSignatureFilter.groups => signature.participantCount > 1,
     ConversationSignatureFilter.oneToOne => signature.participantCount <= 1,
     ConversationSignatureFilter.highActivity => signature.messageCount >= 1000,
-    ConversationSignatureFilter.dormantRevived => _isDormantOrRevived(
-      signature,
-    ),
   };
-}
-
-bool _isDormantOrRevived(ConversationSignatureDisplayModel signature) {
-  final first = _parseUtc(signature.firstMessageAtUtc);
-  final last = _parseUtc(signature.lastMessageAtUtc);
-  if (first == null || last == null) {
-    return false;
-  }
-  final now = DateTime.now().toUtc();
-  return last.difference(first).inDays >= 365 &&
-      now.difference(last).inDays <= 120;
 }
 
 int _compareSignatures(
@@ -250,19 +234,28 @@ int _compareSignatures(
   ConversationSignatureSort sort,
 ) {
   final primary = switch (sort) {
-    ConversationSignatureSort.recent => _compareNullableUtcDesc(
+    ConversationSignatureSort.mostRecentlyUpdated => _compareNullableUtcDesc(
       a.lastMessageAtUtc,
       b.lastMessageAtUtc,
     ),
-    ConversationSignatureSort.largest => b.messageCount.compareTo(
+    ConversationSignatureSort.mostTotalMessages => b.messageCount.compareTo(
       a.messageCount,
+    ),
+    ConversationSignatureSort.byDateOfCreation => _compareNullableUtcAsc(
+      a.firstMessageAtUtc,
+      b.firstMessageAtUtc,
+    ),
+    ConversationSignatureSort.startedMostRecently => _compareNullableUtcDesc(
+      a.firstMessageAtUtc,
+      b.firstMessageAtUtc,
     ),
     ConversationSignatureSort.longestRunning => _conversationSpanDays(
       b,
     ).compareTo(_conversationSpanDays(a)),
-    ConversationSignatureSort.mostActiveRecently => _recentTraceActivity(
-      b,
-    ).compareTo(_recentTraceActivity(a)),
+    ConversationSignatureSort.dormant => _compareNullableUtcAsc(
+      a.lastMessageAtUtc,
+      b.lastMessageAtUtc,
+    ),
   };
   if (primary != 0) {
     return primary;
@@ -292,6 +285,21 @@ int _compareNullableUtcDesc(String? aValue, String? bValue) {
   return b.compareTo(a);
 }
 
+int _compareNullableUtcAsc(String? aValue, String? bValue) {
+  final a = _parseUtc(aValue);
+  final b = _parseUtc(bValue);
+  if (a == null && b == null) {
+    return 0;
+  }
+  if (a == null) {
+    return 1;
+  }
+  if (b == null) {
+    return -1;
+  }
+  return a.compareTo(b);
+}
+
 int _conversationSpanDays(ConversationSignatureDisplayModel signature) {
   final first = _parseUtc(signature.firstMessageAtUtc);
   final last = _parseUtc(signature.lastMessageAtUtc);
@@ -299,14 +307,6 @@ int _conversationSpanDays(ConversationSignatureDisplayModel signature) {
     return 0;
   }
   return last.difference(first).inDays;
-}
-
-int _recentTraceActivity(ConversationSignatureDisplayModel signature) {
-  final months = signature.activityMonths;
-  final start = months.length <= 4 ? 0 : months.length - 4;
-  return months
-      .skip(start)
-      .fold<int>(0, (sum, month) => sum + month.messageCount);
 }
 
 DateTime? _parseUtc(String? value) {

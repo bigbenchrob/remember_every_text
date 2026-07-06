@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/util/count_label_formatter.dart';
+import '../../../../core/util/date_range_formatter.dart';
 import '../../../handles/feature_level_providers.dart'
     show handleDisplayNameProvider;
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
@@ -88,8 +89,6 @@ class _HandleMessagesEvidenceViewState
             activeScopeLabel: normalizedQuery.isEmpty
                 ? null
                 : 'Message text contains "$normalizedQuery"',
-            statusLine:
-                'evidence skeleton • handle scope • hydrate visible rows',
             searchConfig: MessageEvidenceHeaderSearchConfig(
               controller: _searchController,
               placeholder: 'Search messages from this handle',
@@ -129,11 +128,11 @@ String _countLabel({
   if (query.isNotEmpty) {
     if (isMatchingLoaded) {
       return '${_formatCount(matchingIds?.length ?? 0)} of '
-          '${_formatCount(totalCount)} messages match "$query"';
+          '${CountLabelFormatter.messages(totalCount)} match "$query"';
     }
     return 'matching messages...';
   }
-  return '${_formatCount(totalCount)} messages';
+  return CountLabelFormatter.messages(totalCount);
 }
 
 String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
@@ -145,12 +144,12 @@ String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
     return 'No dated messages';
   }
   dates.sort();
-  final first = _formatDateLabel(dates.first);
-  final last = _formatDateLabel(dates.last);
-  if (first == last) {
-    return first;
-  }
-  return '$first to $last';
+  return DateRangeFormatter.formatMessageEvidenceRange(
+    start: dates.first,
+    end: dates.last,
+    itemCount: entries.length,
+    emptyLabel: 'No dated messages',
+  );
 }
 
 DateTime? _parseDate(String? value) {
@@ -160,10 +159,6 @@ DateTime? _parseDate(String? value) {
   return DateTime.tryParse(value);
 }
 
-String _formatDateLabel(DateTime value) {
-  return DateFormat.yMMMd().format(value.toLocal());
-}
-
 String _formatCount(int count) {
-  return NumberFormat.decimalPattern().format(count);
+  return CountLabelFormatter.formatCount(count);
 }

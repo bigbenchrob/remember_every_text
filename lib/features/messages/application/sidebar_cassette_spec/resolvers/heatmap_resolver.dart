@@ -33,7 +33,13 @@ class HeatmapResolver extends _$HeatmapResolver {
       placementMode: SidebarBodyPlacementMode.inset,
       contentAlignment: SidebarBodyContentAlignment.loose,
       title: '',
+      footerText: contactId == null ? _globalSearchHeatmapGuidance : null,
       shouldExpand: false,
     );
   }
 }
+
+const _globalSearchHeatmapGuidance =
+    'Messages are shown at right, listed by date. Click a month in the '
+    'heatmap to jump to that part of the archive. Enter search terms in the '
+    'message list header.';

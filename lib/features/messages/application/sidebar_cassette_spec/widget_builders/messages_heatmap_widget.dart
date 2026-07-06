@@ -1,11 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../core/util/count_label_formatter.dart';
+import '../../../../../core/util/date_label_formatter.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart'
@@ -340,7 +341,7 @@ class MessageHeatmapContent extends ConsumerWidget {
       SidebarCassetteSemanticStyle.visualization,
     );
     final summaryText =
-        '${NumberFormat.decimalPattern().format(data.totalMessages)} messages '
+        '${CountLabelFormatter.messages(data.totalMessages)} '
         '• ${_formatDateRange(data.firstMessageDate, data.lastMessageDate)}';
 
     return LayoutBuilder(
@@ -597,8 +598,7 @@ class _EmptyHeatmapCard extends ConsumerWidget {
 }
 
 String _formatDateRange(DateTime start, DateTime end) {
-  final formatter = DateFormat('MMM yyyy');
-  final startLabel = formatter.format(start);
-  final endLabel = formatter.format(end);
+  final startLabel = DateLabelFormatter.compactMonthYear(start);
+  final endLabel = DateLabelFormatter.compactMonthYear(end);
   return startLabel == endLabel ? startLabel : '$startLabel → $endLabel';
 }

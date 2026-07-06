@@ -1,16 +1,22 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../config/theme/widgets/layout/app_panel_bands.dart';
+import '../../../../core/util/date_range_formatter.dart';
+import '../../../../essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
+import '../../../../essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart'
     show panelActionsProvider;
+import '../../application/message_evidence/message_evidence_identity.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
+import '../../application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../widgets/conversation_signature_card_presentation.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
@@ -42,12 +48,22 @@ class SearchResultContextSidebarView extends ConsumerWidget {
     final skeletonAsync = ref.watch(
       messageEvidenceTimelineSkeletonProvider(scope: evidenceScope),
     );
+    final conversationId = canonicalConversationEvidenceId(chatId);
 
     return ColoredBox(
-      color: colors.surfaces.canvas,
+      color: colors.messagePanels.coolPanelSurface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Padding(
+            padding: AppPanelBands.sidePanelPadding,
+            child: Text(
+              'Conversation',
+              style: typography.title1.copyWith(
+                color: colors.content.textPrimary,
+              ),
+            ),
+          ),
           Expanded(
             child: skeletonAsync.when(
               skipLoadingOnReload: true,
@@ -70,24 +86,35 @@ class SearchResultContextSidebarView extends ConsumerWidget {
                   );
                 }
 
-                return MessageEvidenceTimelineView(
-                  evidenceScope: evidenceScope,
-                  skeleton: skeleton,
-                  // Search is intentionally disabled for this bounded
-                  // context-window scope: it is already a search-result
-                  // evidence excerpt, not an independently navigable timeline.
-                  headerData: MessageEvidenceHeaderModel(
-                    title: 'Message context',
-                    identityContextLine: 'Chat $chatId',
-                    dateRangeLabel: _dateSpan(skeleton.entries),
-                    countLabel:
-                        '${beforeCount + afterCount + 1} message window',
-                    scopeContextLine: 'Search result context',
-                    statusLine:
-                        'search result context • evidence skeleton • hydrate visible rows',
-                  ),
-                  emptyMessage: 'No context messages found.',
-                  anchorMessageId: skeleton.initialAnchorMessageId,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _ConversationContextCardHeader(
+                      conversationId: conversationId,
+                      excerptMessageCount: beforeCount + afterCount + 1,
+                    ),
+                    Expanded(
+                      child: MessageEvidenceTimelineView(
+                        evidenceScope: evidenceScope,
+                        skeleton: skeleton,
+                        // Search is intentionally disabled for this bounded
+                        // context-window scope: it is already a search-result
+                        // evidence excerpt, not an independently navigable
+                        // timeline.
+                        headerData: MessageEvidenceHeaderModel(
+                          title: 'Message context',
+                          identityContextLine: 'Chat $chatId',
+                          dateRangeLabel: _dateSpan(skeleton.entries),
+                          countLabel:
+                              '${beforeCount + afterCount + 1} message window',
+                          scopeContextLine: 'Search result context',
+                        ),
+                        showHeader: false,
+                        emptyMessage: 'No context messages found.',
+                        anchorMessageId: skeleton.initialAnchorMessageId,
+                      ),
+                    ),
+                  ],
                 );
               },
               loading: () => Center(
@@ -131,8 +158,149 @@ class SearchResultContextSidebarView extends ConsumerWidget {
   }
 }
 
-String _formatDateLabel(DateTime value) {
-  return DateFormat.yMMMd().format(value.toLocal());
+class _ConversationContextCardHeader extends ConsumerWidget {
+  const _ConversationContextCardHeader({
+    required this.conversationId,
+    required this.excerptMessageCount,
+  });
+
+  final int conversationId;
+  final int excerptMessageCount;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+    final signaturesAsync = ref.watch(
+      conversationSignatureDisplayByIdsProvider(
+        request: ConversationSignatureDisplayByIdsRequest(
+          conversationIds: [conversationId],
+        ),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        AppPanelBands.titleToPrimaryGap,
+        16,
+        0,
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: _contextIntroHeaderHeight),
+        child: signaturesAsync.when(
+          data: (signatures) {
+            if (signatures.isEmpty) {
+              return _ConversationContextIntro(
+                excerptMessageCount: excerptMessageCount,
+                labelStyle: _excerptLabelStyle(colors, typography),
+                child: _ConversationContextFallbackHeader(
+                  conversationId: conversationId,
+                  colors: colors,
+                  typography: typography,
+                ),
+              );
+            }
+
+            final signature = signatures.first;
+            return _ConversationContextIntro(
+              excerptMessageCount: excerptMessageCount,
+              labelStyle: _excerptLabelStyle(colors, typography),
+              child: ConversationSignatureCard(
+                signature: conversationSignatureCardDataFromDisplay(signature),
+                style: conversationSignatureContextHeaderCardStyle(
+                  colors,
+                  typography,
+                ),
+                monthColorForMessageCount:
+                    conversationSignatureMonthColorForMessageCount,
+                trailing: ConversationFavouriteButton(
+                  conversationId: signature.conversationId,
+                ),
+              ),
+            );
+          },
+          loading: () => Text(
+            'Loading conversation...',
+            style: typography.caption.copyWith(
+              color: colors.content.textSecondary,
+            ),
+          ),
+          error: (error, _) => _ConversationContextIntro(
+            excerptMessageCount: excerptMessageCount,
+            labelStyle: _excerptLabelStyle(colors, typography),
+            child: _ConversationContextFallbackHeader(
+              conversationId: conversationId,
+              colors: colors,
+              typography: typography,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConversationContextIntro extends StatelessWidget {
+  const _ConversationContextIntro({
+    required this.child,
+    required this.excerptMessageCount,
+    required this.labelStyle,
+  });
+
+  final Widget child;
+  final int excerptMessageCount;
+  final TextStyle labelStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        child,
+        const SizedBox(height: AppPanelBands.primaryToSecondaryGap),
+        Text(_excerptLabel(excerptMessageCount), style: labelStyle),
+        const SizedBox(height: AppPanelBands.secondaryToContentGap),
+      ],
+    );
+  }
+}
+
+class _ConversationContextFallbackHeader extends StatelessWidget {
+  const _ConversationContextFallbackHeader({
+    required this.conversationId,
+    required this.colors,
+    required this.typography,
+  });
+
+  final int conversationId;
+  final ThemeColors colors;
+  final ThemeTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'Conversation $conversationId',
+      style: typography.headline.copyWith(color: colors.content.textPrimary),
+    );
+  }
+}
+
+const double _contextIntroHeaderHeight = 132;
+
+TextStyle _excerptLabelStyle(ThemeColors colors, ThemeTypography typography) {
+  return typography.caption.copyWith(
+    color: colors.content.textSecondary.withValues(alpha: 0.78),
+    fontWeight: FontWeight.w500,
+  );
+}
+
+String _excerptLabel(int count) {
+  if (count <= 1) {
+    return 'Excerpt centered on the chosen message';
+  }
+  return '$count-message excerpt centered on the chosen message';
 }
 
 String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
@@ -144,12 +312,12 @@ String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
     return 'No dated messages';
   }
   dates.sort();
-  final first = _formatDateLabel(dates.first);
-  final last = _formatDateLabel(dates.last);
-  if (first == last) {
-    return first;
-  }
-  return '$first to $last';
+  return DateRangeFormatter.formatMessageEvidenceRange(
+    start: dates.first,
+    end: dates.last,
+    itemCount: entries.length,
+    emptyLabel: 'No dated messages',
+  );
 }
 
 DateTime? _parseDate(String? value) {

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/conversation_signatures/conversation_signature.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
@@ -9,6 +10,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/mes
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
+import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_display_provider.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_row_data.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
 import 'package:remember_this_text/features/messages/presentation/view/search_result_context_sidebar_view.dart';
@@ -26,6 +28,7 @@ void main() {
       beforeCount: 10,
       afterCount: 10,
     );
+    final conversationId = _liveChatGraphId(chatId);
     final beforeMessage = _message(
       id: _liveChatGraphId(498),
       text: 'Before context',
@@ -66,6 +69,33 @@ void main() {
           messageGraphReaderProvider.overrideWith((ref) async {
             return MessageGraphReader(repository: repository);
           }),
+          conversationSignatureDisplayByIdsProvider(
+            request: ConversationSignatureDisplayByIdsRequest(
+              conversationIds: [conversationId],
+            ),
+          ).overrideWith((ref) async {
+            return [
+              ConversationSignatureDisplayModel(
+                conversationId: conversationId,
+                title: 'Alex and Casey',
+                participantLabels: const ['Alex', 'Casey'],
+                participantCount: 2,
+                isGroup: true,
+                messageCount: 3,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-04-11T11:58:00.000Z',
+                lastMessageAtUtc: '2026-04-11T12:02:00.000Z',
+                lastMessageText: 'After context',
+                activityMonths: const [
+                  ConversationSignatureMonth(
+                    year: 2026,
+                    month: 4,
+                    messageCount: 3,
+                  ),
+                ],
+              ),
+            ];
+          }),
           messageEvidenceRowProvider(
             scope: evidenceScope,
             messageId: beforeMessage.messageId,
@@ -98,7 +128,12 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Message context'), findsOneWidget);
+    expect(find.text('Alex and Casey +2'), findsOneWidget);
+    expect(
+      find.text('21-message excerpt centered on the chosen message'),
+      findsOneWidget,
+    );
+    expect(find.text('Message context'), findsNothing);
     expect(find.text('Anchor message'), findsOneWidget);
     expect(find.text('Before context'), findsOneWidget);
     expect(find.text('After context'), findsOneWidget);

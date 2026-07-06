@@ -7,7 +7,7 @@ part of 'conversation_signature_display_provider.dart';
 // **************************************************************************
 
 String _$conversationSignatureDisplayHash() =>
-    r'76831b087f711a70c8324dd54ec40492b936f6d0';
+    r'2ec5b4113c52c7549d6092bc9bd3ce2dde632648';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -45,8 +45,9 @@ class ConversationSignatureDisplayFamily
   ConversationSignatureDisplayProvider call({
     int limit = 500,
     String searchQuery = '',
-    ConversationSignatureFilter filter = ConversationSignatureFilter.recent,
-    ConversationSignatureSort sort = ConversationSignatureSort.recent,
+    ConversationSignatureFilter filter = ConversationSignatureFilter.all,
+    ConversationSignatureSort sort =
+        ConversationSignatureSort.mostRecentlyUpdated,
     List<int> excludedFavouriteConversationIds = const <int>[],
   }) {
     return ConversationSignatureDisplayProvider(
@@ -94,8 +95,9 @@ class ConversationSignatureDisplayProvider
   ConversationSignatureDisplayProvider({
     int limit = 500,
     String searchQuery = '',
-    ConversationSignatureFilter filter = ConversationSignatureFilter.recent,
-    ConversationSignatureSort sort = ConversationSignatureSort.recent,
+    ConversationSignatureFilter filter = ConversationSignatureFilter.all,
+    ConversationSignatureSort sort =
+        ConversationSignatureSort.mostRecentlyUpdated,
     List<int> excludedFavouriteConversationIds = const <int>[],
   }) : this._internal(
          (ref) => conversationSignatureDisplay(

@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/util/count_label_formatter.dart';
+import '../../../../core/util/date_range_formatter.dart';
 import '../../application/message_evidence/conversation_evidence_header_context_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
@@ -107,7 +108,6 @@ class _ConversationMessagesPreviewViewState
               isMatchingLoaded,
             ),
             activeScopeLabel: _activeScopeLabel(normalizedQuery),
-            statusLine: _statusLine(normalizedQuery),
             searchConfig: MessageEvidenceHeaderSearchConfig(
               controller: _searchController,
               placeholder: 'Search this conversation',
@@ -153,11 +153,11 @@ class _ConversationMessagesPreviewViewState
     if (query.isNotEmpty) {
       if (isMatchingLoaded) {
         return '${_formatCount(matchingIds?.length ?? 0)} of '
-            '${_formatCount(messageCount)} messages match "$query"';
+            '${CountLabelFormatter.messages(messageCount)} match "$query"';
       }
       return 'matching messages...';
     }
-    return '${_formatCount(messageCount)} messages';
+    return CountLabelFormatter.messages(messageCount);
   }
 
   String? _activeScopeLabel(String query) {
@@ -170,21 +170,6 @@ class _ConversationMessagesPreviewViewState
     }
     if (parts.isEmpty) {
       return null;
-    }
-    return parts.join(' • ');
-  }
-
-  String _statusLine(String query) {
-    final parts = <String>[
-      'evidence skeleton',
-      'full conversation',
-      'hydrate visible rows',
-    ];
-    if (query.isNotEmpty) {
-      parts.add('search context "$query"');
-    }
-    if (widget.anchorMessageId != null) {
-      parts.add('anchor ${widget.anchorMessageId}');
     }
     return parts.join(' • ');
   }
@@ -216,31 +201,14 @@ String _emptyMessage({required String query, required bool isMatchingLoaded}) {
 }
 
 String _conversationDateSpan(ConversationEvidenceHeaderContext? headerContext) {
-  final first = _formatDateLabel(headerContext?.firstMessageAtUtc);
-  final last = _formatDateLabel(headerContext?.lastMessageAtUtc);
-  if (first == null && last == null) {
-    return '';
-  }
-  if (first == null) {
-    return 'through $last';
-  }
-  if (last == null || first == last) {
-    return first;
-  }
-  return '$first to $last';
-}
-
-String? _formatDateLabel(String? value) {
-  if (value == null || value.isEmpty) {
-    return null;
-  }
-  final parsed = DateTime.tryParse(value);
-  if (parsed == null) {
-    return value;
-  }
-  return DateFormat.yMMMd().format(parsed.toLocal());
+  return DateRangeFormatter.formatMessageEvidenceRangeFromIsoStrings(
+    startIso: headerContext?.firstMessageAtUtc,
+    endIso: headerContext?.lastMessageAtUtc,
+    itemCount: headerContext?.messageCount,
+    emptyLabel: '',
+  );
 }
 
 String _formatCount(int count) {
-  return NumberFormat.decimalPattern().format(count);
+  return CountLabelFormatter.formatCount(count);
 }

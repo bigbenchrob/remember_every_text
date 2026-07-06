@@ -1,12 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/buttons/buttons.dart';
+import '../../../../core/util/count_label_formatter.dart';
+import '../../../../core/util/date_range_formatter.dart';
 import '../../../contacts/feature_level_providers.dart'
     show ContactPickerDialog;
 import '../../../handles/feature_level_providers.dart'
@@ -103,8 +104,7 @@ class HandleLensView extends HookConsumerWidget {
                             isBusy: isBusy,
                             isCreating: isCreating,
                             typography: typography,
-                            errorColor:
-                                colors.buttons.destructiveForeground,
+                            errorColor: colors.buttons.destructiveForeground,
                           )
                         : null,
                   ),
@@ -260,9 +260,7 @@ class _CreateContactForm extends HookConsumerWidget {
             padding: const EdgeInsets.only(top: 6),
             child: Text(
               errorMessage.value!,
-              style: typography.caption.copyWith(
-                color: errorColor,
-              ),
+              style: typography.caption.copyWith(color: errorColor),
             ),
           ),
       ],
@@ -359,8 +357,6 @@ class _HandleLensEvidencePane extends ConsumerWidget {
             activeScopeLabel: searchQuery.isEmpty
                 ? null
                 : 'Message text contains "$searchQuery"',
-            statusLine:
-                'evidence skeleton • handle scope • hydrate visible rows',
             searchConfig: MessageEvidenceHeaderSearchConfig(
               controller: searchController,
               placeholder: 'Search messages from this handle',
@@ -390,11 +386,11 @@ String _countLabel({
   if (query.isNotEmpty) {
     if (isMatchingLoaded) {
       return '${_formatCount(matchingIds?.length ?? 0)} of '
-          '${_formatCount(totalCount)} messages match "$query"';
+          '${CountLabelFormatter.messages(totalCount)} match "$query"';
     }
     return 'matching messages...';
   }
-  return '${_formatCount(totalCount)} messages';
+  return CountLabelFormatter.messages(totalCount);
 }
 
 String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
@@ -406,12 +402,12 @@ String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
     return 'No dated messages';
   }
   dates.sort();
-  final first = _formatDateLabel(dates.first);
-  final last = _formatDateLabel(dates.last);
-  if (first == last) {
-    return first;
-  }
-  return '$first to $last';
+  return DateRangeFormatter.formatMessageEvidenceRange(
+    start: dates.first,
+    end: dates.last,
+    itemCount: entries.length,
+    emptyLabel: 'No dated messages',
+  );
 }
 
 DateTime? _parseDate(String? value) {
@@ -421,10 +417,6 @@ DateTime? _parseDate(String? value) {
   return DateTime.tryParse(value);
 }
 
-String _formatDateLabel(DateTime value) {
-  return DateFormat.yMMMd().format(value.toLocal());
-}
-
 String _formatCount(int count) {
-  return NumberFormat.decimalPattern().format(count);
+  return CountLabelFormatter.formatCount(count);
 }

@@ -321,7 +321,7 @@ class MessagePanels {
   /// Shared tint used when a message acts as the context anchor between
   /// the global search results and the end-sidebar context view.
   Color get contextAnchorBackground =>
-      _t.accents.primary.withValues(alpha: _t.isDark ? 0.20 : 0.12);
+      _t.status.warning.withValues(alpha: _t.isDark ? 0.18 : 0.10);
 
   /// Subtle neutral tint for sparse or metadata-heavy content.
   Color get mutedTint => _t.content.textTertiary.withValues(alpha: 0.08);
@@ -340,11 +340,11 @@ class MessagePanels {
 
   /// Primary border for context-anchor message chrome.
   Color get contextAnchorBorder =>
-      _t.accents.primary.withValues(alpha: _t.isDark ? 0.76 : 0.42);
+      _t.status.warning.withValues(alpha: _t.isDark ? 0.78 : 0.62);
 
   /// Badge fill for the context-anchor marker.
   Color get contextAnchorBadgeBackground =>
-      _t.accents.primary.withValues(alpha: _t.isDark ? 0.88 : 0.82);
+      _t.status.warning.withValues(alpha: _t.isDark ? 0.90 : 0.84);
 
   /// Foreground for the context-anchor badge glyph.
   Color get contextAnchorBadgeForeground =>
@@ -352,7 +352,7 @@ class MessagePanels {
 
   /// Glow/focus color used during the one-shot anchor activation pulse.
   Color get contextAnchorGlow =>
-      _t.accents.primary.withValues(alpha: _t.isDark ? 0.28 : 0.18);
+      _t.status.warning.withValues(alpha: _t.isDark ? 0.30 : 0.22);
 
   /// Bottom-edge glow indicating new evidence exists beyond the viewport.
   Color get pendingEvidenceGlow =>

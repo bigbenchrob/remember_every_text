@@ -125,8 +125,8 @@ void main() {
     expect(find.text('Conversation with Claire and +15552'), findsOneWidget);
     expect(find.textContaining('3 messages'), findsOneWidget);
     expect(find.text('newest'), findsOneWidget);
-    expect(find.text('associated 1'), findsOneWidget);
-    expect(find.text('reaction'), findsOneWidget);
+    expect(find.text('associated 1'), findsNothing);
+    expect(find.text('reaction'), findsNothing);
     expect(find.text('View options'), findsNothing);
     expect(find.text('Latest 500'), findsNothing);
   });
