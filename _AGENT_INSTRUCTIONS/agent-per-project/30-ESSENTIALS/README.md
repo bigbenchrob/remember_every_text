@@ -130,7 +130,8 @@ provide payload data and approved body content inside that envelope.
 panel navigation currency:
 
 * `ViewSpec.messages`
-* `ViewSpec.import`
+* `ViewSpec.conversations`
+* `ViewSpec.settings`
 * `ViewSpec.environmentReadiness`
 * `ViewSpec.onboarding`
 
@@ -143,8 +144,9 @@ Panel rules:
 
 * Panel state stores `ViewSpec`, not arbitrary widgets.
 * Flow-managed messages panels are projections of global flow state.
-* Import, environment readiness, and onboarding specs are explicitly
-  sidebar-independent and can park the normal sidebar.
+* Environment readiness and onboarding specs are explicitly
+  sidebar-independent and can park the normal sidebar. Other system flows
+  should declare sidebar independence explicitly in their current spec model.
 * Right-panel content is subordinate to center-panel compatibility.
 * Features may interpret their approved inner specs, but essentials owns panel
   stack policy and cross-surface reconciliation.

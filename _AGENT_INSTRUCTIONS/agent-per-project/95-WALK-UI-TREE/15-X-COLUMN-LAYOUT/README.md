@@ -39,52 +39,55 @@ is a Conversation workspace, not a Search-owned context widget. See:
 - `CONVERSATION_OWNERSHIP_AUDIT.md`
 - `CONVERSATION_OWNERSHIP_REPAIR.md`
 
-## Page Skeleton
+## Current Page Skeleton
 
-Each primary MessageLens page should be organized into vertical bands:
+The current implementation direction is deliberately simpler than the original
+four-band model.
 
-### Band 1: Panel Title / Lens Identity
+The page owns two shared vertical envelopes:
+
+1. top identity band
+2. middle context band
+
+Content starts immediately after the middle band.
+
+This preserves the important cross-column rhythm without forcing every panel
+to subdivide its internal header content identically.
+
+### Top Identity Band
 
 Examples:
 
-- `Search all messages`
-- `All messages`
-- `Conversation`
+- Left: `Search all messages` selector.
+- Center: `All messages`.
+- Right: `Conversation`.
 
 The title names the lens or panel. It should not narrate how the user arrived
 there.
 
-### Band 2: Primary Object / Primary Mode Information
+### Middle Context Band
 
 Examples:
 
-- Left: compact heatmap orientation or search mode context.
-- Center: result date range and hit count.
-- Right: Conversation Card.
+- Left: compact orientation or cassette material above primary sidebar
+  content.
+- Center: result metadata and search controls.
+- Right: Conversation Card and excerpt description.
 
-This band answers: what object, mode, or evidence universe is currently being
-inspected?
+The middle band is elastic in meaning but fixed in outer height for
+participating columns. Children may arrange themselves inside the band. They
+must not push content start downward.
 
-### Band 3: Secondary Scope / Controls
-
-Examples:
-
-- Left: secondary guidance, if needed.
-- Center: search input and AND/OR controls.
-- Right: `21-message excerpt centered on the chosen message`.
-
-This band explains scope, controls, or the relationship between the primary
-object and the content below.
-
-### Band 4: Content
+### Content Start
 
 Examples:
 
-- Left: heatmap/navigation.
+- Left: heatmap/navigation or the cassette selected as the sidebar content
+  start.
 - Center: message results.
 - Right: conversation excerpt messages.
 
-The beginning of Band 4 should align across peer panels.
+The beginning of content should align across peer panels.
 
 ## Band Ownership
 
@@ -99,6 +102,29 @@ If a component is too tall for its assigned band, the component should adapt:
 - defer secondary details to another area
 
 It should not push lower bands out of alignment.
+
+## Sidebar Cassette Seam
+
+The sidebar cassette system remains responsible for cassette chaining and
+flexible sidebar layout. X-column layout must not rewrite the cassette system
+or hard-code widget-specific rules such as "the heatmap starts here."
+
+Instead, participating sidebar surfaces use a content-start seam:
+
+- The top menu/selector is wrapped in the top identity band.
+- The next pre-content cassette or orientation material may occupy the middle
+  context band.
+- The primary navigation/evidence cassette begins after the middle band.
+- Future cassette specs may declare preferred content-start candidacy when the
+  autonomous seam needs to handle more configurations.
+
+For the Search page, the heatmap/navigation cassette is the current content
+start. The orientation text sits above it in the middle band, and task guidance
+may sit below the heatmap as post-content guidance.
+
+The important invariant is not "the heatmap aligns." The invariant is that the
+sidebar exposes a content-start seam that can align with peer panel content
+without surrendering cassette ownership.
 
 ## Left Sidebar Guidance
 
@@ -132,10 +158,9 @@ The Search page should resolve into:
 
 | Band | Search Panel | Messages Panel | Conversation Panel |
 | --- | --- | --- | --- |
-| 1 | Search all messages | All messages | Conversation |
-| 2 | Heatmap scope/orientation | Date range + hit count | Conversation Card |
-| 3 | Secondary guidance or mode context | Search field + AND/OR | Excerpt description |
-| 4 | Heatmap/navigation | Search results | Conversation excerpt |
+| Top identity | Search all messages | All messages | Conversation |
+| Middle context | Heatmap scope/orientation | Date range, hit count, search controls | Conversation Card, excerpt description |
+| Content start | Heatmap/navigation | Search results | Conversation excerpt |
 
 The page skeleton should own the vertical positions of these bands. The panel
 contents should render inside the assigned band.
@@ -151,7 +176,7 @@ owners of each panel:
 
 Then implement in small steps:
 
-1. Define reusable band constants or a lightweight page skeleton primitive.
+1. Define reusable band constants or lightweight band wrapper primitives.
 2. Apply it first to the Search page only.
 3. Constrain the right Conversation Card to Band 2.
 4. Move the left heatmap into the shared Band 4 content start.
@@ -162,29 +187,36 @@ Then implement in small steps:
 Avoid a broad app-shell redesign. This is a reusable layout grammar, not a new
 navigation system.
 
-## Current Implementation Primitive
+## Current Implementation Primitives
 
-The shared primitive is:
+The current shared primitives are:
 
+- `lib/config/theme/widgets/layout/vertical_column_bands.dart`
 - `lib/config/theme/widgets/layout/app_panel_bands.dart`
 
-`AppPanelBandHeader` and `AppPanelBandColumn` reserve the invisible title,
-primary, and secondary bands without rendering debug boxes or decorative
-chrome. The bands should be perceptible through alignment, whitespace, and
-rhythm.
+`TopColumnBand` and `MiddleColumnBand` are the current diagnostic wrappers for
+the simplified two-envelope model. They own the fixed outer dimensions and
+optional developer-mode margin visualization. Children own their internal
+presentation and may use explicit child placement only when the default is not
+enough.
+
+`AppPanelBandHeader` and related `app_panel_bands.dart` types are retained as
+older support primitives during the transition. Prefer the top/middle band
+wrappers for new X-column layout work unless the existing code path already
+requires the older primitive.
 
 The center Message Evidence header and the right Conversation excerpt panel
-both use this skeleton. The left Search sidebar remains cassette-driven, but
-its content should be arranged to respect the same conceptual bands: selector,
-orientation, guidance, and heatmap/content.
+both participate in this skeleton. The left Search sidebar remains
+cassette-driven, but its content should expose the same conceptual seam:
+selector, middle orientation/context, and content-start cassette.
 
 ## Acceptance Criteria
 
-- The three panel titles align on a shared visual baseline.
-- The primary object/mode band aligns across the three panels.
-- The secondary control/scope band aligns across the three panels.
-- The content band begins at approximately the same vertical position in all
-  three panels.
+- The three panel identities align on a shared visual baseline.
+- The top identity band is fixed and shared for participating columns.
+- The middle context band is fixed and shared for participating columns.
+- Content begins immediately after the middle context band in all participating
+  columns.
 - Components adapt to assigned bands rather than pushing lower bands downward.
 - The Search page feels like three coordinated lenses onto one graph, not a
   sidebar plus a main view plus another sidebar.

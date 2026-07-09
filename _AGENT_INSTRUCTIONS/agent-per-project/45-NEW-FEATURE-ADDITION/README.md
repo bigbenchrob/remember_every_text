@@ -2,17 +2,24 @@
 tier: project
 scope: workflow
 owner: agent-per-project
-last_reviewed: 2026-06-06
+last_reviewed: 2026-07-09
 source_of_truth: doc
 links:
   - ../../agent-instructions-shared/INDEX.md
+  - ./INDEX.md
   - ../40-FEATURES/README.md
 tests: []
 ---
 
 # New Feature Addition Workflow
 
-This folder tracks feature work that is still in planning or active development. Follow this workflow whenever the user asks for a new capability that is not yet represented in `40-FEATURES/`.
+This folder tracks feature work that is still in planning or active
+development, plus historical feature proposals and retrospectives that remain
+useful as rationale. Read [`INDEX.md`](INDEX.md) before treating any folder here
+as current implementation guidance.
+
+Follow this workflow whenever the user asks for a new capability that is not
+yet represented in `40-FEATURES/`.
 
 ## Lifecycle Overview
 
@@ -50,9 +57,12 @@ Templates live under `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates
 - Workflow guide: `AGENTS.md`
 - Feature brief template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/TEMPLATE-feature-brief.md`
 
-## Current Feature Folders
+## Active/Planning Feature Folders
 
-The table below is the current active/planning set. Other folders in this directory may be useful history, but they are not active marching orders by default.
+The table below is the active/planning set recorded for this folder. Other
+folders in this directory may be useful history, but they are not active
+marching orders by default. Verify status through [`INDEX.md`](INDEX.md), the
+current project roadmap, or the user's latest instruction before implementing.
 
 | Feature | Key Docs |
 | --- | --- |

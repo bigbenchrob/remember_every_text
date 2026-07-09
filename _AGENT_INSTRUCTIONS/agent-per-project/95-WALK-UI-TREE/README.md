@@ -21,6 +21,11 @@ The review documents define _what should change_.
 
 Codex implementation plans define _how those changes will be made._
 
+This is the active product-improvement phase of the project. The graph
+architecture should now be treated as supporting infrastructure. Do not expand
+a UI review into unrelated architecture cleanup unless the review identifies a
+clear release, data-integrity, ownership, or user-visible correctness blocker.
+
 ---
 
 # Directory Structure

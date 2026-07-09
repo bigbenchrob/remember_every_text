@@ -2,10 +2,11 @@
 tier: project
 scope: architecture
 owner: agent-per-project
-last_reviewed: 2026-06-26
+last_reviewed: 2026-07-09
 source_of_truth: doc
 links:
   - ./01-aggregate-boundaries.md
+  - ./05-CURRENT-STATE.md
   - ../30-ESSENTIALS/README.md
   - ../40-FEATURES/README.md
   - ../42-SPEC-SYSTEM/README.md
@@ -37,14 +38,15 @@ lib/
 └── constants/                   # Shared constants
 ```
 
-Current feature modules include `address_book_folders`, `attachments`, `chats`,
-`contacts`, `environment_readiness`, `handles`, `messages`, `settings`, and
-`sidebar_utilities`.
+Current feature modules include `address_book_folders`, `attachments`,
+`contacts`, `conversations`, `environment_readiness`, `handles`, `messages`,
+`settings`, and `sidebar_utilities`.
 
-Current essentials areas include navigation, sidebar, search, onboarding, db,
-source-scoped import, conversation graph, retired storage cleanup/diagnostic
-boundaries, logging, window state, config, debug, services, tooltips, and shared
-contacts infrastructure.
+Current essentials areas include app mode, navigation, sidebar, search,
+onboarding, db, source-scoped import, conversation graph, archive
+compatibility, paths, retired storage cleanup/diagnostic boundaries, logging,
+window state, config, debug, services, tooltips, and shared contacts
+infrastructure.
 
 ## Essentials vs Features
 
@@ -65,6 +67,21 @@ Features own domain content:
 - feature data resolution and repositories
 - payloads/view models for approved feature surfaces
 - terminal feature rendering inside essentials-owned surface contracts
+
+Current feature boundary highlights:
+
+- `features/conversations` owns user-facing Conversation presentation:
+  Conversation cards, signature glyphs, Favourites/Core Favourite affordances,
+  Conversation collections, and Conversation excerpt panels.
+- `features/messages` owns message evidence surfaces: evidence scopes,
+  timeline skeleton/hydration, message headers/search controls, message rows,
+  and attachment evidence presentation.
+- `essentials/conversation_graph` owns graph projection/build/read facts and
+  source-scoped graph identity. It does not own user-facing Conversation
+  widgets.
+- `essentials/search` owns shared graph search infrastructure and evidence
+  selection. Search may request a Conversation excerpt, but Conversation UI is
+  rendered by the Conversations feature.
 
 Path location alone does not prove architectural ownership. Some contact-related
 logic is shared infrastructure under essentials; other contact-related logic is
@@ -105,6 +122,10 @@ file/schema cleanup inventory for reset cleanup and read-only diagnostics.
 Source import, graph build, and retired-file cleanup details belong in
 `../20-DATA-IMPORT-MIGRATION/`.
 Database boundaries and provider access rules belong in `../10-DATABASES/`.
+
+For the current project phase and active product/release priorities, see
+`./05-CURRENT-STATE.md` and
+`../55-READERS-INTEGRATORS-ORCHESTRATORS/85-RELEASE-EXIT-PLAN.md`.
 
 Hard boundaries:
 

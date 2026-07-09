@@ -2,12 +2,13 @@
 tier: project
 scope: features
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-07-09
 source_of_truth: doc
 links:
 	- ../45-NEW-FEATURE-ADDITION/README.md
 	- ../42-SPEC-SYSTEM/README.md
 	- ./chat-handles/CHARTER.md
+	- ./conversations/README.md
 	- ../90-USE-CASE-ILLUSTRATIONS/README.md
 tests: []
 ---
@@ -25,7 +26,8 @@ Feature docs must not imply that features own app-level orchestration. Features 
 | Feature | Key Docs |
 | --- | --- |
 | `chat-handles/` | Draft scaffold for handle identity/linking concerns. Current concrete implementation is split across `lib/features/handles`, `lib/features/contacts/application/services/manual_handle_link_service.dart`, and overlay DB handle overrides. |
-| `chats/` | Draft scaffold for chat aggregate and recent-chat projection. Current code has repository/view-model support but no active `ViewSpec.chats` route. |
+| `chats/` | Historical scaffold for older chat terminology. Current user-facing Conversation ownership belongs to `lib/features/conversations`; do not use `chats/` docs as current implementation guidance. |
+| `conversations/` | [`README.md`](conversations/README.md) - Canonical user-facing owner of Conversation cards, glyphs, favourites, collections, and Conversation excerpt panels. |
 | `contact-favourites/` | [`RECENTS-FAVORITES.md`](contact-favourites/RECENTS-FAVORITES.md) — Picker section precedence, de-duplication, and semantic preservation rules |
 | `contact-names/` | Current notes for participant naming overrides, virtual participants, and overlay/working separation. |
 | `identify-stray-handles/` | [`MASTER_PLAN.md`](identify-stray-handles/MASTER_PLAN.md) — 3-phase plan: overlay schema + virtual participants → sidebar review + Handle Lens → polish & bulk ops |
@@ -43,14 +45,17 @@ The current code tree also contains feature modules that do not all have full do
 | --- | --- |
 | `address_book_folders` | AddressBook source folder discovery and readiness support. The old presentation/loading widgets and user-selectable candidate workflow are retired; the active value is the source path resolver used by onboarding and source-scoped contact import. |
 | `attachments` | Attachment archive, graph evidence resolution, deterministic recovery, and archive settings support. The old generic `Attachment`/`AttachmentId` feature-domain model is retired. |
-| `chats` | Chat repository, recent-chat and timeline support. |
 | `contacts` | Contact picker/sidebar cassettes, favorites, virtual participants, contact profile/name overrides, tooltip spec. |
+| `conversations` | Canonical user-facing Conversation presentation: cards, signature glyphs, Favourites/Core Favourite state/action, conversation collections, and Conversation excerpt panels. |
 | `environment_readiness` | ViewSpec-driven readiness panel used by onboarding/system surfaces. |
 | `handles` | Stray-handle review cassettes, graph/overlay handle providers, manual-linking operations, and Handle Lens support. |
-| `messages` | Message timeline scopes, sidebar heatmaps/navigators, ViewSpec handling, hydration, recovered-message surfaces. |
-| `reactions` | Retired feature shell. Reaction evidence is preserved by message import/projection semantics and retired reaction-table cleanup/reference data, not by an active standalone feature module. |
+| `messages` | Message evidence scopes, timeline skeleton/hydration, message evidence headers/search, row rendering, attachment evidence tiles, sidebar heatmaps/navigators, and recovered-message surfaces. Conversation identity presentation belongs to `conversations`. |
 | `settings` | Settings sidebar cassettes and settings action surfaces. |
 | `sidebar_utilities` | Top-chat/settings menu cassettes and shared sidebar utility specs. |
+
+No active `lib/features/chats` or `lib/features/reactions` module was present
+in the July 2026 code inventory. Treat those names as historical unless the
+code tree reintroduces them deliberately.
 
 ## Required Files Per Feature
 

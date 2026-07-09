@@ -34,6 +34,35 @@ The intent is not architectural novelty for its own sake. The intent is to impro
 - testability
 - observability
 
+## Current Status
+
+This folder contains both durable architectural guidance and a long graph
+migration history. Do not treat every numbered document as an active task.
+
+Use [`TOPIC_INDEX.md`](TOPIC_INDEX.md) when looking for a specific topic. It
+groups the numbered documents by purpose so readers do not have to infer
+currency from file number alone.
+
+Current use:
+
+- For responsibility boundaries, read `00` through `30` plus the specific
+  invariant docs linked below.
+- For message evidence work, read
+  [`69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md`](69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md).
+- For retained database and attachment reachability questions, read
+  [`81-LEGACY-STORAGE-RETENTION-REGISTER.md`](81-LEGACY-STORAGE-RETENTION-REGISTER.md),
+  [`83-LEGACY-DATABASE-RETIREMENT-ASSESSMENT.md`](83-LEGACY-DATABASE-RETIREMENT-ASSESSMENT.md),
+  and [`84-ATTACHMENT-REACHABILITY-AUDIT.md`](84-ATTACHMENT-REACHABILITY-AUDIT.md).
+- For deciding whether to do more architecture hardening, read
+  [`85-RELEASE-EXIT-PLAN.md`](85-RELEASE-EXIT-PLAN.md) first. The default
+  answer is now: defer hardening unless it directly unblocks release,
+  data-integrity, archive/recovery, onboarding, readiness, or user-visible
+  correctness.
+
+The graph migration has crossed from primary project objective into
+infrastructure. Current product work normally belongs in release readiness,
+archive/recovery verification, onboarding, or the UI/UX walk.
+
 ## Reading Flow
 
 Use these documents in this order when working on the source-scoped graph architecture:
@@ -65,6 +94,36 @@ Use these documents in this order when working on the source-scoped graph archit
 25. [`82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md`](82-SOURCE-SCOPED-ARCHIVE-IMPORT-CUTOVER-PLAN.md) - cutover plan for replacing old archive import/projection paths with source-scoped archive source registration, import, projection, and verification.
 26. [`83-LEGACY-DATABASE-RETIREMENT-ASSESSMENT.md`](83-LEGACY-DATABASE-RETIREMENT-ASSESSMENT.md) - policy assessment classifying `macos_import.db` and `working.db` as retired cleanup/diagnostic inventory rather than permanent reference databases.
 27. [`84-ATTACHMENT-REACHABILITY-AUDIT.md`](84-ATTACHMENT-REACHABILITY-AUDIT.md) - attachment reachability proof showing ordinary graph-era attachment evidence and living archive sweeps resolve through `working_ss.db`, overlay archive metadata, and the archive filesystem rather than retired databases.
+28. [`85-RELEASE-EXIT-PLAN.md`](85-RELEASE-EXIT-PLAN.md) - current product/release mode: stop opportunistic hardening and advance readiness, onboarding, archive import, archive/recovery verification, retired database readiness, and final smoke testing.
+
+## Navigation Guide
+
+### Durable Invariants
+
+These documents are current architectural guardrails:
+
+- `00-TERMINOLOGY.md`
+- `10-ARCHITECTURE-CONTRACT.md`
+- `20-ALLOWED-DEPENDENCIES.md`
+- `30-INVARIANTS.md`
+- `49-IMPORT-STAGE-CONTROLLER-AND-PIPELINE-ORCHESTRATOR-STRATEGY.md`
+- `60-CANONICAL-TOPOLOGY-PROJECTION-DESIGN.md`
+- `64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md`
+- `68-SS-MESSAGE-SEMANTIC-PRESERVATION-MODEL.md`
+- `69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md`
+
+### Migration History And Audit Evidence
+
+Documents `40` through `84` include pilot plans, graph migration checkpoints,
+dependency matrices, parity audits, retirement assessments, and reachability
+proofs. They are useful when interpreting why the system has its current
+shape. They should not be read as permission to restart retired legacy paths.
+
+### Current Work Selection
+
+`85-RELEASE-EXIT-PLAN.md` is the current gate for deciding whether work should
+proceed. Architecture cleanup that does not directly improve release readiness
+or user-visible correctness should be recorded for later rather than executed.
 
 Read [`64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md`](64-SOURCE-SCOPED-ROW-KEY-STRATEGY.md) before adding archive-source support, topology projection, source occurrence tables, provenance sidecars, or any schema that stores source-derived relationship endpoints.
 
