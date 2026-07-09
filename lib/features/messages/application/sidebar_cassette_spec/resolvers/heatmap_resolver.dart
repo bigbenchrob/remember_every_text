@@ -30,6 +30,9 @@ class HeatmapResolver extends _$HeatmapResolver {
     return MessagesHeatmapCassettePayload(
       contactId: contactId,
       role: SidebarCassetteRole.contextPrimary,
+      layoutAnchor: contactId == null
+          ? SidebarCassetteLayoutAnchor.preferredContentStart
+          : SidebarCassetteLayoutAnchor.none,
       placementMode: SidebarBodyPlacementMode.inset,
       contentAlignment: SidebarBodyContentAlignment.loose,
       title: '',

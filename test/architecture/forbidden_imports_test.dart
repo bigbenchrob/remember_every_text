@@ -17,8 +17,9 @@ const Set<String> _sidebarSemanticActionTransportFiles = {
 const Set<String> _panelActionProviderAllowedFiles = {
   'lib/essentials/navigation/presentation/view/panel_stack_surface.dart',
   'lib/essentials/navigation/presentation/view/sidebar_parked_overlay.dart',
+  'lib/features/conversations/application/actions/conversation_excerpt_navigation_actions_provider.dart',
   'lib/features/messages/presentation/view/recovered_attachment_sidebar_view.dart',
-  'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
+  'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
 };
 
 const Set<String> _appModeActionProviderAllowedFiles = {
@@ -166,6 +167,7 @@ const Set<String> _rawPresentationColorLiteralAllowedFiles = {
   // Theme token definitions are the correct home for raw color literals.
   'lib/config/theme/colors/theme_colors.dart',
   'lib/config/theme/colors/theme_colors_annotated.dart',
+  'lib/config/theme/widgets/heatmap/activity_heatmap_color_scale.dart',
 
   // Canonical heatmap activity scale: these colors are data semantics shared
   // by contact heatmaps and conversation glyphs, not incidental chrome.
@@ -254,7 +256,7 @@ const Set<String> _unawaitedAllowedFiles = {
   'lib/essentials/conversation_graph/application/conversation_favourites/conversation_favourites_provider.dart',
   'lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart',
   'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
-  'lib/essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart',
+  'lib/features/conversations/presentation/widgets/conversation_favourite_button.dart',
   'lib/essentials/logging/application/app_logger.dart',
   'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
@@ -263,8 +265,8 @@ const Set<String> _unawaitedAllowedFiles = {
   'lib/features/attachments/application/attachment_resolver_provider.dart',
   'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_picker_actions_provider.dart',
   'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/picker_filter_mode_provider.dart',
-  'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_provider.dart',
-  'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
+  'lib/features/conversations/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_provider.dart',
+  'lib/features/conversations/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
   'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
   'lib/main.dart',
 };
@@ -448,7 +450,6 @@ const Set<String> _featureIdentitySourceScopedRowKeyAllowedFiles = {
 };
 
 const Set<String> _messageEvidenceIdentityBridgeAllowedFiles = {
-  'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart',
   'lib/features/messages/application/user_metadata/message_overlay_provider.dart',
   'lib/features/messages/infrastructure/repositories/graph_message_overlay_repository.dart',
 };
@@ -458,7 +459,6 @@ const Set<String> _retiredMessageOverlayWriteAllowedFiles = {
 };
 
 const Set<String> _liveChatGraphIdentityBridgeAllowedFiles = {
-  'lib/essentials/conversation_graph/infrastructure/repositories/message_graph_repository.dart',
   'lib/features/handles/application/read_models/handle_identity.dart',
   'lib/features/messages/application/message_evidence/message_evidence_identity.dart',
 };
@@ -470,8 +470,8 @@ const Set<String> _contactPageGraphIdentityBridgeAllowedFiles = {
 };
 
 const Set<String> _messageEvidenceTextMatchProviderAllowedFiles = {
+  'lib/features/conversations/presentation/view/conversation_messages_view.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/conversation_messages_preview_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
@@ -482,14 +482,14 @@ const Set<String> _messageEvidenceInitialRowsProviderAllowedFiles = {
 };
 
 const Set<String> _messageEvidenceTimelineSkeletonProviderAllowedFiles = {
+  'lib/features/conversations/presentation/view/conversation_messages_view.dart',
+  'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
   'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/conversation_messages_preview_view.dart',
   'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
 };
 
 const Set<String> _messageEvidenceRowProviderAllowedFiles = {
@@ -501,28 +501,28 @@ const Set<String> _messageEvidenceAttachmentsProviderAllowedFiles = {
 };
 
 const Set<String> _messageEvidenceTimelineViewAllowedFiles = {
+  'lib/features/conversations/presentation/view/conversation_messages_view.dart',
+  'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/conversation_messages_preview_view.dart',
   'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
 };
 
 const Set<String> _messageEvidenceHeaderModelAllowedFiles = {
+  'lib/features/conversations/presentation/view/conversation_messages_view.dart',
+  'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/conversation_messages_preview_view.dart',
   'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/search_result_context_sidebar_view.dart',
 };
 
 const Set<String> _messageEvidenceHeaderSearchConfigAllowedFiles = {
+  'lib/features/conversations/presentation/view/conversation_messages_view.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/conversation_messages_preview_view.dart',
   'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
@@ -546,16 +546,11 @@ const Set<String> _messageHeatmapActionProviderAllowedFiles = {
 };
 
 const Set<String> _conversationNavigationActionProviderAllowedFiles = {
-  'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
+  'lib/features/conversations/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
 };
 
 const Set<String> _contactConversationNavigationActionProviderAllowedFiles = {
-  'lib/features/messages/presentation/widgets/contact_graph_conversation_section.dart',
-};
-
-const Set<String> _chatSelectionActionProviderAllowedFiles = {
-  'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
-  'lib/features/chats/presentation/view_model/chats_view_model_provider.dart',
+  'lib/features/conversations/presentation/widgets/contact_conversations/contact_graph_conversation_section.dart',
 };
 
 const Set<String> _recoveredMessageNavigationActionProviderAllowedFiles = {
@@ -574,7 +569,7 @@ const Set<String> _handleReviewActionProviderAllowedFiles = {
 
 const Set<String>
 _conversationSignaturePreferencesActionProviderAllowedFiles = {
-  'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
+  'lib/features/conversations/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
 };
 
 const Set<String> _contactPickerActionProviderAllowedFiles = {
@@ -629,7 +624,7 @@ const Set<String> _strayHandleSidebarActionProviderAllowedFiles = {
 };
 
 const Set<String> _conversationFavouriteActionProviderAllowedFiles = {
-  'lib/essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart',
+  'lib/features/conversations/presentation/widgets/conversation_favourite_button.dart',
 };
 
 const Set<String> _attachmentRecoveryActionProviderAllowedFiles = {
@@ -1702,19 +1697,6 @@ void main() {
       );
     });
 
-    test('Production chats provider imports stay explicit', () async {
-      final offenders = await _findBroadChatsProviderImportOffenders();
-
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'Broad production imports of features/chats/feature_level_providers.dart '
-            'hide whether a caller needs chat read models, actions, or view '
-            'models. Import exact symbols with a show list.',
-      );
-    });
-
     test('Production address book folder provider imports stay explicit', () async {
       final offenders =
           await _findBroadAddressBookFoldersProviderImportOffenders();
@@ -2612,53 +2594,6 @@ void main() {
       );
     });
 
-    test('Chats view model dispatches sidebar actions', () async {
-      final offenders = await _findChatsViewModelFlowMutationOffenders();
-
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'The chats selection controller may translate chat selections into '
-            'semantic chat-selection actions, but sidebar intent construction '
-            'and dispatch belong behind ChatSelectionActions. Graph read-model '
-            'composition belongs in the chats application layer, not '
-            'presentation view models.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
-      );
-    });
-
-    test('Chat selection action provider stays selection-owned', () async {
-      final offenders = await _findChatSelectionActionProviderOffenders();
-
-      expect(
-        offenders,
-        orderedEquals(
-          _chatSelectionActionProviderAllowedFiles.toList()..sort(),
-        ),
-        reason:
-            'chatSelectionActionsProvider owns chat-to-conversation '
-            'navigation intent construction. New surfaces should use a '
-            'feature-local action/read-model boundary instead of spreading '
-            'chat selection authority directly.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
-      );
-    });
-
-    test('Graph status sheet delegates chat-open diagnostics', () async {
-      final offenders = await _findGraphStatusSheetChatOpenOffenders();
-
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'ConversationGraphStatusSheet may forward chat-open intent, but '
-            'chat-selection dispatch and failure diagnostics belong behind '
-            'ChatSelectionActions.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
-      );
-    });
-
     test('Message display media diagnostics use action boundary', () async {
       final offenders = await _findMessageDisplayMediaDiagnosticOffenders();
 
@@ -3247,13 +3182,12 @@ void main() {
         'lib/essentials/db_migrate',
         'lib/essentials/incremental_update_ss',
         'lib/essentials/db/infrastructure/data_sources/local/working',
-        'lib/features/chats/application/conversation_browser',
-        'lib/features/chats/presentation/view/conversation_browser_view.dart',
+        'lib/features/chats',
         'test/essentials/db_importers',
         'test/essentials/db_migrate',
         'test/essentials/incremental_update_ss',
         'test/essentials/db/infrastructure/data_sources/local/working',
-        'test/features/chats/application/conversation_browser',
+        'test/features/chats',
       ];
       final existingPaths = retiredPaths
           .where((path) => Directory(path).existsSync())
@@ -3265,10 +3199,10 @@ void main() {
         reason:
             'The old db_importers, db_migrate, incremental_update_ss, and '
             'retired Drift working-schema folders have been retired. The old '
-            'conversation browser has also been retired. Live source monitoring '
+            'chat-named feature boundary has also been retired. Live source monitoring '
             'belongs to conversation_graph lifecycle code, source fact importers '
             'belong to source_scoped_import, ordinary conversation browsing '
-            'belongs to the conversation signature/evidence spine, and retired-file '
+            'belongs to features/conversations, and retired-file '
             'diagnostics belong to essentials/db.\n'
             'Existing retired paths:\n${existingPaths.join('\n')}',
       );
@@ -3540,21 +3474,6 @@ void main() {
             'archive service, archive settings, and recovery providers through '
             'features/attachments/feature_level_providers.dart. Direct imports '
             'of attachment application provider files create provider islands.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
-      );
-    });
-
-    test('Other systems use chats feature boundary', () async {
-      final offenders = await _findCrossSystemChatProviderImportOffenders();
-
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'Systems outside chats should consume chat view-model providers '
-            'and read models through features/chats/feature_level_providers.dart. '
-            'Direct imports of chats presentation providers recreate provider '
-            'islands and leak feature internals.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -4243,7 +4162,7 @@ void main() {
         offenders,
         isEmpty,
         reason:
-            'ConversationMessagesPreviewView renders message evidence. '
+            'ConversationMessagesView renders message evidence. '
             'Conversation title/date/count composition should stay behind the '
             'ConversationEvidenceHeaderContext provider so raw graph '
             'participant facts do not become user-facing labels in widgets.\n'
@@ -4371,46 +4290,18 @@ void main() {
       );
     });
 
-    test('Retired conversation browser is not publicly exported', () async {
-      final offenders =
-          await _findRetiredConversationBrowserPublicExportOffenders();
+    test('Retired chats feature boundary does not return', () async {
+      final offenders = await _findRetiredChatsFeatureOffenders();
 
       expect(
         offenders,
         isEmpty,
         reason:
-            'The old ConversationBrowserView has been retired. It must not be '
-            'exported from feature_level_providers.dart where ordinary feature '
-            'consumers can rediscover it as a normal public chats surface.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
-      );
-    });
-
-    test('Retired conversation browser files do not return', () async {
-      final offenders = await _findRetiredConversationBrowserFileOffenders();
-
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'The old conversation browser view and integrator are retired. '
-            'Conversation browsing belongs to the graph sidebar/evidence spine, '
-            'not a restored center-panel browser path.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
-      );
-    });
-
-    test('Retired conversation browser internals do not return', () async {
-      final offenders =
-          await _findRetiredConversationBrowserInternalImportOffenders();
-
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'The old conversation browser integrator/view have been retired. '
-            'Ordinary app code must use graph/evidence-spine read models '
-            'instead of importing this retired browser internals path.\n'
+            'The chat-named feature boundary has been retired. Conversation '
+            'identity, cards, favourites, excerpts, and conversation '
+            'navigation belong to features/conversations; ordinary message '
+            'evidence belongs to features/messages. Do not recreate '
+            'features/chats or import it as a compatibility seam.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -4849,7 +4740,7 @@ void main() {
       'Conversation signature preferences store stays feature-boundary owned',
       () {
         const retiredInfrastructureProvider =
-            'lib/features/messages/infrastructure/repositories/conversation_signature_preferences_store_provider.dart';
+            'lib/features/conversations/infrastructure/repositories/conversation_signature_preferences_store_provider.dart';
 
         expect(
           File(retiredInfrastructureProvider).existsSync(),
@@ -4857,7 +4748,7 @@ void main() {
           reason:
               'ConversationSignaturePreferencesStore is an application '
               'contract. Provider composition imports concrete overlay storage '
-              'and belongs in a named messages application provider boundary, '
+              'and belongs in a named conversations application provider boundary, '
               'not an infrastructure provider island.',
         );
       },
@@ -8108,29 +7999,6 @@ Future<List<String>> _findBroadSidebarUtilitiesProviderImportOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findBroadChatsProviderImportOffenders() async {
-  final files = await _collectDartFiles((path) {
-    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
-      return false;
-    }
-    return path.startsWith('lib/');
-  });
-  final offenders = <String>{};
-  final broadImportPattern = RegExp(
-    r'''import\s+['"][^'"]*chats/feature_level_providers\.dart['"]\s*;''',
-  );
-
-  for (final filePath in files) {
-    final source = await File(filePath).readAsString();
-    final uncommented = _stripComments(source);
-    if (broadImportPattern.hasMatch(uncommented)) {
-      offenders.add(filePath);
-    }
-  }
-
-  return offenders.toList()..sort();
-}
-
 Future<List<String>>
 _findBroadAddressBookFoldersProviderImportOffenders() async {
   final files = await _collectDartFiles((path) {
@@ -9191,38 +9059,6 @@ Future<List<String>> _findCrossSystemAttachmentProviderImportOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findCrossSystemChatProviderImportOffenders() async {
-  final files = await _collectDartFiles((path) {
-    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
-      return false;
-    }
-    if (path.startsWith('lib/features/chats/')) {
-      return false;
-    }
-    return path.startsWith('lib/features/') ||
-        path.startsWith('lib/essentials/');
-  });
-  final offenders = <String>{};
-
-  for (final filePath in files) {
-    final source = await File(filePath).readAsString();
-    final uncommented = _stripComments(source);
-    final imports = _extractImports(uncommented);
-    for (final importTarget in imports) {
-      if (importTarget.endsWith(
-            'features/chats/presentation/view_model/chats_view_model_provider.dart',
-          ) ||
-          importTarget.endsWith(
-            'chats/presentation/view_model/chats_view_model_provider.dart',
-          )) {
-        offenders.add('$filePath imports $importTarget');
-      }
-    }
-  }
-
-  return offenders.toList()..sort();
-}
-
 Future<List<String>>
 _findCrossSystemSettingsApplicationImportOffenders() async {
   final files = await _collectDartFiles((path) {
@@ -9739,7 +9575,7 @@ _findConversationSignaturePresentationRawProviderOffenders() async {
 Future<List<String>>
 _findConversationSignatureSelectionActionBoundaryOffenders() async {
   const filePath =
-      'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart';
+      'lib/features/conversations/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart';
   final file = File(filePath);
   if (!file.existsSync()) {
     return const <String>[];
@@ -9765,7 +9601,7 @@ _findConversationSignatureSelectionActionBoundaryOffenders() async {
 Future<List<String>>
 _findConversationNavigationActionProviderOffenders() async {
   const navigationActionsFile =
-      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_navigation_actions_provider.dart';
+      'lib/features/conversations/application/sidebar_cassette_spec/resolver_tools/conversation_navigation_actions_provider.dart';
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
@@ -9791,7 +9627,7 @@ _findConversationNavigationActionProviderOffenders() async {
 Future<List<String>>
 _findConversationSignaturePreferencesActionBoundaryOffenders() async {
   const filePath =
-      'lib/features/messages/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart';
+      'lib/features/conversations/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart';
   final file = File(filePath);
   if (!file.existsSync()) {
     return const <String>[];
@@ -9811,7 +9647,7 @@ _findConversationSignaturePreferencesActionBoundaryOffenders() async {
 Future<List<String>>
 _findConversationSignaturePreferencesActionProviderOffenders() async {
   const actionsFile =
-      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_actions_provider.dart';
+      'lib/features/conversations/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_actions_provider.dart';
   return _findProviderUsageOffenders(
     providerName: 'conversationSignaturePreferencesActionsProvider',
     providerFile: actionsFile,
@@ -9821,7 +9657,7 @@ _findConversationSignaturePreferencesActionProviderOffenders() async {
 Future<List<String>>
 _findConversationMessageHeaderContextBoundaryOffenders() async {
   const filePath =
-      'lib/features/messages/presentation/view/conversation_messages_preview_view.dart';
+      'lib/features/conversations/presentation/view/conversation_messages_view.dart';
   final source = await File(filePath).readAsString();
   final uncommented = _stripComments(source);
   final imports = _extractImports(uncommented);
@@ -9858,16 +9694,16 @@ Future<List<String>> _findContactMessageHeaderContextBoundaryOffenders() async {
 Future<List<String>>
 _findContactConversationSectionDisplayBoundaryOffenders() async {
   const filePath =
-      'lib/features/messages/presentation/widgets/contact_graph_conversation_section.dart';
+      'lib/features/conversations/presentation/widgets/contact_conversations/contact_graph_conversation_section.dart';
   final source = await File(filePath).readAsString();
   final uncommented = _stripComments(source);
   final imports = _extractImports(uncommented);
   const forbiddenImports = <String>{
-    '../../../../essentials/conversation_graph/application/contacts/contact_graph.dart',
-    '../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
-    '../../../../essentials/navigation/feature_level_providers.dart',
-    '../../../../essentials/navigation/domain/entities/view_spec.dart',
-    '../../../../essentials/navigation/domain/navigation_constants.dart',
+    '../../../../../essentials/conversation_graph/application/contacts/contact_graph.dart',
+    '../../../../../essentials/conversation_graph/application/contacts/contact_graph_provider.dart',
+    '../../../../../essentials/navigation/feature_level_providers.dart',
+    '../../../../../essentials/navigation/domain/entities/view_spec.dart',
+    '../../../../../essentials/navigation/domain/navigation_constants.dart',
   };
   final offenders = <String>[
     for (final importTarget in imports)
@@ -9893,7 +9729,7 @@ _findContactConversationSectionDisplayBoundaryOffenders() async {
 Future<List<String>>
 _findContactConversationSectionActionBoundaryOffenders() async {
   const filePath =
-      'lib/features/messages/presentation/widgets/contact_graph_conversation_section.dart';
+      'lib/features/conversations/presentation/widgets/contact_conversations/contact_graph_conversation_section.dart';
   final source = await File(filePath).readAsString();
   final uncommented = _stripComments(source);
   final offenders = <String>[];
@@ -9915,7 +9751,7 @@ _findContactConversationSectionActionBoundaryOffenders() async {
 Future<List<String>>
 _findContactConversationNavigationActionProviderOffenders() async {
   const navigationActionsFile =
-      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_conversation_navigation_actions_provider.dart';
+      'lib/features/conversations/application/contact_conversations/contact_conversation_navigation_actions_provider.dart';
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
@@ -10009,77 +9845,43 @@ Future<List<String>> _findConversationBrowserSpecRouteOffenders() async {
   return offenders..sort();
 }
 
-Future<List<String>>
-_findRetiredConversationBrowserPublicExportOffenders() async {
-  const exportFile = 'lib/features/chats/feature_level_providers.dart';
-  final file = File(exportFile);
-  if (!file.existsSync()) {
-    return const [];
+Future<List<String>> _findRetiredChatsFeatureOffenders() async {
+  final offenders = <String>[];
+  const retiredPaths = <String>['lib/features/chats', 'test/features/chats'];
+
+  for (final path in retiredPaths) {
+    if (Directory(path).existsSync() || File(path).existsSync()) {
+      offenders.add(path);
+    }
   }
 
-  final uncommented = _stripComments(await file.readAsString());
-  if (!uncommented.contains('conversation_browser_view.dart')) {
-    return const [];
-  }
-
-  return const ['$exportFile exports retained conversation_browser_view.dart'];
-}
-
-Future<List<String>> _findRetiredConversationBrowserFileOffenders() async {
-  const retiredFiles = <String>[
-    'lib/features/chats/application/conversation_browser/conversation_browser_integrator.dart',
-    'lib/features/chats/presentation/view/conversation_browser_view.dart',
-  ];
-
-  return [
-    for (final filePath in retiredFiles)
-      if (File(filePath).existsSync()) filePath,
-  ];
-}
-
-Future<List<String>>
-_findRetiredConversationBrowserInternalImportOffenders() async {
-  const retainedViewPath =
-      'lib/features/chats/presentation/view/conversation_browser_view.dart';
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    if (path == retainedViewPath) {
-      return false;
-    }
-    if (path.startsWith(
-      'lib/features/chats/application/conversation_browser/',
-    )) {
-      return false;
-    }
-    return path.startsWith('lib/features/') ||
-        path.startsWith('lib/essentials/');
+    return path.startsWith('lib/') || path.startsWith('test/');
   });
-  final offenders = <String>{};
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
     final imports = _extractImports(uncommented);
     for (final importTarget in imports) {
-      if (importTarget.endsWith(
-            'features/chats/application/conversation_browser/conversation_browser_integrator.dart',
-          ) ||
+      if (importTarget.contains('features/chats/') ||
           importTarget.endsWith(
-            'chats/application/conversation_browser/conversation_browser_integrator.dart',
+            'features/chats/feature_level_providers.dart',
           )) {
         offenders.add('$filePath imports $importTarget');
       }
     }
   }
 
-  return offenders.toList()..sort();
+  return offenders..sort();
 }
 
 Future<List<String>> _findConversationSignatureCardPurityOffenders() async {
   const filePath =
-      'lib/essentials/conversation_graph/presentation/widgets/conversation_signature_card.dart';
+      'lib/features/conversations/presentation/widgets/conversation_signature_card.dart';
   final file = File(filePath);
   if (!file.existsSync()) {
     return const <String>[];
@@ -10868,7 +10670,7 @@ Future<List<String>> _findCrossFeatureContactInfrastructureOffenders() async {
 Future<List<String>>
 _findConversationSignaturePreferencesStorageOffenders() async {
   const filePath =
-      'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_provider.dart';
+      'lib/features/conversations/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_provider.dart';
   final file = File(filePath);
   if (!file.existsSync()) {
     return const <String>[];
@@ -11107,7 +10909,7 @@ _findConversationFavouritesStructuredStorageOffenders() async {
 Future<List<String>>
 _findConversationFavouriteButtonActionBoundaryOffenders() async {
   const filePath =
-      'lib/essentials/conversation_graph/presentation/widgets/conversation_favourite_button.dart';
+      'lib/features/conversations/presentation/widgets/conversation_favourite_button.dart';
   final file = File(filePath);
   if (!file.existsSync()) {
     return const <String>[];
@@ -11909,7 +11711,6 @@ Future<List<String>> _findGraphStatusSheetControlBoundaryOffenders() async {
 
   if (uncommented.contains('ref.invalidate(') ||
       uncommented.contains('widget.ref.invalidate(') ||
-      uncommented.contains('chatsViewModelProvider.notifier') ||
       uncommented.contains('writeRun(') ||
       uncommented.contains('.runOnce(owner:')) {
     offenders.add('$filePath owns graph status refresh/build action details');
@@ -13831,74 +13632,6 @@ Future<List<String>> _findGroupedContactSelectorRefreshOffenders() async {
   if (uncommented.contains('ref.invalidate(') ||
       uncommented.contains('widget.ref.invalidate(')) {
     offenders.add('$filePath owns picker refresh invalidation directly');
-  }
-
-  return offenders..sort();
-}
-
-Future<List<String>> _findChatsViewModelFlowMutationOffenders() async {
-  const filePath =
-      'lib/features/chats/presentation/view_model/chats_view_model_provider.dart';
-  final file = File(filePath);
-  if (!file.existsSync()) {
-    return const <String>[];
-  }
-
-  final uncommented = _stripComments(await file.readAsString());
-  final offenders = <String>[];
-  final imports = _extractImports(uncommented);
-  for (final importTarget in imports) {
-    if (importTarget.contains('/conversation_graph/application/')) {
-      offenders.add('$filePath imports $importTarget');
-    }
-  }
-  if (uncommented.contains('sidebarFlowProvider')) {
-    offenders.add('$filePath imports or mutates sidebarFlowProvider');
-  }
-  const forbiddenTokens = <String>[
-    'sidebarActionDispatcherProvider',
-    'SidebarActionDispatchContext',
-    'ConversationSelected',
-  ];
-
-  for (final token in forbiddenTokens) {
-    if (uncommented.contains(token)) {
-      offenders.add('$filePath uses $token');
-    }
-  }
-
-  return offenders..sort();
-}
-
-Future<List<String>> _findChatSelectionActionProviderOffenders() async {
-  const actionsFile =
-      'lib/features/chats/application/actions/chat_selection_actions_provider.dart';
-  return _findProviderUsageOffenders(
-    providerName: 'chatSelectionActionsProvider',
-    providerFile: actionsFile,
-  );
-}
-
-Future<List<String>> _findGraphStatusSheetChatOpenOffenders() async {
-  const filePath =
-      'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
-  final file = File(filePath);
-  if (!file.existsSync()) {
-    return const <String>[];
-  }
-
-  final uncommented = _stripComments(await file.readAsString());
-  final imports = _extractImports(uncommented);
-  final offenders = <String>[
-    for (final importTarget in imports)
-      if (importTarget.endsWith(
-        'essentials/logging/feature_level_providers.dart',
-      ))
-        '$filePath imports $importTarget',
-  ];
-  if (uncommented.contains('appLoggerProvider.notifier') ||
-      uncommented.contains('Conversation graph status chat open failed')) {
-    offenders.add('$filePath owns chat-open failure diagnostics');
   }
 
   return offenders..sort();

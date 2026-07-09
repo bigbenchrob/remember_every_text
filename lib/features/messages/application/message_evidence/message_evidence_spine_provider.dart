@@ -33,7 +33,6 @@ import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
 import 'message_attachment_evidence.dart';
-import 'message_evidence_identity.dart';
 import 'recovered_message_evidence_provider.dart';
 
 part 'message_evidence_spine_provider.g.dart';
@@ -72,16 +71,16 @@ Future<MessageEvidenceTimelineSkeleton> messageEvidenceTimelineSkeleton(
       _handleMessagesTimelineSkeleton(ref, handleId: handleId),
     ConversationEvidenceScope(:final conversationId) =>
       _conversationTimelineSkeleton(ref, conversationId: conversationId),
-    SearchResultContextEvidenceScope(
-      :final messageId,
-      :final chatId,
+    ConversationExcerptEvidenceScope(
+      :final conversationId,
+      :final anchorMessageId,
       :final beforeCount,
       :final afterCount,
     ) =>
-      _searchResultContextSkeleton(
+      _conversationExcerptSkeleton(
         ref,
-        messageId: messageId,
-        chatId: chatId,
+        conversationId: conversationId,
+        anchorMessageId: anchorMessageId,
         beforeCount: beforeCount,
         afterCount: afterCount,
       ),
@@ -148,7 +147,7 @@ Future<MessageEvidenceRowData?> messageEvidenceRow(
         conversationId: conversationId,
         messageId: messageId,
       ),
-    SearchResultContextEvidenceScope() => _globalMessageById(
+    ConversationExcerptEvidenceScope() => _globalMessageById(
       ref,
       messageId: messageId,
     ),
@@ -268,7 +267,7 @@ Future<List<MessageAttachmentEvidence>> messageEvidenceAttachments(
     GlobalMessagesEvidenceScope() ||
     HandleMessagesEvidenceScope() ||
     ConversationEvidenceScope() ||
-    SearchResultContextEvidenceScope() => _messageAttachments(
+    ConversationExcerptEvidenceScope() => _messageAttachments(
       ref,
       messageId: messageId,
     ),
@@ -391,16 +390,16 @@ Future<List<int>> messageEvidenceTextMatchIds(
         query: normalizedQuery,
         matchAnyTerm: matchAnyTerm,
       ),
-    SearchResultContextEvidenceScope(
-      :final messageId,
-      :final chatId,
+    ConversationExcerptEvidenceScope(
+      :final conversationId,
+      :final anchorMessageId,
       :final beforeCount,
       :final afterCount,
     ) =>
-      _searchResultContextMessageIdsMatchingText(
+      _conversationExcerptMessageIdsMatchingText(
         ref,
-        messageId: messageId,
-        chatId: chatId,
+        conversationId: conversationId,
+        anchorMessageId: anchorMessageId,
         beforeCount: beforeCount,
         afterCount: afterCount,
         query: normalizedQuery,
@@ -577,17 +576,17 @@ Future<ConversationMessage?> _handleMessageById(
   return reader.readHandleMessageById(handleId: handleId, messageId: messageId);
 }
 
-Future<MessageEvidenceTimelineSkeleton> _searchResultContextSkeleton(
+Future<MessageEvidenceTimelineSkeleton> _conversationExcerptSkeleton(
   Ref ref, {
-  required int messageId,
-  required int chatId,
+  required int conversationId,
+  required int anchorMessageId,
   required int beforeCount,
   required int afterCount,
 }) async {
   final reader = await ref.watch(messageGraphReaderProvider.future);
-  final entries = await reader.readMessageContextTimeline(
-    messageId: messageId,
-    chatId: chatId,
+  final entries = await reader.readConversationExcerptTimeline(
+    conversationId: conversationId,
+    anchorMessageId: anchorMessageId,
     beforeCount: beforeCount,
     afterCount: afterCount,
   );
@@ -600,23 +599,23 @@ Future<MessageEvidenceTimelineSkeleton> _searchResultContextSkeleton(
           monthKey: entry.monthKey,
         ),
     ],
-    initialAnchorMessageId: canonicalMessageEvidenceId(messageId),
+    initialAnchorMessageId: anchorMessageId,
   );
 }
 
-Future<List<int>> _searchResultContextMessageIdsMatchingText(
+Future<List<int>> _conversationExcerptMessageIdsMatchingText(
   Ref ref, {
-  required int messageId,
-  required int chatId,
+  required int conversationId,
+  required int anchorMessageId,
   required int beforeCount,
   required int afterCount,
   required String query,
   required bool matchAnyTerm,
 }) async {
-  final skeleton = await _searchResultContextSkeleton(
+  final skeleton = await _conversationExcerptSkeleton(
     ref,
-    messageId: messageId,
-    chatId: chatId,
+    conversationId: conversationId,
+    anchorMessageId: anchorMessageId,
     beforeCount: beforeCount,
     afterCount: afterCount,
   );

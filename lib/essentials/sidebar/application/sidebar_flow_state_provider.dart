@@ -7,6 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import '../../../features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
+import '../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
@@ -434,8 +435,8 @@ abstract class SidebarFlowState with _$SidebarFlowState {
         if (conversationId == null) {
           return null;
         }
-        return ViewSpec.messages(
-          MessagesSpec.forConversation(
+        return ViewSpec.conversations(
+          ConversationsSpec.conversationMessages(
             conversationId: conversationId,
             anchorMessageId: selectedConversationAnchorMessageId,
             searchQuery: selectedConversationSearchQuery,
@@ -453,8 +454,8 @@ abstract class SidebarFlowState with _$SidebarFlowState {
                 SidebarFlowContactProjection.conversations) {
               final conversationId = selectedConversationId;
               if (conversationId != null) {
-                return ViewSpec.messages(
-                  MessagesSpec.forConversation(
+                return ViewSpec.conversations(
+                  ConversationsSpec.conversationMessages(
                     conversationId: conversationId,
                     anchorMessageId: selectedConversationAnchorMessageId,
                     searchQuery: selectedConversationSearchQuery,

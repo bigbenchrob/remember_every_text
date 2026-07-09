@@ -1,11 +1,9 @@
 import 'package:flutter/widgets.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
-import '../payloads/conversation_signatures_cassette_payload.dart';
 import '../payloads/messages_heatmap_cassette_payload.dart';
 import '../payloads/recovered_no_handle_from_me_navigator_cassette_payload.dart';
 import '../payloads/recovered_unlinked_navigator_cassette_payload.dart';
-import '../widget_builders/conversation_signatures_widget.dart';
 import '../widget_builders/messages_heatmap_widget.dart';
 import '../widget_builders/recovered_no_handle_from_me_navigator_widget.dart';
 import '../widget_builders/recovered_unlinked_navigator_widget.dart';
@@ -15,8 +13,6 @@ Widget buildPlacementGovernedCassetteBody({
   required PlacementGovernedSidebarCassettePayload payload,
 }) {
   return switch (payload) {
-    ConversationSignaturesCassettePayload() =>
-      const ConversationSignaturesWidget(),
     MessagesHeatmapCassettePayload() => MessagesHeatmapWidget(
       contactId: payload.contactId,
     ),

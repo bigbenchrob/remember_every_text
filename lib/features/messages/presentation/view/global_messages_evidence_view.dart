@@ -4,17 +4,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../core/util/count_label_formatter.dart';
 import '../../../../core/util/date_label_formatter.dart';
 import '../../../../core/util/date_range_formatter.dart';
-import '../../../../essentials/conversation_graph/application/identity/live_chat_graph_identity.dart';
 import '../../../../essentials/navigation/domain/entities/view_spec.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart'
     show effectiveRightPanelSpecProvider;
+import '../../../conversations/feature_level_providers.dart'
+    show conversationExcerptNavigationActionsProvider;
 import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
+import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
-import '../../domain/spec_classes/messages_view_spec.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
@@ -115,6 +116,8 @@ class _GlobalMessagesEvidenceViewState
           monthAnchor: widget.monthAnchor,
           anchorMessageId: activeContextMessageId,
           highlightQuery: normalizedQuery,
+          useFixedPanelFrame: true,
+          resolveRowAction: _resolveConversationContextAction,
           onVisibleMonthChanged: (monthKey) {
             ref
                 .read(
@@ -137,13 +140,9 @@ class _GlobalMessagesEvidenceViewState
       effectiveRightPanelSpecProvider(SidebarMode.messages),
     );
     return rightSpec?.when(
-      messages: (messagesSpec) {
-        return messagesSpec.maybeWhen(
-          searchResultContext: (messageId, _, __, ___) {
-            return canonicalLiveChatGraphId(messageId);
-          },
-          orElse: () => null,
-        );
+      messages: (_) => null,
+      conversations: (conversationsSpec) {
+        return conversationsSpec.anchorMessageId;
       },
       settings: (_) => null,
       environmentReadiness: (_) => null,
@@ -202,6 +201,43 @@ class _GlobalMessagesEvidenceViewState
       return 'Selected month';
     }
     return null;
+  }
+
+  VoidCallback? _resolveConversationContextAction(
+    MessageEvidenceScope evidenceScope,
+    MessageEvidenceRowData message,
+    String highlightQuery,
+  ) {
+    final query = highlightQuery.trim();
+    if (query.isEmpty) {
+      return null;
+    }
+
+    if (evidenceScope is! MessageSearchEvidenceScope) {
+      return null;
+    }
+
+    final conversationId = message.sourceConversationId;
+    if (conversationId == null) {
+      return null;
+    }
+
+    final actions = ref.read(
+      conversationExcerptNavigationActionsProvider.notifier,
+    );
+    if (actions.isActive(
+      conversationId: conversationId,
+      anchorMessageId: message.messageId,
+    )) {
+      return null;
+    }
+
+    return () {
+      actions.open(
+        conversationId: conversationId,
+        anchorMessageId: message.messageId,
+      );
+    };
   }
 }
 

@@ -16,6 +16,10 @@ Components own their presentation.
 Components must adapt to the space assigned by the page skeleton. They should
 not determine the vertical positioning of peer content across panels.
 
+The page skeleton establishes the application's visual grammar. Individual
+panels do not invent their own vertical hierarchy; they express the shared
+grammar using content appropriate to their lens.
+
 ## Problem
 
 The three Search page panels currently drift because each column lays itself
@@ -28,6 +32,12 @@ with the Messages panel.
 
 The solution is not more widget nudging. The solution is a stable page
 skeleton.
+
+This layout work also exposed a Conversation ownership issue. The right panel
+is a Conversation workspace, not a Search-owned context widget. See:
+
+- `CONVERSATION_OWNERSHIP_AUDIT.md`
+- `CONVERSATION_OWNERSHIP_REPAIR.md`
 
 ## Page Skeleton
 
@@ -152,6 +162,22 @@ Then implement in small steps:
 Avoid a broad app-shell redesign. This is a reusable layout grammar, not a new
 navigation system.
 
+## Current Implementation Primitive
+
+The shared primitive is:
+
+- `lib/config/theme/widgets/layout/app_panel_bands.dart`
+
+`AppPanelBandHeader` and `AppPanelBandColumn` reserve the invisible title,
+primary, and secondary bands without rendering debug boxes or decorative
+chrome. The bands should be perceptible through alignment, whitespace, and
+rhythm.
+
+The center Message Evidence header and the right Conversation excerpt panel
+both use this skeleton. The left Search sidebar remains cassette-driven, but
+its content should be arranged to respect the same conceptual bands: selector,
+orientation, guidance, and heatmap/content.
+
 ## Acceptance Criteria
 
 - The three panel titles align on a shared visual baseline.
@@ -162,6 +188,8 @@ navigation system.
 - Components adapt to assigned bands rather than pushing lower bands downward.
 - The Search page feels like three coordinated lenses onto one graph, not a
   sidebar plus a main view plus another sidebar.
+- Users perceive the three panels as coordinated peer workspaces presenting
+  different lenses onto the same underlying graph.
 
 ## Design Philosophy
 

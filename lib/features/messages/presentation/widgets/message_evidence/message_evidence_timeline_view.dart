@@ -4,20 +4,20 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../core/util/date_label_formatter.dart';
-import '../../../../../essentials/conversation_graph/application/identity/live_chat_graph_identity.dart';
-import '../../../../../essentials/navigation/application/panel_actions_provider.dart';
-import '../../../../../essentials/navigation/application/panels_view_state_provider.dart';
-import '../../../../../essentials/navigation/domain/entities/view_spec.dart';
-import '../../../../../essentials/navigation/domain/navigation_constants.dart';
-import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../domain/message_evidence/message_evidence_skeleton.dart';
-import '../../../domain/spec_classes/messages_view_spec.dart';
 import 'message_evidence_fade_overlay.dart';
 import 'message_evidence_header.dart';
 import 'message_evidence_row.dart';
+
+typedef MessageEvidenceRowActionResolver =
+    VoidCallback? Function(
+      MessageEvidenceScope evidenceScope,
+      MessageEvidenceRowData message,
+      String highlightQuery,
+    );
 
 class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
   const MessageEvidenceTimelineView({
@@ -31,6 +31,8 @@ class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
     this.initialRows = const <int, MessageEvidenceRowData>{},
     this.isInitialRowsLoading = false,
     this.showHeader = true,
+    this.useFixedPanelFrame = false,
+    this.resolveRowAction,
     this.onVisibleMonthChanged,
     super.key,
   });
@@ -45,6 +47,8 @@ class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
   final Map<int, MessageEvidenceRowData> initialRows;
   final bool isInitialRowsLoading;
   final bool showHeader;
+  final bool useFixedPanelFrame;
+  final MessageEvidenceRowActionResolver? resolveRowAction;
   final ValueChanged<String?>? onVisibleMonthChanged;
 
   @override
@@ -125,7 +129,11 @@ class _MessageEvidenceTimelineViewState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (widget.showHeader) MessageEvidenceHeader(data: widget.headerData),
+          if (widget.showHeader)
+            MessageEvidenceHeader(
+              data: widget.headerData,
+              useFixedPanelFrame: widget.useFixedPanelFrame,
+            ),
           Expanded(
             child: Stack(
               children: [
@@ -159,6 +167,7 @@ class _MessageEvidenceTimelineViewState
                                   entry.messageId == widget.anchorMessageId,
                               correspondencePulseId: _anchorPulseId,
                               highlightQuery: widget.highlightQuery,
+                              resolveRowAction: widget.resolveRowAction,
                               showDayDivider:
                                   previousEntry == null ||
                                   _dayLabel(entry.dateUtc) != previousDayLabel,
@@ -416,6 +425,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
     required this.isAnchorMessage,
     required this.correspondencePulseId,
     required this.highlightQuery,
+    required this.resolveRowAction,
     required this.showDayDivider,
   });
 
@@ -425,6 +435,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
   final bool isAnchorMessage;
   final int correspondencePulseId;
   final String highlightQuery;
+  final MessageEvidenceRowActionResolver? resolveRowAction;
   final bool showDayDivider;
 
   @override
@@ -438,6 +449,7 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
         isAnchorMessage: isAnchorMessage,
         correspondencePulseId: correspondencePulseId,
         highlightQuery: highlightQuery,
+        resolveRowAction: resolveRowAction,
         showDayDivider: showDayDivider,
       );
     }
@@ -466,11 +478,10 @@ class _MessageEvidenceTimelineRow extends ConsumerWidget {
               isAnchorMessage: isAnchorMessage,
               correspondencePulseId: correspondencePulseId,
               searchQuery: highlightQuery,
-              onOpenConversationContext: _openConversationContextAction(
-                ref: ref,
-                evidenceScope: evidenceScope,
-                message: message,
-                highlightQuery: highlightQuery,
+              onOpenConversationContext: resolveRowAction?.call(
+                evidenceScope,
+                message,
+                highlightQuery,
               ),
             );
           },
@@ -491,6 +502,7 @@ class _ResolvedMessageEvidenceTimelineRow extends ConsumerWidget {
     required this.isAnchorMessage,
     required this.correspondencePulseId,
     required this.highlightQuery,
+    required this.resolveRowAction,
     required this.showDayDivider,
   });
 
@@ -500,6 +512,7 @@ class _ResolvedMessageEvidenceTimelineRow extends ConsumerWidget {
   final bool isAnchorMessage;
   final int correspondencePulseId;
   final String highlightQuery;
+  final MessageEvidenceRowActionResolver? resolveRowAction;
   final bool showDayDivider;
 
   @override
@@ -514,63 +527,15 @@ class _ResolvedMessageEvidenceTimelineRow extends ConsumerWidget {
           isAnchorMessage: isAnchorMessage,
           correspondencePulseId: correspondencePulseId,
           searchQuery: highlightQuery,
-          onOpenConversationContext: _openConversationContextAction(
-            ref: ref,
-            evidenceScope: evidenceScope,
-            message: message,
-            highlightQuery: highlightQuery,
+          onOpenConversationContext: resolveRowAction?.call(
+            evidenceScope,
+            message,
+            highlightQuery,
           ),
         ),
       ],
     );
   }
-}
-
-VoidCallback? _openConversationContextAction({
-  required WidgetRef ref,
-  required MessageEvidenceScope evidenceScope,
-  required MessageEvidenceRowData message,
-  required String highlightQuery,
-}) {
-  final query = highlightQuery.trim();
-  if (query.isEmpty) {
-    return null;
-  }
-
-  if (evidenceScope is! MessageSearchEvidenceScope) {
-    return null;
-  }
-
-  final conversationId = message.sourceConversationId;
-  if (conversationId == null) {
-    return null;
-  }
-
-  final sourceMessageId = liveChatSourceRowIdForGraphId(message.messageId);
-  final sourceChatId = liveChatSourceRowIdForGraphId(conversationId);
-  if (sourceMessageId == null || sourceChatId == null) {
-    return null;
-  }
-  final targetSpec = ViewSpec.messages(
-    MessagesSpec.searchResultContext(
-      messageId: sourceMessageId,
-      chatId: sourceChatId,
-    ),
-  );
-  final rightPanelStack = ref.watch(
-    panelsViewStateProvider(
-      SidebarMode.messages,
-    ).select((stacks) => stacks[WindowPanel.right]),
-  );
-  if (rightPanelStack?.activePage?.spec == targetSpec) {
-    return null;
-  }
-
-  return () {
-    ref
-        .read(panelActionsProvider.notifier)
-        .showRightPanel(mode: SidebarMode.messages, spec: targetSpec);
-  };
 }
 
 class _GraphMessageSkeleton extends StatelessWidget {

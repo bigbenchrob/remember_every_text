@@ -10,6 +10,7 @@ export 'application/chats/chat_projection_repository_provider.dart';
 export 'application/contacts/contact_graph_provider.dart';
 export 'application/contacts/contact_graph_repository_provider.dart';
 export 'application/contacts/contact_projection_repository_provider.dart';
+export 'application/conversation_favourites/conversation_favourite_actions_provider.dart';
 export 'application/conversation_favourites/conversation_favourites_provider.dart';
 export 'application/conversation_favourites/conversation_favourites_store_provider.dart';
 export 'application/conversation_graph_build_controller_provider.dart';

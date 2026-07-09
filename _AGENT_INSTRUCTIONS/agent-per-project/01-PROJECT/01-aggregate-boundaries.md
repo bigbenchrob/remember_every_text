@@ -54,7 +54,7 @@ docs win when lower-level details differ.
    sidebar topology, or shared chrome.
 6. Specs and surface orchestration follow `../42-SPEC-SYSTEM/`.
 
-## Chat Boundary
+## Conversation Boundary
 
 Current graph projection:
 
@@ -68,9 +68,15 @@ it from source-scoped facts. Durable user preferences such as custom names,
 favourites, visibility, and similar user intent belong in overlay tables or
 feature-owned overlay services, not in source projection rows.
 
-Chat-related UI/content lives primarily under `lib/features/chats`,
-`lib/features/messages`, and essentials navigation/sidebar infrastructure.
-Essentials owns the panel/sidebar routing policy around chat/message surfaces.
+Conversation is the canonical user-facing graph entity. New user-facing
+Conversation UI/content belongs under `lib/features/conversations`. The older
+`lib/features/chats` feature boundary has been retired and must not be
+reintroduced for user-facing Conversation behavior.
+
+Messages owns message evidence rendering. Search owns search. Conversations
+owns Conversation identity, cards, glyphs, favourites, collections, and
+Conversation excerpt panels. Essentials owns the panel/sidebar routing policy
+around conversation/message surfaces.
 
 ## Message Boundary
 

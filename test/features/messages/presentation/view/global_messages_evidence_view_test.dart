@@ -14,10 +14,10 @@ import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dar
 import 'package:remember_this_text/essentials/search/application/graph_message_search.dart';
 import 'package:remember_this_text/essentials/search/application/graph_search_repository_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
+import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_row_data.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
-import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/messages/presentation/view/global_messages_evidence_view.dart';
 import 'package:remember_this_text/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart';
 
@@ -155,7 +155,7 @@ void main() {
   });
 
   testWidgets(
-    'anchors center evidence to active right-panel search result context',
+    'anchors center evidence to active right-panel conversation excerpt',
     (tester) async {
       final targetMessageId = canonicalLiveChatGraphId(123);
       final otherMessageId = canonicalLiveChatGraphId(124);
@@ -220,8 +220,11 @@ void main() {
           .read(panelsViewStateProvider(SidebarMode.messages).notifier)
           .show(
             panel: WindowPanel.right,
-            spec: const ViewSpec.messages(
-              MessagesSpec.searchResultContext(messageId: 123, chatId: 99),
+            spec: ViewSpec.conversations(
+              ConversationsSpec.conversationExcerpt(
+                conversationId: canonicalLiveChatGraphId(99),
+                anchorMessageId: targetMessageId,
+              ),
             ),
           );
 
@@ -345,9 +348,10 @@ class _FakeMessageGraphRepository implements MessageGraphRepository {
   }
 
   @override
-  Future<List<ConversationMessageTimelineEntry>> readMessageContextTimeline({
-    required int messageId,
-    required int chatId,
+  Future<List<ConversationMessageTimelineEntry>>
+  readConversationExcerptTimeline({
+    required int conversationId,
+    required int anchorMessageId,
     required int beforeCount,
     required int afterCount,
   }) async {

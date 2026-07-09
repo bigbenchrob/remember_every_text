@@ -1,6 +1,5 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../application/conversations/conversation.dart';
-import '../../application/identity/live_chat_graph_identity.dart';
 import '../../application/messages/message_graph_repository.dart';
 
 class SqliteMessageGraphRepository implements MessageGraphRepository {
@@ -285,15 +284,13 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
   }
 
   @override
-  Future<List<ConversationMessageTimelineEntry>> readMessageContextTimeline({
-    required int messageId,
-    required int chatId,
+  Future<List<ConversationMessageTimelineEntry>>
+  readConversationExcerptTimeline({
+    required int conversationId,
+    required int anchorMessageId,
     required int beforeCount,
     required int afterCount,
   }) async {
-    final graphMessageId = canonicalLiveChatGraphId(messageId);
-    final graphChatId = canonicalLiveChatGraphId(chatId);
-
     final selectedRows = await graphDatabase.selectRows(
       '''
       SELECT 1
@@ -302,26 +299,26 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
         AND message_ss_id = ?
       LIMIT 1
       ''',
-      <Object?>[graphChatId, graphMessageId],
+      <Object?>[conversationId, anchorMessageId],
     );
     if (selectedRows.isEmpty) {
       return const <ConversationMessageTimelineEntry>[];
     }
 
     final beforeRows = await _readContextRows(
-      chatId: graphChatId,
-      messageId: graphMessageId,
+      chatId: conversationId,
+      messageId: anchorMessageId,
       operator: '<',
       orderDirection: 'DESC',
       limit: beforeCount,
     );
     final selectedEntryRows = await _readContextSelectedRow(
-      chatId: graphChatId,
-      messageId: graphMessageId,
+      chatId: conversationId,
+      messageId: anchorMessageId,
     );
     final afterRows = await _readContextRows(
-      chatId: graphChatId,
-      messageId: graphMessageId,
+      chatId: conversationId,
+      messageId: anchorMessageId,
       operator: '>',
       orderDirection: 'ASC',
       limit: afterCount,

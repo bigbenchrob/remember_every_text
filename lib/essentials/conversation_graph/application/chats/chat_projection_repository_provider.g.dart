@@ -7,7 +7,7 @@ part of 'chat_projection_repository_provider.dart';
 // **************************************************************************
 
 String _$chatProjectionRepositoryHash() =>
-    r'b21c249ae15f116567735a584d2438e3d0f28aca';
+    r'b57649286a1d5dfb780f0f4eac2e9a335d0c2923';
 
 /// See also [chatProjectionRepository].
 @ProviderFor(chatProjectionRepository)

@@ -7,7 +7,7 @@ part of 'message_evidence_spine_provider.dart';
 // **************************************************************************
 
 String _$messageEvidenceTimelineSkeletonHash() =>
-    r'e6f615c145bd8b020abc757af1c0f7688ec7658e';
+    r'6f70a414e35de9627ff4dc3dcaeac1fd2d92d14b';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -164,7 +164,7 @@ class _MessageEvidenceTimelineSkeletonProviderElement
 }
 
 String _$messageEvidenceRowHash() =>
-    r'c970725f4b42554fb8fc5ac30b5c3d9599285fca';
+    r'd144d6976593f20df32a746292af4350ecd4e24e';
 
 /// See also [messageEvidenceRow].
 @ProviderFor(messageEvidenceRow)
@@ -311,7 +311,7 @@ class _MessageEvidenceRowProviderElement
 }
 
 String _$messageEvidenceAttachmentsHash() =>
-    r'3cb218222c03351c1d17f69313048217da129278';
+    r'38651f5c43eb11aec171e58b0d34032b3f1769da';
 
 /// See also [messageEvidenceAttachments].
 @ProviderFor(messageEvidenceAttachments)
@@ -638,7 +638,7 @@ class _MessageEvidenceInitialRowsProviderElement
 }
 
 String _$messageEvidenceTextMatchIdsHash() =>
-    r'907e6a7d75a4ba6c8a1c84e620c4b75887678426';
+    r'2ca7a5d16913841a75bd4578875bbe0be7d77b7e';
 
 /// See also [messageEvidenceTextMatchIds].
 @ProviderFor(messageEvidenceTextMatchIds)

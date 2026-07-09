@@ -9,6 +9,11 @@ import '../../../features/contacts/feature_level_providers.dart'
         ContactSelectionControlCassettePayload,
         HandleFilterCassettePayload,
         buildPlacementGovernedCassetteBody;
+import '../../../features/conversations/feature_level_providers.dart'
+    as conversations_feature
+    show
+        ConversationSignaturesCassettePayload,
+        buildPlacementGovernedCassetteBody;
 import '../../../features/handles/feature_level_providers.dart'
     as handles_feature
     show
@@ -19,7 +24,6 @@ import '../../../features/handles/feature_level_providers.dart'
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature
     show
-        ConversationSignaturesCassettePayload,
         MessagesHeatmapCassettePayload,
         RecoveredNoHandleFromMeNavigatorCassettePayload,
         RecoveredUnlinkedNavigatorCassettePayload,
@@ -224,8 +228,10 @@ Widget _buildPlacementGovernedCassetteBody({
       handles_feature.buildPlacementGovernedCassetteBody(payload: payload),
     handles_feature.StrayHandlesTypeSwitcherCassettePayload() =>
       handles_feature.buildPlacementGovernedCassetteBody(payload: payload),
-    messages_feature.ConversationSignaturesCassettePayload() =>
-      messages_feature.buildPlacementGovernedCassetteBody(payload: payload),
+    conversations_feature.ConversationSignaturesCassettePayload() =>
+      conversations_feature.buildPlacementGovernedCassetteBody(
+        payload: payload,
+      ),
     messages_feature.MessagesHeatmapCassettePayload() =>
       messages_feature.buildPlacementGovernedCassetteBody(payload: payload),
     messages_feature.RecoveredUnlinkedNavigatorCassettePayload() =>

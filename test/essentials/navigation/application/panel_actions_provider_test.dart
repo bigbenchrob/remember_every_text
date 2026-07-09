@@ -5,6 +5,7 @@ import 'package:remember_this_text/essentials/navigation/application/panels_view
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
+import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 
 void main() {
@@ -12,8 +13,11 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
-    const spec = ViewSpec.messages(
-      MessagesSpec.searchResultContext(messageId: 100, chatId: 200),
+    const spec = ViewSpec.conversations(
+      ConversationsSpec.conversationExcerpt(
+        conversationId: 200,
+        anchorMessageId: 100,
+      ),
     );
 
     container

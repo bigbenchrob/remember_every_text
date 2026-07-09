@@ -131,6 +131,7 @@ class SidebarParkedOverlay extends ConsumerWidget {
     }
     return spec.when(
       messages: (_) => 'Operation in Progress',
+      conversations: (_) => 'Conversation',
       settings: (_) => 'Settings',
       environmentReadiness: (_) => 'Environment Readiness',
       onboarding: (_) => 'Onboarding',
@@ -143,6 +144,7 @@ class SidebarParkedOverlay extends ConsumerWidget {
     }
     return spec.when(
       messages: (_) => CupertinoIcons.gear_alt,
+      conversations: (_) => CupertinoIcons.chat_bubble_2,
       settings: (_) => CupertinoIcons.gear,
       environmentReadiness: (_) => CupertinoIcons.check_mark_circled,
       onboarding: (_) => CupertinoIcons.rocket,

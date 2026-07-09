@@ -55,11 +55,12 @@ extension ViewSpecPatterns on ViewSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ViewMessages value)?  messages,TResult Function( _ViewSettings value)?  settings,TResult Function( _ViewEnvironmentReadiness value)?  environmentReadiness,TResult Function( _ViewOnboarding value)?  onboarding,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ViewMessages value)?  messages,TResult Function( _ViewConversations value)?  conversations,TResult Function( _ViewSettings value)?  settings,TResult Function( _ViewEnvironmentReadiness value)?  environmentReadiness,TResult Function( _ViewOnboarding value)?  onboarding,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _ViewMessages() when messages != null:
-return messages(_that);case _ViewSettings() when settings != null:
+return messages(_that);case _ViewConversations() when conversations != null:
+return conversations(_that);case _ViewSettings() when settings != null:
 return settings(_that);case _ViewEnvironmentReadiness() when environmentReadiness != null:
 return environmentReadiness(_that);case _ViewOnboarding() when onboarding != null:
 return onboarding(_that);case _:
@@ -80,11 +81,12 @@ return onboarding(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ViewMessages value)  messages,required TResult Function( _ViewSettings value)  settings,required TResult Function( _ViewEnvironmentReadiness value)  environmentReadiness,required TResult Function( _ViewOnboarding value)  onboarding,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ViewMessages value)  messages,required TResult Function( _ViewConversations value)  conversations,required TResult Function( _ViewSettings value)  settings,required TResult Function( _ViewEnvironmentReadiness value)  environmentReadiness,required TResult Function( _ViewOnboarding value)  onboarding,}){
 final _that = this;
 switch (_that) {
 case _ViewMessages():
-return messages(_that);case _ViewSettings():
+return messages(_that);case _ViewConversations():
+return conversations(_that);case _ViewSettings():
 return settings(_that);case _ViewEnvironmentReadiness():
 return environmentReadiness(_that);case _ViewOnboarding():
 return onboarding(_that);case _:
@@ -104,11 +106,12 @@ return onboarding(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ViewMessages value)?  messages,TResult? Function( _ViewSettings value)?  settings,TResult? Function( _ViewEnvironmentReadiness value)?  environmentReadiness,TResult? Function( _ViewOnboarding value)?  onboarding,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ViewMessages value)?  messages,TResult? Function( _ViewConversations value)?  conversations,TResult? Function( _ViewSettings value)?  settings,TResult? Function( _ViewEnvironmentReadiness value)?  environmentReadiness,TResult? Function( _ViewOnboarding value)?  onboarding,}){
 final _that = this;
 switch (_that) {
 case _ViewMessages() when messages != null:
-return messages(_that);case _ViewSettings() when settings != null:
+return messages(_that);case _ViewConversations() when conversations != null:
+return conversations(_that);case _ViewSettings() when settings != null:
 return settings(_that);case _ViewEnvironmentReadiness() when environmentReadiness != null:
 return environmentReadiness(_that);case _ViewOnboarding() when onboarding != null:
 return onboarding(_that);case _:
@@ -128,10 +131,11 @@ return onboarding(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( MessagesSpec spec)?  messages,TResult Function( SettingsViewSpec spec)?  settings,TResult Function( EnvironmentReadinessSpec spec)?  environmentReadiness,TResult Function( OnboardingSpec spec)?  onboarding,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( MessagesSpec spec)?  messages,TResult Function( ConversationsSpec spec)?  conversations,TResult Function( SettingsViewSpec spec)?  settings,TResult Function( EnvironmentReadinessSpec spec)?  environmentReadiness,TResult Function( OnboardingSpec spec)?  onboarding,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ViewMessages() when messages != null:
-return messages(_that.spec);case _ViewSettings() when settings != null:
+return messages(_that.spec);case _ViewConversations() when conversations != null:
+return conversations(_that.spec);case _ViewSettings() when settings != null:
 return settings(_that.spec);case _ViewEnvironmentReadiness() when environmentReadiness != null:
 return environmentReadiness(_that.spec);case _ViewOnboarding() when onboarding != null:
 return onboarding(_that.spec);case _:
@@ -152,10 +156,11 @@ return onboarding(_that.spec);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( MessagesSpec spec)  messages,required TResult Function( SettingsViewSpec spec)  settings,required TResult Function( EnvironmentReadinessSpec spec)  environmentReadiness,required TResult Function( OnboardingSpec spec)  onboarding,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( MessagesSpec spec)  messages,required TResult Function( ConversationsSpec spec)  conversations,required TResult Function( SettingsViewSpec spec)  settings,required TResult Function( EnvironmentReadinessSpec spec)  environmentReadiness,required TResult Function( OnboardingSpec spec)  onboarding,}) {final _that = this;
 switch (_that) {
 case _ViewMessages():
-return messages(_that.spec);case _ViewSettings():
+return messages(_that.spec);case _ViewConversations():
+return conversations(_that.spec);case _ViewSettings():
 return settings(_that.spec);case _ViewEnvironmentReadiness():
 return environmentReadiness(_that.spec);case _ViewOnboarding():
 return onboarding(_that.spec);case _:
@@ -175,10 +180,11 @@ return onboarding(_that.spec);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( MessagesSpec spec)?  messages,TResult? Function( SettingsViewSpec spec)?  settings,TResult? Function( EnvironmentReadinessSpec spec)?  environmentReadiness,TResult? Function( OnboardingSpec spec)?  onboarding,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( MessagesSpec spec)?  messages,TResult? Function( ConversationsSpec spec)?  conversations,TResult? Function( SettingsViewSpec spec)?  settings,TResult? Function( EnvironmentReadinessSpec spec)?  environmentReadiness,TResult? Function( OnboardingSpec spec)?  onboarding,}) {final _that = this;
 switch (_that) {
 case _ViewMessages() when messages != null:
-return messages(_that.spec);case _ViewSettings() when settings != null:
+return messages(_that.spec);case _ViewConversations() when conversations != null:
+return conversations(_that.spec);case _ViewSettings() when settings != null:
 return settings(_that.spec);case _ViewEnvironmentReadiness() when environmentReadiness != null:
 return environmentReadiness(_that.spec);case _ViewOnboarding() when onboarding != null:
 return onboarding(_that.spec);case _:
@@ -259,6 +265,81 @@ as MessagesSpec,
 $MessagesSpecCopyWith<$Res> get spec {
   
   return $MessagesSpecCopyWith<$Res>(_self.spec, (value) {
+    return _then(_self.copyWith(spec: value));
+  });
+}
+}
+
+/// @nodoc
+
+
+class _ViewConversations implements ViewSpec {
+  const _ViewConversations(this.spec);
+  
+
+@override final  ConversationsSpec spec;
+
+/// Create a copy of ViewSpec
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ViewConversationsCopyWith<_ViewConversations> get copyWith => __$ViewConversationsCopyWithImpl<_ViewConversations>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ViewConversations&&(identical(other.spec, spec) || other.spec == spec));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,spec);
+
+@override
+String toString() {
+  return 'ViewSpec.conversations(spec: $spec)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ViewConversationsCopyWith<$Res> implements $ViewSpecCopyWith<$Res> {
+  factory _$ViewConversationsCopyWith(_ViewConversations value, $Res Function(_ViewConversations) _then) = __$ViewConversationsCopyWithImpl;
+@useResult
+$Res call({
+ ConversationsSpec spec
+});
+
+
+$ConversationsSpecCopyWith<$Res> get spec;
+
+}
+/// @nodoc
+class __$ViewConversationsCopyWithImpl<$Res>
+    implements _$ViewConversationsCopyWith<$Res> {
+  __$ViewConversationsCopyWithImpl(this._self, this._then);
+
+  final _ViewConversations _self;
+  final $Res Function(_ViewConversations) _then;
+
+/// Create a copy of ViewSpec
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? spec = null,}) {
+  return _then(_ViewConversations(
+null == spec ? _self.spec : spec // ignore: cast_nullable_to_non_nullable
+as ConversationsSpec,
+  ));
+}
+
+/// Create a copy of ViewSpec
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ConversationsSpecCopyWith<$Res> get spec {
+  
+  return $ConversationsSpecCopyWith<$Res>(_self.spec, (value) {
     return _then(_self.copyWith(spec: value));
   });
 }

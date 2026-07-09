@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import '../../../../features/environment_readiness/domain/spec_classes/environment_readiness_view_spec.dart';
 import '../../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../../features/settings/domain/spec_classes/settings_view_spec.dart';
@@ -10,6 +11,8 @@ part 'view_spec.freezed.dart';
 @freezed
 abstract class ViewSpec with _$ViewSpec {
   const factory ViewSpec.messages(MessagesSpec spec) = _ViewMessages;
+  const factory ViewSpec.conversations(ConversationsSpec spec) =
+      _ViewConversations;
   const factory ViewSpec.settings(SettingsViewSpec spec) = _ViewSettings;
   const factory ViewSpec.environmentReadiness(EnvironmentReadinessSpec spec) =
       _ViewEnvironmentReadiness;
@@ -25,6 +28,7 @@ extension ViewSpecSidebarAwareness on ViewSpec {
   bool get isSidebarIndependent => switch (this) {
     _ViewEnvironmentReadiness() => true,
     _ViewOnboarding() => true,
+    _ViewConversations() => false,
     _ViewSettings() => false,
     _ => false,
   };

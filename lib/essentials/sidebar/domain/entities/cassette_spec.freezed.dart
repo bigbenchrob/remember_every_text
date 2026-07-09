@@ -55,13 +55,14 @@ extension CassetteSpecPatterns on CassetteSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _CassetteSidebarWidget value)?  sidebarUtility,TResult Function( _CassetteContacts value)?  contacts,TResult Function( _CassetteContactsInfo value)?  contactsInfo,TResult Function( _CassetteHandles value)?  handles,TResult Function( _CassetteHandlesInfo value)?  handlesInfo,TResult Function( _CassetteMessages value)?  messages,TResult Function( _CassetteMessagesInfo value)?  messagesInfo,TResult Function( _CassetteSettings value)?  settings,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _CassetteSidebarWidget value)?  sidebarUtility,TResult Function( _CassetteContacts value)?  contacts,TResult Function( _CassetteContactsInfo value)?  contactsInfo,TResult Function( _CassetteConversations value)?  conversations,TResult Function( _CassetteHandles value)?  handles,TResult Function( _CassetteHandlesInfo value)?  handlesInfo,TResult Function( _CassetteMessages value)?  messages,TResult Function( _CassetteMessagesInfo value)?  messagesInfo,TResult Function( _CassetteSettings value)?  settings,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _CassetteSidebarWidget() when sidebarUtility != null:
 return sidebarUtility(_that);case _CassetteContacts() when contacts != null:
 return contacts(_that);case _CassetteContactsInfo() when contactsInfo != null:
-return contactsInfo(_that);case _CassetteHandles() when handles != null:
+return contactsInfo(_that);case _CassetteConversations() when conversations != null:
+return conversations(_that);case _CassetteHandles() when handles != null:
 return handles(_that);case _CassetteHandlesInfo() when handlesInfo != null:
 return handlesInfo(_that);case _CassetteMessages() when messages != null:
 return messages(_that);case _CassetteMessagesInfo() when messagesInfo != null:
@@ -84,13 +85,14 @@ return settings(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _CassetteSidebarWidget value)  sidebarUtility,required TResult Function( _CassetteContacts value)  contacts,required TResult Function( _CassetteContactsInfo value)  contactsInfo,required TResult Function( _CassetteHandles value)  handles,required TResult Function( _CassetteHandlesInfo value)  handlesInfo,required TResult Function( _CassetteMessages value)  messages,required TResult Function( _CassetteMessagesInfo value)  messagesInfo,required TResult Function( _CassetteSettings value)  settings,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _CassetteSidebarWidget value)  sidebarUtility,required TResult Function( _CassetteContacts value)  contacts,required TResult Function( _CassetteContactsInfo value)  contactsInfo,required TResult Function( _CassetteConversations value)  conversations,required TResult Function( _CassetteHandles value)  handles,required TResult Function( _CassetteHandlesInfo value)  handlesInfo,required TResult Function( _CassetteMessages value)  messages,required TResult Function( _CassetteMessagesInfo value)  messagesInfo,required TResult Function( _CassetteSettings value)  settings,}){
 final _that = this;
 switch (_that) {
 case _CassetteSidebarWidget():
 return sidebarUtility(_that);case _CassetteContacts():
 return contacts(_that);case _CassetteContactsInfo():
-return contactsInfo(_that);case _CassetteHandles():
+return contactsInfo(_that);case _CassetteConversations():
+return conversations(_that);case _CassetteHandles():
 return handles(_that);case _CassetteHandlesInfo():
 return handlesInfo(_that);case _CassetteMessages():
 return messages(_that);case _CassetteMessagesInfo():
@@ -112,13 +114,14 @@ return settings(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _CassetteSidebarWidget value)?  sidebarUtility,TResult? Function( _CassetteContacts value)?  contacts,TResult? Function( _CassetteContactsInfo value)?  contactsInfo,TResult? Function( _CassetteHandles value)?  handles,TResult? Function( _CassetteHandlesInfo value)?  handlesInfo,TResult? Function( _CassetteMessages value)?  messages,TResult? Function( _CassetteMessagesInfo value)?  messagesInfo,TResult? Function( _CassetteSettings value)?  settings,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _CassetteSidebarWidget value)?  sidebarUtility,TResult? Function( _CassetteContacts value)?  contacts,TResult? Function( _CassetteContactsInfo value)?  contactsInfo,TResult? Function( _CassetteConversations value)?  conversations,TResult? Function( _CassetteHandles value)?  handles,TResult? Function( _CassetteHandlesInfo value)?  handlesInfo,TResult? Function( _CassetteMessages value)?  messages,TResult? Function( _CassetteMessagesInfo value)?  messagesInfo,TResult? Function( _CassetteSettings value)?  settings,}){
 final _that = this;
 switch (_that) {
 case _CassetteSidebarWidget() when sidebarUtility != null:
 return sidebarUtility(_that);case _CassetteContacts() when contacts != null:
 return contacts(_that);case _CassetteContactsInfo() when contactsInfo != null:
-return contactsInfo(_that);case _CassetteHandles() when handles != null:
+return contactsInfo(_that);case _CassetteConversations() when conversations != null:
+return conversations(_that);case _CassetteHandles() when handles != null:
 return handles(_that);case _CassetteHandlesInfo() when handlesInfo != null:
 return handlesInfo(_that);case _CassetteMessages() when messages != null:
 return messages(_that);case _CassetteMessagesInfo() when messagesInfo != null:
@@ -140,12 +143,13 @@ return settings(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( SidebarUtilityCassetteSpec spec)?  sidebarUtility,TResult Function( ContactsCassetteSpec spec)?  contacts,TResult Function( ContactsInfoCassetteSpec spec)?  contactsInfo,TResult Function( HandlesCassetteSpec spec)?  handles,TResult Function( HandlesInfoCassetteSpec spec)?  handlesInfo,TResult Function( MessagesCassetteSpec spec)?  messages,TResult Function( MessagesInfoCassetteSpec spec)?  messagesInfo,TResult Function( SettingsCassetteSpec spec)?  settings,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( SidebarUtilityCassetteSpec spec)?  sidebarUtility,TResult Function( ContactsCassetteSpec spec)?  contacts,TResult Function( ContactsInfoCassetteSpec spec)?  contactsInfo,TResult Function( ConversationsCassetteSpec spec)?  conversations,TResult Function( HandlesCassetteSpec spec)?  handles,TResult Function( HandlesInfoCassetteSpec spec)?  handlesInfo,TResult Function( MessagesCassetteSpec spec)?  messages,TResult Function( MessagesInfoCassetteSpec spec)?  messagesInfo,TResult Function( SettingsCassetteSpec spec)?  settings,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CassetteSidebarWidget() when sidebarUtility != null:
 return sidebarUtility(_that.spec);case _CassetteContacts() when contacts != null:
 return contacts(_that.spec);case _CassetteContactsInfo() when contactsInfo != null:
-return contactsInfo(_that.spec);case _CassetteHandles() when handles != null:
+return contactsInfo(_that.spec);case _CassetteConversations() when conversations != null:
+return conversations(_that.spec);case _CassetteHandles() when handles != null:
 return handles(_that.spec);case _CassetteHandlesInfo() when handlesInfo != null:
 return handlesInfo(_that.spec);case _CassetteMessages() when messages != null:
 return messages(_that.spec);case _CassetteMessagesInfo() when messagesInfo != null:
@@ -168,12 +172,13 @@ return settings(_that.spec);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( SidebarUtilityCassetteSpec spec)  sidebarUtility,required TResult Function( ContactsCassetteSpec spec)  contacts,required TResult Function( ContactsInfoCassetteSpec spec)  contactsInfo,required TResult Function( HandlesCassetteSpec spec)  handles,required TResult Function( HandlesInfoCassetteSpec spec)  handlesInfo,required TResult Function( MessagesCassetteSpec spec)  messages,required TResult Function( MessagesInfoCassetteSpec spec)  messagesInfo,required TResult Function( SettingsCassetteSpec spec)  settings,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( SidebarUtilityCassetteSpec spec)  sidebarUtility,required TResult Function( ContactsCassetteSpec spec)  contacts,required TResult Function( ContactsInfoCassetteSpec spec)  contactsInfo,required TResult Function( ConversationsCassetteSpec spec)  conversations,required TResult Function( HandlesCassetteSpec spec)  handles,required TResult Function( HandlesInfoCassetteSpec spec)  handlesInfo,required TResult Function( MessagesCassetteSpec spec)  messages,required TResult Function( MessagesInfoCassetteSpec spec)  messagesInfo,required TResult Function( SettingsCassetteSpec spec)  settings,}) {final _that = this;
 switch (_that) {
 case _CassetteSidebarWidget():
 return sidebarUtility(_that.spec);case _CassetteContacts():
 return contacts(_that.spec);case _CassetteContactsInfo():
-return contactsInfo(_that.spec);case _CassetteHandles():
+return contactsInfo(_that.spec);case _CassetteConversations():
+return conversations(_that.spec);case _CassetteHandles():
 return handles(_that.spec);case _CassetteHandlesInfo():
 return handlesInfo(_that.spec);case _CassetteMessages():
 return messages(_that.spec);case _CassetteMessagesInfo():
@@ -195,12 +200,13 @@ return settings(_that.spec);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( SidebarUtilityCassetteSpec spec)?  sidebarUtility,TResult? Function( ContactsCassetteSpec spec)?  contacts,TResult? Function( ContactsInfoCassetteSpec spec)?  contactsInfo,TResult? Function( HandlesCassetteSpec spec)?  handles,TResult? Function( HandlesInfoCassetteSpec spec)?  handlesInfo,TResult? Function( MessagesCassetteSpec spec)?  messages,TResult? Function( MessagesInfoCassetteSpec spec)?  messagesInfo,TResult? Function( SettingsCassetteSpec spec)?  settings,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( SidebarUtilityCassetteSpec spec)?  sidebarUtility,TResult? Function( ContactsCassetteSpec spec)?  contacts,TResult? Function( ContactsInfoCassetteSpec spec)?  contactsInfo,TResult? Function( ConversationsCassetteSpec spec)?  conversations,TResult? Function( HandlesCassetteSpec spec)?  handles,TResult? Function( HandlesInfoCassetteSpec spec)?  handlesInfo,TResult? Function( MessagesCassetteSpec spec)?  messages,TResult? Function( MessagesInfoCassetteSpec spec)?  messagesInfo,TResult? Function( SettingsCassetteSpec spec)?  settings,}) {final _that = this;
 switch (_that) {
 case _CassetteSidebarWidget() when sidebarUtility != null:
 return sidebarUtility(_that.spec);case _CassetteContacts() when contacts != null:
 return contacts(_that.spec);case _CassetteContactsInfo() when contactsInfo != null:
-return contactsInfo(_that.spec);case _CassetteHandles() when handles != null:
+return contactsInfo(_that.spec);case _CassetteConversations() when conversations != null:
+return conversations(_that.spec);case _CassetteHandles() when handles != null:
 return handles(_that.spec);case _CassetteHandlesInfo() when handlesInfo != null:
 return handlesInfo(_that.spec);case _CassetteMessages() when messages != null:
 return messages(_that.spec);case _CassetteMessagesInfo() when messagesInfo != null:
@@ -433,6 +439,81 @@ as ContactsInfoCassetteSpec,
 $ContactsInfoCassetteSpecCopyWith<$Res> get spec {
   
   return $ContactsInfoCassetteSpecCopyWith<$Res>(_self.spec, (value) {
+    return _then(_self.copyWith(spec: value));
+  });
+}
+}
+
+/// @nodoc
+
+
+class _CassetteConversations implements CassetteSpec {
+  const _CassetteConversations(this.spec);
+  
+
+@override final  ConversationsCassetteSpec spec;
+
+/// Create a copy of CassetteSpec
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$CassetteConversationsCopyWith<_CassetteConversations> get copyWith => __$CassetteConversationsCopyWithImpl<_CassetteConversations>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CassetteConversations&&(identical(other.spec, spec) || other.spec == spec));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,spec);
+
+@override
+String toString() {
+  return 'CassetteSpec.conversations(spec: $spec)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$CassetteConversationsCopyWith<$Res> implements $CassetteSpecCopyWith<$Res> {
+  factory _$CassetteConversationsCopyWith(_CassetteConversations value, $Res Function(_CassetteConversations) _then) = __$CassetteConversationsCopyWithImpl;
+@useResult
+$Res call({
+ ConversationsCassetteSpec spec
+});
+
+
+$ConversationsCassetteSpecCopyWith<$Res> get spec;
+
+}
+/// @nodoc
+class __$CassetteConversationsCopyWithImpl<$Res>
+    implements _$CassetteConversationsCopyWith<$Res> {
+  __$CassetteConversationsCopyWithImpl(this._self, this._then);
+
+  final _CassetteConversations _self;
+  final $Res Function(_CassetteConversations) _then;
+
+/// Create a copy of CassetteSpec
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? spec = null,}) {
+  return _then(_CassetteConversations(
+null == spec ? _self.spec : spec // ignore: cast_nullable_to_non_nullable
+as ConversationsCassetteSpec,
+  ));
+}
+
+/// Create a copy of CassetteSpec
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ConversationsCassetteSpecCopyWith<$Res> get spec {
+  
+  return $ConversationsCassetteSpecCopyWith<$Res>(_self.spec, (value) {
     return _then(_self.copyWith(spec: value));
   });
 }

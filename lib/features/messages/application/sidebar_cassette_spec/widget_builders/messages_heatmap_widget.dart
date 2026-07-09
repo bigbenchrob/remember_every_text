@@ -12,12 +12,13 @@ import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart'
     show SidebarFlowContactProjection, sidebarFlowProvider;
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../../../../conversations/feature_level_providers.dart'
+    show ContactGraphConversationSection;
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../application/message_evidence/current_visible_month_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
-import '../../../presentation/widgets/contact_graph_conversation_section.dart';
 import '../resolver_tools/contact_context_identity.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
 import '../resolver_tools/global_messages_heatmap_provider.dart';

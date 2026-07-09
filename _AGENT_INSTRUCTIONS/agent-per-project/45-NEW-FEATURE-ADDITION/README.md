@@ -58,3 +58,4 @@ The table below is the current active/planning set. Other folders in this direct
 | --- | --- |
 | `archive-canonical-attachments/` | [`PROPOSAL.md`](archive-canonical-attachments/PROPOSAL.md), [`CHECKLIST.md`](archive-canonical-attachments/CHECKLIST.md), [`DESIGN_NOTES.md`](archive-canonical-attachments/DESIGN_NOTES.md), [`TESTS.md`](archive-canonical-attachments/TESTS.md) |
 | `ephemeral-sidebar-projection/` | [`PROPOSAL.md`](ephemeral-sidebar-projection/PROPOSAL.md), [`CHECKLIST.md`](ephemeral-sidebar-projection/CHECKLIST.md), [`DESIGN_NOTES.md`](ephemeral-sidebar-projection/DESIGN_NOTES.md), [`TESTS.md`](ephemeral-sidebar-projection/TESTS.md) |
+| `03-INTRODUCE-SIDEBAR-CONTENT-SEAM/` | [`PROPOSAL.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/PROPOSAL.md), [`CHECKLIST.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/CHECKLIST.md), [`DESIGN_NOTES.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/DESIGN_NOTES.md), [`TESTS.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/TESTS.md) |

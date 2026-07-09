@@ -6,12 +6,6 @@ part 'messages_view_spec.freezed.dart';
 
 @freezed
 abstract class MessagesSpec with _$MessagesSpec {
-  const factory MessagesSpec.forConversation({
-    required int conversationId,
-    int? anchorMessageId,
-    String? searchQuery,
-  }) = _MessagesForConversation;
-
   const factory MessagesSpec.forContact({
     required int contactId,
     DateTime? scrollToDate,
@@ -44,14 +38,6 @@ abstract class MessagesSpec with _$MessagesSpec {
     required int messageId,
     required AttachmentInfo attachment,
   }) = _RecoveredAttachmentViewer;
-
-  /// End-sidebar context viewer for a selected search result.
-  const factory MessagesSpec.searchResultContext({
-    required int messageId,
-    required int chatId,
-    @Default(10) int beforeCount,
-    @Default(10) int afterCount,
-  }) = _MessagesSearchResultContext;
 
   /// Triage view for a stray handle: header + action bar + message list.
   const factory MessagesSpec.handleLens({required int handleId}) =
