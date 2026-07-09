@@ -18,6 +18,9 @@ import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
+import 'package:remember_this_text/features/conversations/application/view_spec/coordinators/view_spec_coordinator.dart'
+    as conversations_view_spec;
+import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import 'package:remember_this_text/features/environment_readiness/domain/spec_classes/environment_readiness_view_spec.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/coordinators/view_spec_coordinator.dart'
     as messages_view_spec;
@@ -690,8 +693,10 @@ void main() {
       expect(
         container.read(effectiveCenterPanelSpecProvider(SidebarMode.messages)),
         equals(
-          const ViewSpec.messages(
-            MessagesSpec.forConversation(conversationId: 8796093022216),
+          const ViewSpec.conversations(
+            ConversationsSpec.conversationMessages(
+              conversationId: 8796093022216,
+            ),
           ),
         ),
       );
@@ -726,8 +731,10 @@ void main() {
             .read(panelsViewStateProvider(SidebarMode.messages).notifier)
             .show(
               panel: WindowPanel.center,
-              spec: const ViewSpec.messages(
-                MessagesSpec.forConversation(conversationId: 8796093022216),
+              spec: const ViewSpec.conversations(
+                ConversationsSpec.conversationMessages(
+                  conversationId: 8796093022216,
+                ),
               ),
             );
 
@@ -736,8 +743,10 @@ void main() {
             effectiveCenterPanelSpecProvider(SidebarMode.messages),
           ),
           equals(
-            const ViewSpec.messages(
-              MessagesSpec.forConversation(conversationId: 8796093022216),
+            const ViewSpec.conversations(
+              ConversationsSpec.conversationMessages(
+                conversationId: 8796093022216,
+              ),
             ),
           ),
         );
@@ -751,8 +760,8 @@ void main() {
             effectiveCenterPanelSpecProvider(SidebarMode.messages),
           ),
           equals(
-            const ViewSpec.messages(
-              MessagesSpec.forConversation(conversationId: 123),
+            const ViewSpec.conversations(
+              ConversationsSpec.conversationMessages(conversationId: 123),
             ),
           ),
         );
@@ -764,8 +773,10 @@ void main() {
               ?.activePage
               ?.spec,
           equals(
-            const ViewSpec.messages(
-              MessagesSpec.forConversation(conversationId: 8796093022216),
+            const ViewSpec.conversations(
+              ConversationsSpec.conversationMessages(
+                conversationId: 8796093022216,
+              ),
             ),
           ),
         );
@@ -790,16 +801,22 @@ void main() {
           .read(panelsViewStateProvider(SidebarMode.messages).notifier)
           .show(
             panel: WindowPanel.right,
-            spec: const ViewSpec.messages(
-              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+            spec: const ViewSpec.conversations(
+              ConversationsSpec.conversationExcerpt(
+                conversationId: 5,
+                anchorMessageId: 99,
+              ),
             ),
           );
 
       expect(
         container.read(effectiveRightPanelSpecProvider(SidebarMode.messages)),
         equals(
-          const ViewSpec.messages(
-            MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+          const ViewSpec.conversations(
+            ConversationsSpec.conversationExcerpt(
+              conversationId: 5,
+              anchorMessageId: 99,
+            ),
           ),
         ),
       );
@@ -823,8 +840,11 @@ void main() {
             .read(panelsViewStateProvider(SidebarMode.messages).notifier)
             .show(
               panel: WindowPanel.right,
-              spec: const ViewSpec.messages(
-                MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+              spec: const ViewSpec.conversations(
+                ConversationsSpec.conversationExcerpt(
+                  conversationId: 5,
+                  anchorMessageId: 99,
+                ),
               ),
             );
 
@@ -849,7 +869,7 @@ void main() {
       },
     );
 
-    test('contact flow does not claim search-result context right panel', () {
+    test('contact flow does not claim conversation excerpt right panel', () {
       final container = ProviderContainer(
         overrides: [
           conversationGraphPopulatedProvider.overrideWith(
@@ -865,8 +885,11 @@ void main() {
           .read(panelsViewStateProvider(SidebarMode.messages).notifier)
           .show(
             panel: WindowPanel.right,
-            spec: const ViewSpec.messages(
-              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+            spec: const ViewSpec.conversations(
+              ConversationsSpec.conversationExcerpt(
+                conversationId: 5,
+                anchorMessageId: 99,
+              ),
             ),
           );
 
@@ -889,6 +912,9 @@ void main() {
           messages_view_spec.viewSpecCoordinatorProvider.overrideWith(
             _FakeMessagesViewSpecCoordinator.new,
           ),
+          conversations_view_spec.viewSpecCoordinatorProvider.overrideWith(
+            _FakeConversationsViewSpecCoordinator.new,
+          ),
         ],
       );
 
@@ -908,13 +934,16 @@ void main() {
           .read(panelsViewStateProvider(SidebarMode.messages).notifier)
           .show(
             panel: WindowPanel.right,
-            spec: const ViewSpec.messages(
-              MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+            spec: const ViewSpec.conversations(
+              ConversationsSpec.conversationExcerpt(
+                conversationId: 5,
+                anchorMessageId: 99,
+              ),
             ),
           );
       await tester.pump();
 
-      expect(find.text('search:99'), findsOneWidget);
+      expect(find.text('conversation:99'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
@@ -1363,8 +1392,6 @@ class _FakeMessagesViewSpecCoordinator
   @override
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
-      forConversation: (conversationId, anchorMessageId, searchQuery) =>
-          Text('conversation:$conversationId'),
       forContact: (contactId, scrollToDate, filterHandleId) =>
           Text('contact:$contactId'),
       globalTimeline: (scrollToDate) => const Text('global'),
@@ -1375,9 +1402,24 @@ class _FakeMessagesViewSpecCoordinator
           const Text('recovered:no-handle-from-me'),
       recoveredAttachmentViewer: (messageId, attachment) =>
           Text('attachment:$messageId'),
-      searchResultContext: (messageId, chatId, beforeCount, afterCount) =>
-          Text('search:$messageId'),
       handleLens: (handleId) => Text('lens:$handleId'),
+    );
+  }
+}
+
+class _FakeConversationsViewSpecCoordinator
+    extends conversations_view_spec.ViewSpecCoordinator {
+  @override
+  void build() {}
+
+  @override
+  Widget buildForSpec(ConversationsSpec spec) {
+    return spec.when(
+      conversationMessages: (conversationId, anchorMessageId, searchQuery) =>
+          Text('conversation:$conversationId'),
+      conversationExcerpt:
+          (conversationId, anchorMessageId, beforeCount, afterCount) =>
+              Text('conversation:$anchorMessageId'),
     );
   }
 }

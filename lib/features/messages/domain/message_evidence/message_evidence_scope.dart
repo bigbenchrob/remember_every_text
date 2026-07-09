@@ -221,42 +221,49 @@ final class ConversationEvidenceScope extends MessageEvidenceScope {
 }
 
 @immutable
-final class SearchResultContextEvidenceScope extends MessageEvidenceScope {
-  const SearchResultContextEvidenceScope({
-    required this.messageId,
-    required this.chatId,
+final class ConversationExcerptEvidenceScope extends MessageEvidenceScope {
+  const ConversationExcerptEvidenceScope({
+    required this.conversationId,
+    required this.anchorMessageId,
     required this.beforeCount,
     required this.afterCount,
   }) : super(kind: MessageEvidenceScopeKind.contextWindow);
 
-  final int messageId;
-  final int chatId;
+  final int conversationId;
+  final int anchorMessageId;
   final int beforeCount;
   final int afterCount;
 
   @override
   String get stableKey =>
-      'search-context:$chatId:$messageId:$beforeCount:$afterCount';
+      'conversation-excerpt:'
+      '$conversationId:$anchorMessageId:$beforeCount:$afterCount';
 
   @override
   bool operator ==(Object other) {
-    return other is SearchResultContextEvidenceScope &&
-        other.messageId == messageId &&
-        other.chatId == chatId &&
+    return other is ConversationExcerptEvidenceScope &&
+        other.conversationId == conversationId &&
+        other.anchorMessageId == anchorMessageId &&
         other.beforeCount == beforeCount &&
         other.afterCount == afterCount;
   }
 
   @override
   int get hashCode {
-    return Object.hash(runtimeType, messageId, chatId, beforeCount, afterCount);
+    return Object.hash(
+      runtimeType,
+      conversationId,
+      anchorMessageId,
+      beforeCount,
+      afterCount,
+    );
   }
 
   @override
   String toString() {
-    return 'SearchResultContextEvidenceScope('
-        'messageId: $messageId, '
-        'chatId: $chatId, '
+    return 'ConversationExcerptEvidenceScope('
+        'conversationId: $conversationId, '
+        'anchorMessageId: $anchorMessageId, '
         'beforeCount: $beforeCount, '
         'afterCount: $afterCount'
         ')';

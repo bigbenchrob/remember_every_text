@@ -7,7 +7,7 @@ part of 'contact_projection_repository_provider.dart';
 // **************************************************************************
 
 String _$contactProjectionRepositoryHash() =>
-    r'd1a295a8b61a635e75446f0502eecfdbb299eba3';
+    r'8e970b183d8e8f919570dccb4fe65e2d20dfa5ab';
 
 /// See also [contactProjectionRepository].
 @ProviderFor(contactProjectionRepository)

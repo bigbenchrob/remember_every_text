@@ -175,6 +175,7 @@ class CassetteRackState extends _$CassetteRackState {
           );
         },
         contactsInfo: (_) => null,
+        conversations: (_) => null,
         handles: (_) => null,
         handlesInfo: (_) => null,
         messages: (_) => null,

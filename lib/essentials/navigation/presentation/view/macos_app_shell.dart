@@ -10,7 +10,10 @@ import '../../../app_mode/feature_level_providers.dart'
     show switchableDarkModeProvider;
 import '../../../conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
 import '../../../debug/feature_level_providers.dart'
-    show DeveloperModeValue, developerModeProvider;
+    show
+        DeveloperModeValue,
+        columnBandDebugMarginsProvider,
+        developerModeProvider;
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/feature_level_providers.dart'
     show onboardingGateProvider;
@@ -162,6 +165,30 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                               .read(appShellActionsProvider.notifier)
                               .toggleDeveloperMode(),
                         );
+                      },
+                      showLabel: false,
+                    );
+                  }(),
+                if (kDebugMode &&
+                    ref.watch(developerModeProvider).valueOrNull ==
+                        DeveloperModeValue.developer)
+                  () {
+                    final marginsVisible = ref.watch(
+                      columnBandDebugMarginsProvider,
+                    );
+                    return ToolBarIconButton(
+                      label: marginsVisible
+                          ? 'Hide layout band margins'
+                          : 'Show layout band margins',
+                      icon: MacosIcon(
+                        marginsVisible
+                            ? Icons.border_outer
+                            : Icons.border_clear,
+                      ),
+                      onPressed: () {
+                        ref
+                            .read(appShellActionsProvider.notifier)
+                            .toggleColumnBandDebugMargins();
                       },
                       showLabel: false,
                     );

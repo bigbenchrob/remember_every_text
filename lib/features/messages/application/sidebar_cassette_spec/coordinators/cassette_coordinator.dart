@@ -2,7 +2,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/spec_classes/messages_cassette_spec.dart';
-import '../resolvers/conversation_signatures_resolver.dart';
 import '../resolvers/heatmap_resolver.dart';
 
 part 'cassette_coordinator.g.dart';
@@ -39,9 +38,6 @@ class MessagesCassetteCoordinator extends _$MessagesCassetteCoordinator {
     required int cassetteIndex,
   }) async {
     return spec.map(
-      conversationSignatures: (_) => ref
-          .read(conversationSignaturesResolverProvider.notifier)
-          .resolve(cassetteIndex: cassetteIndex),
       heatMap: (heatMap) => ref
           .read(heatmapResolverProvider.notifier)
           .resolve(contactId: heatMap.contactId, cassetteIndex: cassetteIndex),

@@ -27,6 +27,13 @@ enum SidebarCassetteSemanticStyle {
   visualization,
 }
 
+/// Optional semantic anchor for page-level sidebar alignment.
+///
+/// This does not change how an individual cassette renders. It lets the
+/// sidebar stack expose a stable content-start seam to page layouts that align
+/// peer columns.
+enum SidebarCassetteLayoutAnchor { none, preferredContentStart }
+
 /// Approved content placement modes within the sidebar content envelope.
 enum SidebarBodyPlacementMode { fullWidth, inset, insetWithTrailingGutter }
 
@@ -150,6 +157,7 @@ abstract base class SidebarCassettePayload {
     required this.role,
     this.topSpacing = 0,
     this.semanticStyle = SidebarCassetteSemanticStyle.automatic,
+    this.layoutAnchor = SidebarCassetteLayoutAnchor.none,
   });
 
   /// Semantic role used by essentials-owned sidebar composition.
@@ -160,6 +168,9 @@ abstract base class SidebarCassettePayload {
 
   /// Shared semantic hint used by essentials-owned sidebar hierarchy.
   final SidebarCassetteSemanticStyle semanticStyle;
+
+  /// Optional semantic seam used by page-level sidebar layout.
+  final SidebarCassetteLayoutAnchor layoutAnchor;
 
   /// Explicit render contract consumed by the sidebar render router.
   SidebarCassetteRenderKind get renderKind;
@@ -177,6 +188,7 @@ abstract base class InertSidebarCassettePayload extends SidebarCassettePayload {
     required super.role,
     super.topSpacing = 0,
     super.semanticStyle = SidebarCassetteSemanticStyle.automatic,
+    super.layoutAnchor = SidebarCassetteLayoutAnchor.none,
   });
 }
 
@@ -188,6 +200,7 @@ abstract base class PlacementGovernedSidebarCassettePayload
     required super.role,
     super.topSpacing = 0,
     super.semanticStyle = SidebarCassetteSemanticStyle.automatic,
+    super.layoutAnchor = SidebarCassetteLayoutAnchor.none,
     this.title = '',
     this.subtitle,
     this.sectionTitle,

@@ -11,10 +11,6 @@ part 'messages_cassette_spec.freezed.dart';
 /// will live alongside this file after running build_runner.
 @freezed
 abstract class MessagesCassetteSpec with _$MessagesCassetteSpec {
-  /// Compact conversation topology signatures for the Conversations branch.
-  const factory MessagesCassetteSpec.conversationSignatures() =
-      _MessagesConversationSignaturesSpec;
-
   /// Heat map cassette for messages. When [contactId] is provided the heatmap
   /// is scoped to that contact; otherwise it visualises the entire archive.
   const factory MessagesCassetteSpec.heatMap({int? contactId}) =

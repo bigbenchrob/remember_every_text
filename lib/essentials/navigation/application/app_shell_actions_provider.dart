@@ -4,7 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../app_mode/feature_level_providers.dart'
     show switchableDarkModeProvider;
-import '../../debug/feature_level_providers.dart' show developerModeProvider;
+import '../../debug/feature_level_providers.dart'
+    show columnBandDebugMarginsProvider, developerModeProvider;
 import '../../window_state/feature_level_providers.dart'
     show windowStateServiceProvider;
 
@@ -17,6 +18,10 @@ class AppShellActions extends _$AppShellActions {
 
   Future<void> toggleDeveloperMode() async {
     await ref.read(developerModeProvider.notifier).toggleMode();
+  }
+
+  void toggleColumnBandDebugMargins() {
+    ref.read(columnBandDebugMarginsProvider.notifier).toggle();
   }
 
   void cycleThemeMode() {

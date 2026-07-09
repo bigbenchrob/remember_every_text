@@ -17,6 +17,8 @@ import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_s
 import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
+import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_cassette_spec.dart';
+import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
@@ -189,8 +191,8 @@ void main() {
       expect(
         rack.cassettes,
         contains(
-          const CassetteSpec.messages(
-            MessagesCassetteSpec.conversationSignatures(),
+          const CassetteSpec.conversations(
+            ConversationsCassetteSpec.conversationSignatures(),
           ),
         ),
       );
@@ -435,8 +437,10 @@ void main() {
       expect(
         flowState.projectedCenterSpec,
         equals(
-          const ViewSpec.messages(
-            MessagesSpec.forConversation(conversationId: 8796093022216),
+          const ViewSpec.conversations(
+            ConversationsSpec.conversationMessages(
+              conversationId: 8796093022216,
+            ),
           ),
         ),
       );
@@ -462,8 +466,10 @@ void main() {
       expect(
         flowState.projectedCenterSpec,
         equals(
-          const ViewSpec.messages(
-            MessagesSpec.forConversation(conversationId: 8796093022216),
+          const ViewSpec.conversations(
+            ConversationsSpec.conversationMessages(
+              conversationId: 8796093022216,
+            ),
           ),
         ),
       );
@@ -872,8 +878,11 @@ void main() {
         flow.showGlobalTimeline();
         panels.show(
           panel: WindowPanel.right,
-          spec: const ViewSpec.messages(
-            MessagesSpec.searchResultContext(messageId: 99, chatId: 5),
+          spec: const ViewSpec.conversations(
+            ConversationsSpec.conversationExcerpt(
+              conversationId: 5,
+              anchorMessageId: 99,
+            ),
           ),
         );
 

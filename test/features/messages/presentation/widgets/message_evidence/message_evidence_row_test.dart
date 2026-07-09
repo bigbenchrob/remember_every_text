@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
@@ -48,6 +49,92 @@ void main() {
     expect(find.textContaining('received | Claire'), findsOneWidget);
     expect(find.textContaining('handle: 1 (778) 990-8506'), findsOneWidget);
   });
+
+  testWidgets('does not render semantic provenance badges under messages', (
+    tester,
+  ) async {
+    await _pumpRow(
+      tester,
+      developerMode: DeveloperModeValue.developer,
+      scope: const ConversationEvidenceScope(conversationId: 42),
+      message: _message(
+        semanticKind: 'rich_text',
+        itemKind: 'text',
+        associatedMessageId: 123,
+        hasAttributedBodySource: true,
+        hasMessageSummaryInfo: true,
+        errorCode: 0,
+      ),
+    );
+
+    expect(find.text('hello'), findsOneWidget);
+    expect(find.text('rich_text'), findsNothing);
+    expect(find.text('text'), findsNothing);
+    expect(find.text('associated 123'), findsNothing);
+    expect(find.text('attributed body'), findsNothing);
+    expect(find.text('summary info'), findsNothing);
+    expect(find.text('error 0'), findsNothing);
+  });
+
+  testWidgets('renders conversation context action from explicit callback', (
+    tester,
+  ) async {
+    var opened = false;
+    await _pumpRow(
+      tester,
+      developerMode: DeveloperModeValue.user,
+      scope: const MessageSearchEvidenceScope(query: 'hello'),
+      message: _message(sourceConversationId: 99),
+      onOpenConversationContext: () {
+        opened = true;
+      },
+    );
+
+    expect(find.text('In conversation'), findsOneWidget);
+
+    await tester.tap(find.text('In conversation'));
+    await tester.pump();
+
+    expect(opened, isTrue);
+  });
+
+  testWidgets('hides conversation context action when callback is absent', (
+    tester,
+  ) async {
+    await _pumpRow(
+      tester,
+      developerMode: DeveloperModeValue.user,
+      scope: const MessageSearchEvidenceScope(query: 'hello'),
+      message: _message(sourceConversationId: 99),
+    );
+
+    expect(find.text('In conversation'), findsNothing);
+  });
+
+  testWidgets('renders persistent correspondence chrome for anchor messages', (
+    tester,
+  ) async {
+    await _pumpRow(
+      tester,
+      developerMode: DeveloperModeValue.user,
+      scope: const MessageSearchEvidenceScope(query: 'hello'),
+      message: _message(),
+      isAnchorMessage: true,
+    );
+
+    final anchorDecorations = tester
+        .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+        .map((box) => box.decoration)
+        .whereType<BoxDecoration>()
+        .where((decoration) {
+          return decoration.border != null &&
+              decoration.boxShadow != null &&
+              decoration.color != null;
+        })
+        .toList(growable: false);
+
+    expect(anchorDecorations, isNotEmpty);
+  });
 }
 
 Future<void> _pumpRow(
@@ -55,6 +142,8 @@ Future<void> _pumpRow(
   required DeveloperModeValue developerMode,
   required MessageEvidenceScope scope,
   required MessageEvidenceRowData message,
+  bool isAnchorMessage = false,
+  VoidCallback? onOpenConversationContext,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -64,23 +153,42 @@ Future<void> _pumpRow(
         ),
       ],
       child: MacosApp(
-        home: MessageEvidenceRow(message: message, evidenceScope: scope),
+        home: MessageEvidenceRow(
+          message: message,
+          evidenceScope: scope,
+          isAnchorMessage: isAnchorMessage,
+          onOpenConversationContext: onOpenConversationContext,
+        ),
       ),
     ),
   );
   await tester.pump();
 }
 
-MessageEvidenceRowData _message() {
-  return const MessageEvidenceRowData(
+MessageEvidenceRowData _message({
+  String? semanticKind,
+  String? itemKind,
+  int? associatedMessageId,
+  bool hasAttributedBodySource = false,
+  bool hasMessageSummaryInfo = false,
+  int? sourceConversationId,
+  int? errorCode,
+}) {
+  return MessageEvidenceRowData(
     messageId: 8796093170832,
     dateUtc: '2026-05-20T18:58:00Z',
     isFromMe: false,
     text: 'hello',
-    associatedMessageId: null,
+    associatedMessageId: associatedMessageId,
     attachmentCount: 0,
+    sourceConversationId: sourceConversationId,
     senderDisplayHandle: 'Claire',
     senderRawHandleLabel: '1 (778) 990-8506',
+    semanticKind: semanticKind,
+    itemKind: itemKind,
+    hasAttributedBodySource: hasAttributedBodySource,
+    hasMessageSummaryInfo: hasMessageSummaryInfo,
+    errorCode: errorCode,
   );
 }
 

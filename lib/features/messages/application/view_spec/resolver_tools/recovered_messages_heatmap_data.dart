@@ -1,3 +1,4 @@
+import '../../../../../core/util/date_label_formatter.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 
 CalendarHeatmapTimelineData? buildRecoveredMessagesHeatmapData({
@@ -13,9 +14,7 @@ CalendarHeatmapTimelineData? buildRecoveredMessagesHeatmapData({
 
   final counts = <String, int>{};
   for (final sentDate in sortedDates) {
-    final year = sentDate.year;
-    final month = sentDate.month.toString().padLeft(2, '0');
-    final key = '$year-$month';
+    final key = DateLabelFormatter.monthKey(sentDate);
     counts[key] = (counts[key] ?? 0) + 1;
   }
 
@@ -28,7 +27,7 @@ CalendarHeatmapTimelineData? buildRecoveredMessagesHeatmapData({
     var yearHasMessages = false;
 
     for (var month = 1; month <= 12; month += 1) {
-      final key = '$year-${month.toString().padLeft(2, '0')}';
+      final key = DateLabelFormatter.monthKey(DateTime(year, month));
       final count = counts[key] ?? 0;
       final monthDate = DateTime(year, month);
       final isBeforeStart = monthDate.isBefore(firstMonth);

@@ -245,7 +245,7 @@ void main() {
   });
 
   test(
-    'reads bounded search context around live source message and chat row ids',
+    'reads bounded conversation excerpt around graph message and conversation ids',
     () async {
       const sourceChatRowId = 301;
       const sourceMessageRowId = 202;
@@ -300,18 +300,20 @@ void main() {
         messageId: otherChatMessageId,
       );
 
-      final timeline = await _reader(graphDatabase).readMessageContextTimeline(
-        messageId: sourceMessageRowId,
-        chatId: sourceChatRowId,
-        beforeCount: 1,
-        afterCount: 1,
-      );
-      final missing = await _reader(graphDatabase).readMessageContextTimeline(
-        messageId: sourceMessageRowId,
-        chatId: 999,
-        beforeCount: 1,
-        afterCount: 1,
-      );
+      final timeline = await _reader(graphDatabase)
+          .readConversationExcerptTimeline(
+            conversationId: chatId,
+            anchorMessageId: selectedMessageId,
+            beforeCount: 1,
+            afterCount: 1,
+          );
+      final missing = await _reader(graphDatabase)
+          .readConversationExcerptTimeline(
+            conversationId: _id(999),
+            anchorMessageId: selectedMessageId,
+            beforeCount: 1,
+            afterCount: 1,
+          );
 
       expect(timeline.map((entry) => entry.messageId), [
         beforeMessageId,

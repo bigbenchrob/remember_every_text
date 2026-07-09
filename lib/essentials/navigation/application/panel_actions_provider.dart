@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../domain/entities/panel_stack.dart';
+import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';
 import '../domain/sidebar_mode.dart';
 import 'panels_view_state_provider.dart';
@@ -21,6 +22,12 @@ class PanelActions extends _$PanelActions {
     ref
         .read(panelsViewStateProvider(mode).notifier)
         .clear(panel: WindowPanel.right);
+  }
+
+  void showRightPanel({required SidebarMode mode, required ViewSpec spec}) {
+    ref
+        .read(panelsViewStateProvider(mode).notifier)
+        .show(panel: WindowPanel.right, spec: spec);
   }
 
   void activateTab({

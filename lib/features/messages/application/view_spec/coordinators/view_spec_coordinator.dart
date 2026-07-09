@@ -2,14 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../domain/spec_classes/messages_view_spec.dart';
-import '../../../presentation/view/conversation_messages_preview_view.dart';
 import '../resolvers/global_timeline_resolver.dart';
 import '../resolvers/handle_lens_resolver.dart';
 import '../resolvers/messages_for_contact_resolver.dart';
 import '../resolvers/messages_for_handle_resolver.dart';
 import '../resolvers/recovered_attachment_sidebar_resolver.dart';
 import '../resolvers/recovered_unlinked_messages_resolver.dart';
-import '../resolvers/search_result_context_sidebar_resolver.dart';
 
 part 'view_spec_coordinator.g.dart';
 
@@ -27,12 +25,6 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
   /// Build a center-panel widget for the given [MessagesSpec].
   Widget buildForSpec(MessagesSpec spec) {
     return spec.when(
-      forConversation: (conversationId, anchorMessageId, searchQuery) =>
-          ConversationMessagesPreviewView(
-            conversationId: conversationId,
-            anchorMessageId: anchorMessageId,
-            searchQuery: searchQuery,
-          ),
       forContact: (contactId, scrollToDate, filterHandleId) =>
           MessagesForContactResolver().resolve(
             contactId: contactId,
@@ -57,13 +49,6 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
           RecoveredAttachmentSidebarResolver().resolve(
             messageId: messageId,
             attachment: attachment,
-          ),
-      searchResultContext: (messageId, chatId, beforeCount, afterCount) =>
-          SearchResultContextSidebarResolver().resolve(
-            messageId: messageId,
-            chatId: chatId,
-            beforeCount: beforeCount,
-            afterCount: afterCount,
           ),
       handleLens: (handleId) =>
           HandleLensResolver().resolve(handleId: handleId),

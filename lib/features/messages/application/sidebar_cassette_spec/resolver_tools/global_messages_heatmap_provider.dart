@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../core/util/date_label_formatter.dart';
 import '../../../../../essentials/conversation_graph/application/conversations/conversation.dart';
 import '../../../../../essentials/conversation_graph/feature_level_providers.dart'
     show messageGraphReaderProvider;
@@ -38,9 +39,7 @@ CalendarHeatmapTimelineData? _buildGraphGlobalTimeline(
   final lastDate = datedEntries.last.date;
   final counts = <String, int>{};
   for (final entry in datedEntries) {
-    final key =
-        entry.monthKey ??
-        '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}';
+    final key = entry.monthKey ?? DateLabelFormatter.monthKey(entry.date);
     counts[key] = (counts[key] ?? 0) + 1;
   }
 
@@ -56,7 +55,7 @@ CalendarHeatmapTimelineData? _buildGraphGlobalTimeline(
     var yearHasMessages = false;
 
     for (var month = 1; month <= 12; month++) {
-      final key = '$year-${month.toString().padLeft(2, '0')}';
+      final key = DateLabelFormatter.monthKey(DateTime(year, month));
       final monthDate = DateTime(year, month);
       final isBeforeStart = monthDate.isBefore(firstMonth);
       final count = isBeforeStart ? 0 : counts[key] ?? 0;

@@ -8,6 +8,9 @@ import '../../../features/contacts/feature_level_providers.dart'
         contactChooserCassetteStateProvider,
         contactsCassetteCoordinatorProvider,
         contactsInfoCassetteCoordinatorProvider;
+import '../../../features/conversations/feature_level_providers.dart'
+    as conversations_feature
+    show conversationsCassetteCoordinatorProvider;
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/feature_level_providers.dart'
     as handles_feature
@@ -199,6 +202,15 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
         contacts_feature.contactsInfoCassetteCoordinatorProvider.notifier,
       );
       return coordinator.buildViewModel(infoSpec, cassetteIndex: cassetteIndex);
+    },
+    conversations: (conversationsSpec) async {
+      final coordinator = ref.read(
+        conversations_feature.conversationsCassetteCoordinatorProvider.notifier,
+      );
+      return coordinator.buildViewModel(
+        conversationsSpec,
+        cassetteIndex: cassetteIndex,
+      );
     },
     handles: (handlesSpec) async {
       handlesSpec.when(

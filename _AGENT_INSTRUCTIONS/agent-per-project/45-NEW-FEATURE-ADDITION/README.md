@@ -2,17 +2,24 @@
 tier: project
 scope: workflow
 owner: agent-per-project
-last_reviewed: 2026-06-06
+last_reviewed: 2026-07-09
 source_of_truth: doc
 links:
   - ../../agent-instructions-shared/INDEX.md
+  - ./INDEX.md
   - ../40-FEATURES/README.md
 tests: []
 ---
 
 # New Feature Addition Workflow
 
-This folder tracks feature work that is still in planning or active development. Follow this workflow whenever the user asks for a new capability that is not yet represented in `40-FEATURES/`.
+This folder tracks feature work that is still in planning or active
+development, plus historical feature proposals and retrospectives that remain
+useful as rationale. Read [`INDEX.md`](INDEX.md) before treating any folder here
+as current implementation guidance.
+
+Follow this workflow whenever the user asks for a new capability that is not
+yet represented in `40-FEATURES/`.
 
 ## Lifecycle Overview
 
@@ -50,11 +57,16 @@ Templates live under `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates
 - Workflow guide: `AGENTS.md`
 - Feature brief template: `_AGENT_INSTRUCTIONS/agent-instructions-shared/90-templates/TEMPLATE-feature-brief.md`
 
-## Current Feature Folders
+## Active/Planning Feature Folders
 
-The table below is the current active/planning set. Other folders in this directory may be useful history, but they are not active marching orders by default.
+The table below is the active/planning set recorded for this folder. Other
+folders in this directory may be useful history, but they are not active
+marching orders by default. Verify status through [`INDEX.md`](INDEX.md), the
+current project roadmap, or the user's latest instruction before implementing.
 
 | Feature | Key Docs |
 | --- | --- |
 | `archive-canonical-attachments/` | [`PROPOSAL.md`](archive-canonical-attachments/PROPOSAL.md), [`CHECKLIST.md`](archive-canonical-attachments/CHECKLIST.md), [`DESIGN_NOTES.md`](archive-canonical-attachments/DESIGN_NOTES.md), [`TESTS.md`](archive-canonical-attachments/TESTS.md) |
 | `ephemeral-sidebar-projection/` | [`PROPOSAL.md`](ephemeral-sidebar-projection/PROPOSAL.md), [`CHECKLIST.md`](ephemeral-sidebar-projection/CHECKLIST.md), [`DESIGN_NOTES.md`](ephemeral-sidebar-projection/DESIGN_NOTES.md), [`TESTS.md`](ephemeral-sidebar-projection/TESTS.md) |
+| `03-INTRODUCE-SIDEBAR-CONTENT-SEAM/` | [`PROPOSAL.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/PROPOSAL.md), [`CHECKLIST.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/CHECKLIST.md), [`DESIGN_NOTES.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/DESIGN_NOTES.md), [`TESTS.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/TESTS.md) |
+| `04-CONVERSATION-TAGS/` | Exploratory package for durable Conversation Tags: [`PROPOSAL.md`](04-CONVERSATION-TAGS/PROPOSAL.md), [`CHECKLIST.md`](04-CONVERSATION-TAGS/CHECKLIST.md), [`DESIGN_NOTES.md`](04-CONVERSATION-TAGS/DESIGN_NOTES.md), [`TESTS.md`](04-CONVERSATION-TAGS/TESTS.md) |

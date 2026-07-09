@@ -11,6 +11,17 @@ int canonicalMessageEvidenceId(int messageId) {
   return canonicalLiveChatGraphId(messageId);
 }
 
+/// Resolves a conversation selection id to the canonical graph id used by
+/// evidence and conversation-card projections.
+///
+/// Some bounded evidence context entry points still carry live
+/// `chat.db.chat.ROWID` values. Conversation evidence remains graph-native:
+/// callers get back the canonical `chat_ss_id` when the live rowid is
+/// recognizable, otherwise the supplied id is assumed to already be canonical.
+int canonicalConversationEvidenceId(int conversationId) {
+  return canonicalLiveChatGraphId(conversationId);
+}
+
 /// Returns the live `chat.db.message` ROWID for a graph message evidence id.
 ///
 /// This exists only for older rowid-keyed overlay compatibility. Ordinary message

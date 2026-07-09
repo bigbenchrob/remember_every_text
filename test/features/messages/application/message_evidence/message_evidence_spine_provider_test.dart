@@ -12,8 +12,6 @@ import 'package:remember_this_text/essentials/conversation_graph/application/mes
 import 'package:remember_this_text/essentials/db/feature_level_providers/message_data_version_provider.dart';
 import 'package:remember_this_text/essentials/search/application/graph_message_search.dart';
 import 'package:remember_this_text/essentials/search/application/graph_search_repository_provider.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
@@ -476,11 +474,11 @@ void main() {
   });
 
   test(
-    'search result context scope exposes bounded evidence skeleton',
+    'conversation excerpt scope exposes bounded evidence skeleton',
     () async {
-      const scope = SearchResultContextEvidenceScope(
-        messageId: 11,
-        chatId: 7,
+      const scope = ConversationExcerptEvidenceScope(
+        conversationId: 7,
+        anchorMessageId: 11,
         beforeCount: 1,
         afterCount: 1,
       );
@@ -536,10 +534,7 @@ void main() {
       );
 
       expect(skeleton.entries.map((entry) => entry.messageId), [10, 11]);
-      expect(
-        skeleton.initialAnchorMessageId,
-        SourceScopedRowKey.pack(sourceId: liveChatDbSourceId, sourceRowId: 11),
-      );
+      expect(skeleton.initialAnchorMessageId, 11);
       expect(message?.text, 'context row');
       expect(matches, [11]);
     },
@@ -881,9 +876,10 @@ class _FakeMessageGraphRepository implements MessageGraphRepository {
   }
 
   @override
-  Future<List<ConversationMessageTimelineEntry>> readMessageContextTimeline({
-    required int messageId,
-    required int chatId,
+  Future<List<ConversationMessageTimelineEntry>>
+  readConversationExcerptTimeline({
+    required int conversationId,
+    required int anchorMessageId,
     required int beforeCount,
     required int afterCount,
   }) async {

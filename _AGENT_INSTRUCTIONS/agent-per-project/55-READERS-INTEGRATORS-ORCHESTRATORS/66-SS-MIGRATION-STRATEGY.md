@@ -57,7 +57,7 @@ Examples:
 
 - `features/search/`
 - `features/contacts/`
-- `features/chats/`
+- `features/conversations/`
 - `features/messages/`
 
 When a legacy feature needs source-scoped behavior, add implementation variants inside the existing feature folder rather than creating a sibling feature.
@@ -72,6 +72,11 @@ features/search/application/
 ```
 
 The feature boundary remains stable while its implementation can migrate behind that boundary.
+
+Conversation note: `features/conversations/` is the canonical user-facing
+Conversation feature boundary. The older `features/chats/` feature boundary has
+been retired and must not be reintroduced for user-facing Conversation
+behavior.
 
 ## Provider Switch Points
 

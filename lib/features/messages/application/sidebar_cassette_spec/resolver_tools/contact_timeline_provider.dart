@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../core/util/date_label_formatter.dart';
 import '../../../../../essentials/conversation_graph/application/contacts/contact_graph.dart';
 import '../../../../../essentials/conversation_graph/feature_level_providers.dart'
     show
@@ -76,7 +77,7 @@ CalendarHeatmapTimelineData? _buildGraphContactTimeline({
 
   final counts = <String, int>{
     for (final monthCount in activity.monthCounts)
-      '${monthCount.year}-${monthCount.month.toString().padLeft(2, '0')}':
+      DateLabelFormatter.monthKey(DateTime(monthCount.year, monthCount.month)):
           monthCount.messageCount,
   };
   final firstYear = firstDate.year;
@@ -92,7 +93,7 @@ CalendarHeatmapTimelineData? _buildGraphContactTimeline({
     for (var month = 1; month <= 12; month++) {
       final monthDate = DateTime(year, month);
       final isBeforeStart = monthDate.isBefore(contactStartMonth);
-      final key = '$year-${month.toString().padLeft(2, '0')}';
+      final key = DateLabelFormatter.monthKey(DateTime(year, month));
       final count = isBeforeStart ? 0 : counts[key] ?? 0;
       if (count > 0) {
         yearHasMessages = true;
@@ -145,9 +146,7 @@ CalendarHeatmapTimelineData? _buildGraphTimelineFromEntries({
   final lastDate = datedEntries.last.date;
   final counts = <String, int>{};
   for (final entry in datedEntries) {
-    final key =
-        entry.monthKey ??
-        '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}';
+    final key = entry.monthKey ?? DateLabelFormatter.monthKey(entry.date);
     counts[key] = (counts[key] ?? 0) + 1;
   }
 
@@ -178,7 +177,7 @@ CalendarHeatmapTimelineData _buildGraphTimelineFromMonthCounts({
     for (var month = 1; month <= 12; month++) {
       final monthDate = DateTime(year, month);
       final isBeforeStart = monthDate.isBefore(contactStartMonth);
-      final key = '$year-${month.toString().padLeft(2, '0')}';
+      final key = DateLabelFormatter.monthKey(DateTime(year, month));
       final count = isBeforeStart ? 0 : counts[key] ?? 0;
       if (count > 0) {
         yearHasMessages = true;

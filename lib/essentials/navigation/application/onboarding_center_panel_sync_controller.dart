@@ -146,6 +146,7 @@ String _describeCenterSpec(ViewSpec? spec) {
 
   return spec.map(
     messages: (_) => 'messages',
+    conversations: (_) => 'conversations',
     settings: (_) => 'settings',
     environmentReadiness: (value) => value.spec.maybeWhen(
       readinessPanel: () => 'environmentReadiness.readinessPanel',

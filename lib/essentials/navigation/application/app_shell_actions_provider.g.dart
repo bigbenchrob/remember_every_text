@@ -6,7 +6,7 @@ part of 'app_shell_actions_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$appShellActionsHash() => r'01e40cc60dd70007b5a0b259f9c6d14f2626b982';
+String _$appShellActionsHash() => r'ad12530fa8c49a2f4377036dd0b29aafea1ae8da';
 
 /// See also [AppShellActions].
 @ProviderFor(AppShellActions)

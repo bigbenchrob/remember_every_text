@@ -7,7 +7,7 @@ part of 'conversation_graph_status_snapshot_provider.dart';
 // **************************************************************************
 
 String _$conversationGraphStatusSnapshotHash() =>
-    r'95e587fa79a8ddde388e28a8c7053d9bcb9105d1';
+    r'21fc09f4f5721dea755d0a4d5c242bd732e50096';
 
 /// See also [conversationGraphStatusSnapshot].
 @ProviderFor(conversationGraphStatusSnapshot)

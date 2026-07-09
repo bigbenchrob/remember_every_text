@@ -9,7 +9,12 @@ part of 'source_scoped_import_ledger_provider.dart';
 String _$sourceScopedImportLedgerHash() =>
     r'3c871867f0de7b248819ea0f000f07d4a5bfb612';
 
-/// See also [sourceScopedImportLedger].
+/// Semantic access to the source-scoped import ledger.
+///
+/// Physical database construction stays in `essentials/db`; import/projection
+/// code consumes this port-shaped provider instead of database file details.
+///
+/// Copied from [sourceScopedImportLedger].
 @ProviderFor(sourceScopedImportLedger)
 final sourceScopedImportLedgerProvider =
     AutoDisposeFutureProvider<ImportLedger>.internal(

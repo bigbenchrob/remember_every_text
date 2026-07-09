@@ -7,7 +7,7 @@ part of 'message_projection_repository_provider.dart';
 // **************************************************************************
 
 String _$messageProjectionRepositoryHash() =>
-    r'324c024e1ad99465598661d169c3b63ba1cdf4bd';
+    r'f1db83c0982117bfb49372ef6f250e1684de5f9d';
 
 /// See also [messageProjectionRepository].
 @ProviderFor(messageProjectionRepository)

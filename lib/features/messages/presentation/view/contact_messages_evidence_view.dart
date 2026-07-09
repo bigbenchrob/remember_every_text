@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../../core/util/count_label_formatter.dart';
+import '../../../../core/util/date_label_formatter.dart';
+import '../../../../core/util/date_range_formatter.dart';
 import '../../application/message_evidence/contact_evidence_header_context_provider.dart';
 import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
@@ -100,7 +102,7 @@ class _ContactMessagesEvidenceViewState
             isInitialRowsLoading: true,
             headerData: MessageEvidenceHeaderModel(
               title: 'Loading contact messages',
-              countLabel: '${_formatCount(skeleton.totalCount)} messages',
+              countLabel: CountLabelFormatter.messages(skeleton.totalCount),
             ),
             emptyMessage: 'No messages found for this contact.',
             monthAnchor: widget.monthAnchor,
@@ -171,9 +173,15 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final visibleSkeleton = _visibleSkeleton(
+      skeleton: skeleton,
+      query: searchQuery,
+      matchingIds: matchingMessageIds,
+      isMatchingLoaded: isMatchingLoaded,
+    );
     return MessageEvidenceTimelineView(
       evidenceScope: evidenceScope,
-      skeleton: skeleton,
+      skeleton: visibleSkeleton,
       initialRows: initialRows,
       isInitialRowsLoading: isInitialRowsLoading,
       headerData: MessageEvidenceHeaderModel(
@@ -182,7 +190,6 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
         dateRangeLabel: _dateRangeLabel(),
         countLabel: _countLabel(),
         activeScopeLabel: _activeScopeLabel(),
-        statusLine: _statusLine(),
         searchConfig: MessageEvidenceHeaderSearchConfig(
           controller: searchController,
           placeholder: 'Search messages from ${_contactLabel()}',
@@ -227,6 +234,7 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
     return _dateSpan(
       headerContext?.firstMessageAtUtc,
       headerContext?.lastMessageAtUtc,
+      itemCount: headerContext?.totalMessageCount,
     );
   }
 
@@ -234,26 +242,26 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
     if (searchQuery.isNotEmpty) {
       if (isMatchingLoaded) {
         return '${_formatCount(matchingMessageIds?.length ?? 0)} of '
-            '${_formatCount(skeleton.totalCount)} messages match "$searchQuery"';
+            '${CountLabelFormatter.messages(skeleton.totalCount)} match "$searchQuery"';
       }
       return 'matching messages...';
     }
 
     final monthLabel = _monthLabel(monthAnchor);
     if (monthLabel != null) {
-      return '${_formatCount(_monthMessageCount(_monthKey(monthAnchor!)))} messages this month';
+      return '${CountLabelFormatter.messages(_monthMessageCount(_monthKey(monthAnchor!)))} this month';
     }
 
     if (filterHandleId != null) {
-      return '${_formatCount(skeleton.totalCount)} messages';
+      return CountLabelFormatter.messages(skeleton.totalCount);
     }
 
     final totalMessageCount = headerContext?.totalMessageCount;
     if (totalMessageCount == null) {
-      return '${_formatCount(skeleton.totalCount)} messages';
+      return CountLabelFormatter.messages(skeleton.totalCount);
     }
 
-    return '${_formatCount(totalMessageCount)} messages';
+    return CountLabelFormatter.messages(totalMessageCount);
   }
 
   String? _activeScopeLabel() {
@@ -266,20 +274,13 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
     return null;
   }
 
-  String _statusLine() {
-    if (searchQuery.isNotEmpty) {
-      return 'evidence skeleton • contact text match overlay • hydrate visible rows';
-    }
-    if (monthAnchor != null) {
-      return 'selected month • evidence skeleton • hydrate visible rows';
-    }
-    if (filterHandleId != null) {
-      return 'selected handle • evidence skeleton • latest position • hydrate visible rows';
-    }
-    return 'evidence skeleton • latest position • hydrate visible rows';
-  }
-
   String _emptyMessage() {
+    if (searchQuery.isNotEmpty) {
+      if (!isMatchingLoaded) {
+        return 'Matching contact messages...';
+      }
+      return 'No contact messages match "$searchQuery".';
+    }
     if (monthAnchor != null) {
       return 'No messages found for this contact in the selected month.';
     }
@@ -324,48 +325,45 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
     return _dateSpan(
       skeleton.entries.first.dateUtc,
       skeleton.entries.last.dateUtc,
+      itemCount: skeleton.entries.length,
     );
   }
 }
 
+MessageEvidenceTimelineSkeleton _visibleSkeleton({
+  required MessageEvidenceTimelineSkeleton skeleton,
+  required String query,
+  required List<int>? matchingIds,
+  required bool isMatchingLoaded,
+}) {
+  if (query.isEmpty) {
+    return skeleton;
+  }
+  if (!isMatchingLoaded) {
+    return const MessageEvidenceTimelineSkeleton(entries: []);
+  }
+  return skeleton.filteredByMessageIds(matchingIds ?? const <int>[]);
+}
+
 String _monthKey(DateTime value) {
-  return '${value.year.toString().padLeft(4, '0')}-'
-      '${value.month.toString().padLeft(2, '0')}';
+  return DateLabelFormatter.monthKey(value);
 }
 
 String? _monthLabel(DateTime? value) {
   if (value == null) {
     return null;
   }
-  return DateFormat.yMMMM().format(value);
+  return DateLabelFormatter.longMonthYear(value);
 }
 
-String _dateSpan(String? first, String? last) {
-  final firstLabel = _dateLabel(first);
-  final lastLabel = _dateLabel(last);
-  if (firstLabel == null && lastLabel == null) {
-    return 'No date range';
-  }
-  if (firstLabel == null) {
-    return 'through $lastLabel';
-  }
-  if (lastLabel == null || firstLabel == lastLabel) {
-    return firstLabel;
-  }
-  return '$firstLabel to $lastLabel';
-}
-
-String? _dateLabel(String? value) {
-  if (value == null || value.isEmpty) {
-    return null;
-  }
-  final parsed = DateTime.tryParse(value);
-  if (parsed == null) {
-    return value;
-  }
-  return DateFormat.yMMMd().format(parsed.toLocal());
+String _dateSpan(String? first, String? last, {int? itemCount}) {
+  return DateRangeFormatter.formatMessageEvidenceRangeFromIsoStrings(
+    startIso: first,
+    endIso: last,
+    itemCount: itemCount,
+  );
 }
 
 String _formatCount(int count) {
-  return NumberFormat.decimalPattern().format(count);
+  return CountLabelFormatter.formatCount(count);
 }

@@ -482,6 +482,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       '''
       SELECT DISTINCT
         m.ss_id AS message_id,
+        ctm.chat_ss_id AS conversation_id,
         m.date_utc,
         m.is_from_me,
         m.text,
@@ -625,6 +626,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       '''
       SELECT DISTINCT
         m.ss_id AS message_id,
+        ctm.chat_ss_id AS conversation_id,
         m.date_utc,
         m.is_from_me,
         m.text,
@@ -887,6 +889,7 @@ class SqliteContactGraphRepository implements ContactGraphRepository {
       text: row['text'] as String?,
       associatedMessageId: _readNullableInt(row['associated_message_ss_id']),
       attachmentCount: _readInt(row['attachment_count']),
+      conversationId: _readNullableInt(row['conversation_id']),
       senderHandleId: _readNullableInt(row['sender_handle_ss_id']),
       senderCanonicalHandleId: _readNullableInt(
         row['sender_canonical_handle_ss_id'],

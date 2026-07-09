@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart' show MacosTooltip;
 
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../core/util/date_label_formatter.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
 
 /// Renders a calendar heatmap timeline visualization
@@ -217,7 +218,9 @@ class _SingleYearRow extends ConsumerWidget {
     if (selectedMonthKey == null) {
       return false;
     }
-    final monthKey = '${month.year}-${month.month.toString().padLeft(2, '0')}';
+    final monthKey = DateLabelFormatter.monthKey(
+      DateTime(month.year, month.month),
+    );
     return monthKey == selectedMonthKey;
   }
 }

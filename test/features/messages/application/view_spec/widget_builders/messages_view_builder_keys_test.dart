@@ -5,13 +5,11 @@ import 'package:remember_this_text/features/messages/application/view_spec/widge
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/messages_for_contact_builder.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/messages_for_handle_builder.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/recovered_unlinked_messages_builder.dart';
-import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/search_result_context_sidebar_builder.dart';
 import 'package:remember_this_text/features/messages/presentation/view/contact_messages_evidence_view.dart';
 import 'package:remember_this_text/features/messages/presentation/view/global_messages_evidence_view.dart';
 import 'package:remember_this_text/features/messages/presentation/view/handle_lens_view.dart';
 import 'package:remember_this_text/features/messages/presentation/view/handle_messages_evidence_view.dart';
 import 'package:remember_this_text/features/messages/presentation/view/recovered_messages_evidence_view.dart';
-import 'package:remember_this_text/features/messages/presentation/view/search_result_context_sidebar_view.dart';
 
 void main() {
   group('message center-surface builder keys', () {
@@ -77,15 +75,6 @@ void main() {
         isA<RecoveredMessagesEvidenceView>(),
       );
       expect(buildHandleLensView(handleId: 12), isA<HandleLensView>());
-      expect(
-        const SearchResultContextSidebarBuilder().build(
-          messageId: 100,
-          chatId: 200,
-          beforeCount: 5,
-          afterCount: 10,
-        ),
-        isA<SearchResultContextSidebarView>(),
-      );
     });
   });
 }

@@ -47,7 +47,7 @@ final graphAttachmentArchiveCandidateReaderProvider =
 typedef GraphAttachmentArchiveCandidateReaderRef =
     AutoDisposeFutureProviderRef<GraphAttachmentArchiveCandidateReader>;
 String _$currentAttachmentSnapshotLookupHash() =>
-    r'073bca73e41e9b5ae08e1ac34193ba901c5be127';
+    r'8404ad657e4bb7d3b409fecdef82a79382db52cf';
 
 /// See also [currentAttachmentSnapshotLookup].
 @ProviderFor(currentAttachmentSnapshotLookup)

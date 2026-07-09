@@ -34,6 +34,7 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
     this.leadingLabel,
     this.itemBuilder,
     this.equals,
+    this.isEnabled = true,
     required this.outerPadding,
     required this.panelMargin,
     required this.triggerPadding,
@@ -66,6 +67,7 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
   final String? leadingLabel;
   final AppDropdownItemBuilder<T>? itemBuilder;
   final bool Function(T a, T b)? equals;
+  final bool isEnabled;
   final EdgeInsetsGeometry outerPadding;
   final EdgeInsetsGeometry panelMargin;
   final EdgeInsetsGeometry triggerPadding;
@@ -103,41 +105,72 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
     ]);
 
     final setOpen = useCallback((bool value) {
+      if (!isEnabled && value) {
+        return;
+      }
       if (isOpen.value != value) {
         isOpen.value = value;
         onMenuVisibilityChanged?.call(value);
       }
-    }, [isOpen, onMenuVisibilityChanged]);
+    }, [isEnabled, isOpen, onMenuVisibilityChanged]);
 
     final toggleOpen = useCallback(() {
+      if (!isEnabled) {
+        return;
+      }
       setOpen(!isOpen.value);
-    }, [setOpen, isOpen]);
+    }, [isEnabled, setOpen, isOpen]);
 
     final handleSelection = useCallback((T option) {
+      if (!isEnabled) {
+        return;
+      }
       onSelected(option);
       setOpen(false);
-    }, [onSelected, setOpen]);
+    }, [isEnabled, onSelected, setOpen]);
 
     // Watch state to trigger rebuilds on brightness changes
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
 
-    final controlFill = colors.surfaces.control;
+    final controlFill = isEnabled
+        ? colors.surfaces.control
+        : colors.surfaces.controlMuted.withValues(alpha: 0.38);
     final panelFill = colors.surfaces.surfaceRaised;
     final dividerColor = colors.lines.divider;
     final borderColor = colors.lines.borderSubtle;
     final borderLayers = colors.lines.dropdown;
-    final labelColor = colors.content.textPrimary;
+    final labelColor = isEnabled
+        ? colors.content.textPrimary
+        : colors.content.textDisabled;
+    final secondaryLabelColor = isEnabled
+        ? colors.content.textTertiary
+        : colors.content.textDisabled;
+    final effectiveIsOpen = isEnabled && isOpen.value;
+    final effectiveLeadingLabelStyle =
+        leadingLabelStyle?.copyWith(color: secondaryLabelColor) ??
+        typography.callout.copyWith(
+          color: secondaryLabelColor,
+          fontWeight: FontWeight.w400,
+        );
+    final effectiveSelectedValueStyle =
+        selectedValueStyle?.copyWith(color: labelColor) ??
+        typography.callout.copyWith(
+          color: labelColor,
+          fontWeight: FontWeight.w400,
+        );
 
     final selectedLabel = optionLabelBuilder(selectedOption);
 
     final trigger = FocusableActionDetector(
       onShowFocusHighlight: (_) {},
-      mouseCursor: SystemMouseCursors.click,
+      mouseCursor: isEnabled
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: toggleOpen,
+        onTap: isEnabled ? toggleOpen : null,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: controlFill,
@@ -150,26 +183,13 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
               mainAxisSize: MainAxisSize.max,
               children: [
                 if (leadingLabel != null) ...[
-                  Text(
-                    leadingLabel!,
-                    style:
-                        leadingLabelStyle ??
-                        typography.callout.copyWith(
-                          color: colors.content.textTertiary,
-                          fontWeight: FontWeight.w400,
-                        ),
-                  ),
+                  Text(leadingLabel!, style: effectiveLeadingLabelStyle),
                   const SizedBox(width: 8),
                 ],
                 Expanded(
                   child: Text(
                     selectedLabel,
-                    style:
-                        selectedValueStyle ??
-                        typography.callout.copyWith(
-                          color: labelColor,
-                          fontWeight: FontWeight.w400,
-                        ),
+                    style: effectiveSelectedValueStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -185,9 +205,11 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
                         ? const EdgeInsets.all(4)
                         : EdgeInsets.zero,
                     child: Icon(
-                      isOpen.value ? openIcon : closedIcon,
+                      effectiveIsOpen ? openIcon : closedIcon,
                       size: trailingIconSize,
-                      color: chevronColor ?? labelColor,
+                      color: isEnabled
+                          ? chevronColor ?? labelColor
+                          : colors.content.iconDisabled,
                     ),
                   ),
                 ),
@@ -306,7 +328,7 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
             duration: animationDuration,
             curve: animationCurve,
             alignment: Alignment.topCenter,
-            child: isOpen.value ? buildPanel() : const SizedBox.shrink(),
+            child: effectiveIsOpen ? buildPanel() : const SizedBox.shrink(),
           ),
         ],
       ),

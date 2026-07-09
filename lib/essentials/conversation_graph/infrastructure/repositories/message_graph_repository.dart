@@ -1,6 +1,5 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../application/conversations/conversation.dart';
-import '../../application/identity/live_chat_graph_identity.dart';
 import '../../application/messages/message_graph_repository.dart';
 
 class SqliteMessageGraphRepository implements MessageGraphRepository {
@@ -57,6 +56,13 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
         m.has_message_summary_info,
         m.has_payload_data_source,
         m.error_code,
+        (
+          SELECT ctm.chat_ss_id
+          FROM chat_to_message ctm
+          WHERE ctm.message_ss_id = m.ss_id
+          ORDER BY ctm.chat_ss_id ASC
+          LIMIT 1
+        ) AS conversation_id,
         (
           SELECT COUNT(*)
           FROM message_to_attachment mta
@@ -193,6 +199,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
         m.has_message_summary_info,
         m.has_payload_data_source,
         m.error_code,
+        ctm.chat_ss_id AS conversation_id,
         (
           SELECT COUNT(*)
           FROM message_to_attachment mta
@@ -277,15 +284,13 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
   }
 
   @override
-  Future<List<ConversationMessageTimelineEntry>> readMessageContextTimeline({
-    required int messageId,
-    required int chatId,
+  Future<List<ConversationMessageTimelineEntry>>
+  readConversationExcerptTimeline({
+    required int conversationId,
+    required int anchorMessageId,
     required int beforeCount,
     required int afterCount,
   }) async {
-    final graphMessageId = canonicalLiveChatGraphId(messageId);
-    final graphChatId = canonicalLiveChatGraphId(chatId);
-
     final selectedRows = await graphDatabase.selectRows(
       '''
       SELECT 1
@@ -294,26 +299,26 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
         AND message_ss_id = ?
       LIMIT 1
       ''',
-      <Object?>[graphChatId, graphMessageId],
+      <Object?>[conversationId, anchorMessageId],
     );
     if (selectedRows.isEmpty) {
       return const <ConversationMessageTimelineEntry>[];
     }
 
     final beforeRows = await _readContextRows(
-      chatId: graphChatId,
-      messageId: graphMessageId,
+      chatId: conversationId,
+      messageId: anchorMessageId,
       operator: '<',
       orderDirection: 'DESC',
       limit: beforeCount,
     );
     final selectedEntryRows = await _readContextSelectedRow(
-      chatId: graphChatId,
-      messageId: graphMessageId,
+      chatId: conversationId,
+      messageId: anchorMessageId,
     );
     final afterRows = await _readContextRows(
-      chatId: graphChatId,
-      messageId: graphMessageId,
+      chatId: conversationId,
+      messageId: anchorMessageId,
       operator: '>',
       orderDirection: 'ASC',
       limit: afterCount,
@@ -426,6 +431,7 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       text: row['text'] as String?,
       associatedMessageId: _readNullableInt(row['associated_message_ss_id']),
       attachmentCount: _readInt(row['attachment_count']),
+      conversationId: _readNullableInt(row['conversation_id']),
       senderHandleId: _readNullableInt(row['sender_handle_ss_id']),
       senderCanonicalHandleId: _readNullableInt(
         row['sender_canonical_handle_ss_id'],

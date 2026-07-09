@@ -98,7 +98,7 @@ makes future failures harder to attribute.
 - `lib/essentials/source_scoped_import/`
 - `lib/features/messages/`
 - `lib/features/contacts/`
-- `lib/features/chats/`
+- `lib/features/conversations/`
 - `lib/features/handles/`
 - focused tests under matching `test/` paths
 
@@ -459,9 +459,9 @@ scope.
 
 - Removed the legacy/graph chat read-model switch. Product recent-chat and chat
   selection flows now route through graph conversation identity only.
-- `recentChatsProvider` is graph-only for product reads. The legacy recent-chat
-  reader remains only as a diagnostic compatibility reader for the SS comparison
-  panel.
+- The former `recentChatsProvider` graph compatibility seam was later retired
+  with the chat-named feature boundary; product reads now use Conversation
+  feature/read-model surfaces.
 - Removed unused legacy chat-by-age/unmatched-chat provider families that read
   `working.db` directly.
 - Contact and global timeline heatmaps now read graph timeline skeletons; the
@@ -1044,10 +1044,11 @@ retention criteria.
   settings widgets had no runtime caller after the unified triage flow became
   the active handle surface. The graph/overlay operation providers remain
   because they are semantic services rather than dead presentation shell code.
-- The duplicate chats heatmap timeline model was retired. `RecentChatSummary`
-  no longer carries an always-null heatmap field, and timeline/heatmap data is
-  owned by the message evidence/sidebar heatmap path rather than a parallel
-  chats-domain model.
+- The duplicate chats heatmap timeline model was retired. The later
+  `features/chats` boundary retirement removed `RecentChatSummary` entirely;
+  timeline/heatmap data is owned by the message evidence/sidebar heatmap path
+  and Conversation feature read models rather than a parallel chats-domain
+  model.
 - The unused generic attachment Freezed model was retired. `Attachment`,
   `AttachmentId`, and `AttachmentStatus` had no active imports outside their
   generated files and converter; graph attachment behavior remains owned by
@@ -2709,11 +2710,10 @@ retention criteria.
     `RecoveredNoHandleFromMeOpened` sidebar action intent. The cassette widget
     now reports navigation intent only; `SidebarActionDispatcher` owns the
     recovered no-handle flow mutation and projected center-panel state.
-  - Routed the chats feature selection controller through
+  - Historical note: the chats feature selection controller was routed through
     `SidebarActionDispatcher` by extending `ConversationSelected` with optional
-    anchor/search context. `ChatsViewModel` now translates chat selections into
-    semantic sidebar actions rather than mutating `SidebarFlow` directly, with
-    an architecture tripwire guarding the boundary.
+    anchor/search context. That intermediate `ChatsViewModel` boundary was
+    later retired when Conversation ownership moved to `features/conversations`.
   - Moved stray-handle/handle-message center evidence projection into
     `SidebarFlowState`. The flow state now carries explicit handle evidence
     selection (`lens` vs `messages`) on the Stray Handles branch, and
@@ -2883,10 +2883,10 @@ retention criteria.
   Settings action rows still render descriptor labels and tone, but
   enabled-state dispatch and settings sidebar intent construction now live in
   the settings application boundary.
-- Moved chat selection dispatch behind `ChatSelectionActions`. The chats view
-  model keeps its public selection API for existing callers, but conversation
-  sidebar intent construction and dispatch now live in the chats application
-  boundary.
+- Historical note: chat selection dispatch temporarily moved behind
+  `ChatSelectionActions`. That compatibility boundary was later retired with
+  `features/chats`; conversation sidebar intent now belongs to
+  `features/conversations`.
 - Moved generic sidebar dropdown dispatch behind `SidebarBodyModelActions`.
   `SidebarBodyModelContent` now renders typed dropdown body models and forwards
   selected options; disabled-option policy and sidebar dispatch live in the
@@ -2910,22 +2910,11 @@ retention criteria.
   call the workflow notifier directly from UI code. Added a tripwire guarding
   this workflow action boundary and a provider-spread guard limiting direct
   consumers to the archive workflow UI surfaces.
-- Routed the conversation graph status sheet's diagnostic open-chat action
-  through the chats feature action boundary. The status sheet still renders
-  graph diagnostics and selected chat rows, but chat selection/navigation now
-  crosses `ChatSelectionActions` instead of mutating the chats view model
-  directly. Extended the graph-status-sheet tripwire for this boundary. Added
-  provider-level coverage proving chat selection dispatches the semantic
-  conversation sidebar intent, including anchor message and search query
-  context.
-- Tightened `ChatSelectionActions` provider spread. The action provider is now
-  guarded as the owner of chat-to-conversation navigation intent construction,
-  with only the chats view model and graph status diagnostic opener approved as
-  direct consumers.
-- Moved graph-status-sheet chat-open failure diagnostics into
-  `ChatSelectionActions`. The status sheet now forwards chat-open intent only;
-  selection dispatch and warning logging stay behind the chats action boundary,
-  with a tripwire preventing direct logging from returning to the sheet.
+- Historical note: the conversation graph status sheet's diagnostic open-chat
+  action temporarily crossed the chats feature action boundary. That
+  `ChatSelectionActions` compatibility seam was later retired with
+  `features/chats`; Conversation-owned navigation now belongs under
+  `features/conversations`.
 - Moved video message tile failure logging behind `MessageMediaDiagnostics`.
   Shared message display widgets still own media-controller lifecycle, but
   media failure logger writes now stay behind a messages application action

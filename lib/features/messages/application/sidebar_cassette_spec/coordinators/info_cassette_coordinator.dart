@@ -33,6 +33,7 @@ class MessagesInfoCassetteCoordinator
         if (body != null) {
           return StaticFeatureInfoSidebarCassettePayload(
             role: SidebarCassetteRole.contextSecondary,
+            semanticStyle: SidebarCassetteSemanticStyle.supportingContext,
             topSpacing: content.topSpacing,
             title: content.title,
             bodyText: body,

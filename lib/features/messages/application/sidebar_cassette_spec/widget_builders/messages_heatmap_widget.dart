@@ -1,22 +1,24 @@
 import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../core/util/count_label_formatter.dart';
+import '../../../../../core/util/date_label_formatter.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/domain/sidebar_action_intent.dart';
 import '../../../../../essentials/sidebar/feature_level_providers.dart'
     show SidebarFlowContactProjection, sidebarFlowProvider;
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../../../../conversations/feature_level_providers.dart'
+    show ContactGraphConversationSection;
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../application/message_evidence/current_visible_month_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
-import '../../../presentation/widgets/contact_graph_conversation_section.dart';
 import '../resolver_tools/contact_context_identity.dart';
 import '../resolver_tools/contact_timeline_provider.dart';
 import '../resolver_tools/global_messages_heatmap_provider.dart';
@@ -340,7 +342,7 @@ class MessageHeatmapContent extends ConsumerWidget {
       SidebarCassetteSemanticStyle.visualization,
     );
     final summaryText =
-        '${NumberFormat.decimalPattern().format(data.totalMessages)} messages '
+        '${CountLabelFormatter.messages(data.totalMessages)} '
         '• ${_formatDateRange(data.firstMessageDate, data.lastMessageDate)}';
 
     return LayoutBuilder(
@@ -597,8 +599,7 @@ class _EmptyHeatmapCard extends ConsumerWidget {
 }
 
 String _formatDateRange(DateTime start, DateTime end) {
-  final formatter = DateFormat('MMM yyyy');
-  final startLabel = formatter.format(start);
-  final endLabel = formatter.format(end);
+  final startLabel = DateLabelFormatter.compactMonthYear(start);
+  final endLabel = DateLabelFormatter.compactMonthYear(end);
   return startLabel == endLabel ? startLabel : '$startLabel → $endLabel';
 }

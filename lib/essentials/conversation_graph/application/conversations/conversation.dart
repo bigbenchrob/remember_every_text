@@ -30,6 +30,7 @@ class ConversationMessage {
     required this.text,
     required this.associatedMessageId,
     required this.attachmentCount,
+    this.conversationId,
     this.senderHandleId,
     this.senderCanonicalHandleId,
     this.senderDisplayHandle,
@@ -50,6 +51,7 @@ class ConversationMessage {
   final String? text;
   final int? associatedMessageId;
   final int attachmentCount;
+  final int? conversationId;
   final int? senderHandleId;
   final int? senderCanonicalHandleId;
   final String? senderDisplayHandle;

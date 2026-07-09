@@ -5,9 +5,36 @@ import 'package:remember_this_text/essentials/navigation/application/panels_view
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
+import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 
 void main() {
+  test('showRightPanel opens right panel stack', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    const spec = ViewSpec.conversations(
+      ConversationsSpec.conversationExcerpt(
+        conversationId: 200,
+        anchorMessageId: 100,
+      ),
+    );
+
+    container
+        .read(panelActionsProvider.notifier)
+        .showRightPanel(mode: SidebarMode.messages, spec: spec);
+
+    expect(
+      container
+          .read(
+            panelsViewStateProvider(SidebarMode.messages),
+          )[WindowPanel.right]
+          ?.activePage
+          ?.spec,
+      spec,
+    );
+  });
+
   test('activateTab and closeTab delegate to panel stack state', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);

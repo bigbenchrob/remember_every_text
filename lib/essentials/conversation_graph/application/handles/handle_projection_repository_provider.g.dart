@@ -7,7 +7,7 @@ part of 'handle_projection_repository_provider.dart';
 // **************************************************************************
 
 String _$handleProjectionRepositoryHash() =>
-    r'0700a538aa33b7d633e87c25315dc2d7db1c5aed';
+    r'30b192ae68ec9f692e20d7053c6b8ce246a738a7';
 
 /// See also [handleProjectionRepository].
 @ProviderFor(handleProjectionRepository)

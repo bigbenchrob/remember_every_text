@@ -14,30 +14,61 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MessagesCassetteSpec {
 
-
+ int? get contactId;
+/// Create a copy of MessagesCassetteSpec
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MessagesCassetteSpecCopyWith<MessagesCassetteSpec> get copyWith => _$MessagesCassetteSpecCopyWithImpl<MessagesCassetteSpec>(this as MessagesCassetteSpec, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MessagesCassetteSpec);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MessagesCassetteSpec&&(identical(other.contactId, contactId) || other.contactId == contactId));
 }
 
 
 @override
-int get hashCode => runtimeType.hashCode;
+int get hashCode => Object.hash(runtimeType,contactId);
 
 @override
 String toString() {
-  return 'MessagesCassetteSpec()';
+  return 'MessagesCassetteSpec(contactId: $contactId)';
 }
 
 
 }
 
 /// @nodoc
-class $MessagesCassetteSpecCopyWith<$Res>  {
-$MessagesCassetteSpecCopyWith(MessagesCassetteSpec _, $Res Function(MessagesCassetteSpec) __);
+abstract mixin class $MessagesCassetteSpecCopyWith<$Res>  {
+  factory $MessagesCassetteSpecCopyWith(MessagesCassetteSpec value, $Res Function(MessagesCassetteSpec) _then) = _$MessagesCassetteSpecCopyWithImpl;
+@useResult
+$Res call({
+ int? contactId
+});
+
+
+
+
+}
+/// @nodoc
+class _$MessagesCassetteSpecCopyWithImpl<$Res>
+    implements $MessagesCassetteSpecCopyWith<$Res> {
+  _$MessagesCassetteSpecCopyWithImpl(this._self, this._then);
+
+  final MessagesCassetteSpec _self;
+  final $Res Function(MessagesCassetteSpec) _then;
+
+/// Create a copy of MessagesCassetteSpec
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? contactId = freezed,}) {
+  return _then(_self.copyWith(
+contactId: freezed == contactId ? _self.contactId : contactId // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
 }
 
 
@@ -55,11 +86,10 @@ extension MessagesCassetteSpecPatterns on MessagesCassetteSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _MessagesConversationSignaturesSpec value)?  conversationSignatures,TResult Function( _MessagesHeatMapSpec value)?  heatMap,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _MessagesHeatMapSpec value)?  heatMap,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _MessagesConversationSignaturesSpec() when conversationSignatures != null:
-return conversationSignatures(_that);case _MessagesHeatMapSpec() when heatMap != null:
+case _MessagesHeatMapSpec() when heatMap != null:
 return heatMap(_that);case _:
   return orElse();
 
@@ -78,11 +108,10 @@ return heatMap(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _MessagesConversationSignaturesSpec value)  conversationSignatures,required TResult Function( _MessagesHeatMapSpec value)  heatMap,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _MessagesHeatMapSpec value)  heatMap,}){
 final _that = this;
 switch (_that) {
-case _MessagesConversationSignaturesSpec():
-return conversationSignatures(_that);case _MessagesHeatMapSpec():
+case _MessagesHeatMapSpec():
 return heatMap(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -100,11 +129,10 @@ return heatMap(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _MessagesConversationSignaturesSpec value)?  conversationSignatures,TResult? Function( _MessagesHeatMapSpec value)?  heatMap,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _MessagesHeatMapSpec value)?  heatMap,}){
 final _that = this;
 switch (_that) {
-case _MessagesConversationSignaturesSpec() when conversationSignatures != null:
-return conversationSignatures(_that);case _MessagesHeatMapSpec() when heatMap != null:
+case _MessagesHeatMapSpec() when heatMap != null:
 return heatMap(_that);case _:
   return null;
 
@@ -122,10 +150,9 @@ return heatMap(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  conversationSignatures,TResult Function( int? contactId)?  heatMap,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int? contactId)?  heatMap,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _MessagesConversationSignaturesSpec() when conversationSignatures != null:
-return conversationSignatures();case _MessagesHeatMapSpec() when heatMap != null:
+case _MessagesHeatMapSpec() when heatMap != null:
 return heatMap(_that.contactId);case _:
   return orElse();
 
@@ -144,10 +171,9 @@ return heatMap(_that.contactId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  conversationSignatures,required TResult Function( int? contactId)  heatMap,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int? contactId)  heatMap,}) {final _that = this;
 switch (_that) {
-case _MessagesConversationSignaturesSpec():
-return conversationSignatures();case _MessagesHeatMapSpec():
+case _MessagesHeatMapSpec():
 return heatMap(_that.contactId);case _:
   throw StateError('Unexpected subclass');
 
@@ -165,10 +191,9 @@ return heatMap(_that.contactId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  conversationSignatures,TResult? Function( int? contactId)?  heatMap,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int? contactId)?  heatMap,}) {final _that = this;
 switch (_that) {
-case _MessagesConversationSignaturesSpec() when conversationSignatures != null:
-return conversationSignatures();case _MessagesHeatMapSpec() when heatMap != null:
+case _MessagesHeatMapSpec() when heatMap != null:
 return heatMap(_that.contactId);case _:
   return null;
 
@@ -180,47 +205,15 @@ return heatMap(_that.contactId);case _:
 /// @nodoc
 
 
-class _MessagesConversationSignaturesSpec implements MessagesCassetteSpec {
-  const _MessagesConversationSignaturesSpec();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessagesConversationSignaturesSpec);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'MessagesCassetteSpec.conversationSignatures()';
-}
-
-
-}
-
-
-
-
-/// @nodoc
-
-
 class _MessagesHeatMapSpec implements MessagesCassetteSpec {
   const _MessagesHeatMapSpec({this.contactId});
   
 
- final  int? contactId;
+@override final  int? contactId;
 
 /// Create a copy of MessagesCassetteSpec
 /// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
+@override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
 _$MessagesHeatMapSpecCopyWith<_MessagesHeatMapSpec> get copyWith => __$MessagesHeatMapSpecCopyWithImpl<_MessagesHeatMapSpec>(this, _$identity);
 
@@ -246,7 +239,7 @@ String toString() {
 /// @nodoc
 abstract mixin class _$MessagesHeatMapSpecCopyWith<$Res> implements $MessagesCassetteSpecCopyWith<$Res> {
   factory _$MessagesHeatMapSpecCopyWith(_MessagesHeatMapSpec value, $Res Function(_MessagesHeatMapSpec) _then) = __$MessagesHeatMapSpecCopyWithImpl;
-@useResult
+@override @useResult
 $Res call({
  int? contactId
 });
@@ -265,7 +258,7 @@ class __$MessagesHeatMapSpecCopyWithImpl<$Res>
 
 /// Create a copy of MessagesCassetteSpec
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? contactId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? contactId = freezed,}) {
   return _then(_MessagesHeatMapSpec(
 contactId: freezed == contactId ? _self.contactId : contactId // ignore: cast_nullable_to_non_nullable
 as int?,

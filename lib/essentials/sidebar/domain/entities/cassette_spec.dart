@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import '../../../../features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
+import '../../../../features/conversations/domain/spec_classes/conversations_cassette_spec.dart';
 import '../../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../../features/handles/domain/spec_classes/handles_info_cassette_spec.dart';
 import '../../../../features/messages/domain/spec_classes/messages_cassette_spec.dart';
@@ -15,6 +16,7 @@ part 'cascade/cassette_child_resolver.dart';
 part 'cascade/sidebar_utility_topology.dart';
 part 'cascade/contacts_cassette_topology.dart';
 part 'cascade/contacts_info_topology.dart';
+part 'cascade/conversations_cassette_topology.dart';
 part 'cascade/handles_cassette_topology.dart';
 part 'cascade/handles_info_topology.dart';
 part 'cascade/messages_cassette_topology.dart';
@@ -31,6 +33,8 @@ abstract class CassetteSpec with _$CassetteSpec {
       _CassetteContacts;
   const factory CassetteSpec.contactsInfo(ContactsInfoCassetteSpec spec) =
       _CassetteContactsInfo;
+  const factory CassetteSpec.conversations(ConversationsCassetteSpec spec) =
+      _CassetteConversations;
   const factory CassetteSpec.handles(HandlesCassetteSpec spec) =
       _CassetteHandles;
   const factory CassetteSpec.handlesInfo(HandlesInfoCassetteSpec spec) =

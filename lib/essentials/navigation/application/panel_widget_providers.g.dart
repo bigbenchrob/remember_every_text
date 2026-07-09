@@ -1041,7 +1041,7 @@ class _ShouldShowEndSidebarProviderElement
 }
 
 String _$contextualSidebarWidgetHash() =>
-    r'3f7b437cab31d9042aaee4e5db0c5d75550806e3';
+    r'abc52bff826f4fa3e83dd8672bbaeef1e6d5f3f6';
 
 /// See also [contextualSidebarWidget].
 @ProviderFor(contextualSidebarWidget)

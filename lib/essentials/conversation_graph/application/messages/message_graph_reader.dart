@@ -52,15 +52,16 @@ class MessageGraphReader {
     );
   }
 
-  Future<List<ConversationMessageTimelineEntry>> readMessageContextTimeline({
-    required int messageId,
-    required int chatId,
+  Future<List<ConversationMessageTimelineEntry>>
+  readConversationExcerptTimeline({
+    required int conversationId,
+    required int anchorMessageId,
     required int beforeCount,
     required int afterCount,
   }) {
-    return repository.readMessageContextTimeline(
-      messageId: messageId,
-      chatId: chatId,
+    return repository.readConversationExcerptTimeline(
+      conversationId: conversationId,
+      anchorMessageId: anchorMessageId,
       beforeCount: beforeCount,
       afterCount: afterCount,
     );

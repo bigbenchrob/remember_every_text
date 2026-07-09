@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/conversations/feature_level_providers.dart'
+    as conversations_feature
+    show viewSpecCoordinatorProvider;
 import '../../../features/environment_readiness/feature_level_providers.dart'
-    as environment_readiness_feature show viewSpecCoordinatorProvider;
+    as environment_readiness_feature
+    show viewSpecCoordinatorProvider;
 import '../../../features/messages/feature_level_providers.dart'
-    as messages_feature show viewSpecCoordinatorProvider;
+    as messages_feature
+    show viewSpecCoordinatorProvider;
 import '../../../features/settings/feature_level_providers.dart'
-    as settings_feature show viewSpecCoordinatorProvider;
+    as settings_feature
+    show viewSpecCoordinatorProvider;
 import '../../onboarding/domain/spec_classes/onboarding_view_spec.dart';
 import '../../onboarding/presentation/onboarding_dev_panel.dart';
 import '../domain/entities/panel_stack.dart';
@@ -41,6 +47,9 @@ class PanelCoordinator extends _$PanelCoordinator {
       messages: (messagesSpec) => ref
           .read(messages_feature.viewSpecCoordinatorProvider.notifier)
           .buildForSpec(messagesSpec),
+      conversations: (conversationsSpec) => ref
+          .read(conversations_feature.viewSpecCoordinatorProvider.notifier)
+          .buildForSpec(conversationsSpec),
       settings: (settingsSpec) => ref
           .read(settings_feature.viewSpecCoordinatorProvider.notifier)
           .buildForSpec(settingsSpec),

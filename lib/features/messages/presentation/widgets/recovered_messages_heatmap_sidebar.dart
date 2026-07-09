@@ -1,10 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../core/util/count_label_formatter.dart';
+import '../../../../core/util/date_label_formatter.dart';
 import '../../../../essentials/sidebar/presentation/view/sidebar_cassette_card.dart';
 import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/message_evidence/recovered_message_evidence_provider.dart';
@@ -107,19 +108,16 @@ class RecoveredMessagesHeatmapSidebar extends ConsumerWidget {
 }
 
 String? _monthKeyFor(DateTime? date) {
-  if (date == null) {
-    return null;
-  }
-  return '${date.year}-${date.month.toString().padLeft(2, '0')}';
+  return DateLabelFormatter.monthKeyOrNull(date);
 }
 
 String _buildRecoveredMonthTooltip({
   required MonthData monthData,
   required bool onlyNoHandleFromMe,
 }) {
-  final monthLabel = DateFormat(
-    'MMMM yyyy',
-  ).format(DateTime(monthData.year, monthData.month));
+  final monthLabel = DateLabelFormatter.longMonthYear(
+    DateTime(monthData.year, monthData.month),
+  );
 
   if (monthData.messageCount == 0) {
     return onlyNoHandleFromMe
@@ -127,9 +125,7 @@ String _buildRecoveredMonthTooltip({
         : '$monthLabel\nNo recovered deleted messages';
   }
 
-  final countLabel = NumberFormat.decimalPattern().format(
-    monthData.messageCount,
-  );
+  final countLabel = CountLabelFormatter.formatCount(monthData.messageCount);
 
   return onlyNoHandleFromMe
       ? '$monthLabel\n$countLabel recovered no-handle outgoing messages'

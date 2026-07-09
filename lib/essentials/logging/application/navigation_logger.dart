@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../navigation/domain/entities/view_spec.dart';
@@ -44,15 +45,13 @@ class NavigationLogEntry {
 
   Map<String, dynamic> _viewSpecToJson(ViewSpec spec) {
     return spec.when(
+      conversations: (conversationsSpec) => {
+        'type': 'conversations',
+        'spec': _conversationsSpecToJson(conversationsSpec),
+      },
       messages: (messagesSpec) => {
         'type': 'messages',
         'spec': messagesSpec.when(
-          forConversation: (conversationId, anchorMessageId, searchQuery) => {
-            'variant': 'forConversation',
-            'conversationId': conversationId,
-            if (anchorMessageId != null) 'anchorMessageId': anchorMessageId,
-            if (searchQuery != null) 'searchQuery': searchQuery,
-          },
           forContact: (contactId, scrollToDate, filterHandleId) => {
             'variant': 'forContact',
             'contactId': contactId,
@@ -89,13 +88,6 @@ class NavigationLogEntry {
             if (attachment.mimeType != null) 'mimeType': attachment.mimeType,
             if (attachment.localPath != null) 'localPath': attachment.localPath,
           },
-          searchResultContext: (messageId, chatId, beforeCount, afterCount) => {
-            'variant': 'searchResultContext',
-            'messageId': messageId,
-            'chatId': chatId,
-            'beforeCount': beforeCount,
-            'afterCount': afterCount,
-          },
           handleLens: (handleId) => {
             'variant': 'handleLens',
             'handleId': handleId,
@@ -121,6 +113,25 @@ class NavigationLogEntry {
         'type': 'onboarding',
         'spec': onboardingSpec.when(devPanel: () => {'variant': 'devPanel'}),
       },
+    );
+  }
+
+  Map<String, dynamic> _conversationsSpecToJson(ConversationsSpec spec) {
+    return spec.when(
+      conversationMessages: (conversationId, anchorMessageId, searchQuery) => {
+        'variant': 'conversationMessages',
+        'conversationId': conversationId,
+        if (anchorMessageId != null) 'anchorMessageId': anchorMessageId,
+        if (searchQuery != null) 'searchQuery': searchQuery,
+      },
+      conversationExcerpt:
+          (conversationId, anchorMessageId, beforeCount, afterCount) => {
+            'variant': 'conversationExcerpt',
+            'conversationId': conversationId,
+            'anchorMessageId': anchorMessageId,
+            'beforeCount': beforeCount,
+            'afterCount': afterCount,
+          },
     );
   }
 }

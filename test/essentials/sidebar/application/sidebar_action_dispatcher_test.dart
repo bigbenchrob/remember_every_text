@@ -21,6 +21,7 @@ import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_s
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
+import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import 'package:remember_this_text/features/handles/application/state/stray_handle_mode_provider.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
@@ -106,8 +107,10 @@ void main() {
       expect(
         _activeSpec(container, WindowPanel.center),
         equals(
-          const ViewSpec.messages(
-            MessagesSpec.forConversation(conversationId: 8796093022216),
+          const ViewSpec.conversations(
+            ConversationsSpec.conversationMessages(
+              conversationId: 8796093022216,
+            ),
           ),
         ),
       );
@@ -137,8 +140,10 @@ void main() {
         expect(
           _activeSpec(container, WindowPanel.center),
           equals(
-            const ViewSpec.messages(
-              MessagesSpec.forConversation(conversationId: 8796093022216),
+            const ViewSpec.conversations(
+              ConversationsSpec.conversationMessages(
+                conversationId: 8796093022216,
+              ),
             ),
           ),
         );

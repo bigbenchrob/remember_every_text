@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../config/theme/widgets/layout/vertical_column_bands.dart';
+import '../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/messages/feature_level_providers.dart'
-    as messages_feature show recoveredMessagesSidebarProvider;
+    as messages_feature
+    show recoveredMessagesSidebarProvider;
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
+import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../sidebar/application/cassette_rack_state_provider.dart';
 import '../../sidebar/application/cassette_widget_coordinator_provider.dart';
@@ -179,6 +183,7 @@ Widget? contextualSidebarWidget(Ref ref, SidebarMode mode) {
         ),
       );
     },
+    conversations: (_) => null,
     settings: (_) => null,
     environmentReadiness: (_) => null,
     onboarding: (_) => null,
@@ -226,6 +231,13 @@ bool _shouldHideStoredRightPanel({
     return false;
   }
 
+  if (_isConversationExcerptRightPanel(rightSpec)) {
+    return !_isCenterSpecCompatibleWithSidebar(
+      flowState: flowState,
+      centerSpec: rightSpec,
+    );
+  }
+
   if (!_supportsRecoveredAttachmentSidebar(centerSpec)) {
     return true;
   }
@@ -233,6 +245,18 @@ bool _shouldHideStoredRightPanel({
   return !_isCenterSpecCompatibleWithSidebar(
     flowState: flowState,
     centerSpec: rightSpec,
+  );
+}
+
+bool _isConversationExcerptRightPanel(ViewSpec spec) {
+  return spec.maybeWhen(
+    conversations: (conversationsSpec) {
+      return conversationsSpec.maybeWhen(
+        conversationExcerpt: (_, __, ___, ____) => true,
+        orElse: () => false,
+      );
+    },
+    orElse: () => false,
   );
 }
 
@@ -297,6 +321,7 @@ bool _shouldUseStoredCenterStack({
 String _defaultPanelTitle(ViewSpec spec) {
   return spec.map(
     messages: (_) => 'Messages',
+    conversations: (_) => 'Conversation',
     settings: (_) => 'Settings',
     environmentReadiness: (_) => 'Environment Readiness',
     onboarding: (_) => 'Onboarding',
@@ -373,9 +398,9 @@ bool _isCenterSpecCompatibleWithSidebar({
   }
 
   return centerSpec.when(
-    messages: (messagesSpec) {
-      return messagesSpec.when(
-        forConversation: (conversationId, _, _) {
+    conversations: (conversationsSpec) {
+      return conversationsSpec.when(
+        conversationMessages: (conversationId, _, _) {
           return (flowState.topMenuChoice == TopChatMenuChoice.conversations &&
                   flowState.selectedConversationId == conversationId) ||
               (flowState.topMenuChoice == TopChatMenuChoice.contacts &&
@@ -383,6 +408,13 @@ bool _isCenterSpecCompatibleWithSidebar({
                   flowState.contactProjection ==
                       SidebarFlowContactProjection.conversations);
         },
+        conversationExcerpt: (_, __, ___, ____) {
+          return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
+        },
+      );
+    },
+    messages: (messagesSpec) {
+      return messagesSpec.when(
         forContact: (contactId, _, __) {
           return flowState.topMenuChoice == TopChatMenuChoice.contacts &&
               flowState.messageScope == SidebarFlowMessageScope.regular &&
@@ -411,9 +443,6 @@ bool _isCenterSpecCompatibleWithSidebar({
               TopChatMenuChoice.recoveredNoHandleFromMeMessages;
         },
         recoveredAttachmentViewer: (_, __) => true,
-        searchResultContext: (_, __, ___, ____) {
-          return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
-        },
         handleLens: (_) {
           return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
         },
@@ -534,8 +563,35 @@ Widget _buildLeftPanelSurface({
       mode: mode,
       cassetteEntries: cassetteEntries,
       contextualWidget: contextualWidget,
+      contentSeamLayout: _contentSeamLayoutForRack(mode: mode, rack: rack),
     ),
   );
+}
+
+_SidebarContentSeamLayout? _contentSeamLayoutForRack({
+  required SidebarMode mode,
+  required CassetteRack rack,
+}) {
+  if (mode != SidebarMode.messages || rack.cassettes.isEmpty) {
+    return null;
+  }
+
+  final firstSpec = rack.cassettes.first.spec;
+  final usesSearchAllMessages = switch (firstSpec) {
+    SidebarUtilityCassetteSpec() => firstSpec.maybeWhen(
+      topChatMenu: (selectedChoice) {
+        return selectedChoice == TopChatMenuChoice.searchAllMessages;
+      },
+      orElse: () => false,
+    ),
+    _ => false,
+  };
+
+  if (!usesSearchAllMessages) {
+    return null;
+  }
+
+  return const _SidebarContentSeamLayout();
 }
 
 class LeftPanelHost extends ConsumerWidget {
@@ -571,18 +627,24 @@ class RightPanelHost extends ConsumerWidget {
   }
 }
 
+final class _SidebarContentSeamLayout {
+  const _SidebarContentSeamLayout();
+}
+
 /// Sidebar surface that separates pinned controls from scrollable content.
 class _LeftSidebarSurface extends StatelessWidget {
   const _LeftSidebarSurface({
     required this.mode,
     required this.cassetteEntries,
     required this.contextualWidget,
+    required this.contentSeamLayout,
   });
 
   final SidebarMode mode;
   final List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
   cassetteEntries;
   final Widget? contextualWidget;
+  final _SidebarContentSeamLayout? contentSeamLayout;
 
   @override
   Widget build(BuildContext context) {
@@ -618,6 +680,7 @@ class _LeftSidebarSurface extends StatelessWidget {
           mode: mode,
           cassetteEntries: mainContentEntries,
           maxWidth: constraints.maxWidth,
+          contentSeamLayout: contentSeamLayout,
         );
 
         if (contextualWidget case final contextualWidgetValue?) {
@@ -631,6 +694,10 @@ class _LeftSidebarSurface extends StatelessWidget {
         }
 
         final hasExpandingContent = content.any((c) => c.shouldExpand);
+        final renderedControls = _buildSidebarControls(
+          controls: controls,
+          contentSeamLayout: contentSeamLayout,
+        );
 
         // When we have expanding content (e.g., scrollable lists that handle
         // their own scrolling), use a simple Column layout instead of
@@ -640,7 +707,7 @@ class _LeftSidebarSurface extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ...controls,
+              ...renderedControls,
               Expanded(child: _ContentFillColumn(children: content)),
             ],
           );
@@ -650,7 +717,8 @@ class _LeftSidebarSurface extends StatelessWidget {
         // entire sidebar can scroll if content exceeds available height.
         return CustomScrollView(
           slivers: [
-            for (final control in controls) SliverToBoxAdapter(child: control),
+            for (final control in renderedControls)
+              SliverToBoxAdapter(child: control),
             for (final item in content) SliverToBoxAdapter(child: item.widget),
           ],
         );
@@ -659,12 +727,43 @@ class _LeftSidebarSurface extends StatelessWidget {
   }
 }
 
+List<Widget> _buildSidebarControls({
+  required List<Widget> controls,
+  required _SidebarContentSeamLayout? contentSeamLayout,
+}) {
+  if (contentSeamLayout == null) {
+    return controls;
+  }
+
+  return [
+    TopColumnBand(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      childPlacement: const ColumnBandChildPlacement.topLeft(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: controls,
+      ),
+    ),
+  ];
+}
+
 List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntries({
   required SidebarMode mode,
   required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
   cassetteEntries,
   required double maxWidth,
+  required _SidebarContentSeamLayout? contentSeamLayout,
 }) {
+  if (contentSeamLayout case final seamLayout?) {
+    return _buildSidebarContentEntriesWithSeam(
+      mode: mode,
+      cassetteEntries: cassetteEntries,
+      maxWidth: maxWidth,
+      contentSeamLayout: seamLayout,
+    );
+  }
+
   final content = <({Widget widget, bool shouldExpand})>[];
   var index = 0;
 
@@ -708,6 +807,80 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntries({
   }
 
   return content;
+}
+
+List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
+  required SidebarMode mode,
+  required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
+  cassetteEntries,
+  required double maxWidth,
+  required _SidebarContentSeamLayout contentSeamLayout,
+}) {
+  final firstEntryIsContentStart =
+      cassetteEntries.isNotEmpty &&
+      cassetteEntries.first.resolvedCassette.payload.layoutAnchor ==
+          SidebarCassetteLayoutAnchor.preferredContentStart;
+  final middleZoneEntries = firstEntryIsContentStart || cassetteEntries.isEmpty
+      ? <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[]
+      : [cassetteEntries.first];
+  final contentStartEntries = _resetLeadingTopSpacing(
+    mode: mode,
+    entries: cassetteEntries.sublist(middleZoneEntries.length),
+  );
+
+  final middleZoneContent = _buildSidebarContentEntries(
+    mode: mode,
+    cassetteEntries: middleZoneEntries,
+    maxWidth: maxWidth,
+    contentSeamLayout: null,
+  );
+  final contentStartContent = _buildSidebarContentEntries(
+    mode: mode,
+    cassetteEntries: contentStartEntries,
+    maxWidth: maxWidth,
+    contentSeamLayout: null,
+  );
+
+  return [
+    (
+      widget: MiddleColumnBand(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+        childPlacement: const ColumnBandChildPlacement.topLeft(),
+        child: _ContentFillColumn(children: middleZoneContent),
+      ),
+      shouldExpand: false,
+    ),
+    ...contentStartContent,
+  ];
+}
+
+List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
+_resetLeadingTopSpacing({
+  required SidebarMode mode,
+  required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
+  entries,
+}) {
+  if (entries.isEmpty) {
+    return entries;
+  }
+
+  final first = entries.first;
+  final resetResolvedCassette = ResolvedSidebarCassette(
+    spec: first.resolvedCassette.spec,
+    cassetteIndex: first.resolvedCassette.cassetteIndex,
+    payload: first.resolvedCassette.payload,
+    topSpacing: 0,
+  );
+  return [
+    (
+      resolvedCassette: resetResolvedCassette,
+      widget: buildResolvedSidebarCassetteWidget(
+        mode: mode,
+        resolvedCassette: resetResolvedCassette,
+      ),
+    ),
+    ...entries.skip(1),
+  ];
 }
 
 List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
