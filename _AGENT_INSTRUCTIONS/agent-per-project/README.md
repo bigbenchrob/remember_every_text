@@ -18,8 +18,8 @@ This directory captures MessageLens-specific documentation that complements the 
 > ⚠️ Read `_AGENT_INSTRUCTIONS/agent-instructions-shared/00-global/agent-guardrails.md` before using this index. The guardrails define planning, approval, and diff-scope rules for all agents.
 
 If you are opening this documentation cold, read
-[`00-START-HERE.md`](00-START-HERE.md) first. It distinguishes current
-canonical guidance from historical reference areas.
+[`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) first for the project mental model,
+then [`00-START-HERE.md`](00-START-HERE.md) for the canonical documentation map.
 
 ## Agent Prompt Harness
 
@@ -64,6 +64,8 @@ Some project folders intentionally preserve a lot of history. Use these
 navigation documents before treating individual files as current guidance:
 
 - [`00-START-HERE.md`](00-START-HERE.md) - cold-start orientation.
+- [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) - senior-engineer introduction to
+  MessageLens' purpose, mental model, and contribution philosophy.
 - [`45-NEW-FEATURE-ADDITION/INDEX.md`](45-NEW-FEATURE-ADDITION/INDEX.md) -
   feature-planning staging/history index.
 - [`55-READERS-INTEGRATORS-ORCHESTRATORS/TOPIC_INDEX.md`](55-READERS-INTEGRATORS-ORCHESTRATORS/TOPIC_INDEX.md) -

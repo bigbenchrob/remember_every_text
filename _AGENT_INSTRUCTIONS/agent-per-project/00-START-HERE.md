@@ -26,14 +26,16 @@ It answers three questions:
 
 Read these first:
 
-1. [`README.md`](README.md) - top-level documentation map.
-2. [`01-PROJECT/05-CURRENT-STATE.md`](01-PROJECT/05-CURRENT-STATE.md) -
+1. [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) - cohesive mental model for new
+   developers and fresh agents.
+2. [`README.md`](README.md) - top-level documentation map.
+3. [`01-PROJECT/05-CURRENT-STATE.md`](01-PROJECT/05-CURRENT-STATE.md) -
    current project phase, active data spine, and feature ownership.
-3. [`00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/00-READ-FIRST.md`](00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/00-READ-FIRST.md) -
+4. [`00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/00-READ-FIRST.md`](00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/00-READ-FIRST.md) -
    architectural constitution entry point.
-4. [`95-WALK-UI-TREE/README.md`](95-WALK-UI-TREE/README.md) - active UI/UX
+5. [`95-WALK-UI-TREE/README.md`](95-WALK-UI-TREE/README.md) - active UI/UX
    review process.
-5. [`55-READERS-INTEGRATORS-ORCHESTRATORS/85-RELEASE-EXIT-PLAN.md`](55-READERS-INTEGRATORS-ORCHESTRATORS/85-RELEASE-EXIT-PLAN.md) -
+6. [`55-READERS-INTEGRATORS-ORCHESTRATORS/85-RELEASE-EXIT-PLAN.md`](55-READERS-INTEGRATORS-ORCHESTRATORS/85-RELEASE-EXIT-PLAN.md) -
    release-first decision rule.
 
 ## Current Project Mode
