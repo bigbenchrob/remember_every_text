@@ -726,3 +726,40 @@ own Tag definitions or assignments.
 - Manual app verification: create two Tags, tag several Conversations, type a
   partial Tag, accept the suggestion, add a second Tag token, remove a token,
   and confirm the Conversation list updates immediately.
+
+---
+
+# Tag Visibility Policy Work Package
+
+Date: 2026-07-12
+
+Scope: Created a new feature-planning package for Tag Visibility Policy using
+`04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/08-tag-visibility-policy.md`
+as the seed.
+
+## Summary
+
+The new package records the approved direction that Conversation visibility is
+best modeled as policy attached to Tag definitions rather than as a separate
+Conversation-level suppression mechanism. It preserves the key behavior:
+ordinary Browse can exclude low-value classes of Conversations, while explicit
+Structured Conversation Retrieval by Tag still returns those Conversations.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/README.md` | Created package overview. | Establishes the package, governing principles, and relationship to Tags, Conversation Intent, and retrieval. |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/PROPOSAL.md` | Created feature proposal. | Defines product rationale, core model, ownership, first-slice direction, and non-goals. |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/DESIGN_NOTES.md` | Created design notes. | Captures UX language, browse-vs-retrieval semantics, conflict cases, and first-slice UI considerations. |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/CHECKLIST.md` | Created phased checklist. | Provides a future implementation and validation sequence without starting code work. |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/TESTS.md` | Created validation strategy. | Records persistence, read-model, UI, architecture, and manual verification expectations. |
+| `45-NEW-FEATURE-ADDITION/INDEX.md` | Added `06-STRUCTURED-CONVERSATION-RETRIEVAL/` and `07-TAG-VISIBILITY-POLICY/` to active planning folders. | Keeps the feature-planning index discoverable and current. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Confirm first implementation slice before code changes.
+- Decide final user-facing language for the visibility action: for example,
+  "Suppress from Browse", "Hide Conversations with this Tag", or "Show only
+  when requested".
