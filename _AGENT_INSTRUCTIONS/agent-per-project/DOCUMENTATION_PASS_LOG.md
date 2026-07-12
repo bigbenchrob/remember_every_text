@@ -326,3 +326,257 @@ assets were modified.
 - Decide whether first version includes tag color.
 - Decide whether Core Favourites should remain separate from tag
   infrastructure or eventually share overlay primitives.
+
+---
+
+# Conversation Intent Architecture Package
+
+Date: 2026-07-09
+
+Scope: Created an exploratory architecture work package for Conversation Intent
+under `45-NEW-FEATURE-ADDITION/` and lightly amended the Conversation Tags
+package to reference the broader seam.
+
+## Summary
+
+This pass defined Conversation Intent as user-authored or user-confirmed
+metadata attached to stable Conversation identity. The package positions
+Favourites, Tags, Working Sets, Hidden state, Notes, saved investigations, and
+future confirmed AI classifications as user intent attached to the one
+canonical Conversation rather than separate containers or sidebar-owned list
+types.
+
+No application source code, tests, configs, generated files, database files, or
+assets were modified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/README.md` | Created package overview. | Provides entry point, package contents, governing idea, and relationship to Conversation Tags. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/PROPOSAL.md` | Created architecture proposal. | Defines Conversation Intent, conceptual model, ownership, product philosophy, relationship to Tags, non-goals, open questions, and acceptance criteria. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/DESIGN_NOTES.md` | Created design notes. | Records ownership, retrieval implications, relationships to existing concepts, UX implications, overlay considerations, lifetimes, and anti-patterns. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/CHECKLIST.md` | Created architecture checklist. | Records concept approval, existing-intent audit, shared model, Tags-on-intent, retrieval, and completion criteria phases. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/TESTS.md` | Created validation plan. | Captures future product, architectural, regression, tags-on-intent, retrieval, AI suggestion, and data-integrity validation. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/README.md` | Added Conversation Intent relationship. | Clarifies that Tags are one durable form of broader Conversation Intent while the Tags package remains focused. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/PROPOSAL.md` | Added Conversation Intent relationship section. | Positions Tags as a feature built on the broader intent seam rather than a tag-only special case. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/DESIGN_NOTES.md` | Added Conversation Intent design note. | Clarifies the general seam without expanding tag-specific design scope. |
+| `45-NEW-FEATURE-ADDITION/README.md` | Added Conversation Intent package to active/planning table. | Makes the architecture package discoverable. |
+| `45-NEW-FEATURE-ADDITION/INDEX.md` | Added Conversation Intent package to active/potentially active planning folders. | Prevents the package from becoming orphaned and clarifies exploratory status. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this architecture-package log entry. | Required by the work package request. |
+
+## Needs Verification / Human Review
+
+- Confirm that "Conversation Intent" is the preferred durable term.
+- Decide whether existing Core Favourites should eventually migrate onto shared
+  intent primitives or remain separate until Tags prove the need.
+- Decide whether Working Sets are durable intent, session intent, or both.
+
+---
+
+# Structured Conversation Retrieval Work Package
+
+Date: 2026-07-11
+
+Scope: Created an exploratory work package for Structured Conversation
+Retrieval under `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/`.
+
+## Summary
+
+This pass defined Structured Conversation Retrieval as a product and
+architectural model for retrieving Conversations through structured tokens over
+Conversation identity, metadata, and Conversation Intent. It explicitly
+distinguishes Conversation Retrieval from All Messages Search: retrieval answers
+"Which Conversation am I trying to work with?", while message search answers
+"Where was this said?"
+
+No application source code, tests, configs, generated files, database files, or
+assets were modified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/README.md` | Created package overview. | Provides entry point, package contents, core distinction, relationship to Conversation Intent, and exploratory status. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/PROPOSAL.md` | Created proposal. | Defines purpose, product philosophy, tokenized retrieval model, relationships to Intent/Lenses/Search, architectural direction, non-goals, and acceptance criteria. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/DESIGN_NOTES.md` | Created design notes. | Records token semantics, candidate sources, retrieval semantics, UX risks, ownership boundaries, and minimal first-slice direction. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/CHECKLIST.md` | Created phased checklist. | Records concept approval, token model, ownership planning, UI walk planning, future implementation slices, and completion criteria. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/TESTS.md` | Created future validation plan. | Captures product, interaction, retrieval, ownership, lens, regression, and non-goal validation expectations. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this work-package log entry. | Required by the work package request. |
+
+## Needs Verification / Human Review
+
+- Decide final user-facing label for Structured Conversation Retrieval.
+- Decide first-slice token types.
+- Decide whether first-slice token combination is AND-only.
+- Decide whether this should replace the current Conversation metadata search
+  field during the UI walk.
+- Return to the Conversation Intent open-question cycle and link
+  `05-categories-of-conversation-intent.md` from the main Intent package after
+  the current interruption is resolved.
+
+## Follow-Up Edit
+
+Date: 2026-07-11
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/PROPOSAL.md` | Added the sentence "Structured Conversation Retrieval is not a query language. It is a language for describing remembered context." | Captures the intended product philosophy more precisely. |
+| `DOCUMENTATION_PASS_LOG.md` | Logged this follow-up edit. | Maintains documentation pass traceability. |
+
+---
+
+# Conversation Intent Consolidation Pass
+
+Date: 2026-07-11
+
+Scope: Consolidated the approved Conversation Intent open-question decisions
+into the canonical package documents under
+`45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/`.
+
+## Summary
+
+This pass updated the Conversation Intent package from exploratory proposal
+language into an approved architectural reference. The evaluation documents in
+`01-OPEN-QUESTION-EVALUATION/` remain untouched as the decision record. The
+canonical package now reflects the settled decisions for Core Favourites,
+intent lifetimes, Working Sets, Suppressed visibility state, categories of
+Conversation Intent, and Conversation Notes. Saved Investigations are now
+explicitly identified as a separate future workspace architecture outside this
+package.
+
+No application source code, tests, configs, generated files, database files, or
+assets were modified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/README.md` | Updated status and package overview; added settled decisions and decision-record links. | Makes the package read as the canonical architecture while preserving evaluation documents as rationale. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/PROPOSAL.md` | Consolidated approved decisions on categories, lifetimes, Tags, Favourites, Suppressed state, Working Sets, Notes, and Saved Investigations. | Removes resolved questions from proposal framing and records the resulting architecture. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/DESIGN_NOTES.md` | Replaced speculative sections with approved behavior and terminology; narrowed remaining design questions. | Keeps design notes focused on current architecture and unresolved implementation-level choices. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/CHECKLIST.md` | Marked concept decisions as approved and retained implementation/audit items as future work. | Separates settled architecture from pending implementation planning. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/TESTS.md` | Updated validation language for Suppressed state, Conversation Notes, and note-presence retrieval. | Aligns future validation strategy with approved architecture. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this consolidation entry. | Required by the consolidation request. |
+
+## Needs Verification / Human Review
+
+- Confirm whether the remaining design questions in `DESIGN_NOTES.md` are the
+  correct ones to leave open before implementation planning.
+- Decide when to convert the approved architecture into a concrete
+  implementation slice.
+
+---
+
+# Conversation Tags Consolidation Pass
+
+Date: 2026-07-11
+
+Scope: Consolidated the Conversation Tags work package under
+`45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/` after Conversation Intent became
+the canonical architecture for user-authored Conversation meaning.
+
+## Summary
+
+This pass refocused Conversation Tags as a tag-specific product and UX package.
+The package now treats Tags as durable Meaning intent built on Conversation
+Intent, references Structured Conversation Retrieval where tags may later be
+consumed as remembered-context tokens, and avoids re-explaining the broader
+intent architecture.
+
+No application source code, tests, configs, generated files, database files, or
+assets were modified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/README.md` | Updated status, links, package framing, and governing principles. | Makes the package a focused tag feature specification rather than a duplicate architecture package. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/PROPOSAL.md` | Reframed the core model as tag-specific; delegated storage/identity/overlay ownership to Conversation Intent; revised retrieval/search relationship; narrowed open questions. | Keeps architecture in Conversation Intent and leaves only tag-specific product questions open. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/DESIGN_NOTES.md` | Collapsed duplicated architecture into an inherited-architecture summary; focused notes on tag UX, presentation, editing, scaling, and tag-specific questions. | Preserves useful tag design guidance while avoiding redefinition of the approved Conversation Intent seam. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/CHECKLIST.md` | Updated statuses, phase names, product decisions, and cross-lens items. | Separates settled Conversation Intent architecture from remaining tag implementation decisions. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/TESTS.md` | Reframed validation as tag-specific and linked to Conversation Intent validation for general architecture. | Prevents duplicate validation ownership and adds tag-specific UX/retrieval checks. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this consolidation entry. | Required by the redirection request. |
+
+## Needs Verification / Human Review
+
+- Confirm whether the remaining tag-specific open questions are the right set
+  before implementation planning.
+- Decide whether the first implementation slice should include retrieval by tag
+  or only tag creation/assignment/display.
+
+---
+
+# Conversation Tags Open Question Evaluation: Tag Creation Workflow
+
+Date: 2026-07-11
+
+Scope: Added a tag-specific product decision record under
+`45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/`.
+
+## Summary
+
+This pass evaluated the correct workflow for creating, editing, and managing
+Conversation Tags. The recommendation is Conversation-first tagging: users
+should create and apply tags while looking at a Conversation, with a secondary
+Tag Manager reserved for cleanup, rename, deletion, and scale.
+
+No application source code, tests, configs, generated files, database files, or
+assets were modified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/07-tag-creation-and-management-workflow.md` | Created evaluation document. | Records the recommendation for Conversation-first tag creation, secondary tag management, duplicate prevention, card presentation, retrieval relationship, UX risks, and first-slice direction. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this evaluation entry. | Required by the open-question evaluation request. |
+
+## Needs Verification / Human Review
+
+- Confirm whether the first implementation slice should include only
+  create/apply/remove/display, or also a minimal secondary rename/delete
+  management surface.
+
+## Follow-Up Refinement
+
+Date: 2026-07-11
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/07-tag-creation-and-management-workflow.md` | Added the governing product principle that Tags should be discovered through use, refined the secondary management role, and documented authoring/retrieval symmetry. | Strengthens the product rationale without reopening the Conversation-first recommendation. |
+| `DOCUMENTATION_PASS_LOG.md` | Logged this follow-up refinement. | Maintains documentation pass traceability. |
+
+---
+
+# Conversation Tags Implementation Readiness Audit
+
+Date: 2026-07-11
+
+Scope: Repository-aware implementation readiness audit for Conversation Tags,
+confined to `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/`.
+
+## Summary
+
+This pass inspected current Core Favourites persistence, overlay database
+conventions, canonical Conversation identity, Conversation read models,
+Conversation card surfaces, action/provider boundaries, and test infrastructure.
+It concluded that Tags are ready for a narrow first implementation slice, but
+should not begin with a broad generic Conversation Intent framework.
+
+No application source code, tests, configs, generated files, database files, or
+assets were modified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/IMPLEMENTATION_READINESS_AUDIT.md` | Created repository-aware readiness audit and first-slice plan. | Maps the settled tag product direction onto the current codebase before implementation begins. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/README.md` | Linked the readiness audit from package contents. | Makes the implementation planning document discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation pass traceability. |
+
+## Needs Verification / Human Review
+
+- Confirm the recommended first implementation surface: Conversations sidebar
+  card first, then Contact By Conversation and right Conversation excerpt panel.
+- Confirm that first-slice tag storage should use first-class overlay tables
+  rather than an overlay settings JSON blob.

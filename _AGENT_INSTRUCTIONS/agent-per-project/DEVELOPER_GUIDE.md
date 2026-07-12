@@ -4,7 +4,7 @@ scope: developer-guide
 owner: agent-per-project
 last_reviewed: 2026-07-09
 source_of_truth: doc
-links:
+links:V
   - ./00-START-HERE.md
   - ./01-PROJECT/05-CURRENT-STATE.md
   - ./01-PROJECT/02-architecture-overview.md
@@ -25,12 +25,10 @@ sense.
 
 ## What MessageLens Is
 
-MessageLens is a memory exploration and rediscovery application built from
-Apple Messages data.
+MessageLens is a personal archive and investigation tool for Apple Messages.
 
-Apple Messages is the primary data source, but it is not the product. Apple
-Messages already owns the live messaging experience. MessageLens is concerned
-with a different problem:
+It is not trying to be another chat client. Apple Messages already owns the live
+messaging experience. MessageLens is concerned with a different problem:
 
 > How do you understand years of personal communication as evidence, memory,
 > relationship history, and recoverable data?
@@ -38,25 +36,18 @@ with a different problem:
 That difference matters. A normal messaging app is optimized for what just
 happened. MessageLens is optimized for what happened over time.
 
-The product helps people retrieve things they already know exist and rediscover
-things they did not know to ask for: relationships that changed shape,
-conversations that quietly faded away, significant moments buried in ordinary
-message history, and context around fragments of memory.
-
-It needs to answer questions like:
+The product needs to answer questions like:
 
 - Who was I talking to?
 - Which conversation did this message belong to?
 - What was happening around this message?
 - Which relationships have persisted, faded, revived, or changed shape?
-- What meaningful conversations or moments have I forgotten?
 - What message evidence can still be recovered when Apple's local attachment
   cache has been evicted?
 
 The app therefore treats messages as evidence and conversations as historical
 objects. The UI is not just a list of bubbles. It is a set of lenses onto a
-large personal graph, supporting both retrieval ("find something I know exists")
-and discovery ("show me something meaningful I did not know to ask for").
+large personal graph.
 
 ## The Most Important Idea
 
@@ -465,10 +456,9 @@ After this guide, read:
    non-negotiable architecture rules.
 4. `01-PROJECT/02-architecture-overview.md` for the high-level code ownership
    map.
-5. The subsystem owner for the work you are about to do.
-
-Use `DOCUMENTATION_OWNERSHIP_AUDIT.md` when you are unsure which document owns a
-concept.
+   V
+   Use `DOCUMENTATION_OWNERSHIP_AUDIT.md` when you are unsure which document owns a
+   concept.
 
 Use `45-NEW-FEATURE-ADDITION/INDEX.md` and
 `55-READERS-INTEGRATORS-ORCHESTRATORS/TOPIC_INDEX.md` before treating documents

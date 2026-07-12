@@ -41,6 +41,7 @@ the time of this IA pass. Verify status before implementation.
 | --- | --- |
 | [`03-INTRODUCE-SIDEBAR-CONTENT-SEAM/`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/) | Active design-planning area for aligning sidebar cassette chains with the X-column layout work. |
 | [`04-CONVERSATION-TAGS/`](04-CONVERSATION-TAGS/) | Exploratory design package for durable user-created semantic labels attached to canonical Conversation identity. Not an implementation task until explicitly approved. |
+| [`05-CONVERSATION-INTENT-ARCHITECTURE/`](05-CONVERSATION-INTENT-ARCHITECTURE/) | Exploratory architecture package defining Conversation Intent as the broader overlay/user-intent seam under Favourites, Tags, Working Sets, Hidden state, Notes, saved investigations, and future user-confirmed classifications. |
 | [`archive-canonical-attachments/`](archive-canonical-attachments/) | Attachment/archive planning material. Verify against `25-ONBOARDING-AND-ARCHIVE/`, `55/84`, and current archive/recovery work before implementation. |
 | [`ephemeral-sidebar-projection/`](ephemeral-sidebar-projection/) | Sidebar projection planning material. Verify against the canonical spec/cassette system and current UI-walk direction before implementation. |
 
