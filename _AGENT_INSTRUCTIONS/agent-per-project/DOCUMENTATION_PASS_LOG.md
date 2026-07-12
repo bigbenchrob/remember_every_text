@@ -580,3 +580,149 @@ assets were modified.
   card first, then Contact By Conversation and right Conversation excerpt panel.
 - Confirm that first-slice tag storage should use first-class overlay tables
   rather than an overlay settings JSON blob.
+
+---
+
+# Conversation Tags First Slice Implementation Plan
+
+Date: 2026-07-12
+
+Scope: Added the concrete first vertical-slice implementation plan for
+Conversation Tags under
+`45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/`.
+
+## Summary
+
+This pass translated the approved Conversation Intent architecture, Conversation
+Tags package, and implementation readiness audit into a narrow implementation
+plan. The slice proves one complete workflow: create a Tag in Conversation
+context, attach it to the canonical Conversation, persist it in overlay storage,
+merge it into Conversation read models, display it in canonical Conversation
+presentation, and preserve it across restart.
+
+No application source code, tests, configs, generated files, database files, or
+assets were modified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/FIRST_SLICE_IMPLEMENTATION_PLAN.md` | Created first-slice implementation plan. | Defines affected features, overlay additions, providers/actions, read-model changes, UI changes, test strategy, migration considerations, implementation order, and explicit non-goals. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/README.md` | Linked the first-slice plan from package contents. | Makes the implementation plan discoverable before coding begins. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation pass traceability. |
+
+## Needs Verification / Human Review
+
+- Approve or revise the plan assumptions before implementation:
+  Conversations sidebar as first surface, first-class overlay tables, separate
+  tag definitions/assignments, and no global Tag Manager in the first slice.
+
+---
+
+# Conversation Tags First Vertical Slice Implementation Documentation
+
+Date: 2026-07-12
+
+Scope: Updated the Conversation Tags work package to reflect the implemented
+first vertical slice.
+
+## Summary
+
+The first Conversation Tags slice now supports creating/applying/removing tags
+from a Conversation in the Conversations sidebar, persisting tags in overlay
+storage, merging tag state into Conversation signature display models, and
+displaying tag labels on the canonical Conversation card for the first surface.
+
+Application code, tests, generated files, and overlay schema were changed as
+part of the implementation. This log entry records only the documentation
+updates made after implementation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/README.md` | Marked first slice implemented and summarized implemented/deferred scope. | Keeps the package entry point current without claiming full tag feature completion. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/CHECKLIST.md` | Checked off completed planning, first-slice, overlay, identity, and display items. | Distinguishes implemented first-slice behavior from future tag management/retrieval work. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/TESTS.md` | Added implemented first-slice test coverage summary. | Records what is currently proven by tests versus future validation needs. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/FIRST_SLICE_IMPLEMENTATION_PLAN.md` | Marked plan implemented and added outcome/deferred sections. | Preserves the plan as historical implementation context. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this implementation documentation entry. | Maintains traceability for documentation changes. |
+
+## Needs Verification / Human Review
+
+- Manual app verification: create a tag on a Conversation in the Conversations
+  sidebar, restart the app, and confirm the tag remains visible on that card.
+- Architecture test still reports one unrelated pre-existing layout debug color
+  literal in `lib/config/theme/widgets/layout/vertical_column_bands.dart`.
+
+---
+
+# Conversation Tags Post-Implementation Architectural Review
+
+Date: 2026-07-12
+
+Scope: Reviewed the implemented first Conversation Tags vertical slice against
+the approved Conversation Intent architecture, Conversation Tags package,
+Structured Conversation Retrieval package, readiness audit, and first-slice
+implementation plan.
+
+## Summary
+
+The review concluded that the first Conversation Tags vertical slice validates
+the approved architecture. Tags are persisted as overlay-owned Conversation
+Intent, graph projection remains untouched, Conversation-owned read/action
+providers merge tags at read time, and the canonical Conversation Card remains
+pure presentation. No code changes were recommended before the next slice.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/POST_IMPLEMENTATION_ARCHITECTURAL_REVIEW.md` | Created post-implementation architectural review. | Records architectural validation, implementation observations, deviations, debt, lessons, and next-slice recommendations. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Manually verify the first slice in the running app: create a tag, apply it to
+  a Conversation, remove it, restart, and confirm persistence.
+- Choose the second implementation slice explicitly before expanding tag
+  display, retrieval, or management behavior.
+
+---
+
+# Structured Conversation Retrieval Tag Token Slice
+
+Date: 2026-07-12
+
+Scope: Implemented and documented the first Structured Conversation Retrieval
+vertical slice: Tag tokens in the Conversations sidebar Browse list.
+
+## Summary
+
+The Conversations Browse retrieval field now consumes existing Conversation
+Tags. Typing a partial Tag name suggests known Tags, accepting a suggestion
+creates a visible token, and selected Tag tokens filter Conversation signatures
+with simple AND semantics. The slice does not search message bodies and does not
+own Tag definitions or assignments.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/README.md` | Marked the Tag-token vertical slice implemented and recorded implemented/deferred scope. | Keeps the package entry point current. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/PROPOSAL.md` | Added implemented first-slice section. | Records that Tag-token retrieval now proves the model without implementing other token types. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/DESIGN_NOTES.md` | Updated minimal first-slice direction and open questions. | Distinguishes implemented Tag-token behavior from future retrieval work. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/CHECKLIST.md` | Checked off approved/implemented first-slice items. | Tracks implementation progress while preserving future phases. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/TESTS.md` | Added implemented test coverage summary. | Records focused validation for known Tag suggestions and AND filtering. |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/README.md` | Noted that Structured Conversation Retrieval consumes existing Tags as tokens. | Clarifies ownership: Tags remain Conversation Intent; retrieval consumes them. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation traceability. |
+
+## Verification
+
+- `flutter test test/features/conversations/application/conversation_retrieval/conversation_retrieval_tag_token_test.dart test/features/conversations/application/conversation_signatures/conversation_signature_display_provider_test.dart --reporter expanded`
+- `flutter analyze`
+
+## Needs Verification / Human Review
+
+- Manual app verification: create two Tags, tag several Conversations, type a
+  partial Tag, accept the suggestion, add a second Tag token, remove a token,
+  and confirm the Conversation list updates immediately.

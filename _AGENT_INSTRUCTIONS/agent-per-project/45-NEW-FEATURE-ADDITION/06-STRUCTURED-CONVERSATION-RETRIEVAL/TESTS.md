@@ -2,9 +2,9 @@
 tier: project
 scope: validation-plan
 owner: agent-per-project
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-12
 source_of_truth: draft
-status: exploratory
+status: first-slice-implemented
 links:
   - ./PROPOSAL.md
   - ./CHECKLIST.md
@@ -13,7 +13,36 @@ tests: []
 
 # Structured Conversation Retrieval Validation Plan
 
-This is a future validation plan. It is not an instruction to write tests now.
+This records the general validation strategy and the first implemented
+Tag-token retrieval tests.
+
+## Implemented First-Slice Coverage
+
+The first Tag-token slice adds focused tests for:
+
+- partial Tag lookup by normalized prefix;
+- no suggestion for already-selected Tags;
+- no free-text fallback when no Tag exists;
+- Conversation list filtering by selected Tag IDs;
+- multiple selected Tag tokens combining with AND semantics.
+
+Relevant tests:
+
+```text
+flutter test \
+  test/features/conversations/application/conversation_retrieval/conversation_retrieval_tag_token_test.dart \
+  test/features/conversations/application/conversation_signatures/conversation_signature_display_provider_test.dart
+```
+
+These tests prove the first retrieval data flow:
+
+```text
+typed text
+  -> Tag lookup
+  -> Tag token
+  -> Conversation read-model filter
+  -> narrowed Conversation list
+```
 
 ## Product Validation
 

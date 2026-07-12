@@ -11,6 +11,7 @@ export 'application/conversation_signatures/conversation_signature_display_provi
     show
         ConversationSignatureDisplayByIdsRequest,
         ConversationSignatureDisplayModel,
+        ConversationSignatureSelectedTagsRequest,
         ConversationSignatureFilter,
         ConversationSignatureSort,
         conversationSignatureDisplayByIdsProvider,

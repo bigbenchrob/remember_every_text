@@ -100,6 +100,37 @@ void main() {
     );
     expect(find.textContaining('1 messages', findRichText: true), findsNothing);
   });
+
+  testWidgets('renders supplied tag labels without provider dependencies', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: SizedBox(
+          width: 260,
+          child: ConversationSignatureCard(
+            signature: const ConversationSignatureCardData(
+              conversationId: 42,
+              title: 'Claire',
+              participantCount: 1,
+              messageCount: 10,
+              firstMessageAtUtc: '2026-05-01T10:00:00.000Z',
+              lastMessageAtUtc: '2026-05-02T10:00:00.000Z',
+              activityMonths: [],
+              tagLabels: ['Family', 'Travel'],
+            ),
+            style: _testStyle,
+            monthColorForMessageCount: (_) => const Color(0xFF00AA00),
+            onPressed: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Family'), findsOneWidget);
+    expect(find.text('Travel'), findsOneWidget);
+  });
 }
 
 const _testStyle = ConversationSignatureCardStyle(
@@ -115,5 +146,8 @@ const _testStyle = ConversationSignatureCardStyle(
   participantSuffixStyle: TextStyle(color: Color(0xFF777777), fontSize: 10),
   summaryStyle: TextStyle(color: Color(0xFF555555), fontSize: 11),
   summaryHighlightStyle: TextStyle(color: Color(0xFFCC6600), fontSize: 11),
+  tagTextStyle: TextStyle(color: Color(0xFF666666), fontSize: 10),
+  tagBackgroundColor: Color(0x11000000),
+  tagBorderColor: Color(0x22000000),
   emptyMonthBorderColor: Color(0xFF999999),
 );

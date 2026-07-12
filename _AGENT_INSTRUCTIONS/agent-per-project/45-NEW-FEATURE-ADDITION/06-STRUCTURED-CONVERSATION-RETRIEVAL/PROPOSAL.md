@@ -2,9 +2,9 @@
 tier: project
 scope: feature-proposal
 owner: agent-per-project
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-12
 source_of_truth: draft
-status: exploratory
+status: first-slice-implemented
 links:
   - ./README.md
   - ./DESIGN_NOTES.md
@@ -125,6 +125,27 @@ Initial design should consider tokens such as:
 This list is not complete. The architecture should allow new Conversation
 metadata and Conversation Intent types to become retrieval tokens without
 inventing another sidebar mode.
+
+## Implemented First Slice: Tag Tokens
+
+The first implemented vertical slice proves the retrieval model with Tag tokens
+only.
+
+Implemented behavior:
+
+```text
+type partial Tag name
+  -> suggest matching known Tag
+  -> accept suggestion
+  -> visible Tag token
+  -> Conversations list filtered to Conversations carrying that Tag
+```
+
+Multiple Tag tokens combine using simple AND semantics. Retrieval state is not
+persisted in this slice. Tag definitions and assignments remain owned by
+Conversation Intent and overlay storage; retrieval consumes them.
+
+No other token type has been implemented.
 
 ## Relationship To Conversation Intent
 

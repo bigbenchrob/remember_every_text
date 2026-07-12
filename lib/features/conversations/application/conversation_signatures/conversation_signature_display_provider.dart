@@ -8,6 +8,8 @@ import '../../../../essentials/conversation_graph/feature_level_providers.dart'
     show conversationSignatureReaderProvider, conversationSignaturesProvider;
 import '../../../contacts/feature_level_providers.dart'
     show ConversationDisplayIdentity, displayIdentityResolverProvider;
+import '../../domain/conversation_tags/conversation_tag_display.dart';
+import '../conversation_tags/conversation_tags_provider.dart';
 
 part 'conversation_signature_display_provider.g.dart';
 
@@ -35,6 +37,7 @@ class ConversationSignatureDisplayModel {
     required this.lastMessageAtUtc,
     required this.lastMessageText,
     required this.activityMonths,
+    this.tags = const <ConversationTagDisplay>[],
   });
 
   final int conversationId;
@@ -48,6 +51,7 @@ class ConversationSignatureDisplayModel {
   final String? lastMessageAtUtc;
   final String? lastMessageText;
   final List<ConversationSignatureMonth> activityMonths;
+  final List<ConversationTagDisplay> tags;
 }
 
 @immutable
@@ -70,11 +74,35 @@ class ConversationSignatureDisplayByIdsRequest {
   int get hashCode => _equality.hash(conversationIds);
 }
 
+@immutable
+class ConversationSignatureSelectedTagsRequest {
+  ConversationSignatureSelectedTagsRequest({required Iterable<int> tagIds})
+    : tagIds = List<int>.unmodifiable(tagIds);
+
+  const ConversationSignatureSelectedTagsRequest.empty()
+    : tagIds = const <int>[];
+
+  final List<int> tagIds;
+
+  static const _equality = ListEquality<int>();
+
+  @override
+  bool operator ==(Object other) {
+    return other is ConversationSignatureSelectedTagsRequest &&
+        _equality.equals(other.tagIds, tagIds);
+  }
+
+  @override
+  int get hashCode => _equality.hash(tagIds);
+}
+
 @riverpod
 Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
   Ref ref, {
   int limit = 500,
   String searchQuery = '',
+  ConversationSignatureSelectedTagsRequest selectedTags =
+      const ConversationSignatureSelectedTagsRequest.empty(),
   ConversationSignatureFilter filter = ConversationSignatureFilter.all,
   ConversationSignatureSort sort =
       ConversationSignatureSort.mostRecentlyUpdated,
@@ -87,6 +115,15 @@ Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
     displayIdentityResolverProvider.future,
   );
   final excludedFavouriteIds = excludedFavouriteConversationIds.toSet();
+  final tagsByConversationId = await ref.watch(
+    conversationTagsByConversationIdsProvider(
+      request: ConversationTagsByConversationIdsRequest(
+        conversationIds: signatures.map((signature) {
+          return signature.conversationId;
+        }),
+      ),
+    ).future,
+  );
 
   final displayModels = [
     for (final signature in signatures)
@@ -96,13 +133,18 @@ Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
           conversationId: signature.conversationId,
           handles: signature.participantLabels,
         ),
+        tags:
+            tagsByConversationId[signature.conversationId] ??
+            const <ConversationTagDisplay>[],
       ),
   ];
 
   final normalizedQuery = searchQuery.trim().toLowerCase();
+  final selectedTagIds = selectedTags.tagIds.toSet();
   final filtered = displayModels.where((signature) {
     return !excludedFavouriteIds.contains(signature.conversationId) &&
         _matchesSearch(signature, normalizedQuery) &&
+        _matchesSelectedTags(signature, selectedTagIds) &&
         _matchesFilter(signature, filter);
   }).toList();
 
@@ -143,6 +185,15 @@ Future<List<ConversationSignatureDisplayModel>> _readDisplayModelsByIds(
   final identityResolver = await ref.watch(
     displayIdentityResolverProvider.future,
   );
+  final tagsByConversationId = await ref.watch(
+    conversationTagsByConversationIdsProvider(
+      request: ConversationTagsByConversationIdsRequest(
+        conversationIds: signatures.map((signature) {
+          return signature.conversationId;
+        }),
+      ),
+    ).future,
+  );
   final displayModelsById = {
     for (final signature in signatures)
       signature.conversationId: _toDisplayModel(
@@ -151,6 +202,9 @@ Future<List<ConversationSignatureDisplayModel>> _readDisplayModelsByIds(
           conversationId: signature.conversationId,
           handles: signature.participantLabels,
         ),
+        tags:
+            tagsByConversationId[signature.conversationId] ??
+            const <ConversationTagDisplay>[],
       ),
   };
 
@@ -163,8 +217,9 @@ Future<List<ConversationSignatureDisplayModel>> _readDisplayModelsByIds(
 
 ConversationSignatureDisplayModel _toDisplayModel(
   ConversationSignature signature,
-  ConversationDisplayIdentity displayIdentity,
-) {
+  ConversationDisplayIdentity displayIdentity, {
+  List<ConversationTagDisplay> tags = const <ConversationTagDisplay>[],
+}) {
   return ConversationSignatureDisplayModel(
     conversationId: signature.conversationId,
     title: displayIdentity.title,
@@ -177,6 +232,7 @@ ConversationSignatureDisplayModel _toDisplayModel(
     lastMessageAtUtc: signature.lastMessageAtUtc,
     lastMessageText: signature.lastMessageText,
     activityMonths: signature.activityMonths,
+    tags: tags,
   );
 }
 
@@ -214,6 +270,18 @@ bool _matchesSearch(
     signature.lastMessageText ?? '',
   ].join(' ').toLowerCase();
   return searchableText.contains(normalizedQuery);
+}
+
+bool _matchesSelectedTags(
+  ConversationSignatureDisplayModel signature,
+  Set<int> selectedTagIds,
+) {
+  if (selectedTagIds.isEmpty) {
+    return true;
+  }
+
+  final signatureTagIds = signature.tags.map((tag) => tag.id).toSet();
+  return selectedTagIds.every(signatureTagIds.contains);
 }
 
 bool _matchesFilter(

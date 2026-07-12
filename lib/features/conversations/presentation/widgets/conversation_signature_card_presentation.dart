@@ -12,6 +12,7 @@ ConversationSignatureCardData conversationSignatureCardDataFromDisplay(
   ConversationSignatureSummaryHighlight summaryHighlight =
       ConversationSignatureSummaryHighlight.none,
   ConversationSignatureMonthMarker? highlightedMonth,
+  bool includeTags = false,
 }) {
   return ConversationSignatureCardData(
     conversationId: signature.conversationId,
@@ -24,6 +25,9 @@ ConversationSignatureCardData conversationSignatureCardDataFromDisplay(
     firstMessageAtUtc: signature.firstMessageAtUtc,
     lastMessageAtUtc: signature.lastMessageAtUtc,
     activityMonths: signature.activityMonths,
+    tagLabels: includeTags
+        ? [for (final tag in signature.tags) tag.displayName]
+        : const <String>[],
   );
 }
 
@@ -66,6 +70,12 @@ ConversationSignatureCardStyle conversationSignatureCardStyle(
       fontWeight: FontWeight.w700,
     ),
     monthHighlightColor: colors.status.warning,
+    tagTextStyle: typography.caption.copyWith(
+      color: colors.content.textSecondary.withValues(alpha: 0.9),
+      fontWeight: FontWeight.w500,
+    ),
+    tagBackgroundColor: colors.surfaces.surface.withValues(alpha: 0.32),
+    tagBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.26),
     emptyMonthBorderColor: colors.lines.borderSubtle,
   );
 }
@@ -105,6 +115,12 @@ ConversationSignatureCardStyle favouriteConversationSignatureCardStyle(
       fontWeight: FontWeight.w700,
     ),
     monthHighlightColor: colors.status.warning,
+    tagTextStyle: typography.caption.copyWith(
+      color: colors.content.textSecondary.withValues(alpha: 0.92),
+      fontWeight: FontWeight.w500,
+    ),
+    tagBackgroundColor: colors.surfaces.surface.withValues(alpha: 0.38),
+    tagBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.28),
     emptyMonthBorderColor: colors.lines.borderSubtle,
   );
 }
@@ -144,6 +160,12 @@ ConversationSignatureCardStyle conversationSignatureContextHeaderCardStyle(
       fontWeight: FontWeight.w700,
     ),
     monthHighlightColor: colors.status.warning,
+    tagTextStyle: typography.caption.copyWith(
+      color: colors.content.textSecondary.withValues(alpha: 0.82),
+      fontWeight: FontWeight.w500,
+    ),
+    tagBackgroundColor: colors.surfaces.surface.withValues(alpha: 0.2),
+    tagBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.2),
     emptyMonthBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.82),
   );
 }

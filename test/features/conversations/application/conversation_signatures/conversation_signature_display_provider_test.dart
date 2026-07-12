@@ -8,6 +8,9 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_repository.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
+import 'package:remember_this_text/features/conversations/application/conversation_tags/conversation_tag_repository.dart';
+import 'package:remember_this_text/features/conversations/application/conversation_tags/conversation_tag_repository_provider.dart';
+import 'package:remember_this_text/features/conversations/domain/conversation_tags/conversation_tag_display.dart';
 import 'package:remember_this_text/features/conversations/feature_level_providers.dart';
 
 void main() {
@@ -47,6 +50,9 @@ void main() {
               ),
             },
           );
+        }),
+        conversationTagRepositoryProvider.overrideWith((ref) async {
+          return const _FakeConversationTagRepository();
         }),
       ],
     );
@@ -134,6 +140,9 @@ void main() {
         displayIdentityResolverProvider.overrideWith((ref) async {
           return const DisplayIdentityResolver(identitiesByHandleKey: {});
         }),
+        conversationTagRepositoryProvider.overrideWith((ref) async {
+          return const _FakeConversationTagRepository();
+        }),
       ],
     );
     addTearDown(container.dispose);
@@ -170,6 +179,118 @@ void main() {
       3,
     ]);
   });
+
+  test(
+    'filters conversations by selected tag tokens using AND semantics',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          conversationSignaturesProvider(limit: 500).overrideWith((ref) async {
+            return const [
+              ConversationSignature(
+                conversationId: 1,
+                title: 'family',
+                participantLabels: ['+15551'],
+                participantCount: 1,
+                isGroup: false,
+                messageCount: 20,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-05-01T10:00:00.000Z',
+                lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+                lastMessageText: 'hello',
+                activityMonths: [],
+              ),
+              ConversationSignature(
+                conversationId: 2,
+                title: 'family estate',
+                participantLabels: ['+15552'],
+                participantCount: 1,
+                isGroup: false,
+                messageCount: 30,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-04-01T10:00:00.000Z',
+                lastMessageAtUtc: '2026-05-21T10:00:00.000Z',
+                lastMessageText: 'paperwork',
+                activityMonths: [],
+              ),
+              ConversationSignature(
+                conversationId: 3,
+                title: 'estate only',
+                participantLabels: ['+15553'],
+                participantCount: 1,
+                isGroup: false,
+                messageCount: 40,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-03-01T10:00:00.000Z',
+                lastMessageAtUtc: '2026-05-22T10:00:00.000Z',
+                lastMessageText: 'terms',
+                activityMonths: [],
+              ),
+            ];
+          }),
+          displayIdentityResolverProvider.overrideWith((ref) async {
+            return const DisplayIdentityResolver(identitiesByHandleKey: {});
+          }),
+          conversationTagRepositoryProvider.overrideWith((ref) async {
+            return const _FakeConversationTagRepository(
+              tagsByConversationId: {
+                1: [
+                  ConversationTagDisplay(
+                    id: 10,
+                    displayName: 'Family',
+                    normalizedName: 'family',
+                  ),
+                ],
+                2: [
+                  ConversationTagDisplay(
+                    id: 10,
+                    displayName: 'Family',
+                    normalizedName: 'family',
+                  ),
+                  ConversationTagDisplay(
+                    id: 11,
+                    displayName: 'Estate',
+                    normalizedName: 'estate',
+                  ),
+                ],
+                3: [
+                  ConversationTagDisplay(
+                    id: 11,
+                    displayName: 'Estate',
+                    normalizedName: 'estate',
+                  ),
+                ],
+              },
+            );
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final familyMatches = await container.read(
+        conversationSignatureDisplayProvider(
+          selectedTags: ConversationSignatureSelectedTagsRequest(
+            tagIds: const [10],
+          ),
+        ).future,
+      );
+      expect(familyMatches.map((signature) => signature.conversationId), [
+        2,
+        1,
+      ]);
+
+      final familyEstateMatches = await container.read(
+        conversationSignatureDisplayProvider(
+          selectedTags: ConversationSignatureSelectedTagsRequest(
+            tagIds: const [10, 11],
+          ),
+        ).future,
+      );
+      expect(familyEstateMatches.map((signature) => signature.conversationId), [
+        2,
+      ]);
+    },
+  );
 
   test('applies revised conversation sort semantics', () async {
     final container = ProviderContainer(
@@ -219,6 +340,9 @@ void main() {
         }),
         displayIdentityResolverProvider.overrideWith((ref) async {
           return const DisplayIdentityResolver(identitiesByHandleKey: {});
+        }),
+        conversationTagRepositoryProvider.overrideWith((ref) async {
+          return const _FakeConversationTagRepository();
         }),
       ],
     );
@@ -309,6 +433,19 @@ void main() {
           displayIdentityResolverProvider.overrideWith((ref) async {
             return const DisplayIdentityResolver(identitiesByHandleKey: {});
           }),
+          conversationTagRepositoryProvider.overrideWith((ref) async {
+            return const _FakeConversationTagRepository(
+              tagsByConversationId: {
+                2: [
+                  ConversationTagDisplay(
+                    id: 9,
+                    displayName: 'Family',
+                    normalizedName: 'family',
+                  ),
+                ],
+              },
+            );
+          }),
         ],
       );
       addTearDown(container.dispose);
@@ -327,8 +464,57 @@ void main() {
         [10, 20],
       );
       expect(signatures.first.title, '+15552 and +15553');
+      expect(signatures.first.tags.map((tag) => tag.displayName), ['Family']);
     },
   );
+}
+
+class _FakeConversationTagRepository implements ConversationTagRepository {
+  const _FakeConversationTagRepository({
+    this.tagsByConversationId = const <int, List<ConversationTagDisplay>>{},
+  });
+
+  final Map<int, List<ConversationTagDisplay>> tagsByConversationId;
+
+  @override
+  Future<List<ConversationTagDisplay>> readAllTags() async {
+    return const <ConversationTagDisplay>[];
+  }
+
+  @override
+  Future<Map<int, List<ConversationTagDisplay>>> readTagsByConversationIds(
+    Iterable<int> conversationIds,
+  ) async {
+    return {
+      for (final conversationId in conversationIds)
+        conversationId:
+            tagsByConversationId[conversationId] ??
+            const <ConversationTagDisplay>[],
+    };
+  }
+
+  @override
+  Future<ConversationTagDisplay> createTag(String rawName) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<ConversationTagDisplay> createAndAssignTag({
+    required int conversationId,
+    required String rawName,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> assignTag({required int conversationId, required int tagId}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> removeTag({required int conversationId, required int tagId}) {
+    throw UnimplementedError();
+  }
 }
 
 class _FakeConversationRepository implements ConversationRepository {

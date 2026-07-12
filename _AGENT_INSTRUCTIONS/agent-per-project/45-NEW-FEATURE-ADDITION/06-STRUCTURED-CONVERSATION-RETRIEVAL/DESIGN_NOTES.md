@@ -2,9 +2,9 @@
 tier: project
 scope: design-notes
 owner: agent-per-project
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-12
 source_of_truth: draft
-status: exploratory
+status: first-slice-implemented
 links:
   - ./PROPOSAL.md
   - ../05-CONVERSATION-INTENT-ARCHITECTURE/DESIGN_NOTES.md
@@ -193,27 +193,32 @@ evidence.
 
 ## Minimal First Slice Direction
 
-When implementation is eventually approved, the smallest useful slice may be:
+The first implementation slice is Tag-token retrieval in the Conversations
+sidebar Browse mode.
 
-1. Replace the current low-value Conversation metadata search field with a
-   structured retrieval field in Browse mode.
-2. Support a small token set:
-   - Contact identity;
-   - Core Favourite;
-   - group / one-to-one;
-   - maybe Tag only if Tags already exist.
-3. Combine tokens with a simple AND model.
-4. Keep the existing Conversation Lens / Organize by control separate.
-5. Show empty-state copy that explains selected tokens.
+Implemented:
 
-This slice should wait until Conversation Intent and Tags planning are resolved.
+- Replace the current low-value Conversation metadata search field with a
+  structured Tag retrieval field in Browse mode.
+- Suggest only known Tags.
+- Convert accepted suggestions into visible Tag tokens.
+- Combine multiple Tag tokens with simple AND semantics.
+- Keep the existing Conversation Lens / Organize by control separate.
+- Do not persist retrieval state.
+
+Deferred:
+
+- Contact identity tokens.
+- Core Favourite tokens.
+- group / one-to-one tokens.
+- Working Set, visibility, Notes, or AI tokens.
+- Empty-state copy specialized to active tokens.
+- Keyboard navigation beyond accepting the first suggestion via submit.
 
 ## Open Questions
 
 - What should the user-facing label be?
-- Should first-slice retrieval replace or sit beside the current Conversation
-  search field?
-- Which token types are available before Tags exist?
+- What token types should follow Tags?
 - How should typeahead candidates be ranked?
 - Should tokens be keyboard-first?
 - Should retrieval state persist across app relaunch?

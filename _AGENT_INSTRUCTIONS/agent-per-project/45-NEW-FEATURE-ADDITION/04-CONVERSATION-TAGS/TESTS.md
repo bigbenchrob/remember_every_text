@@ -2,9 +2,9 @@
 tier: project
 scope: test-plan
 owner: agent-per-project
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-12
 source_of_truth: draft
-status: consolidated-exploratory
+status: first-slice-implemented
 links:
   - ./PROPOSAL.md
   - ./CHECKLIST.md
@@ -13,9 +13,27 @@ links:
 
 # Conversation Tags Validation Plan
 
-This document describes future tag-specific validation. It is not an instruction
-to write tests now. General Conversation Intent validation is owned by
+This document describes tag-specific validation. The first vertical slice now
+has focused tests; broader cross-lens and management validation remains future
+work. General Conversation Intent validation is owned by
 [`../05-CONVERSATION-INTENT-ARCHITECTURE/TESTS.md`](../05-CONVERSATION-INTENT-ARCHITECTURE/TESTS.md).
+
+## Implemented First-Slice Tests
+
+Implemented tests currently cover:
+
+- overlay migration from schema v6 creates Conversation tag storage;
+- tag creation persists display and normalized names;
+- empty tag names are rejected;
+- duplicate normalized names reuse the existing tag definition;
+- Conversation tag assignments persist by canonical Conversation identity;
+- duplicate assignments are prevented;
+- removing an assignment does not delete the tag definition;
+- Conversation tag actions mutate the repository and invalidate affected reads;
+- Conversation signature display models merge tag display data by
+  `conversationId`;
+- `ConversationSignatureCard` renders supplied tag labels without provider
+  dependencies.
 
 ## Product Validation
 

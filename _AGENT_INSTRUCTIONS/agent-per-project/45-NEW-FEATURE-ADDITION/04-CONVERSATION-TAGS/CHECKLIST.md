@@ -2,9 +2,9 @@
 tier: project
 scope: implementation-checklist
 owner: agent-per-project
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-12
 source_of_truth: draft
-status: consolidated-exploratory
+status: first-slice-implemented
 links:
   - ./PROPOSAL.md
   - ./DESIGN_NOTES.md
@@ -14,8 +14,9 @@ links:
 
 # Conversation Tags Checklist
 
-This checklist is intentionally exploratory. It defines phases and completion
-criteria for future tag work, but it is not authorization to implement.
+This checklist tracks Conversation Tags. The first vertical slice is now
+implemented; the remaining unchecked items describe future work, not current
+scope.
 
 ## Planning Package
 
@@ -28,19 +29,19 @@ criteria for future tag work, but it is not authorization to implement.
 - [x] Define implementation phases.
 - [x] Define completion checklist.
 - [x] Define future validation strategy.
-- [ ] Review package with user.
-- [ ] Decide whether Conversation Tags should enter active implementation.
+- [x] Review package with user.
+- [x] Decide whether Conversation Tags should enter active implementation.
 
 ## Phase 0: Product Decisions
 
-- [ ] Confirm first-slice scope.
-- [ ] Decide whether first version includes tag color.
-- [ ] Decide tag creation/editing entry point.
-- [ ] Decide whether tags appear on compact Conversation Cards.
+- [x] Confirm first-slice scope.
+- [x] Decide whether first version includes tag color.
+- [x] Decide tag creation/editing entry point.
+- [x] Decide whether tags appear on compact Conversation Cards.
 - [ ] Decide minimum deletion confirmation behavior.
 - [ ] Decide whether first version includes tag management surface.
-- [ ] Decide duplicate-name normalization behavior.
-- [ ] Decide whether tags support descriptions in the first slice.
+- [x] Decide duplicate-name normalization behavior.
+- [x] Decide whether tags support descriptions in the first slice.
 - [ ] Decide whether tag retrieval first appears in Browse, Structured
       Conversation Retrieval, or both.
 
@@ -50,22 +51,22 @@ criteria for future tag work, but it is not authorization to implement.
 - [x] Confirm stable Conversation identity is inherited from Conversation
       Intent.
 - [x] Confirm feature ownership is inherited from Conversation Intent.
-- [ ] Define tag-specific read-model display data.
-- [ ] Define how tags appear in Conversation display models.
+- [x] Define tag-specific read-model display data.
+- [x] Define how tags appear in Conversation display models.
 - [ ] Define how Structured Conversation Retrieval may consume tags without
       owning them.
-- [ ] Identify migration or compatibility concerns.
+- [x] Identify migration or compatibility concerns.
 
 ## Phase 2: Minimal Product Slice
 
 Candidate scope:
 
-- [ ] Create a tag.
+- [x] Create a tag.
 - [ ] Rename a tag.
 - [ ] Delete a tag.
-- [ ] Add a tag to a Conversation.
-- [ ] Remove a tag from a Conversation.
-- [ ] Show tags in at least one Conversation-owned surface.
+- [x] Add a tag to a Conversation.
+- [x] Remove a tag from a Conversation.
+- [x] Show tags in at least one Conversation-owned surface.
 - [ ] Filter or retrieve Conversations by a single tag, if included in the
       approved first slice.
 
@@ -99,9 +100,9 @@ Potential later work:
 
 Conversation Tags can be considered architecturally complete when:
 
-- [ ] Tags are stored as overlay/user intent, not graph projection.
-- [ ] Tags attach to stable Conversation identity.
-- [ ] A Conversation can have multiple tags.
+- [x] Tags are stored as overlay/user intent, not graph projection.
+- [x] Tags attach to stable Conversation identity.
+- [x] A Conversation can have multiple tags.
 - [ ] Tag state appears consistently wherever the Conversation appears.
 - [ ] Renaming a tag updates its presentation everywhere.
 - [ ] Deleting a tag has clear global semantics.

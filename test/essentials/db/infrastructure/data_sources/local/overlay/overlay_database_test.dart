@@ -153,6 +153,48 @@ void main() {
         contains('Virtual Person'),
       );
     });
+
+    test('migrates v6 schema by adding conversation tag tables', () async {
+      await db.close();
+
+      final tempDir = await Directory.systemTemp.createTemp(
+        'overlay_v6_conversation_tag_migration_test_',
+      );
+      final dbPath = appDatabasePath(
+        AppDatabaseFile.overlay,
+        databaseDirectory: tempDir.path,
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+      await existingDatabase.execute('''
+        CREATE TABLE message_user_tags (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          message_guid TEXT NOT NULL,
+          tag_display TEXT NOT NULL,
+          tag_normalized TEXT NOT NULL,
+          created_at_utc TEXT NOT NULL,
+          updated_at_utc TEXT NOT NULL
+        )
+      ''');
+      await existingDatabase.execute('PRAGMA user_version = 6');
+      await existingDatabase.close();
+
+      final migratedDatabase = OverlayDatabase(NativeDatabase(File(dbPath)));
+      addTearDown(migratedDatabase.close);
+
+      final tables = await migratedDatabase
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+          .get();
+      final tableNames = tables.map((row) => row.read<String>('name'));
+
+      expect(tableNames, contains('conversation_tags'));
+      expect(tableNames, contains('conversation_tag_assignments'));
+    });
   });
 
   group('HandleToParticipantOverrides', () {

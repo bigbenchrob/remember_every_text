@@ -2,9 +2,9 @@
 tier: project
 scope: feature-package
 owner: agent-per-project
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-12
 source_of_truth: draft
-status: consolidated-exploratory
+status: first-slice-implemented
 links:
   - ../05-CONVERSATION-INTENT-ARCHITECTURE/README.md
   - ../06-STRUCTURED-CONVERSATION-RETRIEVAL/README.md
@@ -33,8 +33,13 @@ Favourites, Tags, Working Sets, Suppressed state, Notes, and future
 user-confirmed classifications. Structured Conversation Retrieval owns the
 future retrieval grammar that may consume tags as tokens.
 
-This package is not an implementation task. It defines product and
-architectural direction only.
+This package defines product and architectural direction for Conversation Tags.
+The first vertical slice has been implemented: a Tag can be created and applied
+from a Conversation in the Conversations sidebar, persisted in overlay storage,
+merged into Conversation signature read models, and displayed quietly on the
+canonical Conversation card in that first surface. A first Structured
+Conversation Retrieval slice now consumes those existing Tags as retrieval
+tokens; retrieval does not own Tag definitions or assignments.
 
 ## Package Contents
 
@@ -47,6 +52,8 @@ architectural direction only.
 - [`IMPLEMENTATION_READINESS_AUDIT.md`](IMPLEMENTATION_READINESS_AUDIT.md) -
   repository-aware audit of current seams and the recommended first
   implementation slice.
+- [`FIRST_SLICE_IMPLEMENTATION_PLAN.md`](FIRST_SLICE_IMPLEMENTATION_PLAN.md) -
+  concrete vertical-slice plan for the first approved implementation pass.
 
 ## Governing Principles
 
@@ -60,6 +67,24 @@ architectural direction only.
 
 ## Status
 
-Consolidated exploratory feature specification. Do not implement until the tag
-product questions have been reviewed and an implementation plan is explicitly
-approved.
+First vertical slice implemented.
+
+Implemented scope:
+
+- first-class overlay tag definitions and Conversation tag assignments;
+- Conversation-owned repository, read providers, and action provider;
+- tag display data merged into `ConversationSignatureDisplayModel`;
+- provider-free `ConversationSignatureCard` support for supplied tag labels;
+- Conversation-sidebar tag affordance for create/apply/remove;
+- tests for overlay migration, repository behavior, action invalidation,
+  read-model merge, and provider-free card rendering.
+- first Structured Conversation Retrieval consumer: known Tags can be accepted
+  as tokens that filter the Conversations Browse list with AND semantics.
+
+Still outside the implemented slice:
+
+- additional Structured Conversation Retrieval token types;
+- Tag Manager / cleanup surface;
+- tag colors, descriptions, ordering, merge, import/export, sync, AI-assisted
+  suggestions, Working Set integration, Notes integration, and broad
+  cross-surface tag display.

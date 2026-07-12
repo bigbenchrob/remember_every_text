@@ -2,9 +2,9 @@
 tier: project
 scope: feature-package
 owner: agent-per-project
-last_reviewed: 2026-07-11
+last_reviewed: 2026-07-12
 source_of_truth: draft
-status: exploratory
+status: first-slice-implemented
 links:
   - ./seed.md
   - ./PROPOSAL.md
@@ -70,5 +70,23 @@ Conversations feature.
 
 ## Status
 
-Exploratory. Do not implement until this package has been reviewed and an
-implementation slice has been explicitly approved.
+First vertical slice implemented.
+
+Implemented scope:
+
+- the Conversations sidebar Browse field now retrieves by known Tag tokens
+  rather than free text;
+- typing a partial tag name suggests matching existing Tags;
+- accepting a suggestion converts it into a visible Tag token;
+- multiple selected Tag tokens combine with simple AND semantics;
+- selected Tag tokens filter the Conversation list through the Conversation
+  signature read model;
+- Organize by / Conversation Lenses remain independent of retrieval.
+
+Still outside the implemented slice:
+
+- Contact, Favourite, Working Set, visibility, Notes, AI, or free-text tokens;
+- Boolean syntax, OR/NOT logic, saved retrievals, history, or retrieval
+  persistence;
+- message-content search. All Messages Search remains the message-content
+  retrieval system.
