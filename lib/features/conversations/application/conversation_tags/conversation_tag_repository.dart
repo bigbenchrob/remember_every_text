@@ -17,4 +17,9 @@ abstract class ConversationTagRepository {
   Future<void> assignTag({required int conversationId, required int tagId});
 
   Future<void> removeTag({required int conversationId, required int tagId});
+
+  Future<void> setTagVisibilityPolicy({
+    required int tagId,
+    required ConversationTagVisibilityPolicy visibilityPolicy,
+  });
 }

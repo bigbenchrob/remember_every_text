@@ -149,6 +149,26 @@ class OverlayConversationTagRepository implements ConversationTagRepository {
         .go();
   }
 
+  @override
+  Future<void> setTagVisibilityPolicy({
+    required int tagId,
+    required ConversationTagVisibilityPolicy visibilityPolicy,
+  }) async {
+    if (tagId <= 0) {
+      return;
+    }
+    final now = DateTime.now().toUtc().toIso8601String();
+    await (_database.update(_database.conversationTags)..where((tbl) {
+          return tbl.id.equals(tagId);
+        }))
+        .write(
+          ConversationTagsCompanion(
+            visibilityPolicy: Value(visibilityPolicy.storageValue),
+            updatedAtUtc: Value(now),
+          ),
+        );
+  }
+
   Future<ConversationTag?> _readTagByNormalizedName(String normalizedName) {
     return (_database.select(_database.conversationTags)..where((tbl) {
           return tbl.normalizedName.equals(normalizedName);
@@ -161,6 +181,9 @@ class OverlayConversationTagRepository implements ConversationTagRepository {
       id: row.id,
       displayName: row.displayName,
       normalizedName: row.normalizedName,
+      visibilityPolicy: parseConversationTagVisibilityPolicy(
+        row.visibilityPolicy,
+      ),
     );
   }
 }

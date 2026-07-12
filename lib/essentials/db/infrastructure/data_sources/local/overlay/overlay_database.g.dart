@@ -4837,6 +4837,18 @@ class $ConversationTagsTable extends ConversationTags
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _visibilityPolicyMeta = const VerificationMeta(
+    'visibilityPolicy',
+  );
+  @override
+  late final GeneratedColumn<String> visibilityPolicy = GeneratedColumn<String>(
+    'visibility_policy',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('ordinary'),
+  );
   static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
     'createdAtUtc',
   );
@@ -4864,6 +4876,7 @@ class $ConversationTagsTable extends ConversationTags
     id,
     displayName,
     normalizedName,
+    visibilityPolicy,
     createdAtUtc,
     updatedAtUtc,
   ];
@@ -4903,6 +4916,15 @@ class $ConversationTagsTable extends ConversationTags
       );
     } else if (isInserting) {
       context.missing(_normalizedNameMeta);
+    }
+    if (data.containsKey('visibility_policy')) {
+      context.handle(
+        _visibilityPolicyMeta,
+        visibilityPolicy.isAcceptableOrUnknown(
+          data['visibility_policy']!,
+          _visibilityPolicyMeta,
+        ),
+      );
     }
     if (data.containsKey('created_at_utc')) {
       context.handle(
@@ -4951,6 +4973,10 @@ class $ConversationTagsTable extends ConversationTags
         DriftSqlType.string,
         data['${effectivePrefix}normalized_name'],
       )!,
+      visibilityPolicy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visibility_policy'],
+      )!,
       createdAtUtc: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}created_at_utc'],
@@ -4972,12 +4998,14 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
   final int id;
   final String displayName;
   final String normalizedName;
+  final String visibilityPolicy;
   final String createdAtUtc;
   final String updatedAtUtc;
   const ConversationTag({
     required this.id,
     required this.displayName,
     required this.normalizedName,
+    required this.visibilityPolicy,
     required this.createdAtUtc,
     required this.updatedAtUtc,
   });
@@ -4987,6 +5015,7 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
     map['id'] = Variable<int>(id);
     map['display_name'] = Variable<String>(displayName);
     map['normalized_name'] = Variable<String>(normalizedName);
+    map['visibility_policy'] = Variable<String>(visibilityPolicy);
     map['created_at_utc'] = Variable<String>(createdAtUtc);
     map['updated_at_utc'] = Variable<String>(updatedAtUtc);
     return map;
@@ -4997,6 +5026,7 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
       id: Value(id),
       displayName: Value(displayName),
       normalizedName: Value(normalizedName),
+      visibilityPolicy: Value(visibilityPolicy),
       createdAtUtc: Value(createdAtUtc),
       updatedAtUtc: Value(updatedAtUtc),
     );
@@ -5011,6 +5041,7 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
       id: serializer.fromJson<int>(json['id']),
       displayName: serializer.fromJson<String>(json['displayName']),
       normalizedName: serializer.fromJson<String>(json['normalizedName']),
+      visibilityPolicy: serializer.fromJson<String>(json['visibilityPolicy']),
       createdAtUtc: serializer.fromJson<String>(json['createdAtUtc']),
       updatedAtUtc: serializer.fromJson<String>(json['updatedAtUtc']),
     );
@@ -5022,6 +5053,7 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
       'id': serializer.toJson<int>(id),
       'displayName': serializer.toJson<String>(displayName),
       'normalizedName': serializer.toJson<String>(normalizedName),
+      'visibilityPolicy': serializer.toJson<String>(visibilityPolicy),
       'createdAtUtc': serializer.toJson<String>(createdAtUtc),
       'updatedAtUtc': serializer.toJson<String>(updatedAtUtc),
     };
@@ -5031,12 +5063,14 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
     int? id,
     String? displayName,
     String? normalizedName,
+    String? visibilityPolicy,
     String? createdAtUtc,
     String? updatedAtUtc,
   }) => ConversationTag(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
     normalizedName: normalizedName ?? this.normalizedName,
+    visibilityPolicy: visibilityPolicy ?? this.visibilityPolicy,
     createdAtUtc: createdAtUtc ?? this.createdAtUtc,
     updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
   );
@@ -5049,6 +5083,9 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
       normalizedName: data.normalizedName.present
           ? data.normalizedName.value
           : this.normalizedName,
+      visibilityPolicy: data.visibilityPolicy.present
+          ? data.visibilityPolicy.value
+          : this.visibilityPolicy,
       createdAtUtc: data.createdAtUtc.present
           ? data.createdAtUtc.value
           : this.createdAtUtc,
@@ -5064,6 +5101,7 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
           ..write('id: $id, ')
           ..write('displayName: $displayName, ')
           ..write('normalizedName: $normalizedName, ')
+          ..write('visibilityPolicy: $visibilityPolicy, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
           ..write(')'))
@@ -5071,8 +5109,14 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, displayName, normalizedName, createdAtUtc, updatedAtUtc);
+  int get hashCode => Object.hash(
+    id,
+    displayName,
+    normalizedName,
+    visibilityPolicy,
+    createdAtUtc,
+    updatedAtUtc,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5080,6 +5124,7 @@ class ConversationTag extends DataClass implements Insertable<ConversationTag> {
           other.id == this.id &&
           other.displayName == this.displayName &&
           other.normalizedName == this.normalizedName &&
+          other.visibilityPolicy == this.visibilityPolicy &&
           other.createdAtUtc == this.createdAtUtc &&
           other.updatedAtUtc == this.updatedAtUtc);
 }
@@ -5088,12 +5133,14 @@ class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
   final Value<int> id;
   final Value<String> displayName;
   final Value<String> normalizedName;
+  final Value<String> visibilityPolicy;
   final Value<String> createdAtUtc;
   final Value<String> updatedAtUtc;
   const ConversationTagsCompanion({
     this.id = const Value.absent(),
     this.displayName = const Value.absent(),
     this.normalizedName = const Value.absent(),
+    this.visibilityPolicy = const Value.absent(),
     this.createdAtUtc = const Value.absent(),
     this.updatedAtUtc = const Value.absent(),
   });
@@ -5101,6 +5148,7 @@ class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
     this.id = const Value.absent(),
     required String displayName,
     required String normalizedName,
+    this.visibilityPolicy = const Value.absent(),
     required String createdAtUtc,
     required String updatedAtUtc,
   }) : displayName = Value(displayName),
@@ -5111,6 +5159,7 @@ class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
     Expression<int>? id,
     Expression<String>? displayName,
     Expression<String>? normalizedName,
+    Expression<String>? visibilityPolicy,
     Expression<String>? createdAtUtc,
     Expression<String>? updatedAtUtc,
   }) {
@@ -5118,6 +5167,7 @@ class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
       if (id != null) 'id': id,
       if (displayName != null) 'display_name': displayName,
       if (normalizedName != null) 'normalized_name': normalizedName,
+      if (visibilityPolicy != null) 'visibility_policy': visibilityPolicy,
       if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
       if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
     });
@@ -5127,6 +5177,7 @@ class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
     Value<int>? id,
     Value<String>? displayName,
     Value<String>? normalizedName,
+    Value<String>? visibilityPolicy,
     Value<String>? createdAtUtc,
     Value<String>? updatedAtUtc,
   }) {
@@ -5134,6 +5185,7 @@ class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
       id: id ?? this.id,
       displayName: displayName ?? this.displayName,
       normalizedName: normalizedName ?? this.normalizedName,
+      visibilityPolicy: visibilityPolicy ?? this.visibilityPolicy,
       createdAtUtc: createdAtUtc ?? this.createdAtUtc,
       updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
     );
@@ -5151,6 +5203,9 @@ class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
     if (normalizedName.present) {
       map['normalized_name'] = Variable<String>(normalizedName.value);
     }
+    if (visibilityPolicy.present) {
+      map['visibility_policy'] = Variable<String>(visibilityPolicy.value);
+    }
     if (createdAtUtc.present) {
       map['created_at_utc'] = Variable<String>(createdAtUtc.value);
     }
@@ -5166,6 +5221,7 @@ class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
           ..write('id: $id, ')
           ..write('displayName: $displayName, ')
           ..write('normalizedName: $normalizedName, ')
+          ..write('visibilityPolicy: $visibilityPolicy, ')
           ..write('createdAtUtc: $createdAtUtc, ')
           ..write('updatedAtUtc: $updatedAtUtc')
           ..write(')'))
@@ -8224,6 +8280,7 @@ typedef $$ConversationTagsTableCreateCompanionBuilder =
       Value<int> id,
       required String displayName,
       required String normalizedName,
+      Value<String> visibilityPolicy,
       required String createdAtUtc,
       required String updatedAtUtc,
     });
@@ -8232,6 +8289,7 @@ typedef $$ConversationTagsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> displayName,
       Value<String> normalizedName,
+      Value<String> visibilityPolicy,
       Value<String> createdAtUtc,
       Value<String> updatedAtUtc,
     });
@@ -8257,6 +8315,11 @@ class $$ConversationTagsTableFilterComposer
 
   ColumnFilters<String> get normalizedName => $composableBuilder(
     column: $table.normalizedName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get visibilityPolicy => $composableBuilder(
+    column: $table.visibilityPolicy,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8295,6 +8358,11 @@ class $$ConversationTagsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get visibilityPolicy => $composableBuilder(
+    column: $table.visibilityPolicy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get createdAtUtc => $composableBuilder(
     column: $table.createdAtUtc,
     builder: (column) => ColumnOrderings(column),
@@ -8325,6 +8393,11 @@ class $$ConversationTagsTableAnnotationComposer
 
   GeneratedColumn<String> get normalizedName => $composableBuilder(
     column: $table.normalizedName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get visibilityPolicy => $composableBuilder(
+    column: $table.visibilityPolicy,
     builder: (column) => column,
   );
 
@@ -8379,12 +8452,14 @@ class $$ConversationTagsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> displayName = const Value.absent(),
                 Value<String> normalizedName = const Value.absent(),
+                Value<String> visibilityPolicy = const Value.absent(),
                 Value<String> createdAtUtc = const Value.absent(),
                 Value<String> updatedAtUtc = const Value.absent(),
               }) => ConversationTagsCompanion(
                 id: id,
                 displayName: displayName,
                 normalizedName: normalizedName,
+                visibilityPolicy: visibilityPolicy,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
               ),
@@ -8393,12 +8468,14 @@ class $$ConversationTagsTableTableManager
                 Value<int> id = const Value.absent(),
                 required String displayName,
                 required String normalizedName,
+                Value<String> visibilityPolicy = const Value.absent(),
                 required String createdAtUtc,
                 required String updatedAtUtc,
               }) => ConversationTagsCompanion.insert(
                 id: id,
                 displayName: displayName,
                 normalizedName: normalizedName,
+                visibilityPolicy: visibilityPolicy,
                 createdAtUtc: createdAtUtc,
                 updatedAtUtc: updatedAtUtc,
               ),

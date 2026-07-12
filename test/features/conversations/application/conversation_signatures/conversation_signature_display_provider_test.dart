@@ -292,6 +292,81 @@ void main() {
     },
   );
 
+  test(
+    'suppresses tagged conversations from default browse but not explicit tag retrieval',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          conversationSignaturesProvider(limit: 500).overrideWith((ref) async {
+            return const [
+              ConversationSignature(
+                conversationId: 1,
+                title: 'family',
+                participantLabels: ['+15551'],
+                participantCount: 1,
+                isGroup: false,
+                messageCount: 20,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-05-01T10:00:00.000Z',
+                lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+                lastMessageText: 'hello',
+                activityMonths: [],
+              ),
+              ConversationSignature(
+                conversationId: 2,
+                title: '2fa',
+                participantLabels: ['+15552'],
+                participantCount: 1,
+                isGroup: false,
+                messageCount: 30,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-04-01T10:00:00.000Z',
+                lastMessageAtUtc: '2026-05-21T10:00:00.000Z',
+                lastMessageText: 'code',
+                activityMonths: [],
+              ),
+            ];
+          }),
+          displayIdentityResolverProvider.overrideWith((ref) async {
+            return const DisplayIdentityResolver(identitiesByHandleKey: {});
+          }),
+          conversationTagRepositoryProvider.overrideWith((ref) async {
+            return const _FakeConversationTagRepository(
+              tagsByConversationId: {
+                2: [
+                  ConversationTagDisplay(
+                    id: 20,
+                    displayName: '2FA',
+                    normalizedName: '2fa',
+                    visibilityPolicy:
+                        ConversationTagVisibilityPolicy.suppressFromBrowse,
+                  ),
+                ],
+              },
+            );
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final defaultBrowse = await container.read(
+        conversationSignatureDisplayProvider().future,
+      );
+      expect(defaultBrowse.map((signature) => signature.conversationId), [1]);
+
+      final explicitRetrieval = await container.read(
+        conversationSignatureDisplayProvider(
+          selectedTags: ConversationSignatureSelectedTagsRequest(
+            tagIds: const [20],
+          ),
+        ).future,
+      );
+      expect(explicitRetrieval.map((signature) => signature.conversationId), [
+        2,
+      ]);
+    },
+  );
+
   test('applies revised conversation sort semantics', () async {
     final container = ProviderContainer(
       overrides: [
@@ -513,6 +588,14 @@ class _FakeConversationTagRepository implements ConversationTagRepository {
 
   @override
   Future<void> removeTag({required int conversationId, required int tagId}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> setTagVisibilityPolicy({
+    required int tagId,
+    required ConversationTagVisibilityPolicy visibilityPolicy,
+  }) {
     throw UnimplementedError();
   }
 }

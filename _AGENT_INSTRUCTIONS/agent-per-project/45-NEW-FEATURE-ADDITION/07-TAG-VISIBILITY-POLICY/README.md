@@ -3,8 +3,8 @@ tier: project
 scope: feature-package
 owner: agent-per-project
 last_reviewed: 2026-07-12
-source_of_truth: draft
-status: exploratory
+source_of_truth: canonical
+status: first-slice-implemented
 links:
   - ../04-CONVERSATION-TAGS/README.md
   - ../04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/08-tag-visibility-policy.md
@@ -48,9 +48,9 @@ Tag Visibility Policy extends Tag definitions with browsing/discovery behavior.
 It does not replace Tags, Favourites, Working Sets, or Structured Conversation
 Retrieval.
 
-The first implementation should be narrow: prove that a Tag can carry a
-visibility policy and that ordinary Conversation Browse excludes Conversations
-with suppressing Tags while explicit retrieval by that Tag still finds them.
+The first implementation is narrow: a Tag can carry a visibility policy,
+ordinary Conversation Browse excludes Conversations with suppressing Tags, and
+explicit retrieval by that Tag still finds them.
 
 ## Governing Principles
 
@@ -65,8 +65,20 @@ with suppressing Tags while explicit retrieval by that Tag still finds them.
 - A generic hidden/suppressed system Tag may exist for one-off hiding, but the
   preferred model is semantic classification first.
 
-## Status
+## Implemented First Slice
 
-Exploratory package created from the approved open-question evaluation.
+Implemented on 2026-07-12:
 
-No implementation has begun in this package.
+- Tag definitions persist a visibility policy in overlay storage.
+- Existing and newly created Tags default to ordinary visibility.
+- The existing Conversation Tag editor can mark a Tag as suppressed from Browse
+  or return it to ordinary visibility.
+- Conversation read models merge Tag visibility policy at read time.
+- Default Conversations Browse excludes Conversations carrying a suppressing
+  Tag.
+- Explicit Structured Conversation Retrieval by that Tag still returns matching
+  Conversations.
+
+The implementation deliberately does not include a Tag Manager, Tag colors,
+bulk policy editing, AI suggestions, message filtering, or a generic
+Conversation-level hidden flag.

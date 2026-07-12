@@ -763,3 +763,43 @@ Structured Conversation Retrieval by Tag still returns those Conversations.
 - Decide final user-facing language for the visibility action: for example,
   "Suppress from Browse", "Hide Conversations with this Tag", or "Show only
   when requested".
+
+---
+
+# Tag Visibility Policy First Slice
+
+Date: 2026-07-12
+
+Scope: Implemented and documented the first Tag Visibility Policy vertical
+slice.
+
+## Summary
+
+Conversation Tag definitions now carry an overlay-owned visibility policy.
+Tags default to ordinary visibility, can be marked as suppressing ordinary
+Browse from the existing Conversation Tag editor, and are merged into
+Conversation read models at read time. Default Conversations Browse excludes
+Conversations carrying suppressing Tags, while explicit Structured Conversation
+Retrieval by that Tag still returns them.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/README.md` | Marked the first slice implemented and summarized actual behavior. | Keeps the package entry point current. |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/PROPOSAL.md` | Recorded the implemented first-slice shape. | Distinguishes approved architecture from deferred feature expansion. |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/DESIGN_NOTES.md` | Added implemented first-slice answers. | Captures the current UI and behavior without closing future wording questions. |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/CHECKLIST.md` | Checked off completed first-slice items. | Tracks implementation progress. |
+| `45-NEW-FEATURE-ADDITION/07-TAG-VISIBILITY-POLICY/TESTS.md` | Added implemented focused verification coverage. | Records how the slice is validated. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation traceability. |
+
+## Verification
+
+- `flutter test test/essentials/db/infrastructure/data_sources/local/overlay/overlay_database_test.dart test/features/conversations/infrastructure/repositories/overlay_conversation_tag_repository_test.dart test/features/conversations/application/conversation_tags/conversation_tag_actions_provider_test.dart test/features/conversations/application/conversation_signatures/conversation_signature_display_provider_test.dart test/features/conversations/application/conversation_retrieval/conversation_retrieval_tag_token_test.dart test/features/conversations/presentation/widgets/conversation_signature_card_test.dart --reporter compact`
+- `flutter analyze`
+
+## Needs Verification / Human Review
+
+- Manual app verification: mark a low-value Tag as suppressed from Browse,
+  confirm default Browse excludes matching Conversations, then retrieve that
+  Tag explicitly and confirm the Conversations return.

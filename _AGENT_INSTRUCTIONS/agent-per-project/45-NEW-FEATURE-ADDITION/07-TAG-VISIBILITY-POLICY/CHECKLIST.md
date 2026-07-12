@@ -3,8 +3,8 @@ tier: project
 scope: implementation-checklist
 owner: agent-per-project
 last_reviewed: 2026-07-12
-source_of_truth: draft
-status: exploratory
+source_of_truth: canonical
+status: first-slice-implemented
 links:
   - ./README.md
   - ./PROPOSAL.md
@@ -18,24 +18,25 @@ links:
 
 - [x] Seed decision establishes visibility as Tag definition policy.
 - [x] Package created from the approved seed.
-- [ ] Confirm whether the first implementation requires a dedicated
-  implementation readiness audit.
-- [ ] Confirm final first-slice scope before code changes.
+- [x] Confirm whether the first implementation requires a dedicated
+  implementation readiness audit. The first slice was small enough to proceed
+  from the approved package.
+- [x] Confirm final first-slice scope before code changes.
 
 ## Phase 1 - First Vertical Slice
 
-- [ ] Extend Tag definition read/write model with a visibility policy.
-- [ ] Persist visibility policy in overlay/user-intent storage.
-- [ ] Keep graph projection unchanged.
-- [ ] Add Conversation-owned action for updating a Tag visibility policy.
-- [ ] Merge Tag visibility into Conversation read models at read time.
-- [ ] Exclude Conversations carrying suppressing Tags from default
+- [x] Extend Tag definition read/write model with a visibility policy.
+- [x] Persist visibility policy in overlay/user-intent storage.
+- [x] Keep graph projection unchanged.
+- [x] Add Conversation-owned action for updating a Tag visibility policy.
+- [x] Merge Tag visibility into Conversation read models at read time.
+- [x] Exclude Conversations carrying suppressing Tags from default
   Conversations Browse.
-- [ ] Ensure explicit Tag-token retrieval still includes matching suppressed
+- [x] Ensure explicit Tag-token retrieval still includes matching suppressed
   Conversations.
-- [ ] Provide a minimal UI affordance to mark/unmark a Tag as suppressed from
+- [x] Provide a minimal UI affordance to mark/unmark a Tag as suppressed from
   ordinary Browse.
-- [ ] Keep Conversation Cards pure presentation.
+- [x] Keep Conversation Cards pure presentation.
 
 ## Phase 2 - Cross-Surface Policy Clarification
 

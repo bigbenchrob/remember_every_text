@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../domain/conversation_tags/conversation_tag_display.dart';
 import '../conversation_signatures/conversation_signature_display_provider.dart';
 import 'conversation_tag_repository_provider.dart';
 import 'conversation_tags_provider.dart';
@@ -40,6 +41,18 @@ class ConversationTagActions extends _$ConversationTagActions {
   }) async {
     final repository = await ref.read(conversationTagRepositoryProvider.future);
     await repository.removeTag(conversationId: conversationId, tagId: tagId);
+    _invalidateConversationTagReads();
+  }
+
+  Future<void> setTagVisibilityPolicy({
+    required int tagId,
+    required ConversationTagVisibilityPolicy visibilityPolicy,
+  }) async {
+    final repository = await ref.read(conversationTagRepositoryProvider.future);
+    await repository.setTagVisibilityPolicy(
+      tagId: tagId,
+      visibilityPolicy: visibilityPolicy,
+    );
     _invalidateConversationTagReads();
   }
 

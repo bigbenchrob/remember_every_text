@@ -155,6 +155,7 @@ class _ConversationTagEditorSheetState
                     onCreate: _createAndAssignTag,
                     onAssign: _assignTag,
                     onRemove: _removeTag,
+                    onSetVisibilityPolicy: _setVisibilityPolicy,
                   );
                 },
                 loading: () => const Center(child: ProgressCircle()),
@@ -205,6 +206,20 @@ class _ConversationTagEditorSheetState
     });
   }
 
+  Future<void> _setVisibilityPolicy(
+    ConversationTagDisplay tag,
+    ConversationTagVisibilityPolicy visibilityPolicy,
+  ) async {
+    await _runAction(() async {
+      await ref
+          .read(conversationTagActionsProvider.notifier)
+          .setTagVisibilityPolicy(
+            tagId: tag.id,
+            visibilityPolicy: visibilityPolicy,
+          );
+    });
+  }
+
   Future<void> _runAction(Future<void> Function() action) async {
     if (_isBusy) {
       return;
@@ -245,6 +260,7 @@ class _ConversationTagEditorContent extends StatelessWidget {
     required this.onCreate,
     required this.onAssign,
     required this.onRemove,
+    required this.onSetVisibilityPolicy,
   });
 
   final List<ConversationTagDisplay> allTags;
@@ -257,6 +273,11 @@ class _ConversationTagEditorContent extends StatelessWidget {
   final Future<void> Function() onCreate;
   final Future<void> Function(ConversationTagDisplay tag) onAssign;
   final Future<void> Function(ConversationTagDisplay tag) onRemove;
+  final Future<void> Function(
+    ConversationTagDisplay tag,
+    ConversationTagVisibilityPolicy visibilityPolicy,
+  )
+  onSetVisibilityPolicy;
 
   @override
   Widget build(BuildContext context) {
@@ -300,6 +321,12 @@ class _ConversationTagEditorContent extends StatelessWidget {
                   colors: colors,
                   typography: typography,
                   onRemove: isBusy ? null : () => onRemove(tag),
+                  onVisibilityToggle: isBusy
+                      ? null
+                      : () => onSetVisibilityPolicy(
+                          tag,
+                          _toggledVisibilityPolicy(tag),
+                        ),
                 ),
             ],
           ),
@@ -361,6 +388,12 @@ class _ConversationTagEditorContent extends StatelessWidget {
                         colors: colors,
                         typography: typography,
                         onTap: isBusy ? null : () async => onAssign(tag),
+                        onVisibilityToggle: isBusy
+                            ? null
+                            : () => onSetVisibilityPolicy(
+                                tag,
+                                _toggledVisibilityPolicy(tag),
+                              ),
                       );
                     },
                   ),
@@ -381,6 +414,15 @@ class _ConversationTagEditorContent extends StatelessWidget {
       ],
     );
   }
+
+  ConversationTagVisibilityPolicy _toggledVisibilityPolicy(
+    ConversationTagDisplay tag,
+  ) {
+    if (tag.visibilityPolicy.suppressesOrdinaryBrowse) {
+      return ConversationTagVisibilityPolicy.ordinary;
+    }
+    return ConversationTagVisibilityPolicy.suppressFromBrowse;
+  }
 }
 
 class _AppliedConversationTagChip extends StatelessWidget {
@@ -389,12 +431,14 @@ class _AppliedConversationTagChip extends StatelessWidget {
     required this.colors,
     required this.typography,
     required this.onRemove,
+    required this.onVisibilityToggle,
   });
 
   final ConversationTagDisplay tag;
   final ThemeColors colors;
   final ThemeTypography typography;
   final VoidCallback? onRemove;
+  final VoidCallback? onVisibilityToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -412,7 +456,35 @@ class _AppliedConversationTagChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(tag.displayName, style: typography.caption),
+            if (tag.visibilityPolicy.suppressesOrdinaryBrowse) ...[
+              const SizedBox(width: 4),
+              Text(
+                'suppressed',
+                style: typography.caption.copyWith(
+                  color: colors.content.textTertiary,
+                ),
+              ),
+            ],
             const SizedBox(width: 3),
+            Tooltip(
+              message: tag.visibilityPolicy.suppressesOrdinaryBrowse
+                  ? 'Include this tag in Browse'
+                  : 'Suppress this tag from Browse',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onVisibilityToggle,
+                child: Icon(
+                  tag.visibilityPolicy.suppressesOrdinaryBrowse
+                      ? CupertinoIcons.eye_slash
+                      : CupertinoIcons.eye,
+                  size: 12,
+                  color: onVisibilityToggle == null
+                      ? colors.content.textDisabled
+                      : colors.content.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: onRemove,
@@ -437,12 +509,14 @@ class _AvailableConversationTagRow extends StatelessWidget {
     required this.colors,
     required this.typography,
     required this.onTap,
+    required this.onVisibilityToggle,
   });
 
   final ConversationTagDisplay tag;
   final ThemeColors colors;
   final ThemeTypography typography;
   final VoidCallback? onTap;
+  final VoidCallback? onVisibilityToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -465,6 +539,34 @@ class _AvailableConversationTagRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: typography.callout,
+              ),
+            ),
+            if (tag.visibilityPolicy.suppressesOrdinaryBrowse)
+              Padding(
+                padding: const EdgeInsets.only(right: AppSpacing.sm),
+                child: Text(
+                  'suppressed',
+                  style: typography.caption.copyWith(
+                    color: colors.content.textTertiary,
+                  ),
+                ),
+              ),
+            Tooltip(
+              message: tag.visibilityPolicy.suppressesOrdinaryBrowse
+                  ? 'Include this tag in Browse'
+                  : 'Suppress this tag from Browse',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onVisibilityToggle,
+                child: Icon(
+                  tag.visibilityPolicy.suppressesOrdinaryBrowse
+                      ? CupertinoIcons.eye_slash
+                      : CupertinoIcons.eye,
+                  size: 13,
+                  color: onVisibilityToggle == null
+                      ? colors.content.textDisabled
+                      : colors.content.iconSecondary,
+                ),
               ),
             ),
           ],

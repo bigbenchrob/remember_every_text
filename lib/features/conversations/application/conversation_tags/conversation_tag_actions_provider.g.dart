@@ -7,7 +7,7 @@ part of 'conversation_tag_actions_provider.dart';
 // **************************************************************************
 
 String _$conversationTagActionsHash() =>
-    r'7044f48590fb4c809290ab47d17864af1a699516';
+    r'1fb0f6d6184d8159de4d28fa99505d7fee1adf64';
 
 /// See also [ConversationTagActions].
 @ProviderFor(ConversationTagActions)

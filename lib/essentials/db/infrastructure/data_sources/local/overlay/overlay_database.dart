@@ -31,7 +31,7 @@ class OverlayDatabase extends _$OverlayDatabase {
   OverlayDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,6 +60,9 @@ class OverlayDatabase extends _$OverlayDatabase {
       if (from < 7) {
         await m.createTable(conversationTags);
         await m.createTable(conversationTagAssignments);
+      }
+      if (from >= 7 && from < 8) {
+        await m.addColumn(conversationTags, conversationTags.visibilityPolicy);
       }
       await _createOverlayIndexes();
     },
@@ -1264,6 +1267,10 @@ class ConversationTags extends Table {
   TextColumn get displayName => text().named('display_name')();
 
   TextColumn get normalizedName => text().named('normalized_name')();
+
+  TextColumn get visibilityPolicy => text()
+      .named('visibility_policy')
+      .withDefault(const Constant('ordinary'))();
 
   TextColumn get createdAtUtc => text().named('created_at_utc')();
   TextColumn get updatedAtUtc => text().named('updated_at_utc')();

@@ -3,8 +3,8 @@ tier: project
 scope: design-notes
 owner: agent-per-project
 last_reviewed: 2026-07-12
-source_of_truth: draft
-status: exploratory
+source_of_truth: canonical
+status: first-slice-implemented
 links:
   - ./README.md
   - ./PROPOSAL.md
@@ -146,14 +146,14 @@ enter the set; lenses decide how that set is emphasized.
 
 ## First-Slice UI Candidate
 
-A minimal first slice could add a Tag-level action near the existing Tag
+A minimal first slice adds a Tag-level action near the existing Tag
 creation/application affordance:
 
 - "Suppress this Tag from Browse"
 - "Include this Tag in Browse"
 
-This can be refined later. The first slice should prove the behavior, not
-finalize every management workflow.
+The implemented wording and icon treatment may be refined later. The first
+slice proves the behavior without finalizing every management workflow.
 
 ## Open Design Questions
 
@@ -166,3 +166,13 @@ finalize every management workflow.
   add noise?
 - Should Contact-scoped Conversation lists respect suppression by default, or
   does explicit Contact context imply inclusion?
+
+## Implemented First-Slice Answers
+
+- The first implementation exposes visibility in the existing Conversation Tag
+  editor rather than adding a Tag Manager.
+- Suppressing a Tag affects ordinary Conversations Browse.
+- Explicit Tag-token retrieval includes matching Conversations even when the
+  selected Tag normally suppresses ordinary Browse.
+- Conversation Cards remain focused on identity. Suppression state is edited
+  where Tags are edited, not made dominant on every card surface.

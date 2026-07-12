@@ -3,8 +3,8 @@ tier: project
 scope: validation-strategy
 owner: agent-per-project
 last_reviewed: 2026-07-12
-source_of_truth: draft
-status: exploratory
+source_of_truth: canonical
+status: first-slice-implemented
 links:
   - ./README.md
   - ./PROPOSAL.md
@@ -13,31 +13,37 @@ links:
 
 # Tag Visibility Policy Tests
 
-This document outlines the validation strategy for future implementation. No
-tests have been implemented for this package yet.
+This document records the validation strategy and implemented first-slice test
+coverage.
 
 ## Repository / Persistence Tests
 
-Future tests should prove:
+Implemented tests prove:
 
 - Tag definitions can persist a visibility policy.
 - Existing Tags without explicit policy default to ordinary visibility.
 - Updating visibility policy does not alter Tag assignments.
+
+Future tests should also prove:
+
 - Deleting a Tag removes both assignment and policy state according to the Tag
   deletion rules.
 - Overlay remains the only persistence owner.
 
 ## Read-Model Tests
 
-Future tests should prove:
+Implemented tests prove:
 
 - Conversation read models merge Tag visibility policy at read time.
 - Default Conversations Browse excludes Conversations with suppressing Tags.
-- Multiple Tags are handled correctly when at least one Tag suppresses default
-  Browse.
 - Explicit Tag-token retrieval includes Conversations carrying the selected
   Tag, even if the Tag is suppressing.
 - Organize By / Conversation Lenses remain independent of visibility policy.
+
+Future tests should also prove:
+
+- Multiple Tags are handled correctly when at least one Tag suppresses default
+  Browse.
 
 ## UI / Widget Tests
 
@@ -81,3 +87,15 @@ The first implementation should be manually verified with this workflow:
 - Contact/Search explicit contexts accidentally hide matching Conversations.
 - Visibility policy leaks into graph projection.
 - Tag retrieval starts behaving like message-content search.
+
+## Implemented Focused Verification
+
+As of 2026-07-12, the focused verification set includes:
+
+- overlay migration from schema v7 to v8 adds Tag visibility policy;
+- overlay Tag repository persists Tag visibility policy;
+- Conversation Tag actions update visibility policy through the repository;
+- Conversation signature display suppresses default Browse results while
+  preserving explicit Tag-token retrieval;
+- existing Tag-token retrieval and pure Conversation card presentation tests
+  still pass.

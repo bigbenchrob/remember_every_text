@@ -40,6 +40,21 @@ void main() {
       ))[42]!.map((tag) => tag.displayName),
       ['Family'],
     );
+
+    final tag = (await container.read(conversationTagsProvider.future)).single;
+    await container
+        .read(conversationTagActionsProvider.notifier)
+        .setTagVisibilityPolicy(
+          tagId: tag.id,
+          visibilityPolicy: ConversationTagVisibilityPolicy.suppressFromBrowse,
+        );
+
+    expect(
+      (await container.read(
+        conversationTagsProvider.future,
+      )).single.visibilityPolicy,
+      ConversationTagVisibilityPolicy.suppressFromBrowse,
+    );
   });
 }
 
@@ -106,6 +121,26 @@ class _MutableConversationTagRepository implements ConversationTagRepository {
     required int tagId,
   }) async {
     _assignments[conversationId]?.remove(tagId);
+  }
+
+  @override
+  Future<void> setTagVisibilityPolicy({
+    required int tagId,
+    required ConversationTagVisibilityPolicy visibilityPolicy,
+  }) async {
+    final index = _tags.indexWhere((tag) {
+      return tag.id == tagId;
+    });
+    if (index < 0) {
+      return;
+    }
+    final tag = _tags[index];
+    _tags[index] = ConversationTagDisplay(
+      id: tag.id,
+      displayName: tag.displayName,
+      normalizedName: tag.normalizedName,
+      visibilityPolicy: visibilityPolicy,
+    );
   }
 
   ConversationTagDisplay? _tagById(int tagId) {

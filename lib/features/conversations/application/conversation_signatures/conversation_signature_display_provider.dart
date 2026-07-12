@@ -141,8 +141,11 @@ Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
 
   final normalizedQuery = searchQuery.trim().toLowerCase();
   final selectedTagIds = selectedTags.tagIds.toSet();
+  final isExplicitTagRetrieval = selectedTagIds.isNotEmpty;
   final filtered = displayModels.where((signature) {
     return !excludedFavouriteIds.contains(signature.conversationId) &&
+        (isExplicitTagRetrieval ||
+            !_isSuppressedFromOrdinaryBrowse(signature)) &&
         _matchesSearch(signature, normalizedQuery) &&
         _matchesSelectedTags(signature, selectedTagIds) &&
         _matchesFilter(signature, filter);
@@ -282,6 +285,14 @@ bool _matchesSelectedTags(
 
   final signatureTagIds = signature.tags.map((tag) => tag.id).toSet();
   return selectedTagIds.every(signatureTagIds.contains);
+}
+
+bool _isSuppressedFromOrdinaryBrowse(
+  ConversationSignatureDisplayModel signature,
+) {
+  return signature.tags.any((tag) {
+    return tag.visibilityPolicy.suppressesOrdinaryBrowse;
+  });
 }
 
 bool _matchesFilter(

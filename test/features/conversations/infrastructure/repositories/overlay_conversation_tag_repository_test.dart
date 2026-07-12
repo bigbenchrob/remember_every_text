@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/features/conversations/domain/conversation_tags/conversation_tag_display.dart';
 import 'package:remember_this_text/features/conversations/infrastructure/repositories/overlay_conversation_tag_repository.dart';
 
 void main() {
@@ -64,5 +65,22 @@ void main() {
 
     expect(tagsByConversation[42], isEmpty);
     expect(allTags.map((tag) => tag.displayName), ['Family']);
+  });
+
+  test('persists tag visibility policy on the tag definition', () async {
+    final tag = await repository.createTag('2FA');
+
+    await repository.setTagVisibilityPolicy(
+      tagId: tag.id,
+      visibilityPolicy: ConversationTagVisibilityPolicy.suppressFromBrowse,
+    );
+
+    final allTags = await repository.readAllTags();
+
+    expect(allTags.single.displayName, '2FA');
+    expect(
+      allTags.single.visibilityPolicy,
+      ConversationTagVisibilityPolicy.suppressFromBrowse,
+    );
   });
 }

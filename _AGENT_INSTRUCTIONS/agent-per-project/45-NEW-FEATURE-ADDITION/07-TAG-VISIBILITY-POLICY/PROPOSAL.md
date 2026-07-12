@@ -3,8 +3,8 @@ tier: project
 scope: feature-proposal
 owner: agent-per-project
 last_reviewed: 2026-07-12
-source_of_truth: draft
-status: exploratory
+source_of_truth: canonical
+status: first-slice-implemented
 links:
   - ./README.md
   - ./DESIGN_NOTES.md
@@ -182,7 +182,7 @@ class should not appear in normal browsing.
 
 ## Proposed First Slice
 
-The first implementation should be deliberately small:
+The first implementation is deliberately small:
 
 1. Allow one existing Tag definition to be marked as suppressing ordinary
    Browse.
@@ -191,6 +191,11 @@ The first implementation should be deliberately small:
    Conversations.
 4. Display enough UI state that the user understands the Tag has a visibility
    consequence.
+
+The implemented slice uses overlay persistence on Tag definitions, merges
+visibility policy into Conversation read models, exposes a minimal action in
+the existing Conversation Tag editor, and keeps explicit Tag-token retrieval as
+an override of default Browse suppression.
 
 Do not implement a full Tag Manager, bulk visibility controls, complex
 visibility hierarchies, or Discovery-specific policy UI in the first slice.
