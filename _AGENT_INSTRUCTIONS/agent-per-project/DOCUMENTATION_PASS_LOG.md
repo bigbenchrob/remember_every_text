@@ -803,3 +803,64 @@ Retrieval by that Tag still returns them.
 - Manual app verification: mark a low-value Tag as suppressed from Browse,
   confirm default Browse excludes matching Conversations, then retrieve that
   Tag explicitly and confirm the Conversations return.
+
+---
+
+# Contact-Backed Conversation Tags Linkage
+
+Date: 2026-07-13
+
+Scope: Linked the deferred Contact Tags evaluation from higher-order planning
+documents without changing implementation scope.
+
+## Summary
+
+The Contact Tags evaluation identifies a likely future need for
+Contact-backed Conversation Tags: identity-backed retrieval coordinates that
+refer to canonical Contact identity instead of copied display text. This pass
+made that evaluation discoverable from the Conversation Tags, Conversation
+Intent, Structured Conversation Retrieval, and feature-planning index entry
+points while preserving it as deferred work.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/04-CONVERSATION-TAGS/README.md` | Added the Contact Tags evaluation to links, package contents, deferred scope, and a short deferred section. | Makes the concept discoverable from the Tag package without implying implementation approval. |
+| `45-NEW-FEATURE-ADDITION/05-CONVERSATION-INTENT-ARCHITECTURE/README.md` | Linked the Contact Tags evaluation as related deferred Conversation Intent work. | Records that Contact-backed tags relate to intent/retrieval but are not part of the current slice. |
+| `45-NEW-FEATURE-ADDITION/06-STRUCTURED-CONVERSATION-RETRIEVAL/README.md` | Added a deferred Contact retrieval coordinate section. | Ensures future Contact-token work finds the Contact Tags reasoning. |
+| `45-NEW-FEATURE-ADDITION/INDEX.md` | Updated the Conversation Tags row to mention deferred Contact-backed Conversation Tags. | Improves top-level retrieval. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- None. This was linkage only; implementation remains deferred.
+
+---
+
+# Conversation Card Chat Hook Evaluation
+
+Date: 2026-07-13
+
+Scope: Created a UI/UX evaluation for optionally showing formatted chat hooks
+on one-to-one Conversation Cards.
+
+## Summary
+
+The evaluation records a future refinement for Conversation Cards: one-to-one
+cards may need a quiet secondary `via ...` line to distinguish multiple
+canonical Conversations that resolve to the same Contact display name. The
+document keeps this independent from Contact-backed Conversation Tags:
+Contact-backed Tags are retrieval coordinates, while formatted chat hooks are
+visual disambiguation metadata.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Conversations/conversation-card-chat-hook.md` | Created UI/UX evaluation. | Captures rationale, proposed behavior, one-to-one-only scope, relationship to Contact Tags, risks, and recommendation without implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- None. This is an evaluation document only; implementation remains deferred.

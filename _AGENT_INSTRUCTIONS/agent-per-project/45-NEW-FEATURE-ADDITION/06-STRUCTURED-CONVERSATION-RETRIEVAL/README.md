@@ -12,6 +12,7 @@ links:
   - ./CHECKLIST.md
   - ./TESTS.md
   - ../05-CONVERSATION-INTENT-ARCHITECTURE/README.md
+  - ../04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/09-contact-tags.md
   - ../../95-WALK-UI-TREE/00-Registers/DESIGN_LANGUAGE_NOTES.md
 tests: []
 ---
@@ -90,3 +91,14 @@ Still outside the implemented slice:
   persistence;
 - message-content search. All Messages Search remains the message-content
   retrieval system.
+
+## Deferred Contact Retrieval Coordinate
+
+The Contact Tags evaluation records a likely future retrieval token type:
+Contact-backed Conversation Tags. These are not ordinary text Tags; they would
+refer to canonical Contact identity and resolve display labels through the
+same identity system used elsewhere in MessageLens.
+
+[`../04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/09-contact-tags.md`](../04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/09-contact-tags.md)
+
+This remains explicitly deferred while Conversation Tags settle in real use.

@@ -7,6 +7,7 @@ source_of_truth: doc
 status: approved-architecture
 links:
   - ../04-CONVERSATION-TAGS/README.md
+  - ../04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/09-contact-tags.md
   - ./01-OPEN-QUESTION-EVALUATION/README.md
   - ./01-OPEN-QUESTION-EVALUATION/05-categories-of-conversation-intent.md
   - ../../40-FEATURES/conversations/README.md
@@ -72,6 +73,16 @@ Conversation Tags remain their own focused feature package:
 
 This Conversation Intent package does not replace the Tags package. It provides
 the broader architectural model that Tags should be built on.
+
+The Contact Tags evaluation records a deferred, related concept:
+Contact-backed Conversation Tags as identity-backed retrieval coordinates
+inside the Conversations namespace, rather than ordinary user-authored text
+Tags:
+
+[`../04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/09-contact-tags.md`](../04-CONVERSATION-TAGS/01-OPEN-QUESTION-EVALUATION/09-contact-tags.md)
+
+This remains future work. It should not be treated as part of the current
+Conversation Tags implementation slice.
 
 ## Status
 

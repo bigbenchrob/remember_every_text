@@ -8,6 +8,7 @@ status: first-slice-implemented
 links:
   - ../05-CONVERSATION-INTENT-ARCHITECTURE/README.md
   - ../06-STRUCTURED-CONVERSATION-RETRIEVAL/README.md
+  - ./01-OPEN-QUESTION-EVALUATION/09-contact-tags.md
   - ../../40-FEATURES/conversations/README.md
   - ../../95-WALK-UI-TREE/00-STANDARDS/UX_PRINCIPLES.md
   - ../../95-WALK-UI-TREE/00-Registers/DESIGN_LANGUAGE_NOTES.md
@@ -54,6 +55,9 @@ tokens; retrieval does not own Tag definitions or assignments.
   implementation slice.
 - [`FIRST_SLICE_IMPLEMENTATION_PLAN.md`](FIRST_SLICE_IMPLEMENTATION_PLAN.md) -
   concrete vertical-slice plan for the first approved implementation pass.
+- [`01-OPEN-QUESTION-EVALUATION/09-contact-tags.md`](01-OPEN-QUESTION-EVALUATION/09-contact-tags.md) -
+  deferred evaluation of Contact-backed Conversation Tags as identity-backed
+  retrieval coordinates.
 
 ## Governing Principles
 
@@ -84,7 +88,20 @@ Implemented scope:
 Still outside the implemented slice:
 
 - additional Structured Conversation Retrieval token types;
+- Contact-backed Conversation Tags / Contact retrieval tokens;
 - Tag Manager / cleanup surface;
 - tag colors, descriptions, ordering, merge, import/export, sync, AI-assisted
   suggestions, Working Set integration, Notes integration, and broad
   cross-surface tag display.
+
+## Deferred: Contact-Backed Conversation Tags
+
+The Contact Tags evaluation records a future need for application-supplied,
+identity-backed Conversation Tags that refer to canonical Contact identity
+rather than copied display text:
+
+[`01-OPEN-QUESTION-EVALUATION/09-contact-tags.md`](01-OPEN-QUESTION-EVALUATION/09-contact-tags.md)
+
+This is intentionally deferred. The current implementation should continue to
+let Conversation Tags settle in use before deciding how Contact-backed
+retrieval coordinates should be implemented.
