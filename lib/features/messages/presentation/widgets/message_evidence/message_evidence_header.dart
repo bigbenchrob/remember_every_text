@@ -107,9 +107,9 @@ class MessageEvidenceHeader extends ConsumerWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TopColumnBand(child: title),
-                MiddleColumnBand(
-                  child: _MessageEvidenceMiddleBand(
+                TitleColumnBand(child: title),
+                ContextColumnBand(
+                  child: _MessageEvidenceContextBand(
                     primary: primary,
                     secondary: secondary,
                   ),
@@ -126,8 +126,8 @@ class MessageEvidenceHeader extends ConsumerWidget {
   }
 }
 
-class _MessageEvidenceMiddleBand extends StatelessWidget {
-  const _MessageEvidenceMiddleBand({
+class _MessageEvidenceContextBand extends StatelessWidget {
+  const _MessageEvidenceContextBand({
     required this.primary,
     required this.secondary,
   });

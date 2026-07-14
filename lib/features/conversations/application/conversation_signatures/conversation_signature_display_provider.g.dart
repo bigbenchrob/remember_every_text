@@ -7,7 +7,7 @@ part of 'conversation_signature_display_provider.dart';
 // **************************************************************************
 
 String _$conversationSignatureDisplayHash() =>
-    r'2ec5b4113c52c7549d6092bc9bd3ce2dde632648';
+    r'bb35c017b2ca25bcfe5a7eb3701a72a56eb9e2f8';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -45,6 +45,8 @@ class ConversationSignatureDisplayFamily
   ConversationSignatureDisplayProvider call({
     int limit = 500,
     String searchQuery = '',
+    ConversationSignatureSelectedTagsRequest selectedTags =
+        const ConversationSignatureSelectedTagsRequest.empty(),
     ConversationSignatureFilter filter = ConversationSignatureFilter.all,
     ConversationSignatureSort sort =
         ConversationSignatureSort.mostRecentlyUpdated,
@@ -53,6 +55,7 @@ class ConversationSignatureDisplayFamily
     return ConversationSignatureDisplayProvider(
       limit: limit,
       searchQuery: searchQuery,
+      selectedTags: selectedTags,
       filter: filter,
       sort: sort,
       excludedFavouriteConversationIds: excludedFavouriteConversationIds,
@@ -66,6 +69,7 @@ class ConversationSignatureDisplayFamily
     return call(
       limit: provider.limit,
       searchQuery: provider.searchQuery,
+      selectedTags: provider.selectedTags,
       filter: provider.filter,
       sort: provider.sort,
       excludedFavouriteConversationIds:
@@ -95,6 +99,8 @@ class ConversationSignatureDisplayProvider
   ConversationSignatureDisplayProvider({
     int limit = 500,
     String searchQuery = '',
+    ConversationSignatureSelectedTagsRequest selectedTags =
+        const ConversationSignatureSelectedTagsRequest.empty(),
     ConversationSignatureFilter filter = ConversationSignatureFilter.all,
     ConversationSignatureSort sort =
         ConversationSignatureSort.mostRecentlyUpdated,
@@ -104,6 +110,7 @@ class ConversationSignatureDisplayProvider
            ref as ConversationSignatureDisplayRef,
            limit: limit,
            searchQuery: searchQuery,
+           selectedTags: selectedTags,
            filter: filter,
            sort: sort,
            excludedFavouriteConversationIds: excludedFavouriteConversationIds,
@@ -118,6 +125,7 @@ class ConversationSignatureDisplayProvider
              ConversationSignatureDisplayFamily._allTransitiveDependencies,
          limit: limit,
          searchQuery: searchQuery,
+         selectedTags: selectedTags,
          filter: filter,
          sort: sort,
          excludedFavouriteConversationIds: excludedFavouriteConversationIds,
@@ -132,6 +140,7 @@ class ConversationSignatureDisplayProvider
     required super.from,
     required this.limit,
     required this.searchQuery,
+    required this.selectedTags,
     required this.filter,
     required this.sort,
     required this.excludedFavouriteConversationIds,
@@ -139,6 +148,7 @@ class ConversationSignatureDisplayProvider
 
   final int limit;
   final String searchQuery;
+  final ConversationSignatureSelectedTagsRequest selectedTags;
   final ConversationSignatureFilter filter;
   final ConversationSignatureSort sort;
   final List<int> excludedFavouriteConversationIds;
@@ -161,6 +171,7 @@ class ConversationSignatureDisplayProvider
         debugGetCreateSourceHash: null,
         limit: limit,
         searchQuery: searchQuery,
+        selectedTags: selectedTags,
         filter: filter,
         sort: sort,
         excludedFavouriteConversationIds: excludedFavouriteConversationIds,
@@ -179,6 +190,7 @@ class ConversationSignatureDisplayProvider
     return other is ConversationSignatureDisplayProvider &&
         other.limit == limit &&
         other.searchQuery == searchQuery &&
+        other.selectedTags == selectedTags &&
         other.filter == filter &&
         other.sort == sort &&
         other.excludedFavouriteConversationIds ==
@@ -190,6 +202,7 @@ class ConversationSignatureDisplayProvider
     var hash = _SystemHash.combine(0, runtimeType.hashCode);
     hash = _SystemHash.combine(hash, limit.hashCode);
     hash = _SystemHash.combine(hash, searchQuery.hashCode);
+    hash = _SystemHash.combine(hash, selectedTags.hashCode);
     hash = _SystemHash.combine(hash, filter.hashCode);
     hash = _SystemHash.combine(hash, sort.hashCode);
     hash = _SystemHash.combine(hash, excludedFavouriteConversationIds.hashCode);
@@ -207,6 +220,9 @@ mixin ConversationSignatureDisplayRef
 
   /// The parameter `searchQuery` of this provider.
   String get searchQuery;
+
+  /// The parameter `selectedTags` of this provider.
+  ConversationSignatureSelectedTagsRequest get selectedTags;
 
   /// The parameter `filter` of this provider.
   ConversationSignatureFilter get filter;
@@ -231,6 +247,9 @@ class _ConversationSignatureDisplayProviderElement
   @override
   String get searchQuery =>
       (origin as ConversationSignatureDisplayProvider).searchQuery;
+  @override
+  ConversationSignatureSelectedTagsRequest get selectedTags =>
+      (origin as ConversationSignatureDisplayProvider).selectedTags;
   @override
   ConversationSignatureFilter get filter =>
       (origin as ConversationSignatureDisplayProvider).filter;

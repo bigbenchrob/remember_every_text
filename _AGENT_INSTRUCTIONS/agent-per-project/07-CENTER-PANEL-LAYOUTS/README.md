@@ -2,7 +2,7 @@
 tier: project
 scope: center-panel-layouts
 owner: @rob
-last_reviewed: 2026-04-26
+last_reviewed: 2026-07-14
 source_of_truth: doc
 links:
   - ../05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md
@@ -32,6 +32,7 @@ Use these docs when a feature needs to explain system state through a center-pan
 ## What does not belong here
 
 - Sidebar cassette layout rules
+- Cross-column vertical alignment between sidebar, center panel, and end panel
 - Theme token definitions
 - Feature-specific business meaning
 - ViewSpec routing mechanics
@@ -39,6 +40,7 @@ Use these docs when a feature needs to explain system state through a center-pan
 Those concerns belong respectively in:
 
 - `../08-SIDEBAR-LAYOUTS/`
+- `../09-CROSS-COLUMN-LAYOUT/`
 - `../05-COLOR-AND-TYPOGRAPHY-THEMING/`
 - feature-local docs under `../40-FEATURES/` or `../45-NEW-FEATURE-ADDITION/`
 - `../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md`

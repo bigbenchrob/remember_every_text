@@ -3,6 +3,11 @@
 This folder documents the cross-column layout grammar emerging from the
 MessageLens UI walk.
 
+> Current canonical mechanics live in
+> `../../09-CROSS-COLUMN-LAYOUT/`. This folder preserves the UI-walk history,
+> rationale, and ownership repairs that led to the durable cross-column layout
+> contract.
+
 The immediate trigger is the Search page, but the intent is broader: major
 MessageLens lenses should share a stable page skeleton so new surfaces snap
 into a common visual rhythm instead of inventing their own vertical hierarchy.
@@ -46,15 +51,15 @@ four-band model.
 
 The page owns two shared vertical envelopes:
 
-1. top identity band
-2. middle context band
+1. title band
+2. context band
 
-Content starts immediately after the middle band.
+Content starts immediately after the context band.
 
 This preserves the important cross-column rhythm without forcing every panel
 to subdivide its internal header content identically.
 
-### Top Identity Band
+### Title Band
 
 Examples:
 
@@ -65,7 +70,7 @@ Examples:
 The title names the lens or panel. It should not narrate how the user arrived
 there.
 
-### Middle Context Band
+### Context Band
 
 Examples:
 
@@ -74,7 +79,7 @@ Examples:
 - Center: result metadata and search controls.
 - Right: Conversation Card and excerpt description.
 
-The middle band is elastic in meaning but fixed in outer height for
+The context band is elastic in meaning but fixed in outer height for
 participating columns. Children may arrange themselves inside the band. They
 must not push content start downward.
 
@@ -111,15 +116,15 @@ or hard-code widget-specific rules such as "the heatmap starts here."
 
 Instead, participating sidebar surfaces use a content-start seam:
 
-- The top menu/selector is wrapped in the top identity band.
+- The top menu/selector is wrapped in the title band.
 - The next pre-content cassette or orientation material may occupy the middle
   context band.
-- The primary navigation/evidence cassette begins after the middle band.
+- The primary navigation/evidence cassette begins after the context band.
 - Future cassette specs may declare preferred content-start candidacy when the
   autonomous seam needs to handle more configurations.
 
 For the Search page, the heatmap/navigation cassette is the current content
-start. The orientation text sits above it in the middle band, and task guidance
+start. The orientation text sits above it in the context band, and task guidance
 may sit below the heatmap as post-content guidance.
 
 The important invariant is not "the heatmap aligns." The invariant is that the
@@ -158,8 +163,8 @@ The Search page should resolve into:
 
 | Band | Search Panel | Messages Panel | Conversation Panel |
 | --- | --- | --- | --- |
-| Top identity | Search all messages | All messages | Conversation |
-| Middle context | Heatmap scope/orientation | Date range, hit count, search controls | Conversation Card, excerpt description |
+| Title band | Search all messages | All messages | Conversation |
+| Context band | Heatmap scope/orientation | Date range, hit count, search controls | Conversation Card, excerpt description |
 | Content start | Heatmap/navigation | Search results | Conversation excerpt |
 
 The page skeleton should own the vertical positions of these bands. The panel
@@ -194,14 +199,14 @@ The current shared primitives are:
 - `lib/config/theme/widgets/layout/vertical_column_bands.dart`
 - `lib/config/theme/widgets/layout/app_panel_bands.dart`
 
-`TopColumnBand` and `MiddleColumnBand` are the current diagnostic wrappers for
+`TitleColumnBand` and `ContextColumnBand` are the current diagnostic wrappers for
 the simplified two-envelope model. They own the fixed outer dimensions and
 optional developer-mode margin visualization. Children own their internal
 presentation and may use explicit child placement only when the default is not
 enough.
 
 `AppPanelBandHeader` and related `app_panel_bands.dart` types are retained as
-older support primitives during the transition. Prefer the top/middle band
+older support primitives during the transition. Prefer the top/context band
 wrappers for new X-column layout work unless the existing code path already
 requires the older primitive.
 
@@ -213,9 +218,9 @@ selector, middle orientation/context, and content-start cassette.
 ## Acceptance Criteria
 
 - The three panel identities align on a shared visual baseline.
-- The top identity band is fixed and shared for participating columns.
-- The middle context band is fixed and shared for participating columns.
-- Content begins immediately after the middle context band in all participating
+- The title band is fixed and shared for participating columns.
+- The context band is fixed and shared for participating columns.
+- Content begins immediately after the context band in all participating
   columns.
 - Components adapt to assigned bands rather than pushing lower bands downward.
 - The Search page feels like three coordinated lenses onto one graph, not a

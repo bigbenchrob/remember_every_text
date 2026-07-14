@@ -12,10 +12,13 @@ ConversationSignatureCardData conversationSignatureCardDataFromDisplay(
   ConversationSignatureSummaryHighlight summaryHighlight =
       ConversationSignatureSummaryHighlight.none,
   ConversationSignatureMonthMarker? highlightedMonth,
+  bool includeTags = false,
+  bool includeChatHook = false,
 }) {
   return ConversationSignatureCardData(
     conversationId: signature.conversationId,
     title: signature.title,
+    chatHookLabel: includeChatHook ? signature.chatHookLabel : null,
     titleContextLabel: titleContextLabel,
     summaryHighlight: summaryHighlight,
     highlightedMonth: highlightedMonth,
@@ -24,6 +27,9 @@ ConversationSignatureCardData conversationSignatureCardDataFromDisplay(
     firstMessageAtUtc: signature.firstMessageAtUtc,
     lastMessageAtUtc: signature.lastMessageAtUtc,
     activityMonths: signature.activityMonths,
+    tagLabels: includeTags
+        ? [for (final tag in signature.tags) tag.displayName]
+        : const <String>[],
   );
 }
 
@@ -58,6 +64,10 @@ ConversationSignatureCardStyle conversationSignatureCardStyle(
       color: colors.content.textTertiary.withValues(alpha: 0.68),
       fontWeight: FontWeight.w500,
     ),
+    chatHookStyle: typography.caption.copyWith(
+      color: colors.content.textPrimary.withValues(alpha: 0.72),
+      fontWeight: FontWeight.w400,
+    ),
     summaryStyle: typography.caption.copyWith(
       color: colors.content.textTertiary.withValues(alpha: 0.78),
     ),
@@ -66,6 +76,12 @@ ConversationSignatureCardStyle conversationSignatureCardStyle(
       fontWeight: FontWeight.w700,
     ),
     monthHighlightColor: colors.status.warning,
+    tagTextStyle: typography.caption.copyWith(
+      color: colors.content.textSecondary.withValues(alpha: 0.9),
+      fontWeight: FontWeight.w500,
+    ),
+    tagBackgroundColor: colors.surfaces.surface.withValues(alpha: 0.32),
+    tagBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.26),
     emptyMonthBorderColor: colors.lines.borderSubtle,
   );
 }
@@ -97,6 +113,10 @@ ConversationSignatureCardStyle favouriteConversationSignatureCardStyle(
       color: colors.content.textTertiary.withValues(alpha: 0.72),
       fontWeight: FontWeight.w500,
     ),
+    chatHookStyle: typography.caption.copyWith(
+      color: colors.content.textPrimary.withValues(alpha: 0.74),
+      fontWeight: FontWeight.w400,
+    ),
     summaryStyle: typography.caption.copyWith(
       color: colors.content.textTertiary.withValues(alpha: 0.8),
     ),
@@ -105,6 +125,12 @@ ConversationSignatureCardStyle favouriteConversationSignatureCardStyle(
       fontWeight: FontWeight.w700,
     ),
     monthHighlightColor: colors.status.warning,
+    tagTextStyle: typography.caption.copyWith(
+      color: colors.content.textSecondary.withValues(alpha: 0.92),
+      fontWeight: FontWeight.w500,
+    ),
+    tagBackgroundColor: colors.surfaces.surface.withValues(alpha: 0.38),
+    tagBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.28),
     emptyMonthBorderColor: colors.lines.borderSubtle,
   );
 }
@@ -136,6 +162,10 @@ ConversationSignatureCardStyle conversationSignatureContextHeaderCardStyle(
       color: colors.content.textTertiary.withValues(alpha: 0.58),
       fontWeight: FontWeight.w500,
     ),
+    chatHookStyle: typography.caption.copyWith(
+      color: colors.content.textPrimary.withValues(alpha: 0.68),
+      fontWeight: FontWeight.w400,
+    ),
     summaryStyle: typography.caption.copyWith(
       color: colors.content.textTertiary.withValues(alpha: 0.68),
     ),
@@ -144,6 +174,12 @@ ConversationSignatureCardStyle conversationSignatureContextHeaderCardStyle(
       fontWeight: FontWeight.w700,
     ),
     monthHighlightColor: colors.status.warning,
+    tagTextStyle: typography.caption.copyWith(
+      color: colors.content.textSecondary.withValues(alpha: 0.82),
+      fontWeight: FontWeight.w500,
+    ),
+    tagBackgroundColor: colors.surfaces.surface.withValues(alpha: 0.2),
+    tagBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.2),
     emptyMonthBorderColor: colors.lines.borderSubtle.withValues(alpha: 0.82),
   );
 }

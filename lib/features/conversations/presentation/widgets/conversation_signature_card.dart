@@ -10,6 +10,7 @@ class ConversationSignatureCardData {
   const ConversationSignatureCardData({
     required this.conversationId,
     required this.title,
+    this.chatHookLabel,
     this.titleContextLabel,
     this.summaryHighlight = ConversationSignatureSummaryHighlight.none,
     this.highlightedMonth,
@@ -18,10 +19,12 @@ class ConversationSignatureCardData {
     required this.firstMessageAtUtc,
     required this.lastMessageAtUtc,
     required this.activityMonths,
+    this.tagLabels = const <String>[],
   });
 
   final int conversationId;
   final String title;
+  final String? chatHookLabel;
   final String? titleContextLabel;
   final ConversationSignatureSummaryHighlight summaryHighlight;
   final ConversationSignatureMonthMarker? highlightedMonth;
@@ -30,6 +33,7 @@ class ConversationSignatureCardData {
   final String? firstMessageAtUtc;
   final String? lastMessageAtUtc;
   final List<ConversationSignatureMonth> activityMonths;
+  final List<String> tagLabels;
 }
 
 class ConversationSignatureMonthMarker {
@@ -65,10 +69,14 @@ class ConversationSignatureCardStyle {
     required this.titleStyle,
     required this.selectedTitleStyle,
     this.titleContextStyle,
+    required this.chatHookStyle,
     required this.participantSuffixStyle,
     required this.summaryStyle,
     this.summaryHighlightStyle,
     this.monthHighlightColor,
+    required this.tagTextStyle,
+    required this.tagBackgroundColor,
+    required this.tagBorderColor,
     required this.emptyMonthBorderColor,
   });
 
@@ -81,10 +89,14 @@ class ConversationSignatureCardStyle {
   final TextStyle titleStyle;
   final TextStyle selectedTitleStyle;
   final TextStyle? titleContextStyle;
+  final TextStyle chatHookStyle;
   final TextStyle participantSuffixStyle;
   final TextStyle summaryStyle;
   final TextStyle? summaryHighlightStyle;
   final Color? monthHighlightColor;
+  final TextStyle tagTextStyle;
+  final Color tagBackgroundColor;
+  final Color tagBorderColor;
   final Color emptyMonthBorderColor;
 }
 
@@ -207,6 +219,14 @@ class _ConversationSignatureCardState extends State<ConversationSignatureCard> {
                     ],
                   ],
                 ),
+                if (signature.chatHookLabel != null) ...[
+                  Text(
+                    signature.chatHookLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: widget.style.chatHookStyle,
+                  ),
+                ],
                 const SizedBox(height: 7),
                 _ConversationMonthGlyph(
                   months: signature.activityMonths,
@@ -231,9 +251,67 @@ class _ConversationSignatureCardState extends State<ConversationSignatureCard> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (signature.tagLabels.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  _ConversationTagRow(
+                    labels: signature.tagLabels,
+                    style: widget.style,
+                  ),
+                ],
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConversationTagRow extends StatelessWidget {
+  const _ConversationTagRow({required this.labels, required this.style});
+
+  final List<String> labels;
+  final ConversationSignatureCardStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleLabels = labels.take(3).toList(growable: false);
+    final hiddenCount = labels.length - visibleLabels.length;
+
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        for (final label in visibleLabels)
+          _ConversationTagChip(label: label, style: style),
+        if (hiddenCount > 0)
+          _ConversationTagChip(label: '+$hiddenCount', style: style),
+      ],
+    );
+  }
+}
+
+class _ConversationTagChip extends StatelessWidget {
+  const _ConversationTagChip({required this.label, required this.style});
+
+  final String label;
+  final ConversationSignatureCardStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: style.tagBackgroundColor,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: style.tagBorderColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style.tagTextStyle,
         ),
       ),
     );

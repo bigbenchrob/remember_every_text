@@ -6,8 +6,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature.dart';
 import '../../../../essentials/conversation_graph/feature_level_providers.dart'
     show conversationSignatureReaderProvider, conversationSignaturesProvider;
+import '../../../../essentials/db/shared/handle_identifier_utils.dart';
 import '../../../contacts/feature_level_providers.dart'
     show ConversationDisplayIdentity, displayIdentityResolverProvider;
+import '../../domain/conversation_tags/conversation_tag_display.dart';
+import '../conversation_tags/conversation_tags_provider.dart';
 
 part 'conversation_signature_display_provider.g.dart';
 
@@ -26,6 +29,7 @@ class ConversationSignatureDisplayModel {
   const ConversationSignatureDisplayModel({
     required this.conversationId,
     required this.title,
+    this.chatHookLabel,
     required this.participantLabels,
     required this.participantCount,
     required this.isGroup,
@@ -35,10 +39,12 @@ class ConversationSignatureDisplayModel {
     required this.lastMessageAtUtc,
     required this.lastMessageText,
     required this.activityMonths,
+    this.tags = const <ConversationTagDisplay>[],
   });
 
   final int conversationId;
   final String title;
+  final String? chatHookLabel;
   final List<String> participantLabels;
   final int participantCount;
   final bool isGroup;
@@ -48,6 +54,7 @@ class ConversationSignatureDisplayModel {
   final String? lastMessageAtUtc;
   final String? lastMessageText;
   final List<ConversationSignatureMonth> activityMonths;
+  final List<ConversationTagDisplay> tags;
 }
 
 @immutable
@@ -70,11 +77,35 @@ class ConversationSignatureDisplayByIdsRequest {
   int get hashCode => _equality.hash(conversationIds);
 }
 
+@immutable
+class ConversationSignatureSelectedTagsRequest {
+  ConversationSignatureSelectedTagsRequest({required Iterable<int> tagIds})
+    : tagIds = List<int>.unmodifiable(tagIds);
+
+  const ConversationSignatureSelectedTagsRequest.empty()
+    : tagIds = const <int>[];
+
+  final List<int> tagIds;
+
+  static const _equality = ListEquality<int>();
+
+  @override
+  bool operator ==(Object other) {
+    return other is ConversationSignatureSelectedTagsRequest &&
+        _equality.equals(other.tagIds, tagIds);
+  }
+
+  @override
+  int get hashCode => _equality.hash(tagIds);
+}
+
 @riverpod
 Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
   Ref ref, {
   int limit = 500,
   String searchQuery = '',
+  ConversationSignatureSelectedTagsRequest selectedTags =
+      const ConversationSignatureSelectedTagsRequest.empty(),
   ConversationSignatureFilter filter = ConversationSignatureFilter.all,
   ConversationSignatureSort sort =
       ConversationSignatureSort.mostRecentlyUpdated,
@@ -87,6 +118,15 @@ Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
     displayIdentityResolverProvider.future,
   );
   final excludedFavouriteIds = excludedFavouriteConversationIds.toSet();
+  final tagsByConversationId = await ref.watch(
+    conversationTagsByConversationIdsProvider(
+      request: ConversationTagsByConversationIdsRequest(
+        conversationIds: signatures.map((signature) {
+          return signature.conversationId;
+        }),
+      ),
+    ).future,
+  );
 
   final displayModels = [
     for (final signature in signatures)
@@ -96,13 +136,21 @@ Future<List<ConversationSignatureDisplayModel>> conversationSignatureDisplay(
           conversationId: signature.conversationId,
           handles: signature.participantLabels,
         ),
+        tags:
+            tagsByConversationId[signature.conversationId] ??
+            const <ConversationTagDisplay>[],
       ),
   ];
 
   final normalizedQuery = searchQuery.trim().toLowerCase();
+  final selectedTagIds = selectedTags.tagIds.toSet();
+  final isExplicitTagRetrieval = selectedTagIds.isNotEmpty;
   final filtered = displayModels.where((signature) {
     return !excludedFavouriteIds.contains(signature.conversationId) &&
+        (isExplicitTagRetrieval ||
+            !_isSuppressedFromOrdinaryBrowse(signature)) &&
         _matchesSearch(signature, normalizedQuery) &&
+        _matchesSelectedTags(signature, selectedTagIds) &&
         _matchesFilter(signature, filter);
   }).toList();
 
@@ -143,6 +191,15 @@ Future<List<ConversationSignatureDisplayModel>> _readDisplayModelsByIds(
   final identityResolver = await ref.watch(
     displayIdentityResolverProvider.future,
   );
+  final tagsByConversationId = await ref.watch(
+    conversationTagsByConversationIdsProvider(
+      request: ConversationTagsByConversationIdsRequest(
+        conversationIds: signatures.map((signature) {
+          return signature.conversationId;
+        }),
+      ),
+    ).future,
+  );
   final displayModelsById = {
     for (final signature in signatures)
       signature.conversationId: _toDisplayModel(
@@ -151,6 +208,9 @@ Future<List<ConversationSignatureDisplayModel>> _readDisplayModelsByIds(
           conversationId: signature.conversationId,
           handles: signature.participantLabels,
         ),
+        tags:
+            tagsByConversationId[signature.conversationId] ??
+            const <ConversationTagDisplay>[],
       ),
   };
 
@@ -163,11 +223,13 @@ Future<List<ConversationSignatureDisplayModel>> _readDisplayModelsByIds(
 
 ConversationSignatureDisplayModel _toDisplayModel(
   ConversationSignature signature,
-  ConversationDisplayIdentity displayIdentity,
-) {
+  ConversationDisplayIdentity displayIdentity, {
+  List<ConversationTagDisplay> tags = const <ConversationTagDisplay>[],
+}) {
   return ConversationSignatureDisplayModel(
     conversationId: signature.conversationId,
     title: displayIdentity.title,
+    chatHookLabel: _chatHookLabelForSignature(signature, displayIdentity),
     participantLabels: displayIdentity.participantLabels,
     participantCount: signature.participantCount,
     isGroup: signature.isGroup,
@@ -177,7 +239,62 @@ ConversationSignatureDisplayModel _toDisplayModel(
     lastMessageAtUtc: signature.lastMessageAtUtc,
     lastMessageText: signature.lastMessageText,
     activityMonths: signature.activityMonths,
+    tags: tags,
   );
+}
+
+String? _chatHookLabelForSignature(
+  ConversationSignature signature,
+  ConversationDisplayIdentity displayIdentity,
+) {
+  if (signature.isGroup || signature.participantLabels.length != 1) {
+    return null;
+  }
+
+  final rawHook = signature.participantLabels.single.trim();
+  if (rawHook.isEmpty || rawHook == 'Unknown') {
+    return null;
+  }
+
+  if (rawHook.toLowerCase() == displayIdentity.title.trim().toLowerCase()) {
+    return null;
+  }
+
+  return formatPhoneNumberForDisplay(rawHook);
+}
+
+Set<int> conversationSignatureIdsWithDuplicateChatHooks(
+  Iterable<ConversationSignatureDisplayModel> signatures,
+) {
+  final identityCounts = <String, int>{};
+  for (final signature in signatures) {
+    if (!_canUseChatHookForDisambiguation(signature)) {
+      continue;
+    }
+
+    final key = _normalizedDisplayIdentityKey(signature);
+    identityCounts[key] = (identityCounts[key] ?? 0) + 1;
+  }
+
+  return {
+    for (final signature in signatures)
+      if (_canUseChatHookForDisambiguation(signature) &&
+          (identityCounts[_normalizedDisplayIdentityKey(signature)] ?? 0) > 1)
+        signature.conversationId,
+  };
+}
+
+bool _canUseChatHookForDisambiguation(
+  ConversationSignatureDisplayModel signature,
+) {
+  return !signature.isGroup &&
+      (signature.chatHookLabel?.trim().isNotEmpty ?? false);
+}
+
+String _normalizedDisplayIdentityKey(
+  ConversationSignatureDisplayModel signature,
+) {
+  return signature.title.trim().toLowerCase();
 }
 
 String conversationSignatureFilterLabel(ConversationSignatureFilter filter) {
@@ -214,6 +331,26 @@ bool _matchesSearch(
     signature.lastMessageText ?? '',
   ].join(' ').toLowerCase();
   return searchableText.contains(normalizedQuery);
+}
+
+bool _matchesSelectedTags(
+  ConversationSignatureDisplayModel signature,
+  Set<int> selectedTagIds,
+) {
+  if (selectedTagIds.isEmpty) {
+    return true;
+  }
+
+  final signatureTagIds = signature.tags.map((tag) => tag.id).toSet();
+  return selectedTagIds.every(signatureTagIds.contains);
+}
+
+bool _isSuppressedFromOrdinaryBrowse(
+  ConversationSignatureDisplayModel signature,
+) {
+  return signature.tags.any((tag) {
+    return tag.visibilityPolicy.suppressesOrdinaryBrowse;
+  });
 }
 
 bool _matchesFilter(

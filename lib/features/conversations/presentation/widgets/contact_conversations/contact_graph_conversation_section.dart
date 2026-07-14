@@ -6,7 +6,9 @@ import '../../../../../config/theme/theme_typography.dart';
 import '../../../application/contact_conversations/contact_conversation_navigation_actions_provider.dart';
 import '../../../application/contact_conversations/contact_conversation_signatures_provider.dart';
 import '../../../application/conversation_signatures/conversation_signature_display_provider.dart'
-    show ConversationSignatureDisplayModel;
+    show
+        ConversationSignatureDisplayModel,
+        conversationSignatureIdsWithDuplicateChatHooks;
 import '../conversation_favourite_button.dart';
 import '../conversation_signature_card.dart';
 import '../conversation_signature_card_presentation.dart';
@@ -129,6 +131,8 @@ class _ContactGraphConversationContentState
     final typography = ref.watch(themeTypographyProvider);
     final cardStyle = conversationSignatureCardStyle(colors, typography);
     final signatureDisplays = widget.signatureDisplays;
+    final conversationIdsWithChatHooks =
+        conversationSignatureIdsWithDuplicateChatHooks(signatureDisplays);
 
     return Padding(
       padding: widget.padding,
@@ -143,7 +147,12 @@ class _ContactGraphConversationContentState
             itemBuilder: (context, index) {
               final signature = signatureDisplays[index];
               return ConversationSignatureCard(
-                signature: conversationSignatureCardDataFromDisplay(signature),
+                signature: conversationSignatureCardDataFromDisplay(
+                  signature,
+                  includeChatHook: conversationIdsWithChatHooks.contains(
+                    signature.conversationId,
+                  ),
+                ),
                 style: cardStyle,
                 monthColorForMessageCount:
                     conversationSignatureMonthColorForMessageCount,

@@ -2,10 +2,12 @@
 tier: project
 scope: design-notes
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-11
 source_of_truth: draft
-status: exploratory
+status: consolidated-exploratory
 links:
+  - ../05-CONVERSATION-INTENT-ARCHITECTURE/DESIGN_NOTES.md
+  - ../06-STRUCTURED-CONVERSATION-RETRIEVAL/README.md
   - ./PROPOSAL.md
   - ../../10-DATABASES/07-overlay-database-independence.md
   - ../../40-FEATURES/conversations/README.md
@@ -29,61 +31,26 @@ They do not answer:
 That distinction keeps tags from becoming folders and keeps MessageLens aligned
 with its memory exploration model.
 
-## Storage Model Considerations
+In the broader architecture, Tags are durable **Meaning** intent. Conversation
+Intent owns the shared seam for user-authored or user-confirmed Conversation
+meaning. This document remains focused on the tag-specific expression of that
+model.
 
-At the architectural level, the storage model needs three stable concepts:
+## Inherited Architecture
 
-1. **Tag definition**
-   - user-visible name;
-   - optional presentation attributes;
-   - user-controlled ordering, if supported;
-   - lifecycle state such as active/deleted, if needed.
+Tags inherit these constraints from Conversation Intent:
 
-2. **Conversation/tag assignment**
-   - stable Conversation identity;
-   - tag identity;
-   - user intent that the tag applies to the Conversation.
+- Tags attach to canonical Conversation identity.
+- Tags are overlay/user intent.
+- Tags survive graph rebuilds.
+- Graph projection does not read or write tag state.
+- Read models merge graph facts with tag overlay state at read time.
+- Search, Messages, Contacts, and Discovery may consume tag state but do not
+  own tag semantics.
 
-3. **Tag metadata**
-   - optional future fields such as color, description, or last-used timestamp.
-
-These belong in overlay/user-intent storage, not graph projection.
-
-The graph can be rebuilt from source data. Tags cannot. Tags are authored by the
-user and must survive graph rebuilds.
-
-## Conversation Identity
-
-Tags must attach to stable Conversation identity, not:
-
-- displayed title;
-- participant name string;
-- list position;
-- search result index;
-- current sort order;
-- local card instance;
-- message preview text.
-
-If a Conversation appears in multiple lenses, the same tags should appear and
-behave consistently in each lens.
-
-This is a direct application of:
-
-> There is only one Conversation.
-
-## Overlay Ownership
-
-Tags are user intent.
-
-Therefore:
-
-- imports must not create or overwrite user tags;
-- graph projection must not read tags;
-- tag state must not be stored in source-scoped graph projection tables;
-- read models should merge Conversation facts with tag overlay state at read
-  time;
-- overlay state should win where user intent conflicts with derived labels or
-  presentation defaults.
+Those rules are owned by
+[`../05-CONVERSATION-INTENT-ARCHITECTURE/`](../05-CONVERSATION-INTENT-ARCHITECTURE/).
+This package should not duplicate them beyond this summary.
 
 ## Feature Ownership
 
@@ -99,6 +66,11 @@ Overlay/database infrastructure should own persistence mechanics.
 
 Search, Contacts, and Messages may consume tag state, but should not define
 the tag model.
+
+Structured Conversation Retrieval may eventually consume tags as retrieval
+tokens. That retrieval grammar is owned by
+[`../06-STRUCTURED-CONVERSATION-RETRIEVAL/`](../06-STRUCTURED-CONVERSATION-RETRIEVAL/),
+not by this package.
 
 ## UX Considerations
 
@@ -172,7 +144,7 @@ Ordering can mean several things:
 - order tags appear on a Conversation;
 - order tags appear in a tag picker;
 - order tagged Conversation lenses appear;
-- user-pinned/frequent tags.
+- user-prioritized/frequent tags.
 
 Do not overdesign initial ordering. Reasonable first behavior:
 
@@ -211,10 +183,14 @@ Tags should support both:
 
 - direct retrieval: "Find conversations tagged Work";
 - rediscovery: "Show dormant Family conversations";
-- refinement: "Search message text only inside Health conversations";
+- retrieval refinement: "Show Conversations tagged Health";
+- message-search refinement: "Search message text only inside Health
+  conversations";
 - interpretation: "This old conversation matters because I tagged it Taxes."
 
-Tags become a bridge between user memory and graph evidence.
+Tags become a bridge between user memory and graph evidence. They are especially
+valuable when the user remembers meaning rather than participants or exact
+phrasing.
 
 ## Future Synchronization
 
@@ -241,7 +217,8 @@ Export should preserve:
 - tag definitions;
 - Conversation identity references;
 - assignments;
-- enough provenance to detect whether identities still resolve after rebuilds.
+- enough identity/provenance to detect whether assignments still resolve after
+  rebuilds.
 
 Import should avoid creating duplicate tags accidentally.
 
@@ -271,6 +248,9 @@ Avoid:
 
 ## Open Design Questions
 
+These are tag-specific product questions, not general Conversation Intent
+questions:
+
 - Should tag names be globally unique case-insensitively?
 - Should tags support descriptions?
 - Should tags support user color eventually?
@@ -278,6 +258,8 @@ Avoid:
   surfaces?
 - Should tags appear in message evidence headers when a Conversation is in
   scope?
-- Should there be a dedicated tag management surface?
-- Should tags be considered a kind of Conversation Lens scope?
-- Should future Saved Investigations reference tags, Working Sets, or both?
+- Should there be a dedicated tag management surface in the first slice?
+- Should tag retrieval first appear in the Conversation sidebar, Structured
+  Conversation Retrieval, or both?
+- Should deleted tags disappear completely, or leave a user-visible recovery
+  affordance?

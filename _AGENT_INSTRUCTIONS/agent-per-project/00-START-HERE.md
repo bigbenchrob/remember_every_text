@@ -2,7 +2,7 @@
 tier: project
 scope: navigation
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-14
 source_of_truth: doc
 links:
   - ./README.md
@@ -62,6 +62,7 @@ correctness, or an active UI-walk review.
 | Onboarding and archive/recovery | `25-ONBOARDING-AND-ARCHIVE/` |
 | Essentials, navigation, panels, sidebar, search | `30-ESSENTIALS/` |
 | Feature ownership | `40-FEATURES/` |
+| Cross-column vertical alignment | `09-CROSS-COLUMN-LAYOUT/` |
 | Cross-surface specs and ViewSpec/cassette architecture | `42-SPEC-SYSTEM/` |
 | Message Evidence Spine and graph-migration history | `55-READERS-INTEGRATORS-ORCHESTRATORS/` |
 | Active UI/UX walk and design language | `95-WALK-UI-TREE/` |

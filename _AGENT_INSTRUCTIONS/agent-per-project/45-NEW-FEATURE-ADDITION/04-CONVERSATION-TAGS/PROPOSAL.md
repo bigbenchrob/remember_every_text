@@ -2,10 +2,12 @@
 tier: project
 scope: feature-proposal
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-11
 source_of_truth: draft
-status: exploratory
+status: consolidated-exploratory
 links:
+  - ../05-CONVERSATION-INTENT-ARCHITECTURE/README.md
+  - ../06-STRUCTURED-CONVERSATION-RETRIEVAL/README.md
   - ./README.md
   - ./DESIGN_NOTES.md
   - ../../40-FEATURES/conversations/README.md
@@ -54,6 +56,11 @@ Tags support two complementary modes:
 The tag system should therefore serve both known-item lookup and future
 exploratory surfaces.
 
+Tags are also the first major planned feature built on the broader
+Conversation Intent seam. This package owns tag-specific product behavior; the
+Conversation Intent package owns the general architecture for user-authored or
+user-confirmed Conversation meaning.
+
 ## Product Philosophy
 
 Tags are not folders.
@@ -73,17 +80,16 @@ Examples:
 Tags should feel lightweight enough that users will apply them, but durable
 enough that applying a tag feels like preserving meaning.
 
-## Core Model
+## Tag-Specific Model
 
 A Conversation may have zero, one, or many tags.
 
 A Tag may apply to zero, one, or many Conversations.
 
-Tags are user intent. They should be stored in overlay and resolved against
-stable Conversation identity. The graph projection should not consult tags, and
-tags should not be written into graph projection tables.
+Tags are durable **Meaning** intent. They describe what a Conversation
+represents to the user.
 
-The model should support:
+The tag feature should support:
 
 - creation of a tag;
 - assigning a tag to a Conversation;
@@ -93,7 +99,18 @@ The model should support:
 - listing Conversations with a tag;
 - showing tags wherever the Conversation appears.
 
+The storage, identity, overlay, and ownership rules for this model are inherited
+from Conversation Intent rather than redefined here.
+
 ## Relationship To Existing Concepts
+
+### Conversation Intent
+
+Conversation Intent is the broader architectural model for user-authored or
+user-confirmed metadata attached to stable Conversation identity.
+
+Tags are one durable Conversation Intent type. They should be designed on top
+of that seam rather than as a tag-only persistence or sidebar special case.
 
 ### Favourites
 
@@ -134,16 +151,23 @@ They may eventually interact:
 Do not implement Working Sets as tags by default. They have different
 lifetimes.
 
-### Search
+### Structured Conversation Retrieval And Search
 
-Search may eventually use tags as refinement context:
+Structured Conversation Retrieval may eventually consume tags as remembered
+context tokens:
+
+- Conversations tagged `Family`;
+- Favourite Conversations tagged `Taxes`;
+- Dormant Conversations tagged `Health`.
+
+Message-content Search may also use tags as refinement context:
 
 - search within tagged Conversations;
 - tag Conversations found from message search results;
 - surface tags in result context.
 
-Search should not own the tag model. Search can request tag operations or
-filter by tags through Conversation/user-intent boundaries.
+Search should not own the tag model. Search can request tag operations or filter
+by tags through Conversation/user-intent boundaries.
 
 ### Discovery
 
@@ -160,19 +184,18 @@ system.
 
 ## Architectural Direction
 
-Conversation Tags should be treated as user overlay intent attached to canonical
-Conversation identity.
+Conversation Tags inherit their architectural direction from Conversation
+Intent:
 
-High-level ownership:
+- Tags attach to canonical Conversation identity.
+- Tags are persisted as overlay/user intent.
+- Graph projection does not read or write tags.
+- `features/conversations` owns user-facing tag workflows and presentation.
+- Search, Messages, Contacts, and Discovery may consume tag state but do not own
+  tag semantics.
 
-- `features/conversations` owns user-facing tag workflows, presentation, and
-  Conversation/tag lenses.
-- Overlay storage owns persisted user intent.
-- `essentials/conversation_graph` owns source-scoped Conversation identity and
-  graph facts, not tag meaning.
-- `features/messages` may display or request tag affordances where a message
-  belongs to a Conversation, but it should not own the tag model.
-- Search and future Discovery can consume tags as scope/refinement inputs.
+This package should not redefine the broader intent architecture. It should
+specify how tags behave as a user-facing feature.
 
 ## Non-Goals
 
@@ -185,7 +208,7 @@ Do not implement:
 
 - AI-assisted tagging;
 - tag synchronization;
-- saved investigations;
+- higher-order investigation workspace features;
 - complex tag hierarchies;
 - tag folders;
 - nested tags;
@@ -202,10 +225,10 @@ The first implementation slice, when approved later, should likely be small:
 2. Rename/delete a tag.
 3. Add/remove a tag from a Conversation Card.
 4. Show assigned tags on a Conversation detail/card surface in a restrained way.
-5. Filter Browse Conversations by one tag.
+5. Expose a tag as a future retrieval/lens scope, if doing so remains small.
 
-This would prove the durable model without overbuilding Discovery, Search
-refinement, or AI assistance.
+This would prove the durable model without overbuilding Discovery,
+message-content Search refinement, Working Sets, or AI assistance.
 
 ## Open Questions
 
@@ -216,9 +239,10 @@ refinement, or AI assistance.
   the current lens?
 - Should tag creation happen inline from the Conversation Card, from a tag
   management surface, or both?
-- Should Core Favourites eventually be represented through the same user-intent
-  infrastructure as tags while remaining user-facing as Favourites?
-- How should tags behave if a Conversation identity is rebuilt or recanonicalized?
+- Should duplicate tag names be prevented case-insensitively?
+- Should tags support optional descriptions?
+- Should tag filtering first appear as a Conversation sidebar affordance or as
+  part of Structured Conversation Retrieval?
 - Should tags be exportable as a user data file before any synchronization work?
 
 ## Acceptance Criteria For This Proposal
@@ -230,4 +254,5 @@ refinement, or AI assistance.
 - The proposal distinguishes Tags from Favourites and Working Sets.
 - The proposal supports future retrieval and discovery without designing those
   features in detail.
+- The package depends on Conversation Intent instead of re-explaining it.
 - The package remains exploratory and does not mandate implementation.

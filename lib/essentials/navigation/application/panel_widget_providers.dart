@@ -736,7 +736,7 @@ List<Widget> _buildSidebarControls({
   }
 
   return [
-    TopColumnBand(
+    TitleColumnBand(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       childPlacement: const ColumnBandChildPlacement.topLeft(),
       child: Column(
@@ -820,17 +820,17 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
       cassetteEntries.isNotEmpty &&
       cassetteEntries.first.resolvedCassette.payload.layoutAnchor ==
           SidebarCassetteLayoutAnchor.preferredContentStart;
-  final middleZoneEntries = firstEntryIsContentStart || cassetteEntries.isEmpty
+  final contextZoneEntries = firstEntryIsContentStart || cassetteEntries.isEmpty
       ? <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[]
       : [cassetteEntries.first];
   final contentStartEntries = _resetLeadingTopSpacing(
     mode: mode,
-    entries: cassetteEntries.sublist(middleZoneEntries.length),
+    entries: cassetteEntries.sublist(contextZoneEntries.length),
   );
 
-  final middleZoneContent = _buildSidebarContentEntries(
+  final contextZoneContent = _buildSidebarContentEntries(
     mode: mode,
-    cassetteEntries: middleZoneEntries,
+    cassetteEntries: contextZoneEntries,
     maxWidth: maxWidth,
     contentSeamLayout: null,
   );
@@ -843,10 +843,10 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
 
   return [
     (
-      widget: MiddleColumnBand(
+      widget: ContextColumnBand(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
         childPlacement: const ColumnBandChildPlacement.topLeft(),
-        child: _ContentFillColumn(children: middleZoneContent),
+        child: _ContentFillColumn(children: contextZoneContent),
       ),
       shouldExpand: false,
     ),

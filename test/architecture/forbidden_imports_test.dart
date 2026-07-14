@@ -282,6 +282,7 @@ const Set<String> _providerInvalidationAllowedFiles = {
   'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_favorite_actions_provider.dart',
   'lib/features/contacts/application/sidebar_cassette_spec/resolver_tools/contact_sidebar_refresh_actions_provider.dart',
   'lib/features/contacts/application/contact_access/contact_access_provider.dart',
+  'lib/features/conversations/application/conversation_tags/conversation_tag_actions_provider.dart',
   'lib/features/handles/application/review/handle_review_provider.dart',
   'lib/features/handles/application/settings_cassette_spec/resolver_tools/manual_linking_provider.dart',
   'lib/features/handles/application/settings_cassette_spec/resolver_tools/spam_management_provider.dart',

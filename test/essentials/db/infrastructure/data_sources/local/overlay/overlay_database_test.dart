@@ -153,6 +153,121 @@ void main() {
         contains('Virtual Person'),
       );
     });
+
+    test('migrates v6 schema by adding conversation tag tables', () async {
+      await db.close();
+
+      final tempDir = await Directory.systemTemp.createTemp(
+        'overlay_v6_conversation_tag_migration_test_',
+      );
+      final dbPath = appDatabasePath(
+        AppDatabaseFile.overlay,
+        databaseDirectory: tempDir.path,
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+      await existingDatabase.execute('''
+        CREATE TABLE message_user_tags (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          message_guid TEXT NOT NULL,
+          tag_display TEXT NOT NULL,
+          tag_normalized TEXT NOT NULL,
+          created_at_utc TEXT NOT NULL,
+          updated_at_utc TEXT NOT NULL
+        )
+      ''');
+      await existingDatabase.execute('PRAGMA user_version = 6');
+      await existingDatabase.close();
+
+      final migratedDatabase = OverlayDatabase(NativeDatabase(File(dbPath)));
+      addTearDown(migratedDatabase.close);
+
+      final tables = await migratedDatabase
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+          .get();
+      final tableNames = tables.map((row) => row.read<String>('name'));
+
+      expect(tableNames, contains('conversation_tags'));
+      expect(tableNames, contains('conversation_tag_assignments'));
+    });
+
+    test('migrates v7 schema by adding tag visibility policy', () async {
+      await db.close();
+
+      final tempDir = await Directory.systemTemp.createTemp(
+        'overlay_v7_conversation_tag_visibility_migration_test_',
+      );
+      final dbPath = appDatabasePath(
+        AppDatabaseFile.overlay,
+        databaseDirectory: tempDir.path,
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+        }
+      });
+
+      final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+      await existingDatabase.execute('''
+        CREATE TABLE message_user_tags (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          message_guid TEXT NOT NULL,
+          tag_display TEXT NOT NULL,
+          tag_normalized TEXT NOT NULL,
+          created_at_utc TEXT NOT NULL,
+          updated_at_utc TEXT NOT NULL
+        )
+      ''');
+      await existingDatabase.execute('''
+        CREATE TABLE conversation_tags (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          display_name TEXT NOT NULL,
+          normalized_name TEXT NOT NULL,
+          created_at_utc TEXT NOT NULL,
+          updated_at_utc TEXT NOT NULL
+        )
+      ''');
+      await existingDatabase.execute('''
+        INSERT INTO conversation_tags (
+          display_name,
+          normalized_name,
+          created_at_utc,
+          updated_at_utc
+        ) VALUES ('Family', 'family', '2026-07-12T00:00:00.000Z', '2026-07-12T00:00:00.000Z')
+      ''');
+      await existingDatabase.execute('''
+        CREATE TABLE conversation_tag_assignments (
+          conversation_id INTEGER NOT NULL,
+          tag_id INTEGER NOT NULL,
+          created_at_utc TEXT NOT NULL,
+          updated_at_utc TEXT NOT NULL,
+          PRIMARY KEY (conversation_id, tag_id)
+        )
+      ''');
+      await existingDatabase.execute('PRAGMA user_version = 7');
+      await existingDatabase.close();
+
+      final migratedDatabase = OverlayDatabase(NativeDatabase(File(dbPath)));
+      addTearDown(migratedDatabase.close);
+
+      final columns = await migratedDatabase
+          .customSelect('PRAGMA table_info(conversation_tags)')
+          .get();
+      final row = await migratedDatabase
+          .select(migratedDatabase.conversationTags)
+          .getSingle();
+
+      expect(
+        columns.map((column) => column.read<String>('name')),
+        contains('visibility_policy'),
+      );
+      expect(row.visibilityPolicy, 'ordinary');
+    });
   });
 
   group('HandleToParticipantOverrides', () {

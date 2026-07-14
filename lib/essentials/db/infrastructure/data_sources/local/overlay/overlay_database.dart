@@ -23,13 +23,15 @@ part 'overlay_database.g.dart';
     DismissedHandles,
     HandleVisibilityOverrides,
     ArchivedAttachments,
+    ConversationTags,
+    ConversationTagAssignments,
   ],
 )
 class OverlayDatabase extends _$OverlayDatabase {
   OverlayDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,6 +57,13 @@ class OverlayDatabase extends _$OverlayDatabase {
         await m.dropColumn(participantOverrides, 'name_mode');
         await m.dropColumn(virtualParticipants, 'short_name');
       }
+      if (from < 7) {
+        await m.createTable(conversationTags);
+        await m.createTable(conversationTagAssignments);
+      }
+      if (from >= 7 && from < 8) {
+        await m.addColumn(conversationTags, conversationTags.visibilityPolicy);
+      }
       await _createOverlayIndexes();
     },
   );
@@ -67,6 +76,7 @@ class OverlayDatabase extends _$OverlayDatabase {
       'CREATE INDEX IF NOT EXISTS idx_message_user_tags_tag_normalized ON message_user_tags(tag_normalized)',
     );
     await _createGraphMessageIntentTables();
+    await _createConversationTagIndexes();
   }
 
   Future<void> _createGraphMessageIntentTables() async {
@@ -101,6 +111,21 @@ class OverlayDatabase extends _$OverlayDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_message_intent_tags_normalized '
       'ON message_intent_tags(tag_normalized)',
+    );
+  }
+
+  Future<void> _createConversationTagIndexes() async {
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_conversation_tags_normalized '
+      'ON conversation_tags(normalized_name)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_conversation_tag_assignments_conversation '
+      'ON conversation_tag_assignments(conversation_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_conversation_tag_assignments_tag '
+      'ON conversation_tag_assignments(tag_id)',
     );
   }
 
@@ -1227,6 +1252,49 @@ class MessageUserTags extends Table {
   List<Set<Column>> get uniqueKeys => [
     {messageGuid, tagNormalized},
   ];
+}
+
+/// User-authored semantic labels attached to canonical Conversation identity.
+///
+/// Conversation tags are overlay intent. They are not graph projection data and
+/// must be merged with graph facts at read time.
+class ConversationTags extends Table {
+  @override
+  String get tableName => 'conversation_tags';
+
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get displayName => text().named('display_name')();
+
+  TextColumn get normalizedName => text().named('normalized_name')();
+
+  TextColumn get visibilityPolicy => text()
+      .named('visibility_policy')
+      .withDefault(const Constant('ordinary'))();
+
+  TextColumn get createdAtUtc => text().named('created_at_utc')();
+  TextColumn get updatedAtUtc => text().named('updated_at_utc')();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {normalizedName},
+  ];
+}
+
+/// Assignment of a user-authored tag to one canonical Conversation.
+class ConversationTagAssignments extends Table {
+  @override
+  String get tableName => 'conversation_tag_assignments';
+
+  IntColumn get conversationId => integer().named('conversation_id')();
+
+  IntColumn get tagId => integer().named('tag_id')();
+
+  TextColumn get createdAtUtc => text().named('created_at_utc')();
+  TextColumn get updatedAtUtc => text().named('updated_at_utc')();
+
+  @override
+  Set<Column> get primaryKey => {conversationId, tagId};
 }
 
 /// User-defined manual links from handles to participants or virtual participants.

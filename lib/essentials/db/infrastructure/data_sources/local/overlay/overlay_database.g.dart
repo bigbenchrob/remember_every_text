@@ -4796,6 +4796,781 @@ class ArchivedAttachmentsCompanion extends UpdateCompanion<ArchivedAttachment> {
   }
 }
 
+class $ConversationTagsTable extends ConversationTags
+    with TableInfo<$ConversationTagsTable, ConversationTag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConversationTagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _normalizedNameMeta = const VerificationMeta(
+    'normalizedName',
+  );
+  @override
+  late final GeneratedColumn<String> normalizedName = GeneratedColumn<String>(
+    'normalized_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _visibilityPolicyMeta = const VerificationMeta(
+    'visibilityPolicy',
+  );
+  @override
+  late final GeneratedColumn<String> visibilityPolicy = GeneratedColumn<String>(
+    'visibility_policy',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('ordinary'),
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> createdAtUtc = GeneratedColumn<String>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAtUtc = GeneratedColumn<String>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    displayName,
+    normalizedName,
+    visibilityPolicy,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'conversation_tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConversationTag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('normalized_name')) {
+      context.handle(
+        _normalizedNameMeta,
+        normalizedName.isAcceptableOrUnknown(
+          data['normalized_name']!,
+          _normalizedNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_normalizedNameMeta);
+    }
+    if (data.containsKey('visibility_policy')) {
+      context.handle(
+        _visibilityPolicyMeta,
+        visibilityPolicy.isAcceptableOrUnknown(
+          data['visibility_policy']!,
+          _visibilityPolicyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {normalizedName},
+  ];
+  @override
+  ConversationTag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConversationTag(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      normalizedName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}normalized_name'],
+      )!,
+      visibilityPolicy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}visibility_policy'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $ConversationTagsTable createAlias(String alias) {
+    return $ConversationTagsTable(attachedDatabase, alias);
+  }
+}
+
+class ConversationTag extends DataClass implements Insertable<ConversationTag> {
+  final int id;
+  final String displayName;
+  final String normalizedName;
+  final String visibilityPolicy;
+  final String createdAtUtc;
+  final String updatedAtUtc;
+  const ConversationTag({
+    required this.id,
+    required this.displayName,
+    required this.normalizedName,
+    required this.visibilityPolicy,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['display_name'] = Variable<String>(displayName);
+    map['normalized_name'] = Variable<String>(normalizedName);
+    map['visibility_policy'] = Variable<String>(visibilityPolicy);
+    map['created_at_utc'] = Variable<String>(createdAtUtc);
+    map['updated_at_utc'] = Variable<String>(updatedAtUtc);
+    return map;
+  }
+
+  ConversationTagsCompanion toCompanion(bool nullToAbsent) {
+    return ConversationTagsCompanion(
+      id: Value(id),
+      displayName: Value(displayName),
+      normalizedName: Value(normalizedName),
+      visibilityPolicy: Value(visibilityPolicy),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory ConversationTag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConversationTag(
+      id: serializer.fromJson<int>(json['id']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      normalizedName: serializer.fromJson<String>(json['normalizedName']),
+      visibilityPolicy: serializer.fromJson<String>(json['visibilityPolicy']),
+      createdAtUtc: serializer.fromJson<String>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<String>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'displayName': serializer.toJson<String>(displayName),
+      'normalizedName': serializer.toJson<String>(normalizedName),
+      'visibilityPolicy': serializer.toJson<String>(visibilityPolicy),
+      'createdAtUtc': serializer.toJson<String>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<String>(updatedAtUtc),
+    };
+  }
+
+  ConversationTag copyWith({
+    int? id,
+    String? displayName,
+    String? normalizedName,
+    String? visibilityPolicy,
+    String? createdAtUtc,
+    String? updatedAtUtc,
+  }) => ConversationTag(
+    id: id ?? this.id,
+    displayName: displayName ?? this.displayName,
+    normalizedName: normalizedName ?? this.normalizedName,
+    visibilityPolicy: visibilityPolicy ?? this.visibilityPolicy,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  ConversationTag copyWithCompanion(ConversationTagsCompanion data) {
+    return ConversationTag(
+      id: data.id.present ? data.id.value : this.id,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      normalizedName: data.normalizedName.present
+          ? data.normalizedName.value
+          : this.normalizedName,
+      visibilityPolicy: data.visibilityPolicy.present
+          ? data.visibilityPolicy.value
+          : this.visibilityPolicy,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationTag(')
+          ..write('id: $id, ')
+          ..write('displayName: $displayName, ')
+          ..write('normalizedName: $normalizedName, ')
+          ..write('visibilityPolicy: $visibilityPolicy, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    displayName,
+    normalizedName,
+    visibilityPolicy,
+    createdAtUtc,
+    updatedAtUtc,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConversationTag &&
+          other.id == this.id &&
+          other.displayName == this.displayName &&
+          other.normalizedName == this.normalizedName &&
+          other.visibilityPolicy == this.visibilityPolicy &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class ConversationTagsCompanion extends UpdateCompanion<ConversationTag> {
+  final Value<int> id;
+  final Value<String> displayName;
+  final Value<String> normalizedName;
+  final Value<String> visibilityPolicy;
+  final Value<String> createdAtUtc;
+  final Value<String> updatedAtUtc;
+  const ConversationTagsCompanion({
+    this.id = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.normalizedName = const Value.absent(),
+    this.visibilityPolicy = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+  });
+  ConversationTagsCompanion.insert({
+    this.id = const Value.absent(),
+    required String displayName,
+    required String normalizedName,
+    this.visibilityPolicy = const Value.absent(),
+    required String createdAtUtc,
+    required String updatedAtUtc,
+  }) : displayName = Value(displayName),
+       normalizedName = Value(normalizedName),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<ConversationTag> custom({
+    Expression<int>? id,
+    Expression<String>? displayName,
+    Expression<String>? normalizedName,
+    Expression<String>? visibilityPolicy,
+    Expression<String>? createdAtUtc,
+    Expression<String>? updatedAtUtc,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (displayName != null) 'display_name': displayName,
+      if (normalizedName != null) 'normalized_name': normalizedName,
+      if (visibilityPolicy != null) 'visibility_policy': visibilityPolicy,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+    });
+  }
+
+  ConversationTagsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? displayName,
+    Value<String>? normalizedName,
+    Value<String>? visibilityPolicy,
+    Value<String>? createdAtUtc,
+    Value<String>? updatedAtUtc,
+  }) {
+    return ConversationTagsCompanion(
+      id: id ?? this.id,
+      displayName: displayName ?? this.displayName,
+      normalizedName: normalizedName ?? this.normalizedName,
+      visibilityPolicy: visibilityPolicy ?? this.visibilityPolicy,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (normalizedName.present) {
+      map['normalized_name'] = Variable<String>(normalizedName.value);
+    }
+    if (visibilityPolicy.present) {
+      map['visibility_policy'] = Variable<String>(visibilityPolicy.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<String>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<String>(updatedAtUtc.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationTagsCompanion(')
+          ..write('id: $id, ')
+          ..write('displayName: $displayName, ')
+          ..write('normalizedName: $normalizedName, ')
+          ..write('visibilityPolicy: $visibilityPolicy, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ConversationTagAssignmentsTable extends ConversationTagAssignments
+    with
+        TableInfo<$ConversationTagAssignmentsTable, ConversationTagAssignment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConversationTagAssignmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<int> conversationId = GeneratedColumn<int>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tagIdMeta = const VerificationMeta('tagId');
+  @override
+  late final GeneratedColumn<int> tagId = GeneratedColumn<int>(
+    'tag_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtUtcMeta = const VerificationMeta(
+    'createdAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> createdAtUtc = GeneratedColumn<String>(
+    'created_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtUtcMeta = const VerificationMeta(
+    'updatedAtUtc',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAtUtc = GeneratedColumn<String>(
+    'updated_at_utc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    conversationId,
+    tagId,
+    createdAtUtc,
+    updatedAtUtc,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'conversation_tag_assignments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConversationTagAssignment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('tag_id')) {
+      context.handle(
+        _tagIdMeta,
+        tagId.isAcceptableOrUnknown(data['tag_id']!, _tagIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tagIdMeta);
+    }
+    if (data.containsKey('created_at_utc')) {
+      context.handle(
+        _createdAtUtcMeta,
+        createdAtUtc.isAcceptableOrUnknown(
+          data['created_at_utc']!,
+          _createdAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtUtcMeta);
+    }
+    if (data.containsKey('updated_at_utc')) {
+      context.handle(
+        _updatedAtUtcMeta,
+        updatedAtUtc.isAcceptableOrUnknown(
+          data['updated_at_utc']!,
+          _updatedAtUtcMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtUtcMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {conversationId, tagId};
+  @override
+  ConversationTagAssignment map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConversationTagAssignment(
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      tagId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tag_id'],
+      )!,
+      createdAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at_utc'],
+      )!,
+      updatedAtUtc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at_utc'],
+      )!,
+    );
+  }
+
+  @override
+  $ConversationTagAssignmentsTable createAlias(String alias) {
+    return $ConversationTagAssignmentsTable(attachedDatabase, alias);
+  }
+}
+
+class ConversationTagAssignment extends DataClass
+    implements Insertable<ConversationTagAssignment> {
+  final int conversationId;
+  final int tagId;
+  final String createdAtUtc;
+  final String updatedAtUtc;
+  const ConversationTagAssignment({
+    required this.conversationId,
+    required this.tagId,
+    required this.createdAtUtc,
+    required this.updatedAtUtc,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['conversation_id'] = Variable<int>(conversationId);
+    map['tag_id'] = Variable<int>(tagId);
+    map['created_at_utc'] = Variable<String>(createdAtUtc);
+    map['updated_at_utc'] = Variable<String>(updatedAtUtc);
+    return map;
+  }
+
+  ConversationTagAssignmentsCompanion toCompanion(bool nullToAbsent) {
+    return ConversationTagAssignmentsCompanion(
+      conversationId: Value(conversationId),
+      tagId: Value(tagId),
+      createdAtUtc: Value(createdAtUtc),
+      updatedAtUtc: Value(updatedAtUtc),
+    );
+  }
+
+  factory ConversationTagAssignment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConversationTagAssignment(
+      conversationId: serializer.fromJson<int>(json['conversationId']),
+      tagId: serializer.fromJson<int>(json['tagId']),
+      createdAtUtc: serializer.fromJson<String>(json['createdAtUtc']),
+      updatedAtUtc: serializer.fromJson<String>(json['updatedAtUtc']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'conversationId': serializer.toJson<int>(conversationId),
+      'tagId': serializer.toJson<int>(tagId),
+      'createdAtUtc': serializer.toJson<String>(createdAtUtc),
+      'updatedAtUtc': serializer.toJson<String>(updatedAtUtc),
+    };
+  }
+
+  ConversationTagAssignment copyWith({
+    int? conversationId,
+    int? tagId,
+    String? createdAtUtc,
+    String? updatedAtUtc,
+  }) => ConversationTagAssignment(
+    conversationId: conversationId ?? this.conversationId,
+    tagId: tagId ?? this.tagId,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+    updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+  );
+  ConversationTagAssignment copyWithCompanion(
+    ConversationTagAssignmentsCompanion data,
+  ) {
+    return ConversationTagAssignment(
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      tagId: data.tagId.present ? data.tagId.value : this.tagId,
+      createdAtUtc: data.createdAtUtc.present
+          ? data.createdAtUtc.value
+          : this.createdAtUtc,
+      updatedAtUtc: data.updatedAtUtc.present
+          ? data.updatedAtUtc.value
+          : this.updatedAtUtc,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationTagAssignment(')
+          ..write('conversationId: $conversationId, ')
+          ..write('tagId: $tagId, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(conversationId, tagId, createdAtUtc, updatedAtUtc);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConversationTagAssignment &&
+          other.conversationId == this.conversationId &&
+          other.tagId == this.tagId &&
+          other.createdAtUtc == this.createdAtUtc &&
+          other.updatedAtUtc == this.updatedAtUtc);
+}
+
+class ConversationTagAssignmentsCompanion
+    extends UpdateCompanion<ConversationTagAssignment> {
+  final Value<int> conversationId;
+  final Value<int> tagId;
+  final Value<String> createdAtUtc;
+  final Value<String> updatedAtUtc;
+  final Value<int> rowid;
+  const ConversationTagAssignmentsCompanion({
+    this.conversationId = const Value.absent(),
+    this.tagId = const Value.absent(),
+    this.createdAtUtc = const Value.absent(),
+    this.updatedAtUtc = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConversationTagAssignmentsCompanion.insert({
+    required int conversationId,
+    required int tagId,
+    required String createdAtUtc,
+    required String updatedAtUtc,
+    this.rowid = const Value.absent(),
+  }) : conversationId = Value(conversationId),
+       tagId = Value(tagId),
+       createdAtUtc = Value(createdAtUtc),
+       updatedAtUtc = Value(updatedAtUtc);
+  static Insertable<ConversationTagAssignment> custom({
+    Expression<int>? conversationId,
+    Expression<int>? tagId,
+    Expression<String>? createdAtUtc,
+    Expression<String>? updatedAtUtc,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (tagId != null) 'tag_id': tagId,
+      if (createdAtUtc != null) 'created_at_utc': createdAtUtc,
+      if (updatedAtUtc != null) 'updated_at_utc': updatedAtUtc,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConversationTagAssignmentsCompanion copyWith({
+    Value<int>? conversationId,
+    Value<int>? tagId,
+    Value<String>? createdAtUtc,
+    Value<String>? updatedAtUtc,
+    Value<int>? rowid,
+  }) {
+    return ConversationTagAssignmentsCompanion(
+      conversationId: conversationId ?? this.conversationId,
+      tagId: tagId ?? this.tagId,
+      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+      updatedAtUtc: updatedAtUtc ?? this.updatedAtUtc,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<int>(conversationId.value);
+    }
+    if (tagId.present) {
+      map['tag_id'] = Variable<int>(tagId.value);
+    }
+    if (createdAtUtc.present) {
+      map['created_at_utc'] = Variable<String>(createdAtUtc.value);
+    }
+    if (updatedAtUtc.present) {
+      map['updated_at_utc'] = Variable<String>(updatedAtUtc.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationTagAssignmentsCompanion(')
+          ..write('conversationId: $conversationId, ')
+          ..write('tagId: $tagId, ')
+          ..write('createdAtUtc: $createdAtUtc, ')
+          ..write('updatedAtUtc: $updatedAtUtc, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$OverlayDatabase extends GeneratedDatabase {
   _$OverlayDatabase(QueryExecutor e) : super(e);
   $OverlayDatabaseManager get managers => $OverlayDatabaseManager(this);
@@ -4827,6 +5602,11 @@ abstract class _$OverlayDatabase extends GeneratedDatabase {
       $HandleVisibilityOverridesTable(this);
   late final $ArchivedAttachmentsTable archivedAttachments =
       $ArchivedAttachmentsTable(this);
+  late final $ConversationTagsTable conversationTags = $ConversationTagsTable(
+    this,
+  );
+  late final $ConversationTagAssignmentsTable conversationTagAssignments =
+      $ConversationTagAssignmentsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4844,6 +5624,8 @@ abstract class _$OverlayDatabase extends GeneratedDatabase {
     dismissedHandles,
     handleVisibilityOverrides,
     archivedAttachments,
+    conversationTags,
+    conversationTagAssignments,
   ];
 }
 
@@ -7493,6 +8275,445 @@ typedef $$ArchivedAttachmentsTableProcessedTableManager =
       ArchivedAttachment,
       PrefetchHooks Function()
     >;
+typedef $$ConversationTagsTableCreateCompanionBuilder =
+    ConversationTagsCompanion Function({
+      Value<int> id,
+      required String displayName,
+      required String normalizedName,
+      Value<String> visibilityPolicy,
+      required String createdAtUtc,
+      required String updatedAtUtc,
+    });
+typedef $$ConversationTagsTableUpdateCompanionBuilder =
+    ConversationTagsCompanion Function({
+      Value<int> id,
+      Value<String> displayName,
+      Value<String> normalizedName,
+      Value<String> visibilityPolicy,
+      Value<String> createdAtUtc,
+      Value<String> updatedAtUtc,
+    });
+
+class $$ConversationTagsTableFilterComposer
+    extends Composer<_$OverlayDatabase, $ConversationTagsTable> {
+  $$ConversationTagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get normalizedName => $composableBuilder(
+    column: $table.normalizedName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get visibilityPolicy => $composableBuilder(
+    column: $table.visibilityPolicy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConversationTagsTableOrderingComposer
+    extends Composer<_$OverlayDatabase, $ConversationTagsTable> {
+  $$ConversationTagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get normalizedName => $composableBuilder(
+    column: $table.normalizedName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get visibilityPolicy => $composableBuilder(
+    column: $table.visibilityPolicy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ConversationTagsTableAnnotationComposer
+    extends Composer<_$OverlayDatabase, $ConversationTagsTable> {
+  $$ConversationTagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get normalizedName => $composableBuilder(
+    column: $table.normalizedName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get visibilityPolicy => $composableBuilder(
+    column: $table.visibilityPolicy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+}
+
+class $$ConversationTagsTableTableManager
+    extends
+        RootTableManager<
+          _$OverlayDatabase,
+          $ConversationTagsTable,
+          ConversationTag,
+          $$ConversationTagsTableFilterComposer,
+          $$ConversationTagsTableOrderingComposer,
+          $$ConversationTagsTableAnnotationComposer,
+          $$ConversationTagsTableCreateCompanionBuilder,
+          $$ConversationTagsTableUpdateCompanionBuilder,
+          (
+            ConversationTag,
+            BaseReferences<
+              _$OverlayDatabase,
+              $ConversationTagsTable,
+              ConversationTag
+            >,
+          ),
+          ConversationTag,
+          PrefetchHooks Function()
+        > {
+  $$ConversationTagsTableTableManager(
+    _$OverlayDatabase db,
+    $ConversationTagsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ConversationTagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ConversationTagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ConversationTagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<String> normalizedName = const Value.absent(),
+                Value<String> visibilityPolicy = const Value.absent(),
+                Value<String> createdAtUtc = const Value.absent(),
+                Value<String> updatedAtUtc = const Value.absent(),
+              }) => ConversationTagsCompanion(
+                id: id,
+                displayName: displayName,
+                normalizedName: normalizedName,
+                visibilityPolicy: visibilityPolicy,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String displayName,
+                required String normalizedName,
+                Value<String> visibilityPolicy = const Value.absent(),
+                required String createdAtUtc,
+                required String updatedAtUtc,
+              }) => ConversationTagsCompanion.insert(
+                id: id,
+                displayName: displayName,
+                normalizedName: normalizedName,
+                visibilityPolicy: visibilityPolicy,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConversationTagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$OverlayDatabase,
+      $ConversationTagsTable,
+      ConversationTag,
+      $$ConversationTagsTableFilterComposer,
+      $$ConversationTagsTableOrderingComposer,
+      $$ConversationTagsTableAnnotationComposer,
+      $$ConversationTagsTableCreateCompanionBuilder,
+      $$ConversationTagsTableUpdateCompanionBuilder,
+      (
+        ConversationTag,
+        BaseReferences<
+          _$OverlayDatabase,
+          $ConversationTagsTable,
+          ConversationTag
+        >,
+      ),
+      ConversationTag,
+      PrefetchHooks Function()
+    >;
+typedef $$ConversationTagAssignmentsTableCreateCompanionBuilder =
+    ConversationTagAssignmentsCompanion Function({
+      required int conversationId,
+      required int tagId,
+      required String createdAtUtc,
+      required String updatedAtUtc,
+      Value<int> rowid,
+    });
+typedef $$ConversationTagAssignmentsTableUpdateCompanionBuilder =
+    ConversationTagAssignmentsCompanion Function({
+      Value<int> conversationId,
+      Value<int> tagId,
+      Value<String> createdAtUtc,
+      Value<String> updatedAtUtc,
+      Value<int> rowid,
+    });
+
+class $$ConversationTagAssignmentsTableFilterComposer
+    extends Composer<_$OverlayDatabase, $ConversationTagAssignmentsTable> {
+  $$ConversationTagAssignmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get tagId => $composableBuilder(
+    column: $table.tagId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConversationTagAssignmentsTableOrderingComposer
+    extends Composer<_$OverlayDatabase, $ConversationTagAssignmentsTable> {
+  $$ConversationTagAssignmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get tagId => $composableBuilder(
+    column: $table.tagId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ConversationTagAssignmentsTableAnnotationComposer
+    extends Composer<_$OverlayDatabase, $ConversationTagAssignmentsTable> {
+  $$ConversationTagAssignmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get tagId =>
+      $composableBuilder(column: $table.tagId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAtUtc => $composableBuilder(
+    column: $table.createdAtUtc,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAtUtc => $composableBuilder(
+    column: $table.updatedAtUtc,
+    builder: (column) => column,
+  );
+}
+
+class $$ConversationTagAssignmentsTableTableManager
+    extends
+        RootTableManager<
+          _$OverlayDatabase,
+          $ConversationTagAssignmentsTable,
+          ConversationTagAssignment,
+          $$ConversationTagAssignmentsTableFilterComposer,
+          $$ConversationTagAssignmentsTableOrderingComposer,
+          $$ConversationTagAssignmentsTableAnnotationComposer,
+          $$ConversationTagAssignmentsTableCreateCompanionBuilder,
+          $$ConversationTagAssignmentsTableUpdateCompanionBuilder,
+          (
+            ConversationTagAssignment,
+            BaseReferences<
+              _$OverlayDatabase,
+              $ConversationTagAssignmentsTable,
+              ConversationTagAssignment
+            >,
+          ),
+          ConversationTagAssignment,
+          PrefetchHooks Function()
+        > {
+  $$ConversationTagAssignmentsTableTableManager(
+    _$OverlayDatabase db,
+    $ConversationTagAssignmentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ConversationTagAssignmentsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ConversationTagAssignmentsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ConversationTagAssignmentsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> conversationId = const Value.absent(),
+                Value<int> tagId = const Value.absent(),
+                Value<String> createdAtUtc = const Value.absent(),
+                Value<String> updatedAtUtc = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConversationTagAssignmentsCompanion(
+                conversationId: conversationId,
+                tagId: tagId,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int conversationId,
+                required int tagId,
+                required String createdAtUtc,
+                required String updatedAtUtc,
+                Value<int> rowid = const Value.absent(),
+              }) => ConversationTagAssignmentsCompanion.insert(
+                conversationId: conversationId,
+                tagId: tagId,
+                createdAtUtc: createdAtUtc,
+                updatedAtUtc: updatedAtUtc,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConversationTagAssignmentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$OverlayDatabase,
+      $ConversationTagAssignmentsTable,
+      ConversationTagAssignment,
+      $$ConversationTagAssignmentsTableFilterComposer,
+      $$ConversationTagAssignmentsTableOrderingComposer,
+      $$ConversationTagAssignmentsTableAnnotationComposer,
+      $$ConversationTagAssignmentsTableCreateCompanionBuilder,
+      $$ConversationTagAssignmentsTableUpdateCompanionBuilder,
+      (
+        ConversationTagAssignment,
+        BaseReferences<
+          _$OverlayDatabase,
+          $ConversationTagAssignmentsTable,
+          ConversationTagAssignment
+        >,
+      ),
+      ConversationTagAssignment,
+      PrefetchHooks Function()
+    >;
 
 class $OverlayDatabaseManager {
   final _$OverlayDatabase _db;
@@ -7528,4 +8749,12 @@ class $OverlayDatabaseManager {
       );
   $$ArchivedAttachmentsTableTableManager get archivedAttachments =>
       $$ArchivedAttachmentsTableTableManager(_db, _db.archivedAttachments);
+  $$ConversationTagsTableTableManager get conversationTags =>
+      $$ConversationTagsTableTableManager(_db, _db.conversationTags);
+  $$ConversationTagAssignmentsTableTableManager
+  get conversationTagAssignments =>
+      $$ConversationTagAssignmentsTableTableManager(
+        _db,
+        _db.conversationTagAssignments,
+      );
 }
