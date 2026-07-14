@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 /// Shared vertical rhythm for peer application panels.
 ///
 /// The strict frame model owns two fixed-height regions above content:
-/// top identity -> middle context/controls -> content.
+/// title identity -> context/controls -> content.
 ///
 /// These constants intentionally describe layout rhythm, not business meaning.
 /// Individual features still own the data and wording inside each band.
@@ -18,40 +18,40 @@ abstract final class AppPanelBands {
   static const EdgeInsets sidePanelPadding = EdgeInsets.fromLTRB(16, 16, 16, 0);
   static const EdgeInsets endPanelPadding = EdgeInsets.fromLTRB(16, 24, 16, 28);
 
-  static const double topBandHeight = 72;
-  static const double middleBandHeight = 166;
+  static const double titleColumnBandHeight = 72;
+  static const double contextColumnBandHeight = 166;
 
-  static const EdgeInsets sidebarTopBandPadding = EdgeInsets.fromLTRB(
+  static const EdgeInsets sidebarTitleBandPadding = EdgeInsets.fromLTRB(
     16,
     10,
     16,
     0,
   );
-  static const EdgeInsets sidebarMiddleBandPadding = EdgeInsets.fromLTRB(
+  static const EdgeInsets sidebarContextBandPadding = EdgeInsets.fromLTRB(
     16,
     0,
     16,
     0,
   );
-  static const EdgeInsets centerTopBandPadding = EdgeInsets.fromLTRB(
+  static const EdgeInsets centerTitleBandPadding = EdgeInsets.fromLTRB(
     32,
     24,
     32,
     0,
   );
-  static const EdgeInsets centerMiddleBandPadding = EdgeInsets.fromLTRB(
+  static const EdgeInsets centerContextBandPadding = EdgeInsets.fromLTRB(
     32,
     0,
     32,
     0,
   );
-  static const EdgeInsets endTopBandPadding = EdgeInsets.fromLTRB(
+  static const EdgeInsets endTitleBandPadding = EdgeInsets.fromLTRB(
     32,
     24,
     32,
     0,
   );
-  static const EdgeInsets endMiddleBandPadding = EdgeInsets.fromLTRB(
+  static const EdgeInsets endContextBandPadding = EdgeInsets.fromLTRB(
     32,
     0,
     32,
@@ -70,26 +70,27 @@ abstract final class AppPanelBands {
 /// Fixed-height frame for page columns that need cross-column alignment.
 ///
 /// The frame does not infer meaning. It only guarantees that content begins
-/// after the same top and middle vertical envelopes in participating columns.
+/// after the same title and context vertical envelopes in participating
+/// columns.
 class AppPanelColumnFrame extends StatelessWidget {
   const AppPanelColumnFrame({
-    required this.top,
-    required this.middle,
+    required this.title,
+    required this.contextContent,
     required this.content,
-    this.topPadding = AppPanelBands.centerTopBandPadding,
-    this.middlePadding = AppPanelBands.centerMiddleBandPadding,
-    this.topBandHeight = AppPanelBands.topBandHeight,
-    this.middleBandHeight = AppPanelBands.middleBandHeight,
+    this.titlePadding = AppPanelBands.centerTitleBandPadding,
+    this.contextPadding = AppPanelBands.centerContextBandPadding,
+    this.titleBandHeight = AppPanelBands.titleColumnBandHeight,
+    this.contextBandHeight = AppPanelBands.contextColumnBandHeight,
     super.key,
   });
 
-  final Widget top;
-  final Widget middle;
+  final Widget title;
+  final Widget contextContent;
   final Widget content;
-  final EdgeInsets topPadding;
-  final EdgeInsets middlePadding;
-  final double topBandHeight;
-  final double middleBandHeight;
+  final EdgeInsets titlePadding;
+  final EdgeInsets contextPadding;
+  final double titleBandHeight;
+  final double contextBandHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -97,14 +98,14 @@ class AppPanelColumnFrame extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppPanelFixedBand(
-          height: topBandHeight,
-          padding: topPadding,
-          child: top,
+          height: titleBandHeight,
+          padding: titlePadding,
+          child: title,
         ),
         AppPanelFixedBand(
-          height: middleBandHeight,
-          padding: middlePadding,
-          child: middle,
+          height: contextBandHeight,
+          padding: contextPadding,
+          child: contextContent,
         ),
         Expanded(child: content),
       ],
@@ -115,21 +116,21 @@ class AppPanelColumnFrame extends StatelessWidget {
 /// Fixed-height header for panels whose content list is owned elsewhere.
 class AppPanelFrameHeader extends StatelessWidget {
   const AppPanelFrameHeader({
-    required this.top,
-    required this.middle,
-    this.topPadding = AppPanelBands.centerTopBandPadding,
-    this.middlePadding = AppPanelBands.centerMiddleBandPadding,
-    this.topBandHeight = AppPanelBands.topBandHeight,
-    this.middleBandHeight = AppPanelBands.middleBandHeight,
+    required this.title,
+    required this.contextContent,
+    this.titlePadding = AppPanelBands.centerTitleBandPadding,
+    this.contextPadding = AppPanelBands.centerContextBandPadding,
+    this.titleBandHeight = AppPanelBands.titleColumnBandHeight,
+    this.contextBandHeight = AppPanelBands.contextColumnBandHeight,
     super.key,
   });
 
-  final Widget top;
-  final Widget middle;
-  final EdgeInsets topPadding;
-  final EdgeInsets middlePadding;
-  final double topBandHeight;
-  final double middleBandHeight;
+  final Widget title;
+  final Widget contextContent;
+  final EdgeInsets titlePadding;
+  final EdgeInsets contextPadding;
+  final double titleBandHeight;
+  final double contextBandHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -137,14 +138,14 @@ class AppPanelFrameHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppPanelFixedBand(
-          height: topBandHeight,
-          padding: topPadding,
-          child: top,
+          height: titleBandHeight,
+          padding: titlePadding,
+          child: title,
         ),
         AppPanelFixedBand(
-          height: middleBandHeight,
-          padding: middlePadding,
-          child: middle,
+          height: contextBandHeight,
+          padding: contextPadding,
+          child: contextContent,
         ),
       ],
     );

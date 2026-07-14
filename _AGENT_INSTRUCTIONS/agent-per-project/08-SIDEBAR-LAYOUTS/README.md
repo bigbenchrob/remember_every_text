@@ -2,7 +2,7 @@
 tier: project
 scope: sidebar-layouts
 owner: @rob
-last_reviewed: 2026-04-26
+last_reviewed: 2026-07-14
 source_of_truth: doc
 links:
   - ../05-COLOR-AND-TYPOGRAPHY-THEMING/05-dark-mode-theming.md
@@ -34,6 +34,8 @@ Use these docs when a feature needs to compose a sidebar branch from navigation 
 
 - durable sidebar flow state
 - cassette topology and cascade logic
+- cross-column vertical alignment and content-start seams shared with center
+  and end panels
 - feature-specific business meaning
 - center-panel report composition
 - theme-token definitions
@@ -42,6 +44,7 @@ Those concerns belong respectively in:
 
 - `../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/20-sidebar-cassette-system.md`
 - `../42-SPEC-SYSTEM/REFERENCE/54-SIDEBAR-CASSETTE-SPEC-SYSTEM/00-cassette-system-architecture.md`
+- `../09-CROSS-COLUMN-LAYOUT/`
 - feature-local docs under `../40-FEATURES/` or `../45-NEW-FEATURE-ADDITION/`
 - `../07-CENTER-PANEL-LAYOUTS/`
 - `../05-COLOR-AND-TYPOGRAPHY-THEMING/`

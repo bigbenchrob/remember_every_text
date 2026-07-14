@@ -13,10 +13,12 @@ ConversationSignatureCardData conversationSignatureCardDataFromDisplay(
       ConversationSignatureSummaryHighlight.none,
   ConversationSignatureMonthMarker? highlightedMonth,
   bool includeTags = false,
+  bool includeChatHook = false,
 }) {
   return ConversationSignatureCardData(
     conversationId: signature.conversationId,
     title: signature.title,
+    chatHookLabel: includeChatHook ? signature.chatHookLabel : null,
     titleContextLabel: titleContextLabel,
     summaryHighlight: summaryHighlight,
     highlightedMonth: highlightedMonth,
@@ -61,6 +63,10 @@ ConversationSignatureCardStyle conversationSignatureCardStyle(
     participantSuffixStyle: typography.caption.copyWith(
       color: colors.content.textTertiary.withValues(alpha: 0.68),
       fontWeight: FontWeight.w500,
+    ),
+    chatHookStyle: typography.caption.copyWith(
+      color: colors.content.textPrimary.withValues(alpha: 0.72),
+      fontWeight: FontWeight.w400,
     ),
     summaryStyle: typography.caption.copyWith(
       color: colors.content.textTertiary.withValues(alpha: 0.78),
@@ -107,6 +113,10 @@ ConversationSignatureCardStyle favouriteConversationSignatureCardStyle(
       color: colors.content.textTertiary.withValues(alpha: 0.72),
       fontWeight: FontWeight.w500,
     ),
+    chatHookStyle: typography.caption.copyWith(
+      color: colors.content.textPrimary.withValues(alpha: 0.74),
+      fontWeight: FontWeight.w400,
+    ),
     summaryStyle: typography.caption.copyWith(
       color: colors.content.textTertiary.withValues(alpha: 0.8),
     ),
@@ -151,6 +161,10 @@ ConversationSignatureCardStyle conversationSignatureContextHeaderCardStyle(
     participantSuffixStyle: typography.caption.copyWith(
       color: colors.content.textTertiary.withValues(alpha: 0.58),
       fontWeight: FontWeight.w500,
+    ),
+    chatHookStyle: typography.caption.copyWith(
+      color: colors.content.textPrimary.withValues(alpha: 0.68),
+      fontWeight: FontWeight.w400,
     ),
     summaryStyle: typography.caption.copyWith(
       color: colors.content.textTertiary.withValues(alpha: 0.68),

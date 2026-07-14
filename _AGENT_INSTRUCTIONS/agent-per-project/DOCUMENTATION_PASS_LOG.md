@@ -40,7 +40,7 @@ assets were modified as part of this documentation pass.
 | `40-FEATURES/conversations/README.md` | Created canonical Conversations feature boundary document. | Conversation presentation was previously documented indirectly through UI-walk and migration notes; it now has a discoverable feature-owned home. |
 | `55-READERS-INTEGRATORS-ORCHESTRATORS/README.md` | Added current-status guidance, navigation guide, and `85-RELEASE-EXIT-PLAN.md` to reading flow. | The folder accumulated many specialized numbered docs; a clearer index was lower-risk than physically moving historical documents. |
 | `95-WALK-UI-TREE/README.md` | Added note that the UI walk is the active product-improvement phase and should not expand into unrelated hardening. | Aligns UI work with Document 85's release-first rule. |
-| `95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/README.md` | Updated from the earlier rigid four-band/AppPanelBandColumn framing to the current top/middle/content-start band model and sidebar content-start seam. | The code now includes `TopColumnBand` and `MiddleColumnBand`; the old README text was stale and over-rigid. |
+| `95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/README.md` | Updated from the earlier rigid four-band/AppPanelBandColumn framing to the current title/context/content-start band model and sidebar content-start seam. | The code now includes `TitleColumnBand` and `ContextColumnBand`; the old README text was stale and over-rigid. |
 | `DOCUMENTATION_PASS_LOG.md` | Created this log. | Required by the documentation-pass request. |
 
 ## Structure Decisions
@@ -79,8 +79,8 @@ Reason:
   behavior, not user-facing Conversation widgets.
 - Search requests Conversation excerpts; Conversations renders the Conversation
   lens; Messages renders the message evidence rows.
-- X-column layout currently uses a top identity band and middle context band,
-  with content beginning after the middle band.
+- X-column layout currently uses a title band and context band, with content
+  beginning after the context band.
 
 ## Needs Verification / Human Review
 
@@ -864,3 +864,117 @@ visual disambiguation metadata.
 ## Needs Verification / Human Review
 
 - None. This is an evaluation document only; implementation remains deferred.
+
+---
+
+# Conversation Card Chat Hook Presentation Evaluation
+
+Date: 2026-07-13
+
+Scope: Added a follow-up UI/UX evaluation for the visual presentation of the
+one-to-one Conversation Card chat hook after real-data use.
+
+## Summary
+
+The evaluation records that the chat hook is not ordinary metadata; it is an
+identity qualifier explaining why multiple one-to-one Conversations can share
+the same Contact display name. The recommendation is to evaluate a future
+refinement where hooks are shown conditionally for duplicate display identities,
+drop the `via` prefix, and render as a smaller near-title line within the
+Conversation identity block.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Conversations/conversation-card-chat-hook-presentation.md` | Created UI/UX evaluation. | Captures visual hierarchy, typography, conditional display, relationship to glyphs and Contact Tags, risks, and a future implementation-slice recommendation. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- None. This is an evaluation document only; no implementation was performed.
+
+---
+
+# Cross-Column Layout Canonical Documentation
+
+Date: 2026-07-14
+
+Scope: Created a top-level canonical documentation folder for page-level
+cross-column vertical alignment and linked it from the relevant documentation
+indexes.
+
+## Summary
+
+The vertical alignment work for MessageLens had become hard to find because its
+mechanics were spread across active UI-walk notes, Conversation ownership
+documents, and the sidebar content-seam work package. This pass created
+`09-CROSS-COLUMN-LAYOUT/` as the durable documentation home for the mechanical
+contract: title/context column bands, content-start alignment, wrapper behavior,
+and the sidebar cassette content-start seam.
+
+The UI-walk and feature-package documents remain valuable design history. The
+new folder is now the place to look when a future developer or agent needs to
+understand how left, center, and right panels line up across the window.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Created canonical folder overview. | Establishes this folder as the source of truth for cross-column layout mechanics. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Created durable alignment contract. | Defines the title band, context band, content-start invariant, ownership rules, and current band heights. |
+| `09-CROSS-COLUMN-LAYOUT/01-column-band-wrappers.md` | Created wrapper mechanics reference. | Documents `TitleColumnBand`, `ContextColumnBand`, child placement, debug margins, and the relationship to older `app_panel_bands.dart` support primitives. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Created sidebar seam reference. | Documents how the cassette system participates through `SidebarCassetteLayoutAnchor.preferredContentStart` without surrendering sidebar ownership. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Created current applied Search-page note. | Captures the present left/center/right mapping and known tuning issue around search-control placement. |
+| `09-CROSS-COLUMN-LAYOUT/04-design-history-and-cross-references.md` | Created history/cross-reference guide. | Links the canonical contract back to UI-walk history, sidebar seam design notes, and Conversation ownership repair documents. |
+| `README.md` | Added `09-CROSS-COLUMN-LAYOUT/` to the canonical map and clarified that `95-WALK-UI-TREE/` now contains historical layout review notes. | Makes the new canonical layout home discoverable from the project index. |
+| `00-START-HERE.md` | Added cross-column vertical alignment to canonical owners. | Gives cold-start readers an obvious destination for layout alignment questions. |
+| `07-CENTER-PANEL-LAYOUTS/README.md` | Added cross-column alignment to out-of-scope concerns. | Clarifies that center-panel layout does not own page-wide alignment. |
+| `08-SIDEBAR-LAYOUTS/README.md` | Added cross-column alignment/content-start seams to out-of-scope concerns. | Clarifies that sidebar layout does not own peer-panel alignment. |
+| `95-WALK-UI-TREE/README.md` | Pointed cross-column mechanics to `09-CROSS-COLUMN-LAYOUT/`. | Separates active UI review/history from durable layout mechanics. |
+| `95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/README.md` | Added a notice that canonical mechanics now live in `09-CROSS-COLUMN-LAYOUT/`. | Preserves the old folder as design history while preventing future agents from treating it as the only source of truth. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this log entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Review whether the current band heights documented here (`TitleColumnBand` 72,
+  `ContextColumnBand` 166) should be treated as stable tokens or still as
+  Search-page-specific provisional values.
+- Review the known Search-page tuning issue: the search controls may still sit
+  too close to the content below. The new docs record where that should be
+  solved, not the final visual tuning.
+
+---
+
+# Cross-Column Layout Terminology Rename
+
+Date: 2026-07-14
+
+Scope: Renamed the cross-column alignment vocabulary from earlier geometric
+band names to title/context bands in code and documentation.
+
+## Summary
+
+The previous labels described geometry but not the role of each aligned region.
+This pass renamed the public wrapper classes and related implementation
+terminology to `TitleColumnBand` and `ContextColumnBand` so future agents can
+reason about the bands by purpose: the title band owns panel identity, and the
+context band owns pre-content scope, controls, or object context.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Renamed the public wrapper classes to `TitleColumnBand` and `ContextColumnBand`. | Aligns code entities with the durable cross-column layout vocabulary. |
+| `lib/config/theme/widgets/layout/app_panel_bands.dart` | Renamed transitional frame constants/parameters to title/context wording. | Prevents older support primitives from preserving stale terminology. |
+| `lib/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart` | Updated wrapper usage and renamed the internal evidence context-band helper. | Keeps message evidence header implementation aligned with the shared layout contract. |
+| `lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart` | Updated wrapper usage and renamed title/context frame parameters and helper. | Keeps the conversation excerpt panel aligned with the shared layout contract. |
+| `lib/essentials/navigation/application/panel_widget_providers.dart` | Updated wrapper usage and renamed sidebar seam internals to context-zone wording. | Keeps the cassette content-start seam vocabulary consistent with the shared contract. |
+| `09-CROSS-COLUMN-LAYOUT/` | Updated canonical layout documentation to title/context terminology. | Makes this folder the clear source for current naming and mechanics. |
+| `95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/README.md` | Updated historical UI-walk bridge terminology. | Preserves historical context while pointing to current names. |
+| `README.md` | Updated canonical-map wording. | Keeps the project index aligned with current layout language. |
+| `DOCUMENTATION_PASS_LOG.md` | Updated the immediately preceding cross-column entry and appended this rename entry. | Maintains traceability for the terminology change. |
+
+## Needs Verification / Human Review
+
+- None beyond normal UI review of the existing cross-column layout tuning. This pass is a terminology and symbol rename, not a layout behavior change.

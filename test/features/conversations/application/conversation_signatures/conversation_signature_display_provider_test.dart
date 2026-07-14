@@ -8,10 +8,10 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_repository.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
+import 'package:remember_this_text/features/conversations/application/conversation_signatures/conversation_signature_display_provider.dart';
 import 'package:remember_this_text/features/conversations/application/conversation_tags/conversation_tag_repository.dart';
 import 'package:remember_this_text/features/conversations/application/conversation_tags/conversation_tag_repository_provider.dart';
 import 'package:remember_this_text/features/conversations/domain/conversation_tags/conversation_tag_display.dart';
-import 'package:remember_this_text/features/conversations/feature_level_providers.dart';
 
 void main() {
   test('resolves participant labels before sidebar rendering', () async {
@@ -64,8 +64,125 @@ void main() {
 
     expect(signatures, hasLength(1));
     expect(signatures.single.title, 'Cathie and +17789908506');
+    expect(signatures.single.chatHookLabel, isNull);
     expect(signatures.single.participantLabels, ['Cathie', '+17789908506']);
     expect(signatures.single.activityMonths.single.messageCount, 12);
+  });
+
+  test('adds secondary chat hook for resolved one-to-one contacts', () async {
+    final container = ProviderContainer(
+      overrides: [
+        conversationSignaturesProvider(limit: 500).overrideWith((ref) async {
+          return const [
+            ConversationSignature(
+              conversationId: 42,
+              title: '+16045550101',
+              participantLabels: ['+16045550101'],
+              participantCount: 1,
+              isGroup: false,
+              messageCount: 12,
+              attachmentCount: 1,
+              firstMessageAtUtc: '2026-05-01T10:00:00.000Z',
+              lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+              lastMessageText: 'hello',
+              activityMonths: [
+                ConversationSignatureMonth(
+                  year: 2026,
+                  month: 5,
+                  messageCount: 12,
+                ),
+              ],
+            ),
+          ];
+        }),
+        displayIdentityResolverProvider.overrideWith((ref) async {
+          return const DisplayIdentityResolver(
+            identitiesByHandleKey: {
+              '6045550101': ParticipantDisplayIdentity(
+                primaryLabel: 'Claire',
+                source: DisplayIdentitySource.userOverride,
+                isKnownContact: true,
+              ),
+            },
+          );
+        }),
+        conversationTagRepositoryProvider.overrideWith((ref) async {
+          return const _FakeConversationTagRepository();
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final signatures = await container.read(
+      conversationSignatureDisplayProvider().future,
+    );
+
+    expect(signatures.single.title, 'Claire');
+    expect(signatures.single.chatHookLabel, '(604) 555-0101');
+    expect(conversationSignatureIdsWithDuplicateChatHooks(signatures), isEmpty);
+  });
+
+  test('marks only duplicate one-to-one display identities for chat hooks', () {
+    const signatures = [
+      ConversationSignatureDisplayModel(
+        conversationId: 1,
+        title: 'Rusung',
+        chatHookLabel: 'rusung@icloud.com',
+        participantLabels: ['Rusung'],
+        participantCount: 1,
+        isGroup: false,
+        messageCount: 10,
+        attachmentCount: 0,
+        firstMessageAtUtc: null,
+        lastMessageAtUtc: null,
+        lastMessageText: null,
+        activityMonths: [],
+      ),
+      ConversationSignatureDisplayModel(
+        conversationId: 2,
+        title: 'Rusung',
+        chatHookLabel: '+1 503-776-0150',
+        participantLabels: ['Rusung'],
+        participantCount: 1,
+        isGroup: false,
+        messageCount: 10,
+        attachmentCount: 0,
+        firstMessageAtUtc: null,
+        lastMessageAtUtc: null,
+        lastMessageText: null,
+        activityMonths: [],
+      ),
+      ConversationSignatureDisplayModel(
+        conversationId: 3,
+        title: 'Claire',
+        chatHookLabel: 'claire@example.com',
+        participantLabels: ['Claire'],
+        participantCount: 1,
+        isGroup: false,
+        messageCount: 10,
+        attachmentCount: 0,
+        firstMessageAtUtc: null,
+        lastMessageAtUtc: null,
+        lastMessageText: null,
+        activityMonths: [],
+      ),
+      ConversationSignatureDisplayModel(
+        conversationId: 4,
+        title: 'Rusung and Claire',
+        chatHookLabel: 'ignored@example.com',
+        participantLabels: ['Rusung', 'Claire'],
+        participantCount: 2,
+        isGroup: true,
+        messageCount: 10,
+        attachmentCount: 0,
+        firstMessageAtUtc: null,
+        lastMessageAtUtc: null,
+        lastMessageText: null,
+        activityMonths: [],
+      ),
+    ];
+
+    expect(conversationSignatureIdsWithDuplicateChatHooks(signatures), {1, 2});
   });
 
   test('applies sidebar search filter and sort semantics', () async {

@@ -129,11 +129,11 @@ String _stripKnownSchemes(String value) {
 
 /// Format a phone number into human-friendly format if possible.
 ///
-/// Returns the formatted number like "1 (234) 567-8901" for US/Canada numbers,
+/// Returns the formatted number like "(234) 567-8901" for US/Canada numbers,
 /// or "+63 909 032 9007" for international numbers.
 ///
 /// Examples:
-/// - "+12345678901" → "1 (234) 567-8901" (US/Canada)
+/// - "+12345678901" → "(234) 567-8901" (US/Canada)
 /// - "2345678901" → "(234) 567-8901" (US/Canada)
 /// - "+639090329007" → "+63 909 032 9007" (Philippines)
 /// - "+97466780166" → "+974 667 801 66" (Qatar)
@@ -169,8 +169,9 @@ String formatPhoneNumberForDisplay(String? rawIdentifier) {
     // Format: (234) 567-8901
     return '(${digitsOnly.substring(0, 3)}) ${digitsOnly.substring(3, 6)}-${digitsOnly.substring(6)}';
   } else if (digitsOnly.length == 11 && digitsOnly.startsWith('1')) {
-    // Format: 1 (234) 567-8901
-    return '${digitsOnly[0]} (${digitsOnly.substring(1, 4)}) ${digitsOnly.substring(4, 7)}-${digitsOnly.substring(7)}';
+    // Format: (234) 567-8901. The North American dialing prefix is not useful
+    // in user-facing labels.
+    return '(${digitsOnly.substring(1, 4)}) ${digitsOnly.substring(4, 7)}-${digitsOnly.substring(7)}';
   }
 
   // International number (12+ digits) - format with country code and spacing

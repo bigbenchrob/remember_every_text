@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature.dart';
 import '../../../../essentials/conversation_graph/feature_level_providers.dart'
     show conversationSignatureReaderProvider, conversationSignaturesProvider;
+import '../../../../essentials/db/shared/handle_identifier_utils.dart';
 import '../../../contacts/feature_level_providers.dart'
     show ConversationDisplayIdentity, displayIdentityResolverProvider;
 import '../../domain/conversation_tags/conversation_tag_display.dart';
@@ -28,6 +29,7 @@ class ConversationSignatureDisplayModel {
   const ConversationSignatureDisplayModel({
     required this.conversationId,
     required this.title,
+    this.chatHookLabel,
     required this.participantLabels,
     required this.participantCount,
     required this.isGroup,
@@ -42,6 +44,7 @@ class ConversationSignatureDisplayModel {
 
   final int conversationId;
   final String title;
+  final String? chatHookLabel;
   final List<String> participantLabels;
   final int participantCount;
   final bool isGroup;
@@ -226,6 +229,7 @@ ConversationSignatureDisplayModel _toDisplayModel(
   return ConversationSignatureDisplayModel(
     conversationId: signature.conversationId,
     title: displayIdentity.title,
+    chatHookLabel: _chatHookLabelForSignature(signature, displayIdentity),
     participantLabels: displayIdentity.participantLabels,
     participantCount: signature.participantCount,
     isGroup: signature.isGroup,
@@ -237,6 +241,60 @@ ConversationSignatureDisplayModel _toDisplayModel(
     activityMonths: signature.activityMonths,
     tags: tags,
   );
+}
+
+String? _chatHookLabelForSignature(
+  ConversationSignature signature,
+  ConversationDisplayIdentity displayIdentity,
+) {
+  if (signature.isGroup || signature.participantLabels.length != 1) {
+    return null;
+  }
+
+  final rawHook = signature.participantLabels.single.trim();
+  if (rawHook.isEmpty || rawHook == 'Unknown') {
+    return null;
+  }
+
+  if (rawHook.toLowerCase() == displayIdentity.title.trim().toLowerCase()) {
+    return null;
+  }
+
+  return formatPhoneNumberForDisplay(rawHook);
+}
+
+Set<int> conversationSignatureIdsWithDuplicateChatHooks(
+  Iterable<ConversationSignatureDisplayModel> signatures,
+) {
+  final identityCounts = <String, int>{};
+  for (final signature in signatures) {
+    if (!_canUseChatHookForDisambiguation(signature)) {
+      continue;
+    }
+
+    final key = _normalizedDisplayIdentityKey(signature);
+    identityCounts[key] = (identityCounts[key] ?? 0) + 1;
+  }
+
+  return {
+    for (final signature in signatures)
+      if (_canUseChatHookForDisambiguation(signature) &&
+          (identityCounts[_normalizedDisplayIdentityKey(signature)] ?? 0) > 1)
+        signature.conversationId,
+  };
+}
+
+bool _canUseChatHookForDisambiguation(
+  ConversationSignatureDisplayModel signature,
+) {
+  return !signature.isGroup &&
+      (signature.chatHookLabel?.trim().isNotEmpty ?? false);
+}
+
+String _normalizedDisplayIdentityKey(
+  ConversationSignatureDisplayModel signature,
+) {
+  return signature.title.trim().toLowerCase();
 }
 
 String conversationSignatureFilterLabel(ConversationSignatureFilter filter) {

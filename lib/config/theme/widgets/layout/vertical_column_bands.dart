@@ -10,7 +10,7 @@ import '../../../../essentials/debug/feature_level_providers.dart'
 /// Diagnostic interface for vertical column alignment bands.
 ///
 /// The page-level layout experiment uses only two fixed wrappers:
-/// top identity and middle context. Content starts immediately after them.
+/// title identity and context. Content starts immediately after them.
 abstract class VerticalColumnBand extends ConsumerWidget {
   const VerticalColumnBand({
     required this.child,
@@ -81,8 +81,8 @@ class ColumnBandChildPlacement {
   final AlignmentGeometry alignment;
 }
 
-class TopColumnBand extends VerticalColumnBand {
-  const TopColumnBand({
+class TitleColumnBand extends VerticalColumnBand {
+  const TitleColumnBand({
     required super.child,
     super.height = 72,
     super.padding = const EdgeInsets.fromLTRB(32, 24, 32, 0),
@@ -94,8 +94,8 @@ class TopColumnBand extends VerticalColumnBand {
   });
 }
 
-class MiddleColumnBand extends VerticalColumnBand {
-  const MiddleColumnBand({
+class ContextColumnBand extends VerticalColumnBand {
+  const ContextColumnBand({
     required super.child,
     super.height = 166,
     super.padding = const EdgeInsets.fromLTRB(32, 10, 32, 0),

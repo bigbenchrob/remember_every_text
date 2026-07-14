@@ -41,9 +41,11 @@ Active review folders should stay numbered by application area, for example:
 - `10-Messages-Sidebar/Conversations/`
 - `10-Messages-Sidebar/Contacts/`
 
-Cross-column layout grammar lives in `15-X-COLUMN-LAYOUT/`. Use that folder
-when a UI issue concerns page-level vertical rhythm across peer panels rather
-than the presentation of one widget or one sidebar surface.
+Historical cross-column layout review notes live in `15-X-COLUMN-LAYOUT/`.
+The durable mechanical contract now lives in
+`../09-CROSS-COLUMN-LAYOUT/`. Use the top-level folder when a UI issue concerns
+page-level vertical rhythm across peer panels rather than the presentation of
+one widget or one sidebar surface.
 
 Cross-review registers live in `00-Registers/`. Use these registers for
 deferred implementation decisions, future design concepts, and cleanup items

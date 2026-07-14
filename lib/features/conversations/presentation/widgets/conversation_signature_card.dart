@@ -10,6 +10,7 @@ class ConversationSignatureCardData {
   const ConversationSignatureCardData({
     required this.conversationId,
     required this.title,
+    this.chatHookLabel,
     this.titleContextLabel,
     this.summaryHighlight = ConversationSignatureSummaryHighlight.none,
     this.highlightedMonth,
@@ -23,6 +24,7 @@ class ConversationSignatureCardData {
 
   final int conversationId;
   final String title;
+  final String? chatHookLabel;
   final String? titleContextLabel;
   final ConversationSignatureSummaryHighlight summaryHighlight;
   final ConversationSignatureMonthMarker? highlightedMonth;
@@ -67,6 +69,7 @@ class ConversationSignatureCardStyle {
     required this.titleStyle,
     required this.selectedTitleStyle,
     this.titleContextStyle,
+    required this.chatHookStyle,
     required this.participantSuffixStyle,
     required this.summaryStyle,
     this.summaryHighlightStyle,
@@ -86,6 +89,7 @@ class ConversationSignatureCardStyle {
   final TextStyle titleStyle;
   final TextStyle selectedTitleStyle;
   final TextStyle? titleContextStyle;
+  final TextStyle chatHookStyle;
   final TextStyle participantSuffixStyle;
   final TextStyle summaryStyle;
   final TextStyle? summaryHighlightStyle;
@@ -215,6 +219,14 @@ class _ConversationSignatureCardState extends State<ConversationSignatureCard> {
                     ],
                   ],
                 ),
+                if (signature.chatHookLabel != null) ...[
+                  Text(
+                    signature.chatHookLabel!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: widget.style.chatHookStyle,
+                  ),
+                ],
                 const SizedBox(height: 7),
                 _ConversationMonthGlyph(
                   months: signature.activityMonths,

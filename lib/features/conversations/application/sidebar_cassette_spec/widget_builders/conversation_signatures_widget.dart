@@ -26,6 +26,7 @@ import '../../conversation_signatures/conversation_signature_display_provider.da
         ConversationSignatureFilter,
         ConversationSignatureSelectedTagsRequest,
         ConversationSignatureSort,
+        conversationSignatureIdsWithDuplicateChatHooks,
         conversationSignatureDisplayProvider,
         conversationSignatureFilterLabel,
         conversationSignatureSortLabel,
@@ -295,6 +296,9 @@ class _ConversationSignatureListAsync extends ConsumerWidget {
           );
         }
 
+        final conversationIdsWithChatHooks =
+            conversationSignatureIdsWithDuplicateChatHooks(signatures);
+
         return ListView.separated(
           itemCount: signatures.length,
           separatorBuilder: (context, index) => const SizedBox(height: 7),
@@ -309,6 +313,9 @@ class _ConversationSignatureListAsync extends ConsumerWidget {
                     ConversationSignatureSummaryHighlight.none,
                 highlightedMonth: highlightedMonthForSignature?.call(signature),
                 includeTags: true,
+                includeChatHook: conversationIdsWithChatHooks.contains(
+                  signature.conversationId,
+                ),
               ),
               style: cardStyle,
               monthColorForMessageCount:

@@ -78,13 +78,13 @@ class ConversationExcerptPanelView extends ConsumerWidget {
                 }
 
                 return _ConversationExcerptColumnFrame(
-                  top: Text(
+                  title: Text(
                     'Conversation',
                     style: typography.title1.copyWith(
                       color: colors.content.textPrimary,
                     ),
                   ),
-                  middle: _ConversationExcerptMiddleBand(
+                  contextContent: _ConversationExcerptContextBand(
                     conversationId: conversationId,
                     label: _excerptLabel(beforeCount + afterCount + 1),
                     colors: colors,
@@ -112,13 +112,13 @@ class ConversationExcerptPanelView extends ConsumerWidget {
                 );
               },
               loading: () => _ConversationExcerptColumnFrame(
-                top: Text(
+                title: Text(
                   'Conversation',
                   style: typography.title1.copyWith(
                     color: colors.content.textPrimary,
                   ),
                 ),
-                middle: Text(
+                contextContent: Text(
                   'Loading conversation...',
                   style: typography.caption.copyWith(
                     color: colors.content.textSecondary,
@@ -127,13 +127,13 @@ class ConversationExcerptPanelView extends ConsumerWidget {
                 content: const SizedBox.shrink(),
               ),
               error: (error, _) => _ConversationExcerptColumnFrame(
-                top: Text(
+                title: Text(
                   'Conversation',
                   style: typography.title1.copyWith(
                     color: colors.content.textPrimary,
                   ),
                 ),
-                middle: Column(
+                contextContent: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -230,13 +230,13 @@ class _ConversationContextCardHeader extends ConsumerWidget {
 
 class _ConversationExcerptColumnFrame extends StatelessWidget {
   const _ConversationExcerptColumnFrame({
-    required this.top,
-    required this.middle,
+    required this.title,
+    required this.contextContent,
     required this.content,
   });
 
-  final Widget top;
-  final Widget middle;
+  final Widget title;
+  final Widget contextContent;
   final Widget content;
 
   @override
@@ -244,16 +244,16 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TopColumnBand(child: top),
-        MiddleColumnBand(child: middle),
+        TitleColumnBand(child: title),
+        ContextColumnBand(child: contextContent),
         Expanded(child: content),
       ],
     );
   }
 }
 
-class _ConversationExcerptMiddleBand extends StatelessWidget {
-  const _ConversationExcerptMiddleBand({
+class _ConversationExcerptContextBand extends StatelessWidget {
+  const _ConversationExcerptContextBand({
     required this.conversationId,
     required this.label,
     required this.colors,
