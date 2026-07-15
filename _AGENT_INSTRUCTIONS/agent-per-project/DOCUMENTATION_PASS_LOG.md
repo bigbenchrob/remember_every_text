@@ -1295,3 +1295,72 @@ Track B: empty / metadata / empty
 
 - `flutter test test/config/theme/widgets/layout/cross_column_track_plan_test.dart --reporter compact`
 - `flutter analyze`
+
+---
+
+# TrackOccupant Architecture Analysis
+
+Date: 2026-07-15
+
+Scope: Added an exploratory architecture analysis for a future TrackOccupant
+seam in the Cross-Column Layout Tracks package.
+
+## Summary
+
+The first layout-track slices proved Track A and Track B negotiation, but the
+current implementation still uses page-level numeric requirements for title,
+metadata, and top-menu occupants. This documentation pass analyzes a
+`TrackOccupant` model that would let presentation contracts declare track
+requirements without querying rendered widgets or using post-frame measurement.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Added a full architecture analysis covering definition, API shape, requirement context, text/control/glyph/card handling, alternatives, risks, testing, and first implementation candidate. | Gives the proposed TrackOccupant seam a single discoverable planning document before any implementation work. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Linked the new TrackOccupant analysis from package contents. | Keeps the work package index current. |
+
+---
+
+# TrackOccupant Implementation-Plan Constraint Refinement
+
+Date: 2026-07-15
+
+Scope: Incorporated implementation-plan decisions into the TrackOccupant
+architecture analysis.
+
+## Summary
+
+The TrackOccupant analysis now records the settled constraints for a future
+first-slice implementation plan: all visible track content uses occupants,
+empty cells have no occupant, constant and calculated requirements share the
+same abstraction, shim tracks are ordinary fixed-height occupants, and the
+coordinator remains feature-blind.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Added implementation-plan constraints and refined sections on empty cells, shim tracks, constant requirements, calculated requirements, coordinator responsibility, and first-slice scope. | Ensures the future implementation plan follows the revised architecture without implying implementation approval. |
+
+---
+
+# TrackOccupant Presentation Construction Wording
+
+Date: 2026-07-15
+
+Scope: Refined TrackOccupant terminology in the Cross-Column Layout Tracks
+package.
+
+## Summary
+
+Replaced Flutter-specific "widget construction" phrasing with presentation
+construction language. The architecture now reads as requirement calculation
+plus construction of the presentation widget, which better captures the
+conceptual boundary while preserving the concrete Flutter implementation shape.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Reworded TrackOccupant ownership and API sections from "widget construction" to "construction of the presentation widget" / "presentation construction." | Keeps the architecture concept durable while still acknowledging the current Flutter implementation. |

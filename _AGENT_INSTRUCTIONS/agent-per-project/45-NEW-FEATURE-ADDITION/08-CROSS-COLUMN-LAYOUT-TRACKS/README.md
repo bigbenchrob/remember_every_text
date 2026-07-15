@@ -59,6 +59,9 @@ implemented for Search-page Track A and Track B only. It does not supersede
 - [`FLUTTER_IMPLEMENTATION_INVESTIGATION.md`](FLUTTER_IMPLEMENTATION_INVESTIGATION.md)
   - evaluates Flutter-native implementation mechanisms and recommends the
   first implementation strategy.
+- [`TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md`](TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md)
+  - evaluates a future `TrackOccupant` seam for deriving track requirements
+  from presentation contracts without post-frame widget measurement.
 - [`CHECKLIST.md`](CHECKLIST.md) - phased planning and implementation checklist.
 - [`TESTS.md`](TESTS.md) - validation strategy for a future implementation.
 
