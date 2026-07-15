@@ -978,3 +978,320 @@ context band owns pre-content scope, controls, or object context.
 ## Needs Verification / Human Review
 
 - None beyond normal UI review of the existing cross-column layout tuning. This pass is a terminology and symbol rename, not a layout behavior change.
+
+---
+
+# Cross-Column Layout Tracks Work Package
+
+Date: 2026-07-14
+
+Scope: Created a new exploratory feature work package for a potential successor
+to the current fixed title/context band cross-column layout model.
+
+## Summary
+
+The current cross-column layout contract in `09-CROSS-COLUMN-LAYOUT/` remains
+the canonical implemented model. This pass created
+`45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/` to explore a more
+general track-based model before any implementation work begins.
+
+The package records the proposed direction: columns declare preferred heights
+for shared horizontal layout tracks, the page resolves each track by maximum
+required height, and each participating column renders inside the resolved
+track plan. The first future implementation slice is explicitly limited to the
+Search page, with only the sidebar top menu participating in Track A.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Created package overview. | Establishes status, scope, relationship to the current canonical layout docs, and first-slice limits. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Created proposal. | Defines layout tracks, height resolution, ownership, non-goals, and Search-page-first success criteria. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Created design notes. | Captures product rationale, architectural rationale, variable-content handling, sidebar participation, migration strategy, risks, and open questions. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Created phased checklist. | Records decision gates and a conservative implementation path without approving implementation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Created validation strategy. | Defines future unit, widget, regression, and manual tests for a track-based implementation. |
+| `45-NEW-FEATURE-ADDITION/README.md` | Added active/planning rows for `06`, `07`, and `08`, and updated review date. | Keeps the workflow README aligned with the current numbered planning folders. |
+| `45-NEW-FEATURE-ADDITION/INDEX.md` | Added `08-CROSS-COLUMN-LAYOUT-TRACKS/` to the active/planning table and updated review date. | Makes the new package discoverable while clarifying that `09-CROSS-COLUMN-LAYOUT/` remains the implemented reference. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Review whether the track concept should use semantic names such as
+  `identity/context/content` or ordinal names such as `Track A/Track B`.
+- Review whether preferred heights should be declared by models, widgets, or
+  layout adapters before implementation begins.
+- Confirm that the first implementation slice should remain Search-page-only
+  and should not solve autonomous sidebar cassette placement.
+
+---
+
+# Cross-Column Layout Tracks Flutter Investigation
+
+Date: 2026-07-14
+
+Scope: Added a Flutter implementation investigation to the Cross-Column Layout
+Tracks work package.
+
+## Summary
+
+This pass evaluated which Flutter layout mechanisms best fit the approved
+layout-track architecture. The recommendation is to start with ordinary widget
+composition plus explicit, model-published layout requirements. The page should
+resolve a shared track plan and pass resolved heights into compatibility
+wrappers, rather than using post-frame measurement, `CustomMultiChildLayout`, or
+custom render objects in the first slice.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/FLUTTER_IMPLEMENTATION_INVESTIGATION.md` | Created Flutter implementation investigation. | Evaluates ordinary composition, `LayoutBuilder`, inherited plans, provider-driven models, `CustomMultiChildLayout`, `MultiChildRenderObjectWidget`, and custom `RenderBox`; recommends model-published requirements for the first Search-page slice. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added the investigation to package contents. | Makes the new implementation guidance discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Confirm whether first-slice requirements should be computed locally in the
+  Search page or exposed through a narrowly scoped page-level provider.
+- Confirm whether track IDs should remain ordinal (`Track A`, `Track B`) during
+  the prototype or become semantic names before implementation.
+
+---
+
+# Cross-Column Layout Tracks Terminology Refinement
+
+Date: 2026-07-14
+
+Scope: Refined terminology in the Cross-Column Layout Tracks work package so
+the package describes declarative track requirements rather than preferred
+widget heights.
+
+## Summary
+
+This pass updated the package language from the older height-centered framing to
+the settled track-centered model. The recommended terms are now `TrackId`,
+`TrackRequirement`, and `ResolvedTrackPlan`. The documentation now emphasizes
+that the page does not ask widgets how tall they are after layout. Instead,
+participating columns or layout adapters declare what each Track requires, the
+page resolves a shared TrackPlan, and columns render within that resolved plan.
+
+Height remains the first requirement supported by the proposed architecture, but
+the wording now leaves room for future requirements such as minimum height,
+compact variants, alignment preferences, and overflow policy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Reframed the package overview around declared track requirements and a shared `ResolvedTrackPlan`. | Clarifies that tracks, not preferred heights, are the architectural abstraction. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Replaced height-centered language with `TrackRequirement` / `ResolvedTrackPlan` terminology and added explicit declarative architecture wording. | Records the governing model: columns declare requirements; the page resolves and distributes the plan. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Updated ownership and variable-content language to center on `TrackRequirement` values. | Keeps design notes aligned with the broader requirement model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Updated future implementation checklist entries to use `TrackRequirement` and `ResolvedTrackPlan`. | Ensures a future implementation starts with the current naming. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/FLUTTER_IMPLEMENTATION_INVESTIGATION.md` | Replaced `LayoutTrackRequirement`, `ResolvedLayoutTrackPlan`, and preferred-height wording with `TrackRequirement`, `ResolvedTrackPlan`, and declarative requirement language. | Keeps Flutter implementation guidance consistent with the approved terminology. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Updated validation wording from preferred heights to declared height requirements. | Aligns future tests with the track requirement model. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Confirm final code symbol names during implementation. The package now
+  recommends `TrackId`, `TrackRequirement`, and `ResolvedTrackPlan`, but no code
+  has been changed in this documentation-only pass.
+
+---
+
+# Cross-Column Layout Tracks Track A Implementation
+
+Date: 2026-07-14
+
+Scope: Implemented the first vertical slice of the Cross-Column Layout Tracks
+architecture for Search-page Track A only.
+
+## Summary
+
+This pass proves the declarative track model without expanding into Track B,
+sidebar cassette placement, or broad page migration. The Search page now scopes
+a resolved Track A plan when `Search all messages` is active. The existing
+`TitleColumnBand` compatibility wrapper consumes that resolved height, so the
+sidebar top menu, center title, and right Conversation title share the same
+page-owned identity-track allocation.
+
+The existing wrapper system remains in place. `ContextColumnBand`, sidebar
+cassette flow, Contacts, Conversations, and other pages were not migrated.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Added `TrackId`, `TrackRequirement`, `ResolvedTrackPlan`, `ResolvedTrackPlanScope`, and the Search-page Track A plan. | Provides the minimal feature-neutral track model for the first slice. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Let `TitleColumnBand` consume a resolved Track A height while preserving existing fallback behavior. | Keeps the existing wrapper system while moving Track A height ownership to the page plan. |
+| `lib/essentials/navigation/presentation/view/workspace_layout.dart` | Scoped the left/center workspace with the Search-page Track A plan only when Search all messages is active. | Limits the first slice to the Search page and avoids affecting other sidebar modes. |
+| `lib/essentials/navigation/presentation/view/macos_app_shell.dart` | Scoped the right panel with the same Search-page Track A plan when Search all messages is active. | Lets the Conversation right panel participate in Track A without moving ownership into Search widgets. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Added focused tests for track resolution and `TitleColumnBand` resolved/default height behavior. | Verifies the Track A proof slice independently of the full Search page tree. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Marked Track A as first-slice implemented and recorded deferred work. | Keeps the work package current. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Added implementation status. | Separates proven Track A behavior from future architecture. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Updated migration strategy with completed Track A steps. | Records actual implementation progress without treating Track B as done. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Checked off Track A-only implementation items and left Track B/sidebar work deferred. | Maintains planning accuracy. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added implemented Track A test coverage. | Makes the validation path discoverable. |
+
+## Verification
+
+- `flutter test test/config/theme/widgets/layout/cross_column_track_plan_test.dart --reporter compact`
+- `flutter analyze`
+
+## Deferred
+
+- Track B negotiation.
+- Sidebar cassette participation beyond the top menu.
+- Contacts / Conversations page migration.
+- Wrapper retirement.
+- Search-page visual retuning beyond Track A ownership.
+
+---
+
+# Cross-Column Layout Tracks Track B Implementation
+
+Date: 2026-07-14
+
+Scope: Implemented the second vertical slice of the Cross-Column Layout Tracks
+architecture for Search-page Track B only.
+
+## Summary
+
+This pass proves that additional tracks can be added incrementally. Track B is
+the supporting identity track for the Search page. Only the center message
+evidence metadata subheader renders visible content in Track B. The sidebar and
+right panel declare empty Track B participation and receive the same resolved
+allocation.
+
+Track B was refined to be tight to the metadata line rather than functioning as
+a general spacing band. Search-scope explanatory text remains below Track B
+with the search controls instead of being clipped inside the metadata track.
+
+Search controls, sidebar orientation text, Conversation Cards, excerpt
+descriptions, and cassette placement were deliberately left outside Track B.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Added `TrackId.trackB` and changed the Search page plan to include Track A and a tight Track B requirement. | Proves multi-track resolution and empty peer participation without using Track B as hidden spacing. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Let `ContextColumnBand` consume a resolved Track B height while preserving fallback behavior. | Keeps the compatibility wrapper while moving Track B height ownership to the page plan. |
+| `lib/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart` | Split the fixed-frame Search-page header so metadata occupies Track B, while search-scope text and search/actions remain below it when a track plan is present. | Ensures Track B contains only supporting identity metadata and can remain tight. |
+| `lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart` | Added an empty Track B allocation before the existing Conversation Card/excerpt block when a track plan is present. | Keeps right-panel Track B empty without moving Conversation Card content into Track B. |
+| `lib/essentials/navigation/application/panel_widget_providers.dart` | Changed the Search sidebar seam to render an empty Track B allocation, then continue the existing cassette chain below it. | Keeps sidebar Track B empty and avoids automatic cassette placement. |
+| `lib/essentials/navigation/presentation/view/workspace_layout.dart` | Updated the Search page to use the Track A/Track B plan. | Applies the second slice without changing non-Search surfaces. |
+| `lib/essentials/navigation/presentation/view/macos_app_shell.dart` | Updated the right panel to use the Track A/Track B plan. | Applies empty right-panel Track B participation for Search. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Added Track B resolution and `ContextColumnBand` resolved/default behavior coverage. | Verifies the Track B proof slice independently of the full Search page tree. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Marked Track B as implemented and documented empty participation. | Keeps the work package current. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated implementation status and Track B examples. | Clarifies that Track B is metadata-only in this slice. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Updated sidebar participation and migration notes. | Records the implemented empty-track behavior. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Checked off Track B-only implementation items and left later tracks deferred. | Maintains planning accuracy. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added Track B validation notes. | Makes the new test expectations discoverable. |
+
+## Verification
+
+- `flutter test test/config/theme/widgets/layout/cross_column_track_plan_test.dart --reporter compact`
+- `flutter analyze`
+
+## Deferred
+
+- Track C or later tracks.
+- Search controls migration.
+- Conversation Card / excerpt description migration.
+- Sidebar cassette participation beyond empty Track B.
+- Contacts / Conversations page migration.
+- Wrapper retirement.
+
+---
+
+# Cross-Column Layout Tracks Content-Tight Occupied Tracks
+
+Date: 2026-07-14
+
+Scope: Tightened the Search-page Track A/Track B implementation and updated the
+Cross-Column Layout Tracks package.
+
+## Summary
+
+Colored track diagnostics showed that occupied tracks were still preserving
+hidden slack from old compatibility-wrapper padding and broad fixed requirement
+values. This pass records and implements the stricter invariant: occupied
+tracks are exactly as tall as their tallest natural occupant; intentional
+spacing belongs in explicit empty tracks.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Replaced broad Search-page Track A/Track B requirements with named natural occupant contracts for the sidebar top menu trigger, panel title line, and metadata line. | Prevents old spacing constants from functioning as hidden track height. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Removed top/bottom compatibility-wrapper padding whenever a resolved track is present. | Ensures resolved occupied tracks contain content only, not discretionary vertical spacing. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Updated resolved Track A/Track B expectations to use the named natural occupant contracts. | Keeps the track proof tests aligned with the content-tight invariant. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added the content-tight occupied-track rule and explicit empty-track spacing principle. | Makes the current layout rule discoverable. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Clarified that occupied track height resolves from natural occupant requirements and excludes breathing room. | Prevents future track slices from reintroducing hidden spacing. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Added wrapper guidance for resolved tracks. | Documents the compatibility-wrapper constraint. |
+
+---
+
+# Cross-Column Layout Tracks Flush Track A Start
+
+Date: 2026-07-14
+
+Scope: Removed the Search-page page-top inset from the resolved track plan.
+
+## Summary
+
+Visual review confirmed Track A and Track B were content-tight, but Track A was
+still separated from the top of the page content surface by a page-top inset.
+This pass sets the Search-page inset to zero so Track A starts flush. Any future
+separation above Track A should be represented by an explicit shim track rather
+than an implicit inset.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Set the Search-page `pageTopInset` requirement to `0`. | Removes hidden space above Track A. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Updated the Search-page Track A test to assert no hidden top inset. | Protects the flush-start contract. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Documented that Search Track A starts flush with the content surface. | Keeps implementation notes current. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Replaced page-top inset language with explicit flush-start language. | Prevents future confusion between track height and page spacing. |
+
+---
+
+# Cross-Column Layout Tracks Track A Geometry Correction
+
+Date: 2026-07-14
+
+Scope: Refined the Search-page Track A implementation so the page-top inset is
+separate from the resolved Track A height.
+
+## Summary
+
+The second-slice visual check showed that Track B was correctly narrow, but the
+metadata still started too low because Track A was preserving the old 72-pixel
+title-wrapper allocation. This pass separates page top inset from Track A
+height. Track A is now resolved from actual occupant requirements, while the
+page-top inset is represented as its own page-owned value in the resolved track
+plan.
+
+This avoids hiding vertical spacing inside Track A and keeps the sequence:
+
+```text
+page top inset
+Track A: selector / title / title
+Track B: empty / metadata / empty
+```
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Added `pageTopInset` to `ResolvedTrackPlan` and reduced Search-page Track A requirements to occupant-sized values. | Separates page inset from Track A allocation. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | When a resolved Track A plan is present, renders the page-top inset outside the Track A band and removes embedded top padding from the band itself. | Prevents legacy wrapper padding from becoming hidden track height. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Added coverage proving page-top inset is added outside resolved Track A height. | Protects the corrected geometry. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Documented page-top inset as separate from Track A. | Keeps the work package aligned with the implementation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Added architectural note that page insets are not track requirements. | Prevents future confusion between insets and tracks. |
+
+## Verification
+
+- `flutter test test/config/theme/widgets/layout/cross_column_track_plan_test.dart --reporter compact`
+- `flutter analyze`

@@ -5,6 +5,7 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../config/theme/widgets/layout/vertical_column_bands.dart';
 import '../../../../core/util/date_range_formatter.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart'
@@ -241,11 +242,20 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasTrackPlan = ResolvedTrackPlanScope.maybeOf(context) != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         TitleColumnBand(child: title),
-        ContextColumnBand(child: contextContent),
+        if (hasTrackPlan) ...[
+          const ContextColumnBand(child: SizedBox.shrink()),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
+            child: contextContent,
+          ),
+        ] else
+          ContextColumnBand(child: contextContent),
         Expanded(child: content),
       ],
     );

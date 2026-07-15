@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
+import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
+import '../../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../app_mode/feature_level_providers.dart'
     show switchableDarkModeProvider;
 import '../../../conversation_graph/presentation/status/conversation_graph_status_sheet.dart';
@@ -18,6 +20,7 @@ import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/feature_level_providers.dart'
     show onboardingGateProvider;
 import '../../../onboarding/presentation/onboarding_overlay.dart';
+import '../../../sidebar/application/sidebar_flow_state_provider.dart';
 import '../../application/app_shell_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
@@ -110,6 +113,10 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       _ => false,
     };
     final activeMode = ref.watch(activeSidebarModeProvider);
+    final useSearchTrackPlan =
+        activeMode == SidebarMode.messages &&
+        ref.watch(sidebarFlowProvider).topMenuChoice ==
+            TopChatMenuChoice.searchAllMessages;
 
     return Stack(
       children: [
@@ -121,7 +128,15 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
             maxWidth: 520,
             shownByDefault: false,
             builder: (context, scrollController) {
-              return RightPanelHost(mode: activeMode);
+              final rightPanel = RightPanelHost(mode: activeMode);
+              if (!useSearchTrackPlan) {
+                return rightPanel;
+              }
+
+              return ResolvedTrackPlanScope(
+                plan: searchPageTrackPlan,
+                child: rightPanel,
+              );
             },
           ),
           child: MacosScaffold(

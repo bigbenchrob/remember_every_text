@@ -6,11 +6,13 @@ import '../../../../essentials/debug/feature_level_providers.dart'
         DeveloperModeValue,
         columnBandDebugMarginsProvider,
         developerModeProvider;
+import 'cross_column_track_plan.dart';
 
 /// Diagnostic interface for vertical column alignment bands.
 ///
-/// The page-level layout experiment uses only two fixed wrappers:
-/// title identity and context. Content starts immediately after them.
+/// The page-level layout experiment still renders through compatibility band
+/// wrappers. Title bands can consume a page-resolved Track A height; context
+/// bands can consume a page-resolved Track B height.
 abstract class VerticalColumnBand extends ConsumerWidget {
   const VerticalColumnBand({
     required this.child,
@@ -19,6 +21,7 @@ abstract class VerticalColumnBand extends ConsumerWidget {
     required this.borderColor,
     required this.childPlacement,
     required this.allowBandExpansion,
+    this.trackId,
     this.overflowWarning = false,
     super.key,
   });
@@ -29,6 +32,7 @@ abstract class VerticalColumnBand extends ConsumerWidget {
   final Color borderColor;
   final ColumnBandChildPlacement childPlacement;
   final bool allowBandExpansion;
+  final TrackId? trackId;
   final bool overflowWarning;
 
   @override
@@ -38,30 +42,72 @@ abstract class VerticalColumnBand extends ConsumerWidget {
         DeveloperModeValue.developer;
     final showDiagnosticMargins =
         isDeveloperMode && ref.watch(columnBandDebugMarginsProvider);
+    final trackPlan = ResolvedTrackPlanScope.maybeOf(context);
+    final resolvedHeight = switch (trackId) {
+      final trackIdValue? =>
+        trackPlan?.heightFor(trackIdValue, fallback: height) ?? height,
+      null => height,
+    };
+    final usesResolvedTrack = trackPlan != null && trackId != null;
+    final usesResolvedTrackA = trackPlan != null && trackId == TrackId.trackA;
+    final effectivePadding = usesResolvedTrack
+        ? EdgeInsets.fromLTRB(padding.left, 0, padding.right, 0)
+        : padding;
+    final effectiveAlignment = usesResolvedTrackA
+        ? Alignment.centerLeft
+        : childPlacement.alignment;
+    final diagnosticBorderColor = switch (trackId) {
+      TrackId.trackA => const Color(0xFFFF2D2D),
+      TrackId.trackB => const Color(0xFF006CFF),
+      null => borderColor,
+    };
 
-    return DecoratedBox(
+    final band = DecoratedBox(
       decoration: BoxDecoration(
         border: showDiagnosticMargins
             ? Border.all(
-                color: overflowWarning ? const Color(0xFFFFA000) : borderColor,
+                color: overflowWarning
+                    ? const Color(0xFFFFA000)
+                    : diagnosticBorderColor,
               )
             : null,
       ),
-      child: allowBandExpansion
-          ? ConstrainedBox(
-              constraints: BoxConstraints(minHeight: height),
+      child: usesResolvedTrackA
+          ? SizedBox(
+              height: resolvedHeight,
               child: Padding(
-                padding: padding,
-                child: Align(alignment: childPlacement.alignment, child: child),
+                padding: effectivePadding,
+                child: Align(alignment: effectiveAlignment, child: child),
+              ),
+            )
+          : allowBandExpansion
+          ? ConstrainedBox(
+              constraints: BoxConstraints(minHeight: resolvedHeight),
+              child: Padding(
+                padding: effectivePadding,
+                child: Align(alignment: effectiveAlignment, child: child),
               ),
             )
           : SizedBox(
-              height: height,
+              height: resolvedHeight,
               child: Padding(
-                padding: padding,
-                child: Align(alignment: childPlacement.alignment, child: child),
+                padding: effectivePadding,
+                child: Align(alignment: effectiveAlignment, child: child),
               ),
             ),
+    );
+
+    if (!usesResolvedTrackA || trackPlan.pageTopInset == 0) {
+      return band;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(height: trackPlan.pageTopInset),
+        band,
+      ],
     );
   }
 }
@@ -84,25 +130,31 @@ class ColumnBandChildPlacement {
 class TitleColumnBand extends VerticalColumnBand {
   const TitleColumnBand({
     required super.child,
-    super.height = 72,
+    super.height = defaultHeight,
     super.padding = const EdgeInsets.fromLTRB(32, 24, 32, 0),
     super.borderColor = const Color(0xFFFF2D2D),
     super.childPlacement = const ColumnBandChildPlacement.topLeft(),
     super.allowBandExpansion = true,
+    super.trackId = TrackId.trackA,
     super.overflowWarning = false,
     super.key,
   });
+
+  static const double defaultHeight = 72;
 }
 
 class ContextColumnBand extends VerticalColumnBand {
   const ContextColumnBand({
     required super.child,
-    super.height = 166,
+    super.height = defaultHeight,
     super.padding = const EdgeInsets.fromLTRB(32, 10, 32, 0),
-    super.borderColor = const Color(0xFF006CFF),
+    super.borderColor = const Color(0xFF7B61FF),
     super.childPlacement = const ColumnBandChildPlacement.topLeft(),
     super.allowBandExpansion = false,
+    super.trackId = TrackId.trackB,
     super.overflowWarning = false,
     super.key,
   });
+
+  static const double defaultHeight = 166;
 }

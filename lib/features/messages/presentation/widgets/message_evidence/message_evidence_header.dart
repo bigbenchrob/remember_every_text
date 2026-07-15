@@ -6,6 +6,7 @@ import 'package:macos_ui/macos_ui.dart' as macos_ui;
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/layout/app_panel_bands.dart';
+import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../../config/theme/widgets/layout/vertical_column_bands.dart';
 import '../../../domain/message_evidence/message_evidence_search_mode.dart';
 
@@ -95,11 +96,23 @@ class MessageEvidenceHeader extends ConsumerWidget {
       activeScopeLabel: activeScopeLabel,
       activeScopeIndicator: data.activeScopeIndicator,
     );
+    final metadata = _MessageEvidenceMetadataBand(
+      identityContextLine: identityContextLine,
+      hasIdentityContext: hasIdentityContext,
+      metricParts: metricParts,
+    );
+    final supportingContext = _MessageEvidenceSupportingContextBand(
+      scopeContextLine: scopeContextLine,
+      scopeNote: scopeNote,
+      activeScopeLabel: activeScopeLabel,
+      activeScopeIndicator: data.activeScopeIndicator,
+    );
     final secondary = _MessageEvidenceSecondaryBand(
       searchConfig: data.searchConfig,
       actions: data.actions,
       details: resolvedDetails,
     );
+    final hasTrackPlan = ResolvedTrackPlanScope.maybeOf(context) != null;
 
     return ColoredBox(
       color: colors.messagePanels.coolPanelSurface,
@@ -108,12 +121,22 @@ class MessageEvidenceHeader extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TitleColumnBand(child: title),
-                ContextColumnBand(
-                  child: _MessageEvidenceContextBand(
-                    primary: primary,
-                    secondary: secondary,
+                if (hasTrackPlan) ...[
+                  ContextColumnBand(child: metadata),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
+                    child: _MessageEvidencePostTrackBContent(
+                      supportingContext: supportingContext,
+                      secondary: secondary,
+                    ),
                   ),
-                ),
+                ] else
+                  ContextColumnBand(
+                    child: _MessageEvidenceContextBand(
+                      primary: primary,
+                      secondary: secondary,
+                    ),
+                  ),
               ],
             )
           : AppPanelBandHeader(
@@ -122,6 +145,25 @@ class MessageEvidenceHeader extends ConsumerWidget {
               primary: primary,
               secondary: secondary,
             ),
+    );
+  }
+}
+
+class _MessageEvidencePostTrackBContent extends StatelessWidget {
+  const _MessageEvidencePostTrackBContent({
+    required this.supportingContext,
+    required this.secondary,
+  });
+
+  final Widget supportingContext;
+  final Widget secondary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [supportingContext, secondary],
     );
   }
 }
@@ -141,6 +183,137 @@ class _MessageEvidenceContextBand extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [primary, secondary],
+    );
+  }
+}
+
+class _MessageEvidenceMetadataBand extends ConsumerWidget {
+  const _MessageEvidenceMetadataBand({
+    required this.identityContextLine,
+    required this.hasIdentityContext,
+    required this.metricParts,
+  });
+
+  final String? identityContextLine;
+  final bool hasIdentityContext;
+  final List<String> metricParts;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasIdentityContext)
+          Flexible(
+            child: Text(
+              identityContextLine!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.callout.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+          ),
+        if (hasIdentityContext && metricParts.isNotEmpty)
+          const SizedBox(width: 14),
+        if (metricParts.isNotEmpty)
+          Flexible(
+            child: Wrap(
+              spacing: 14,
+              runSpacing: 4,
+              children: [
+                for (final part in metricParts)
+                  Text(
+                    part,
+                    style: typography.callout.copyWith(
+                      color: colors.content.textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MessageEvidenceSupportingContextBand extends ConsumerWidget {
+  const _MessageEvidenceSupportingContextBand({
+    required this.scopeContextLine,
+    required this.scopeNote,
+    required this.activeScopeLabel,
+    required this.activeScopeIndicator,
+  });
+
+  final String? scopeContextLine;
+  final String? scopeNote;
+  final String? activeScopeLabel;
+  final Widget? activeScopeIndicator;
+
+  bool get _hasVisibleContent {
+    return (scopeContextLine != null && scopeContextLine!.isNotEmpty) ||
+        (scopeNote != null && scopeNote!.isNotEmpty) ||
+        (activeScopeLabel != null && activeScopeLabel!.isNotEmpty) ||
+        activeScopeIndicator != null;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!_hasVisibleContent) {
+      return const SizedBox.shrink();
+    }
+
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (scopeContextLine != null && scopeContextLine!.isNotEmpty)
+            Text(
+              scopeContextLine!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.caption.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+          if (scopeNote != null && scopeNote!.isNotEmpty) ...[
+            const SizedBox(height: 5),
+            Text(
+              scopeNote!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.caption.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+          ],
+          if (activeScopeLabel != null && activeScopeLabel!.isNotEmpty) ...[
+            const SizedBox(height: 7),
+            Text(
+              activeScopeLabel!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.caption.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+          ],
+          if (activeScopeIndicator != null) ...[
+            const SizedBox(height: 8),
+            activeScopeIndicator!,
+          ],
+        ],
+      ),
     );
   }
 }

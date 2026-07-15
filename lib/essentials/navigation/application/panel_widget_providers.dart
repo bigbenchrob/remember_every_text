@@ -755,12 +755,11 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntries({
   required double maxWidth,
   required _SidebarContentSeamLayout? contentSeamLayout,
 }) {
-  if (contentSeamLayout case final seamLayout?) {
+  if (contentSeamLayout != null) {
     return _buildSidebarContentEntriesWithSeam(
       mode: mode,
       cassetteEntries: cassetteEntries,
       maxWidth: maxWidth,
-      contentSeamLayout: seamLayout,
     );
   }
 
@@ -814,26 +813,12 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
   required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
   cassetteEntries,
   required double maxWidth,
-  required _SidebarContentSeamLayout contentSeamLayout,
 }) {
-  final firstEntryIsContentStart =
-      cassetteEntries.isNotEmpty &&
-      cassetteEntries.first.resolvedCassette.payload.layoutAnchor ==
-          SidebarCassetteLayoutAnchor.preferredContentStart;
-  final contextZoneEntries = firstEntryIsContentStart || cassetteEntries.isEmpty
-      ? <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[]
-      : [cassetteEntries.first];
   final contentStartEntries = _resetLeadingTopSpacing(
     mode: mode,
-    entries: cassetteEntries.sublist(contextZoneEntries.length),
+    entries: cassetteEntries,
   );
 
-  final contextZoneContent = _buildSidebarContentEntries(
-    mode: mode,
-    cassetteEntries: contextZoneEntries,
-    maxWidth: maxWidth,
-    contentSeamLayout: null,
-  );
   final contentStartContent = _buildSidebarContentEntries(
     mode: mode,
     cassetteEntries: contentStartEntries,
@@ -843,10 +828,10 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
 
   return [
     (
-      widget: ContextColumnBand(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-        childPlacement: const ColumnBandChildPlacement.topLeft(),
-        child: _ContentFillColumn(children: contextZoneContent),
+      widget: const ContextColumnBand(
+        padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+        childPlacement: ColumnBandChildPlacement.topLeft(),
+        child: SizedBox.shrink(),
       ),
       shouldExpand: false,
     ),

@@ -2,7 +2,7 @@
 tier: project
 scope: workflow
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-14
 source_of_truth: doc
 links:
   - ../../agent-instructions-shared/INDEX.md
@@ -71,3 +71,6 @@ current project roadmap, or the user's latest instruction before implementing.
 | `03-INTRODUCE-SIDEBAR-CONTENT-SEAM/` | [`PROPOSAL.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/PROPOSAL.md), [`CHECKLIST.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/CHECKLIST.md), [`DESIGN_NOTES.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/DESIGN_NOTES.md), [`TESTS.md`](03-INTRODUCE-SIDEBAR-CONTENT-SEAM/TESTS.md) |
 | `04-CONVERSATION-TAGS/` | Exploratory package for durable Conversation Tags: [`PROPOSAL.md`](04-CONVERSATION-TAGS/PROPOSAL.md), [`CHECKLIST.md`](04-CONVERSATION-TAGS/CHECKLIST.md), [`DESIGN_NOTES.md`](04-CONVERSATION-TAGS/DESIGN_NOTES.md), [`TESTS.md`](04-CONVERSATION-TAGS/TESTS.md) |
 | `05-CONVERSATION-INTENT-ARCHITECTURE/` | Exploratory architecture package defining the broader Conversation Intent seam underneath Favourites, Tags, Working Sets, Hidden state, Notes, and future user-confirmed classifications: [`PROPOSAL.md`](05-CONVERSATION-INTENT-ARCHITECTURE/PROPOSAL.md), [`CHECKLIST.md`](05-CONVERSATION-INTENT-ARCHITECTURE/CHECKLIST.md), [`DESIGN_NOTES.md`](05-CONVERSATION-INTENT-ARCHITECTURE/DESIGN_NOTES.md), [`TESTS.md`](05-CONVERSATION-INTENT-ARCHITECTURE/TESTS.md) |
+| `06-STRUCTURED-CONVERSATION-RETRIEVAL/` | Structured Conversation Retrieval planning for describing remembered Conversation context with tokens: [`PROPOSAL.md`](06-STRUCTURED-CONVERSATION-RETRIEVAL/PROPOSAL.md), [`CHECKLIST.md`](06-STRUCTURED-CONVERSATION-RETRIEVAL/CHECKLIST.md), [`DESIGN_NOTES.md`](06-STRUCTURED-CONVERSATION-RETRIEVAL/DESIGN_NOTES.md), [`TESTS.md`](06-STRUCTURED-CONVERSATION-RETRIEVAL/TESTS.md) |
+| `07-TAG-VISIBILITY-POLICY/` | Tag visibility policy attached to Tag definitions: [`PROPOSAL.md`](07-TAG-VISIBILITY-POLICY/PROPOSAL.md), [`CHECKLIST.md`](07-TAG-VISIBILITY-POLICY/CHECKLIST.md), [`DESIGN_NOTES.md`](07-TAG-VISIBILITY-POLICY/DESIGN_NOTES.md), [`TESTS.md`](07-TAG-VISIBILITY-POLICY/TESTS.md) |
+| `08-CROSS-COLUMN-LAYOUT-TRACKS/` | Exploratory successor model for cross-column title/context wrappers using shared layout tracks: [`PROPOSAL.md`](08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md), [`CHECKLIST.md`](08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md), [`DESIGN_NOTES.md`](08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md), [`TESTS.md`](08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md) |
