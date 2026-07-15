@@ -246,13 +246,14 @@ For Search Track B:
 
 ---
 
-# Shim Tracks
+# Fixed-Height Spacing Occupants
 
-Do not implement a shim Track in this slice.
+Do not implement a fixed-height spacing occupant in this slice.
 
 Record and preserve the settled rule:
 
-> A future shim is an ordinary Track containing a fixed-height TrackOccupant, conceptually building a `SizedBox`.
+> Future page-specific spacing is an ordinary track cell containing a
+> fixed-height TrackOccupant, conceptually building a `SizedBox`.
 
 Do not introduce:
 
@@ -405,7 +406,7 @@ Report pre-existing failures separately.
 Do not implement:
 
 - Track C or later Tracks;
-- a shim Track;
+- fixed-height spacing occupants;
 - Conversation Card TrackOccupant;
 - Conversation glyph TrackOccupant;
 - card or glyph metrics extraction;

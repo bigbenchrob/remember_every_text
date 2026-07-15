@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../config/theme/widgets/layout/vertical_column_bands.dart';
 import '../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
@@ -833,6 +834,10 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
         childPlacement: ColumnBandChildPlacement.topLeft(),
         child: SizedBox.shrink(),
       ),
+      shouldExpand: false,
+    ),
+    (
+      widget: const TrackCellColumnBand(trackId: TrackId.trackC),
       shouldExpand: false,
     ),
     ...contentStartContent,

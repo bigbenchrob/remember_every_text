@@ -1364,3 +1364,292 @@ conceptual boundary while preserving the concrete Flutter implementation shape.
 | File | Change | Reason |
 | --- | --- | --- |
 | `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Reworded TrackOccupant ownership and API sections from "widget construction" to "construction of the presentation widget" / "presentation construction." | Keeps the architecture concept durable while still acknowledging the current Flutter implementation. |
+
+---
+
+# TrackOccupant First Implementation Slice
+
+Date: 2026-07-15
+
+Scope: Updated the Cross-Column Layout Tracks work package after implementing
+the first Search-page TrackOccupant slice.
+
+## Summary
+
+Search-page Track A/B requirements are now derived from declarative occupants
+instead of page-owned numeric declarations. The documentation now records that
+the first occupant slice is implemented while preserving the deferred scope for
+future tracks, sidebar cassette participation, Conversation Cards, glyphs, and
+Contacts migration.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Updated status and implemented-slice notes to describe occupant-derived Track A/B requirements and empty cells as omitted occupants. | Keeps the package narrative aligned with the implementation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added Phase 4A for the first TrackOccupant slice and marked focused occupant tests complete. | Makes remaining layout-track work discoverable without implying broader migration is done. |
+
+---
+
+# TrackOccupant Implementation Audit
+
+Date: 2026-07-15
+
+Scope: Verified the first TrackOccupant implementation slice against the
+approved implementation seed.
+
+## Summary
+
+The audit found the first TrackOccupant slice architecturally sound. Search
+Track A/B requirements are occupant-derived, empty cells contribute no
+requirements, and the implementation remains within the approved first-slice
+scope. The report records two caveats for future slices: finite-width
+requirement contexts are still deferred, and the Track B plan currently uses a
+representative metadata string because Track B is a single-line height track.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT/IMPLEMENT_TRACK_OCCUPANT_AUDIT.md` | Added implementation audit and verification report. | Provides the requested analysis report in the new TrackOccupant folder. |
+
+---
+
+# Cross-Column Track C Shim Slice
+
+Date: 2026-07-15
+
+Scope: Updated the Cross-Column Layout Tracks package after implementing the
+first explicit Search-page shim track.
+
+## Summary
+
+Track C now models the first intentional cross-column spacing shim. The package
+documents that empty spacing should be represented as an ordinary fixed-height
+track occupant rather than as hidden padding inside Track A, Track B, or their
+compatibility wrappers.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Updated package status and implemented-slice notes to include Track C as a fixed-height shim track. | Records that the Search page now separates metadata from supporting search content using an explicit empty track. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added Phase 4B for the Track C shim slice and focused shim validation. | Makes the next layout-track increment discoverable while preserving deferred scope for later tracks. |
+
+---
+
+# Track Cell And Shim Clarification
+
+Date: 2026-07-15
+
+Scope: Clarified Cross-Column Layout Tracks terminology and shim-track
+ownership after the first Track C slice.
+
+## Summary
+
+The layout-track package now explicitly states that spacing shims are ordinary
+tracks whose height is contributed by one `FixedHeightTrackOccupant` in one
+cell. Peer cells honor the resolved allocation but do not contain duplicate
+shim occupants. The package also now uses the `<Track letter><Column number>`
+cell vocabulary, such as A1, B2, and C3.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added track-cell vocabulary and clarified the C1/C2/C3 Track C mapping. | Makes the current Search-page layout inspectable and prevents treating Track C as direct page-plan metadata. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Added shim-track and track-cell sections. | Records the settled architectural rule that spacing and content use the same occupant negotiation mechanism. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated older Track C examples so Track C is no longer described as primary content in the current Search-page implementation. | Removes stale terminology that conflicted with the implemented Track C shim. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added validation expectations for one C2 shim occupant and empty C1/C3 cells. | Ensures future tests protect against direct fixed-height track overrides or duplicate shim occupants. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Refined Track C checklist items around C2 ownership and empty C1/C3 cells. | Aligns implementation tracking with the settled cell vocabulary. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Updated the shim example to C1/C2/C3 and removed shim representation from open questions. | Marks the shim architecture as settled by implementation. |
+
+---
+
+# Track Semantic Neutrality Correction
+
+Date: 2026-07-15
+
+Scope: Corrected Cross-Column Layout Tracks terminology so tracks remain
+ordinal geometric coordinates only.
+
+## Summary
+
+The previous Track C wording implied that a track could have an intrinsic role,
+such as spacing or shim behavior. The corrected model is that tracks know only
+their ordinal identity and resolved geometry. Meaning belongs to occupants and
+to the page composition that places those occupants.
+
+Current Search-page occupancy is documented as cell-specific:
+
+- A1: Search top menu occupant.
+- A2: "All messages" text occupant.
+- A3: "Conversation" text occupant.
+- B1: no occupant.
+- B2: metadata text occupant.
+- B3: no occupant.
+- C1: no occupant.
+- C2: `FixedHeightTrackOccupant(height: 8)`.
+- C3: no occupant.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Replaced semantic track descriptions with Search-page cell occupancy. | Makes clear that Track A/B/C are coordinates, not roles. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Reframed examples around occupant placement rather than track meaning. | Prevents future implementations from teaching the coordinator semantic track roles. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Replaced shim-track terminology with fixed-height spacing occupant language. | Keeps spacing under the same occupant negotiation mechanism without assigning meaning to the track. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Renamed the implemented C2 slice around fixed-height occupant placement. | Keeps implementation tracking aligned with semantic-neutral track vocabulary. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Updated validation language to check C2 fixed-height occupant behavior rather than a shim track. | Ensures tests protect the generic track model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Updated empty-cell and spacing guidance to avoid semantic track roles. | Clarifies that spacing and content both use occupants. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT/IMPLEMENT_TRACK_OCCUPANT.md` | Updated the implementation seed language around fixed-height spacing occupants. | Prevents older seed text from reintroducing shim-track terminology. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT/IMPLEMENT_TRACK_OCCUPANT_AUDIT.md` | Replaced Track A/B summaries with A1/A2/A3 and B1/B2/B3 occupancy. | Aligns audit language with the corrected model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT/IMPLEMENT_TRACK_OCCUPANT_CHECK.md` | Updated the next-slice recommendation language. | Keeps future work framed around occupants, not semantic tracks. |
+| `lib/essentials/navigation/presentation/layout/search_page_track_plan.dart` | Renamed the Search-page C2 height constant and updated occupancy comments. | Removes semantic track naming from code. |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Updated `FixedHeightTrackOccupant` comments. | Clarifies that fixed-height allocation belongs to the occupant. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Updated compatibility-wrapper comments. | Avoids implying fixed semantic meanings for Track A/B. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Updated fixed-height occupant test wording. | Keeps test intent aligned with semantic-neutral tracks. |
+
+---
+
+# Track Cell Alignment Principle
+
+Date: 2026-07-15
+
+Scope: Added Track Cell Alignment as a future Cross-Column Layout Tracks
+architecture principle.
+
+## Summary
+
+The layout-track package now distinguishes three independent concepts:
+
+- track geometry: the resolved height and position of a shared track;
+- occupant requirement: the natural space requested by an occupant;
+- track cell alignment: placement of an occupant inside an already-resolved
+  cell allocation.
+
+Track Cell Alignment belongs to page composition. It is not a property of the
+track, the `TrackOccupant`, or the underlying presentation widget. Initial
+alignment options should remain limited to top, center, and bottom. Alignment
+must not alter track requirements, resolved track height, or negotiation, and
+must not become hidden padding.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added Track Cell Alignment overview and clarified that designers may use semantic language while the layout engine records only geometry and occupancy. | Gives future readers the top-level mental model before implementation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Added architectural rule separating track geometry, requirements, and alignment. | Establishes page-composition ownership of cell placement. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Added detailed ownership, examples, and padding distinction for Track Cell Alignment. | Prevents alignment from becoming hidden spacing or occupant-owned behavior. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added a future Track Cell Alignment phase. | Records the implementation boundary without authorizing code changes. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added future alignment test expectations. | Ensures future implementation proves alignment does not affect negotiation. |
+
+---
+
+# Conversation Card TrackOccupant Natural Height
+
+Date: 2026-07-15
+
+Scope: Recorded the replacement of the temporary fixed Conversation Card track
+requirement with a natural, width-aware `ConversationSignatureCardTrackOccupant`
+requirement.
+
+## Summary
+
+The current Search-page composition may now place a Conversation Card occupant
+in C3 when the right Conversation excerpt is visible. That occupant no longer
+uses a fixed placeholder height. It derives its natural requirement from the
+same `ConversationSignatureCardPresentationMetrics` used by the rendered
+Conversation Card, so glyph row count, card chrome, finite width, hooks, and
+tags are represented in the requirement without teaching the page coordinator
+Conversation semantics.
+
+Track C remains semantically neutral. The documentation records C3 occupancy,
+not a Track C role.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Updated current Search-page occupancy so C3 may contain a `ConversationSignatureCardTrackOccupant`; documented variable-height negotiation. | Makes the implemented C3 slice discoverable while preserving track semantic neutrality. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Replaced stale C3-empty wording with optional Conversation Card occupancy and shared metrics guidance. | Records why the page no longer owns a Conversation Card height constant. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added Phase 4C and validation items for the C3 Conversation Card occupant. | Tracks the completed vertical slice and its boundaries. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added focused Conversation Card metric and occupant tests to the validation map. | Documents the tests proving width-aware natural height and rendered/calculated parity. |
+
+---
+
+# Canonical Conversation Card Width
+
+Date: 2026-07-15
+
+Scope: Codified canonical `ConversationSignatureCard` width as a presentation
+contract shared by rendered cards and track-occupant requirement calculation.
+
+## Summary
+
+The Conversation Card width is now documented as part of canonical Conversation
+Card presentation. Containers must accommodate the card and may place it inside
+wider space, but they do not stretch it or redefine its glyph geometry. This
+makes glyph row count and natural-height requirements deterministic across the
+Conversations sidebar and right/end Conversation excerpt panel.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added the canonical card-width contract and authoritative metrics symbol. | Makes the top-level layout package explain why C3 card requirements do not depend on panel width. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated Search-page occupancy examples and added the stable card-width principle. | Prevents stale C3-empty language and records the presentation ownership boundary. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Clarified that canonical card width, not ambient container width, drives card glyph geometry. | Keeps the TrackOccupant model deterministic while preserving semantic-neutral tracks. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added completed canonical-width implementation and validation items. | Records the implementation boundary and expected checks. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added canonical-width test expectations. | Ensures future tests protect the single width source of truth. |
+
+---
+
+# End-Panel Conversation Card Centering
+
+Date: 2026-07-15
+
+Scope: Recorded the presentation refinement that centers the fixed-width
+canonical Conversation Card in the right/end Conversation excerpt panel.
+
+## Summary
+
+The canonical Conversation Card width remains stable and owned by the
+Conversation Card presentation contract. The right/end Conversation excerpt
+panel may center that fixed-width card when the panel is wider than the card.
+This is horizontal presentation placement, not Track Cell Alignment and not a
+new Track abstraction.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Clarified that right/end panel card centering is presentation placement, not track-system behavior. | Prevents a small visual refinement from broadening Track Cell Alignment. |
+
+---
+
+# Search-Page C2 Search Controls Occupancy
+
+Date: 2026-07-15
+
+Scope: Recorded the Search-page layout-track update that places the Message
+Evidence post-metadata support/search-control group in cell C2.
+
+## Summary
+
+The old fixed 8 px C2 spacing occupant has been replaced by a
+Message-Evidence-owned post-metadata controls occupant. The track remains
+semantically neutral: the current Search-page composition places the
+support/search-control group in C2 and bottom-aligns it inside the resolved
+allocation when another cell contributes a taller requirement.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Replaced stale C2 spacing language with C2 post-metadata controls occupancy. | Keeps the canonical layout-track overview aligned with the current Search-page composition. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated Search-page occupancy tables from an 8 px spacing occupant to the Message Evidence controls occupant. | Prevents Track C from being misread as a semantic shim track. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Documented C2 bottom alignment for the support/search-control group. | Records the page-composition placement rule without broadening the track model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Updated Phase 4B to describe the post-metadata controls occupant slice. | Keeps implementation checklist history current. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added expectations for the C2 controls occupant and bottom-aligned track cell behavior. | Documents the focused regression surface. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Rewrote a fixed-height spacing example to avoid naming current Search-page C2 as a spacing cell. | Preserves semantic-neutral track language after C2 gained visible controls. |

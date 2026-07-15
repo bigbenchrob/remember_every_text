@@ -2,9 +2,9 @@
 tier: project
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-15
 source_of_truth: proposal
-status: second-slice-implemented
+status: c2-fixed-height-occupant-implemented
 links:
   - ./README.md
   - ./DESIGN_NOTES.md
@@ -16,7 +16,7 @@ tests: []
 
 ## Implementation Status
 
-The first two vertical slices have been implemented for the Search page.
+The first Search-page track slices have been implemented.
 
 Implemented:
 
@@ -113,25 +113,50 @@ Columns render inside that plan.
 
 A layout track is a named horizontal region shared by peer columns.
 
-Examples for the Search page might be:
+Tracks are ordinal geometric coordinates only. They do not carry semantic
+roles. Track A, Track B, Track C, and future tracks do not mean identity,
+supporting metadata, controls, spacing, or content.
 
-- Track A: panel identity
-- Track B: pre-content context
-- Track C: primary content
+Meaning belongs to the occupants and to the page composition that places those
+occupants.
+
+Current Search-page occupancy:
+
+| Cell | Occupant |
+| --- | --- |
+| A1 | Search top menu occupant |
+| A2 | `"All messages"` text occupant |
+| A3 | `"Conversation"` text occupant |
+| B1 | no occupant |
+| B2 | metadata text occupant |
+| B3 | no occupant |
+| C1 | no occupant |
+| C2 | `MessageEvidencePostMetadataControlsTrackOccupant` |
+| C3 | optional `ConversationSignatureCardTrackOccupant` when a Conversation excerpt is visible |
 
 The naming is intentionally abstract at the page-layout level. A track is not a
 feature concept and not a widget type. It is a coordination surface.
 
-Different columns may fill the same track with different kinds of content:
+Different columns may fill the same track with different kinds of occupants:
 
 | Track | Sidebar | Center | Right panel |
 | --- | --- | --- | --- |
 | A | top menu selector | `All messages` title | `Conversation` title |
 | B | empty | result metadata | empty |
-| C | cassette flow / heatmap | message results | conversation excerpt |
+| C | empty | post-metadata controls occupant | optional Conversation Card occupant |
 
-The important invariant is that Track C begins at the same y-position in every
-participating column.
+The important invariant is that each resolved track allocation begins at the
+same y-position in every participating column. In the current Search-page
+composition, C2 demonstrates that a page-specific support/control group can be
+represented by one ordinary occupant in one cell without direct fixed-height
+track metadata.
+
+C3 demonstrates the companion rule for reusable Conversation presentation:
+canonical `ConversationSignatureCard` presentation has a stable width.
+Containers must accommodate that width and may place it within wider space, but
+they do not stretch it or redefine its geometry. The card width is part of the
+Conversation Card presentation contract, not a right-panel or page-level
+layout estimate.
 
 ## Why Tracks Are Preferable To Fixed Bands
 
@@ -174,9 +199,9 @@ resolved occupied track height = max(natural occupant requirements)
 ```
 
 They must not include discretionary breathing room. If the page needs
-intentional spacing between tracks, that spacing should be modeled as an
-explicit empty shim track rather than embedded in an occupied track's
-requirement or wrapper padding.
+intentional spacing between existing content, that spacing should be modeled by
+placing a fixed-height occupant into a chosen cell of an ordinary track rather
+than embedded in an occupied track's requirement or wrapper padding.
 
 A page does not ask widgets:
 
@@ -195,6 +220,46 @@ sized from the maximum actual requirement of the sidebar selector, center title,
 and right title. If a future review calls for separation above Track A, that
 spacing should be modeled explicitly rather than embedded in Track A's
 requirement.
+
+## Track Cell Alignment
+
+The track model separates three concepts:
+
+```text
+Track geometry:
+  the resolved height and y-position of the shared track.
+
+TrackRequirement:
+  the natural vertical space required by an occupant.
+
+Track cell alignment:
+  the placement of an occupant inside an already-resolved track cell.
+```
+
+Track cell alignment belongs to page composition. The page decides that a
+particular occupant in a particular cell should be placed at the top, center,
+or bottom of its resolved allocation.
+
+Alignment does not belong to:
+
+- the track;
+- the `TrackOccupant`;
+- the underlying presentation widget.
+
+This is because the same occupant can reasonably be placed differently in
+different page compositions. A metadata occupant might be bottom-aligned in one
+Search-page cell and top-aligned in another page's equivalent cell without
+changing its natural requirement or presentation widget.
+
+Alignment must not become hidden spacing. It must never change:
+
+- resolved track height;
+- occupant requirement;
+- track negotiation.
+
+It affects only placement within the resolved cell. If the page needs actual
+separation between content, it should use an explicit fixed-height occupant in
+a chosen cell of an ordinary track, not alignment or padding.
 
 This is preferable to:
 

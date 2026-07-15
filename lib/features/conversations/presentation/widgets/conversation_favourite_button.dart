@@ -13,10 +13,12 @@ import '../../../../essentials/conversation_graph/feature_level_providers.dart'
 class ConversationFavouriteButton extends ConsumerStatefulWidget {
   const ConversationFavouriteButton({
     required this.conversationId,
-    this.size = 24,
+    this.size = defaultSize,
     this.iconSize = 13,
     super.key,
   });
+
+  static const double defaultSize = 24;
 
   final int conversationId;
   final double size;

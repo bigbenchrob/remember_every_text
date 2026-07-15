@@ -552,7 +552,7 @@ The sidebar may eventually translate selected cassette roles into occupants,
 but that is a future sidebar-layout problem. It is not required to validate the
 TrackOccupant model.
 
-## 12A. Empty Cells And Shim Tracks
+## 12A. Empty Cells And Fixed-Height Spacing Occupants
 
 An empty track cell simply has no `TrackOccupant`.
 
@@ -565,21 +565,22 @@ Right Track B: no occupant
 
 Do not introduce `EmptyTrackOccupant`.
 
-Shim tracks do not require a special architectural concept. A shim is a normal
-track containing a visible or invisible fixed-height occupant:
+Spacing does not require a special architectural concept. A page composition
+may place one fixed-height occupant in one track cell:
 
 ```text
-Track C
-  Sidebar: no occupant
-  Center: FixedHeightTrackOccupant(height: 8)
-  Right: no occupant
+D1: no occupant
+D2: FixedHeightTrackOccupant(height: 8)
+D3: no occupant
 ```
 
-The resolved Track C height naturally becomes 8 because the normal track
-negotiation algorithm already handles it.
+The resolved track height naturally becomes 8 because the normal track
+negotiation algorithm already handles it. D1 and D3 honor the resolved
+allocation without contributing duplicate occupants.
 
-Do not introduce a special `ShimTrack` type. Spacing and content should use the
-same track negotiation mechanism.
+Do not introduce a special `ShimTrack` type or assign spacing semantics to the
+track itself. Spacing and content should use the same track negotiation
+mechanism through occupants.
 
 ## 13. Performance And Recalculation
 
@@ -618,7 +619,7 @@ Recommended test categories:
 - text occupant calculates expected one-line and wrapped heights;
 - top-menu occupant matches the shared dropdown trigger contract;
 - empty cells contribute no requirement because they have no occupant;
-- fixed-height shim occupant contributes its fixed natural height;
+- fixed-height spacing occupant contributes its fixed natural height;
 - multiple occupants in the same track resolve to the maximum requirement;
 - Track A remains governed by the sidebar selector when it is tallest;
 - Track B remains content-tight around metadata;
@@ -651,9 +652,9 @@ Scope:
 - Search page only;
 - Track A and Track B only.
 
-This slice should not introduce a shim track unless the visual design review
-explicitly calls for one. If a shim is later needed, it should be represented
-as a normal track with a `FixedHeightTrackOccupant`.
+This slice should not introduce a fixed-height spacing occupant unless the
+visual design review explicitly calls for one. If spacing is later needed, it
+should be represented as an ordinary occupant in a chosen track cell.
 
 Do not include:
 
@@ -856,13 +857,10 @@ It should:
 4. Should `TrackRequirement` grow now to include natural/min/max/compact
    fields, or remain height-only for the first occupant slice?
 
-5. Should empty shim tracks be represented as normal `TrackRequirement`s,
-   special track IDs, or a distinct page-spacing concept?
-
-6. How should baseline alignment be represented if height alignment is not
+5. How should baseline alignment be represented if height alignment is not
    sufficient for text-heavy tracks?
 
-7. When Conversation Cards eventually participate, should the card expose a
+6. When Conversation Cards eventually participate, should the card expose a
    metrics helper first, or should a card occupant be built as an adapter around
    smaller text/glyph/tag metrics?
 

@@ -12,7 +12,7 @@ Widget buildPlacementGovernedCassetteBody({
 }) {
   return switch (payload) {
     SettingsTopMenuCassettePayload() => SettingsTopMenuWidget(payload: payload),
-    TopChatMenuCassettePayload() => TopChatMenuWidget(
+    TopChatMenuCassettePayload() => TopMenuTrackOccupantView(
       currentChoice: payload.currentChoice,
       cassetteIndex: payload.cassetteIndex,
       sidebarMode: payload.sidebarMode,

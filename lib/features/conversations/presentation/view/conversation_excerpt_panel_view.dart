@@ -79,17 +79,19 @@ class ConversationExcerptPanelView extends ConsumerWidget {
                 }
 
                 return _ConversationExcerptColumnFrame(
-                  title: Text(
-                    'Conversation',
+                  title: _ConversationTrackTitle(
+                    title: 'Conversation',
                     style: typography.title1.copyWith(
                       color: colors.content.textPrimary,
                     ),
                   ),
                   contextContent: _ConversationExcerptContextBand(
-                    conversationId: conversationId,
                     label: _excerptLabel(beforeCount + afterCount + 1),
                     colors: colors,
                     typography: typography,
+                  ),
+                  trackCContent: _ConversationContextCardHeader(
+                    conversationId: conversationId,
                   ),
                   content: MessageEvidenceTimelineView(
                     evidenceScope: evidenceScope,
@@ -113,8 +115,8 @@ class ConversationExcerptPanelView extends ConsumerWidget {
                 );
               },
               loading: () => _ConversationExcerptColumnFrame(
-                title: Text(
-                  'Conversation',
+                title: _ConversationTrackTitle(
+                  title: 'Conversation',
                   style: typography.title1.copyWith(
                     color: colors.content.textPrimary,
                   ),
@@ -128,8 +130,8 @@ class ConversationExcerptPanelView extends ConsumerWidget {
                 content: const SizedBox.shrink(),
               ),
               error: (error, _) => _ConversationExcerptColumnFrame(
-                title: Text(
-                  'Conversation',
+                title: _ConversationTrackTitle(
+                  title: 'Conversation',
                   style: typography.title1.copyWith(
                     color: colors.content.textPrimary,
                   ),
@@ -169,6 +171,28 @@ class ConversationExcerptPanelView extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ConversationTrackTitle extends StatelessWidget {
+  const _ConversationTrackTitle({required this.title, required this.style});
+
+  final String title;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    if (ResolvedTrackPlanScope.maybeOf(context) == null) {
+      return Text(title, style: style);
+    }
+
+    return TrackOccupantView(
+      occupant: TextTrackOccupant(
+        trackId: TrackId.trackA,
+        text: title,
+        style: style,
       ),
     );
   }
@@ -214,6 +238,7 @@ class _ConversationContextCardHeader extends ConsumerWidget {
           trailing: ConversationFavouriteButton(
             conversationId: signature.conversationId,
           ),
+          horizontalPlacement: Alignment.center,
         );
       },
       loading: () => Text(
@@ -234,10 +259,12 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
     required this.title,
     required this.contextContent,
     required this.content,
+    this.trackCContent,
   });
 
   final Widget title;
   final Widget contextContent;
+  final Widget? trackCContent;
   final Widget content;
 
   @override
@@ -250,12 +277,33 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
         TitleColumnBand(child: title),
         if (hasTrackPlan) ...[
           const ContextColumnBand(child: SizedBox.shrink()),
+          TrackCellColumnBand(
+            trackId: TrackId.trackC,
+            child: trackCContent == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: trackCContent,
+                  ),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
             child: contextContent,
           ),
         ] else
-          ContextColumnBand(child: contextContent),
+          ContextColumnBand(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (trackCContent != null) ...[
+                  trackCContent!,
+                  const SizedBox(height: 10),
+                ],
+                contextContent,
+              ],
+            ),
+          ),
         Expanded(child: content),
       ],
     );
@@ -264,13 +312,11 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
 
 class _ConversationExcerptContextBand extends StatelessWidget {
   const _ConversationExcerptContextBand({
-    required this.conversationId,
     required this.label,
     required this.colors,
     required this.typography,
   });
 
-  final int conversationId;
   final String label;
   final ThemeColors colors;
   final ThemeTypography typography;
@@ -280,11 +326,7 @@ class _ConversationExcerptContextBand extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        _ConversationContextCardHeader(conversationId: conversationId),
-        const SizedBox(height: 10),
-        Text(label, style: _excerptLabelStyle(colors, typography)),
-      ],
+      children: [Text(label, style: _excerptLabelStyle(colors, typography))],
     );
   }
 }

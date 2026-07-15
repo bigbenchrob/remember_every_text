@@ -2,9 +2,9 @@
 tier: project
 scope: design-notes
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-15
 source_of_truth: proposal
-status: second-slice-implemented
+status: c2-fixed-height-occupant-implemented
 links:
   - ./PROPOSAL.md
   - ../../09-CROSS-COLUMN-LAYOUT/01-column-band-wrappers.md
@@ -40,8 +40,9 @@ The track model keeps that ownership but changes the way track geometry is
 chosen:
 
 - current model: the page gives fixed wrapper heights;
-- proposed model: columns publish `TrackRequirement` values and the page
-  resolves a shared `ResolvedTrackPlan`.
+- proposed model: page compositions place `TrackOccupant`s into cells;
+  occupants publish `TrackRequirement` values; and the page resolves a shared
+  `ResolvedTrackPlan`.
 
 That is a better long-term fit because MessageLens has heterogeneous content:
 
@@ -62,10 +63,16 @@ The page-level layout coordinator owns:
 - distributing the resolved plan;
 - enforcing that participating columns render within the plan.
 
-Columns own:
+Pages own:
 
-- which content belongs to which track;
-- the requirement declaration for that track;
+- which content belongs to which track cell;
+- cell alignment decisions for those occupants;
+- the page-specific arrangement of occupied and empty cells.
+
+TrackOccupants own:
+
+- the requirement declaration for their presentation;
+- construction of the presentation widget;
 - compact/adaptive presentation when content approaches constraints;
 - rendering inside the resolved track allocation.
 
@@ -78,14 +85,76 @@ Widgets own:
 
 Widgets do not own cross-column alignment.
 
+## Track Cell Alignment
+
+Track cell alignment answers a different question than track height or
+occupant requirement.
+
+```text
+Track height:
+  How tall is this shared horizontal coordinate?
+
+TrackRequirement:
+  How much space does this occupant naturally require?
+
+Track cell alignment:
+  Where should this occupant be placed inside its resolved cell allocation?
+```
+
+Alignment belongs to the page composition because it is a decision about how
+one page arranges its occupants. It is not a property of the track, the
+`TrackOccupant`, or the underlying widget.
+
+This preserves the ownership model:
+
+- tracks own shared geometry;
+- `TrackOccupant`s own natural requirements and construction of the
+  presentation widget;
+- pages own track occupancy and cell alignment;
+- widgets own presentation inside their natural bounds.
+
+Initial vertical alignment options should be limited to:
+
+- top;
+- center;
+- bottom.
+
+Do not broaden this into a general layout framework until real page work
+requires it. Do not add horizontal alignment until a concrete need appears.
+
+Alignment must not become hidden spacing. Padding inserts space and can change
+the apparent rhythm of a page. Cell alignment places an occupant inside an
+allocation that has already been resolved. It must not alter the
+`TrackRequirement`, the resolved track height, or the negotiation algorithm.
+
+Example:
+
+```text
+Resolved Track C height: 120
+
+C2:
+  occupant requirement: 18
+  alignment: bottom
+
+C3:
+  occupant requirement: 120
+  alignment: top
+```
+
+The track remains 120px. C2 is simply placed at the bottom of its resolved
+cell. The track system still knows nothing about metadata, cards, Search,
+context, or controls.
+
 ## Track Requirements
 
 The proposal does not settle the exact implementation mechanism.
 
 An occupied track's requirement should describe the natural outer height of the
 occupant itself. It is not a spacing allowance. Compatibility wrappers may
-preserve horizontal inset and alignment, but when they consume a resolved track
-plan they should not add top or bottom padding to that track.
+preserve horizontal inset and default child placement during the migration, but
+when they consume a resolved track plan they should not add top or bottom
+padding to that track. Future cell placement should be a page-composition
+alignment decision rather than wrapper-owned layout behavior.
 
 Possible approaches:
 
@@ -146,6 +215,82 @@ still starts at the shared y-position.
 This avoids making every panel invent filler content merely to satisfy the
 grid.
 
+## Fixed-Height Occupants Used For Spacing
+
+Spacing uses the same mechanism as content.
+
+A spacing decision is not a special track type and does not receive a direct
+fixed height from the page coordinator. It is represented by placing a
+`FixedHeightTrackOccupant` in one track cell of the current page composition.
+
+For the current Search page:
+
+```text
+C1: no occupant
+C2: MessageEvidencePostMetadataControlsTrackOccupant
+C3: optional ConversationSignatureCardTrackOccupant when a Conversation excerpt
+    is visible
+```
+
+The page coordinator collects the C2 requirement and, when the right
+Conversation excerpt is visible, the C3 requirement. The resolved track height
+is simply the maximum requirement contributed by the current occupants. C1
+renders the resolved cell allocation without contributing a duplicate occupant.
+
+Track C does not therefore gain spacing semantics. Tracks know only their
+ordinal identity and resolved geometry. Meaning belongs to the occupants and to
+the page composition that places those occupants.
+
+In this composition, the C2 occupant declares the natural outer height for the
+Message Evidence support/search-control group. The C2 cell then bottom-aligns
+that group inside the resolved allocation when another cell contributes a taller
+requirement.
+
+`ConversationSignatureCardTrackOccupant` is the first Search-page occupant in
+this package whose natural requirement varies materially with content. It uses
+`ConversationSignatureCardPresentationMetrics`, shared with the rendered
+Conversation Card, so glyph row count and canonical card width influence the C3
+requirement without adding a page-owned Conversation Card height constant.
+
+The canonical card width is itself part of the Conversation Card presentation
+contract. The authoritative value is
+`ConversationSignatureCardPresentationMetrics.canonicalWidth`. Surfaces that
+use canonical `ConversationSignatureCard` presentation must provide enough
+space for that width. If a container is wider, it places the fixed-width card
+inside the available space; it does not stretch the card and therefore does not
+change glyph wrapping or natural-height calculation.
+
+This preserves the universal rule:
+
+```text
+occupants declare requirements
+tracks resolve maximums
+columns honor resolved allocations
+```
+
+There should be no separate code path for fixed track height, spacing metadata,
+or semantic track-role overrides.
+
+## Track Cell Vocabulary
+
+Track cells are named with the track letter followed by the column number:
+
+```text
+A1  A2  A3
+B1  B2  B3
+C1  C2  C3
+```
+
+The letter identifies the shared horizontal track. The number identifies the
+column:
+
+- `1` = left sidebar;
+- `2` = center panel;
+- `3` = right/end panel.
+
+Use this vocabulary in design discussion, implementation plans, diagnostics,
+and tests when it clarifies which column owns an occupant.
+
 ## Sidebar Participation
 
 The sidebar cassette system should continue to own cassette sequencing,
@@ -196,10 +341,14 @@ Migration should be gradual.
 5. Let the sidebar top menu participate in Track A only. **Done.**
 6. Map center metadata onto Track B, with empty sidebar/right allocations.
    **Done.**
-7. Verify that the current visual alignment is preserved or improved.
-8. Map future controls, Conversation Card, or excerpt metadata onto later
-   tracks only if approved.
-9. Only after that, consider replacing wrappers or extending sidebar track
+7. Add the first explicit spacing shim as Track C using a single C2
+   `FixedHeightTrackOccupant`. **Done.**
+8. Add the right-panel Conversation Card as an optional C3
+   `ConversationSignatureCardTrackOccupant`. **Done.**
+9. Verify that the current visual alignment is preserved or improved.
+10. Map future controls or excerpt metadata onto later tracks only if
+   approved.
+11. Only after that, consider replacing wrappers or extending sidebar track
    participation.
 
 This avoids destabilizing Contacts, Conversations, and other sidebar surfaces
@@ -224,8 +373,6 @@ while the new model is still being proven.
   adapters?
 - What vocabulary should replace `TitleColumnBand` and `ContextColumnBand` if
   tracks become canonical?
-- Should tracks be named semantically (`identity`, `context`) or ordinally
-  (`trackA`, `trackB`) in code?
 - What maximum height should prevent a single rich widget from making the whole
   page feel top-heavy?
 - How should debug overlays show resolved track plans?

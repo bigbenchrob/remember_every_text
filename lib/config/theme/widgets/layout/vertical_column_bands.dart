@@ -11,8 +11,8 @@ import 'cross_column_track_plan.dart';
 /// Diagnostic interface for vertical column alignment bands.
 ///
 /// The page-level layout experiment still renders through compatibility band
-/// wrappers. Title bands can consume a page-resolved Track A height; context
-/// bands can consume a page-resolved Track B height.
+/// wrappers. These wrappers consume resolved track heights while callers decide
+/// which page-specific occupants belong in each track cell.
 abstract class VerticalColumnBand extends ConsumerWidget {
   const VerticalColumnBand({
     required this.child,
@@ -59,6 +59,7 @@ abstract class VerticalColumnBand extends ConsumerWidget {
     final diagnosticBorderColor = switch (trackId) {
       TrackId.trackA => const Color(0xFFFF2D2D),
       TrackId.trackB => const Color(0xFF006CFF),
+      TrackId.trackC => const Color(0xFF00A36C),
       null => borderColor,
     };
 
@@ -157,4 +158,27 @@ class ContextColumnBand extends VerticalColumnBand {
   });
 
   static const double defaultHeight = 166;
+}
+
+/// Renders one column cell for a resolved track allocation.
+///
+/// This widget does not contribute a [TrackRequirement]. It only honors the
+/// resolved height supplied by [ResolvedTrackPlanScope].
+class TrackCellColumnBand extends VerticalColumnBand {
+  const TrackCellColumnBand({
+    required TrackId trackId,
+    Widget child = const SizedBox.shrink(),
+    ColumnBandChildPlacement childPlacement =
+        const ColumnBandChildPlacement.topLeft(),
+    super.key,
+  }) : super(
+         child: child,
+         height: 0,
+         padding: EdgeInsets.zero,
+         borderColor: const Color(0xFF00A36C),
+         childPlacement: childPlacement,
+         allowBandExpansion: false,
+         trackId: trackId,
+         overflowWarning: false,
+       );
 }

@@ -86,7 +86,20 @@ class MessageEvidenceHeader extends ConsumerWidget {
             .toList(growable: false);
     final resolvedDetails = data.details ?? details;
 
-    final title = Text(data.title, style: typography.title1);
+    final hasTrackPlan = ResolvedTrackPlanScope.maybeOf(context) != null;
+    final title = hasTrackPlan
+        ? TrackOccupantView(
+            occupant: TextTrackOccupant(
+              trackId: TrackId.trackA,
+              text: data.title,
+              style: typography.title1,
+            ),
+          )
+        : Text(data.title, style: typography.title1);
+    final metadataText = [
+      if (hasIdentityContext) identityContextLine,
+      ...metricParts,
+    ].whereType<String>().join('   ');
     final primary = _MessageEvidencePrimaryBand(
       identityContextLine: identityContextLine,
       hasIdentityContext: hasIdentityContext,
@@ -96,11 +109,21 @@ class MessageEvidenceHeader extends ConsumerWidget {
       activeScopeLabel: activeScopeLabel,
       activeScopeIndicator: data.activeScopeIndicator,
     );
-    final metadata = _MessageEvidenceMetadataBand(
-      identityContextLine: identityContextLine,
-      hasIdentityContext: hasIdentityContext,
-      metricParts: metricParts,
-    );
+    final metadata = hasTrackPlan
+        ? TrackOccupantView(
+            occupant: TextTrackOccupant(
+              trackId: TrackId.trackB,
+              text: metadataText,
+              style: typography.callout.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+          )
+        : _MessageEvidenceMetadataBand(
+            identityContextLine: identityContextLine,
+            hasIdentityContext: hasIdentityContext,
+            metricParts: metricParts,
+          );
     final supportingContext = _MessageEvidenceSupportingContextBand(
       scopeContextLine: scopeContextLine,
       scopeNote: scopeNote,
@@ -112,8 +135,6 @@ class MessageEvidenceHeader extends ConsumerWidget {
       actions: data.actions,
       details: resolvedDetails,
     );
-    final hasTrackPlan = ResolvedTrackPlanScope.maybeOf(context) != null;
-
     return ColoredBox(
       color: colors.messagePanels.coolPanelSurface,
       child: useFixedPanelFrame
@@ -123,11 +144,15 @@ class MessageEvidenceHeader extends ConsumerWidget {
                 TitleColumnBand(child: title),
                 if (hasTrackPlan) ...[
                   ContextColumnBand(child: metadata),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
-                    child: _MessageEvidencePostTrackBContent(
-                      supportingContext: supportingContext,
-                      secondary: secondary,
+                  TrackCellColumnBand(
+                    trackId: TrackId.trackC,
+                    childPlacement: const ColumnBandChildPlacement.bottomLeft(),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
+                      child: _MessageEvidencePostTrackBContent(
+                        supportingContext: supportingContext,
+                        secondary: secondary,
+                      ),
                     ),
                   ),
                 ] else

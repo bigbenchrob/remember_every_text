@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
+import '../../../../config/theme/colors/theme_colors.dart';
+import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
+import '../../../../features/conversations/presentation/widgets/conversation_signature_card.dart';
 import '../../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../app_mode/feature_level_providers.dart'
     show switchableDarkModeProvider;
@@ -25,6 +28,8 @@ import '../../application/app_shell_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/sidebar_mode.dart';
+import '../layout/search_page_conversation_track_occupants.dart';
+import '../layout/search_page_track_plan.dart';
 import '../widgets/app_mode_toggle.dart';
 import '../widgets/onboarding_center_panel_sync_observer.dart';
 import 'workspace_layout.dart';
@@ -41,6 +46,10 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   static const double _toolbarHorizontalPadding = 8.0;
   static const double _toolbarVerticalPadding = 4.0;
   static const double _defaultEndSidebarWidth = 360.0;
+  static const double _endSidebarContentHorizontalInset = 32.0;
+  static const double _minimumEndSidebarWidth =
+      ConversationSignatureCardPresentationMetrics.canonicalWidth +
+      (_endSidebarContentHorizontalInset * 2);
   Timer? _windowFrameDebounce;
   DateTime _lastFrameSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _pendingTrailingFrameSave = false;
@@ -124,7 +133,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
           endSidebar: Sidebar(
             key: ValueKey<String>('end-sidebar-${activeMode.name}'),
             startWidth: _defaultEndSidebarWidth,
-            minWidth: 300,
+            minWidth: _minimumEndSidebarWidth,
             maxWidth: 520,
             shownByDefault: false,
             builder: (context, scrollController) {
@@ -133,8 +142,25 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                 return rightPanel;
               }
 
+              final typography = ref.watch(themeTypographyProvider);
+              ref.watch(themeColorsProvider);
+              final colors = ref.read(themeColorsProvider.notifier);
+              final rightSpec = ref.watch(
+                effectiveRightPanelSpecProvider(activeMode),
+              );
+              final additionalOccupants =
+                  searchPageConversationExcerptTrackOccupants(
+                    ref: ref,
+                    rightSpec: rightSpec,
+                    colors: colors,
+                    typography: typography,
+                  );
               return ResolvedTrackPlanScope(
-                plan: searchPageTrackPlan,
+                plan: resolveSearchPageTrackPlan(
+                  context: context,
+                  typography: typography,
+                  additionalOccupants: additionalOccupants,
+                ),
                 child: rightPanel,
               );
             },

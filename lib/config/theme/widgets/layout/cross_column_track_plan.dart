@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 /// Shared horizontal layout tracks used to coordinate peer page columns.
-enum TrackId { trackA, trackB }
+enum TrackId { trackA, trackB, trackC }
 
 /// A declarative requirement contributed by a column for a shared track.
 class TrackRequirement {
@@ -9,6 +9,62 @@ class TrackRequirement {
 
   final TrackId trackId;
   final double height;
+}
+
+/// Environmental inputs needed to calculate track requirements.
+///
+/// This is deliberately a plain value object rather than a BuildContext. The
+/// page resolves framework state once, then occupants translate their
+/// presentation contracts into requirements.
+class TrackRequirementContext {
+  const TrackRequirementContext({
+    required this.availableWidth,
+    required this.textScaler,
+    required this.textDirection,
+    this.locale,
+  });
+
+  factory TrackRequirementContext.fromBuildContext(
+    BuildContext context, {
+    required double availableWidth,
+  }) {
+    return TrackRequirementContext(
+      availableWidth: availableWidth,
+      textScaler: MediaQuery.textScalerOf(context),
+      textDirection: Directionality.of(context),
+      locale: Localizations.maybeLocaleOf(context),
+    );
+  }
+
+  final double availableWidth;
+  final TextScaler textScaler;
+  final TextDirection textDirection;
+  final Locale? locale;
+}
+
+/// Resolved geometry for a single occupant's track cell.
+class ResolvedTrackAllocation {
+  const ResolvedTrackAllocation({
+    required this.trackId,
+    required this.height,
+    required this.availableWidth,
+  });
+
+  final TrackId trackId;
+  final double height;
+  final double availableWidth;
+}
+
+/// Declarative presentation adapter for content placed in a shared track.
+///
+/// Occupants own requirement calculation and construction of the presentation
+/// widget. The page coordinator only sees TrackRequirement values.
+abstract interface class TrackOccupant {
+  TrackId get trackId;
+
+  TrackRequirement requirement(TrackRequirementContext context);
+
+  Widget build(BuildContext context, ResolvedTrackAllocation allocation);
 }
 
 /// Page-resolved track geometry shared by participating columns.
@@ -31,6 +87,17 @@ class ResolvedTrackPlan {
     }
     return ResolvedTrackPlan._(
       heights: Map<TrackId, double>.unmodifiable(heights),
+      pageTopInset: pageTopInset,
+    );
+  }
+
+  factory ResolvedTrackPlan.fromOccupants({
+    required Iterable<TrackOccupant> occupants,
+    required TrackRequirementContext context,
+    double pageTopInset = 0,
+  }) {
+    return ResolvedTrackPlan.resolve(
+      requirements: occupants.map((occupant) => occupant.requirement(context)),
       pageTopInset: pageTopInset,
     );
   }
@@ -65,56 +132,103 @@ class ResolvedTrackPlanScope extends InheritedWidget {
   }
 }
 
-/// Natural Search-page track occupant contracts.
-///
-/// These values describe the visible occupants themselves, not page spacing:
-/// - sidebar top menu: dropdown trigger vertical padding (10 + 10) plus the
-///   chevron capsule (14 icon + 4 + 4 padding);
-/// - panel title: `ThemeTypography.title1` line contract (20 * 1.15);
-/// - metadata row: `ThemeTypography.callout` line contract (14 * 1.25).
-///
-/// Occupied tracks contain no discretionary spacing. Their height is the
-/// maximum natural requirement declared by their occupants. All intentional
-/// cross-column spacing is modeled as explicit empty tracks.
-abstract final class SearchPageTrackRequirements {
-  const SearchPageTrackRequirements._();
+/// Renders a track occupant inside the current resolved track allocation.
+class TrackOccupantView extends StatelessWidget {
+  const TrackOccupantView({required this.occupant, super.key});
 
-  static const double pageTopInset = 0;
-  static const double sidebarTopMenuTrigger = 42;
-  static const double panelTitleLine = 23;
-  static const double metadataLine = 17.5;
+  final TrackOccupant occupant;
+
+  @override
+  Widget build(BuildContext context) {
+    final requirementContext = TrackRequirementContext.fromBuildContext(
+      context,
+      availableWidth: double.infinity,
+    );
+    final fallbackRequirement = occupant.requirement(requirementContext);
+    final plan = ResolvedTrackPlanScope.maybeOf(context);
+    final height =
+        plan?.heightFor(
+          occupant.trackId,
+          fallback: fallbackRequirement.height,
+        ) ??
+        fallbackRequirement.height;
+    return SizedBox(
+      height: fallbackRequirement.height,
+      child: occupant.build(
+        context,
+        ResolvedTrackAllocation(
+          trackId: occupant.trackId,
+          height: height,
+          availableWidth: double.infinity,
+        ),
+      ),
+    );
+  }
 }
 
-/// Search page Track A/B proof slice.
+/// Text presentation occupant for one shared track cell.
+class TextTrackOccupant implements TrackOccupant {
+  const TextTrackOccupant({
+    required this.trackId,
+    required this.text,
+    required this.style,
+    this.maxLines = 1,
+    this.overflow = TextOverflow.ellipsis,
+    this.softWrap = false,
+  });
+
+  @override
+  final TrackId trackId;
+  final String text;
+  final TextStyle style;
+  final int? maxLines;
+  final TextOverflow overflow;
+  final bool softWrap;
+
+  @override
+  TrackRequirement requirement(TrackRequirementContext context) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: maxLines,
+      ellipsis: overflow == TextOverflow.ellipsis ? '\u2026' : null,
+      textDirection: context.textDirection,
+      textScaler: context.textScaler,
+      locale: context.locale,
+    )..layout(maxWidth: context.availableWidth);
+
+    return TrackRequirement(trackId: trackId, height: painter.height);
+  }
+
+  @override
+  Widget build(BuildContext context, ResolvedTrackAllocation allocation) {
+    return Text(
+      text,
+      style: style,
+      maxLines: maxLines,
+      overflow: overflow,
+      softWrap: softWrap,
+    );
+  }
+}
+
+/// Fixed-height occupant for a cell that requires constant vertical allocation.
 ///
-/// Track A is the identity track. The Search page currently has three
-/// participants: the sidebar top menu, the center "All messages" title, and
-/// the right "Conversation" title.
-///
-/// Track B is the supporting identity track. In the second slice, only the
-/// center metadata subheader renders visible content in Track B. The sidebar
-/// and right panel still declare empty requirements so the page proves empty
-/// track participation without moving cassette or Conversation Card content.
-final ResolvedTrackPlan searchPageTrackPlan = ResolvedTrackPlan.resolve(
-  pageTopInset: SearchPageTrackRequirements.pageTopInset,
-  requirements: const <TrackRequirement>[
-    TrackRequirement(
-      trackId: TrackId.trackA,
-      height: SearchPageTrackRequirements.sidebarTopMenuTrigger,
-    ),
-    TrackRequirement(
-      trackId: TrackId.trackA,
-      height: SearchPageTrackRequirements.panelTitleLine,
-    ),
-    TrackRequirement(
-      trackId: TrackId.trackA,
-      height: SearchPageTrackRequirements.panelTitleLine,
-    ),
-    TrackRequirement(trackId: TrackId.trackB, height: 0),
-    TrackRequirement(
-      trackId: TrackId.trackB,
-      height: SearchPageTrackRequirements.metadataLine,
-    ),
-    TrackRequirement(trackId: TrackId.trackB, height: 0),
-  ],
-);
+/// When used for page-specific spacing, it still participates through the same
+/// track negotiation model as visible content.
+class FixedHeightTrackOccupant implements TrackOccupant {
+  const FixedHeightTrackOccupant({required this.trackId, required this.height});
+
+  @override
+  final TrackId trackId;
+  final double height;
+
+  @override
+  TrackRequirement requirement(TrackRequirementContext context) {
+    return TrackRequirement(trackId: trackId, height: height);
+  }
+
+  @override
+  Widget build(BuildContext context, ResolvedTrackAllocation allocation) {
+    return SizedBox(height: allocation.height);
+  }
+}

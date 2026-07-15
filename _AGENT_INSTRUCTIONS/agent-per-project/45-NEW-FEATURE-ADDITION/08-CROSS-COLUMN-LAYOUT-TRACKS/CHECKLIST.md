@@ -2,9 +2,9 @@
 tier: project
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-15
 source_of_truth: proposal
-status: second-slice-implemented
+status: c2-fixed-height-occupant-implemented
 links:
   - ./README.md
   - ./PROPOSAL.md
@@ -74,10 +74,85 @@ approval to implement.
 - [x] Do not introduce ad hoc title padding outside the track plan.
 - [x] Do not introduce ad hoc Track B padding outside the compatibility wrapper.
 
+## Phase 4A - TrackOccupant First Slice
+
+- [x] Define a minimal generic `TrackOccupant` contract.
+- [x] Define a plain `TrackRequirementContext` for environment inputs needed by
+      requirement calculation.
+- [x] Define a `ResolvedTrackAllocation` passed to occupant presentation
+      construction.
+- [x] Add `ResolvedTrackPlan.fromOccupants`.
+- [x] Add `TextTrackOccupant` for title and metadata text.
+- [x] Add a Search top-menu occupant backed by the same presentation metrics as
+      the rendered top menu.
+- [x] Replace Search-page Track A/B numeric declarations with occupant-derived
+      requirements.
+- [x] Represent empty Track B sidebar/right cells by omitting occupants.
+- [x] Keep the coordinator feature-blind and free of top-menu/title/card
+      branches.
+- [x] Preserve the existing compatibility wrappers.
+- [x] Do not introduce C2 spacing, Conversation Card occupants,
+      glyph occupants, sidebar cassette participation, or Contacts migration.
+
+## Phase 4B - Search-Page C2 Post-Metadata Controls Occupant Slice
+
+- [x] Add `FixedHeightTrackOccupant` for cells that need fixed vertical
+      allocation.
+- [x] Place the Message Evidence post-metadata controls occupant in Search-page
+      cell C2.
+- [x] Render the resolved C-track allocation in sidebar, center panel, and
+      right panel cells.
+- [x] Keep C1 unoccupied; it honors the resolved allocation only.
+- [x] Keep Track C semantically neutral; C2's occupant carries the
+      page-specific support/search-control requirement.
+- [x] Bottom-align the C2 support/search-control group inside the resolved cell
+      allocation.
+- [x] Avoid direct fixed Track C height overrides outside occupant
+      negotiation.
+- [x] Preserve Track A and Track B behavior.
+- [x] Do not introduce Track D, search-control tracks, Conversation Card
+      tracks, sidebar cassette participation, or Contacts migration.
+
+## Phase 4C - Search-Page C3 Conversation Card Occupant Slice
+
+- [x] Replace the temporary fixed Conversation Card track requirement with a
+      natural requirement.
+- [x] Derive the requirement from
+      `ConversationSignatureCardPresentationMetrics`, shared with the rendered
+      `ConversationSignatureCard`.
+- [x] Make the requirement canonical-width aware so glyph row count can change
+      the resolved track height without depending on the right panel's current
+      width.
+- [x] Define the canonical card width in
+      `ConversationSignatureCardPresentationMetrics`.
+- [x] Ensure the rendered canonical `ConversationSignatureCard` uses the same
+      width as the occupant requirement calculation.
+- [x] Keep the page coordinator free of Conversation Card, glyph, and feature
+      branches.
+- [x] Keep Track C semantically neutral; C3's occupant carries the
+      page-specific Conversation Card placement.
+- [x] Preserve Track A and Track B behavior.
+- [x] Do not introduce Track D, search-control tracks, sidebar cassette
+      participation, Contacts migration, widget measurement, GlobalKeys, or
+      post-frame repair.
+
 ## Phase 5 - Validation
 
 - [x] Verify Track A model behavior with focused widget tests.
 - [x] Verify Track B model behavior with focused widget tests.
+- [x] Verify TrackOccupant requirement resolution with focused widget tests.
+- [x] Verify fixed-height spacing occupants with focused widget tests.
+- [x] Verify Conversation Card presentation metrics with focused widget tests.
+- [x] Verify Conversation Card occupant requirements increase with glyph
+      height.
+- [x] Verify rendered Conversation Card height stays synchronized with the
+      calculated natural requirement.
+- [x] Verify finite width affects Conversation glyph row count at the metrics
+      level.
+- [x] Verify `ConversationSignatureCardTrackOccupant` requirements use the
+      canonical card width rather than ambient container width.
+- [x] Verify rendered Conversation Card width is canonical inside wider
+      containers.
 - [ ] Manually verify Search page with no right panel.
 - [ ] Manually verify Search page with right Conversation excerpt panel.
 - [ ] Verify short and long Conversation Card content.
@@ -92,6 +167,15 @@ approval to implement.
 - [x] Mark this package as second-slice implemented.
 - [ ] Document migration notes from wrappers to tracks.
 - [x] Record deferred sidebar cassette participation work.
+
+## Phase 7 - Future Track Cell Alignment
+
+- [ ] Define a page-composition-level vertical alignment model.
+- [ ] Support only top, center, and bottom initially.
+- [ ] Keep alignment out of `TrackId`, `TrackRequirement`, and
+      `TrackOccupant`.
+- [ ] Verify alignment changes do not affect resolved track heights.
+- [ ] Verify alignment is not used as hidden spacing.
 
 ## Deferred Work
 
