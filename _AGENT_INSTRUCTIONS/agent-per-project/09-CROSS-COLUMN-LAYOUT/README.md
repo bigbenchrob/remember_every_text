@@ -45,7 +45,7 @@ using content appropriate to their lens.
 ## What This Folder Owns
 
 - the durable cross-column alignment contract
-- the ordinal track-cell wrapper mechanics
+- the page matrix, resolved geometry, and complete-cell rendering mechanics
 - the sidebar cassette content-start seam
 - current Search-page application of the contract
 - links to the UI-walk and feature-package history that produced the design
@@ -66,7 +66,8 @@ documentation.
 1. [`00-cross-column-layout-contract.md`](00-cross-column-layout-contract.md)
    explains the invariant.
 2. [`01-column-band-wrappers.md`](01-column-band-wrappers.md) explains the
-   mechanics of generic `TrackCellColumnBand` wrappers.
+   active matrix and `TrackCellView` mechanics. Its filename preserves an old
+   link; its content describes the current system.
 3. [`02-sidebar-cassette-content-start-seam.md`](02-sidebar-cassette-content-start-seam.md)
    explains how the sidebar participates without surrendering cassette
    ownership.
@@ -75,8 +76,8 @@ documentation.
 5. [`04-design-history-and-cross-references.md`](04-design-history-and-cross-references.md)
    points to the UI-walk and feature-package history.
 6. [`05-anatomy-of-track-cell-rendering.md`](05-anatomy-of-track-cell-rendering.md)
-   explains the concrete rendering chain from page composition to
-   `TrackCellColumnBand`.
+   explains the concrete rendering chain from feature preparation through
+   complete `CellId` rendering.
 
 ## Relationship To UI Walk
 

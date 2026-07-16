@@ -54,12 +54,12 @@ Meaning:
 
 When a page participates in the cross-column seam:
 
-1. app-control/top-menu cassettes are wrapped in `TrackCellColumnBand` for the
-   first ordinal track cell used by the page composition
-2. the next pre-content cassette, if present, may be placed in another
-   `TrackCellColumnBand`
-3. if the first cassette is already `preferredContentStart`, the sidebar can
-   still render empty track-cell allocations required by the page composition
+1. the app-control/top-menu cassette is represented by the occupant placed at
+   A1 in the Search-page matrix
+2. the sidebar renders A1 through E1 by complete `CellId`
+3. empty cells contain no occupant or claim, but may preserve explicit
+   page-owned resting geometry and still receive the Track height resolved from
+   all peer cells
 4. content-start cassettes and all later cassettes render below the page's
    pre-content track sequence
 

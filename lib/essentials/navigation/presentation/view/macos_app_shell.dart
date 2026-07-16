@@ -9,7 +9,9 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
+import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../../features/conversations/presentation/widgets/conversation_signature_card.dart';
+import '../../../../features/messages/presentation/layout/search_page_message_evidence_track_occupants.dart';
 import '../../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../app_mode/feature_level_providers.dart'
     show switchableDarkModeProvider;
@@ -126,166 +128,188 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         activeMode == SidebarMode.messages &&
         ref.watch(sidebarFlowProvider).topMenuChoice ==
             TopChatMenuChoice.searchAllMessages;
+    final SearchPageTrackComposition? searchPageTrackComposition;
+    if (useSearchTrackPlan) {
+      final typography = ref.watch(themeTypographyProvider);
+      ref.watch(themeColorsProvider);
+      final colors = ref.read(themeColorsProvider.notifier);
+      final presentationConstraints = PresentationConstraints.fromBuildContext(
+        context,
+        availableWidth: MediaQuery.sizeOf(context).width,
+      );
+      final centerSpec = ref.watch(
+        effectiveCenterPanelSpecProvider(activeMode),
+      );
+      final rightSpec = ref.watch(effectiveRightPanelSpecProvider(activeMode));
+      final messageOccupants = searchPageMessageEvidenceTrackOccupants(
+        ref: ref,
+        centerSpec: centerSpec,
+        colors: colors,
+        typography: typography,
+        constraints: presentationConstraints,
+      );
+      final conversationOccupants = searchPageConversationExcerptTrackOccupants(
+        ref: ref,
+        rightSpec: rightSpec,
+        colors: colors,
+        typography: typography,
+        constraints: presentationConstraints,
+      );
+      searchPageTrackComposition = composeSearchPageTrackLayout(
+        presentationConstraints: presentationConstraints,
+        typography: typography,
+        centerTitle: messageOccupants.title,
+        centerMetadata: messageOccupants.metadata,
+        centerSearchControls: messageOccupants.searchControls,
+        centerSupportingContext: messageOccupants.supportingContext,
+        centerSupportingContextMinimumReservedHeight:
+            messageOccupants.supportingContextMinimumReservedHeight,
+        rightTitle: conversationOccupants.title,
+        rightConversationCardMinimumReservedHeight:
+            conversationOccupants.cardMinimumReservedHeight,
+        rightExcerptLabelMinimumReservedHeight:
+            conversationOccupants.excerptLabelMinimumReservedHeight,
+        rightConversationCard: conversationOccupants.card,
+        rightExcerptLabel: conversationOccupants.excerptLabel,
+      );
+    } else {
+      searchPageTrackComposition = null;
+    }
 
-    return Stack(
-      children: [
-        MacosWindow(
-          endSidebar: Sidebar(
-            key: ValueKey<String>('end-sidebar-${activeMode.name}'),
-            startWidth: _defaultEndSidebarWidth,
-            minWidth: _minimumEndSidebarWidth,
-            maxWidth: 520,
-            shownByDefault: false,
-            builder: (context, scrollController) {
-              final rightPanel = RightPanelHost(mode: activeMode);
-              if (!useSearchTrackPlan) {
-                return rightPanel;
-              }
-
-              final typography = ref.watch(themeTypographyProvider);
-              ref.watch(themeColorsProvider);
-              final colors = ref.read(themeColorsProvider.notifier);
-              final rightSpec = ref.watch(
-                effectiveRightPanelSpecProvider(activeMode),
-              );
-              final additionalOccupants =
-                  searchPageConversationExcerptTrackOccupants(
-                    ref: ref,
-                    rightSpec: rightSpec,
-                    colors: colors,
-                    typography: typography,
-                  );
-              return ResolvedTrackPlanScope(
-                plan: resolveSearchPageTrackPlan(
-                  context: context,
-                  typography: typography,
-                  additionalOccupants: additionalOccupants,
+    Widget window = MacosWindow(
+      endSidebar: Sidebar(
+        key: ValueKey<String>('end-sidebar-${activeMode.name}'),
+        startWidth: _defaultEndSidebarWidth,
+        minWidth: _minimumEndSidebarWidth,
+        maxWidth: 520,
+        shownByDefault: false,
+        builder: (context, scrollController) {
+          return RightPanelHost(mode: activeMode);
+        },
+      ),
+      child: MacosScaffold(
+        toolBar: ToolBar(
+          // Position mode toggle above sidebar, other controls above center panel.
+          padding: const EdgeInsets.only(
+            left: _toolbarHorizontalPadding,
+            right: _toolbarHorizontalPadding,
+            top: _toolbarVerticalPadding,
+            bottom: _toolbarVerticalPadding,
+          ),
+          title: const _ToolbarTitle(),
+          centerTitle: true,
+          leading: const AppModeToggle(),
+          actions: [
+            if (kDebugMode)
+              ToolBarIconButton(
+                label: 'Conversation graph status',
+                icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
+                onPressed: _showConversationGraphStatus,
+                showLabel: false,
+              ),
+            if (kDebugMode)
+              () {
+                final developerMode = ref.watch(developerModeProvider);
+                final isDeveloperMode =
+                    developerMode.valueOrNull == DeveloperModeValue.developer;
+                return ToolBarIconButton(
+                  label: isDeveloperMode
+                      ? 'Developer mode enabled'
+                      : 'Developer mode disabled',
+                  icon: MacosIcon(
+                    isDeveloperMode
+                        ? CupertinoIcons.hammer_fill
+                        : CupertinoIcons.hammer,
+                  ),
+                  onPressed: () {
+                    unawaited(
+                      ref
+                          .read(appShellActionsProvider.notifier)
+                          .toggleDeveloperMode(),
+                    );
+                  },
+                  showLabel: false,
+                );
+              }(),
+            if (kDebugMode &&
+                ref.watch(developerModeProvider).valueOrNull ==
+                    DeveloperModeValue.developer)
+              () {
+                final marginsVisible = ref.watch(
+                  columnBandDebugMarginsProvider,
+                );
+                return ToolBarIconButton(
+                  label: marginsVisible
+                      ? 'Hide layout band margins'
+                      : 'Show layout band margins',
+                  icon: MacosIcon(
+                    marginsVisible ? Icons.border_outer : Icons.border_clear,
+                  ),
+                  onPressed: () {
+                    ref
+                        .read(appShellActionsProvider.notifier)
+                        .toggleColumnBandDebugMargins();
+                  },
+                  showLabel: false,
+                );
+              }(),
+            () {
+              final themeMode = ref.watch(switchableDarkModeProvider);
+              final (IconData icon, String tooltip) = switch (themeMode) {
+                ThemeMode.system => (
+                  CupertinoIcons.circle_lefthalf_fill,
+                  'Theme: System (click to switch to Light)',
                 ),
-                child: rightPanel,
+                ThemeMode.light => (
+                  CupertinoIcons.sun_max_fill,
+                  'Theme: Light (click to switch to Dark)',
+                ),
+                ThemeMode.dark => (
+                  CupertinoIcons.moon_stars_fill,
+                  'Theme: Dark (click to switch to System)',
+                ),
+              };
+              return ToolBarIconButton(
+                label: tooltip,
+                icon: MacosIcon(icon),
+                onPressed: () {
+                  ref.read(appShellActionsProvider.notifier).cycleThemeMode();
+                },
+                showLabel: false,
+              );
+            }(),
+          ],
+        ),
+        children: [
+          ContentArea(
+            builder: (context, scrollController) {
+              return Stack(
+                children: [
+                  IndexedStack(
+                    index: activeMode == SidebarMode.messages ? 0 : 1,
+                    children: const [
+                      WorkspaceLayout(mode: SidebarMode.messages),
+                      WorkspaceLayout(mode: SidebarMode.settings),
+                    ],
+                  ),
+                  const OnboardingCenterPanelSyncObserver(),
+                  _EndSidebarSyncObserver(mode: activeMode),
+                ],
               );
             },
           ),
-          child: MacosScaffold(
-            toolBar: ToolBar(
-              // Position mode toggle above sidebar, other controls above center panel.
-              padding: const EdgeInsets.only(
-                left: _toolbarHorizontalPadding,
-                right: _toolbarHorizontalPadding,
-                top: _toolbarVerticalPadding,
-                bottom: _toolbarVerticalPadding,
-              ),
-              title: const _ToolbarTitle(),
-              centerTitle: true,
-              leading: const AppModeToggle(),
-              actions: [
-                if (kDebugMode)
-                  ToolBarIconButton(
-                    label: 'Conversation graph status',
-                    icon: const MacosIcon(CupertinoIcons.waveform_path_ecg),
-                    onPressed: _showConversationGraphStatus,
-                    showLabel: false,
-                  ),
-                if (kDebugMode)
-                  () {
-                    final developerMode = ref.watch(developerModeProvider);
-                    final isDeveloperMode =
-                        developerMode.valueOrNull ==
-                        DeveloperModeValue.developer;
-                    return ToolBarIconButton(
-                      label: isDeveloperMode
-                          ? 'Developer mode enabled'
-                          : 'Developer mode disabled',
-                      icon: MacosIcon(
-                        isDeveloperMode
-                            ? CupertinoIcons.hammer_fill
-                            : CupertinoIcons.hammer,
-                      ),
-                      onPressed: () {
-                        unawaited(
-                          ref
-                              .read(appShellActionsProvider.notifier)
-                              .toggleDeveloperMode(),
-                        );
-                      },
-                      showLabel: false,
-                    );
-                  }(),
-                if (kDebugMode &&
-                    ref.watch(developerModeProvider).valueOrNull ==
-                        DeveloperModeValue.developer)
-                  () {
-                    final marginsVisible = ref.watch(
-                      columnBandDebugMarginsProvider,
-                    );
-                    return ToolBarIconButton(
-                      label: marginsVisible
-                          ? 'Hide layout band margins'
-                          : 'Show layout band margins',
-                      icon: MacosIcon(
-                        marginsVisible
-                            ? Icons.border_outer
-                            : Icons.border_clear,
-                      ),
-                      onPressed: () {
-                        ref
-                            .read(appShellActionsProvider.notifier)
-                            .toggleColumnBandDebugMargins();
-                      },
-                      showLabel: false,
-                    );
-                  }(),
-                () {
-                  final themeMode = ref.watch(switchableDarkModeProvider);
-                  final (IconData icon, String tooltip) = switch (themeMode) {
-                    ThemeMode.system => (
-                      CupertinoIcons.circle_lefthalf_fill,
-                      'Theme: System (click to switch to Light)',
-                    ),
-                    ThemeMode.light => (
-                      CupertinoIcons.sun_max_fill,
-                      'Theme: Light (click to switch to Dark)',
-                    ),
-                    ThemeMode.dark => (
-                      CupertinoIcons.moon_stars_fill,
-                      'Theme: Dark (click to switch to System)',
-                    ),
-                  };
-                  return ToolBarIconButton(
-                    label: tooltip,
-                    icon: MacosIcon(icon),
-                    onPressed: () {
-                      ref
-                          .read(appShellActionsProvider.notifier)
-                          .cycleThemeMode();
-                    },
-                    showLabel: false,
-                  );
-                }(),
-              ],
-            ),
-            children: [
-              ContentArea(
-                builder: (context, scrollController) {
-                  return Stack(
-                    children: [
-                      IndexedStack(
-                        index: activeMode == SidebarMode.messages ? 0 : 1,
-                        children: const [
-                          WorkspaceLayout(mode: SidebarMode.messages),
-                          WorkspaceLayout(mode: SidebarMode.settings),
-                        ],
-                      ),
-                      const OnboardingCenterPanelSyncObserver(),
-                      _EndSidebarSyncObserver(mode: activeMode),
-                    ],
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        if (showOnboardingOverlay) const OnboardingOverlay(),
-      ],
+        ],
+      ),
+    );
+    if (searchPageTrackComposition != null) {
+      window = ResolvedTrackLayoutMatrixScope(
+        matrix: searchPageTrackComposition.resolvedMatrix,
+        child: window,
+      );
+    }
+
+    return Stack(
+      children: [window, if (showOnboardingOverlay) const OnboardingOverlay()],
     );
   }
 }

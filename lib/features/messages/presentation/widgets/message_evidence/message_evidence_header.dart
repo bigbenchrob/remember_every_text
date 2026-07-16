@@ -7,7 +7,8 @@ import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/layout/app_panel_bands.dart';
 import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
-import '../../../../../config/theme/widgets/layout/vertical_column_bands.dart';
+import '../../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
+import '../../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../domain/message_evidence/message_evidence_search_mode.dart';
 
 class MessageEvidenceHeaderModel {
@@ -86,45 +87,13 @@ class MessageEvidenceHeader extends ConsumerWidget {
             .toList(growable: false);
     final resolvedDetails = data.details ?? details;
 
-    final hasTrackPlan = ResolvedTrackPlanScope.maybeOf(context) != null;
-    final title = hasTrackPlan
-        ? TrackOccupantView(
-            occupant: TextTrackOccupant(
-              trackId: TrackId.trackA,
-              text: data.title,
-              style: typography.title1,
-            ),
-          )
-        : Text(data.title, style: typography.title1);
-    final metadataText = [
-      if (hasIdentityContext) identityContextLine,
-      ...metricParts,
-    ].whereType<String>().join('   ');
+    final hasResolvedMatrix =
+        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
+    final title = Text(data.title, style: typography.title1);
     final primary = _MessageEvidencePrimaryBand(
       identityContextLine: identityContextLine,
       hasIdentityContext: hasIdentityContext,
       metricParts: metricParts,
-      scopeContextLine: scopeContextLine,
-      scopeNote: scopeNote,
-      activeScopeLabel: activeScopeLabel,
-      activeScopeIndicator: data.activeScopeIndicator,
-    );
-    final metadata = hasTrackPlan
-        ? TrackOccupantView(
-            occupant: TextTrackOccupant(
-              trackId: TrackId.trackB,
-              text: metadataText,
-              style: typography.callout.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          )
-        : _MessageEvidenceMetadataBand(
-            identityContextLine: identityContextLine,
-            hasIdentityContext: hasIdentityContext,
-            metricParts: metricParts,
-          );
-    final supportingContext = _MessageEvidenceSupportingContextBand(
       scopeContextLine: scopeContextLine,
       scopeNote: scopeNote,
       activeScopeLabel: activeScopeLabel,
@@ -137,54 +106,9 @@ class MessageEvidenceHeader extends ConsumerWidget {
     );
     return ColoredBox(
       color: colors.messagePanels.coolPanelSurface,
-      child: useFixedPanelFrame
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TrackCellColumnBand(
-                  trackId: TrackId.trackA,
-                  fallbackHeight: 72,
-                  padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
-                  childPlacement: const ColumnBandChildPlacement.topLeft(),
-                  allowBandExpansion: true,
-                  child: title,
-                ),
-                if (hasTrackPlan) ...[
-                  TrackCellColumnBand(
-                    trackId: TrackId.trackB,
-                    fallbackHeight: 166,
-                    padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
-                    child: metadata,
-                  ),
-                  TrackCellColumnBand(
-                    trackId: TrackId.trackC,
-                    childPlacement: const ColumnBandChildPlacement.centerLeft(),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
-                      child: secondary,
-                    ),
-                  ),
-                  TrackCellColumnBand(
-                    trackId: TrackId.trackD,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
-                      child: supportingContext,
-                    ),
-                  ),
-                  const TrackCellColumnBand(trackId: TrackId.trackE),
-                ] else
-                  TrackCellColumnBand(
-                    trackId: TrackId.trackB,
-                    fallbackHeight: 166,
-                    padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
-                    child: _MessageEvidenceContextBand(
-                      primary: primary,
-                      secondary: secondary,
-                    ),
-                  ),
-              ],
-            )
-          : AppPanelBandHeader(
+      child: useFixedPanelFrame && hasResolvedMatrix
+          ? const _SearchPageMessageEvidenceTrackCells()
+          : _MessageEvidenceFallbackHeader(
               padding: padding,
               title: title,
               primary: primary,
@@ -194,152 +118,54 @@ class MessageEvidenceHeader extends ConsumerWidget {
   }
 }
 
-class _MessageEvidenceContextBand extends StatelessWidget {
-  const _MessageEvidenceContextBand({
+class _MessageEvidenceFallbackHeader extends StatelessWidget {
+  const _MessageEvidenceFallbackHeader({
+    required this.padding,
+    required this.title,
     required this.primary,
     required this.secondary,
   });
 
+  final EdgeInsets padding;
+  final Widget title;
   final Widget primary;
   final Widget secondary;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [primary, secondary],
+    return Padding(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          title,
+          const SizedBox(height: AppPanelBands.titleToPrimaryGap),
+          primary,
+          const SizedBox(height: AppPanelBands.primaryToSecondaryGap),
+          secondary,
+        ],
+      ),
     );
   }
 }
 
-class _MessageEvidenceMetadataBand extends ConsumerWidget {
-  const _MessageEvidenceMetadataBand({
-    required this.identityContextLine,
-    required this.hasIdentityContext,
-    required this.metricParts,
-  });
-
-  final String? identityContextLine;
-  final bool hasIdentityContext;
-  final List<String> metricParts;
+class _SearchPageMessageEvidenceTrackCells extends StatelessWidget {
+  const _SearchPageMessageEvidenceTrackCells();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (hasIdentityContext)
-          Flexible(
-            child: Text(
-              identityContextLine!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: typography.callout.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ),
-        if (hasIdentityContext && metricParts.isNotEmpty)
-          const SizedBox(width: 14),
-        if (metricParts.isNotEmpty)
-          Flexible(
-            child: Wrap(
-              spacing: 14,
-              runSpacing: 4,
-              children: [
-                for (final part in metricParts)
-                  Text(
-                    part,
-                    style: typography.callout.copyWith(
-                      color: colors.content.textSecondary,
-                    ),
-                  ),
-              ],
+        for (final trackId in TrackId.values)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: TrackCellView(
+              cellId: CellId(trackId: trackId, columnId: TrackColumnId.column2),
             ),
           ),
       ],
-    );
-  }
-}
-
-class _MessageEvidenceSupportingContextBand extends ConsumerWidget {
-  const _MessageEvidenceSupportingContextBand({
-    required this.scopeContextLine,
-    required this.scopeNote,
-    required this.activeScopeLabel,
-    required this.activeScopeIndicator,
-  });
-
-  final String? scopeContextLine;
-  final String? scopeNote;
-  final String? activeScopeLabel;
-  final Widget? activeScopeIndicator;
-
-  bool get _hasVisibleContent {
-    return (scopeContextLine != null && scopeContextLine!.isNotEmpty) ||
-        (scopeNote != null && scopeNote!.isNotEmpty) ||
-        (activeScopeLabel != null && activeScopeLabel!.isNotEmpty) ||
-        activeScopeIndicator != null;
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (!_hasVisibleContent) {
-      return const SizedBox.shrink();
-    }
-
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (scopeContextLine != null && scopeContextLine!.isNotEmpty)
-            Text(
-              scopeContextLine!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: typography.caption.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          if (scopeNote != null && scopeNote!.isNotEmpty) ...[
-            const SizedBox(height: 5),
-            Text(
-              scopeNote!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: typography.caption.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ],
-          if (activeScopeLabel != null && activeScopeLabel!.isNotEmpty) ...[
-            const SizedBox(height: 7),
-            Text(
-              activeScopeLabel!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: typography.caption.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ],
-          if (activeScopeIndicator != null) ...[
-            const SizedBox(height: 8),
-            activeScopeIndicator!,
-          ],
-        ],
-      ),
     );
   }
 }
@@ -458,7 +284,21 @@ class _MessageEvidenceSecondaryBand extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (searchConfig != null)
-          _MessageEvidenceHeaderSearchRow(config: searchConfig!),
+          MessageEvidenceSearchControlsPresentation(
+            query: searchConfig!.controller.text,
+            placeholder: searchConfig!.placeholder,
+            mode: searchConfig!.mode,
+            onQueryChanged: (query) {
+              if (searchConfig!.controller.text == query) {
+                return;
+              }
+              searchConfig!.controller.value = TextEditingValue(
+                text: query,
+                selection: TextSelection.collapsed(offset: query.length),
+              );
+            },
+            onModeChanged: searchConfig!.onModeChanged,
+          ),
         if (actions != null) ...[
           SizedBox(height: searchConfig == null ? 0 : 9),
           _MessageEvidenceHeaderActionRow(child: actions!),
@@ -472,13 +312,56 @@ class _MessageEvidenceSecondaryBand extends StatelessWidget {
   }
 }
 
-class _MessageEvidenceHeaderSearchRow extends ConsumerWidget {
-  const _MessageEvidenceHeaderSearchRow({required this.config});
+/// Feature-owned Search controls presentation used by both legacy headers and
+/// page-level Track occupants.
+class MessageEvidenceSearchControlsPresentation extends ConsumerStatefulWidget {
+  const MessageEvidenceSearchControlsPresentation({
+    required this.query,
+    required this.placeholder,
+    required this.onQueryChanged,
+    this.mode,
+    this.onModeChanged,
+    super.key,
+  });
 
-  final MessageEvidenceHeaderSearchConfig config;
+  final String query;
+  final String placeholder;
+  final ValueChanged<String> onQueryChanged;
+  final MessageEvidenceSearchMode? mode;
+  final ValueChanged<MessageEvidenceSearchMode>? onModeChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MessageEvidenceSearchControlsPresentation> createState() {
+    return _MessageEvidenceSearchControlsPresentationState();
+  }
+}
+
+class _MessageEvidenceSearchControlsPresentationState
+    extends ConsumerState<MessageEvidenceSearchControlsPresentation> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.query,
+  );
+
+  @override
+  void didUpdateWidget(MessageEvidenceSearchControlsPresentation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_controller.text == widget.query) {
+      return;
+    }
+    _controller.value = TextEditingValue(
+      text: widget.query,
+      selection: TextSelection.collapsed(offset: widget.query.length),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
 
@@ -494,16 +377,17 @@ class _MessageEvidenceHeaderSearchRow extends ConsumerWidget {
           const SizedBox(width: 8),
           Expanded(
             child: macos_ui.MacosTextField(
-              controller: config.controller,
-              placeholder: config.placeholder,
+              controller: _controller,
+              placeholder: widget.placeholder,
               clearButtonMode: macos_ui.OverlayVisibilityMode.editing,
+              onChanged: widget.onQueryChanged,
             ),
           ),
-          if (config.mode != null && config.onModeChanged != null) ...[
+          if (widget.mode != null && widget.onModeChanged != null) ...[
             const SizedBox(width: 8),
             _MessageEvidenceSearchModeToggle(
-              mode: config.mode!,
-              onModeChanged: config.onModeChanged!,
+              mode: widget.mode!,
+              onModeChanged: widget.onModeChanged!,
             ),
           ],
         ],

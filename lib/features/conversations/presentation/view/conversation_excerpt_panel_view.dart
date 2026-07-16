@@ -6,7 +6,8 @@ import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
-import '../../../../config/theme/widgets/layout/vertical_column_bands.dart';
+import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
+import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../../core/util/date_range_formatter.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart'
     show panelActionsProvider;
@@ -22,6 +23,7 @@ import '../../application/conversation_signatures/conversation_signature_display
 import '../widgets/conversation_favourite_button.dart';
 import '../widgets/conversation_signature_card.dart';
 import '../widgets/conversation_signature_card_presentation.dart';
+import 'conversation_excerpt_panel_track_metrics.dart';
 
 class ConversationExcerptPanelView extends ConsumerWidget {
   const ConversationExcerptPanelView({
@@ -86,7 +88,9 @@ class ConversationExcerptPanelView extends ConsumerWidget {
                     ),
                   ),
                   contextContent: _ConversationExcerptContextBand(
-                    label: _excerptLabel(beforeCount + afterCount + 1),
+                    label: conversationExcerptLabel(
+                      beforeCount + afterCount + 1,
+                    ),
                     colors: colors,
                     typography: typography,
                   ),
@@ -184,17 +188,7 @@ class _ConversationTrackTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ResolvedTrackPlanScope.maybeOf(context) == null) {
-      return Text(title, style: style);
-    }
-
-    return TrackOccupantView(
-      occupant: TextTrackOccupant(
-        trackId: TrackId.trackA,
-        text: title,
-        style: style,
-      ),
-    );
+    return Text(title, style: style);
   }
 }
 
@@ -269,46 +263,40 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasTrackPlan = ResolvedTrackPlanScope.maybeOf(context) != null;
+    final hasResolvedMatrix =
+        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
+    if (hasResolvedMatrix) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final trackId in TrackId.values)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: TrackCellView(
+                cellId: CellId(
+                  trackId: trackId,
+                  columnId: TrackColumnId.column3,
+                ),
+              ),
+            ),
+          Expanded(child: content),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TrackCellColumnBand(
-          trackId: TrackId.trackA,
-          fallbackHeight: 72,
-          padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
-          childPlacement: const ColumnBandChildPlacement.topLeft(),
-          allowBandExpansion: true,
-          child: title,
+        SizedBox(
+          height: 72,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+            child: Align(alignment: Alignment.topLeft, child: title),
+          ),
         ),
-        if (hasTrackPlan) ...[
-          const TrackCellColumnBand(
-            trackId: TrackId.trackB,
-            fallbackHeight: 166,
-            padding: EdgeInsets.fromLTRB(32, 10, 32, 0),
-          ),
-          TrackCellColumnBand(
-            trackId: TrackId.trackC,
-            child: trackCContent == null
-                ? const SizedBox.shrink()
-                : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: trackCContent,
-                  ),
-          ),
-          TrackCellColumnBand(
-            trackId: TrackId.trackD,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
-              child: contextContent,
-            ),
-          ),
-          const TrackCellColumnBand(trackId: TrackId.trackE),
-        ] else
-          TrackCellColumnBand(
-            trackId: TrackId.trackB,
-            fallbackHeight: 166,
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 166),
+          child: Padding(
             padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,6 +310,7 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
               ],
             ),
           ),
+        ),
         Expanded(child: content),
       ],
     );
@@ -344,7 +333,9 @@ class _ConversationExcerptContextBand extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [Text(label, style: _excerptLabelStyle(colors, typography))],
+      children: [
+        Text(label, style: conversationExcerptLabelStyle(colors, typography)),
+      ],
     );
   }
 }
@@ -367,20 +358,6 @@ class _ConversationContextFallbackHeader extends StatelessWidget {
       style: typography.headline.copyWith(color: colors.content.textPrimary),
     );
   }
-}
-
-TextStyle _excerptLabelStyle(ThemeColors colors, ThemeTypography typography) {
-  return typography.caption.copyWith(
-    color: colors.content.textSecondary.withValues(alpha: 0.78),
-    fontWeight: FontWeight.w500,
-  );
-}
-
-String _excerptLabel(int count) {
-  if (count <= 1) {
-    return 'Excerpt centered on the chosen message';
-  }
-  return '$count-message excerpt centered on the chosen message';
 }
 
 String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {

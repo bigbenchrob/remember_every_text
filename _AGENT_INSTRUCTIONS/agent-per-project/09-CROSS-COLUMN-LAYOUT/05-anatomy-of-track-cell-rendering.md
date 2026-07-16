@@ -9,206 +9,114 @@ links:
   - ./01-column-band-wrappers.md
   - ./03-search-page-current-implementation.md
   - ../../../lib/config/theme/widgets/layout/cross_column_track_plan.dart
-  - ../../../lib/config/theme/widgets/layout/vertical_column_bands.dart
+  - ../../../lib/config/theme/widgets/layout/page_track_layout_matrix.dart
+  - ../../../lib/config/theme/widgets/layout/resolved_track_layout_matrix.dart
   - ../../../lib/essentials/navigation/presentation/layout/search_page_track_plan.dart
-tests: []
+tests:
+  - test/config/theme/widgets/layout/page_track_layout_matrix_test.dart
+  - test/config/theme/widgets/layout/resolved_track_layout_matrix_test.dart
 ---
 
 # Anatomy Of Track Cell Rendering
 
-This document explains how the current Search-page layout tracks become a
-Flutter widget tree.
-
-It is deliberately mechanical. For the architectural rule that tracks are
-ordinal geometry only, see
-[`00-cross-column-layout-contract.md`](00-cross-column-layout-contract.md).
-
-## Core Point
-
-`TrackCellColumnBand` does not discover its peers.
-
-It does not ask:
-
-```text
-Who else is in my row?
-```
-
-The page composition declares the participating occupants first. The track plan
-is resolved before descendant track-cell wrappers render.
+This document explains the current Search-page rendering chain mechanically.
 
 ## Rendering Chain
 
-The Search-page chain is:
+```text
+Messages and Conversations prepare presentation inputs
+    -> Search page constructs placement-independent TrackOccupants
+    -> PageTrackLayoutMatrix places each occupant at one CellId
+       and records any page-owned minimum reservation
+    -> each occupant declares an OccupantDimensionalClaim
+    -> ResolvedTrackLayoutMatrix resolves max effective height per ordinal Track
+    -> ResolvedTrackLayoutMatrixScope distributes one immutable result
+    -> TrackCellView renders one resolved CellId
+    -> feature-owned presentation appears inside the resolved allocation
+```
+
+## 1. Features Prepare Presentation
+
+Messages owns evidence labels and controls. Conversations owns the Conversation
+title, signature card, and excerpt label. The page receives prepared occupants;
+it does not initiate feature reads or construct feature UI.
+
+## 2. The Page Declares The Matrix
+
+`buildSearchPageTrackLayoutMatrix(...)` records every Search-page coordinate
+exactly once. Occupied cells contain a `TrackOccupant`; empty cells contain no
+occupant. A cell may also carry a `minimumReservedHeight` when the page's
+intended resting composition must survive an optional occupant's absence. Cell
+alignment and reservations are page-composition decisions.
+
+This is the only place that answers questions such as:
 
 ```text
-Page composition
-  declares TrackOccupants
-
-TrackOccupants
-  declare TrackRequirements
-
-ResolvedTrackPlan
-  resolves max requirement per TrackId
-
-ResolvedTrackPlanScope
-  provides the resolved plan to the subtree
-
-TrackCellColumnBand
-  reads the resolved height for its TrackId
-
-Child presentation widget
-  renders inside that cell
+Which occupant is in C2?
+Is D3 occupied?
+How is A1 aligned?
 ```
 
-## Step By Step
+## 3. Occupants Declare Dimensional Truth
 
-### 1. Page Composition Declares Occupants
+Each `TrackOccupant` calculates an `OccupantDimensionalClaim` from the same
+presentation contract and constraints used to construct its approved feature
+presentation.
 
-The Search page calls `resolveSearchPageTrackPlan(...)`.
+The occupant does not know its `CellId`, Track, column, page, or alignment.
 
-That function explicitly declares the current Search-page occupants. For
-example:
+## 4. The Resolver Produces One Matrix
+
+`ResolvedTrackLayoutMatrix.resolve(...)` visits every matrix cell once. An
+occupied cell may contribute a live `naturalHeight`; an empty cell contributes
+no claim. The resolver computes each cell's effective height as:
 
 ```text
-A1: TopMenuTrackOccupant
-A2: TextTrackOccupant("All messages")
-A3: TextTrackOccupant("Conversation")
-B2: metadata text occupant
-C2: search controls occupant
-D2: supporting context occupant
-E: fixed-height occupant
+max(minimumReservedHeight, live naturalHeight or zero)
 ```
 
-Optional right-panel occupants, such as the Conversation Card and excerpt label,
-are added by the page when the right Conversation excerpt panel is visible.
+For each ordinal Track it chooses the maximum effective height. It then records
+a `ResolvedTrackCell` for every occupied and empty coordinate. The live claim
+remains unchanged, so reservation geometry never masquerades as occupant
+dimensional truth.
 
-No `TrackCellColumnBand` searches for these peers. They are known because the
-page composition declared them.
+The resolver knows only geometry and occupancy. Diagnostic labels are inert.
 
-### 2. Occupants Declare Requirements
+## 5. The Scope Distributes The Result
 
-Each `TrackOccupant` answers:
+`MacosAppShell` constructs the Search composition before `MacosWindow` renders
+and places one `ResolvedTrackLayoutMatrixScope` above the window. Sidebar,
+center, and end panel therefore consume the same immutable geometry.
 
-```text
-What TrackRequirement do I declare?
-```
+## 6. TrackCellView Renders A Cell
 
-Examples:
+Each participating column emits `TrackCellView(cellId: ...)` in ordinal Track
+order. The renderer:
 
-- a top-menu occupant can use a known presentation contract;
-- a text occupant can use text metrics;
-- a Conversation Card occupant can use Conversation Card presentation metrics;
-- a fixed-height occupant can declare a constant height.
+1. reads its resolved cell;
+2. returns an empty box for an empty cell;
+3. asks an occupant to construct the approved presentation for an occupied
+   cell;
+4. places that presentation using the cell alignment stored by the page.
 
-The page coordinator does not need to know what kind of content produced the
-requirement.
-
-### 3. The Page Resolves The Track Plan
-
-`ResolvedTrackPlan.fromOccupants(...)` asks each occupant for a
-`TrackRequirement`, then resolves the maximum height for each `TrackId`.
-
-Conceptually:
-
-```text
-Track A = max(A1 requirement, A2 requirement, A3 requirement)
-Track B = max(B2 requirement)
-Track C = max(C2 requirement, optional C3 requirement)
-Track D = max(D2 requirement, optional D3 requirement)
-Track E = max(E fixed-height requirement)
-```
-
-The resolved plan is just data:
-
-```text
-Track A -> 30
-Track B -> 18
-Track C -> 96
-Track D -> 34
-Track E -> 16
-```
-
-It does not know that Track A currently contains titles or that Track E
-currently creates visual separation. Those are page-composition effects, not
-track semantics.
-
-### 4. The Plan Is Placed In The Widget Tree
-
-The resolved plan is passed down through `ResolvedTrackPlanScope`.
-
-`ResolvedTrackPlanScope` is a Flutter `InheritedWidget`. Its job is only to
-make the already-resolved plan available to descendant widgets.
-
-The main workspace receives a scope in `workspace_layout.dart`.
-
-The macOS end sidebar is built through a separate `MacosWindow` sidebar
-builder, so the right panel receives a corresponding scope in
-`macos_app_shell.dart`.
-
-Both scopes call the same Search-page resolver, so the center and right panel
-receive the same geometry.
-
-### 5. TrackCellColumnBand Reads The Plan
-
-When Flutter later builds a widget such as:
-
-```dart
-TrackCellColumnBand(trackId: TrackId.trackA, ...)
-```
-
-that wrapper asks:
-
-```text
-What height did the page resolve for Track A?
-```
-
-It reads that value from `ResolvedTrackPlanScope`.
-
-If a resolved plan exists, the track cell uses the resolved height. If no plan
-exists, it uses its fallback height for compatibility with non-participating
-surfaces.
-
-### 6. The Child Renders Inside The Cell
-
-The child widget is then placed inside the resolved cell according to the
-page-composition placement rules.
-
-The child does not own cross-column alignment.
-
-The cell does not calculate track requirements.
-
-The page does not inspect already-built Flutter widgets.
+It does not find peers or resolve heights.
 
 ## Inspector Notes
 
-Flutter Inspector may show internal Flutter element types such as:
-
-```text
-SingleChildRenderObjectElement
-```
-
-That is not the MessageLens `TrackOccupant`.
-
-The MessageLens occupant is the Dart object that implements `TrackOccupant` and
-declares a `TrackRequirement`. Flutter's element tree is the rendered result of
-the already-resolved plan.
+Flutter Inspector may show framework element types such as
+`SingleChildRenderObjectElement`. Those are Flutter's rendered element tree,
+not MessageLens `TrackOccupant` objects. Occupants are declarative Dart objects
+consumed before the resulting presentation enters the widget tree.
 
 ## Correct Mental Model
 
-Use this model:
-
 ```text
-Page composition declares occupants.
-Occupants declare requirements.
-Page resolves geometry.
-Track cells consume geometry.
-Widgets render presentation.
+Features prepare presentation.
+Occupants declare dimensional truth.
+The page matrix declares placement.
+The resolver derives shared geometry.
+Cells render the immutable result.
 ```
 
-Avoid this model:
-
-```text
-TrackCellColumnBand finds its peers and asks them how tall they are.
-```
-
-That is not how the system works.
+The retired row-only plan and band wrappers are historical architecture, not a
+fallback to use for new work.

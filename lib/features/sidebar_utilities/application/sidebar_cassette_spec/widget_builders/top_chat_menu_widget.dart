@@ -27,7 +27,7 @@ abstract final class TopChatMenuPresentationMetrics {
 
   static double naturalTriggerHeight({
     required TextStyle selectedValueStyle,
-    required TrackRequirementContext context,
+    required PresentationConstraints constraints,
   }) {
     final painter = TextPainter(
       text: TextSpan(
@@ -35,10 +35,10 @@ abstract final class TopChatMenuPresentationMetrics {
         style: selectedValueStyle,
       ),
       maxLines: 1,
-      textDirection: context.textDirection,
-      textScaler: context.textScaler,
-      locale: context.locale,
-    )..layout(maxWidth: context.availableWidth);
+      textDirection: constraints.textDirection,
+      textScaler: constraints.textScaler,
+      locale: constraints.locale,
+    )..layout(maxWidth: constraints.availableWidth);
     const chevronHeight = trailingIconSize + chevronBackgroundPadding * 2;
     final contentHeight = painter.height > chevronHeight
         ? painter.height
@@ -61,21 +61,22 @@ class TopMenuTrackOccupant implements TrackOccupant {
   final TextStyle selectedValueStyle;
 
   @override
-  TrackId get trackId => TrackId.trackA;
-
-  @override
-  TrackRequirement requirement(TrackRequirementContext context) {
-    return TrackRequirement(
-      trackId: trackId,
-      height: TopChatMenuPresentationMetrics.naturalTriggerHeight(
+  OccupantDimensionalClaim dimensionalClaim(
+    PresentationConstraints constraints,
+  ) {
+    return OccupantDimensionalClaim(
+      naturalHeight: TopChatMenuPresentationMetrics.naturalTriggerHeight(
         selectedValueStyle: selectedValueStyle,
-        context: context,
+        constraints: constraints,
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context, ResolvedTrackAllocation allocation) {
+  Widget buildPresentation(
+    BuildContext context,
+    ResolvedTrackAllocation allocation,
+  ) {
     return TopChatMenuWidget(
       currentChoice: currentChoice,
       cassetteIndex: cassetteIndex,
@@ -84,8 +85,8 @@ class TopMenuTrackOccupant implements TrackOccupant {
   }
 }
 
-class TopMenuTrackOccupantView extends ConsumerWidget {
-  const TopMenuTrackOccupantView({
+class TopMenuCassetteView extends StatelessWidget {
+  const TopMenuCassetteView({
     required this.currentChoice,
     required this.cassetteIndex,
     required this.sidebarMode,
@@ -97,15 +98,11 @@ class TopMenuTrackOccupantView extends ConsumerWidget {
   final SidebarMode sidebarMode;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final typography = ref.watch(themeTypographyProvider);
-    return TrackOccupantView(
-      occupant: TopMenuTrackOccupant(
-        currentChoice: currentChoice,
-        cassetteIndex: cassetteIndex,
-        sidebarMode: sidebarMode,
-        selectedValueStyle: typography.controlValue,
-      ),
+  Widget build(BuildContext context) {
+    return TopChatMenuWidget(
+      currentChoice: currentChoice,
+      cassetteIndex: cassetteIndex,
+      sidebarMode: sidebarMode,
     );
   }
 }
@@ -251,6 +248,7 @@ class TopChatMenuWidget extends ConsumerWidget {
       // - Brand-tinted chevron background for intentional feel
       selectedValueStyle: typography.controlValue,
       trailingIconSize: TopChatMenuPresentationMetrics.trailingIconSize,
+      panelPresentation: AppDropdownPanelPresentation.anchoredOverlay,
       chevronColor: colors.dropdownMenu(DropdownMenu.chevronIcon),
       chevronBackgroundColor: colors.dropdownMenu(DropdownMenu.chevronBg),
     );

@@ -236,26 +236,24 @@ void main() {
         textDirection: TextDirection.ltr,
         child: Builder(
           builder: (context) {
-            final requirementContext = TrackRequirementContext.fromBuildContext(
+            final constraints = PresentationConstraints.fromBuildContext(
               context,
               availableWidth: 120,
             );
-            final oneRowRequirement = ConversationSignatureCardTrackOccupant(
-              trackId: TrackId.trackC,
+            final oneRowClaim = ConversationSignatureCardTrackOccupant(
               signature: oneRowSignature,
               style: _testStyle,
               includeFavouriteButton: false,
-            ).requirement(requirementContext);
-            final multiRowRequirement = ConversationSignatureCardTrackOccupant(
-              trackId: TrackId.trackC,
+            ).dimensionalClaim(constraints);
+            final multiRowClaim = ConversationSignatureCardTrackOccupant(
               signature: multiRowSignature,
               style: _testStyle,
               includeFavouriteButton: false,
-            ).requirement(requirementContext);
+            ).dimensionalClaim(constraints);
 
             expect(
-              multiRowRequirement.height,
-              greaterThan(oneRowRequirement.height),
+              multiRowClaim.naturalHeight,
+              greaterThan(oneRowClaim.naturalHeight),
             );
             return const SizedBox.shrink();
           },
@@ -274,32 +272,38 @@ void main() {
         textDirection: TextDirection.ltr,
         child: Builder(
           builder: (context) {
-            final narrowRequirement =
+            final narrowClaim =
                 ConversationSignatureCardTrackOccupant(
-                  trackId: TrackId.trackC,
                   signature: signature,
                   style: _testStyle,
                   includeFavouriteButton: false,
-                ).requirement(
-                  TrackRequirementContext.fromBuildContext(
+                ).dimensionalClaim(
+                  PresentationConstraints.fromBuildContext(
                     context,
                     availableWidth: 120,
                   ),
                 );
-            final wideRequirement =
+            final wideClaim =
                 ConversationSignatureCardTrackOccupant(
-                  trackId: TrackId.trackC,
                   signature: signature,
                   style: _testStyle,
                   includeFavouriteButton: false,
-                ).requirement(
-                  TrackRequirementContext.fromBuildContext(
+                ).dimensionalClaim(
+                  PresentationConstraints.fromBuildContext(
                     context,
                     availableWidth: 600,
                   ),
                 );
 
-            expect(wideRequirement.height, narrowRequirement.height);
+            expect(wideClaim.naturalHeight, narrowClaim.naturalHeight);
+            expect(
+              wideClaim.preferredWidth,
+              ConversationSignatureCardPresentationMetrics.canonicalWidth,
+            );
+            expect(
+              wideClaim.minimumWidth,
+              ConversationSignatureCardPresentationMetrics.canonicalWidth,
+            );
             return const SizedBox.shrink();
           },
         ),
@@ -319,7 +323,7 @@ void main() {
         textDirection: TextDirection.ltr,
         child: Builder(
           builder: (context) {
-            final requirementContext = TrackRequirementContext.fromBuildContext(
+            final constraints = PresentationConstraints.fromBuildContext(
               context,
               availableWidth: width,
             );
@@ -327,7 +331,7 @@ void main() {
                 ConversationSignatureCardPresentationMetrics.naturalHeight(
                   signature: signature,
                   style: _testStyle,
-                  context: requirementContext,
+                  constraints: constraints,
                 );
             return UnconstrainedBox(
               alignment: Alignment.topLeft,

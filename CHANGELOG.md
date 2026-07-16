@@ -10,6 +10,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - No unreleased changes yet.
 
+## [0.2.1] — 2026-07-16
+
+### Added
+
+- Added the Search-page cross-column layout matrix so the Search, Messages,
+  and Conversation workspaces negotiate one responsive vertical rhythm.
+- Added developer diagnostics for inspecting resolved matrix cells and Track
+  geometry across all three columns.
+
+### Changed
+
+- Search-page layout composition now lives in one explicit matrix, with
+  feature-owned presentation metrics, placement-independent occupants, and
+  complete cell-based rendering.
+- Optional Conversation-panel content now preserves stable resting geometry
+  before it appears, while larger live content can still expand the shared
+  layout naturally.
+
+### Fixed
+
+- Opening the Conversation panel no longer causes the Search header controls
+  and message results to jump from collapsed Track geometry.
+- The sidebar top selector now opens its choices in an anchored overlay instead
+  of overflowing its resolved cell and blocking page interaction.
+
 ## [0.2.0] — 2026-06-30
 
 ### Added

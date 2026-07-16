@@ -1,130 +1,84 @@
 ---
 tier: project
-scope: track-cell-column-band-wrapper
+scope: page-track-matrix-rendering
 owner: agent-per-project
 last_reviewed: 2026-07-16
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
-  - ../../../lib/config/theme/widgets/layout/vertical_column_bands.dart
-  - ../../../lib/config/theme/widgets/layout/app_panel_bands.dart
-tests: []
+  - ./05-anatomy-of-track-cell-rendering.md
+  - ../../../lib/config/theme/widgets/layout/page_track_layout_matrix.dart
+  - ../../../lib/config/theme/widgets/layout/resolved_track_layout_matrix.dart
+tests:
+  - test/config/theme/widgets/layout/page_track_layout_matrix_test.dart
+  - test/config/theme/widgets/layout/resolved_track_layout_matrix_test.dart
 ---
 
-# Track Cell Column Band Wrapper
+# Page Track Matrix And Cell Renderer
 
-The current cross-column alignment mechanics are implemented with one generic
-wrapper widget:
+This filename is retained to avoid breaking historical links. The old
+`TrackCellColumnBand` wrapper architecture has been retired.
 
+The active Search-page mechanics are:
+
+```text
+PageTrackLayoutMatrix<TrackOccupant>
+    -> ResolvedTrackLayoutMatrix
+    -> ResolvedTrackLayoutMatrixScope
+    -> TrackCellView(CellId)
+```
+
+## PageTrackLayoutMatrix
+
+The matrix is the page's composition authority. It declares every coordinate
+exactly once as either occupied or empty. A `CellId` combines an ordinal
+`TrackId` with an ordinal `TrackColumnId`.
+
+The matrix owns placement only. It does not calculate geometry and does not
+interpret feature meaning.
+
+## ResolvedTrackLayoutMatrix
+
+The resolver asks each occupied cell's `TrackOccupant` for an
+`OccupantDimensionalClaim`. For every cell it computes:
+
+```text
+effective natural height =
+    max(minimumReservedHeight, live naturalHeight or zero)
+```
+
+It resolves each Track to the maximum effective height of its cells and records
+the resulting geometry for every coordinate.
+
+Empty cells contribute no claim. They may still contribute an explicit
+page-owned minimum reservation, and every cell receives the same resolved
+Track height as its peers.
+
+## TrackCellView
+
+`TrackCellView` receives one complete `CellId`. It reads the corresponding
+resolved cell, gives the occupant its resolved allocation, and places the
+resulting feature presentation using the alignment recorded by the page.
+
+It is intentionally unintelligent. It does not infer placement, calculate
+geometry, inspect siblings, or apply feature semantics.
+
+## Diagnostics
+
+Developer diagnostics belong to the resolved-cell renderer. Diagnostic colors
+identify ordinal Tracks only; they never imply title, metadata, controls, or
+other semantic roles.
+
+## Retired Compatibility Path
+
+The following row-only compatibility types no longer exist:
+
+- `TrackRequirement`
+- `ResolvedTrackPlan`
+- `ResolvedTrackPlanScope`
 - `TrackCellColumnBand`
+- `TrackOccupantView`
+- `VerticalColumnBand`
 
-They live in:
-
-```text
-lib/config/theme/widgets/layout/vertical_column_bands.dart
-```
-
-## Role
-
-The wrapper renders one column cell within one ordinal track. It provides the
-resolved outer height for that cell, optional internal padding, page-owned child
-placement, and optional developer diagnostics.
-
-It is intentionally small. It is not a full page frame and it is not a
-business-semantic component. The `TrackId` supplied to it is geometric only.
-
-## Why Wrappers Instead Of A Full Frame
-
-Earlier design work explored a stricter multi-band page frame. That was too
-rigid for MessageLens because the left sidebar is cassette-driven and
-non-deterministic.
-
-The current model is narrower:
-
-```text
-TrackCellColumnBand(trackId: A)
-TrackCellColumnBand(trackId: B)
-TrackCellColumnBand(trackId: C)
-...
-primary content below the page's chosen track sequence
-```
-
-Each column can use the same wrapper while still letting its own feature or
-cassette system decide what content belongs inside each cell.
-
-## TrackCellColumnBand
-
-Purpose:
-
-- renders one cell of an ordinal track
-- consumes a resolved `TrackPlan` when available
-- falls back to a supplied height when a page has not opted into track
-  negotiation
-- keeps the page coordinator free of feature-specific branches
-
-Constructor concepts:
-
-- `trackId`: ordinal coordinate, such as `TrackId.trackA`
-- `fallbackHeight`: compatibility height used only without a resolved plan
-- `padding`: internal presentation inset for the child
-- `childPlacement`: placement of the child within the resolved allocation
-- `allowBandExpansion`: compatibility escape hatch for older/sidebar paths
-
-The wrapper does not know whether its child is a selector, title, metadata row,
-Conversation Card, control group, or fixed-height spacing occupant.
-
-## Child Placement
-
-`ColumnBandChildPlacement` provides approved internal placement options:
-
-- `topLeft`
-- `centerLeft`
-- `bottomLeft`
-- `custom`
-
-Prefer page-composition defaults first. Use explicit placement only when the
-child’s natural presentation needs controlled internal placement inside the
-resolved cell.
-
-Do not move content by adding panel-specific top padding outside the wrapper.
-
-## Debug Margins
-
-The wrapper can show diagnostic colored borders in developer mode when
-`columnBandDebugMarginsProvider` is enabled.
-
-Current diagnostic colors are assigned by ordinal track, not by semantic role:
-
-- Track A: red
-- Track B: blue
-- Track C: green
-- Track D and later tracks: additional debug colors as assigned
-- overflow warning or exceptional diagnostic state: diagnostic warning styling
-
-These borders are diagnostic only. They should not be part of production visual
-language.
-
-## Relationship To app_panel_bands.dart
-
-`lib/config/theme/widgets/layout/app_panel_bands.dart` still exists and contains
-older/support primitives such as:
-
-- `AppPanelBands`
-- `AppPanelColumnFrame`
-- `AppPanelFrameHeader`
-- `AppPanelFixedBand`
-- `AppPanelBandHeader`
-
-Treat these as transitional support for existing code paths unless a specific
-path still requires them.
-
-For new cross-column layout work, prefer the explicit generic wrapper model:
-
-```text
-TrackCellColumnBand(trackId: ...)
-content
-```
-
-If the older primitives are retired or revived, update this document and the
-contract document so future agents do not have to infer the active model from
-code history.
+Do not recreate them. New Search-page Track-region content must appear exactly
+once in the page matrix and render by complete `CellId`.

@@ -3,7 +3,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../config/theme/widgets/layout/cross_column_track_plan.dart';
-import '../../../config/theme/widgets/layout/vertical_column_bands.dart';
+import '../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
+import '../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/messages/feature_level_providers.dart'
@@ -737,16 +738,13 @@ List<Widget> _buildSidebarControls({
   }
 
   return [
-    TrackCellColumnBand(
-      trackId: TrackId.trackA,
-      fallbackHeight: 72,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      childPlacement: const ColumnBandChildPlacement.topLeft(),
-      allowBandExpansion: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: controls,
+    const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: TrackCellView(
+        cellId: CellId(
+          trackId: TrackId.trackA,
+          columnId: TrackColumnId.column1,
+        ),
       ),
     ),
   ];
@@ -832,25 +830,39 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
 
   return [
     (
-      widget: const TrackCellColumnBand(
-        trackId: TrackId.trackB,
-        fallbackHeight: 166,
-        padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
-        childPlacement: ColumnBandChildPlacement.topLeft(),
-        child: SizedBox.shrink(),
+      widget: const TrackCellView(
+        cellId: CellId(
+          trackId: TrackId.trackB,
+          columnId: TrackColumnId.column1,
+        ),
       ),
       shouldExpand: false,
     ),
     (
-      widget: const TrackCellColumnBand(trackId: TrackId.trackC),
+      widget: const TrackCellView(
+        cellId: CellId(
+          trackId: TrackId.trackC,
+          columnId: TrackColumnId.column1,
+        ),
+      ),
       shouldExpand: false,
     ),
     (
-      widget: const TrackCellColumnBand(trackId: TrackId.trackD),
+      widget: const TrackCellView(
+        cellId: CellId(
+          trackId: TrackId.trackD,
+          columnId: TrackColumnId.column1,
+        ),
+      ),
       shouldExpand: false,
     ),
     (
-      widget: const TrackCellColumnBand(trackId: TrackId.trackE),
+      widget: const TrackCellView(
+        cellId: CellId(
+          trackId: TrackId.trackE,
+          columnId: TrackColumnId.column1,
+        ),
+      ),
       shouldExpand: false,
     ),
     ...contentStartContent,

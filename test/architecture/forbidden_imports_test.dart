@@ -487,10 +487,10 @@ const Set<String> _messageEvidenceTimelineSkeletonProviderAllowedFiles = {
   'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
   'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view_model/global_messages_evidence_presentation_provider.dart',
 };
 
 const Set<String> _messageEvidenceRowProviderAllowedFiles = {
@@ -3983,23 +3983,28 @@ void main() {
       },
     );
 
-    test('Message evidence skeleton requests stay source-view scoped', () async {
-      final offenders =
-          await _findMessageEvidenceTimelineSkeletonProviderOffenders();
+    test(
+      'Message evidence skeleton requests stay composition-boundary scoped',
+      () async {
+        final offenders =
+            await _findMessageEvidenceTimelineSkeletonProviderOffenders();
 
-      expect(
-        offenders,
-        orderedEquals(
-          _messageEvidenceTimelineSkeletonProviderAllowedFiles.toList()..sort(),
-        ),
-        reason:
-            'Message evidence skeleton requests should stay with source views '
-            'and the explicit contact prewarm boundary. Low-level renderers '
-            'must not create source-specific skeleton paths; the evidence spine '
-            'owns full-scope skeleton construction and viewport hydration.\n'
-            'Actual users:\n${offenders.join('\n')}',
-      );
-    });
+        expect(
+          offenders,
+          orderedEquals(
+            _messageEvidenceTimelineSkeletonProviderAllowedFiles.toList()
+              ..sort(),
+          ),
+          reason:
+              'Message evidence skeleton requests should stay with source views, '
+              'the explicit prepared-presentation and contact prewarm boundaries. '
+              'Low-level renderers '
+              'must not create source-specific skeleton paths; the evidence spine '
+              'owns full-scope skeleton construction and viewport hydration.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Message evidence row hydration stays in timeline renderer', () async {
       final offenders = await _findMessageEvidenceRowProviderOffenders();

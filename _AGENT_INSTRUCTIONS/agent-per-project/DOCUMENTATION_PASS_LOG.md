@@ -1724,3 +1724,390 @@ the Flutter widget tree.
 | `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Created a mechanical walkthrough of the rendering chain from page composition through `ResolvedTrackPlanScope` to track-cell rendering. | Gives future readers an obvious reference for how cross-column track coordination works in Flutter widget terms. |
 | `09-CROSS-COLUMN-LAYOUT/README.md` | Added the anatomy document to the canonical reading order and link metadata. | Makes the new explanation discoverable from the durable cross-column layout index. |
 | `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation addition. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — First Pass
+
+Date: 2026-07-16
+
+Scope: Established the concise current-state diagnosis and migration direction
+for replacing the Search page's row-only Track requirement plan with an
+authoritative two-dimensional page composition.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Created the work-package index and four-pass reading order. | Distinguishes canonical pass documents from their seed guidance and keeps the refactor scope discoverable. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/01-CURRENT-TRACK-SYSTEM-ANATOMY.md` | Created the concise current-system diagnosis, target direction, responsibility split, and migration outline. | Records why shared row-height negotiation is valuable but insufficient without one complete cell-level composition authority. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the first matrix-refactor documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — Second Pass
+
+Date: 2026-07-16
+
+Scope: Established the canonical `PageTrackLayoutMatrix` architecture for the
+Search-page refactor without beginning implementation planning or source work.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Created the canonical matrix architecture, responsibility chain, constraint-to-claim flow, resolution model, lifecycle invariant, and temporary migration bridge. | Makes the matrix the explicit composition authority while preserving feature-owned presentation and semantic-neutral Track infrastructure. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Linked Document 02 in the package reading order. | Makes the approved target architecture discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the second matrix-refactor documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Proposal Refinement
+
+Date: 2026-07-16
+
+Scope: Tightened the canonical matrix proposal before implementation planning
+without changing its architecture or migration strategy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Simplified the title, elevated the composition-authority axiom, required complete matrix membership, strengthened presentation-derived dimensional truth, clarified page/cell placement ownership, and made renderer simplicity explicit. | Removes remaining terminology ambiguity while preserving the approved matrix architecture and one-matrix layout-tuning philosophy. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the canonical proposal refinement. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — Third Pass
+
+Date: 2026-07-16
+
+Scope: Converted the approved `PageTrackLayoutMatrix` architecture into a
+five-phase, continuously runnable Search-page migration plan.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/03-PAGE-TRACK-LAYOUT-MATRIX-MIGRATION-PLAN.md` | Created the canonical migration plan with compatibility boundaries, repository-aware seams, phase objectives, verification gates, retirement steps, and completion criteria. | Gives implementation a practical sequence while keeping the matrix authoritative and the row-plan bridge temporary. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added Document 03 to the package links and reading order. | Makes the executable migration plan discoverable after the target architecture. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the third matrix-refactor documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — Fourth Pass
+
+Date: 2026-07-16
+
+Scope: Established the living implementation, evidence, compatibility
+retirement, and completion record for the approved Search-page matrix
+migration without beginning source implementation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Created the phase dashboard, evidence sections, final matrix record, compatibility retirement ledger, verification ledger, deviation record, and final completion gate. | Gives implementation one durable authority for recording actual progress and proof without duplicating the architecture or migration plan. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added Document 04 to package links and the canonical reading order. | Completes navigation through diagnosis, architecture, migration, and implementation evidence. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/01-CURRENT-TRACK-SYSTEM-ANATOMY.md` | Replaced stale matrix-owned-placement shorthand with the approved page/cell responsibility split. | Keeps the current-state document consistent with the refined canonical architecture. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the fourth matrix-refactor documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — Package Consistency Pass
+
+Date: 2026-07-16
+
+Scope: Verified Documents 01–04 as one coherent package after completion of the
+four documentation passes.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added package status, relevant test reference, and complete Documents 01–04 navigation. | Makes it immediately clear that architecture and planning are complete while source implementation has not started. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/01-CURRENT-TRACK-SYSTEM-ANATOMY.md` | Added canonical successor links and replaced stale next-pass wording with the completed document sequence. | Prevents the current-state diagnosis from reading like unfinished work. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Linked the migration plan and standardized presentation-construction language. | Keeps architecture terminology and navigation consistent. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/03-PAGE-TRACK-LAYOUT-MATRIX-MIGRATION-PLAN.md` | Standardized feature-owned presentation-construction wording. | Avoids suggesting that generic Track infrastructure owns feature widgets. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the package consistency pass. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Phase 1
+
+Date: 2026-07-16
+
+Scope: Recorded the verified, behavior-neutral introduction of matrix identity
+and validation infrastructure for the Search-page migration.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 1 verified and recorded the final APIs, source/test locations, compatibility evidence, analyzer result, and absence of an active rendering path. | Preserves exact implementation evidence before the Search-page matrix bridge begins. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status and linked the new matrix infrastructure test. | Keeps the package index aligned with source progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the Phase 1 implementation evidence update. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Phase 2 Automated Evidence
+
+Date: 2026-07-16
+
+Scope: Recorded the Search-page matrix composition, temporary row-plan adapter,
+single-scope distribution, focused tests, analyzer result, and remaining manual
+verification gate.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 2 in progress; recorded its source seams, exact 15-cell matrix, removed occupant-bag paths, temporary adapter, one-plan distribution, automated evidence, pre-existing architecture-test failure, and pending visual/lifecycle checks. | Preserves exact evidence without marking the phase verified before manual Search-page review. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status and added the Search-page composition test. | Keeps the package index aligned with implementation progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the Phase 2 evidence update. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Phase 3 Contract Evidence
+
+Date: 2026-07-16
+
+Scope: Recorded the placement-independent occupant API, presentation
+constraints, dimensional claims, focused verification, and the remaining
+feature-presentation delegation boundary before cell rendering.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 3 in progress; recorded final claim contracts, migrated occupants, 42 passing focused tests, clean analyzer, unchanged architecture-test exception, retired placement APIs, and the three compatibility presentations still awaiting Phase 4. | Preserves exact implementation truth without claiming that dimensional adapters already own live feature presentation construction. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status for the Phase 3 contract migration. | Keeps the package index aligned with source progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the Phase 3 evidence update. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Phase 4 Resolution Foundation
+
+Date: 2026-07-16
+
+Scope: Recorded the immutable resolved matrix, complete resolved-cell model,
+`CellId` renderer, one-time claim resolution, focused verification, and the
+remaining feature-presentation preparation seam before live renderer migration.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 4 in progress and recorded resolved-matrix APIs, distribution, renderer behavior, 45 passing focused tests, clean analyzer, compatibility status, and the live presentation migration gate. | Distinguishes proven matrix resolution from the still-pending removal of local renderer authority. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status and test index for the resolved-matrix slice. | Keeps the package index aligned with source progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the Phase 4 resolution-foundation evidence. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Live Cell Renderer Migration
+
+Date: 2026-07-16
+
+Scope: Recorded feature-owned presentation preparation and direct `CellId`
+rendering across the Search sidebar, center message-evidence header, and right
+Conversation excerpt panel.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 3 verified; recorded the three live matrix render paths, cassette-boundary preservation, 68 passing focused tests, clean analyzer, compatibility status, and remaining manual Phase 4 checks. | Distinguishes completed matrix authority in the active Search path from fallback retirement and manual lifecycle proof. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status for the live renderer migration. | Keeps package orientation aligned with source progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation evidence update. | Maintains the project documentation change log. |
+
+---
+
+# Search Track Width-Contract Verification
+
+Date: 2026-07-16
+
+Scope: Reconciled the Search matrix's only currently width-sensitive occupant
+without inventing page geometry that the current window host does not expose.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded the D3 canonical-width contract and the remaining host constraint for future fluid-width occupants. | Distinguishes a truthful feature presentation contract from guessed end-sidebar geometry. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this width-contract verification. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Compatibility And Constraint Audit
+
+Date: 2026-07-16
+
+Scope: Audited remaining row-plan consumers and the presentation constraints
+used by resolved matrix claims after the Search row bridge was removed.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded that no production row-plan scope remains, identified live non-matrix wrapper consumers, and added truthful per-column width constraints as a Phase 4 verification blocker. | Prevents premature compatibility deletion and prevents infinite-width claims from being mistaken for completed resize/wrapping support. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this audit. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Row Bridge Retirement
+
+Date: 2026-07-16
+
+Scope: Recorded removal of the Search page's temporary matrix-to-row-plan
+adapter after all three live Track regions migrated to complete `CellId`
+rendering.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked the temporary adapter removed and distinguished it from generic fallback wrappers still awaiting a consumer audit. | Preserves accurate retirement evidence without claiming unrelated compatibility code is already safe to delete. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the row-bridge retirement evidence. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Prepared Evidence Boundary
+
+Date: 2026-07-16
+
+Scope: Recorded the Messages-owned presentation boundary that supplies both the
+global evidence source view and Search-page matrix occupants without allowing
+layout code to initiate evidence-skeleton reads.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Documented the prepared evidence state, ownership correction, focused and full architecture results, provider test, and Phase 4 decision. | Preserves the distinction between feature-owned evidence composition and page-owned occupant placement. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added the prepared-presentation test and updated package status. | Keeps package orientation aligned with the live implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation evidence update. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Row-Only Compatibility Retirement
+
+Date: 2026-07-16
+
+Scope: Removed the dormant row-plan model, scope, renderers, wrappers, and
+wrapper-only tests after confirming that the Search page renders entirely by
+complete `CellId` and that non-matrix surfaces can use ordinary presentation
+composition.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded compatibility deletion, zero-reference scan, 23 passing focused tests, 350 passing architecture tests, and clean analyzer; left manual verification open. | Completes automated Phase 5 evidence without overstating visual verification. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status to automated Phase 5 retirement complete. | Keeps package orientation current. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Redirected the canonical reading path from wrappers to matrix/cell rendering. | Prevents new readers from adopting retired row-only mechanics. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Replaced wrapper ownership with matrix, resolver, occupant, and complete-cell ownership. | Aligns the durable contract with the implemented architecture. |
+| `09-CROSS-COLUMN-LAYOUT/01-column-band-wrappers.md` | Replaced stale wrapper instructions with current matrix mechanics while retaining the filename for historical links. | Preserves navigation without preserving retired guidance. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Updated sidebar participation to A1-E1 complete-cell rendering. | Documents how the cassette seam now consumes the shared matrix. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Updated Search sidebar and troubleshooting guidance to matrix occupancy, claims, and alignment. | Makes the current applied layout discoverable. |
+| `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Rewrote the rendering anatomy from the retired row plan to feature preparation, page matrix, resolution, scope, and `TrackCellView`. | Gives future developers an accurate mechanical explanation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this retirement and documentation-promotion pass. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Full-Suite Proof
+
+Date: 2026-07-16
+
+Scope: Completed broad automated verification after retiring the row-only
+compatibility system.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded all 1,313 repository tests passing, the content-sized ordinary evidence-header fallback, the corrected display-phone expectation, and the remaining manual verification gate. | Preserves complete automated retirement evidence without claiming visual verification that has not yet been performed. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this full-suite proof. | Maintains the project documentation change log. |
+# PageTrackLayoutMatrix Implementation — Minimum Cell Reservations
+
+Date: 2026-07-16
+
+Scope: Recorded the page-owned resting-geometry mechanism introduced after
+manual Search verification showed optional right-panel cells collapsing before
+their live occupants appeared.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Added `MatrixCell.minimumReservedHeight`, its resolution rule, ownership, lifecycle purpose, and prohibitions. | Makes stable reactive geometry part of the canonical architecture without weakening truthful live claims. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/03-PAGE-TRACK-LAYOUT-MATRIX-MIGRATION-PLAN.md` | Added reservation implementation and verification requirements. | Ensures lifecycle stability is included in migration completion criteria. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded the observed collapse, implemented C3/D2/D3 reservations, feature-owned metric sources, tests, and remaining verification. | Preserves implementation evidence and the exact Search-page occupancy correction. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status with the resting-geometry correction. | Keeps package orientation aligned with source. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Added the durable ownership and resolution rules for page-owned minimum cell reservations. | Prevents empty-cell guidance from incorrectly implying that optional content must collapse shared geometry. |
+| `09-CROSS-COLUMN-LAYOUT/01-column-band-wrappers.md` | Updated the active resolver description with effective-height calculation. | Keeps the retained historical filename pointed at current matrix mechanics. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Clarified how empty sidebar cells participate in reserved shared geometry. | Keeps cassette flow compatible with the page matrix without introducing placeholder occupants. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded C3, D2, and D3 reservation sources, deliberate zero reservations, and lifecycle verification expectations. | Makes the applied Search composition and its resting geometry discoverable. |
+| `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Added reservations and effective-height resolution to the mechanical rendering chain. | Gives future developers an accurate account of how absent optional content preserves page geometry. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded 29 focused layout tests, 350 architecture tests, all 1,320 repository tests, and clean analyzer after the reservation correction. | Completes automated proof while leaving the renewed visual lifecycle check explicit. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added full-suite verification to the package status. | Keeps package orientation aligned with the completed automated proof. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Search Page Matrix Tuning — Conversation Card B3
+
+Date: 2026-07-16
+
+Scope: Moved the optional Conversation Card and its feature-derived minimum
+reservation from C3 to B3 while leaving the Search controls in C2.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Updated the current occupancy and reservation tables from C3 to B3. | Keeps the canonical applied-layout record synchronized with the matrix. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Updated the final matrix, reservation record, and compatibility evidence for B3. | Records the page-composition tuning without changing generic Track semantics. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this matrix tuning pass. | Maintains the project documentation change log. |
+
+---
+
+# Search Top Menu — Track-Safe Overlay Presentation
+
+Date: 2026-07-16
+
+Scope: Recorded the correction that keeps the sidebar top selector's transient
+expanded options outside its resolved A1 geometry.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Documented that A1 claims only the closed trigger and that expanded options use an anchored overlay. | Prevents future interactive Track occupants from expanding inline beyond their resolved cells. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded the overflow defect and overlay correction in the implementation decision ledger. | Preserves why transient menu presentation must remain separate from matrix geometry. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Search Page Matrix Feature Close-Out
+
+Date: 2026-07-16
+
+Scope: Reconciled canonical, work-package, and UI-walk documentation after the
+Search-page matrix migration and final top-menu interaction fix were verified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Replaced the last active wrapper-era prohibition with resolved-matrix-cell language. | Keeps the canonical contract aligned with the retired wrapper path. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Replaced the obsolete tuning note with the completed matrix status and durable tuning rule. | Records the reviewed Search-page result rather than an issue that has been resolved. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Corrected the page-specific occupancy example from C3 to B3. | Keeps the architectural example synchronized with the final matrix. |
+| `45-NEW-FEATURE-ADDITION/INDEX.md` | Added the completed matrix-refactor package and its canonical handoff. | Makes the feature history and current owner discoverable. |
+| `95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/README.md` | Added a current-outcome notice and marked the former band/wrapper material as design history. | Prevents UI-walk history from being mistaken for current mechanics. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded version 0.2.1+19 and the user-visible matrix behavior. | Closes the release-worthy feature with synchronized release metadata. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this close-out pass. | Maintains the documentation change log. |
+
+Other MessageLens pages remain separately reviewed future adoption work; they
+are not incomplete scope in this Search-page feature package.
+
+---

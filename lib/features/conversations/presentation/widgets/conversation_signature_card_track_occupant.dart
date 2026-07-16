@@ -12,35 +12,55 @@ import 'conversation_signature_card_presentation.dart';
 /// owned by the Conversations feature.
 class ConversationSignatureCardTrackOccupant implements TrackOccupant {
   const ConversationSignatureCardTrackOccupant({
-    required this.trackId,
     required this.signature,
     required this.style,
     this.includeFavouriteButton = true,
+    this.horizontalPlacement = Alignment.centerLeft,
   });
 
-  @override
-  final TrackId trackId;
   final ConversationSignatureCardData signature;
   final ConversationSignatureCardStyle style;
   final bool includeFavouriteButton;
+  final AlignmentGeometry horizontalPlacement;
 
-  @override
-  TrackRequirement requirement(TrackRequirementContext context) {
-    return TrackRequirement(
-      trackId: trackId,
-      height: ConversationSignatureCardPresentationMetrics.naturalHeight(
-        signature: signature,
-        style: style,
-        context: context,
-        trailingHeight: includeFavouriteButton
-            ? ConversationFavouriteButton.defaultSize
-            : 0,
-      ),
+  static double minimumNaturalHeight({
+    required ConversationSignatureCardStyle style,
+    required PresentationConstraints constraints,
+    bool includeFavouriteButton = true,
+  }) {
+    return ConversationSignatureCardPresentationMetrics.minimumNaturalHeight(
+      style: style,
+      constraints: constraints,
+      trailingHeight: includeFavouriteButton
+          ? ConversationFavouriteButton.defaultSize
+          : 0,
     );
   }
 
   @override
-  Widget build(BuildContext context, ResolvedTrackAllocation allocation) {
+  OccupantDimensionalClaim dimensionalClaim(
+    PresentationConstraints constraints,
+  ) {
+    return OccupantDimensionalClaim(
+      naturalHeight: ConversationSignatureCardPresentationMetrics.naturalHeight(
+        signature: signature,
+        style: style,
+        constraints: constraints,
+        trailingHeight: includeFavouriteButton
+            ? ConversationFavouriteButton.defaultSize
+            : 0,
+      ),
+      preferredWidth:
+          ConversationSignatureCardPresentationMetrics.canonicalWidth,
+      minimumWidth: ConversationSignatureCardPresentationMetrics.canonicalWidth,
+    );
+  }
+
+  @override
+  Widget buildPresentation(
+    BuildContext context,
+    ResolvedTrackAllocation allocation,
+  ) {
     return ConversationSignatureCard(
       signature: signature,
       style: style,
@@ -50,6 +70,7 @@ class ConversationSignatureCardTrackOccupant implements TrackOccupant {
               conversationId: signature.conversationId,
             )
           : null,
+      horizontalPlacement: horizontalPlacement,
     );
   }
 }

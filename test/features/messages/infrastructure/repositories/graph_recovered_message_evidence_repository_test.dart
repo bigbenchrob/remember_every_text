@@ -175,7 +175,7 @@ void main() {
 
         expect(messages.map((message) => message.guid), ['direct', 'inferred']);
         expect(messages.first.contactName, 'Cathie Campbell');
-        expect(messages.first.senderLabel, '1 (604) 555-0101');
+        expect(messages.first.senderLabel, '(604) 555-0101');
         expect(messages.first.isInferred, isFalse);
         expect(messages.last.isInferred, isTrue);
       },

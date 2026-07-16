@@ -58,10 +58,21 @@ For example, the current Search page uses A1 for the sidebar selector, A2 for
 the center panel label, and A3 for the right panel label. That does not make
 Track A a "title track." It only records the current occupancy.
 
-If a cell is empty, it contributes no requirement. If any cell contains a
-`FixedHeightTrackOccupant`, that occupant contributes an ordinary requirement
-to the track. Designers may describe the visual effect as a spacer or shim, but
-the layout engine records only geometry and occupancy.
+If a cell is empty, it contains no occupant and contributes no dimensional
+claim. A page may still give that cell an explicit `minimumReservedHeight` when
+its intended resting composition must remain stable before optional content is
+available. Resolution uses the greater of the reservation and any live
+occupant's truthful natural height.
+
+The reservation is page-owned geometry. It is not an invisible occupant,
+padding, frozen resolved geometry, or semantic Track behavior. Its value must
+come from the same feature-owned presentation contract as the content that may
+later occupy the cell.
+
+If any cell contains a `FixedHeightTrackOccupant`, that occupant contributes an
+ordinary live requirement to the track. Designers may describe the visual
+effect as a spacer or shim, but the layout engine records only geometry and
+occupancy.
 
 ## Content Start
 
@@ -80,11 +91,25 @@ across the page and understand that the panels are peers.
 
 The page owns:
 
-- the resolved heights of ordinal tracks
+- the complete page matrix and cell occupancy
+- explicit minimum reservations that define intended resting composition
 - the content-start y-position that follows the page's chosen track sequence
-- optional developer diagnostics showing band boundaries
+- cell alignment within resolved Track allocations
 
-Components own:
+The resolver owns:
+
+- collecting occupant claims from the complete matrix
+- resolving each cell's effective height as the greater of its page-owned
+  reservation and its live natural height, or zero when both are absent
+- resolving the maximum effective height for each ordinal Track
+- producing one immutable resolved matrix
+
+Track occupants own:
+
+- dimensional claims derived from approved presentation contracts
+- construction of approved feature presentation
+
+Feature components own:
 
 - wording
 - typography
@@ -93,7 +118,7 @@ Components own:
 
 Components do not own:
 
-- panel-level top padding outside track-cell wrappers
+- panel-level top padding outside resolved matrix cells
 - ad hoc spacer stacks that move primary content down outside the track model
 - repair logic that tries to align with peer panels after layout
 
@@ -101,8 +126,9 @@ Components do not own:
 
 Fix one of:
 
-- track-cell wrapper defaults
-- page-owned cell alignment inside a resolved track
+- matrix occupancy
+- page-owned cell alignment inside a resolved Track
+- occupant dimensional truth
 - sidebar content-start seam semantics
 - component compact-mode behavior
 
@@ -115,9 +141,13 @@ there is a separate design decision approving that risk.
 
 ## Current Implementation
 
-The active wrapper is `TrackCellColumnBand`. It consumes a `TrackId` and a
-resolved track plan, then renders one cell of that track. Older fixed wrappers
-with semantic names have been retired from the active Search-page path.
+The active system is `PageTrackLayoutMatrix` ->
+`ResolvedTrackLayoutMatrix` -> `TrackCellView(CellId)`. The old row-only
+`ResolvedTrackPlan`, scope, and `TrackCellColumnBand` wrapper have been retired.
+
+Every visible Search-page Track-region element appears exactly once in the
+matrix. Renderers consume complete cells and must not bypass the matrix with a
+parallel row-only path.
 
 Occupied tracks should be content-tight: their height comes from the maximum
 natural requirement declared by their occupants. Any intentional separation

@@ -1,6 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/page_track_layout_matrix.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
 import 'package:remember_this_text/essentials/navigation/application/panel_widget_providers.dart';
 import 'package:remember_this_text/essentials/navigation/application/panels_view_state_provider.dart';
@@ -88,6 +91,102 @@ void main() {
   });
 
   group('left sidebar layout contract', () {
+    testWidgets(
+      'Search renders matrix cells before continuing normal cassette content',
+      (tester) async {
+        const topMenuSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(
+            selectedChoice: TopChatMenuChoice.searchAllMessages,
+          ),
+        );
+        const infoSpec = CassetteSpec.contactsInfo(
+          ContactsInfoCassetteSpec.infoCard(
+            key: ContactsInfoKey.pickerContentSources,
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
+            ),
+            ...cassetteRackTestHarnessOverrides(),
+            sidebarCassetteResolutionStateProvider(
+              SidebarMode.messages,
+            ).overrideWith((ref) {
+              return ref.watch(_testSidebarResolutionStateProvider);
+            }),
+          ],
+        );
+        final rackSubscription = container.listen(
+          cassetteRackStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        final resolutionSubscription = container.listen(
+          sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        container
+            .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+            .setRackForTesting([topMenuSpec, infoSpec]);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'legacy-top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: infoSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'cassette-content',
+              ),
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: ResolvedTrackLayoutMatrixScope(
+                matrix: _testSearchSidebarMatrix(),
+                child: const SizedBox(
+                  width: 320,
+                  height: 600,
+                  child: LeftPanelHost(mode: SidebarMode.messages),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('matrix-top-menu'), findsOneWidget);
+        expect(find.text('legacy-top-menu'), findsNothing);
+        expect(find.text('cassette-content'), findsOneWidget);
+        expect(find.byType(TrackCellView), findsWidgets);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        resolutionSubscription.close();
+        rackSubscription.close();
+        await tester.idle();
+        container.dispose();
+        await tester.pump();
+      },
+    );
+
     testWidgets(
       'pins app controls and uses expanding layout from descriptors',
       (tester) async {
@@ -1381,6 +1480,45 @@ ResolvedSidebarCassette _resolvedCassette({
     cassetteIndex: 0,
     payload: payload,
     topSpacing: payload.topSpacing,
+  );
+}
+
+ResolvedTrackLayoutMatrix _testSearchSidebarMatrix() {
+  const columnId = TrackColumnId.column1;
+  final matrix = PageTrackLayoutMatrix<TrackOccupant>(
+    trackIds: TrackId.values,
+    columnIds: const [columnId],
+    cells: const [
+      MatrixCell<TrackOccupant>.occupied(
+        cellId: CellId(trackId: TrackId.trackA, columnId: columnId),
+        occupant: TextTrackOccupant(
+          text: 'matrix-top-menu',
+          style: TextStyle(fontSize: 14),
+        ),
+      ),
+      MatrixCell<TrackOccupant>.empty(
+        cellId: CellId(trackId: TrackId.trackB, columnId: columnId),
+      ),
+      MatrixCell<TrackOccupant>.empty(
+        cellId: CellId(trackId: TrackId.trackC, columnId: columnId),
+      ),
+      MatrixCell<TrackOccupant>.empty(
+        cellId: CellId(trackId: TrackId.trackD, columnId: columnId),
+      ),
+      MatrixCell<TrackOccupant>.occupied(
+        cellId: CellId(trackId: TrackId.trackE, columnId: columnId),
+        occupant: FixedHeightTrackOccupant(height: 16),
+      ),
+    ],
+  );
+
+  return ResolvedTrackLayoutMatrix.resolve(
+    matrix: matrix,
+    constraints: const PresentationConstraints(
+      availableWidth: 288,
+      textScaler: TextScaler.noScaling,
+      textDirection: TextDirection.ltr,
+    ),
   );
 }
 

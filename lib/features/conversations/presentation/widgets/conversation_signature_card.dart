@@ -586,7 +586,7 @@ class ConversationSignatureCardPresentationMetrics {
   static double naturalHeight({
     required ConversationSignatureCardData signature,
     required ConversationSignatureCardStyle style,
-    required TrackRequirementContext context,
+    required PresentationConstraints constraints,
     double trailingHeight = 0,
   }) {
     final contentWidth = math.max(
@@ -597,7 +597,7 @@ class ConversationSignatureCardPresentationMetrics {
       _textHeight(
         text: signature.title,
         style: style.titleStyle,
-        context: context,
+        constraints: constraints,
         maxWidth: contentWidth,
       ),
       trailingHeight,
@@ -607,19 +607,19 @@ class ConversationSignatureCardPresentationMetrics {
         : _textHeight(
             text: signature.chatHookLabel!,
             style: style.chatHookStyle,
-            context: context,
+            constraints: constraints,
             maxWidth: contentWidth,
           );
     final summaryHeight = _textHeight(
       text: 'Summary',
       style: style.summaryStyle,
-      context: context,
+      constraints: constraints,
       maxWidth: contentWidth,
     );
     final tagHeight = _tagRowHeight(
       labels: signature.tagLabels,
       style: style,
-      context: context,
+      constraints: constraints,
       maxWidth: contentWidth,
     );
 
@@ -635,6 +635,45 @@ class ConversationSignatureCardPresentationMetrics {
         glyphSummaryGap +
         summaryHeight +
         tagHeight;
+  }
+
+  /// Natural height of the smallest approved Conversation Card presentation.
+  ///
+  /// This uses the same typography, spacing, canonical width, glyph metrics,
+  /// and trailing-control contract as a rendered card. It represents one title
+  /// line, one glyph row, and one summary line without optional hook or tags.
+  static double minimumNaturalHeight({
+    required ConversationSignatureCardStyle style,
+    required PresentationConstraints constraints,
+    double trailingHeight = 0,
+  }) {
+    final contentWidth = math.max(
+      0.0,
+      canonicalWidth - (cardHorizontalPadding * 2),
+    );
+    final titleHeight = math.max(
+      _textHeight(
+        text: 'M',
+        style: style.titleStyle,
+        constraints: constraints,
+        maxWidth: contentWidth,
+      ),
+      trailingHeight,
+    );
+    final summaryHeight = _textHeight(
+      text: 'M',
+      style: style.summaryStyle,
+      constraints: constraints,
+      maxWidth: contentWidth,
+    );
+
+    return (cardBorderWidth * 2) +
+        (cardVerticalPadding * 2) +
+        titleHeight +
+        identityGlyphGap +
+        glyphDotSize +
+        glyphSummaryGap +
+        summaryHeight;
   }
 
   static double glyphNaturalHeight({
@@ -705,7 +744,7 @@ class ConversationSignatureCardPresentationMetrics {
   static double _tagRowHeight({
     required List<String> labels,
     required ConversationSignatureCardStyle style,
-    required TrackRequirementContext context,
+    required PresentationConstraints constraints,
     required double maxWidth,
   }) {
     if (labels.isEmpty) {
@@ -722,7 +761,7 @@ class ConversationSignatureCardPresentationMetrics {
         _textHeight(
           text: renderedLabels.first,
           style: style.tagTextStyle,
-          context: context,
+          constraints: constraints,
           maxWidth: maxWidth,
         ) +
         (tagPaddingY * 2) +
@@ -731,7 +770,11 @@ class ConversationSignatureCardPresentationMetrics {
     var currentRowWidth = 0.0;
     for (final label in renderedLabels) {
       final chipWidth =
-          _textWidth(text: label, style: style.tagTextStyle, context: context) +
+          _textWidth(
+            text: label,
+            style: style.tagTextStyle,
+            constraints: constraints,
+          ) +
           (tagPaddingX * 2) +
           2;
       final nextWidth = currentRowWidth == 0
@@ -751,16 +794,16 @@ class ConversationSignatureCardPresentationMetrics {
   static double _textHeight({
     required String text,
     required TextStyle style,
-    required TrackRequirementContext context,
+    required PresentationConstraints constraints,
     required double maxWidth,
   }) {
     final painter = TextPainter(
       text: TextSpan(text: text, style: style),
       maxLines: 1,
       ellipsis: '\u2026',
-      textDirection: context.textDirection,
-      textScaler: context.textScaler,
-      locale: context.locale,
+      textDirection: constraints.textDirection,
+      textScaler: constraints.textScaler,
+      locale: constraints.locale,
     )..layout(maxWidth: maxWidth);
     return painter.height;
   }
@@ -768,14 +811,14 @@ class ConversationSignatureCardPresentationMetrics {
   static double _textWidth({
     required String text,
     required TextStyle style,
-    required TrackRequirementContext context,
+    required PresentationConstraints constraints,
   }) {
     final painter = TextPainter(
       text: TextSpan(text: text, style: style),
       maxLines: 1,
-      textDirection: context.textDirection,
-      textScaler: context.textScaler,
-      locale: context.locale,
+      textDirection: constraints.textDirection,
+      textScaler: constraints.textScaler,
+      locale: constraints.locale,
     )..layout(maxWidth: double.infinity);
     return painter.width;
   }

@@ -1,9 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../../core/util/count_label_formatter.dart';
-import '../../../../core/util/date_label_formatter.dart';
-import '../../../../core/util/date_range_formatter.dart';
 import '../../../../essentials/navigation/domain/entities/view_spec.dart';
 import '../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../../essentials/navigation/feature_level_providers.dart'
@@ -11,11 +8,11 @@ import '../../../../essentials/navigation/feature_level_providers.dart'
 import '../../../conversations/feature_level_providers.dart'
     show conversationExcerptNavigationActionsProvider;
 import '../../application/message_evidence/current_visible_month_provider.dart';
-import '../../application/message_evidence/message_evidence_spine_provider.dart';
+import '../../application/message_evidence/global_messages_search_session_provider.dart';
 import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
-import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../view_model/global_messages_evidence_presentation_provider.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
@@ -32,8 +29,6 @@ class GlobalMessagesEvidenceView extends ConsumerStatefulWidget {
 class _GlobalMessagesEvidenceViewState
     extends ConsumerState<GlobalMessagesEvidenceView> {
   late final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-  MessageEvidenceSearchMode _searchMode = MessageEvidenceSearchMode.allTerms;
 
   @override
   void initState() {
@@ -49,68 +44,74 @@ class _GlobalMessagesEvidenceViewState
   }
 
   void _onSearchChanged() {
-    setState(() {
-      _query = _searchController.text;
-    });
+    ref
+        .read(
+          globalMessagesSearchSessionProvider(
+            monthAnchor: widget.monthAnchor,
+          ).notifier,
+        )
+        .setQuery(_searchController.text);
   }
 
   @override
   Widget build(BuildContext context) {
-    const allMessagesScope = GlobalMessagesEvidenceScope();
     final activeContextMessageId = _activeContextMessageId(ref);
-    final normalizedQuery = _query.trim();
-    final evidenceScope = normalizedQuery.isEmpty
-        ? allMessagesScope
-        : MessageSearchEvidenceScope(query: normalizedQuery, mode: _searchMode);
-    final allMessagesSkeletonAsync = ref.watch(
-      messageEvidenceTimelineSkeletonProvider(scope: allMessagesScope),
+    final presentation = ref.watch(
+      globalMessagesEvidencePresentationProvider(
+        monthAnchor: widget.monthAnchor,
+      ),
     );
-    final visibleSkeletonAsync = ref.watch(
-      messageEvidenceTimelineSkeletonProvider(scope: evidenceScope),
-    );
+    if (_searchController.text != presentation.query) {
+      _searchController.value = TextEditingValue(
+        text: presentation.query,
+        selection: TextSelection.collapsed(offset: presentation.query.length),
+      );
+    }
+    final normalizedQuery = presentation.query;
+    final evidenceScope = presentation.evidenceScope;
+    final allMessagesSkeletonAsync = presentation.allMessagesSkeleton;
+    final visibleSkeletonAsync = presentation.visibleSkeleton;
 
     return allMessagesSkeletonAsync.when(
       skipLoadingOnReload: true,
       skipLoadingOnRefresh: true,
       data: (allMessagesSkeleton) {
-        final hasMatchesLoaded =
-            normalizedQuery.isEmpty || visibleSkeletonAsync.hasValue;
         final visibleSkeleton = normalizedQuery.isEmpty
             ? allMessagesSkeleton
             : visibleSkeletonAsync.valueOrNull ??
                   const MessageEvidenceTimelineSkeleton(entries: []);
+        final labels = presentation.labels;
+        if (labels == null) {
+          return const Center(child: Text('Loading message timeline...'));
+        }
 
         return MessageEvidenceTimelineView(
           evidenceScope: evidenceScope,
           skeleton: visibleSkeleton,
           headerData: MessageEvidenceHeaderModel(
             title: 'All messages',
-            dateRangeLabel: _dateRangeLabel(
-              skeleton: allMessagesSkeleton,
-              visibleSkeleton: visibleSkeleton,
-              query: normalizedQuery,
-            ),
-            countLabel: _countLabel(
-              skeleton: allMessagesSkeleton,
-              visibleSkeleton: visibleSkeleton,
-              query: normalizedQuery,
-              hasMatchesLoaded: hasMatchesLoaded,
-            ),
-            activeScopeLabel: _activeScopeLabel(normalizedQuery),
+            dateRangeLabel: labels.dateRange,
+            countLabel: labels.count,
+            activeScopeLabel: labels.supportingContext,
             searchConfig: MessageEvidenceHeaderSearchConfig(
               controller: _searchController,
               placeholder: 'Search these messages',
-              mode: _searchMode,
+              mode: presentation.mode,
               onModeChanged: (mode) {
-                setState(() {
-                  _searchMode = mode;
-                });
+                ref
+                    .read(
+                      globalMessagesSearchSessionProvider(
+                        monthAnchor: widget.monthAnchor,
+                      ).notifier,
+                    )
+                    .setMode(mode);
               },
             ),
           ),
           emptyMessage: _emptyMessage(
             query: normalizedQuery,
-            hasMatchesLoaded: hasMatchesLoaded,
+            hasMatchesLoaded:
+                normalizedQuery.isEmpty || visibleSkeletonAsync.hasValue,
             error: visibleSkeletonAsync.error,
           ),
           monthAnchor: widget.monthAnchor,
@@ -122,7 +123,7 @@ class _GlobalMessagesEvidenceViewState
             ref
                 .read(
                   currentVisibleMonthForScopeProvider(
-                    scope: allMessagesScope,
+                    scope: const GlobalMessagesEvidenceScope(),
                   ).notifier,
                 )
                 .setVisibleMonthKey(monthKey);
@@ -148,59 +149,6 @@ class _GlobalMessagesEvidenceViewState
       environmentReadiness: (_) => null,
       onboarding: (_) => null,
     );
-  }
-
-  String _dateRangeLabel({
-    required MessageEvidenceTimelineSkeleton skeleton,
-    required MessageEvidenceTimelineSkeleton visibleSkeleton,
-    required String query,
-  }) {
-    if (query.isNotEmpty) {
-      return _dateSpan(visibleSkeleton.entries);
-    }
-
-    final monthLabel = _monthLabel(widget.monthAnchor);
-    if (monthLabel != null) {
-      return monthLabel;
-    }
-
-    return _dateSpan(skeleton.entries);
-  }
-
-  String _countLabel({
-    required MessageEvidenceTimelineSkeleton skeleton,
-    required MessageEvidenceTimelineSkeleton visibleSkeleton,
-    required String query,
-    required bool hasMatchesLoaded,
-  }) {
-    if (query.isNotEmpty) {
-      if (hasMatchesLoaded) {
-        return '${_formatCount(visibleSkeleton.totalCount)} of '
-            '${CountLabelFormatter.messages(skeleton.totalCount)} match "$query"';
-      }
-      return 'matching messages...';
-    }
-
-    final monthLabel = _monthLabel(widget.monthAnchor);
-    if (monthLabel != null) {
-      final monthKey = _monthKey(widget.monthAnchor!);
-      final count = skeleton.entries.where((entry) {
-        return entry.monthKey == monthKey;
-      }).length;
-      return '${CountLabelFormatter.messages(count)} this month';
-    }
-
-    return CountLabelFormatter.messages(skeleton.totalCount);
-  }
-
-  String? _activeScopeLabel(String query) {
-    if (query.isNotEmpty) {
-      return 'Message text contains "$query"';
-    }
-    if (widget.monthAnchor != null) {
-      return 'Selected month';
-    }
-    return null;
   }
 
   VoidCallback? _resolveConversationContextAction(
@@ -256,40 +204,4 @@ String _emptyMessage({
     return 'Matching messages...';
   }
   return 'No messages match "$query".';
-}
-
-String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
-  final dates = [
-    for (final entry in entries)
-      if (_parseDate(entry.dateUtc) case final DateTime date) date,
-  ];
-  if (dates.isEmpty) {
-    return 'No dated messages';
-  }
-  dates.sort();
-  return DateRangeFormatter.formatMessageEvidenceRange(
-    start: dates.first,
-    end: dates.last,
-    itemCount: entries.length,
-    emptyLabel: 'No dated messages',
-  );
-}
-
-DateTime? _parseDate(String? value) {
-  return DateLabelFormatter.parseIso(value);
-}
-
-String? _monthLabel(DateTime? value) {
-  if (value == null) {
-    return null;
-  }
-  return DateLabelFormatter.longMonthYear(value);
-}
-
-String _monthKey(DateTime value) {
-  return DateLabelFormatter.monthKey(value);
-}
-
-String _formatCount(int count) {
-  return CountLabelFormatter.formatCount(count);
 }
