@@ -2,7 +2,7 @@
 tier: project
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-07-15
+last_reviewed: 2026-07-16
 source_of_truth: proposal
 status: c2-fixed-height-occupant-implemented
 links:
@@ -23,9 +23,9 @@ Implemented:
 - `TrackRequirement`;
 - `ResolvedTrackPlan`;
 - Search-page scoping of a resolved Track A/Track B plan;
-- `TitleColumnBand` consuming a resolved Track A height;
+- `TrackCellColumnBand(trackId: TrackId.trackA)` consuming a resolved Track A height;
 - Search-page Track A starts flush with the page content surface;
-- `ContextColumnBand` consuming a resolved Track B height;
+- `TrackCellColumnBand(trackId: TrackId.trackB)` consuming a resolved Track B height;
 - center metadata occupying Track B;
 - empty sidebar and right-panel Track B allocations.
 - Track B sized tightly to the metadata line rather than used as a spacing
@@ -48,9 +48,8 @@ MessageLens increasingly presents several peer workspaces in one window:
 Sidebar / Center evidence / Right contextual lens
 ```
 
-The current fixed title/context band model gives those workspaces a shared
-vertical rhythm. It establishes that page-level layout is not owned by any one
-feature.
+The earlier fixed two-wrapper model gave those workspaces a shared vertical
+rhythm. It established that page-level layout is not owned by any one feature.
 
 The next refinement is to make that rhythm more general and less dependent on
 hard-coded wrapper geometry.
@@ -131,8 +130,12 @@ Current Search-page occupancy:
 | B2 | metadata text occupant |
 | B3 | no occupant |
 | C1 | no occupant |
-| C2 | `MessageEvidencePostMetadataControlsTrackOccupant` |
+| C2 | `MessageEvidenceSearchControlsTrackOccupant` |
 | C3 | optional `ConversationSignatureCardTrackOccupant` when a Conversation excerpt is visible |
+| D1 | no occupant |
+| D2 | `MessageEvidenceSupportingContextTrackOccupant` |
+| D3 | optional `ConversationExcerptLabelTrackOccupant` when a Conversation excerpt is visible |
+| E1/E2/E3 | one `FixedHeightTrackOccupant(height: 16)` contributes the shared allocation; every column renders the resolved E cell |
 
 The naming is intentionally abstract at the page-layout level. A track is not a
 feature concept and not a widget type. It is a coordination surface.
@@ -143,11 +146,13 @@ Different columns may fill the same track with different kinds of occupants:
 | --- | --- | --- | --- |
 | A | top menu selector | `All messages` title | `Conversation` title |
 | B | empty | result metadata | empty |
-| C | empty | post-metadata controls occupant | optional Conversation Card occupant |
+| C | empty | search controls occupant | optional Conversation Card occupant |
+| D | empty | supporting context occupant | optional excerpt label occupant |
+| E | empty/rendered allocation | one fixed-height occupant contributes 16 px | empty/rendered allocation |
 
 The important invariant is that each resolved track allocation begins at the
 same y-position in every participating column. In the current Search-page
-composition, C2 demonstrates that a page-specific support/control group can be
+composition, C2 demonstrates that a page-specific control group can be
 represented by one ordinary occupant in one cell without direct fixed-height
 track metadata.
 
@@ -295,7 +300,7 @@ Do not use this package to:
 
 - rewrite the sidebar cassette system;
 - migrate Contacts or other pages;
-- remove `TitleColumnBand` / `ContextColumnBand` immediately;
+- remove the generic `TrackCellColumnBand` compatibility wrapper immediately;
 - introduce post-frame measurement;
 - create feature-specific layout hacks;
 - make the page know about individual cassette types such as heatmaps.

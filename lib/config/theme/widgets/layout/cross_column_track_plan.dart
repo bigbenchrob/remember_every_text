@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 /// Shared horizontal layout tracks used to coordinate peer page columns.
-enum TrackId { trackA, trackB, trackC }
+enum TrackId { trackA, trackB, trackC, trackD, trackE }
 
 /// A declarative requirement contributed by a column for a shared track.
 class TrackRequirement {

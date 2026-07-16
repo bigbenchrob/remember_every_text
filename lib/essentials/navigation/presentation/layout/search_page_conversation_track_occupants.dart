@@ -5,6 +5,7 @@ import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../features/conversations/application/conversation_signatures/conversation_signature_display_provider.dart';
 import '../../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
+import '../../../../features/conversations/presentation/view/conversation_excerpt_panel_track_metrics.dart';
 import '../../../../features/conversations/presentation/widgets/conversation_signature_card_presentation.dart';
 import '../../../../features/conversations/presentation/widgets/conversation_signature_card_track_occupant.dart';
 import '../../domain/entities/view_spec.dart';
@@ -41,6 +42,7 @@ List<TrackOccupant> searchPageConversationExcerptTrackOccupants({
       signature: conversationSignatureCardDataFromDisplay(signature),
       style: conversationSignatureContextHeaderCardStyle(colors, typography),
     ),
+    const ConversationExcerptLabelTrackOccupant(),
   ];
 }
 

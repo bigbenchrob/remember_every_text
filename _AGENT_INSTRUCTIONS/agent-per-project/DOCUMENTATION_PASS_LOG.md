@@ -1653,3 +1653,74 @@ allocation when another cell contributes a taller requirement.
 | `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Updated Phase 4B to describe the post-metadata controls occupant slice. | Keeps implementation checklist history current. |
 | `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added expectations for the C2 controls occupant and bottom-aligned track cell behavior. | Documents the focused regression surface. |
 | `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Rewrote a fixed-height spacing example to avoid naming current Search-page C2 as a spacing cell. | Preserves semantic-neutral track language after C2 gained visible controls. |
+
+---
+
+# Search-Page D-Track Supporting Text Occupancy
+
+Date: 2026-07-15
+
+Scope: Recorded the Search-page layout-track update that separates the Message
+Evidence search controls from supporting context text, and places the right
+Conversation excerpt label in the same ordinal track.
+
+## Summary
+
+The current Search-page composition now uses C2 for the Message Evidence search
+controls, D2 for the Message Evidence supporting context line, and D3 for the
+right Conversation excerpt label when the excerpt panel is visible. Tracks
+remain semantically neutral; these cells record only current occupancy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Updated the current occupancy example with C2, D2, and D3 occupants. | Keeps the overview aligned with the implemented Search-page composition. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated Search-page occupancy tables to include Track D cells. | Prevents stale combined C2 wording from obscuring the current composition. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Generalized the occupancy example so it describes occupied cells rather than a semantic track role. | Reinforces semantic-neutral track documentation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added D2 supporting-context occupant coverage to the test map. | Documents the focused regression surface for the new split. |
+
+---
+
+# Search-Page E-Track Fixed-Height Occupancy
+
+Date: 2026-07-15
+
+Scope: Recorded the Search-page layout-track update that adds an ordinal E
+track with one fixed-height 16 px occupant.
+
+## Summary
+
+The current Search-page composition now includes an E track whose resolved
+height is contributed by one ordinary `FixedHeightTrackOccupant(height: 16)`.
+All three columns render the resolved E allocation before primary content.
+Track E has no semantic meaning; it is only an ordinal coordinate with current
+occupancy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added current E occupancy and clarified that the layout engine records geometry and occupancy, not spacer semantics. | Keeps the overview aligned with the current Search-page composition. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Added E occupancy to the Search-page examples. | Makes the current ordinal track plan discoverable. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Added E occupancy to the current composition example. | Preserves the semantic-neutral track model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added Phase 4E for the fixed-height E occupant slice. | Records the implementation boundary and validation expectations. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added the E fixed-height occupant expectation to the test map. | Documents the focused regression surface. |
+
+---
+
+# Cross-Column Track Cell Rendering Anatomy
+
+Date: 2026-07-16
+
+Scope: Added a durable explanation of how Search-page track occupants,
+requirements, resolved plans, scopes, and `TrackCellColumnBand` wrappers become
+the Flutter widget tree.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Created a mechanical walkthrough of the rendering chain from page composition through `ResolvedTrackPlanScope` to track-cell rendering. | Gives future readers an obvious reference for how cross-column track coordination works in Flutter widget terms. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Added the anatomy document to the canonical reading order and link metadata. | Makes the new explanation discoverable from the durable cross-column layout index. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation addition. | Maintains the project documentation change log. |

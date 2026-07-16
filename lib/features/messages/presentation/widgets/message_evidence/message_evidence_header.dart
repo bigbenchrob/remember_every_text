@@ -141,22 +141,42 @@ class MessageEvidenceHeader extends ConsumerWidget {
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TitleColumnBand(child: title),
+                TrackCellColumnBand(
+                  trackId: TrackId.trackA,
+                  fallbackHeight: 72,
+                  padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+                  childPlacement: const ColumnBandChildPlacement.topLeft(),
+                  allowBandExpansion: true,
+                  child: title,
+                ),
                 if (hasTrackPlan) ...[
-                  ContextColumnBand(child: metadata),
+                  TrackCellColumnBand(
+                    trackId: TrackId.trackB,
+                    fallbackHeight: 166,
+                    padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
+                    child: metadata,
+                  ),
                   TrackCellColumnBand(
                     trackId: TrackId.trackC,
-                    childPlacement: const ColumnBandChildPlacement.bottomLeft(),
+                    childPlacement: const ColumnBandChildPlacement.centerLeft(),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
-                      child: _MessageEvidencePostTrackBContent(
-                        supportingContext: supportingContext,
-                        secondary: secondary,
-                      ),
+                      child: secondary,
                     ),
                   ),
+                  TrackCellColumnBand(
+                    trackId: TrackId.trackD,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
+                      child: supportingContext,
+                    ),
+                  ),
+                  const TrackCellColumnBand(trackId: TrackId.trackE),
                 ] else
-                  ContextColumnBand(
+                  TrackCellColumnBand(
+                    trackId: TrackId.trackB,
+                    fallbackHeight: 166,
+                    padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
                     child: _MessageEvidenceContextBand(
                       primary: primary,
                       secondary: secondary,
@@ -170,25 +190,6 @@ class MessageEvidenceHeader extends ConsumerWidget {
               primary: primary,
               secondary: secondary,
             ),
-    );
-  }
-}
-
-class _MessageEvidencePostTrackBContent extends StatelessWidget {
-  const _MessageEvidencePostTrackBContent({
-    required this.supportingContext,
-    required this.secondary,
-  });
-
-  final Widget supportingContext;
-  final Widget secondary;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [supportingContext, secondary],
     );
   }
 }

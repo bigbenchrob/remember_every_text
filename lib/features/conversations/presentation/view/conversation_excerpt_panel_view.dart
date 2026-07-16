@@ -274,9 +274,20 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TitleColumnBand(child: title),
+        TrackCellColumnBand(
+          trackId: TrackId.trackA,
+          fallbackHeight: 72,
+          padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+          childPlacement: const ColumnBandChildPlacement.topLeft(),
+          allowBandExpansion: true,
+          child: title,
+        ),
         if (hasTrackPlan) ...[
-          const ContextColumnBand(child: SizedBox.shrink()),
+          const TrackCellColumnBand(
+            trackId: TrackId.trackB,
+            fallbackHeight: 166,
+            padding: EdgeInsets.fromLTRB(32, 10, 32, 0),
+          ),
           TrackCellColumnBand(
             trackId: TrackId.trackC,
             child: trackCContent == null
@@ -286,12 +297,19 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
                     child: trackCContent,
                   ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
-            child: contextContent,
+          TrackCellColumnBand(
+            trackId: TrackId.trackD,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
+              child: contextContent,
+            ),
           ),
+          const TrackCellColumnBand(trackId: TrackId.trackE),
         ] else
-          ContextColumnBand(
+          TrackCellColumnBand(
+            trackId: TrackId.trackB,
+            fallbackHeight: 166,
+            padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,

@@ -2,7 +2,7 @@
 tier: project
 scope: implementation-investigation
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-16
 source_of_truth: proposal
 status: exploratory
 links:
@@ -40,8 +40,7 @@ sidebar continues to use the existing cassette flow.
 
 The current implemented model is ordinary widget composition:
 
-- `TitleColumnBand`
-- `ContextColumnBand`
+- `TrackCellColumnBand(trackId: ...)`
 - primary content below
 
 These wrappers live in:
@@ -53,12 +52,12 @@ lib/config/theme/widgets/layout/vertical_column_bands.dart
 The Search page currently maps:
 
 ```text
-TitleColumnBand:
+Track A cells:
   left: Search all messages selector
   center: All messages title
   right: Conversation title
 
-ContextColumnBand:
+Later track cells:
   left: short orientation / sidebar context-zone content
   center: result metadata and search controls
   right: Conversation Card and excerpt description
@@ -86,7 +85,7 @@ Recommended shape:
 
 1. Columns publish explicit `TrackRequirement` values before rendering.
 2. The Search page resolves a `ResolvedTrackPlan`.
-3. Existing title/context wrappers become compatibility renderers that accept
+3. Existing track-cell wrappers act as compatibility renderers that accept
    resolved heights instead of using only fixed defaults.
 4. Center and right columns render inside the same resolved plan.
 5. The sidebar top menu participates in Track A; the rest of the cassette flow
@@ -470,15 +469,15 @@ Do not implement yet. If approved later, implement in this order:
 2. Map current wrapper heights to fallback requirements:
 
    ```text
-   Track A ~= current TitleColumnBand height
-   Track B ~= current ContextColumnBand height
+   Track A ~= current first-row cell fallback height
+   Track B ~= current second-row cell fallback height
    ```
 
 3. Add compatibility constructors or wrappers that accept resolved heights:
 
    ```text
-   TitleColumnBand(height: plan.heightFor(trackA), ...)
-   ContextColumnBand(height: plan.heightFor(trackB), ...)
+   TrackCellColumnBand(trackId: trackA, ...)
+   TrackCellColumnBand(trackId: trackB, ...)
    ```
 
 4. Let Search center and right columns publish requirements.

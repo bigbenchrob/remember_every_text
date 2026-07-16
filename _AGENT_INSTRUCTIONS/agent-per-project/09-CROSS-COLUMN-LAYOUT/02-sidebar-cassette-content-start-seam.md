@@ -2,7 +2,7 @@
 tier: project
 scope: sidebar-content-start-seam
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-16
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
@@ -54,12 +54,14 @@ Meaning:
 
 When a page participates in the cross-column seam:
 
-1. app-control/top-menu cassettes are wrapped in `TitleColumnBand`
-2. the first non-content-start cassette, if present, is placed in
-   `ContextColumnBand`
-3. if the first cassette is already `preferredContentStart`, the context band is
-   still emitted as an empty/available envelope
-4. content-start cassettes and all later cassettes render below the context band
+1. app-control/top-menu cassettes are wrapped in `TrackCellColumnBand` for the
+   first ordinal track cell used by the page composition
+2. the next pre-content cassette, if present, may be placed in another
+   `TrackCellColumnBand`
+3. if the first cassette is already `preferredContentStart`, the sidebar can
+   still render empty track-cell allocations required by the page composition
+4. content-start cassettes and all later cassettes render below the page's
+   pre-content track sequence
 
 This means the content-start cassette begins at the same vertical point as the
 center and right panel content.
@@ -69,10 +71,10 @@ center and right panel content.
 The current Search All Messages sidebar resolves into:
 
 ```text
-TitleColumnBand:
+Track cell A1:
   Search all messages selector
 
-ContextColumnBand:
+Track cell B1 or later sidebar pre-content cell:
   short heatmap orientation text
 
 Content start:
@@ -82,8 +84,8 @@ Below content:
   usage guidance/footer text
 ```
 
-The heatmap is not hard-coded into the page layout. It participates because its
-cassette payload declares:
+The heatmap is not hard-coded into the track system. It participates in sidebar
+content-start placement because its cassette payload declares:
 
 ```dart
 SidebarCassetteLayoutAnchor.preferredContentStart
@@ -118,7 +120,7 @@ heights.
 
 Future behavior may allow cassettes to declare preferred heights or compact
 variants so the coordinator can decide whether a pre-content cassette fits
-inside the context band.
+inside a chosen pre-content track cell.
 
 Do not add post-frame measurement repair loops casually. Dynamic measurement
 risks jitter, rebuild loops, localization failures, and fragile layout
@@ -128,7 +130,7 @@ If autonomous fitting becomes necessary, prefer:
 
 - declared preferred heights
 - explicit compact variants
-- max-line limits for context-band text
+- max-line limits for pre-content text
 - moving extended guidance below content
 
 ## Ownership Rules

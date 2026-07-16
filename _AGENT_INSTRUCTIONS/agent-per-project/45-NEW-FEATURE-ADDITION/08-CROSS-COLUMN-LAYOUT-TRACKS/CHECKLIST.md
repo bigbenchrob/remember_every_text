@@ -2,7 +2,7 @@
 tier: project
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2026-07-15
+last_reviewed: 2026-07-16
 source_of_truth: proposal
 status: c2-fixed-height-occupant-implemented
 links:
@@ -24,10 +24,9 @@ approval to implement.
 - [x] Confirm Search page as the only first implementation target.
 - [x] Confirm that the sidebar cassette system is not rewritten in the first
       slice.
-- [x] Confirm that current `TitleColumnBand` remains a compatibility wrapper
-      during the first Track A slice.
-- [x] Defer `ContextColumnBand` / Track B participation until the second
+- [x] Confirm that a compatibility wrapper remains during the first Track A
       slice.
+- [x] Defer Track B participation until the second slice.
 
 ## Phase 1 - Model The Track Plan
 
@@ -42,7 +41,7 @@ approval to implement.
 ## Phase 2 - Search Page Track A Prototype
 
 - [x] Apply the track plan to the Search page only.
-- [x] Map current title band behavior to Track A.
+- [x] Map current first-row wrapper behavior to Track A.
 - [x] Preserve existing Search page functionality.
 - [x] Preserve current sidebar cassette flow below the top menu.
 - [x] Map center metadata subheader behavior to Track B.
@@ -58,9 +57,9 @@ approval to implement.
 - [x] Do not make sidebar cassettes publish automatic Track B participation yet.
 - [ ] Let future center/right context or control content declare later-track
       requirements.
-- [x] Provide sensible fallback heights matching the current title wrapper
+- [x] Provide sensible fallback heights matching the current Track A wrapper
       default.
-- [x] Provide sensible fallback heights matching the current context wrapper
+- [x] Provide sensible fallback heights matching the current Track B wrapper
       default.
 
 ## Phase 4 - Rendering
@@ -98,20 +97,20 @@ approval to implement.
 
 - [x] Add `FixedHeightTrackOccupant` for cells that need fixed vertical
       allocation.
-- [x] Place the Message Evidence post-metadata controls occupant in Search-page
-      cell C2.
+- [x] Place the Message Evidence search-controls occupant in Search-page cell
+      C2.
 - [x] Render the resolved C-track allocation in sidebar, center panel, and
       right panel cells.
 - [x] Keep C1 unoccupied; it honors the resolved allocation only.
 - [x] Keep Track C semantically neutral; C2's occupant carries the
-      page-specific support/search-control requirement.
-- [x] Bottom-align the C2 support/search-control group inside the resolved cell
+      page-specific search-control requirement.
+- [x] Bottom-align the C2 search-control group inside the resolved cell
       allocation.
 - [x] Avoid direct fixed Track C height overrides outside occupant
       negotiation.
 - [x] Preserve Track A and Track B behavior.
-- [x] Do not introduce Track D, search-control tracks, Conversation Card
-      tracks, sidebar cassette participation, or Contacts migration.
+- [x] Do not introduce Conversation Card tracks, sidebar cassette
+      participation, or Contacts migration in this slice.
 
 ## Phase 4C - Search-Page C3 Conversation Card Occupant Slice
 
@@ -132,9 +131,35 @@ approval to implement.
 - [x] Keep Track C semantically neutral; C3's occupant carries the
       page-specific Conversation Card placement.
 - [x] Preserve Track A and Track B behavior.
-- [x] Do not introduce Track D, search-control tracks, sidebar cassette
-      participation, Contacts migration, widget measurement, GlobalKeys, or
-      post-frame repair.
+- [x] Do not introduce sidebar cassette participation, Contacts migration,
+      widget measurement, GlobalKeys, or post-frame repair.
+
+## Phase 4D - Search-Page D2/D3 Supporting Text Occupant Slice
+
+- [x] Add an ordinal Track D to the generic track model.
+- [x] Place the Message Evidence supporting-context occupant in Search-page
+      cell D2.
+- [x] Place the Conversation excerpt label occupant in Search-page cell D3
+      when the right Conversation excerpt is visible.
+- [x] Render an empty D1 cell in the sidebar without contributing an occupant.
+- [x] Keep Track D semantically neutral; D2 and D3 carry only current
+      page-composition occupancy.
+- [x] Preserve Track A, Track B, and Track C behavior.
+- [x] Do not introduce sidebar cassette participation, Contacts migration,
+      widget measurement, GlobalKeys, or post-frame repair.
+
+## Phase 4E - Search-Page E Fixed-Height Occupant Slice
+
+- [x] Add an ordinal Track E to the generic track model.
+- [x] Place one fixed-height 16 px occupant in the current Search-page
+      composition.
+- [x] Render the resolved E allocation in sidebar, center panel, and right
+      panel cells before primary content begins.
+- [x] Keep Track E semantically neutral; the fixed-height occupant carries only
+      geometry.
+- [x] Preserve Track A, Track B, Track C, and Track D behavior.
+- [x] Do not introduce sidebar cassette participation, Contacts migration,
+      widget measurement, GlobalKeys, or post-frame repair.
 
 ## Phase 5 - Validation
 

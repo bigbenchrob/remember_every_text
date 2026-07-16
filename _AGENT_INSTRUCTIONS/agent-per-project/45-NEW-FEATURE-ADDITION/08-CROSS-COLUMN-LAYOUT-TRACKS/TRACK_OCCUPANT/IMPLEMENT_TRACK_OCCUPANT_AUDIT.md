@@ -99,9 +99,10 @@ Status: passes.
 The Search-page resolved plan omits sidebar and right-panel Track B occupants.
 Those cells therefore contribute no requirements.
 
-The compatibility wrapper still renders an empty `ContextColumnBand` in the
-sidebar and right panel so the resolved allocation exists in the visual layout.
-This is acceptable because it does not contribute to requirement resolution.
+The generic `TrackCellColumnBand` compatibility wrapper still renders empty
+sidebar and right-panel Track B cells so the resolved allocation exists in the
+visual layout. This is acceptable because those cells do not contribute to
+requirement resolution.
 
 ## Scope Validation
 

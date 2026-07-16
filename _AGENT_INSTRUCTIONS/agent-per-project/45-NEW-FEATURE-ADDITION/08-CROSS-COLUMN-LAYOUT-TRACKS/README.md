@@ -2,7 +2,7 @@
 tier: project
 scope: feature-package
 owner: agent-per-project
-last_reviewed: 2026-07-15
+last_reviewed: 2026-07-16
 source_of_truth: proposal
 status: c2-fixed-height-occupant-implemented
 links:
@@ -19,9 +19,9 @@ tests: []
 This package explores a possible successor to the current cross-column layout
 contract documented in [`../../09-CROSS-COLUMN-LAYOUT/`](../../09-CROSS-COLUMN-LAYOUT/).
 
-The current model uses fixed title and context band wrappers. That model has
-proved valuable: it gave MessageLens an explicit page-level alignment contract
-and made sidebar, center-panel, and end-panel content starts coordinate for the
+The current model uses ordinal track-cell wrappers. Earlier fixed named
+wrappers proved the value of an explicit page-level alignment contract by
+making sidebar, center-panel, and end-panel content starts coordinate for the
 first time.
 
 The next question is whether the same idea should evolve from fixed bands into
@@ -153,19 +153,36 @@ B2: metadata text occupant
 B3: no occupant
 
 C1: no occupant
-C2: MessageEvidencePostMetadataControlsTrackOccupant
+C2: MessageEvidenceSearchControlsTrackOccupant
 C3: optional ConversationSignatureCardTrackOccupant when a Conversation excerpt
     is visible
+
+D1: no occupant
+D2: MessageEvidenceSupportingContextTrackOccupant
+D3: optional ConversationExcerptLabelTrackOccupant when a Conversation excerpt
+    is visible
+
+E1/E2/E3: one FixedHeightTrackOccupant(height: 16) contributes the shared
+    allocation; every column renders the resolved E cell before primary
+    content
 ```
 
-The fact that C2 currently contains a post-metadata controls occupant assigns
-no meaning to Track C itself. It only means that this Search-page composition
-has placed the Message Evidence support/search-control group in cell C2.
+The fact that C2 currently contains a search-controls occupant assigns no
+meaning to Track C itself. It only means that this Search-page composition has
+placed the Message Evidence search controls in cell C2.
 
 The fact that C3 may contain a Conversation Card occupant also assigns no
 meaning to Track C itself. It only means that the current Search-page
 composition places a Conversation-owned presentation occupant in cell C3 when
 the right Conversation excerpt is open.
+
+The fact that D2 and D3 currently contain supporting text occupants assigns no
+meaning to Track D itself. It only means that this Search-page composition has
+placed those occupants in those cells.
+
+The fact that one E cell currently contains a fixed-height occupant assigns no
+meaning to Track E itself. Designers may describe the effect as a spacer, but
+the layout engine records only geometry and occupancy.
 
 The first implementation adds a small `TrackRequirement` /
 `ResolvedTrackPlan` model, scopes the Search page with a resolved plan, and
@@ -208,12 +225,14 @@ inset and default child placement. Once Track Cell Alignment is implemented,
 that placement should be expressed by the page composition. In either case,
 wrappers must not contribute vertical padding to a resolved occupied track.
 
-The current C2 occupant demonstrates the visible-content side of the same rule:
+The current C2 and D2 occupants demonstrate the visible-content side of the
+same rule:
 
-> The Message Evidence support/search-control group contributes one ordinary
-> occupant requirement to one cell of an ordinary track. The standard
-> negotiation mechanism resolves that requirement across all columns. Tracks
-> never receive direct fixed heights independently of occupants.
+> The Message Evidence search controls and supporting context line each
+> contribute ordinary occupant requirements to ordinary track cells. The
+> standard negotiation mechanism resolves those requirements across all
+> columns. Tracks never receive direct fixed heights independently of
+> occupants.
 
 In short: visible content and spacing occupants use the same mechanism.
 

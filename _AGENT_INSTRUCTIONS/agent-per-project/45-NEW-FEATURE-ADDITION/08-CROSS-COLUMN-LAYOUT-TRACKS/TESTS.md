@@ -2,7 +2,7 @@
 tier: project
 scope: tests
 owner: agent-per-project
-last_reviewed: 2026-07-15
+last_reviewed: 2026-07-16
 source_of_truth: proposal
 status: c3-conversation-card-occupant-implemented
 links:
@@ -29,18 +29,26 @@ It verifies:
 - `ResolvedTrackPlan` resolves a track to the maximum declared height
   requirement;
 - `ResolvedTrackPlan` resolves separate Track A and Track B requirements;
-- `MessageEvidencePostMetadataControlsTrackOccupant` lets C2 declare the
-  Message Evidence support/search-control group requirement through the
-  ordinary occupant interface;
+- `MessageEvidenceSearchControlsTrackOccupant` lets C2 declare the Message
+  Evidence search-control row requirement through the ordinary occupant
+  interface;
+- `MessageEvidenceSupportingContextTrackOccupant` lets D2 declare the Message
+  Evidence supporting-context row requirement through the ordinary occupant
+  interface;
+- a `FixedHeightTrackOccupant` can contribute an ordinary 16 px E-track
+  allocation;
 - `TrackCellColumnBand` honors the resolved C-track allocation for empty
   cells;
 - `TrackCellColumnBand` can bottom-align content inside a resolved track cell;
 - missing tracks fall back to the wrapper default;
-- `TitleColumnBand` consumes a scoped resolved Track A height;
-- `TitleColumnBand` preserves its default height without a resolved track plan;
-- `ContextColumnBand` consumes a scoped resolved Track B height;
-- `ContextColumnBand` preserves its default height without a resolved track
-  plan.
+- `TrackCellColumnBand(trackId: TrackId.trackA)` consumes a scoped resolved
+  Track A height;
+- `TrackCellColumnBand(trackId: TrackId.trackA)` preserves its fallback height
+  without a resolved track plan;
+- `TrackCellColumnBand(trackId: TrackId.trackB)` consumes a scoped resolved
+  Track B height;
+- `TrackCellColumnBand(trackId: TrackId.trackB)` preserves its fallback height
+  without a resolved track plan.
 
 Focused Conversation Card coverage exists at:
 

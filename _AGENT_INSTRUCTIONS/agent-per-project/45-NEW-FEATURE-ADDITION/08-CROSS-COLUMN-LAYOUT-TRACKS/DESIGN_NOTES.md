@@ -2,7 +2,7 @@
 tier: project
 scope: design-notes
 owner: agent-per-project
-last_reviewed: 2026-07-15
+last_reviewed: 2026-07-16
 source_of_truth: proposal
 status: c2-fixed-height-occupant-implemented
 links:
@@ -227,24 +227,32 @@ For the current Search page:
 
 ```text
 C1: no occupant
-C2: MessageEvidencePostMetadataControlsTrackOccupant
+C2: MessageEvidenceSearchControlsTrackOccupant
 C3: optional ConversationSignatureCardTrackOccupant when a Conversation excerpt
     is visible
+
+D1: no occupant
+D2: MessageEvidenceSupportingContextTrackOccupant
+D3: optional ConversationExcerptLabelTrackOccupant when a Conversation excerpt
+    is visible
+
+E1/E2/E3: one FixedHeightTrackOccupant(height: 16) contributes the shared
+    allocation; every column renders the resolved E cell
 ```
 
-The page coordinator collects the C2 requirement and, when the right
-Conversation excerpt is visible, the C3 requirement. The resolved track height
-is simply the maximum requirement contributed by the current occupants. C1
-renders the resolved cell allocation without contributing a duplicate occupant.
+The page coordinator collects requirements from occupied cells only. The
+resolved track height is simply the maximum requirement contributed by the
+current occupants for that ordinal track. Empty cells render the resolved
+allocation without contributing duplicate occupants.
 
 Track C does not therefore gain spacing semantics. Tracks know only their
 ordinal identity and resolved geometry. Meaning belongs to the occupants and to
 the page composition that places those occupants.
 
 In this composition, the C2 occupant declares the natural outer height for the
-Message Evidence support/search-control group. The C2 cell then bottom-aligns
-that group inside the resolved allocation when another cell contributes a taller
-requirement.
+Message Evidence search controls. The C2 cell then bottom-aligns that group
+inside the resolved allocation when another cell contributes a taller
+requirement. D2 separately declares the supporting context line.
 
 `ConversationSignatureCardTrackOccupant` is the first Search-page occupant in
 this package whose natural requirement varies materially with content. It uses
@@ -310,8 +318,8 @@ explicitly out of scope.
 
 ## Relationship To Current Wrapper Model
 
-The current `TitleColumnBand` and `ContextColumnBand` model remains valid as
-the implemented version of the cross-column layout contract.
+The current `TrackCellColumnBand` model remains valid as the implemented
+version of the cross-column layout contract.
 
 What remains valid:
 
@@ -324,7 +332,8 @@ What remains valid:
 What would change:
 
 - fixed heights become resolved track allocations;
-- wrapper names may become track renderers or compatibility wrappers;
+- the generic track-cell wrapper may later become a lower-level track renderer
+  or compatibility wrapper;
 - Track A/Track B requirements can vary by page and by content;
 - the Search page can prove the model before other surfaces migrate.
 
@@ -335,7 +344,7 @@ Migration should be gradual.
 1. Keep current wrapper implementation intact. **Done for Track A/Track B.**
 2. Introduce a track-plan concept on the Search page only.
    **Done for Track A/Track B.**
-3. Map existing title bands onto Track A. **Done.**
+3. Map existing first-row cells onto Track A. **Done.**
 4. Let center and right title columns publish `TrackRequirement` values.
    **Done through the page-level Track A plan.**
 5. Let the sidebar top menu participate in Track A only. **Done.**
@@ -371,8 +380,8 @@ while the new model is still being proven.
 
 - Should `TrackRequirement` values be declared by models, widgets, or layout
   adapters?
-- What vocabulary should replace `TitleColumnBand` and `ContextColumnBand` if
-  tracks become canonical?
+- Whether the remaining `ColumnBand` vocabulary should eventually be renamed if
+  tracks become fully canonical.
 - What maximum height should prevent a single rich widget from making the whole
   page feel top-heavy?
 - How should debug overlays show resolved track plans?

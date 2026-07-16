@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/vertical_column_bands.dart';
+import 'package:remember_this_text/features/conversations/presentation/view/conversation_excerpt_panel_track_metrics.dart';
 import 'package:remember_this_text/features/messages/presentation/widgets/message_evidence/message_evidence_header_track_metrics.dart';
 import 'package:remember_this_text/features/sidebar_utilities/application/sidebar_cassette_spec/widget_builders/top_chat_menu_widget.dart';
 
@@ -145,9 +146,9 @@ void main() {
     });
 
     testWidgets(
-      'message evidence post-metadata controls declare their presentation height',
+      'message evidence search controls declare their presentation height',
       (tester) async {
-        const occupant = MessageEvidencePostMetadataControlsTrackOccupant();
+        const occupant = MessageEvidenceSearchControlsTrackOccupant();
 
         await tester.pumpWidget(
           Directionality(
@@ -171,7 +172,121 @@ void main() {
                         (requirement) => requirement.height,
                         'height',
                         MessageEvidenceHeaderTrackMetrics
-                            .postMetadataSearchControlsHeight,
+                            .searchControlsRowHeight,
+                      ),
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'message evidence supporting context declares its own track height',
+      (tester) async {
+        const occupant = MessageEvidenceSupportingContextTrackOccupant();
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Builder(
+              builder: (context) {
+                final requirementContext =
+                    TrackRequirementContext.fromBuildContext(
+                      context,
+                      availableWidth: double.infinity,
+                    );
+                expect(
+                  occupant.requirement(requirementContext),
+                  isA<TrackRequirement>()
+                      .having(
+                        (requirement) => requirement.trackId,
+                        'trackId',
+                        TrackId.trackD,
+                      )
+                      .having(
+                        (requirement) => requirement.height,
+                        'height',
+                        MessageEvidenceHeaderTrackMetrics
+                            .supportingContextHeight,
+                      ),
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+      },
+    );
+
+    testWidgets('conversation excerpt label declares a D-track height', (
+      tester,
+    ) async {
+      const occupant = ConversationExcerptLabelTrackOccupant();
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Builder(
+            builder: (context) {
+              final requirementContext =
+                  TrackRequirementContext.fromBuildContext(
+                    context,
+                    availableWidth: double.infinity,
+                  );
+              expect(
+                occupant.requirement(requirementContext),
+                isA<TrackRequirement>()
+                    .having(
+                      (requirement) => requirement.trackId,
+                      'trackId',
+                      TrackId.trackD,
+                    )
+                    .having(
+                      (requirement) => requirement.height,
+                      'height',
+                      ConversationExcerptPanelTrackMetrics.excerptLabelHeight,
+                    ),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+    });
+
+    testWidgets(
+      'a fixed E occupant can contribute an ordinary 16 px allocation',
+      (tester) async {
+        const occupant = FixedHeightTrackOccupant(
+          trackId: TrackId.trackE,
+          height: 16,
+        );
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Builder(
+              builder: (context) {
+                final requirementContext =
+                    TrackRequirementContext.fromBuildContext(
+                      context,
+                      availableWidth: double.infinity,
+                    );
+                expect(
+                  occupant.requirement(requirementContext),
+                  isA<TrackRequirement>()
+                      .having(
+                        (requirement) => requirement.trackId,
+                        'trackId',
+                        TrackId.trackE,
+                      )
+                      .having(
+                        (requirement) => requirement.height,
+                        'height',
+                        16,
                       ),
                 );
                 return const SizedBox.shrink();
@@ -215,7 +330,7 @@ void main() {
     );
   });
 
-  group('TitleColumnBand', () {
+  group('TrackCellColumnBand Track A', () {
     testWidgets('uses resolved Track A height when a plan scope is present', (
       tester,
     ) async {
@@ -233,14 +348,19 @@ void main() {
               plan: plan,
               child: const Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [TitleColumnBand(child: SizedBox.shrink())],
+                children: [
+                  TrackCellColumnBand(
+                    trackId: TrackId.trackA,
+                    child: SizedBox.shrink(),
+                  ),
+                ],
               ),
             ),
           ),
         ),
       );
 
-      expect(tester.getSize(find.byType(TitleColumnBand)).height, 96);
+      expect(tester.getSize(find.byType(TrackCellColumnBand)).height, 96);
     });
 
     testWidgets('Search page Track A has no hidden page top inset', (
@@ -277,7 +397,12 @@ void main() {
                   plan: plan,
                   child: const Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [TitleColumnBand(child: SizedBox.shrink())],
+                    children: [
+                      TrackCellColumnBand(
+                        trackId: TrackId.trackA,
+                        child: SizedBox.shrink(),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -287,12 +412,12 @@ void main() {
       );
 
       expect(
-        tester.getSize(find.byType(TitleColumnBand)).height,
+        tester.getSize(find.byType(TrackCellColumnBand)).height,
         expectedHeight,
       );
     });
 
-    testWidgets('keeps its default height without a plan scope', (
+    testWidgets('uses caller fallback height without a plan scope', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -301,20 +426,26 @@ void main() {
             textDirection: TextDirection.ltr,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [TitleColumnBand(child: SizedBox.shrink())],
+              children: [
+                TrackCellColumnBand(
+                  trackId: TrackId.trackA,
+                  fallbackHeight: 72,
+                  child: SizedBox.shrink(),
+                ),
+              ],
             ),
           ),
         ),
       );
 
       expect(
-        tester.getSize(find.byType(TitleColumnBand)).height,
-        TitleColumnBand.defaultHeight,
+        tester.getSize(find.byType(TrackCellColumnBand)).height,
+        72,
       );
     });
   });
 
-  group('ContextColumnBand', () {
+  group('TrackCellColumnBand Track B', () {
     testWidgets('uses resolved Track B height when a plan scope is present', (
       tester,
     ) async {
@@ -351,7 +482,12 @@ void main() {
                   plan: plan,
                   child: const Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [ContextColumnBand(child: SizedBox.shrink())],
+                    children: [
+                      TrackCellColumnBand(
+                        trackId: TrackId.trackB,
+                        child: SizedBox.shrink(),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -361,12 +497,12 @@ void main() {
       );
 
       expect(
-        tester.getSize(find.byType(ContextColumnBand)).height,
+        tester.getSize(find.byType(TrackCellColumnBand)).height,
         expectedHeight,
       );
     });
 
-    testWidgets('keeps its default height without a plan scope', (
+    testWidgets('uses caller fallback height without a plan scope', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -375,15 +511,21 @@ void main() {
             textDirection: TextDirection.ltr,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [ContextColumnBand(child: SizedBox.shrink())],
+              children: [
+                TrackCellColumnBand(
+                  trackId: TrackId.trackB,
+                  fallbackHeight: 166,
+                  child: SizedBox.shrink(),
+                ),
+              ],
             ),
           ),
         ),
       );
 
       expect(
-        tester.getSize(find.byType(ContextColumnBand)).height,
-        ContextColumnBand.defaultHeight,
+        tester.getSize(find.byType(TrackCellColumnBand)).height,
+        166,
       );
     });
   });

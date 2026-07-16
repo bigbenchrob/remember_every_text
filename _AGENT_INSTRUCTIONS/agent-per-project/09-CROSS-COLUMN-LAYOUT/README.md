@@ -2,7 +2,7 @@
 tier: project
 scope: cross-column-layout
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-16
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
@@ -10,6 +10,7 @@ links:
   - ./02-sidebar-cassette-content-start-seam.md
   - ./03-search-page-current-implementation.md
   - ./04-design-history-and-cross-references.md
+  - ./05-anatomy-of-track-cell-rendering.md
   - ../07-CENTER-PANEL-LAYOUTS/README.md
   - ../08-SIDEBAR-LAYOUTS/README.md
   - ../95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/README.md
@@ -44,7 +45,7 @@ using content appropriate to their lens.
 ## What This Folder Owns
 
 - the durable cross-column alignment contract
-- the title and context column band wrapper mechanics
+- the ordinal track-cell wrapper mechanics
 - the sidebar cassette content-start seam
 - current Search-page application of the contract
 - links to the UI-walk and feature-package history that produced the design
@@ -65,7 +66,7 @@ documentation.
 1. [`00-cross-column-layout-contract.md`](00-cross-column-layout-contract.md)
    explains the invariant.
 2. [`01-column-band-wrappers.md`](01-column-band-wrappers.md) explains the
-   mechanics of `TitleColumnBand` and `ContextColumnBand`.
+   mechanics of generic `TrackCellColumnBand` wrappers.
 3. [`02-sidebar-cassette-content-start-seam.md`](02-sidebar-cassette-content-start-seam.md)
    explains how the sidebar participates without surrendering cassette
    ownership.
@@ -73,6 +74,9 @@ documentation.
    records the current applied Search-page state.
 5. [`04-design-history-and-cross-references.md`](04-design-history-and-cross-references.md)
    points to the UI-walk and feature-package history.
+6. [`05-anatomy-of-track-cell-rendering.md`](05-anatomy-of-track-cell-rendering.md)
+   explains the concrete rendering chain from page composition to
+   `TrackCellColumnBand`.
 
 ## Relationship To UI Walk
 

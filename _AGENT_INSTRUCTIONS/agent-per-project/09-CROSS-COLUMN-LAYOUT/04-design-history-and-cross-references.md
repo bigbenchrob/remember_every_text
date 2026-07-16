@@ -35,7 +35,8 @@ Use it for:
 - the original Search-page observations
 - why widget nudging was rejected
 - why the page should own layout
-- the shift from rigid multi-band frame to title/context wrapper model
+- the shift from a rigid multi-band frame to the older fixed named-wrapper
+  model
 - conversation panel ownership notes that emerged during layout work
 
 Do not treat it as the only current source of truth for cross-column mechanics.

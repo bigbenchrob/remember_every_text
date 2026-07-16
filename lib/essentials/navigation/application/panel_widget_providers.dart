@@ -737,9 +737,12 @@ List<Widget> _buildSidebarControls({
   }
 
   return [
-    TitleColumnBand(
+    TrackCellColumnBand(
+      trackId: TrackId.trackA,
+      fallbackHeight: 72,
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       childPlacement: const ColumnBandChildPlacement.topLeft(),
+      allowBandExpansion: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -829,7 +832,9 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
 
   return [
     (
-      widget: const ContextColumnBand(
+      widget: const TrackCellColumnBand(
+        trackId: TrackId.trackB,
+        fallbackHeight: 166,
         padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
         childPlacement: ColumnBandChildPlacement.topLeft(),
         child: SizedBox.shrink(),
@@ -838,6 +843,14 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
     ),
     (
       widget: const TrackCellColumnBand(trackId: TrackId.trackC),
+      shouldExpand: false,
+    ),
+    (
+      widget: const TrackCellColumnBand(trackId: TrackId.trackD),
+      shouldExpand: false,
+    ),
+    (
+      widget: const TrackCellColumnBand(trackId: TrackId.trackE),
       shouldExpand: false,
     ),
     ...contentStartContent,

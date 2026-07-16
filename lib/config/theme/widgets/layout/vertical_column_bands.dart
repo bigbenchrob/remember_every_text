@@ -8,11 +8,11 @@ import '../../../../essentials/debug/feature_level_providers.dart'
         developerModeProvider;
 import 'cross_column_track_plan.dart';
 
-/// Diagnostic interface for vertical column alignment bands.
+/// Diagnostic interface for vertical column track cells.
 ///
-/// The page-level layout experiment still renders through compatibility band
-/// wrappers. These wrappers consume resolved track heights while callers decide
-/// which page-specific occupants belong in each track cell.
+/// The page-level layout experiment renders through generic track-cell wrappers.
+/// These wrappers consume resolved track heights while callers decide which
+/// page-specific occupants belong in each track cell.
 abstract class VerticalColumnBand extends ConsumerWidget {
   const VerticalColumnBand({
     required this.child,
@@ -60,6 +60,8 @@ abstract class VerticalColumnBand extends ConsumerWidget {
       TrackId.trackA => const Color(0xFFFF2D2D),
       TrackId.trackB => const Color(0xFF006CFF),
       TrackId.trackC => const Color(0xFF00A36C),
+      TrackId.trackD => const Color(0xFFFF8A00),
+      TrackId.trackE => const Color(0xFF9C27B0),
       null => borderColor,
     };
 
@@ -128,38 +130,6 @@ class ColumnBandChildPlacement {
   final AlignmentGeometry alignment;
 }
 
-class TitleColumnBand extends VerticalColumnBand {
-  const TitleColumnBand({
-    required super.child,
-    super.height = defaultHeight,
-    super.padding = const EdgeInsets.fromLTRB(32, 24, 32, 0),
-    super.borderColor = const Color(0xFFFF2D2D),
-    super.childPlacement = const ColumnBandChildPlacement.topLeft(),
-    super.allowBandExpansion = true,
-    super.trackId = TrackId.trackA,
-    super.overflowWarning = false,
-    super.key,
-  });
-
-  static const double defaultHeight = 72;
-}
-
-class ContextColumnBand extends VerticalColumnBand {
-  const ContextColumnBand({
-    required super.child,
-    super.height = defaultHeight,
-    super.padding = const EdgeInsets.fromLTRB(32, 10, 32, 0),
-    super.borderColor = const Color(0xFF7B61FF),
-    super.childPlacement = const ColumnBandChildPlacement.topLeft(),
-    super.allowBandExpansion = false,
-    super.trackId = TrackId.trackB,
-    super.overflowWarning = false,
-    super.key,
-  });
-
-  static const double defaultHeight = 166;
-}
-
 /// Renders one column cell for a resolved track allocation.
 ///
 /// This widget does not contribute a [TrackRequirement]. It only honors the
@@ -168,16 +138,19 @@ class TrackCellColumnBand extends VerticalColumnBand {
   const TrackCellColumnBand({
     required TrackId trackId,
     Widget child = const SizedBox.shrink(),
+    double fallbackHeight = 0,
+    EdgeInsets padding = EdgeInsets.zero,
     ColumnBandChildPlacement childPlacement =
         const ColumnBandChildPlacement.topLeft(),
+    bool allowBandExpansion = false,
     super.key,
   }) : super(
          child: child,
-         height: 0,
-         padding: EdgeInsets.zero,
+         height: fallbackHeight,
+         padding: padding,
          borderColor: const Color(0xFF00A36C),
          childPlacement: childPlacement,
-         allowBandExpansion: false,
+         allowBandExpansion: allowBandExpansion,
          trackId: trackId,
          overflowWarning: false,
        );

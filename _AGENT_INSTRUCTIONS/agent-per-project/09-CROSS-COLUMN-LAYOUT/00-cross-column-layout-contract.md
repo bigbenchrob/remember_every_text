@@ -2,7 +2,7 @@
 tier: project
 scope: cross-column-layout-contract
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-16
 source_of_truth: doc
 links:
   - ./README.md
@@ -26,48 +26,46 @@ graph, not as independently stacked columns.
 
 ## Contract
 
-Participating columns share two fixed vertical envelopes:
+Participating columns share an ordinal set of horizontal tracks:
 
-1. **Title band**
-2. **Context band**
+```text
+Track A
+Track B
+Track C
+...
+```
 
-Primary content begins immediately after the context band.
+Tracks are geometric coordinates only. They do not mean title, context,
+controls, shim, metadata, or content. Those words may describe the current
+occupants in a particular page composition, but they are not properties of the
+track system.
 
-The important invariant is not that every element inside the context band lines
-up. The important invariant is that the page establishes common top and content
-content-start positions across peer columns.
+The important invariant is that every participating column receives the same
+resolved height for each track. The page establishes common y-positions across
+peer columns; it does not assign business meaning to those coordinates.
 
-## Title Band
+## Track Occupancy
 
-The title band identifies the panel or lens.
+Each page composition decides which cells are occupied:
 
-Examples:
+```text
+A1, A2, A3
+B1, B2, B3
+C1, C2, C3
+```
 
-- Left: `Search all messages` selector
-- Center: `All messages`
-- Right: `Conversation`
+For example, the current Search page uses A1 for the sidebar selector, A2 for
+the center panel label, and A3 for the right panel label. That does not make
+Track A a "title track." It only records the current occupancy.
 
-The title names the lens or panel. It should not narrate how the user arrived
-there.
-
-## Context Band
-
-The context band contains pre-content context, scope, controls, or the primary
-object summary for that panel.
-
-Examples:
-
-- Left: short orientation text or one pre-content sidebar cassette
-- Center: result metadata and search controls
-- Right: Conversation Card and excerpt description
-
-This band is fixed in outer height for participating columns, but elastic in
-meaning. Children may arrange themselves internally. They must not push the
-primary content start downward.
+If a cell is empty, it contributes no requirement. If any cell contains a
+`FixedHeightTrackOccupant`, that occupant contributes an ordinary requirement
+to the track. Designers may describe the visual effect as a spacer or shim, but
+the layout engine records only geometry and occupancy.
 
 ## Content Start
 
-Primary content begins directly below the context band.
+Primary content begins after the page's pre-content track sequence.
 
 Examples:
 
@@ -82,46 +80,46 @@ across the page and understand that the panels are peers.
 
 The page owns:
 
-- the fixed outer height of the title band
-- the fixed outer height of the context band
-- the content-start y-position
+- the resolved heights of ordinal tracks
+- the content-start y-position that follows the page's chosen track sequence
 - optional developer diagnostics showing band boundaries
 
 Components own:
 
 - wording
 - typography
-- internal vertical placement inside their assigned band
+- internal vertical placement inside their assigned track cell
 - compact/truncated/adaptive presentation when content approaches overflow
 
 Components do not own:
 
-- panel-level top padding outside the band wrappers
-- ad hoc spacer stacks that move primary content down
+- panel-level top padding outside track-cell wrappers
+- ad hoc spacer stacks that move primary content down outside the track model
 - repair logic that tries to align with peer panels after layout
 
 ## What To Do When Alignment Looks Wrong
 
 Fix one of:
 
-- band wrapper defaults
-- internal child placement inside a band
+- track-cell wrapper defaults
+- page-owned cell alignment inside a resolved track
 - sidebar content-start seam semantics
 - component compact-mode behavior
 
-Do not add one-off top padding outside the bands.
+Do not add one-off top padding outside the track cells.
 
 Do not make a feature widget know about sibling columns.
 
 Do not solve alignment with post-frame measurement or imperative repair unless
 there is a separate design decision approving that risk.
 
-## Current Heights
+## Current Implementation
 
-As of this review, the shared wrapper defaults are:
+The active wrapper is `TrackCellColumnBand`. It consumes a `TrackId` and a
+resolved track plan, then renders one cell of that track. Older fixed wrappers
+with semantic names have been retired from the active Search-page path.
 
-- `TitleColumnBand.height`: `72`
-- `ContextColumnBand.height`: `166`
-
-These are layout rhythm values, not business meaning. If they change, update
-this document and the wrapper documentation together.
+Occupied tracks should be content-tight: their height comes from the maximum
+natural requirement declared by their occupants. Any intentional separation
+should be represented by an explicit fixed-height occupant in an ordinary track
+cell, not by hidden padding in an occupied track.

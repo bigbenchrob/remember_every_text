@@ -12,24 +12,31 @@ abstract final class MessageEvidenceHeaderTrackMetrics {
   static const double supportingContextLineHeight = 15;
   static const double supportingContextBottomInset = 8;
 
-  static const double postMetadataSearchControlsHeight =
-      supportingContextLineHeight +
-      supportingContextBottomInset +
-      searchControlsRowHeight;
+  static const double supportingContextHeight =
+      supportingContextLineHeight + supportingContextBottomInset;
 }
 
-/// Declares the Search-page C2 requirement for the post-metadata message
-/// evidence controls.
+/// Declares the Search-page C2 requirement for the Message Evidence search
+/// controls.
 ///
-/// The current presentation may include the supporting context line and the
-/// search controls row. The occupant remains semantically neutral to the track
-/// coordinator: it contributes only a track id and natural height.
-class MessageEvidencePostMetadataControlsTrackOccupant
+/// The occupant remains semantically neutral to the track coordinator: it
+/// contributes only a track id and natural height.
+class MessageEvidenceSearchControlsTrackOccupant
     extends FixedHeightTrackOccupant {
-  const MessageEvidencePostMetadataControlsTrackOccupant()
+  const MessageEvidenceSearchControlsTrackOccupant()
     : super(
         trackId: TrackId.trackC,
-        height:
-            MessageEvidenceHeaderTrackMetrics.postMetadataSearchControlsHeight,
+        height: MessageEvidenceHeaderTrackMetrics.searchControlsRowHeight,
+      );
+}
+
+/// Declares the Search-page D2 requirement for the Message Evidence supporting
+/// context line.
+class MessageEvidenceSupportingContextTrackOccupant
+    extends FixedHeightTrackOccupant {
+  const MessageEvidenceSupportingContextTrackOccupant()
+    : super(
+        trackId: TrackId.trackD,
+        height: MessageEvidenceHeaderTrackMetrics.supportingContextHeight,
       );
 }

@@ -566,16 +566,16 @@ Right Track B: no occupant
 Do not introduce `EmptyTrackOccupant`.
 
 Spacing does not require a special architectural concept. A page composition
-may place one fixed-height occupant in one track cell:
+may place one fixed-height occupant in one ordinary track cell:
 
 ```text
-D1: no occupant
-D2: FixedHeightTrackOccupant(height: 8)
-D3: no occupant
+cell 1: no occupant
+cell 2: FixedHeightTrackOccupant(height: 8)
+cell 3: no occupant
 ```
 
 The resolved track height naturally becomes 8 because the normal track
-negotiation algorithm already handles it. D1 and D3 honor the resolved
+negotiation algorithm already handles it. Empty cells honor the resolved
 allocation without contributing duplicate occupants.
 
 Do not introduce a special `ShimTrack` type or assign spacing semantics to the

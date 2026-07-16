@@ -255,7 +255,7 @@ Recommend corrections only where ownership is clearly wrong.
 
 10. Wrapper Compatibility
 
-Review how the existing title/context band wrappers participate.
+Review how the existing generic track-cell wrapper participates.
 
 Confirm that wrappers:
 

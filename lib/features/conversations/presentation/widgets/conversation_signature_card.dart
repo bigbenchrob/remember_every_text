@@ -571,7 +571,7 @@ class ConversationSignatureCardPresentationMetrics {
   static const double cardBorderWidth = 0.5;
   static const double cardHorizontalPadding = 8;
   static const double cardVerticalPadding = 9;
-  static const double identityGlyphGap = 7;
+  static const double identityGlyphGap = 5;
   static const double glyphSummaryGap = 5;
   static const double tagGap = 6;
   static const double tagSpacing = 4;

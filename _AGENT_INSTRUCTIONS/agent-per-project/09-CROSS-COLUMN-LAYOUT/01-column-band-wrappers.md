@@ -1,8 +1,8 @@
 ---
 tier: project
-scope: column-band-wrappers
+scope: track-cell-column-band-wrapper
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-16
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
@@ -11,13 +11,12 @@ links:
 tests: []
 ---
 
-# Column Band Wrappers
+# Track Cell Column Band Wrapper
 
-The current cross-column alignment mechanics are implemented with two wrapper
-widgets:
+The current cross-column alignment mechanics are implemented with one generic
+wrapper widget:
 
-- `TitleColumnBand`
-- `ContextColumnBand`
+- `TrackCellColumnBand`
 
 They live in:
 
@@ -27,11 +26,12 @@ lib/config/theme/widgets/layout/vertical_column_bands.dart
 
 ## Role
 
-The wrappers own fixed outer dimensions. They also provide default internal
-padding, child placement, and optional developer diagnostics.
+The wrapper renders one column cell within one ordinal track. It provides the
+resolved outer height for that cell, optional internal padding, page-owned child
+placement, and optional developer diagnostics.
 
-They are intentionally small. They are not a full page frame and they are not a
-business-semantic component.
+It is intentionally small. It is not a full page frame and it is not a
+business-semantic component. The `TrackId` supplied to it is geometric only.
 
 ## Why Wrappers Instead Of A Full Frame
 
@@ -42,47 +42,36 @@ non-deterministic.
 The current model is narrower:
 
 ```text
-TitleColumnBand
-ContextColumnBand
-primary content below
+TrackCellColumnBand(trackId: A)
+TrackCellColumnBand(trackId: B)
+TrackCellColumnBand(trackId: C)
+...
+primary content below the page's chosen track sequence
 ```
 
-Each column can use the same wrappers while still letting its own feature or
-cassette system decide what content belongs inside each band.
+Each column can use the same wrapper while still letting its own feature or
+cassette system decide what content belongs inside each cell.
 
-## TitleColumnBand
-
-Purpose:
-
-- wraps panel identity
-- aligns the top selector/menu/title region across participating columns
-
-Current defaults:
-
-- height: `72`
-- padding: `EdgeInsets.fromLTRB(32, 24, 32, 0)`
-- child placement: top-left
-- diagnostic border: red
-
-Sidebar usage may pass sidebar-specific padding while preserving the same outer
-height.
-
-## ContextColumnBand
+## TrackCellColumnBand
 
 Purpose:
 
-- wraps pre-content context, scope, controls, or primary object summary
-- fixes the content-start y-position below it
+- renders one cell of an ordinal track
+- consumes a resolved `TrackPlan` when available
+- falls back to a supplied height when a page has not opted into track
+  negotiation
+- keeps the page coordinator free of feature-specific branches
 
-Current defaults:
+Constructor concepts:
 
-- height: `166`
-- padding: `EdgeInsets.fromLTRB(32, 10, 32, 0)`
-- child placement: top-left
-- diagnostic border: blue
+- `trackId`: ordinal coordinate, such as `TrackId.trackA`
+- `fallbackHeight`: compatibility height used only without a resolved plan
+- `padding`: internal presentation inset for the child
+- `childPlacement`: placement of the child within the resolved allocation
+- `allowBandExpansion`: compatibility escape hatch for older/sidebar paths
 
-Sidebar usage may pass sidebar-specific padding while preserving the same outer
-height.
+The wrapper does not know whether its child is a selector, title, metadata row,
+Conversation Card, control group, or fixed-height spacing occupant.
 
 ## Child Placement
 
@@ -93,22 +82,24 @@ height.
 - `bottomLeft`
 - `custom`
 
-Prefer wrapper defaults first. Use explicit placement only when the child’s
-natural presentation needs controlled internal placement inside the fixed
-envelope.
+Prefer page-composition defaults first. Use explicit placement only when the
+child’s natural presentation needs controlled internal placement inside the
+resolved cell.
 
 Do not move content by adding panel-specific top padding outside the wrapper.
 
 ## Debug Margins
 
-The wrappers can show diagnostic colored borders in developer mode when
+The wrapper can show diagnostic colored borders in developer mode when
 `columnBandDebugMarginsProvider` is enabled.
 
-Semantics:
+Current diagnostic colors are assigned by ordinal track, not by semantic role:
 
-- red: title band
-- blue: context band
-- orange: overflow warning or exceptional diagnostic state
+- Track A: red
+- Track B: blue
+- Track C: green
+- Track D and later tracks: additional debug colors as assigned
+- overflow warning or exceptional diagnostic state: diagnostic warning styling
 
 These borders are diagnostic only. They should not be part of production visual
 language.
@@ -127,11 +118,10 @@ older/support primitives such as:
 Treat these as transitional support for existing code paths unless a specific
 path still requires them.
 
-For new cross-column layout work, prefer the explicit wrapper model:
+For new cross-column layout work, prefer the explicit generic wrapper model:
 
 ```text
-TitleColumnBand
-ContextColumnBand
+TrackCellColumnBand(trackId: ...)
 content
 ```
 

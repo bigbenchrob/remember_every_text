@@ -17,9 +17,15 @@ import '../../domain/sidebar_mode.dart';
 /// - B2: center metadata line.
 /// - B3: no occupant.
 /// - C1: no occupant.
-/// - C2: message-evidence post-metadata controls occupant.
+/// - C2: message-evidence search controls occupant.
 /// - C3: optional right-panel Conversation Card occupant when an excerpt is
 ///   visible.
+/// - D1: no occupant.
+/// - D2: message-evidence supporting context occupant.
+/// - D3: optional right-panel excerpt label occupant when an excerpt is
+///   visible.
+/// - E1/E2/E3: one fixed-height occupant contributes the shared 16 px
+///   allocation; all columns render the resolved E cell.
 ///
 /// Tracks are ordinal geometry only. Page-specific meaning belongs to the
 /// occupants placed into track cells, not to the track letters themselves.
@@ -61,7 +67,9 @@ ResolvedTrackPlan resolveSearchPageTrackPlan({
       text: 'Search result metadata',
       style: metadataStyle,
     ),
-    const MessageEvidencePostMetadataControlsTrackOccupant(),
+    const MessageEvidenceSearchControlsTrackOccupant(),
+    const MessageEvidenceSupportingContextTrackOccupant(),
+    const FixedHeightTrackOccupant(trackId: TrackId.trackE, height: 16),
     ...additionalOccupants,
   ];
 
