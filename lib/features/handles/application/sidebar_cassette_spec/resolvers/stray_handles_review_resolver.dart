@@ -18,14 +18,16 @@ class StrayHandlesReviewResolver extends _$StrayHandlesReviewResolver {
 
   /// Resolve filter and mode into a sidebar cassette payload.
   Future<SidebarCassettePayload> resolve({
-    required StrayHandleFilter filter,
-    required StrayHandleMode mode,
+    required StrayHandleInvestigation investigation,
+    required StrayHandleFilter? filter,
+    required StrayHandleReviewMode mode,
   }) async {
     return StrayHandlesReviewCassettePayload(
+      investigation: investigation,
       filter: filter,
       mode: mode,
       role: SidebarCassetteRole.contextPrimary,
-      placementMode: SidebarBodyPlacementMode.insetWithTrailingGutter,
+      placementMode: SidebarBodyPlacementMode.inset,
       contentAlignment: SidebarBodyContentAlignment.fill,
       title: '',
       layoutStyle: SidebarCardLayoutStyle.controlAligned,

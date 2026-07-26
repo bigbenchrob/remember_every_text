@@ -1,7 +1,17 @@
 import 'package:flutter/widgets.dart';
 
 /// Shared horizontal layout tracks used to coordinate peer page columns.
-enum TrackId { trackA, trackB, trackC, trackD, trackE }
+enum TrackId {
+  trackA,
+  trackB,
+  trackC,
+  trackD,
+  trackE,
+  trackF,
+  trackG,
+  trackH,
+  trackI,
+}
 
 /// Genuine presentation inputs needed to calculate dimensional truth.
 ///

@@ -19,9 +19,14 @@ class StrayHandlesModeSwitcherResolver
 
   /// Resolve filter and current mode into a sidebar cassette payload.
   Future<SidebarCassettePayload> resolve({
-    required StrayHandleFilter filter,
-    required StrayHandleMode mode,
+    required StrayHandleInvestigation investigation,
+    required StrayHandleFilter? filter,
+    required StrayHandleReviewMode mode,
   }) async {
-    return StrayHandlesModeSwitcherCassettePayload(filter: filter, mode: mode);
+    return StrayHandlesModeSwitcherCassettePayload(
+      investigation: investigation,
+      filter: filter,
+      mode: mode,
+    );
   }
 }

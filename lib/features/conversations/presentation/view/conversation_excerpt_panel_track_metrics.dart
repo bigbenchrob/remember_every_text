@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
+import '../../../../core/util/date_label_formatter.dart';
 import '../widgets/conversation_signature_card.dart';
 
 /// Presentation metrics for Conversation excerpt-panel track occupants.
@@ -13,50 +14,32 @@ import '../widgets/conversation_signature_card.dart';
 abstract final class ConversationExcerptPanelTrackMetrics {
   const ConversationExcerptPanelTrackMetrics._();
 
-  static const int excerptLabelMaxLines = 2;
-
-  /// Stable width shared by Conversation identity and excerpt-label
+  /// Stable width shared by Conversation identity and temporal-orientation
   /// presentations in the end panel.
   static const double canonicalContentWidth =
       ConversationSignatureCardPresentationMetrics.canonicalWidth;
-
-  static double excerptLabelMinimumNaturalHeight({
-    required TextStyle style,
-    required PresentationConstraints constraints,
-  }) {
-    return TextTrackOccupant(text: 'M', style: style)
-        .dimensionalClaim(
-          PresentationConstraints(
-            availableWidth: canonicalContentWidth,
-            textScaler: constraints.textScaler,
-            textDirection: constraints.textDirection,
-            locale: constraints.locale,
-          ),
-        )
-        .naturalHeight;
-  }
 }
 
-TextStyle conversationExcerptLabelStyle(
+TextStyle conversationExcerptTemporalOrientationStyle(
   ThemeColors colors,
   ThemeTypography typography,
 ) {
-  return typography.caption.copyWith(
-    color: colors.content.textSecondary.withValues(alpha: 0.78),
-    fontWeight: FontWeight.w500,
+  return typography.title3.copyWith(
+    color: colors.status.warning.withValues(alpha: 0.84),
   );
 }
 
-String conversationExcerptLabel(int count) {
-  if (count <= 1) {
-    return 'Excerpt centered on the chosen message';
+String? conversationExcerptTemporalOrientationLabel(DateTime? anchorDate) {
+  if (anchorDate == null) {
+    return null;
   }
-  return '$count-message excerpt centered on the chosen message';
+  return DateLabelFormatter.longMonthYear(anchorDate);
 }
 
-/// Track adapter for the approved Conversation excerpt description.
-final class ConversationExcerptLabelTrackOccupant implements TrackOccupant {
-  const ConversationExcerptLabelTrackOccupant({
+/// Track adapter for the month/year orientation of a Conversation excerpt.
+final class ConversationExcerptTemporalOrientationTrackOccupant
+    implements TrackOccupant {
+  const ConversationExcerptTemporalOrientationTrackOccupant({
     required this.label,
     required this.style,
   });
@@ -71,8 +54,7 @@ final class ConversationExcerptLabelTrackOccupant implements TrackOccupant {
     return TextTrackOccupant(
       text: label,
       style: style,
-      maxLines: ConversationExcerptPanelTrackMetrics.excerptLabelMaxLines,
-      softWrap: true,
+      maxLines: 1,
     ).dimensionalClaim(
       PresentationConstraints(
         availableWidth:
@@ -96,7 +78,7 @@ final class ConversationExcerptLabelTrackOccupant implements TrackOccupant {
         child: Text(
           label,
           style: style,
-          maxLines: ConversationExcerptPanelTrackMetrics.excerptLabelMaxLines,
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
       ),

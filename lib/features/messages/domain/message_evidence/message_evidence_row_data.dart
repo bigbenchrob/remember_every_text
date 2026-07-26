@@ -7,6 +7,9 @@ class MessageEvidenceRowData {
     required this.associatedMessageId,
     required this.attachmentCount,
     this.sourceConversationId,
+    this.conversationDisplayTitle,
+    this.isSelfConversation = false,
+    this.senderIsMe = false,
     this.senderHandleId,
     this.senderCanonicalHandleId,
     this.senderDisplayHandle,
@@ -28,6 +31,9 @@ class MessageEvidenceRowData {
   final int? associatedMessageId;
   final int attachmentCount;
   final int? sourceConversationId;
+  final String? conversationDisplayTitle;
+  final bool isSelfConversation;
+  final bool senderIsMe;
   final int? senderHandleId;
   final int? senderCanonicalHandleId;
   final String? senderDisplayHandle;

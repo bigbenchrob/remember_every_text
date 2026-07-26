@@ -10,7 +10,7 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
   ConversationGraphDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -119,9 +119,14 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
       CREATE TABLE IF NOT EXISTS handles (
         ss_id INTEGER PRIMARY KEY,
         id TEXT NOT NULL,
-        service TEXT
+        service TEXT,
+        is_me INTEGER NOT NULL DEFAULT 0 CHECK (is_me IN (0, 1))
       )
     ''');
+    await _addColumnIfMissing(
+      'handles',
+      'is_me INTEGER NOT NULL DEFAULT 0 CHECK (is_me IN (0, 1))',
+    );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_working_handles_id ON handles(id)',
     );
@@ -170,6 +175,19 @@ class ConversationGraphDatabase extends _$ConversationGraphDatabase {
         last_read_message_at_utc TEXT
       )
     ''');
+  }
+
+  Future<void> _addColumnIfMissing(
+    String table,
+    String columnDefinition,
+  ) async {
+    final columnName = columnDefinition.split(' ').first;
+    final columns = await selectRows('PRAGMA table_info($table)');
+    final columnNames = columns.map((row) => row['name']).toSet();
+    if (columnNames.contains(columnName)) {
+      return;
+    }
+    await customStatement('ALTER TABLE $table ADD COLUMN $columnDefinition');
   }
 
   Future<void> _createChatToMessageSchema() async {

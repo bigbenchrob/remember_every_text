@@ -24,6 +24,11 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
     final identitiesByHandleId = <int, ParticipantDisplayIdentity>{};
     final identitiesByContactId = <int, ParticipantDisplayIdentity>{};
 
+    await _addSelfHandleIdentities(
+      identitiesByHandleKey: identities,
+      identitiesByHandleId: identitiesByHandleId,
+    );
+
     final graphContactRows = await graphDatabase.selectRows('''
       SELECT
         c.contact_id AS contact_id,
@@ -82,13 +87,68 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
       participantOverrides: participantOverrides,
       identitiesByContactId: identitiesByContactId,
     );
-    await _addAliasHandleIds(identitiesByHandleId);
+    await _addAliasHandleIdentities(
+      identitiesByHandleKey: identities,
+      identitiesByHandleId: identitiesByHandleId,
+    );
+    _promoteSelfContactIdentities(
+      graphContactRows: graphContactRows,
+      identitiesByHandleId: identitiesByHandleId,
+      identitiesByContactId: identitiesByContactId,
+    );
 
     return DisplayIdentityResolver(
       identitiesByHandleKey: identities,
       identitiesByHandleId: identitiesByHandleId,
       identitiesByContactId: identitiesByContactId,
     );
+  }
+
+  Future<void> _addSelfHandleIdentities({
+    required Map<String, ParticipantDisplayIdentity> identitiesByHandleKey,
+    required Map<int, ParticipantDisplayIdentity> identitiesByHandleId,
+  }) async {
+    final rows = await graphDatabase.selectRows('''
+      SELECT
+        h.ss_id AS handle_ss_id,
+        h.id AS handle_value,
+        COALESCE(ha.canonical_handle_ss_id, h.ss_id)
+          AS canonical_handle_ss_id,
+        ch.display_handle AS canonical_handle_value
+      FROM handles h
+      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = h.ss_id
+      LEFT JOIN canonical_handles ch
+        ON ch.canonical_handle_ss_id =
+          COALESCE(ha.canonical_handle_ss_id, h.ss_id)
+      WHERE h.is_me = 1
+      ORDER BY h.ss_id ASC
+      ''');
+
+    for (final row in rows) {
+      const identity = ParticipantDisplayIdentity(
+        primaryLabel: selfParticipantDisplayLabel,
+        source: DisplayIdentitySource.localAccount,
+        isKnownContact: true,
+      );
+      final handleId = _readNullableInt(row['handle_ss_id']);
+      final canonicalHandleId = _readNullableInt(row['canonical_handle_ss_id']);
+      final handleValue = (row['handle_value'] as String?)?.trim();
+      final canonicalHandleValue = (row['canonical_handle_value'] as String?)
+          ?.trim();
+
+      if (handleId != null) {
+        identitiesByHandleId[handleId] = identity;
+      }
+      if (canonicalHandleId != null) {
+        identitiesByHandleId[canonicalHandleId] = identity;
+      }
+      if (handleValue != null && handleValue.isNotEmpty) {
+        _putIdentity(identitiesByHandleKey, handleValue, identity);
+      }
+      if (canonicalHandleValue != null && canonicalHandleValue.isNotEmpty) {
+        _putIdentity(identitiesByHandleKey, canonicalHandleValue, identity);
+      }
+    }
   }
 
   Future<void> _addContactIdentities({
@@ -134,18 +194,21 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
     }
   }
 
-  Future<void> _addAliasHandleIds(
-    Map<int, ParticipantDisplayIdentity> identitiesByHandleId,
-  ) async {
+  Future<void> _addAliasHandleIdentities({
+    required Map<String, ParticipantDisplayIdentity> identitiesByHandleKey,
+    required Map<int, ParticipantDisplayIdentity> identitiesByHandleId,
+  }) async {
     if (identitiesByHandleId.isEmpty) {
       return;
     }
 
     final rows = await graphDatabase.selectRows('''
       SELECT
-        handle_ss_id,
-        canonical_handle_ss_id
-      FROM handle_aliases
+        ha.handle_ss_id,
+        ha.canonical_handle_ss_id,
+        h.id AS handle_value
+      FROM handle_aliases ha
+      LEFT JOIN handles h ON h.ss_id = ha.handle_ss_id
       ORDER BY handle_ss_id ASC
       ''');
     for (final row in rows) {
@@ -157,6 +220,36 @@ class SqliteDisplayIdentityRepository implements DisplayIdentityRepository {
       final identity = identitiesByHandleId[canonicalHandleId];
       if (identity != null) {
         identitiesByHandleId.putIfAbsent(handleId, () => identity);
+        final handleValue = (row['handle_value'] as String?)?.trim();
+        if (handleValue != null && handleValue.isNotEmpty) {
+          _putIdentity(identitiesByHandleKey, handleValue, identity);
+        }
+      }
+    }
+  }
+
+  void _promoteSelfContactIdentities({
+    required List<Map<String, Object?>> graphContactRows,
+    required Map<int, ParticipantDisplayIdentity> identitiesByHandleId,
+    required Map<int, ParticipantDisplayIdentity> identitiesByContactId,
+  }) {
+    for (final row in graphContactRows) {
+      final contactId = _readNullableInt(row['contact_id']);
+      final handleId = _readNullableInt(row['handle_ss_id']);
+      if (contactId == null ||
+          handleId == null ||
+          identitiesByHandleId[handleId]?.isSelf != true) {
+        continue;
+      }
+
+      final identity = ParticipantDisplayIdentity(
+        primaryLabel: selfParticipantDisplayLabel,
+        source: DisplayIdentitySource.localAccount,
+        isKnownContact: true,
+        contactId: contactId,
+      );
+      for (final key in contactIdentityKeyVariants(contactId)) {
+        identitiesByContactId[key] = identity;
       }
     }
   }

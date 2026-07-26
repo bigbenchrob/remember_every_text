@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
@@ -11,9 +13,14 @@ abstract final class MessageEvidenceHeaderTrackMetrics {
   const MessageEvidenceHeaderTrackMetrics._();
 
   static const double searchControlsRowHeight = 30;
-  static const double supportingContextBottomInset = 8;
+  static const double searchLeadingSlotWidth = 15;
+  static const double searchLeadingGap = 8;
 
-  static double supportingContextMinimumNaturalHeight({
+  /// Aligns status ink with the visible leading edge of macOS text-field chrome.
+  static const double searchStatusFieldChromeInset = 6;
+  static const double investigationStatusIndicatorRadius = 6;
+
+  static double investigationStatusMinimumNaturalHeight({
     required TextStyle style,
     required PresentationConstraints constraints,
   }) {
@@ -27,6 +34,6 @@ abstract final class MessageEvidenceHeaderTrackMetrics {
           ),
         )
         .naturalHeight;
-    return lineHeight + supportingContextBottomInset;
+    return math.max(lineHeight, investigationStatusIndicatorRadius * 2);
   }
 }

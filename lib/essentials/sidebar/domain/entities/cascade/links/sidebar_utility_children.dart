@@ -11,7 +11,7 @@ CassetteSpec sidebarUtilityChildContactsInfoCard() {
 /// Cascade from "From unfamiliar sources" menu to stray handles type switcher.
 CassetteSpec sidebarUtilityChildStrayHandlesTypeSwitcher() {
   return const CassetteSpec.handles(
-    HandlesCassetteSpec.strayHandlesTypeSwitcher(),
+    HandlesCassetteSpec.strayHandlesInvestigationSwitcher(),
   );
 }
 

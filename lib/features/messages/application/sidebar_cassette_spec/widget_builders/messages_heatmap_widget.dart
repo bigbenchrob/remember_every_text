@@ -16,6 +16,7 @@ import '../../../../conversations/feature_level_providers.dart'
     show ContactGraphConversationSection;
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../application/message_evidence/current_visible_month_provider.dart';
+import '../../../application/message_evidence/global_messages_investigation_actions_provider.dart';
 import '../../../domain/calendar_heatmap_timeline_data.dart';
 import '../../../domain/message_evidence/message_evidence_scope.dart';
 import '../../../presentation/widgets/calendar_heatmap_timeline_widget.dart';
@@ -102,10 +103,8 @@ class _GlobalHeatmapContent extends ConsumerWidget {
             year == timeline.lastMessageDate.year &&
             month == timeline.lastMessageDate.month;
         ref
-            .read(messageHeatmapNavigationActionsProvider.notifier)
-            .focusMonth(
-              monthAnchor: isLastMonth ? null : DateTime(year, month, 1),
-            );
+            .read(globalMessagesInvestigationActionsProvider.notifier)
+            .browseMonth(isLastMonth ? null : DateTime(year, month, 1));
       },
     );
   }

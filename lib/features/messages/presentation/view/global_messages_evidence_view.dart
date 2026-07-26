@@ -7,6 +7,7 @@ import '../../../../essentials/navigation/feature_level_providers.dart'
     show effectiveRightPanelSpecProvider;
 import '../../../conversations/feature_level_providers.dart'
     show conversationExcerptNavigationActionsProvider;
+import '../../application/message_evidence/current_search_investigation_provider.dart';
 import '../../application/message_evidence/current_visible_month_provider.dart';
 import '../../application/message_evidence/global_messages_search_session_provider.dart';
 import '../../domain/message_evidence/message_evidence_row_data.dart';
@@ -92,7 +93,7 @@ class _GlobalMessagesEvidenceViewState
             title: 'All messages',
             dateRangeLabel: labels.dateRange,
             countLabel: labels.count,
-            activeScopeLabel: labels.supportingContext,
+            activeScopeLabel: presentation.investigationStatus?.description,
             searchConfig: MessageEvidenceHeaderSearchConfig(
               controller: _searchController,
               placeholder: 'Search these messages',
@@ -152,19 +153,10 @@ class _GlobalMessagesEvidenceViewState
   }
 
   VoidCallback? _resolveConversationContextAction(
-    MessageEvidenceScope evidenceScope,
+    MessageEvidenceScope _,
     MessageEvidenceRowData message,
-    String highlightQuery,
+    String __,
   ) {
-    final query = highlightQuery.trim();
-    if (query.isEmpty) {
-      return null;
-    }
-
-    if (evidenceScope is! MessageSearchEvidenceScope) {
-      return null;
-    }
-
     final conversationId = message.sourceConversationId;
     if (conversationId == null) {
       return null;
@@ -173,9 +165,11 @@ class _GlobalMessagesEvidenceViewState
     final actions = ref.read(
       conversationExcerptNavigationActionsProvider.notifier,
     );
+    final investigationId = ref.read(currentSearchInvestigationProvider);
     if (actions.isActive(
       conversationId: conversationId,
       anchorMessageId: message.messageId,
+      originatingInvestigationId: investigationId,
     )) {
       return null;
     }
@@ -184,6 +178,7 @@ class _GlobalMessagesEvidenceViewState
       actions.open(
         conversationId: conversationId,
         anchorMessageId: message.messageId,
+        originatingInvestigationId: investigationId,
       );
     };
   }

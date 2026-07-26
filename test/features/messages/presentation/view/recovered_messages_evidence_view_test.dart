@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:remember_this_text/features/contacts/feature_level_providers.dart'
+    show DisplayIdentityResolver, displayIdentityResolverProvider;
 import 'package:remember_this_text/features/messages/application/message_evidence/recovered_message_evidence_provider.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/recovered_message_evidence.dart';
@@ -17,6 +19,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            displayIdentityResolverProvider.overrideWith((ref) async {
+              return const DisplayIdentityResolver(identitiesByHandleKey: {});
+            }),
             recoveredUnlinkedMessagesProvider(contactId: 7).overrideWith(
               (ref) =>
                   Stream<List<RecoveredUnlinkedMessageItem>>.value(messages),
@@ -50,6 +55,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            displayIdentityResolverProvider.overrideWith((ref) async {
+              return const DisplayIdentityResolver(identitiesByHandleKey: {});
+            }),
             recoveredUnlinkedMessagesProvider(contactId: 7).overrideWith(
               (ref) =>
                   Stream<List<RecoveredUnlinkedMessageItem>>.value(messages),

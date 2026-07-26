@@ -8,14 +8,30 @@ part of '../cassette_spec.dart';
 CassetteSpec? resolveHandlesChild(HandlesCassetteSpec spec) {
   return spec.when(
     strayHandlesReview: (_, __) => null,
-    // Mode switcher cascades to the stray handles review list
-    strayHandlesModeSwitcher: (filter) => CassetteSpec.handles(
-      HandlesCassetteSpec.strayHandlesReview(filter: filter),
+    strayHandlesModeSwitcher: (investigation, filter) => CassetteSpec.handles(
+      HandlesCassetteSpec.strayHandlesReview(
+        investigation: investigation,
+        filter: filter,
+      ),
     ),
-    // Type switcher cascades to the mode switcher with selected filter
     strayHandlesTypeSwitcher: (selectedFilter) => CassetteSpec.handles(
-      HandlesCassetteSpec.strayHandlesModeSwitcher(filter: selectedFilter),
+      HandlesCassetteSpec.strayHandlesModeSwitcher(
+        investigation: StrayHandleInvestigation.identifySources,
+        filter: selectedFilter,
+      ),
     ),
+    strayHandlesInvestigationSwitcher: (selectedInvestigation) {
+      return switch (selectedInvestigation) {
+        StrayHandleInvestigation.identifySources => const CassetteSpec.handles(
+          HandlesCassetteSpec.strayHandlesTypeSwitcher(),
+        ),
+        StrayHandleInvestigation.numericSenderIds => const CassetteSpec.handles(
+          HandlesCassetteSpec.strayHandlesModeSwitcher(
+            investigation: StrayHandleInvestigation.numericSenderIds,
+          ),
+        ),
+      };
+    },
   );
 }
 

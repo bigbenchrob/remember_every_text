@@ -2,11 +2,12 @@
 tier: project
 scope: page-track-matrix-rendering
 owner: agent-per-project
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-24
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
   - ./05-anatomy-of-track-cell-rendering.md
+  - ./07-column-specific-shared-track-boundaries.md
   - ../../../lib/config/theme/widgets/layout/page_track_layout_matrix.dart
   - ../../../lib/config/theme/widgets/layout/resolved_track_layout_matrix.dart
 tests:
@@ -62,6 +63,24 @@ resulting feature presentation using the alignment recorded by the page.
 
 It is intentionally unintelligent. It does not infer placement, calculate
 geometry, inspect siblings, or apply feature semantics.
+
+## Column Rendering Lifetime
+
+The resolved matrix may contain more ordinal Tracks than a particular column
+renders before resuming native flow. Page composition declares that column's
+final shared Track explicitly.
+
+The column renderer emits `TrackCellView` instances only through that declared
+boundary. It does not:
+
+- render empty trailing cells through the page's final Track;
+- infer departure from the first empty cell;
+- inspect feature meaning; or
+- change the boundary when transient occupancy changes.
+
+This keeps matrix resolution page-wide while allowing each column to have a
+truthful shared lifetime. The full contract is documented in
+[`07-column-specific-shared-track-boundaries.md`](07-column-specific-shared-track-boundaries.md).
 
 ## Diagnostics
 

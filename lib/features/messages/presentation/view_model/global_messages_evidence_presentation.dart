@@ -8,16 +8,25 @@ final class GlobalMessagesEvidenceHeaderLabels {
   const GlobalMessagesEvidenceHeaderLabels({
     required this.dateRange,
     required this.count,
-    required this.supportingContext,
   });
 
   final String dateRange;
   final String count;
-  final String? supportingContext;
 
   String get metadata {
     return [dateRange, count].where((part) => part.isNotEmpty).join('   ');
   }
+}
+
+/// Prepared semantic state for the current Search investigation status row.
+final class SearchInvestigationStatusPresentationModel {
+  const SearchInvestigationStatusPresentationModel({
+    required this.description,
+    required this.isSearching,
+  });
+
+  final String description;
+  final bool isSearching;
 }
 
 GlobalMessagesEvidenceHeaderLabels globalMessagesEvidenceHeaderLabels({
@@ -41,11 +50,28 @@ GlobalMessagesEvidenceHeaderLabels globalMessagesEvidenceHeaderLabels({
       hasMatchesLoaded: hasMatchesLoaded,
       monthAnchor: monthAnchor,
     ),
-    supportingContext: _supportingContextLabel(
-      query: query,
-      monthAnchor: monthAnchor,
-    ),
   );
+}
+
+SearchInvestigationStatusPresentationModel?
+searchInvestigationStatusPresentationModel({
+  required String query,
+  required DateTime? monthAnchor,
+  required bool isSearching,
+}) {
+  if (query.isNotEmpty) {
+    return SearchInvestigationStatusPresentationModel(
+      description: 'Message text contains "$query"',
+      isSearching: isSearching,
+    );
+  }
+  if (monthAnchor != null) {
+    return const SearchInvestigationStatusPresentationModel(
+      description: 'Selected month',
+      isSearching: false,
+    );
+  }
+  return null;
 }
 
 String _dateRangeLabel({
@@ -91,19 +117,6 @@ String _countLabel({
   }
 
   return CountLabelFormatter.messages(skeleton.totalCount);
-}
-
-String? _supportingContextLabel({
-  required String query,
-  required DateTime? monthAnchor,
-}) {
-  if (query.isNotEmpty) {
-    return 'Message text contains "$query"';
-  }
-  if (monthAnchor != null) {
-    return 'Selected month';
-  }
-  return null;
 }
 
 String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {

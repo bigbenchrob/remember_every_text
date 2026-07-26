@@ -7,7 +7,7 @@ part of 'stray_handles_mode_switcher_resolver.dart';
 // **************************************************************************
 
 String _$strayHandlesModeSwitcherResolverHash() =>
-    r'317d3c854d4d2e3be5fcd0a7e64c246d5eb0310d';
+    r'7404e340632f9f420eacfa46fbd432b1c4fd3d5b';
 
 /// Resolver for the stray handles mode switcher cassette.
 ///

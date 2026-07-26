@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
 import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
@@ -46,30 +48,52 @@ final class MessageEvidenceSearchControlsTrackOccupant
   }
 }
 
-/// Track adapter for the approved one-line Message Evidence scope context.
-final class MessageEvidenceSupportingContextTrackOccupant
-    implements TrackOccupant {
-  const MessageEvidenceSupportingContextTrackOccupant({
-    required this.text,
+/// Track adapter for the current Search investigation status presentation.
+final class SearchInvestigationStatusTrackOccupant implements TrackOccupant {
+  const SearchInvestigationStatusTrackOccupant({
+    required this.description,
+    required this.isSearching,
     required this.style,
   });
 
-  final String text;
+  final String description;
+  final bool isSearching;
   final TextStyle style;
 
   @override
   OccupantDimensionalClaim dimensionalClaim(
     PresentationConstraints constraints,
   ) {
-    final textClaim = TextTrackOccupant(
-      text: text,
-      style: style,
-    ).dimensionalClaim(constraints);
+    final visibleText = description.isEmpty
+        ? 'M'
+        : '$description · Searching...';
+    final textClaim = TextTrackOccupant(text: visibleText, style: style)
+        .dimensionalClaim(
+          PresentationConstraints(
+            availableWidth: math.max(
+              0.0,
+              constraints.availableWidth -
+                  MessageEvidenceHeaderTrackMetrics.searchLeadingSlotWidth -
+                  MessageEvidenceHeaderTrackMetrics.searchLeadingGap -
+                  MessageEvidenceHeaderTrackMetrics
+                      .searchStatusFieldChromeInset,
+            ),
+            textScaler: constraints.textScaler,
+            textDirection: constraints.textDirection,
+            locale: constraints.locale,
+          ),
+        );
     return OccupantDimensionalClaim(
-      naturalHeight:
-          textClaim.naturalHeight +
-          MessageEvidenceHeaderTrackMetrics.supportingContextBottomInset,
-      preferredWidth: textClaim.preferredWidth,
+      naturalHeight: math.max(
+        textClaim.naturalHeight,
+        MessageEvidenceHeaderTrackMetrics.investigationStatusIndicatorRadius *
+            2,
+      ),
+      preferredWidth:
+          MessageEvidenceHeaderTrackMetrics.searchLeadingSlotWidth +
+          MessageEvidenceHeaderTrackMetrics.searchLeadingGap +
+          MessageEvidenceHeaderTrackMetrics.searchStatusFieldChromeInset +
+          (textClaim.preferredWidth ?? 0),
     );
   }
 
@@ -78,16 +102,10 @@ final class MessageEvidenceSupportingContextTrackOccupant
     BuildContext context,
     ResolvedTrackAllocation allocation,
   ) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        bottom: MessageEvidenceHeaderTrackMetrics.supportingContextBottomInset,
-      ),
-      child: Text(
-        text,
-        style: style,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+    return SearchInvestigationStatusPresentation(
+      description: description,
+      isSearching: isSearching,
+      style: style,
     );
   }
 }

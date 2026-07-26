@@ -2,13 +2,15 @@
 tier: project
 scope: cross-column-layout
 owner: agent-per-project
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-24
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
   - ./01-column-band-wrappers.md
   - ./02-sidebar-cassette-content-start-seam.md
   - ./03-search-page-current-implementation.md
+  - ./06-unfamiliar-sources-page-current-implementation.md
+  - ./07-column-specific-shared-track-boundaries.md
   - ./04-design-history-and-cross-references.md
   - ./05-anatomy-of-track-cell-rendering.md
   - ../07-CENTER-PANEL-LAYOUTS/README.md
@@ -46,6 +48,7 @@ using content appropriate to their lens.
 
 - the durable cross-column alignment contract
 - the page matrix, resolved geometry, and complete-cell rendering mechanics
+- column-specific shared Track lifetimes and native-flow continuation
 - the sidebar cassette content-start seam
 - current Search-page application of the contract
 - links to the UI-walk and feature-package history that produced the design
@@ -78,6 +81,12 @@ documentation.
 6. [`05-anatomy-of-track-cell-rendering.md`](05-anatomy-of-track-cell-rendering.md)
    explains the concrete rendering chain from feature preparation through
    complete `CellId` rendering.
+7. [`06-unfamiliar-sources-page-current-implementation.md`](06-unfamiliar-sources-page-current-implementation.md)
+   records how the unfamiliar-source page aligns a cassette sidebar with its
+   selected-source evidence without making either system own the other.
+8. [`07-column-specific-shared-track-boundaries.md`](07-column-specific-shared-track-boundaries.md)
+   defines the general distinction between the final page Track and each
+   column's explicitly declared final shared Track.
 
 ## Relationship To UI Walk
 

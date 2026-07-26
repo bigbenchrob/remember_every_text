@@ -204,6 +204,10 @@ String _trackLabel(TrackId trackId) {
     TrackId.trackC => 'C',
     TrackId.trackD => 'D',
     TrackId.trackE => 'E',
+    TrackId.trackF => 'F',
+    TrackId.trackG => 'G',
+    TrackId.trackH => 'H',
+    TrackId.trackI => 'I',
   };
 }
 

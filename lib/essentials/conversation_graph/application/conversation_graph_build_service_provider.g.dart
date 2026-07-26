@@ -7,7 +7,7 @@ part of 'conversation_graph_build_service_provider.dart';
 // **************************************************************************
 
 String _$conversationGraphBuildServiceHash() =>
-    r'42fe2b741898890c19e62359c6b768abfe41615b';
+    r'1bfb532769844a85372ba1df60b0b13309ac57d4';
 
 /// See also [conversationGraphBuildService].
 @ProviderFor(conversationGraphBuildService)

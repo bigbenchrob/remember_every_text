@@ -57,6 +57,31 @@ void main() {
     expect(profile?.origin, ParticipantOrigin.overlayOverride);
   });
 
+  test('contact profile presents a canonical self contact as Me', () async {
+    await graphDb.database.insert('contacts', <String, Object?>{
+      'contact_id': 9001,
+      'display_name': 'Personal Address Book Name',
+    });
+    await graphDb.database.insert('handles', <String, Object?>{
+      'ss_id': 7001,
+      'id': 'self@example.com',
+      'service': 'iMessage',
+      'is_me': 1,
+    });
+    await graphDb.database.insert('contact_to_handle', <String, Object?>{
+      'contact_id': 9001,
+      'handle_ss_id': 7001,
+      'handle_value': 'self@example.com',
+    });
+    await overlayDb.setParticipantDisplayNameOverride(9001, 'Rob');
+
+    final profile = await container.read(
+      contactProfileProvider(contactId: 9001).future,
+    );
+
+    expect(profile?.displayName, 'Me');
+  });
+
   test('contact profile applies rowid-keyed overlay override', () async {
     const rowidKeyedContactId = 17;
     final graphContactId = SourceScopedRowKey.pack(

@@ -21,6 +21,10 @@ class AppHeaderActionButton extends ConsumerStatefulWidget {
   final bool isEnabled;
   final VoidCallback onPressed;
 
+  static const double iconSize = 13;
+  static const double verticalPadding = 5;
+  static const double borderWidth = 1;
+
   @override
   ConsumerState<AppHeaderActionButton> createState() =>
       _AppHeaderActionButtonState();
@@ -77,15 +81,25 @@ class _AppHeaderActionButtonState extends ConsumerState<AppHeaderActionButton> {
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
             color: backgroundColor,
-            border: Border.all(color: borderColor),
+            border: Border.all(
+              color: borderColor,
+              width: AppHeaderActionButton.borderWidth,
+            ),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: AppHeaderActionButton.verticalPadding,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(widget.icon, size: 13, color: contentColor),
+                Icon(
+                  widget.icon,
+                  size: AppHeaderActionButton.iconSize,
+                  color: contentColor,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   widget.label,

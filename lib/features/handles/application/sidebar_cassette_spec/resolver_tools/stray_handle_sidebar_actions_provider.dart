@@ -36,8 +36,25 @@ class StrayHandleSidebarActions extends _$StrayHandleSidebarActions {
     );
   }
 
-  Future<void> changeMode(StrayHandleMode mode) async {
+  Future<void> changeMode(StrayHandleReviewMode mode) async {
     await _dispatch(StrayHandleModeChanged(mode: _mapMode(mode)));
+  }
+
+  Future<void> changeInvestigation({
+    required StrayHandleInvestigation investigation,
+    required int cassetteIndex,
+  }) async {
+    await ref
+        .read(sidebarActionDispatcherProvider.notifier)
+        .dispatch(
+          intent: StrayHandleInvestigationChanged(
+            investigation: _mapInvestigation(investigation),
+          ),
+          context: SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+            cassetteIndex: cassetteIndex,
+          ),
+        );
   }
 
   Future<void> changeFilter({
@@ -67,11 +84,21 @@ class StrayHandleSidebarActions extends _$StrayHandleSidebarActions {
   }
 }
 
-SidebarStrayHandleMode _mapMode(StrayHandleMode mode) {
+SidebarStrayHandleReviewMode _mapMode(StrayHandleReviewMode mode) {
   return switch (mode) {
-    StrayHandleMode.allStrays => SidebarStrayHandleMode.allStrays,
-    StrayHandleMode.spamCandidates => SidebarStrayHandleMode.spamCandidates,
-    StrayHandleMode.dismissed => SidebarStrayHandleMode.dismissed,
+    StrayHandleReviewMode.active => SidebarStrayHandleReviewMode.active,
+    StrayHandleReviewMode.dismissed => SidebarStrayHandleReviewMode.dismissed,
+  };
+}
+
+SidebarStrayHandleInvestigation _mapInvestigation(
+  StrayHandleInvestigation investigation,
+) {
+  return switch (investigation) {
+    StrayHandleInvestigation.identifySources =>
+      SidebarStrayHandleInvestigation.identifySources,
+    StrayHandleInvestigation.numericSenderIds =>
+      SidebarStrayHandleInvestigation.numericSenderIds,
   };
 }
 

@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-20
+last_reviewed: 2026-07-19
 source_of_truth: doc
 links:
       - ./02-import-migration-schema-reference.md
@@ -11,6 +11,7 @@ links:
       - ./20-migration-orchestrator.md
       - ./30-incremental-mode-flag.md
       - ../10-DATABASES/00-all-databases-accessed.md
+      - ../10-DATABASES/12-identity-model-contacts-handles-participants.md
 tests: []
 ---
 
@@ -57,6 +58,7 @@ is the ordinary live-sync, archive-source metadata, or user-facing read spine.
 |-----------|---------|
 | `ChatDbChangeMonitor` | Polls `MAX(ROWID)` from `chat.db`; triggers source-scoped graph build on change |
 | Source-scoped graph build lifecycle | Imports source facts into `macos_import_ss.db` and projects canonical graph rows into `working_ss.db` |
+| Local-account identity reconciliation | At startup, scans historical Messages account/destination metadata, annotates matching imported handles, and projects only changed `is_me` graph facts without reimporting messages |
 | Graph/message data version providers | Bumped after successful graph import/projection so UI providers refresh without closing Drift connections |
 | `AttachmentArchiveService` | Orchestrates live graph archive runs and periodic graph sweeps; graph reads, overlay writes, archive settings, and filesystem work remain behind named attachment-feature ports |
 
@@ -65,6 +67,11 @@ is the ordinary live-sync, archive-source metadata, or user-facing read spine.
 See `10-import-orchestrator.md` for the current `ChatDbChangeMonitor`
 runbook and retired importer mechanics. Do not use the historical retired
 importer sections as live-sync guidance.
+
+The monitor remains an orchestration client. Historical local-account
+reconciliation is exposed through the Conversation Graph build service and
+runs under the same execution authority as other graph mutations; the monitor
+must not compose importer and projector internals itself.
 
 ## Retired Storage Reference Flow
 

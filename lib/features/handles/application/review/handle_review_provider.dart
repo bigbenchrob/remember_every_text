@@ -9,8 +9,11 @@ import '../../infrastructure/repositories/overlay_handle_review_store.dart';
 import '../read_models/handle_display_name_provider.dart';
 import '../read_models/stray_handles_provider.dart'
     show
+        dismissedNumericSenderIdHandlesProvider,
+        dismissedUnknownSourceIdentificationHandlesProvider,
         dismissedHandlesProvider,
-        spamCandidateHandlesProvider,
+        numericSenderIdHandlesProvider,
+        unknownSourceIdentificationHandlesProvider,
         strayHandlesProvider;
 import 'handle_review_controller.dart';
 import 'handle_review_store.dart';
@@ -38,21 +41,38 @@ class HandleReviewActions extends _$HandleReviewActions {
   Future<void> dismissUnfamiliarHandle(String normalizedHandle) async {
     final store = await ref.watch(handleReviewStoreProvider.future);
     await store.dismissHandle(normalizedHandle);
-    _invalidateHandleReviewReads();
+    ref
+        .read(strayHandlesProvider.notifier)
+        .removeDismissedSource(normalizedHandle);
+    _invalidateDismissedHandleReads();
   }
 
   Future<void> restoreUnfamiliarHandle(String normalizedHandle) async {
     final store = await ref.watch(handleReviewStoreProvider.future);
     await store.restoreHandle(normalizedHandle);
-    _invalidateHandleReviewReads();
+    ref
+        .read(dismissedHandlesProvider.notifier)
+        .removeRestoredSource(normalizedHandle);
+    _invalidateActiveHandleReads();
   }
 
   void _invalidateHandleReviewReads({int? handleId}) {
-    ref.invalidate(strayHandlesProvider);
-    ref.invalidate(spamCandidateHandlesProvider);
-    ref.invalidate(dismissedHandlesProvider);
+    _invalidateActiveHandleReads();
+    _invalidateDismissedHandleReads();
     if (handleId != null) {
       ref.invalidate(handleDisplayNameProvider(handleId: handleId));
     }
+  }
+
+  void _invalidateActiveHandleReads() {
+    ref.invalidate(strayHandlesProvider);
+    ref.invalidate(unknownSourceIdentificationHandlesProvider);
+    ref.invalidate(numericSenderIdHandlesProvider);
+  }
+
+  void _invalidateDismissedHandleReads() {
+    ref.invalidate(dismissedHandlesProvider);
+    ref.invalidate(dismissedUnknownSourceIdentificationHandlesProvider);
+    ref.invalidate(dismissedNumericSenderIdHandlesProvider);
   }
 }

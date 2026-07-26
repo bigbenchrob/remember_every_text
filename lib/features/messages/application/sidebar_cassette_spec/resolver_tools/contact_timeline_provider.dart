@@ -10,6 +10,7 @@ import '../../../../../essentials/conversation_graph/feature_level_providers.dar
 import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
 import '../../../domain/calendar_heatmap_timeline_data.dart';
+import '../../message_evidence/contact_evidence_cache_policy.dart';
 
 part 'contact_timeline_provider.g.dart';
 
@@ -25,6 +26,7 @@ Future<CalendarHeatmapTimelineData?> contactTimeline(
   int? filterHandleId,
 }) async {
   ref.watch(messageDataVersionProvider);
+  retainPreparedContactEvidence(ref);
 
   return filterHandleId == null
       ? _readGraphContactTimeline(ref, contactId: contactId)

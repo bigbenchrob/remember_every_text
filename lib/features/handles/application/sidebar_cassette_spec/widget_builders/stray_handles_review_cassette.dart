@@ -8,38 +8,36 @@ import '../../../../../../config/theme/theme_typography.dart';
 import '../../../../../../essentials/sidebar/feature_level_providers.dart'
     show sidebarFlowProvider;
 import '../../../../sidebar_utilities/domain/sidebar_utilities_constants.dart';
+import '../../../domain/entities/stray_handle_endpoint_kind.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
 import '../../read_models/stray_handle_summary.dart';
 import '../../read_models/stray_handles_provider.dart';
 import '../resolver_tools/stray_handle_sidebar_actions_provider.dart';
 
-/// Sidebar cassette that displays a scrollable list of stray handles,
-/// filtered by phone numbers or email addresses.
+/// Sidebar cassette that displays a scrollable list for one unfamiliar-source
+/// investigation.
 ///
 /// Each row shows the handle value, message count, and last message date.
 /// Reviewed-but-unlinked handles are visually muted. Tapping a row
 /// dispatches a semantic sidebar action; center evidence derives from
 /// SidebarFlowState.
 ///
-/// Mode support:
-/// - [StrayHandleMode.allStrays]: Shows all stray handles (default)
-/// - [StrayHandleMode.spamCandidates]: Shows only high junk-score handles
-/// - [StrayHandleMode.dismissed]: Shows dismissed handles for recovery
 class StrayHandlesReviewCassette extends HookConsumerWidget {
   const StrayHandlesReviewCassette({
+    required this.investigation,
     required this.filter,
     required this.mode,
     super.key,
   });
 
-  /// Fixed-width trailing gutter for action buttons.
-  /// All rows reserve this space — data stops, action buttons live here.
+  /// Fixed-width trailing gutter for the recovery action in dismissed mode.
   /// 32pt = 24pt button + 4pt padding on each side.
   static const double actionGutterWidth = 32;
   static const double _contentLaneInset = 8;
 
-  final StrayHandleFilter filter;
-  final StrayHandleMode mode;
+  final StrayHandleInvestigation investigation;
+  final StrayHandleFilter? filter;
+  final StrayHandleReviewMode mode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,23 +46,38 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
     final typography = ref.watch(themeTypographyProvider);
     final actions = ref.read(strayHandleSidebarActionsProvider.notifier);
 
-    // Select provider based on mode
     final asyncHandles = switch (mode) {
-      StrayHandleMode.allStrays => ref.watch(strayHandlesProvider),
-      StrayHandleMode.spamCandidates => ref.watch(spamCandidateHandlesProvider),
-      StrayHandleMode.dismissed => ref.watch(dismissedHandlesProvider),
+      StrayHandleReviewMode.active => switch (investigation) {
+        StrayHandleInvestigation.identifySources => ref.watch(
+          unknownSourceIdentificationHandlesProvider,
+        ),
+        StrayHandleInvestigation.numericSenderIds => ref.watch(
+          numericSenderIdHandlesProvider,
+        ),
+      },
+      StrayHandleReviewMode.dismissed => switch (investigation) {
+        StrayHandleInvestigation.identifySources => ref.watch(
+          dismissedUnknownSourceIdentificationHandlesProvider,
+        ),
+        StrayHandleInvestigation.numericSenderIds => ref.watch(
+          dismissedNumericSenderIdHandlesProvider,
+        ),
+      },
     };
 
     return asyncHandles.when(
       data: (handles) {
         final filtered = _applyFilter(handles);
+        final rowActionGutterWidth = mode == StrayHandleReviewMode.dismissed
+            ? StrayHandlesReviewCassette.actionGutterWidth
+            : 0.0;
 
         final activeHandleId = ref.watch(
           sidebarFlowProvider.select((state) {
             if (state.topMenuChoice != TopChatMenuChoice.strayHandles) {
               return null;
             }
-            return state.selectedHandleEvidenceId;
+            return state.effectiveSelectedHandleEvidenceId;
           }),
         );
 
@@ -89,22 +102,19 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
           // and handle its own scrolling.
           padding: EdgeInsets.zero,
           itemCount: filtered.length,
-          separatorBuilder: (_, __) => const Divider(
+          separatorBuilder: (_, __) => Divider(
             height: 1,
             indent: _contentLaneInset,
-            endIndent: actionGutterWidth,
+            endIndent: rowActionGutterWidth,
           ),
           itemBuilder: (context, index) {
             final handle = filtered[index];
             return _StrayHandleRow(
               handle: handle,
-              mode: mode,
+              actionGutterWidth: rowActionGutterWidth,
               isSelected: handle.handleId == activeHandleId,
               onTap: () => actions.openHandleLens(handleId: handle.handleId),
-              onDismiss: mode != StrayHandleMode.dismissed
-                  ? () => actions.dismissHandle(handle)
-                  : null,
-              onRestore: mode == StrayHandleMode.dismissed
+              onRestore: mode == StrayHandleReviewMode.dismissed
                   ? () => actions.restoreHandle(handle)
                   : null,
             );
@@ -126,43 +136,47 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
   }
 
   List<StrayHandleSummary> _applyFilter(List<StrayHandleSummary> handles) {
-    return switch (filter) {
+    final selectedFilter = filter;
+    if (selectedFilter == null) {
+      return handles;
+    }
+
+    return switch (selectedFilter) {
       // Business URNs start with 'urn:'
-      StrayHandleFilter.businessUrns =>
-        handles.where((h) => h.handleValue.startsWith('urn:')).toList(),
+      StrayHandleFilter.businessUrns => handles.where((handle) {
+        return handle.endpointKind == StrayHandleEndpointKind.businessUrn;
+      }).toList(),
       // Emails contain '@'
-      StrayHandleFilter.emails =>
-        handles.where((h) => h.handleValue.contains('@')).toList(),
+      StrayHandleFilter.emails => handles.where((handle) {
+        return handle.endpointKind == StrayHandleEndpointKind.emailAddress;
+      }).toList(),
       // Phones: no '@', no 'urn:' prefix
       StrayHandleFilter.phones =>
         handles
             .where(
-              (h) =>
-                  !h.handleValue.contains('@') &&
-                  !h.handleValue.startsWith('urn:'),
+              (handle) =>
+                  handle.endpointKind == StrayHandleEndpointKind.phoneNumber ||
+                  handle.endpointKind == StrayHandleEndpointKind.other,
             )
             .toList(),
     };
   }
 
   String get _emptyMessage => switch (mode) {
-    StrayHandleMode.allStrays => switch (filter) {
-      StrayHandleFilter.phones =>
-        'No unfamiliar phone numbers found.\nAll are linked to contacts.',
-      StrayHandleFilter.emails =>
-        'No unfamiliar email addresses found.\nAll are linked to contacts.',
-      StrayHandleFilter.businessUrns =>
-        'No unfamiliar business accounts found.\nAll are linked to contacts.',
+    StrayHandleReviewMode.active => switch (investigation) {
+      StrayHandleInvestigation.numericSenderIds =>
+        'No numeric sender IDs require review.',
+      StrayHandleInvestigation.identifySources => switch (filter) {
+        StrayHandleFilter.phones =>
+          'No unfamiliar phone numbers found.\nAll are linked to contacts.',
+        StrayHandleFilter.emails =>
+          'No unfamiliar email addresses found.\nAll are linked to contacts.',
+        StrayHandleFilter.businessUrns =>
+          'No unfamiliar business accounts found.\nAll are linked to contacts.',
+        null => 'No unfamiliar sources require identification.',
+      },
     },
-    StrayHandleMode.spamCandidates => switch (filter) {
-      StrayHandleFilter.phones =>
-        'No spam candidates.\nNo short codes or one-off messages detected.',
-      StrayHandleFilter.emails =>
-        'No spam candidates.\nNo one-off email addresses detected.',
-      StrayHandleFilter.businessUrns =>
-        'No spam candidates.\nNo one-off business accounts detected.',
-    },
-    StrayHandleMode.dismissed =>
+    StrayHandleReviewMode.dismissed =>
       'No dismissed items.\nItems you dismiss will appear here.',
   };
 }
@@ -170,18 +184,16 @@ class StrayHandlesReviewCassette extends HookConsumerWidget {
 class _StrayHandleRow extends ConsumerWidget {
   const _StrayHandleRow({
     required this.handle,
-    required this.mode,
+    required this.actionGutterWidth,
     required this.isSelected,
     required this.onTap,
-    this.onDismiss,
     this.onRestore,
   });
 
   final StrayHandleSummary handle;
-  final StrayHandleMode mode;
+  final double actionGutterWidth;
   final bool isSelected;
   final VoidCallback onTap;
-  final VoidCallback? onDismiss;
   final VoidCallback? onRestore;
 
   @override
@@ -193,18 +205,6 @@ class _StrayHandleRow extends ConsumerWidget {
     final isReviewed = handle.reviewedAt != null;
     final contentAlpha = isReviewed ? 0.5 : 1.0;
 
-    // Show spam indicator for high junk scores in all modes
-    final showSpamBadge =
-        handle.junkScore >= 3 && mode != StrayHandleMode.dismissed;
-
-    final spamTint = colors.buttons.destructiveForeground;
-
-    // Show dismiss button for spam candidates
-    final showDismiss =
-        onDismiss != null &&
-        (mode == StrayHandleMode.spamCandidates || handle.junkScore >= 3);
-
-    // Show restore button for dismissed mode
     final showRestore = onRestore != null;
 
     return GestureDetector(
@@ -217,7 +217,7 @@ class _StrayHandleRow extends ConsumerWidget {
           if (isSelected)
             Positioned.fill(
               left: StrayHandlesReviewCassette._contentLaneInset,
-              right: StrayHandlesReviewCassette.actionGutterWidth,
+              right: actionGutterWidth,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: colors.accents.primary.withValues(alpha: 0.12),
@@ -225,68 +225,27 @@ class _StrayHandleRow extends ConsumerWidget {
               ),
             ),
           // Data container: no left padding (card wrapper provides inset)
-          // Fixed right inset reserves action gutter for all rows
+          // Dismissed rows reserve a recovery-action gutter.
           Padding(
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               left: StrayHandlesReviewCassette._contentLaneInset,
-              right: StrayHandlesReviewCassette.actionGutterWidth,
+              right: actionGutterWidth,
               top: 8,
               bottom: 8,
             ),
             child: Row(
               children: [
-                // Handle value (with optional spam badge)
                 Expanded(
-                  child: Row(
-                    children: [
-                      if (showSpamBadge) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            // Warning tint for spam badge
-                            color: spamTint.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                          child: Text(
-                            'SPAM',
-                            style: typography.caption.copyWith(
-                              // Warning color for spam badge text
-                              color: spamTint.withValues(alpha: 0.75),
-                              fontSize: 8,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                      Expanded(
-                        child: Text(
-                          handle.handleValue,
-                          style: typography.body.copyWith(
-                            // Spam rows: tint handle with warning color
-                            // Normal rows: standard primary text
-                            color: showSpamBadge
-                                ? spamTint.withValues(
-                                    alpha: contentAlpha * 0.85,
-                                  )
-                                : colors.content.textPrimary.withValues(
-                                    alpha: contentAlpha,
-                                  ),
-                            // Spam: slightly lighter weight (less substantial)
-                            // Normal: medium weight
-                            fontWeight: showSpamBadge
-                                ? FontWeight.w400
-                                : FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  child: Text(
+                    handle.handleValue,
+                    style: typography.body.copyWith(
+                      color: colors.content.textPrimary.withValues(
+                        alpha: contentAlpha,
                       ),
-                    ],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
 
@@ -339,16 +298,14 @@ class _StrayHandleRow extends ConsumerWidget {
 
           // Action button overlay (outside data flow)
           // Nudged up 2pt to align with count/date cluster
-          if (showDismiss || showRestore)
+          if (showRestore)
             Positioned(
               right: 0,
               top: 0,
               bottom: 2,
               child: Align(
                 alignment: Alignment.centerRight,
-                child: showDismiss
-                    ? _DismissButton(onPressed: onDismiss!, colors: colors)
-                    : _RestoreButton(onPressed: onRestore!, colors: colors),
+                child: _RestoreButton(onPressed: onRestore!, colors: colors),
               ),
             ),
         ],
@@ -369,73 +326,6 @@ class _StrayHandleRow extends ConsumerWidget {
     } else {
       return DateFormat.yMMMd().format(date);
     }
-  }
-}
-
-/// Dismiss button with destructive styling and hover state.
-class _DismissButton extends StatefulWidget {
-  const _DismissButton({required this.onPressed, required this.colors});
-
-  final VoidCallback onPressed;
-  final ThemeColors colors;
-
-  @override
-  State<_DismissButton> createState() => _DismissButtonState();
-}
-
-class _DismissButtonState extends State<_DismissButton> {
-  bool _isHovered = false;
-  bool _isPressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final destructiveColor = widget.colors.buttons.destructiveForeground;
-    final neutralColor = widget.colors.content.textTertiary;
-
-    // Background: neutral at rest, slight darkening on hover/press
-    final bgColor = _isPressed
-        ? neutralColor.withValues(alpha: 0.18)
-        : _isHovered
-        ? neutralColor.withValues(alpha: 0.12)
-        : neutralColor.withValues(alpha: 0.08);
-
-    // Border: subtle at rest, slightly stronger on interaction
-    final borderColor = _isPressed
-        ? neutralColor.withValues(alpha: 0.35)
-        : _isHovered
-        ? neutralColor.withValues(alpha: 0.28)
-        : neutralColor.withValues(alpha: 0.20);
-
-    final iconColor = _isPressed
-        ? destructiveColor
-        : _isHovered
-        ? destructiveColor.withValues(alpha: 0.95)
-        : destructiveColor.withValues(alpha: 0.75);
-
-    return Tooltip(
-      message: 'Dismiss handle',
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: GestureDetector(
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) => setState(() => _isPressed = false),
-          onTapCancel: () => setState(() => _isPressed = false),
-          onTap: widget.onPressed,
-          child: Container(
-            // Larger hit area for button-like feel
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: borderColor, width: 0.5),
-            ),
-            child: Icon(CupertinoIcons.xmark, size: 10, color: iconColor),
-          ),
-        ),
-      ),
-    );
   }
 }
 

@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-05
+last_reviewed: 2026-07-19
 source_of_truth: doc
 links:
   - ./01-db-import.md
@@ -12,6 +12,7 @@ links:
   - ./11-contact-to-chat-linking.md
   - ../15-MACOS-SOURCE-DATABASES/00-overview.md
   - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
+  - ../20-DATA-IMPORT-MIGRATION/01-overview.md
   - ../40-FEATURES/README.md
   - ../40-FEATURES/contact-names/VIRTUAL_PARTICIPANTS.md
   - ../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/00-overview.md
@@ -116,6 +117,48 @@ AddressBook `Z_PK`. That may help interpret old retired files, but it is not
 the production identity authority for graph-era app behavior.
 
 Canonical handles remain first-class endpoint identities. Unlinked handles may exist without a contact identity. UI and feature code must route identity through display identity read models when operating on people, and through canonical handles only when the workflow is explicitly handle-focused.
+
+### Local account handles
+
+Source-scoped handle rows may record whether an endpoint belongs to the local
+Messages account. This is imported source evidence, not user intent. The live
+source scan derives it from account identities such as `chat.account_login`
+and incoming `message.destination_caller_id`; `message.is_from_me` constrains
+direction but does not by itself establish identity.
+
+Startup performs a metadata-only reconciliation across the complete historical
+source. It updates existing source-scoped handle annotations and projects only
+the changed `is_me` facts; it does not reimport messages. Handle comparison uses
+the canonical endpoint grouping key, so equivalent North American forms such
+as `+16046858506`, `tel:+16046858506`, and `(604) 685-8506` identify the same
+local endpoint. Empty typed account values such as `E:` do not establish a
+handle identity.
+
+The live-change monitor requests this reconciliation through the Conversation
+Graph build service and its existing execution gate. It does not reach into an
+importer or projector directly. When reconciliation changes graph facts, the
+normal message-data version boundary is advanced so read models refresh without
+reopening database connections.
+
+The fact is projected to graph handles and consumed by the shared display
+identity resolver. A one-to-one Conversation whose endpoint is a local account
+handle is a self-conversation. Presentation consumes that prepared fact rather
+than comparing personal names or guessing from message direction.
+
+Local-account identity outranks imported contact names, manual display-name
+overrides, and raw endpoint labels in ordinary relationship presentation. The
+first-person grammar is:
+
+- `Me` in titles and participant lists;
+- `me` inside prose-like message metadata;
+- `self` for a relationship containing only the local user.
+
+This grammar is resolved before widgets render. Conversation cards, Contact
+summaries and profiles, handle-scoped evidence headers, sender identities, and
+Conversation evidence titles must consume the same display identity result.
+Raw local endpoints and imported personal names may remain visible as
+provenance in explicit handle-management, source-inspection, or identity-editing
+surfaces; they are not ordinary browsing labels.
 
 ## 4. Contacts vs Participants
 
@@ -229,13 +272,17 @@ Search:
 
 Display names may come from:
 
-1. overlay display-name override
-2. overlay virtual contact/participant display name
-3. graph contact/imported AddressBook display identity
-4. stable conversation participant label
-5. fallback canonical handle display or normalized identifier
+1. canonical local-account identity (`Me` / `me` / `self`, according to context)
+2. overlay display-name override
+3. overlay virtual contact/participant display name
+4. graph contact/imported AddressBook display identity
+5. stable conversation participant label
+6. fallback canonical handle display or normalized identifier
 
-Display name resolution order for known contact UI is: user override -> graph/imported contact name -> fallback handle. Raw handles should be primary only for unknown/unlinked handle workflows or explicit handle scopes.
+Outside local-account identity, display name resolution order for known contact
+UI is: user override -> graph/imported contact name -> fallback handle. Raw
+handles should be primary only for unknown/unlinked handle workflows or
+explicit handle scopes.
 
 There is no separate user-facing short-name or nickname identity. The only user-authored contact name override is the name edited through the contact hero card and stored as `participant_overrides.display_name_override`.
 
@@ -263,6 +310,8 @@ Spec → Coordinator → Resolver → Payload / ViewModel → Rendering
 - Do not treat handles as people.
 - Do not treat contacts as the app identity authority.
 - Do not derive identity from display names, short names, nicknames, or search strings.
+- Do not allow a personal contact name or user override to supersede canonical
+  local-account identity in ordinary relationship presentation.
 - Do not assume contact linkage exists for a handle.
 - Do not assume one contact means one handle or one handle means one contact.
 - Do not bypass graph/display identity read models in contact-scoped UI or features.

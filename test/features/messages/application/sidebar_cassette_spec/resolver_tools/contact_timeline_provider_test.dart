@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/message_data_version_provider.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/resolver_tools/contact_timeline_provider.dart';
 
 void main() {
@@ -84,4 +85,57 @@ void main() {
     expect(months['2026-5'], 0);
     expect(months['2026-6'], 1);
   });
+
+  test(
+    'retains a prepared contact timeline across category switches',
+    () async {
+      var readCount = 0;
+      final container = ProviderContainer(
+        overrides: [
+          contactPageGraphSnapshotProvider(contactId: 24).overrideWith((
+            ref,
+          ) async {
+            ref.watch(messageDataVersionProvider);
+            readCount += 1;
+            return const ContactGraphSnapshot(
+              contactId: 24,
+              conversations: <ConversationOverview>[],
+              messageActivity: ContactMessageActivity(
+                firstMessageAtUtc: '2026-04-10T10:00:00.000Z',
+                lastMessageAtUtc: '2026-04-10T10:00:00.000Z',
+                monthCounts: <ContactMessageMonthCount>[
+                  ContactMessageMonthCount(
+                    year: 2026,
+                    month: 4,
+                    messageCount: 1,
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final firstSubscription = container.listen(
+        contactTimelineProvider(contactId: 24),
+        (_, __) {},
+      );
+      await container.read(contactTimelineProvider(contactId: 24).future);
+      firstSubscription.close();
+      await Future<void>.delayed(Duration.zero);
+
+      final secondSubscription = container.listen(
+        contactTimelineProvider(contactId: 24),
+        (_, __) {},
+      );
+      await container.read(contactTimelineProvider(contactId: 24).future);
+      expect(readCount, 1);
+
+      container.read(messageDataVersionProvider.notifier).bump();
+      await container.read(contactTimelineProvider(contactId: 24).future);
+      expect(readCount, 2);
+      secondSubscription.close();
+    },
+  );
 }

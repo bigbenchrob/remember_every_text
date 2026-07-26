@@ -7,7 +7,7 @@ part of 'conversation_excerpt_navigation_actions_provider.dart';
 // **************************************************************************
 
 String _$conversationExcerptNavigationActionsHash() =>
-    r'27358e2997be9baa0d7e2d26cbe8608dd32f553d';
+    r'be4e8fb190c7c925d5c5e9372c87b9b59cbe4031';
 
 /// See also [ConversationExcerptNavigationActions].
 @ProviderFor(ConversationExcerptNavigationActions)

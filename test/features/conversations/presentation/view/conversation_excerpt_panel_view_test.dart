@@ -16,6 +16,37 @@ import 'package:remember_this_text/features/messages/domain/message_evidence/mes
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
 
 void main() {
+  test('reads temporal orientation from the exact anchor message', () async {
+    final conversationId = _liveChatGraphId(12);
+    final anchorGraphId = _liveChatGraphId(500);
+    final anchorMessage = _message(
+      id: anchorGraphId,
+      text: 'Anchor message',
+      conversationId: conversationId,
+    );
+    final repository = _FakeMessageGraphRepository(
+      contextTimeline: const [],
+      messagesById: {anchorGraphId: anchorMessage},
+    );
+    final container = ProviderContainer(
+      overrides: [
+        messageGraphReaderProvider.overrideWith((ref) async {
+          return MessageGraphReader(repository: repository);
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final anchorDate = await container.read(
+      conversationExcerptAnchorDateProvider(
+        conversationId: conversationId,
+        anchorMessageId: anchorGraphId,
+      ).future,
+    );
+
+    expect(anchorDate, DateTime.utc(2026, 4, 11, 12));
+  });
+
   testWidgets('renders conversation excerpt through message evidence spine', (
     tester,
   ) async {
@@ -126,10 +157,12 @@ void main() {
 
     await tester.pumpAndSettle();
 
+    expect(find.text('Conversation excerpt'), findsOneWidget);
     expect(find.text('Alex and Casey +2'), findsOneWidget);
+    expect(find.text('April 2026'), findsOneWidget);
     expect(
       find.text('21-message excerpt centered on the chosen message'),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.text('Message context'), findsNothing);
     expect(find.text('Anchor message'), findsOneWidget);
@@ -151,9 +184,14 @@ MessageEvidenceRowData _rowData(ConversationMessage message) {
   );
 }
 
-ConversationMessage _message({required int id, required String text}) {
+ConversationMessage _message({
+  required int id,
+  required String text,
+  int? conversationId,
+}) {
   return ConversationMessage(
     messageId: id,
+    conversationId: conversationId,
     dateUtc: '2026-04-11T12:00:00.000Z',
     isFromMe: false,
     text: text,

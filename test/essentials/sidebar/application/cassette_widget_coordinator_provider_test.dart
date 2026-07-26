@@ -63,6 +63,7 @@ void main() {
           .setRackForTesting([
             const CassetteSpec.handles(
               HandlesCassetteSpec.strayHandlesReview(
+                investigation: StrayHandleInvestigation.identifySources,
                 filter: StrayHandleFilter.phones,
               ),
             ),
@@ -80,12 +81,12 @@ void main() {
       );
       expect(
         _strayHandlesReviewPayload(initialWidgets).mode,
-        StrayHandleMode.allStrays,
+        StrayHandleReviewMode.active,
       );
 
       container
-          .read(strayHandleModeSettingProvider.notifier)
-          .setMode(StrayHandleMode.spamCandidates);
+          .read(strayHandleReviewModeSettingProvider.notifier)
+          .setMode(StrayHandleReviewMode.dismissed);
 
       final updatedWidgets = await _resolveSidebarCassettes(
         container,
@@ -93,7 +94,7 @@ void main() {
       );
       expect(
         _strayHandlesReviewPayload(updatedWidgets).mode,
-        StrayHandleMode.spamCandidates,
+        StrayHandleReviewMode.dismissed,
       );
     });
 
@@ -105,6 +106,7 @@ void main() {
             .setRackForTesting([
               const CassetteSpec.handles(
                 HandlesCassetteSpec.strayHandlesModeSwitcher(
+                  investigation: StrayHandleInvestigation.identifySources,
                   filter: StrayHandleFilter.phones,
                 ),
               ),
@@ -116,12 +118,12 @@ void main() {
         );
         expect(
           _strayHandlesModeSwitcherPayload(initialWidgets).mode,
-          StrayHandleMode.allStrays,
+          StrayHandleReviewMode.active,
         );
 
         container
-            .read(strayHandleModeSettingProvider.notifier)
-            .setMode(StrayHandleMode.dismissed);
+            .read(strayHandleReviewModeSettingProvider.notifier)
+            .setMode(StrayHandleReviewMode.dismissed);
 
         final updatedWidgets = await _resolveSidebarCassettes(
           container,
@@ -129,7 +131,7 @@ void main() {
         );
         expect(
           _strayHandlesModeSwitcherPayload(updatedWidgets).mode,
-          StrayHandleMode.dismissed,
+          StrayHandleReviewMode.dismissed,
         );
       },
     );

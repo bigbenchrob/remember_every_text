@@ -27,6 +27,7 @@ import 'package:remember_this_text/features/conversations/domain/spec_classes/co
 import 'package:remember_this_text/features/environment_readiness/domain/spec_classes/environment_readiness_view_spec.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/coordinators/view_spec_coordinator.dart'
     as messages_view_spec;
+import 'package:remember_this_text/features/messages/domain/search_investigation_id.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/settings/application/view_spec/coordinators/view_spec_coordinator.dart'
     as settings_view_spec;
@@ -148,6 +149,7 @@ void main() {
               payload: StaticFeatureInfoSidebarCassettePayload(
                 bodyText: 'cassette-content',
               ),
+              topSpacing: 24,
             ),
           ],
           expectedVisibleCount: 2,
@@ -175,7 +177,201 @@ void main() {
         expect(find.text('matrix-top-menu'), findsOneWidget);
         expect(find.text('legacy-top-menu'), findsNothing);
         expect(find.text('cassette-content'), findsOneWidget);
-        expect(find.byType(TrackCellView), findsWidgets);
+        expect(_renderedTrackCellIds(tester), const [
+          CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column1),
+          CellId(trackId: TrackId.trackE, columnId: TrackColumnId.column1),
+          CellId(trackId: TrackId.trackF, columnId: TrackColumnId.column1),
+        ]);
+        final contentTopWithCassetteSpacing = tester
+            .getTopLeft(find.text('cassette-content'))
+            .dy;
+
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'legacy-top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: infoSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'cassette-content',
+              ),
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
+        );
+        await tester.pump();
+
+        expect(
+          tester.getTopLeft(find.text('cassette-content')).dy,
+          contentTopWithCassetteSpacing,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        resolutionSubscription.close();
+        rackSubscription.close();
+        await tester.idle();
+        container.dispose();
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'unfamiliar sources resumes cassette flow after A1 with coordinator spacing',
+      (tester) async {
+        const topMenuSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(
+            selectedChoice: TopChatMenuChoice.strayHandles,
+          ),
+        );
+        const firstControlSpec = CassetteSpec.contactsInfo(
+          ContactsInfoCassetteSpec.infoCard(
+            key: ContactsInfoKey.pickerContentSources,
+          ),
+        );
+        const secondControlSpec = CassetteSpec.contacts(
+          ContactsCassetteSpec.contactHeroSummary(chosenContactId: 42),
+        );
+        const listSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.settingsMenu(),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
+            ),
+            ...cassetteRackTestHarnessOverrides(),
+            sidebarCassetteResolutionStateProvider(
+              SidebarMode.messages,
+            ).overrideWith((ref) {
+              return ref.watch(_testSidebarResolutionStateProvider);
+            }),
+          ],
+        );
+        final rackSubscription = container.listen(
+          cassetteRackStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        final resolutionSubscription = container.listen(
+          sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        container
+            .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+            .setRackForTesting([
+              topMenuSpec,
+              firstControlSpec,
+              secondControlSpec,
+              listSpec,
+            ]);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'legacy-top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: firstControlSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'investigation-control',
+                role: SidebarCassetteRole.filter,
+              ),
+              topSpacing: 24,
+            ),
+            ResolvedSidebarCassette(
+              spec: secondControlSpec,
+              cassetteIndex: 2,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'filter-control',
+                role: SidebarCassetteRole.filter,
+              ),
+              topSpacing: 12,
+            ),
+            ResolvedSidebarCassette(
+              spec: listSpec,
+              cassetteIndex: 3,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'source-list',
+              ),
+            ),
+          ],
+          expectedVisibleCount: 4,
+          isLoading: false,
+        );
+
+        Future<void> pumpSidebar(ResolvedTrackLayoutMatrix matrix) async {
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: ResolvedTrackLayoutMatrixScope(
+                  matrix: matrix,
+                  child: const SizedBox(
+                    width: 320,
+                    height: 600,
+                    child: LeftPanelHost(mode: SidebarMode.messages),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+        }
+
+        await pumpSidebar(_testUnfamiliarSourcesSidebarMatrix(selected: false));
+        expect(find.text('matrix-top-menu'), findsOneWidget);
+        expect(find.text('legacy-top-menu'), findsNothing);
+        expect(find.text('investigation-control'), findsOneWidget);
+        expect(find.text('filter-control'), findsOneWidget);
+        expect(find.text('source-list'), findsOneWidget);
+        expect(_renderedTrackCellIds(tester), const [
+          CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column1),
+        ]);
+        final trackABottom = tester
+            .getBottomLeft(find.byType(TrackCellView))
+            .dy;
+        final groupedControlsTop = tester
+            .getTopLeft(find.byType(SidebarGroupedControlSectionSurface))
+            .dy;
+        expect(groupedControlsTop - trackABottom, 24);
+        final idleFilterTop = tester
+            .getTopLeft(find.text('investigation-control'))
+            .dy;
+
+        await pumpSidebar(_testUnfamiliarSourcesSidebarMatrix(selected: true));
+        final selectedFilterTop = tester
+            .getTopLeft(find.text('investigation-control'))
+            .dy;
+        expect(selectedFilterTop, idleFilterTop);
+        expect(_renderedTrackCellIds(tester), const [
+          CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column1),
+        ]);
+
+        await pumpSidebar(_testUnfamiliarSourcesSidebarMatrix(selected: false));
+        final clearedFilterTop = tester
+            .getTopLeft(find.text('investigation-control'))
+            .dy;
+        expect(clearedFilterTop, idleFilterTop);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -904,6 +1100,7 @@ void main() {
               ConversationsSpec.conversationExcerpt(
                 conversationId: 5,
                 anchorMessageId: 99,
+                originatingInvestigationId: SearchInvestigationId(0),
               ),
             ),
           );
@@ -915,6 +1112,7 @@ void main() {
             ConversationsSpec.conversationExcerpt(
               conversationId: 5,
               anchorMessageId: 99,
+              originatingInvestigationId: SearchInvestigationId(0),
             ),
           ),
         ),
@@ -943,6 +1141,7 @@ void main() {
                 ConversationsSpec.conversationExcerpt(
                   conversationId: 5,
                   anchorMessageId: 99,
+                  originatingInvestigationId: SearchInvestigationId(0),
                 ),
               ),
             );
@@ -988,6 +1187,7 @@ void main() {
               ConversationsSpec.conversationExcerpt(
                 conversationId: 5,
                 anchorMessageId: 99,
+                originatingInvestigationId: SearchInvestigationId(0),
               ),
             ),
           );
@@ -1037,6 +1237,7 @@ void main() {
               ConversationsSpec.conversationExcerpt(
                 conversationId: 5,
                 anchorMessageId: 99,
+                originatingInvestigationId: SearchInvestigationId(0),
               ),
             ),
           );
@@ -1486,7 +1687,14 @@ ResolvedSidebarCassette _resolvedCassette({
 ResolvedTrackLayoutMatrix _testSearchSidebarMatrix() {
   const columnId = TrackColumnId.column1;
   final matrix = PageTrackLayoutMatrix<TrackOccupant>(
-    trackIds: TrackId.values,
+    trackIds: const [
+      TrackId.trackA,
+      TrackId.trackB,
+      TrackId.trackC,
+      TrackId.trackD,
+      TrackId.trackE,
+      TrackId.trackF,
+    ],
     columnIds: const [columnId],
     cells: const [
       MatrixCell<TrackOccupant>.occupied(
@@ -1507,6 +1715,10 @@ ResolvedTrackLayoutMatrix _testSearchSidebarMatrix() {
       ),
       MatrixCell<TrackOccupant>.occupied(
         cellId: CellId(trackId: TrackId.trackE, columnId: columnId),
+        occupant: FixedHeightTrackOccupant(height: 2),
+      ),
+      MatrixCell<TrackOccupant>.occupied(
+        cellId: CellId(trackId: TrackId.trackF, columnId: columnId),
         occupant: FixedHeightTrackOccupant(height: 16),
       ),
     ],
@@ -1520,6 +1732,68 @@ ResolvedTrackLayoutMatrix _testSearchSidebarMatrix() {
       textDirection: TextDirection.ltr,
     ),
   );
+}
+
+ResolvedTrackLayoutMatrix _testUnfamiliarSourcesSidebarMatrix({
+  required bool selected,
+}) {
+  const sidebarColumn = TrackColumnId.column1;
+  const centerColumn = TrackColumnId.column2;
+  final cells = <MatrixCell<TrackOccupant>>[
+    const MatrixCell<TrackOccupant>.occupied(
+      cellId: CellId(trackId: TrackId.trackA, columnId: sidebarColumn),
+      occupant: TextTrackOccupant(
+        text: 'matrix-top-menu',
+        style: TextStyle(fontSize: 14),
+      ),
+    ),
+    const MatrixCell<TrackOccupant>.occupied(
+      cellId: CellId(trackId: TrackId.trackA, columnId: centerColumn),
+      occupant: FixedHeightTrackOccupant(height: 20),
+    ),
+    for (final trackId in TrackId.values.skip(1))
+      MatrixCell<TrackOccupant>.empty(
+        cellId: CellId(trackId: trackId, columnId: sidebarColumn),
+      ),
+    for (final trackId in TrackId.values.skip(1))
+      if (selected && trackId != TrackId.trackI)
+        MatrixCell<TrackOccupant>.occupied(
+          cellId: CellId(trackId: trackId, columnId: centerColumn),
+          occupant: const FixedHeightTrackOccupant(height: 24),
+        )
+      else if (trackId == TrackId.trackI)
+        const MatrixCell<TrackOccupant>.occupied(
+          cellId: CellId(trackId: TrackId.trackI, columnId: centerColumn),
+          occupant: FixedHeightTrackOccupant(height: 16),
+        )
+      else
+        MatrixCell<TrackOccupant>.empty(
+          cellId: CellId(trackId: trackId, columnId: centerColumn),
+        ),
+  ];
+  final matrix = PageTrackLayoutMatrix<TrackOccupant>(
+    trackIds: TrackId.values,
+    columnIds: const [sidebarColumn, centerColumn],
+    cells: cells,
+  );
+
+  return ResolvedTrackLayoutMatrix.resolve(
+    matrix: matrix,
+    constraints: const PresentationConstraints(
+      availableWidth: 288,
+      textScaler: TextScaler.noScaling,
+      textDirection: TextDirection.ltr,
+    ),
+  );
+}
+
+List<CellId> _renderedTrackCellIds(WidgetTester tester) {
+  return [
+    for (final widget in tester.widgetList<TrackCellView>(
+      find.byType(TrackCellView),
+    ))
+      widget.cellId,
+  ];
 }
 
 class _FakeMessagesViewSpecCoordinator
@@ -1540,7 +1814,11 @@ class _FakeMessagesViewSpecCoordinator
           const Text('recovered:no-handle-from-me'),
       recoveredAttachmentViewer: (messageId, attachment) =>
           Text('attachment:$messageId'),
-      handleLens: (handleId) => Text('lens:$handleId'),
+      handleInvestigation: (investigationId, investigation, target) =>
+          target.when(
+            idle: () => Text('idle:${investigation.name}'),
+            selectedSource: (handleId) => Text('lens:$handleId'),
+          ),
     );
   }
 }
@@ -1556,7 +1834,7 @@ class _FakeConversationsViewSpecCoordinator
       conversationMessages: (conversationId, anchorMessageId, searchQuery) =>
           Text('conversation:$conversationId'),
       conversationExcerpt:
-          (conversationId, anchorMessageId, beforeCount, afterCount) =>
+          (conversationId, anchorMessageId, _, beforeCount, afterCount) =>
               Text('conversation:$anchorMessageId'),
     );
   }

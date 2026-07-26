@@ -361,6 +361,12 @@ This prevents:
 - conflicting mutations
 - inconsistent projection state
 
+The gate is an application of the
+[Mechanical Impossibility Principle](../00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/10-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION.md#the-mechanical-impossibility-principle):
+mutation authority is exclusive, so a non-holder cannot enter the protected
+execution path rather than merely being diagnosed after concurrent work has
+begun.
+
 ---
 
 # Pipeline Mutation Contract

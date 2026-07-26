@@ -12,6 +12,7 @@ import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../../features/conversations/presentation/widgets/conversation_signature_card.dart';
 import '../../../../features/messages/presentation/layout/search_page_message_evidence_track_occupants.dart';
+import '../../../../features/messages/presentation/layout/unfamiliar_sources_message_track_occupants.dart';
 import '../../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../app_mode/feature_level_providers.dart'
     show switchableDarkModeProvider;
@@ -32,6 +33,7 @@ import '../../application/sidebar_mode_provider.dart';
 import '../../domain/sidebar_mode.dart';
 import '../layout/search_page_conversation_track_occupants.dart';
 import '../layout/search_page_track_plan.dart';
+import '../layout/unfamiliar_sources_page_track_plan.dart';
 import '../widgets/app_mode_toggle.dart';
 import '../widgets/onboarding_center_panel_sync_observer.dart';
 import 'workspace_layout.dart';
@@ -124,11 +126,16 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       _ => false,
     };
     final activeMode = ref.watch(activeSidebarModeProvider);
+    final sidebarFlowState = ref.watch(sidebarFlowProvider);
     final useSearchTrackPlan =
         activeMode == SidebarMode.messages &&
-        ref.watch(sidebarFlowProvider).topMenuChoice ==
-            TopChatMenuChoice.searchAllMessages;
+        sidebarFlowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
+    final useUnfamiliarSourcesTrackPlan =
+        activeMode == SidebarMode.messages &&
+        sidebarFlowState.topMenuChoice == TopChatMenuChoice.strayHandles;
     final SearchPageTrackComposition? searchPageTrackComposition;
+    final UnfamiliarSourcesPageTrackComposition?
+    unfamiliarSourcesTrackComposition;
     if (useSearchTrackPlan) {
       final typography = ref.watch(themeTypographyProvider);
       ref.watch(themeColorsProvider);
@@ -161,19 +168,45 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         centerTitle: messageOccupants.title,
         centerMetadata: messageOccupants.metadata,
         centerSearchControls: messageOccupants.searchControls,
-        centerSupportingContext: messageOccupants.supportingContext,
-        centerSupportingContextMinimumReservedHeight:
-            messageOccupants.supportingContextMinimumReservedHeight,
+        centerInvestigationStatus: messageOccupants.investigationStatus,
+        centerInvestigationStatusMinimumReservedHeight:
+            messageOccupants.investigationStatusMinimumReservedHeight,
         rightTitle: conversationOccupants.title,
         rightConversationCardMinimumReservedHeight:
             conversationOccupants.cardMinimumReservedHeight,
-        rightExcerptLabelMinimumReservedHeight:
-            conversationOccupants.excerptLabelMinimumReservedHeight,
         rightConversationCard: conversationOccupants.card,
-        rightExcerptLabel: conversationOccupants.excerptLabel,
+        rightTemporalOrientation: conversationOccupants.temporalOrientation,
       );
+      unfamiliarSourcesTrackComposition = null;
     } else {
       searchPageTrackComposition = null;
+      if (useUnfamiliarSourcesTrackPlan) {
+        final typography = ref.watch(themeTypographyProvider);
+        ref.watch(themeColorsProvider);
+        final colors = ref.read(themeColorsProvider.notifier);
+        final presentationConstraints =
+            PresentationConstraints.fromBuildContext(
+              context,
+              availableWidth: MediaQuery.sizeOf(context).width,
+            );
+        final centerSpec = ref.watch(
+          effectiveCenterPanelSpecProvider(activeMode),
+        );
+        final messageOccupants = unfamiliarSourcesMessageTrackOccupants(
+          ref: ref,
+          centerSpec: centerSpec,
+          colors: colors,
+          typography: typography,
+        );
+        unfamiliarSourcesTrackComposition =
+            composeUnfamiliarSourcesPageTrackLayout(
+              presentationConstraints: presentationConstraints,
+              typography: typography,
+              messageOccupants: messageOccupants,
+            );
+      } else {
+        unfamiliarSourcesTrackComposition = null;
+      }
     }
 
     Widget window = MacosWindow(
@@ -301,9 +334,12 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         ],
       ),
     );
-    if (searchPageTrackComposition != null) {
+    final resolvedTrackMatrix =
+        searchPageTrackComposition?.resolvedMatrix ??
+        unfamiliarSourcesTrackComposition?.resolvedMatrix;
+    if (resolvedTrackMatrix != null) {
       window = ResolvedTrackLayoutMatrixScope(
-        matrix: searchPageTrackComposition.resolvedMatrix,
+        matrix: resolvedTrackMatrix,
         child: window,
       );
     }

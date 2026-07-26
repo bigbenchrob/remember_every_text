@@ -323,13 +323,16 @@ class SqliteGraphSearchRepository implements GraphSearchRepository {
         }
         return _GraphScopeSql(
           joinSql: '''
-          JOIN chat_to_message ctm ON ctm.message_ss_id = m.ss_id
-          JOIN chat_to_handle cth ON cth.chat_ss_id = ctm.chat_ss_id
-          LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
+          LEFT JOIN handle_aliases scope_sender_alias
+            ON scope_sender_alias.handle_ss_id = m.sender_handle_ss_id
           ''',
           whereSql:
               '''
-          COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id) = ?
+          COALESCE(
+            m.sender_canonical_handle_ss_id,
+            scope_sender_alias.canonical_handle_ss_id,
+            m.sender_handle_ss_id
+          ) = ?
           $messageFilter
           ''',
           args: <Object?>[handleId, ...messageArgs],

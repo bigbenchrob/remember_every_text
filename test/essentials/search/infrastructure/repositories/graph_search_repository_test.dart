@@ -80,6 +80,65 @@ void main() {
     expect(results, <int>[2001]);
   });
 
+  test(
+    'handle scope searches direct sender evidence without chat edges',
+    () async {
+      const canonicalHandleId = 7001;
+      const aliasHandleId = 7002;
+      const otherHandleId = 7003;
+      await _insertHandle(
+        graphDatabase,
+        handleId: canonicalHandleId,
+        rawIdentifier: '+16049995969',
+      );
+      await _insertHandle(
+        graphDatabase,
+        handleId: aliasHandleId,
+        rawIdentifier: '6049995969',
+      );
+      await _insertHandle(
+        graphDatabase,
+        handleId: otherHandleId,
+        rawIdentifier: '+17789908506',
+      );
+      await _insertCanonicalHandle(
+        graphDatabase,
+        canonicalHandleId: canonicalHandleId,
+      );
+      await _insertHandleAlias(
+        graphDatabase,
+        handleId: aliasHandleId,
+        canonicalHandleId: canonicalHandleId,
+        rawIdentifier: '6049995969',
+      );
+      await _insertMessage(
+        graphDatabase,
+        messageId: 2101,
+        guid: 'guid-2101',
+        text: 'Sender-only settlement evidence.',
+        dateUtc: '2026-05-01T12:00:00Z',
+        senderHandleId: aliasHandleId,
+      );
+      await _insertMessage(
+        graphDatabase,
+        messageId: 2102,
+        guid: 'guid-2102',
+        text: 'Other settlement evidence.',
+        dateUtc: '2026-05-02T12:00:00Z',
+        senderHandleId: otherHandleId,
+      );
+
+      final results = await repository.searchMessageIds(
+        scope: const GraphMessageSearchScope.handle(canonicalHandleId),
+        query: 'settlement',
+        matchAnyTerm: false,
+        filterSaved: false,
+      );
+
+      expect(results, <int>[2101]);
+    },
+  );
+
   test('reads graph-native saved overlay by message_ss_id', () async {
     await _insertMessage(
       graphDatabase,
@@ -209,6 +268,8 @@ Future<void> _insertMessage(
   required String guid,
   required String text,
   required String dateUtc,
+  int? senderHandleId,
+  int? senderCanonicalHandleId,
 }) {
   return graphDatabase.database.insert('messages', <String, Object?>{
     'ss_id': messageId,
@@ -216,6 +277,46 @@ Future<void> _insertMessage(
     'is_from_me': 0,
     'date_utc': dateUtc,
     'text': text,
+    'sender_handle_ss_id': senderHandleId,
+    'sender_canonical_handle_ss_id': senderCanonicalHandleId,
+  });
+}
+
+Future<void> _insertHandle(
+  ConversationGraphDatabase graphDatabase, {
+  required int handleId,
+  required String rawIdentifier,
+}) {
+  return graphDatabase.database.insert('handles', <String, Object?>{
+    'ss_id': handleId,
+    'id': rawIdentifier,
+  });
+}
+
+Future<void> _insertCanonicalHandle(
+  ConversationGraphDatabase graphDatabase, {
+  required int canonicalHandleId,
+}) {
+  return graphDatabase.database.insert('canonical_handles', <String, Object?>{
+    'canonical_handle_ss_id': canonicalHandleId,
+    'display_handle': '+16049995969',
+    'normalized_identifier': '16049995969',
+    'alias_count': 2,
+  });
+}
+
+Future<void> _insertHandleAlias(
+  ConversationGraphDatabase graphDatabase, {
+  required int handleId,
+  required int canonicalHandleId,
+  required String rawIdentifier,
+}) {
+  return graphDatabase.database.insert('handle_aliases', <String, Object?>{
+    'handle_ss_id': handleId,
+    'canonical_handle_ss_id': canonicalHandleId,
+    'raw_identifier': rawIdentifier,
+    'normalized_identifier': '16049995969',
+    'alias_kind': 'phone',
   });
 }
 

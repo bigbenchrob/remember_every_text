@@ -8,24 +8,22 @@ import 'package:remember_this_text/features/handles/domain/spec_classes/handles_
 
 void main() {
   group('StrayHandlesReviewResolver', () {
-    test('declares gutter-aware placement for review list content', () async {
+    test('leaves the trailing action rail to the review rows', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final payload = await container
           .read(strayHandlesReviewResolverProvider.notifier)
           .resolve(
+            investigation: StrayHandleInvestigation.identifySources,
             filter: StrayHandleFilter.phones,
-            mode: StrayHandleMode.allStrays,
+            mode: StrayHandleReviewMode.active,
           );
 
       expect(payload, isA<StrayHandlesReviewCassettePayload>());
       final viewModel = payload as StrayHandlesReviewCassettePayload;
 
-      expect(
-        viewModel.placementMode,
-        SidebarBodyPlacementMode.insetWithTrailingGutter,
-      );
+      expect(viewModel.placementMode, SidebarBodyPlacementMode.inset);
       expect(viewModel.shouldExpand, isTrue);
     });
   });

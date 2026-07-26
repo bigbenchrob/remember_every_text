@@ -127,6 +127,7 @@ void main() {
       'ss_id',
       'id',
       'service',
+      'is_me',
     });
     expect(canonicalHandleColumns.map((row) => row['name']).toSet(), <String>{
       'canonical_handle_ss_id',
@@ -245,4 +246,37 @@ void main() {
       expect(tables.map((row) => row['name']), contains('contact_to_handle'));
     },
   );
+
+  test('upgrades version 1 handles with local account identity', () async {
+    final dbPath = appDatabasePath(
+      AppDatabaseFile.conversationGraph,
+      databaseDirectory: tempDir.path,
+    );
+    final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+    await existingDatabase.execute('''
+      CREATE TABLE handles (
+        ss_id INTEGER PRIMARY KEY,
+        id TEXT NOT NULL,
+        service TEXT
+      )
+    ''');
+    await existingDatabase.insert('handles', <String, Object?>{
+      'ss_id': 12,
+      'id': '+16046858506',
+      'service': 'iMessage',
+    });
+    await existingDatabase.execute('PRAGMA user_version = 1');
+    await existingDatabase.close();
+
+    await graphDatabase.close();
+    graphDatabase = ConversationGraphDatabase(NativeDatabase(File(dbPath)));
+
+    final columns = await graphDatabase.selectRows(
+      'PRAGMA table_info(handles)',
+    );
+    final rows = await graphDatabase.selectRows('SELECT * FROM handles');
+
+    expect(columns.map((row) => row['name']), contains('is_me'));
+    expect(rows.single['is_me'], 0);
+  });
 }

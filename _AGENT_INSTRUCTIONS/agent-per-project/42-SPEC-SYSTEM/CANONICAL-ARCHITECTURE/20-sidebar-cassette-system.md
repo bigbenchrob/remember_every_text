@@ -128,6 +128,12 @@ Essentials owns:
 
 Features may own complex body content only inside the frame essentials provides. A feature-owned body may tune internal lanes, gutters, and local composition, but it must not redefine the sidebar's outer geometry.
 
+Trailing action space must have one owner. If a feature-owned body reserves and
+renders its own row action rail, its payload uses the ordinary inset envelope.
+The essentials-owned trailing-gutter placement mode is reserved for bodies
+whose action occupies the shared outer gutter. Combining both contracts
+double-reserves the same space and clips narrow-sidebar content.
+
 ## Sidebar and panel coordination
 
 Sidebar changes can invalidate panel content.
@@ -137,7 +143,12 @@ When canonical flow changes:
 1. durable flow state changes
 2. stable cassette projection changes
 3. projected panel `ViewSpec` changes
-4. incompatible center/right panel content is cleared or replaced
+4. effective center/right panel content is re-derived
+
+An incompatible stored panel spec may remain stored so unchanged originating
+context can later restore it. It must cease to be effective immediately.
+Sidebar widgets must not compensate for missing compatibility rules by issuing
+imperative panel-clearing commands.
 
 Sidebar widgets may dispatch panel navigation only by sending a `ViewSpec` through the panel state provider. They must verify their cassette context is still current before doing automatic post-render dispatch.
 

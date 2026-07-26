@@ -23,6 +23,7 @@ final class GlobalMessagesEvidencePresentationState {
     required this.allMessagesSkeleton,
     required this.visibleSkeleton,
     required this.labels,
+    required this.investigationStatus,
   });
 
   final String query;
@@ -31,6 +32,7 @@ final class GlobalMessagesEvidencePresentationState {
   final AsyncValue<MessageEvidenceTimelineSkeleton> allMessagesSkeleton;
   final AsyncValue<MessageEvidenceTimelineSkeleton> visibleSkeleton;
   final GlobalMessagesEvidenceHeaderLabels? labels;
+  final SearchInvestigationStatusPresentationModel? investigationStatus;
 }
 
 @riverpod
@@ -67,6 +69,14 @@ GlobalMessagesEvidencePresentationState globalMessagesEvidencePresentation(
           hasMatchesLoaded: query.isEmpty || visibleSkeleton.hasValue,
           monthAnchor: monthAnchor,
         );
+  final investigationStatus = searchInvestigationStatusPresentationModel(
+    query: query,
+    monthAnchor: monthAnchor,
+    isSearching:
+        query.isNotEmpty &&
+        visibleSkeleton.isLoading &&
+        !visibleSkeleton.hasValue,
+  );
 
   return GlobalMessagesEvidencePresentationState(
     query: query,
@@ -75,5 +85,6 @@ GlobalMessagesEvidencePresentationState globalMessagesEvidencePresentation(
     allMessagesSkeleton: allMessagesSkeleton,
     visibleSkeleton: visibleSkeleton,
     labels: labels,
+    investigationStatus: investigationStatus,
   );
 }

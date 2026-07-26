@@ -8,7 +8,7 @@ import '../../../features/contacts/feature_level_providers.dart'
     show contactAccessActionsProvider;
 import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/handles/feature_level_providers.dart'
-    show handleReviewActionsProvider, strayHandleModeSettingProvider;
+    show handleReviewActionsProvider, strayHandleReviewModeSettingProvider;
 import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../features/settings/feature_level_providers.dart'
     show
@@ -179,6 +179,12 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
       case RecoveredNoHandleFromMeOpened():
         ref.read(sidebarFlowProvider.notifier).showRecoveredNoHandleFromMe();
       case StrayHandleFilterChanged(:final filter):
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .beginNewStrayHandleInvestigation();
+        ref
+            .read(strayHandleReviewModeSettingProvider.notifier)
+            .setMode(StrayHandleReviewMode.active);
         _replaceCassetteAtContext(
           context: context,
           spec: CassetteSpec.handles(
@@ -187,9 +193,31 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
             ),
           ),
         );
+      case StrayHandleInvestigationChanged(:final investigation):
+        ref
+            .read(sidebarFlowProvider.notifier)
+            .beginNewStrayHandleInvestigation(
+              investigation: _mapStrayHandleInvestigation(investigation),
+            );
+        ref
+            .read(strayHandleReviewModeSettingProvider.notifier)
+            .setMode(StrayHandleReviewMode.active);
+        _replaceCassetteAtContext(
+          context: context,
+          spec: CassetteSpec.handles(
+            HandlesCassetteSpec.strayHandlesInvestigationSwitcher(
+              selectedInvestigation: _mapStrayHandleInvestigation(
+                investigation,
+              ),
+            ),
+          ),
+        );
       case StrayHandleModeChanged(:final mode):
         ref
-            .read(strayHandleModeSettingProvider.notifier)
+            .read(sidebarFlowProvider.notifier)
+            .beginNewStrayHandleInvestigation();
+        ref
+            .read(strayHandleReviewModeSettingProvider.notifier)
             .setMode(_mapStrayHandleMode(mode));
       case StrayHandleOpened(:final handleId):
         ref
@@ -386,10 +414,20 @@ StrayHandleFilter _mapStrayHandleFilter(SidebarStrayHandleFilter filter) {
   };
 }
 
-StrayHandleMode _mapStrayHandleMode(SidebarStrayHandleMode mode) {
+StrayHandleReviewMode _mapStrayHandleMode(SidebarStrayHandleReviewMode mode) {
   return switch (mode) {
-    SidebarStrayHandleMode.allStrays => StrayHandleMode.allStrays,
-    SidebarStrayHandleMode.spamCandidates => StrayHandleMode.spamCandidates,
-    SidebarStrayHandleMode.dismissed => StrayHandleMode.dismissed,
+    SidebarStrayHandleReviewMode.active => StrayHandleReviewMode.active,
+    SidebarStrayHandleReviewMode.dismissed => StrayHandleReviewMode.dismissed,
+  };
+}
+
+StrayHandleInvestigation _mapStrayHandleInvestigation(
+  SidebarStrayHandleInvestigation investigation,
+) {
+  return switch (investigation) {
+    SidebarStrayHandleInvestigation.identifySources =>
+      StrayHandleInvestigation.identifySources,
+    SidebarStrayHandleInvestigation.numericSenderIds =>
+      StrayHandleInvestigation.numericSenderIds,
   };
 }

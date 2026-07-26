@@ -2,16 +2,18 @@
 tier: project
 scope: sidebar-content-start-seam
 owner: agent-per-project
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-24
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
   - ./01-column-band-wrappers.md
+  - ./07-column-specific-shared-track-boundaries.md
   - ../08-SIDEBAR-LAYOUTS/README.md
   - ../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/20-sidebar-cassette-system.md
   - ../45-NEW-FEATURE-ADDITION/03-INTRODUCE-SIDEBAR-CONTENT-SEAM/PROPOSAL.md
   - ../45-NEW-FEATURE-ADDITION/03-INTRODUCE-SIDEBAR-CONTENT-SEAM/DESIGN_NOTES.md
-tests: []
+tests:
+  - ../../../test/essentials/navigation/application/panel_widget_providers_test.dart
 ---
 
 # Sidebar Cassette Content-Start Seam
@@ -55,16 +57,34 @@ Meaning:
 When a page participates in the cross-column seam:
 
 1. the app-control/top-menu cassette is represented by the occupant placed at
-   A1 in the Search-page matrix
-2. the sidebar renders A1 through E1 by complete `CellId`
-3. empty cells contain no occupant or claim, but may preserve explicit
+   A1 in that page's matrix
+2. Navigation page composition declares the last Track row shared with the
+   sidebar before its independent cassette flow resumes
+3. the sidebar renders column-1 cells through that declared boundary by
+   complete `CellId`
+4. empty cells contain no occupant or claim, but may preserve explicit
    page-owned resting geometry and still receive the Track height resolved from
    all peer cells
-4. content-start cassettes and all later cassettes render below the page's
-   pre-content track sequence
+5. any remaining app-control cassettes and the content-start cassette chain
+   render below the page's pre-content track sequence
 
-This means the content-start cassette begins at the same vertical point as the
-center and right panel content.
+The boundary is page-specific and column-specific. It may include every
+pre-content row when a real cross-column relationship exists, or end after A
+when later rows describe only another column's local presentation. The generic
+sidebar renderer consumes an explicit ordinal boundary; it does not infer the
+boundary from feature meaning, cassette type, current occupancy, or a run of
+empty cells.
+
+This sidebar seam is one application of the general
+[column-specific shared Track boundary](07-column-specific-shared-track-boundaries.md).
+The final Track on the page does not force the sidebar to remain in shared
+geometry for that entire lifetime.
+
+When the sidebar leaves that shared geometry, the
+[Native-Flow Ownership Restoration](07-column-specific-shared-track-boundaries.md#native-flow-ownership-restoration)
+principle applies. The cassette chain resumes ownership of its complete native
+layout policy, including ordinary leading rhythm, unless page composition
+explicitly records that the shared region already supplied the transition.
 
 ## Example: Search All Messages
 
@@ -113,6 +133,36 @@ That lets any future sidebar configuration participate without teaching the
 page skeleton about heatmaps, contact selectors, tag filters, or future
 discovery widgets.
 
+## Example: Unfamiliar Sources
+
+The unfamiliar-source page declares a deliberately narrow shared region:
+
+```text
+A1:
+  source-review top menu
+
+After A1:
+  investigation, endpoint-kind, and disposition controls
+  selected investigation's source list
+
+Meanwhile in column 2:
+  B2 through H2 contain selected-source details and controls when applicable
+
+I2:
+  fixed-height center-header-to-evidence spacing occupant
+```
+
+The cassette coordinator still owns the order and rendering of those controls
+and lists. Only A1 and A2 are persistent page-level peers. Selected-source
+subject, metrics, search, and actions are transient center details and do not
+delay the sidebar cassette chain. Ordinary fixed-height occupants in C2, E2,
+G2, and I2 remain center composition geometry; they do not give those tracks
+semantic roles.
+
+This is not an unfamiliar-source branch inside a generic widget. Navigation's
+page composition declares A as the last shared sidebar row, and the generic
+renderer resumes the cassette flow after that coordinate.
+
 ## Deferred Autonomous Behavior
 
 The current seam is conservative. It does not pre-measure arbitrary cassette
@@ -135,7 +185,8 @@ If autonomous fitting becomes necessary, prefer:
 
 ## Ownership Rules
 
-The page skeleton owns cross-column anchors.
+Navigation page composition owns cross-column anchors and each sidebar's last
+shared Track boundary.
 
 The sidebar cassette coordinator owns cassette chaining and sidebar rendering.
 

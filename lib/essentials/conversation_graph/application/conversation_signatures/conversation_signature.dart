@@ -5,6 +5,7 @@ class ConversationSignature {
     required this.participantLabels,
     required this.participantCount,
     required this.isGroup,
+    this.isSelfConversation = false,
     required this.messageCount,
     required this.attachmentCount,
     required this.firstMessageAtUtc,
@@ -18,6 +19,7 @@ class ConversationSignature {
   final List<String> participantLabels;
   final int participantCount;
   final bool isGroup;
+  final bool isSelfConversation;
   final int messageCount;
   final int attachmentCount;
   final String? firstMessageAtUtc;

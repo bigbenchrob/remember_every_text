@@ -81,8 +81,9 @@ Rules:
 * Durable flow meaning belongs in semantic state, not rendered widgets.
 * Do not reconstruct durable meaning by scanning built sidebar widgets.
 * Do not treat the cassette rack as the source of durable truth.
-* When flow changes, incompatible center/right panel content must be cleared or
-  replaced.
+* When flow changes, incompatible center/right panel content must cease to be
+  effective. Stored panel state may remain available for later restoration;
+  visibility and downstream projections must derive from effective state.
 * Transient settings actions must not be stored in persistent flow state.
 
 ## Sidebar Topology And Cassette Rack
@@ -140,6 +141,12 @@ panel navigation currency:
 projects flow-managed center content from `SidebarFlowState`, parks the sidebar
 for sidebar-independent specs, and hides incompatible right-panel content.
 
+Stored and effective panel state are intentionally different. A stored spec
+records a request that may remain useful after temporary navigation. The
+effective stack contains only stored specs compatible with the current flow or
+investigation. Callers must not delete stored specs merely to repair missing
+compatibility derivation.
+
 Panel rules:
 
 * Panel state stores `ViewSpec`, not arbitrary widgets.
@@ -148,6 +155,8 @@ Panel rules:
   sidebar-independent and can park the normal sidebar. Other system flows
   should declare sidebar independence explicitly in their current spec model.
 * Right-panel content is subordinate to center-panel compatibility.
+* Panel visibility and message anchors must consume effective panel state, not
+  the raw stored stack.
 * Features may interpret their approved inner specs, but essentials owns panel
   stack policy and cross-surface reconciliation.
 
@@ -183,8 +192,17 @@ Feature responsibilities are narrower:
 
 * `features/messages` owns timeline UI/search query state for message views and
   calls the essentials search service.
+* `features/messages` owns the opaque generation identifying the current
+  Search All Messages investigation. Query mutations, AND/OR changes, and
+  month browsing advance that generation.
 * contacts-specific picker filtering remains feature-local where it is not the
   shared message search/indexing system.
+
+Search-created subordinate presentations carry that investigation identity as
+opaque provenance. Generic navigation may compare the identity for equality
+when deriving effective panel state, but it must not understand query text,
+search modes, heatmaps, or result structure. Conversations may carry the
+identity on an excerpt request but does not generate or interpret it.
 
 Do not create a separate feature-level message search infrastructure that
 competes with `lib/essentials/search`.

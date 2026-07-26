@@ -18,7 +18,7 @@ void main() {
       message: _message(),
     );
 
-    expect(find.textContaining('received | Claire'), findsOneWidget);
+    expect(find.textContaining('received from Claire'), findsOneWidget);
     expect(find.textContaining('handle: 1 (778) 990-8506'), findsNothing);
   });
 
@@ -32,7 +32,7 @@ void main() {
       message: _message(),
     );
 
-    expect(find.textContaining('received | Claire'), findsOneWidget);
+    expect(find.textContaining('received from Claire'), findsOneWidget);
     expect(find.textContaining('handle: 1 (778) 990-8506'), findsOneWidget);
   });
 
@@ -46,7 +46,7 @@ void main() {
       message: _message(),
     );
 
-    expect(find.textContaining('received | Claire'), findsOneWidget);
+    expect(find.textContaining('received from Claire'), findsOneWidget);
     expect(find.textContaining('handle: 1 (778) 990-8506'), findsOneWidget);
   });
 
@@ -74,6 +74,63 @@ void main() {
     expect(find.text('attributed body'), findsNothing);
     expect(find.text('summary info'), findsNothing);
     expect(find.text('error 0'), findsNothing);
+  });
+
+  testWidgets('names the conversation recipient for outgoing evidence', (
+    tester,
+  ) async {
+    await _pumpRow(
+      tester,
+      developerMode: DeveloperModeValue.user,
+      scope: const ConversationEvidenceScope(conversationId: 42),
+      message: _message(isFromMe: true, conversationDisplayTitle: 'Claire'),
+    );
+
+    expect(find.textContaining('from me to Claire'), findsOneWidget);
+    expect(find.textContaining('from me | me'), findsNothing);
+  });
+
+  testWidgets('labels incoming self-conversation evidence as self', (
+    tester,
+  ) async {
+    await _pumpRow(
+      tester,
+      developerMode: DeveloperModeValue.user,
+      scope: const ConversationEvidenceScope(conversationId: 42),
+      message: _message(isSelfConversation: true),
+    );
+
+    expect(find.textContaining('self'), findsOneWidget);
+    expect(find.textContaining('received from'), findsNothing);
+  });
+
+  testWidgets('labels outgoing self-conversation evidence as self', (
+    tester,
+  ) async {
+    await _pumpRow(
+      tester,
+      developerMode: DeveloperModeValue.user,
+      scope: const ConversationEvidenceScope(conversationId: 42),
+      message: _message(isFromMe: true, isSelfConversation: true),
+    );
+
+    expect(find.textContaining('self'), findsOneWidget);
+    expect(find.textContaining('from me to'), findsNothing);
+  });
+
+  testWidgets('uses lowercase me for a canonical self sender', (tester) async {
+    await _pumpRow(
+      tester,
+      developerMode: DeveloperModeValue.user,
+      scope: const RecoveredMessagesEvidenceScope(
+        contactId: null,
+        onlyNoHandleFromMe: false,
+      ),
+      message: _message(senderIsMe: true, senderDisplayHandle: 'me'),
+    );
+
+    expect(find.textContaining('received from me'), findsOneWidget);
+    expect(find.textContaining('received from Me'), findsNothing);
   });
 
   testWidgets('renders conversation context action from explicit callback', (
@@ -166,6 +223,11 @@ Future<void> _pumpRow(
 }
 
 MessageEvidenceRowData _message({
+  bool isFromMe = false,
+  bool isSelfConversation = false,
+  bool senderIsMe = false,
+  String senderDisplayHandle = 'Claire',
+  String? conversationDisplayTitle,
   String? semanticKind,
   String? itemKind,
   int? associatedMessageId,
@@ -177,12 +239,15 @@ MessageEvidenceRowData _message({
   return MessageEvidenceRowData(
     messageId: 8796093170832,
     dateUtc: '2026-05-20T18:58:00Z',
-    isFromMe: false,
+    isFromMe: isFromMe,
     text: 'hello',
     associatedMessageId: associatedMessageId,
     attachmentCount: 0,
     sourceConversationId: sourceConversationId,
-    senderDisplayHandle: 'Claire',
+    conversationDisplayTitle: conversationDisplayTitle,
+    isSelfConversation: isSelfConversation,
+    senderIsMe: senderIsMe,
+    senderDisplayHandle: senderDisplayHandle,
     senderRawHandleLabel: '1 (778) 990-8506',
     semanticKind: semanticKind,
     itemKind: itemKind,

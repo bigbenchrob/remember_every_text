@@ -14,6 +14,11 @@ import 'package:remember_this_text/essentials/search/application/graph_message_s
 import 'package:remember_this_text/essentials/search/application/graph_search_repository_provider.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
+import 'package:remember_this_text/features/conversations/feature_level_providers.dart'
+    show
+        ConversationSignatureDisplayByIdsRequest,
+        ConversationSignatureDisplayModel,
+        conversationSignatureDisplayByIdsProvider;
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/recovered_message_evidence_provider.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
@@ -128,6 +133,56 @@ void main() {
       expect(refreshedSkeleton.entries.map((entry) => entry.messageId), [1, 2]);
     },
   );
+
+  test('retains prepared contact evidence across category switches', () async {
+    var timelineReadCount = 0;
+    final container = ProviderContainer(
+      overrides: [
+        _displayIdentityResolverOverride(),
+        contactPageGraphMessageTimelineProvider(contactId: 24).overrideWith((
+          ref,
+        ) async {
+          ref.watch(messageDataVersionProvider);
+          timelineReadCount += 1;
+          return const [
+            ContactGraphMessageTimelineEntry(
+              messageId: 1,
+              dateUtc: '2026-04-20T10:00:00.000Z',
+              monthKey: '2026-04',
+            ),
+          ];
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    const scope = ContactAllMessagesEvidenceScope(contactId: 24);
+    final firstSubscription = container.listen(
+      messageEvidenceTimelineSkeletonProvider(scope: scope),
+      (_, __) {},
+    );
+    await container.read(
+      messageEvidenceTimelineSkeletonProvider(scope: scope).future,
+    );
+    firstSubscription.close();
+    await Future<void>.delayed(Duration.zero);
+
+    final secondSubscription = container.listen(
+      messageEvidenceTimelineSkeletonProvider(scope: scope),
+      (_, __) {},
+    );
+    await container.read(
+      messageEvidenceTimelineSkeletonProvider(scope: scope).future,
+    );
+    expect(timelineReadCount, 1);
+
+    container.read(messageDataVersionProvider.notifier).bump();
+    await container.read(
+      messageEvidenceTimelineSkeletonProvider(scope: scope).future,
+    );
+    expect(timelineReadCount, 2);
+    secondSubscription.close();
+  });
 
   test(
     'contact evidence row stays hydrated when message data version changes',
@@ -327,6 +382,62 @@ void main() {
     expect(skeleton.entries.map((entry) => entry.messageId), [11]);
     expect(message?.messageId, hydratedMessage.messageId);
     expect(message?.text, hydratedMessage.text);
+  });
+
+  test('graph evidence carries canonical Conversation identity', () async {
+    const scope = GlobalMessagesEvidenceScope();
+    const hydratedMessage = ConversationMessage(
+      messageId: 12,
+      dateUtc: '2026-05-20T10:00:00.000Z',
+      isFromMe: true,
+      text: 'outgoing row',
+      associatedMessageId: null,
+      attachmentCount: 0,
+      conversationId: 7,
+    );
+    const repository = _FakeMessageGraphRepository(
+      timeline: [],
+      hydratedMessage: hydratedMessage,
+    );
+    final request = ConversationSignatureDisplayByIdsRequest(
+      conversationIds: const [7],
+    );
+    final container = ProviderContainer(
+      overrides: [
+        _displayIdentityResolverOverride(),
+        messageGraphReaderProvider.overrideWith((ref) async {
+          return const MessageGraphReader(repository: repository);
+        }),
+        conversationSignatureDisplayByIdsProvider(
+          request: request,
+        ).overrideWith((ref) async {
+          return const [
+            ConversationSignatureDisplayModel(
+              conversationId: 7,
+              title: 'Claire',
+              participantLabels: ['Claire'],
+              participantCount: 1,
+              isGroup: false,
+              isSelfConversation: true,
+              messageCount: 1,
+              attachmentCount: 0,
+              firstMessageAtUtc: '2026-05-20T10:00:00.000Z',
+              lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+              lastMessageText: 'outgoing row',
+              activityMonths: [],
+            ),
+          ];
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final message = await container.read(
+      messageEvidenceRowProvider(scope: scope, messageId: 12).future,
+    );
+
+    expect(message?.conversationDisplayTitle, 'Claire');
+    expect(message?.isSelfConversation, isTrue);
   });
 
   test('global evidence scope exposes text match ids', () async {

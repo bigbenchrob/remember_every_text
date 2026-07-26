@@ -42,6 +42,7 @@ class SqliteConversationRepository implements ConversationRepository {
         c.ss_id AS conversation_id,
         COUNT(DISTINCT COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id))
           AS participant_count,
+        MAX(COALESCE(h.is_me, canonical_h.is_me, 0)) AS has_self_handle,
         COUNT(DISTINCT ctm.message_ss_id) AS message_count,
         COUNT(DISTINCT mta.attachment_ss_id) AS attachment_count,
         MIN(m.date_utc) AS first_message_at_utc,
@@ -58,7 +59,10 @@ class SqliteConversationRepository implements ConversationRepository {
         ) AS last_message_text
       FROM chats c
       LEFT JOIN chat_to_handle cth ON cth.chat_ss_id = c.ss_id
+      LEFT JOIN handles h ON h.ss_id = cth.handle_ss_id
       LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
+      LEFT JOIN handles canonical_h
+        ON canonical_h.ss_id = ha.canonical_handle_ss_id
       LEFT JOIN chat_to_message ctm ON ctm.chat_ss_id = c.ss_id
       LEFT JOIN messages m ON m.ss_id = ctm.message_ss_id
       LEFT JOIN message_to_attachment mta ON mta.message_ss_id = m.ss_id
@@ -75,12 +79,14 @@ class SqliteConversationRepository implements ConversationRepository {
       final conversationId = _readInt(row['conversation_id']);
       final participantHandles = await _readParticipantHandles(conversationId);
       final participantCount = _readInt(row['participant_count']);
+      final isGroup = participantCount > 1;
       overviews.add(
         ConversationOverview(
           conversationId: conversationId,
           participantHandles: participantHandles,
           participantCount: participantCount,
-          isGroup: participantCount > 1,
+          isGroup: isGroup,
+          isSelfConversation: !isGroup && _readInt(row['has_self_handle']) == 1,
           messageCount: _readInt(row['message_count']),
           attachmentCount: _readInt(row['attachment_count']),
           firstMessageAtUtc: row['first_message_at_utc'] as String?,

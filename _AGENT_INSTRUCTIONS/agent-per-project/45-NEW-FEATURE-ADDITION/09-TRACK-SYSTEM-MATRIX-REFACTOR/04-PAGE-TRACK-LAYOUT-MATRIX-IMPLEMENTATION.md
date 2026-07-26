@@ -186,7 +186,7 @@ Implementation history:
   effective right-panel spec, and any ready Conversation excerpt presentation.
 - `SearchPageTrackOccupants` gives the page named inputs without transferring
   feature presentation ownership into generic matrix infrastructure.
-- `buildSearchPageTrackLayoutMatrix` declares all 15 Search-page cells exactly
+- `buildSearchPageTrackLayoutMatrix` declares all 18 Search-page cells exactly
   once, including explicit empty cells. It accepts no unordered occupant bag
   and no `additionalOccupants` escape hatch.
 - `deriveSearchPageTemporaryRowPlan` temporarily derived the legacy row-height
@@ -197,7 +197,7 @@ Implementation history:
   `ResolvedTrackLayoutMatrixScope` and deleted in Phase 5.
 - Conversation excerpt preparation returns named optional card and label
   occupants. When the right spec or prepared signature is unavailable, B3 and
-  D3 are explicit empty cells; once ready, the next page composition occupies
+  E3 are explicit empty cells; once ready, the next page composition occupies
   those cells.
 
 Verification on 2026-07-16:
@@ -337,15 +337,15 @@ Current implementation:
   have been removed now that all active Search Track renderers consume cells.
 - Messages prepares the Search title, metadata, controls, and supporting
   context as feature-owned occupants. Conversations prepares the title,
-  optional canonical Conversation Card, and excerpt description. The page
+  optional canonical Conversation Card, and temporal orientation. The page
   receives those occupants as opaque composition inputs.
 - The Search sidebar, center message-evidence header, and right Conversation
-  excerpt frame now render their A-E cells directly through
+  excerpt frame now render their A-F cells directly through
   `TrackCellView(CellId(...))`. None of those active matrix paths selects its
   occupant or alignment locally.
 - The sidebar matrix path replaces only the former row wrappers. The cassette
   rack still owns cassette selection and chaining, and ordinary cassette
-  content resumes after E1.
+  content resumes after F1.
 
 Verification on 2026-07-16 after live renderer migration:
 
@@ -355,7 +355,7 @@ Verification on 2026-07-16 after live renderer migration:
 - Resolved-matrix tests prove maximum-height negotiation, retained claims,
   shared geometry for empty cells, and page-owned bottom alignment through a
   `CellId` renderer.
-- The sidebar test proves that A1-E1 are matrix-rendered while the existing
+- The sidebar test proves that A1-F1 are matrix-rendered while the existing
   cassette chain continues below the Track region.
 
 ### Prepared Message-Evidence Presentation Boundary
@@ -390,12 +390,12 @@ from C3 to B3 required one matrix edit and immediately produced the expected
 composition, validating the central layout-tuning objective.
 Width-contract follow-up:
 
-- The only currently width-sensitive Search Track occupant was the wrapped D3
-  Conversation excerpt label. Its feature presentation now has a stable
-  canonical content width shared with the Conversation signature card.
-- That same canonical width is the sole input to both its `TextPainter`
-  dimensional claim and its rendered `SizedBox`, so the current Search matrix
-  no longer relies on ambient or guessed end-sidebar width for D3 height.
+- The former wrapped E3 Conversation excerpt label used the canonical content
+  width shared with the Conversation signature card, keeping its claim and
+  presentation derived from one contract while that occupant existed.
+- The label has since been retired from the current composition because the
+  Conversation excerpt title and temporal orientation provide sufficient
+  context. E3 is now explicitly empty.
 - The `macos_ui` end sidebar remains resizable but does not expose its live
   width through `MacosWindowScope`. A future fluid-width Track occupant must
   therefore introduce an app-owned geometry boundary before it can claim
@@ -404,8 +404,8 @@ Width-contract follow-up:
 
 The current Search matrix therefore has no ambient-width-sensitive occupant:
 one-line text and fixed controls have height independent of available width,
-while the Conversation card and wrapped excerpt label both use canonical
-feature-owned widths. An app-owned per-column geometry boundary remains a
+while the Conversation card uses its canonical feature-owned width. An
+app-owned per-column geometry boundary remains a
 future prerequisite for adding any genuinely fluid-width occupant, not a
 hidden requirement of the current matrix.
 
@@ -471,9 +471,11 @@ contracts. The card reservation moved with its occupant when the page
 composition was tuned from C3 to B3:
 
 - B3 reserves the smallest approved canonical Conversation Card presentation;
-- D2 reserves the natural outer height of one supporting-context line;
-- D3 reserves the natural height of one excerpt-label line;
-- A3 remains occupied by its title presentation and needs no reservation;
+- E2 reserves the natural height of the one-line Search Investigation Status
+  presentation, including its integrated activity-indicator diameter but no
+  discretionary spacing;
+- E3 is empty and unreserved;
+- A3 remains occupied by its Conversation excerpt title presentation and needs no reservation;
 - C3 remains empty and unreserved.
 
 The Conversations and Messages features calculate these minima from the same
@@ -496,11 +498,12 @@ historical design notes.
 
 | Track | Column 1 | Column 2 | Column 3 |
 | --- | --- | --- | --- |
-| A | A1: `TopMenuTrackOccupant`, center, `Search top menu` | A2: `TextTrackOccupant`, center, `All messages title` | A3: `TextTrackOccupant`, center, `Conversation title` |
+| A | A1: `TopMenuTrackOccupant`, center, `Search top menu` | A2: `TextTrackOccupant`, center, `All messages title` | A3: `TextTrackOccupant`, center, `Conversation excerpt title` |
 | B | B1: empty | B2: `TextTrackOccupant`, top, `Message result metadata` | B3: optional `ConversationSignatureCardTrackOccupant`, top, `Conversation signature card`; minimum reserved from the canonical minimum card presentation |
 | C | C1: empty | C2: `MessageEvidenceSearchControlsTrackOccupant`, center, `Message search controls` | C3: empty |
-| D | D1: empty | D2: `MessageEvidenceSupportingContextTrackOccupant`, top, `Message search supporting context`; minimum reserved from its one-line presentation contract | D3: optional `ConversationExcerptLabelTrackOccupant`, top, `Conversation excerpt label`; minimum reserved from its one-line presentation contract |
-| E | E1: `FixedHeightTrackOccupant`, top, `Fixed spacing` | E2: empty | E3: empty |
+| D | D1: `FixedHeightTrackOccupant(height: 2)`, top, `Fixed spacing` | D2: empty | D3: empty |
+| E | E1: empty | E2: `SearchInvestigationStatusTrackOccupant`, top, `Search investigation status`; minimum reserved from its stable one-line presentation contract | E3: empty |
+| F | F1: `FixedHeightTrackOccupant(height: 16)`, top, `Fixed spacing` | F2: empty | F3: empty |
 
 For each occupied cell, record:
 
@@ -517,7 +520,7 @@ Labels explain the current composition to humans. They never affect geometry.
 | --- | --- | --- | --- | --- |
 | Matrix-to-row-plan adapter | Phase 2 | Phase 5 | Removed | `deriveSearchPageTemporaryRowPlan`, `temporaryRowPlan`, and shell row-plan distribution deleted after all active Search renderers migrated |
 | Unordered occupant bag | Baseline | Phase 2 | Removed | Replaced by explicit matrix cells and named page inputs |
-| `additionalOccupants` | Baseline | Phase 2 | Removed | Optional B3/D3 occupants have named matrix positions |
+| `additionalOccupants` | Baseline | Phase 2 | Removed | Optional occupants have named matrix positions |
 | Row-only renderer lookups | Baseline | Phase 5 | Removed | Sidebar, center, and right Track regions render by complete `CellId`; dead fallback branches and row-only tests deleted |
 | Duplicate local alignment | Baseline | Phase 4/5 | Removed | Search matrix cells own alignment; non-matrix fallbacks use ordinary presentation composition rather than Track authority |
 | Placement-only occupant APIs | Baseline | Phase 3/5 | Removed from occupant contract | No occupant owns `TrackId`, column, `CellId`, page, or alignment; final legacy-renderer audit remains in Phase 5 |

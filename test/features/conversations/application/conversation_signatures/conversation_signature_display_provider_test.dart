@@ -122,6 +122,58 @@ void main() {
     expect(conversationSignatureIdsWithDuplicateChatHooks(signatures), isEmpty);
   });
 
+  test(
+    'self-only signature is titled self without exposing its chat hook',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          conversationSignaturesProvider(limit: 500).overrideWith((ref) async {
+            return const [
+              ConversationSignature(
+                conversationId: 42,
+                title: '+16046858506',
+                participantLabels: ['+16046858506'],
+                participantCount: 1,
+                isGroup: false,
+                isSelfConversation: true,
+                messageCount: 12,
+                attachmentCount: 1,
+                firstMessageAtUtc: '2026-05-01T10:00:00.000Z',
+                lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+                lastMessageText: 'remember this',
+                activityMonths: [],
+              ),
+            ];
+          }),
+          displayIdentityResolverProvider.overrideWith((ref) async {
+            return const DisplayIdentityResolver(
+              identitiesByHandleKey: {
+                '16046858506': ParticipantDisplayIdentity(
+                  primaryLabel: selfParticipantDisplayLabel,
+                  source: DisplayIdentitySource.localAccount,
+                  isKnownContact: true,
+                ),
+              },
+            );
+          }),
+          conversationTagRepositoryProvider.overrideWith((ref) async {
+            return const _FakeConversationTagRepository();
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final signatures = await container.read(
+        conversationSignatureDisplayProvider().future,
+      );
+
+      expect(signatures.single.title, 'self');
+      expect(signatures.single.participantLabels, ['Me']);
+      expect(signatures.single.chatHookLabel, isNull);
+      expect(signatures.single.isSelfConversation, isTrue);
+    },
+  );
+
   test('marks only duplicate one-to-one display identities for chat hooks', () {
     const signatures = [
       ConversationSignatureDisplayModel(

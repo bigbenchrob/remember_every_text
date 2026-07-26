@@ -79,7 +79,55 @@ Examples:
 * global branch -> global timeline view spec
 * onboarding gate -> explicit onboarding or readiness surface
 
-The right panel is commonly subordinate to center panel content. If the active center spec no longer supports the right-panel context, the right panel must be cleared or replaced.
+The right panel is commonly subordinate to center panel content. If the active
+investigation no longer supports stored right-panel context, that context must
+cease to be effective. It does not necessarily need to be deleted.
+
+## Total presentation projections
+
+An active investigation should project a truthful center presentation even
+when it has no selected target. Absence is appropriate when the investigation
+itself is inactive, not merely when the user has not yet selected an item.
+
+Where an investigation supports selection, prefer one feature-owned outer
+ViewSpec with an explicit target union such as `idle | selected item`. Do not
+add a separate `isIdle` flag, a second feature-owned ViewSpec, or synthetic
+layout reservations. The idle target is application state with real
+presentation, not a layout workaround.
+
+Unknown Sources is the first implemented example. Its Messages-owned ViewSpec
+contains the opaque investigation identity, the Handles-owned investigation
+kind, and either an idle or selected-source target. Initial entry, incompatible
+filter changes, investigation switching, and successful dismissal therefore
+retain a nonempty center projection while the investigation remains active.
+The selected-source target continues to render the established evidence
+surface and actions.
+
+## Stored and effective panel state
+
+Stored panel state and effective panel presentation are deliberately distinct.
+
+Stored state preserves a panel request so temporary navigation away from its
+originating context does not destroy useful work. Effective state is derived by
+checking whether that stored request is compatible with the current durable
+context or investigation.
+
+The governing rules are:
+
+* incompatible stored state remains stored unless an owner explicitly replaces
+  it for an independent reason
+* effective panel providers expose only compatible state
+* panel visibility derives from effective state
+* downstream anchors and projections must read effective state, not stored
+  state
+* callers must not scatter imperative panel-clearing commands to repair missing
+  compatibility rules
+
+A Search-created subordinate presentation is effective only while its opaque
+originating Search investigation identity remains current. Navigating away and
+returning without changing that investigation may therefore restore the stored
+presentation. Replacing the investigation makes the old presentation
+ineffective even when the new query parameters later equal the old ones.
 
 Panel content is independent only when that independence is explicitly declared by system flow.
 
@@ -119,3 +167,5 @@ Use these for detail:
 
 * [REFERENCE/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/](../REFERENCE/56-VIEW-SPEC-PANEL-CONTENT-SYSTEM/)
 * [REFERENCE/58-COORDINATED-SPEC-DRIVEN-CONTENT-SYSTEM/20-message-display-pipeline.md](../REFERENCE/58-COORDINATED-SPEC-DRIVEN-CONTENT-SYSTEM/20-message-display-pipeline.md)
+* [Search interactions and investigation compatibility](../../40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md)
+* [Unknown Sources total center projection](../../45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md#implemented-investigation-provenance)

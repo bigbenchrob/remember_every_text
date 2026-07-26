@@ -2,14 +2,15 @@
 tier: project
 scope: developer-guide
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-19
 source_of_truth: doc
-links:V
+links:
   - ./00-START-HERE.md
   - ./01-PROJECT/05-CURRENT-STATE.md
   - ./01-PROJECT/02-architecture-overview.md
   - ./00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/00-READ-FIRST.md
   - ./40-FEATURES/conversations/README.md
+  - ./40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md
   - ./55-READERS-INTEGRATORS-ORCHESTRATORS/69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md
   - ./95-WALK-UI-TREE/README.md
 tests: []
@@ -75,6 +76,12 @@ content, do not bolt on a "clear" command. Ask why the panel could derive an
 invalid view from the current flow state. If a widget needs a name, do not
 format a raw handle locally. Ask which identity resolver should have supplied
 the display label.
+
+The Architectural Constitution names this the
+[Mechanical Impossibility Principle](./00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/10-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION.md#the-mechanical-impossibility-principle):
+whenever practical, make an invalid state unable to exist instead of relying on
+every caller to detect or clean it up. It is a preference grounded in repeated
+project experience, not a claim that imperative cleanup is never necessary.
 
 ## The Product Phase Right Now
 
@@ -204,6 +211,14 @@ For known people, user display-name override wins. Then app-known contact
 identity. Then imported AddressBook display name. Raw handle is fallback, not
 the primary label for a known person.
 
+The local user is the important exception to that ordinary precedence. When a
+canonical handle is marked `is_me`, MessageLens speaks in the first person:
+`Me` in participant titles and lists, `me` in prose-like message metadata, and
+`self` for a Conversation containing only the user. Imported personal names
+and local endpoints remain provenance, not ordinary relationship labels. This
+is resolved centrally from graph identity; widgets must never infer it by
+matching a name.
+
 ## One Conversation
 
 There is only one Conversation.
@@ -259,6 +274,15 @@ MessageLens distinguishes modes of interaction.
 
 Search is for finding something already known. The user has a term, a person, a
 date, or a clue and wants evidence.
+
+Within Search All Messages, the current investigation is primary state. A
+selected result and its right-side Conversation excerpt are subordinate to the
+particular investigative episode that created them. The excerpt may remain
+stored while the user temporarily navigates elsewhere, but it renders only
+while its opaque originating identity remains compatible with the current
+investigation. Query edits, mode changes, and month browsing therefore do not
+issue imperative panel cleanup: effective presentation is derived from
+compatibility.
 
 Browse is for navigating a collection the user broadly understands, such as
 Contacts or Conversations.
@@ -357,6 +381,12 @@ view models carry typed data. Rendering builds widgets at the edge.
 Do not use widgets as state. Do not have a feature construct another feature's
 UI. Do not have a widget query a database to decide meaning. Do not mutate
 another panel directly because it is visually convenient.
+
+Stored panel state is not automatically visible panel state. Navigation derives
+an effective stack from current flow and investigation compatibility. A stored
+presentation may survive temporary incompatibility for restoration, but an
+incompatible presentation must never remain effective. Fix the compatibility
+rule rather than scattering `clear`, `close`, or `dismiss` commands.
 
 The sidebar is navigation and scope selection. The center panel is the primary
 evidence surface. The right panel is a secondary compatible lens when needed.

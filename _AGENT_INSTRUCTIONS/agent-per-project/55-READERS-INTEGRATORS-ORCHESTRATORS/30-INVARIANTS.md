@@ -76,6 +76,32 @@ Handles may appear for a known contact only in explicitly handle-oriented contex
 
 Conversation graph surfaces must resolve participant handles through the preferred contact-name boundary before rendering conversation titles, signatures, message evidence headers, or search context labels.
 
+## Local Account Identity Is A Source-Derived Graph Fact
+
+Whether a canonical handle belongs to the MessageLens user is derived from
+Apple Messages account and incoming-destination evidence. It is not inferred
+from a display name, a rendered Conversation title, or message direction alone,
+and it is not user-authored overlay intent.
+
+Historical reconciliation follows the ordinary responsibility chain:
+
+```text
+chat.db account/destination facts
+-> source-scoped handle annotation
+-> graph handle projection
+-> Conversation read model
+-> `self` evidence presentation
+```
+
+The lifecycle orchestrator may request that reconciliation through the
+Conversation Graph build service and execution gate. It must not directly
+compose importer/projector implementation providers. The operation updates only
+changed local-account annotations and must not reimport historical messages.
+
+Canonical endpoint matching must collapse equivalent representations before
+identity is projected. Typed URI and formatted phone variants are aliases of
+one endpoint, not separate local identities.
+
 ---
 
 # Reader Invariants

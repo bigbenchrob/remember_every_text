@@ -2,12 +2,13 @@
 tier: project
 scope: track-cell-rendering-anatomy
 owner: agent-per-project
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-24
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
   - ./01-column-band-wrappers.md
   - ./03-search-page-current-implementation.md
+  - ./07-column-specific-shared-track-boundaries.md
   - ../../../lib/config/theme/widgets/layout/cross_column_track_plan.dart
   - ../../../lib/config/theme/widgets/layout/page_track_layout_matrix.dart
   - ../../../lib/config/theme/widgets/layout/resolved_track_layout_matrix.dart
@@ -38,7 +39,7 @@ Messages and Conversations prepare presentation inputs
 ## 1. Features Prepare Presentation
 
 Messages owns evidence labels and controls. Conversations owns the Conversation
-title, signature card, and excerpt label. The page receives prepared occupants;
+excerpt title, signature card, and temporal orientation. The page receives prepared occupants;
 it does not initiate feature reads or construct feature UI.
 
 ## 2. The Page Declares The Matrix
@@ -91,7 +92,7 @@ center, and end panel therefore consume the same immutable geometry.
 ## 6. TrackCellView Renders A Cell
 
 Each participating column emits `TrackCellView(cellId: ...)` in ordinal Track
-order. The renderer:
+order through that column's page-declared final shared Track. The renderer:
 
 1. reads its resolved cell;
 2. returns an empty box for an empty cell;
@@ -100,6 +101,12 @@ order. The renderer:
 4. places that presentation using the cell alignment stored by the page.
 
 It does not find peers or resolve heights.
+
+The renderer also does not decide how long the column participates. It receives
+that boundary from page composition. Empty cells inside the boundary render
+their shared allocation. Cells after the boundary are not emitted before the
+column resumes native flow, even when the page matrix continues through later
+Tracks for peer columns.
 
 ## Inspector Notes
 

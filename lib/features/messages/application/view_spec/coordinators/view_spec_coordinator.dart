@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../domain/spec_classes/messages_view_spec.dart';
 import '../resolvers/global_timeline_resolver.dart';
-import '../resolvers/handle_lens_resolver.dart';
+import '../resolvers/handle_investigation_resolver.dart';
 import '../resolvers/messages_for_contact_resolver.dart';
 import '../resolvers/messages_for_handle_resolver.dart';
 import '../resolvers/recovered_attachment_sidebar_resolver.dart';
@@ -50,8 +50,11 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
             messageId: messageId,
             attachment: attachment,
           ),
-      handleLens: (handleId) =>
-          HandleLensResolver().resolve(handleId: handleId),
+      handleInvestigation: (investigationId, investigation, target) =>
+          HandleInvestigationResolver().resolve(
+            investigation: investigation,
+            target: target,
+          ),
     );
   }
 }

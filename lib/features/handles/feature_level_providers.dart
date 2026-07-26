@@ -19,6 +19,8 @@ export './application/info_cassette_spec/coordinators/info_cassette_coordinator.
 export './application/read_models/handle_display_name_provider.dart';
 export './application/read_models/handle_display_name_reader.dart';
 export './application/read_models/handle_identity.dart';
+export './application/read_models/handle_source_presentation.dart';
+export './application/read_models/handle_source_presentation_provider.dart';
 export './application/read_models/stray_handle_summary.dart';
 export './application/read_models/stray_handles_provider.dart';
 export './application/read_models/stray_handles_read_repository.dart';
@@ -29,8 +31,10 @@ export './application/settings_cassette_spec/resolver_tools/handle_visibility_st
 export './application/settings_cassette_spec/resolver_tools/manual_linking_read_repository_provider.dart';
 export './application/settings_cassette_spec/resolver_tools/spam_handles_repository_provider.dart';
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
+export './application/sidebar_cassette_spec/payloads/stray_handles_investigation_switcher_cassette_payload.dart';
 export './application/sidebar_cassette_spec/payloads/stray_handles_mode_switcher_cassette_payload.dart';
 export './application/sidebar_cassette_spec/payloads/stray_handles_review_cassette_payload.dart';
 export './application/sidebar_cassette_spec/payloads/stray_handles_type_switcher_cassette_payload.dart';
 export './application/sidebar_cassette_spec/rendering/handles_cassette_body_builder.dart';
+export './application/source_review/handle_source_review_actions_provider.dart';
 export './application/state/stray_handle_mode_provider.dart';

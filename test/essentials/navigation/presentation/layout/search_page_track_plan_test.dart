@@ -13,7 +13,7 @@ void main() {
         minimumReservations: _minimumReservations(),
       );
 
-      expect(matrix.cells, hasLength(15));
+      expect(matrix.cells, hasLength(18));
       expect(matrix.cells.map((cell) => cell.cellId.diagnosticLabel), const [
         'A1',
         'A2',
@@ -30,15 +30,19 @@ void main() {
         'E1',
         'E2',
         'E3',
+        'F1',
+        'F2',
+        'F3',
       ]);
       expect(_occupiedLabels(matrix), const {
         'A1': 'Search top menu',
         'A2': 'All messages title',
-        'A3': 'Conversation title',
+        'A3': 'Conversation excerpt title',
         'B2': 'Message result metadata',
         'C2': 'Message search controls',
-        'D2': 'Message search supporting context',
-        'E1': 'Fixed spacing',
+        'D1': 'Fixed spacing',
+        'E2': 'Search investigation status',
+        'F1': 'Fixed spacing',
       });
       expect(
         matrix
@@ -57,7 +61,7 @@ void main() {
       final matrix = buildSearchPageTrackLayoutMatrix(
         occupants: _occupants(
           rightConversationCard: const FixedHeightTrackOccupant(height: 88),
-          rightExcerptLabel: const FixedHeightTrackOccupant(height: 30),
+          rightTemporalOrientation: const FixedHeightTrackOccupant(height: 18),
         ),
         minimumReservations: _minimumReservations(),
       );
@@ -68,9 +72,31 @@ void main() {
       );
       expect(
         _occupiedLabels(matrix),
-        containsPair('D3', 'Conversation excerpt label'),
+        containsPair('C3', 'Conversation temporal orientation'),
       );
-      expect(matrix.cells.where((cell) => cell.isOccupied), hasLength(9));
+      expect(
+        matrix
+            .cellAt(
+              const CellId(
+                trackId: TrackId.trackE,
+                columnId: TrackColumnId.column3,
+              ),
+            )
+            .isOccupied,
+        isFalse,
+      );
+      expect(matrix.cells.where((cell) => cell.isOccupied), hasLength(10));
+      expect(
+        matrix
+            .cellAt(
+              const CellId(
+                trackId: TrackId.trackC,
+                columnId: TrackColumnId.column3,
+              ),
+            )
+            .alignment,
+        TrackCellAlignment.center,
+      );
     });
 
     testWidgets('resolves Track heights from claims and reservations', (
@@ -79,7 +105,6 @@ void main() {
       final matrix = buildSearchPageTrackLayoutMatrix(
         occupants: _occupants(
           rightConversationCard: const FixedHeightTrackOccupant(height: 88),
-          rightExcerptLabel: const FixedHeightTrackOccupant(height: 30),
         ),
         minimumReservations: _minimumReservations(),
       );
@@ -101,8 +126,9 @@ void main() {
               expect(resolvedMatrix.heightFor(TrackId.trackA), 30);
               expect(resolvedMatrix.heightFor(TrackId.trackB), 88);
               expect(resolvedMatrix.heightFor(TrackId.trackC), 30);
-              expect(resolvedMatrix.heightFor(TrackId.trackD), 30);
-              expect(resolvedMatrix.heightFor(TrackId.trackE), 16);
+              expect(resolvedMatrix.heightFor(TrackId.trackD), 2);
+              expect(resolvedMatrix.heightFor(TrackId.trackE), 15);
+              expect(resolvedMatrix.heightFor(TrackId.trackF), 16);
               return const SizedBox.shrink();
             },
           ),
@@ -142,7 +168,9 @@ void main() {
       await _withResolvedMatrix(tester, matrix, (resolved) {
         expect(resolved.heightFor(TrackId.trackB), 60);
         expect(resolved.heightFor(TrackId.trackC), 30);
-        expect(resolved.heightFor(TrackId.trackD), 23);
+        expect(resolved.heightFor(TrackId.trackD), 2);
+        expect(resolved.heightFor(TrackId.trackE), 15);
+        expect(resolved.heightFor(TrackId.trackF), 16);
         expect(
           resolved
               .cellAt(
@@ -167,14 +195,12 @@ void main() {
       final minimumCard = buildSearchPageTrackLayoutMatrix(
         occupants: _occupants(
           rightConversationCard: const FixedHeightTrackOccupant(height: 50),
-          rightExcerptLabel: const FixedHeightTrackOccupant(height: 12),
         ),
         minimumReservations: _minimumReservations(),
       );
       final tallCard = buildSearchPageTrackLayoutMatrix(
         occupants: _occupants(
           rightConversationCard: const FixedHeightTrackOccupant(height: 96),
-          rightExcerptLabel: const FixedHeightTrackOccupant(height: 34),
         ),
         minimumReservations: _minimumReservations(),
       );
@@ -182,22 +208,26 @@ void main() {
       await _withResolvedMatrix(tester, resting, (resolved) {
         expect(resolved.heightFor(TrackId.trackB), 60);
         expect(resolved.heightFor(TrackId.trackC), 30);
-        expect(resolved.heightFor(TrackId.trackD), 23);
+        expect(resolved.heightFor(TrackId.trackD), 2);
+        expect(resolved.heightFor(TrackId.trackE), 15);
       });
       await _withResolvedMatrix(tester, minimumCard, (resolved) {
         expect(resolved.heightFor(TrackId.trackB), 60);
         expect(resolved.heightFor(TrackId.trackC), 30);
-        expect(resolved.heightFor(TrackId.trackD), 23);
+        expect(resolved.heightFor(TrackId.trackD), 2);
+        expect(resolved.heightFor(TrackId.trackE), 15);
       });
       await _withResolvedMatrix(tester, tallCard, (resolved) {
         expect(resolved.heightFor(TrackId.trackB), 96);
         expect(resolved.heightFor(TrackId.trackC), 30);
-        expect(resolved.heightFor(TrackId.trackD), 34);
+        expect(resolved.heightFor(TrackId.trackD), 2);
+        expect(resolved.heightFor(TrackId.trackE), 15);
       });
       await _withResolvedMatrix(tester, resting, (resolved) {
         expect(resolved.heightFor(TrackId.trackB), 60);
         expect(resolved.heightFor(TrackId.trackC), 30);
-        expect(resolved.heightFor(TrackId.trackD), 23);
+        expect(resolved.heightFor(TrackId.trackD), 2);
+        expect(resolved.heightFor(TrackId.trackE), 15);
       });
     });
   });
@@ -205,9 +235,8 @@ void main() {
 
 const SearchPageTrackMinimumReservations _minimumReservationsValue =
     SearchPageTrackMinimumReservations(
-      centerSupportingContext: 23,
+      centerInvestigationStatus: 15,
       rightConversationCard: 60,
-      rightExcerptLabel: 15,
     );
 
 SearchPageTrackMinimumReservations _minimumReservations() {
@@ -216,7 +245,7 @@ SearchPageTrackMinimumReservations _minimumReservations() {
 
 SearchPageTrackOccupants _occupants({
   TrackOccupant? rightConversationCard,
-  TrackOccupant? rightExcerptLabel,
+  TrackOccupant? rightTemporalOrientation,
 }) {
   return SearchPageTrackOccupants(
     sidebarTopMenu: const FixedHeightTrackOccupant(height: 30),
@@ -224,10 +253,11 @@ SearchPageTrackOccupants _occupants({
     rightTitle: const FixedHeightTrackOccupant(height: 20),
     centerMetadata: const FixedHeightTrackOccupant(height: 14),
     centerSearchControls: const FixedHeightTrackOccupant(height: 30),
-    centerSupportingContext: const FixedHeightTrackOccupant(height: 23),
+    centerInvestigationStatus: const FixedHeightTrackOccupant(height: 15),
+    searchStatusSpacing: const FixedHeightTrackOccupant(height: 2),
     bottomSpacing: const FixedHeightTrackOccupant(height: 16),
     rightConversationCard: rightConversationCard,
-    rightExcerptLabel: rightExcerptLabel,
+    rightTemporalOrientation: rightTemporalOrientation,
   );
 }
 

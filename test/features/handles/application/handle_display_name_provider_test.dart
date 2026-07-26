@@ -61,6 +61,51 @@ void main() {
     expect(label, 'Claire');
   });
 
+  test('canonical self identity wins over personal labels', () async {
+    await graphDb.database.insert('contacts', <String, Object?>{
+      'contact_id': 9001,
+      'display_name': 'Personal Address Book Name',
+    });
+    await graphDb.database.insert('handles', <String, Object?>{
+      'ss_id': 7001,
+      'id': 'self@example.com',
+      'service': 'iMessage',
+      'is_me': 1,
+    });
+    await graphDb.database.insert('contact_to_handle', <String, Object?>{
+      'contact_id': 9001,
+      'handle_ss_id': 7001,
+      'handle_value': 'self@example.com',
+    });
+    await overlayDb.setParticipantDisplayNameOverride(9001, 'Rob');
+
+    final label = await container.read(
+      handleDisplayNameProvider(handleId: 7001).future,
+    );
+
+    expect(label, 'Me');
+  });
+
+  test('rowid-keyed handle lookup preserves canonical self identity', () async {
+    const rowidKeyedHandleId = 42;
+    final graphHandleId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: rowidKeyedHandleId,
+    );
+    await graphDb.database.insert('handles', <String, Object?>{
+      'ss_id': graphHandleId,
+      'id': 'self@example.com',
+      'service': 'iMessage',
+      'is_me': 1,
+    });
+
+    final label = await container.read(
+      handleDisplayNameProvider(handleId: rowidKeyedHandleId).future,
+    );
+
+    expect(label, 'Me');
+  });
+
   test(
     'rowid-keyed handle override wins over raw graph handle label',
     () async {

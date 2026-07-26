@@ -21,3 +21,17 @@ should be designed here, during the All Messages review, not during the
 Conversations sidebar review.
 
 Do not implement Working Set until this review area explicitly evaluates it.
+
+## Context Action For Every Search Message
+
+Source:
+
+- `search_investigation_compatibility.md`
+
+Every message displayed in Search All Messages is removed from its
+conversational ordering and should therefore expose the Context / In
+Conversation action, not only messages classified as active search results.
+
+This is a separate UI slice. It should reuse the implemented Search
+investigation provenance when requesting a Conversation excerpt and must not
+reintroduce imperative panel cleanup.

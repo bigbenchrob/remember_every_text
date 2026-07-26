@@ -49,6 +49,7 @@ class ConversationSignatureReader {
       participantLabels: participantLabels,
       participantCount: overview.participantCount,
       isGroup: overview.isGroup,
+      isSelfConversation: overview.isSelfConversation,
       messageCount: overview.messageCount,
       attachmentCount: overview.attachmentCount,
       firstMessageAtUtc: overview.firstMessageAtUtc,

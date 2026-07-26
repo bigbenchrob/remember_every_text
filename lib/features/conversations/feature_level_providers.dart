@@ -7,6 +7,8 @@ export 'application/actions/conversation_excerpt_navigation_actions_provider.dar
     show conversationExcerptNavigationActionsProvider;
 export 'application/actions/conversation_selection_actions_provider.dart'
     show conversationSelectionActionsProvider;
+export 'application/conversation_excerpts/conversation_excerpt_anchor_date_provider.dart'
+    show conversationExcerptAnchorDateProvider;
 export 'application/conversation_signatures/conversation_signature_display_provider.dart'
     show
         ConversationSignatureDisplayByIdsRequest,

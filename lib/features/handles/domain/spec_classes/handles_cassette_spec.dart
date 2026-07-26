@@ -2,7 +2,9 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'handles_cassette_spec.freezed.dart';
 
-/// Filter for the stray handles review cassette - determines which handle type to show.
+enum StrayHandleInvestigation { identifySources, numericSenderIds }
+
+/// Filter for the unknown-source identification investigation.
 enum StrayHandleFilter {
   /// Phone numbers (no '@', no 'urn:' prefix)
   phones,
@@ -14,13 +16,10 @@ enum StrayHandleFilter {
   businessUrns,
 }
 
-/// Mode for the stray handles review cassette - determines which handles to show.
-enum StrayHandleMode {
-  /// Show all stray handles (excluding dismissed).
-  allStrays,
-
-  /// Show only spam candidates (short codes, one-off messages).
-  spamCandidates,
+/// Visibility mode within an unknown-source investigation.
+enum StrayHandleReviewMode {
+  /// Show sources that remain in active review.
+  active,
 
   /// Show dismissed handles (for "undo" / escape hatch access).
   dismissed,
@@ -39,18 +38,16 @@ enum StrayHandleMode {
 /// instead of inline message strings.
 @freezed
 abstract class HandlesCassetteSpec with _$HandlesCassetteSpec {
-  /// Unified stray handles review — filtered by phone or email, with mode selector.
+  /// Source rows compatible with one investigation and optional endpoint filter.
   const factory HandlesCassetteSpec.strayHandlesReview({
-    required StrayHandleFilter filter,
-    @Default(StrayHandleMode.allStrays) StrayHandleMode mode,
+    required StrayHandleInvestigation investigation,
+    StrayHandleFilter? filter,
   }) = _HandlesStrayReviewSpec;
 
-  /// Mode switcher control for stray handles triage.
-  ///
-  /// This is a separate cassette that controls the global mode state,
-  /// allowing it to have child cassettes for additional filtering/sorting.
+  /// Active/dismissed maintenance control within one investigation.
   const factory HandlesCassetteSpec.strayHandlesModeSwitcher({
-    required StrayHandleFilter filter,
+    required StrayHandleInvestigation investigation,
+    StrayHandleFilter? filter,
   }) = _HandlesModeSwitcherSpec;
 
   /// Type switcher for selecting Phone # / Email / Business URN.
@@ -60,4 +57,11 @@ abstract class HandlesCassetteSpec with _$HandlesCassetteSpec {
   const factory HandlesCassetteSpec.strayHandlesTypeSwitcher({
     @Default(StrayHandleFilter.phones) StrayHandleFilter selectedFilter,
   }) = _HandlesTypeSwitcherSpec;
+
+  /// Primary investigation choice. Endpoint filtering follows only when the
+  /// source-identification investigation is selected.
+  const factory HandlesCassetteSpec.strayHandlesInvestigationSwitcher({
+    @Default(StrayHandleInvestigation.identifySources)
+    StrayHandleInvestigation selectedInvestigation,
+  }) = _HandlesInvestigationSwitcherSpec;
 }

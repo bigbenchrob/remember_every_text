@@ -7,7 +7,7 @@ part of 'global_messages_search_session_provider.dart';
 // **************************************************************************
 
 String _$globalMessagesSearchSessionHash() =>
-    r'128a151217c921d44c415ef9b7dbb49012b8a073';
+    r'1aefd5ddb75f31828157aa5ad312acda48ff8b2d';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -31,7 +31,7 @@ class _SystemHash {
 }
 
 abstract class _$GlobalMessagesSearchSession
-    extends BuildlessAutoDisposeNotifier<GlobalMessagesSearchSessionState> {
+    extends BuildlessNotifier<GlobalMessagesSearchSessionState> {
   late final DateTime? monthAnchor;
 
   GlobalMessagesSearchSessionState build({DateTime? monthAnchor});
@@ -102,7 +102,7 @@ class GlobalMessagesSearchSessionFamily
 /// Copied from [GlobalMessagesSearchSession].
 class GlobalMessagesSearchSessionProvider
     extends
-        AutoDisposeNotifierProviderImpl<
+        NotifierProviderImpl<
           GlobalMessagesSearchSession,
           GlobalMessagesSearchSessionState
         > {
@@ -162,7 +162,7 @@ class GlobalMessagesSearchSessionProvider
   }
 
   @override
-  AutoDisposeNotifierProviderElement<
+  NotifierProviderElement<
     GlobalMessagesSearchSession,
     GlobalMessagesSearchSessionState
   >
@@ -188,14 +188,14 @@ class GlobalMessagesSearchSessionProvider
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 mixin GlobalMessagesSearchSessionRef
-    on AutoDisposeNotifierProviderRef<GlobalMessagesSearchSessionState> {
+    on NotifierProviderRef<GlobalMessagesSearchSessionState> {
   /// The parameter `monthAnchor` of this provider.
   DateTime? get monthAnchor;
 }
 
 class _GlobalMessagesSearchSessionProviderElement
     extends
-        AutoDisposeNotifierProviderElement<
+        NotifierProviderElement<
           GlobalMessagesSearchSession,
           GlobalMessagesSearchSessionState
         >

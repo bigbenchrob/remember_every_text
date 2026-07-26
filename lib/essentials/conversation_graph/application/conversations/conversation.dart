@@ -4,6 +4,7 @@ class ConversationOverview {
     required this.participantHandles,
     required this.participantCount,
     required this.isGroup,
+    this.isSelfConversation = false,
     required this.messageCount,
     required this.attachmentCount,
     required this.firstMessageAtUtc,
@@ -15,6 +16,7 @@ class ConversationOverview {
   final List<String> participantHandles;
   final int participantCount;
   final bool isGroup;
+  final bool isSelfConversation;
   final int messageCount;
   final int attachmentCount;
   final String? firstMessageAtUtc;

@@ -1,12 +1,17 @@
 import '../../../../essentials/conversation_graph/application/contacts/contact_handle_keys.dart';
 
 enum DisplayIdentitySource {
+  localAccount,
   userOverride,
   overlayVirtual,
   graphContact,
   handleFallback,
   unknown,
 }
+
+const selfParticipantDisplayLabel = 'Me';
+const selfMessageDisplayLabel = 'me';
+const selfConversationDisplayLabel = 'self';
 
 class ParticipantDisplayIdentity {
   const ParticipantDisplayIdentity({
@@ -24,6 +29,7 @@ class ParticipantDisplayIdentity {
   final String? rawHandleLabel;
 
   bool get isFallback => source == DisplayIdentitySource.handleFallback;
+  bool get isSelf => source == DisplayIdentitySource.localAccount;
 }
 
 class ConversationDisplayIdentity {
@@ -31,23 +37,27 @@ class ConversationDisplayIdentity {
     required this.conversationId,
     required this.title,
     required this.participantLabels,
+    this.isSelfConversation = false,
   });
 
   final int? conversationId;
   final String title;
   final List<String> participantLabels;
+  final bool isSelfConversation;
 }
 
 class MessageSenderDisplayIdentity {
   const MessageSenderDisplayIdentity({
     required this.primaryLabel,
     required this.isKnownContact,
+    required this.isSelf,
     this.rawHandleLabel,
     this.contactId,
   });
 
   final String primaryLabel;
   final bool isKnownContact;
+  final bool isSelf;
   final String? rawHandleLabel;
   final int? contactId;
 }
@@ -142,11 +152,16 @@ class DisplayIdentityResolver {
         : List<String>.unmodifiable([
             for (final participant in participants) participant.primaryLabel,
           ]);
+    final isSelfConversation =
+        participants.length == 1 && participants.single.isSelf;
 
     return ConversationDisplayIdentity(
       conversationId: conversationId,
-      title: conversationTitleForParticipantLabels(labels),
+      title: isSelfConversation
+          ? selfConversationDisplayLabel
+          : conversationTitleForParticipantLabels(labels),
       participantLabels: labels,
+      isSelfConversation: isSelfConversation,
     );
   }
 
@@ -159,8 +174,9 @@ class DisplayIdentityResolver {
     final normalizedRawHandle = rawHandleLabel?.trim();
     if (isFromMe) {
       return const MessageSenderDisplayIdentity(
-        primaryLabel: 'me',
+        primaryLabel: selfMessageDisplayLabel,
         isKnownContact: true,
+        isSelf: true,
       );
     }
 
@@ -171,8 +187,11 @@ class DisplayIdentityResolver {
     );
     if (identity != null) {
       return MessageSenderDisplayIdentity(
-        primaryLabel: identity.primaryLabel,
+        primaryLabel: identity.isSelf
+            ? selfMessageDisplayLabel
+            : identity.primaryLabel,
         isKnownContact: identity.isKnownContact,
+        isSelf: identity.isSelf,
         rawHandleLabel:
             normalizedRawHandle == null || normalizedRawHandle.isEmpty
             ? identity.rawHandleLabel
@@ -185,6 +204,7 @@ class DisplayIdentityResolver {
       return MessageSenderDisplayIdentity(
         primaryLabel: normalizedRawHandle,
         isKnownContact: false,
+        isSelf: false,
       );
     }
 
@@ -192,17 +212,20 @@ class DisplayIdentityResolver {
       return MessageSenderDisplayIdentity(
         primaryLabel: 'canonical handle $senderCanonicalHandleId',
         isKnownContact: false,
+        isSelf: false,
       );
     }
     if (senderHandleId != null) {
       return MessageSenderDisplayIdentity(
         primaryLabel: 'handle $senderHandleId',
         isKnownContact: false,
+        isSelf: false,
       );
     }
     return const MessageSenderDisplayIdentity(
       primaryLabel: 'unknown sender',
       isKnownContact: false,
+      isSelf: false,
     );
   }
 

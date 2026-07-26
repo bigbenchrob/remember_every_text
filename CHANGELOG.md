@@ -8,7 +8,149 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-- No unreleased changes yet.
+No unreleased changes yet.
+
+## [0.2.13] — 2026-07-24
+
+### Fixed
+
+- Unknown Sources investigation controls and source lists now continue
+  immediately below the shared page identity row. Selecting, clearing, or
+  dismissing a source no longer moves the sidebar when transient center-panel
+  detail tracks expand or collapse.
+
+## [0.2.12] — 2026-07-21
+
+### Changed
+
+- Unknown Sources center panels now retain a stable Messages identity derived
+  from the active investigation. Selecting a source changes the subject beneath
+  that identity, while idle states use the evidence region to explain what the
+  current category contains and how it can be reviewed.
+
+## [0.2.11] — 2026-07-20
+
+### Changed
+
+- Unknown Sources now retains a truthful center-panel investigation when no
+  source is selected. Identify and Numeric IDs render their own quiet idle
+  guidance instead of dropping the center ViewSpec and collapsing the page
+  matrix; selecting or dismissing a source transitions between explicit idle
+  and selected-source targets within the same Messages-owned presentation.
+
+## [0.2.10] — 2026-07-20
+
+### Fixed
+
+- Dismissing an unfamiliar source now removes only that source from the loaded
+  sidebar projection without replacing the list with a loading state. A
+  successful dismissal also advances unfamiliar-source investigation
+  provenance, so the dismissed source's center evidence becomes incompatible
+  and disappears immediately.
+
+## [0.2.9] — 2026-07-20
+
+### Fixed
+
+- The unfamiliar-source `Dismiss` action now uses the recoverable dismissed
+  source workflow instead of merely marking the source reviewed. Source
+  identity and Create/Link/Dismiss semantics are centralized behind Handles,
+  while the complete message-evidence presentation remains Messages-owned.
+
+## [0.2.8] — 2026-07-20
+
+### Changed
+
+- Unfamiliar-source review now uses the shared cross-column matrix: the sidebar
+  top menu aligns with the selected source title, source details and controls
+  occupy explicit center cells with visible breathing room, and the remaining
+  cassette list begins level with the message evidence list.
+
+## [0.2.7] — 2026-07-20
+
+### Fixed
+
+- Unfamiliar-source center evidence now carries opaque investigation
+  provenance. Changing Identify/Numeric IDs, endpoint type, or Active/Dismissed
+  makes evidence from the previous investigation mechanically incompatible, so
+  stale Phone messages cannot persist beneath an Email or Numeric IDs list.
+
+## [0.2.6] — 2026-07-19
+
+### Changed
+
+- Unfamiliar-source review now separates identity discovery from numeric sender
+  ID review. Short codes are classified neutrally by endpoint shape, cannot
+  enter the source-identification list, and no longer receive an unsupported
+  `SPAM` verdict.
+- Source-identification rows now focus on opening evidence and no longer carry
+  routine per-row dismissal buttons. Dismissal remains available in the source
+  evidence context, with overlay-backed recovery preserved.
+
+## [0.2.5] — 2026-07-19
+
+### Fixed
+
+- Unfamiliar-source rows now use the full sidebar content lane while retaining
+  their dedicated dismiss-action rail, preventing dates from being cropped and
+  keeping the dismiss button aligned at the trailing edge.
+- Unfamiliar-source message badges, timelines, hydrated rows, and in-scope
+  searches now use the same canonical sender relationship, so sender-only
+  evidence remains visible even when Apple Messages supplied no chat-membership
+  edge.
+
+## [0.2.4] — 2026-07-19
+
+### Changed
+
+- Canonical local-account identity now appears consistently in the first
+  person across ordinary Conversation, Contact, handle, and message-evidence
+  presentation: `Me` for participants, `me` in prose metadata, and `self` for
+  self-only relationships. Personal contact names and local endpoints remain
+  available only where identity or handle provenance is explicitly inspected.
+
+## [0.2.3] — 2026-07-19
+
+### Fixed
+
+- Message evidence metadata now states direction and counterpart clearly as
+  `received from <sender>` or `from me to <Conversation>`, instead of showing
+  the ambiguous `received | ...` and incorrect `from me | me` labels.
+- Messages in self-conversations now use the single metadata label `self` for
+  both directions. MessageLens derives this from local account handles in the
+  Messages source rather than comparing display names.
+- Existing conversation graph databases now migrate their handle schema before
+  self-conversation reads begin, preventing `no such column: h.is_me` failures.
+- Startup now reconciles historical local-account handles from Apple Messages
+  account and incoming-destination evidence, then projects only changed
+  identity annotations. Existing self-conversations therefore acquire the
+  `self` label without reimporting message history.
+
+### Changed
+
+- The right panel is now titled `Conversation excerpt` and identifies the
+  selected message's month and year before the evidence begins, making temporal
+  movement from broad Search results into Conversation context immediately
+  visible. The temporal heading uses the established orange organizing-value
+  accent, while the redundant `21-message excerpt...` caption has been removed.
+- Every eligible All Messages row now offers `In conversation`, including
+  ordinary and month-browsed messages outside text-search results.
+
+## [0.2.2] — 2026-07-18
+
+### Fixed
+
+- Search query, mode, and heatmap changes now derive Conversation-context
+  visibility from opaque investigation compatibility, preventing stale excerpts
+  from overriding the current message evidence while preserving restorable
+  stored context.
+
+### Changed
+
+- Search All Messages now presents a structurally aligned investigation status
+  row, with delayed activity feedback for searches that take noticeable time
+  and stable geometry when results complete. Its text now aligns with the
+  visible Search-field edge, with explicit matrix spacing separating the rows.
 
 ## [0.2.1] — 2026-07-16
 

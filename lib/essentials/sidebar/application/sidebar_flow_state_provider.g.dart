@@ -6,7 +6,7 @@ part of 'sidebar_flow_state_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sidebarFlowHash() => r'269ad0274ea9998969fbb292f4f9e6d8d6b5bab4';
+String _$sidebarFlowHash() => r'21215f8cc42c95f3b82efb3467cdf76dbc5f45f7';
 
 /// See also [SidebarFlow].
 @ProviderFor(SidebarFlow)

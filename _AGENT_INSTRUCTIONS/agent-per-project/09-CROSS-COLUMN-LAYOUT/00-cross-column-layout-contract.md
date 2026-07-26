@@ -2,12 +2,13 @@
 tier: project
 scope: cross-column-layout-contract
 owner: agent-per-project
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-26
 source_of_truth: doc
 links:
   - ./README.md
   - ./01-column-band-wrappers.md
   - ./02-sidebar-cassette-content-start-seam.md
+  - ./07-column-specific-shared-track-boundaries.md
 tests: []
 ---
 
@@ -40,9 +41,29 @@ controls, shim, metadata, or content. Those words may describe the current
 occupants in a particular page composition, but they are not properties of the
 track system.
 
+## Governing Principles
+
+> The page establishes common y-positions across peer columns; it does not
+> assign business meaning to those coordinates.
+
+> The Matrix coordinates shared geometry. It does not require unrelated
+> columns to share a common vertical lifetime.
+
 The important invariant is that every participating column receives the same
-resolved height for each track. The page establishes common y-positions across
-peer columns; it does not assign business meaning to those coordinates.
+resolved height for each Track inside its declared shared lifetime.
+
+Participation is column-specific. A column receives shared geometry only
+through the final shared Track explicitly declared for that column. The page
+may continue through later Tracks for other columns after an earlier column has
+resumed its independent native flow: the rendering mechanism already owned by
+that column.
+
+The final Track on the page and a column's final shared Track are not the same
+concept. See
+[`07-column-specific-shared-track-boundaries.md`](07-column-specific-shared-track-boundaries.md).
+
+That boundary exists to express truthful composition, not as a performance
+optimization.
 
 ## Track Occupancy
 
@@ -92,6 +113,7 @@ across the page and understand that the panels are peers.
 The page owns:
 
 - the complete page matrix and cell occupancy
+- each participating column's explicit final shared Track
 - explicit minimum reservations that define intended resting composition
 - the content-start y-position that follows the page's chosen track sequence
 - cell alignment within resolved Track allocations
@@ -121,6 +143,11 @@ Components do not own:
 - panel-level top padding outside resolved matrix cells
 - ad hoc spacer stacks that move primary content down outside the track model
 - repair logic that tries to align with peer panels after layout
+
+The renderer does not infer shared participation from occupancy. An empty cell
+inside a declared shared lifetime still receives the Track's resolved geometry.
+A cell after that column's boundary is not emitted merely because another
+column continues through later page Tracks.
 
 ## What To Do When Alignment Looks Wrong
 
@@ -153,3 +180,8 @@ Occupied tracks should be content-tight: their height comes from the maximum
 natural requirement declared by their occupants. Any intentional separation
 should be represented by an explicit fixed-height occupant in an ordinary track
 cell, not by hidden padding in an occupied track.
+
+This composition authority is an application of the
+[Mechanical Impossibility Principle](../00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/10-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION.md#the-mechanical-impossibility-principle):
+placement follows from one matrix, so a Track-region element cannot render in a
+cell the page did not assign to it.

@@ -6,10 +6,10 @@ import 'package:macos_ui/macos_ui.dart' as macos_ui;
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/layout/app_panel_bands.dart';
-import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
 import '../../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../domain/message_evidence/message_evidence_search_mode.dart';
+import 'message_evidence_header_track_metrics.dart';
 
 class MessageEvidenceHeaderModel {
   const MessageEvidenceHeaderModel({
@@ -107,7 +107,7 @@ class MessageEvidenceHeader extends ConsumerWidget {
     return ColoredBox(
       color: colors.messagePanels.coolPanelSurface,
       child: useFixedPanelFrame && hasResolvedMatrix
-          ? const _SearchPageMessageEvidenceTrackCells()
+          ? const _MessageEvidenceTrackCells()
           : _MessageEvidenceFallbackHeader(
               padding: padding,
               title: title,
@@ -150,15 +150,16 @@ class _MessageEvidenceFallbackHeader extends StatelessWidget {
   }
 }
 
-class _SearchPageMessageEvidenceTrackCells extends StatelessWidget {
-  const _SearchPageMessageEvidenceTrackCells();
+class _MessageEvidenceTrackCells extends StatelessWidget {
+  const _MessageEvidenceTrackCells();
 
   @override
   Widget build(BuildContext context) {
+    final matrix = ResolvedTrackLayoutMatrixScope.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final trackId in TrackId.values)
+        for (final trackId in matrix.trackIds)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: TrackCellView(
@@ -371,10 +372,12 @@ class _MessageEvidenceSearchControlsPresentationState
         children: [
           Icon(
             CupertinoIcons.search,
-            size: 15,
+            size: MessageEvidenceHeaderTrackMetrics.searchLeadingSlotWidth,
             color: colors.content.textSecondary,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(
+            width: MessageEvidenceHeaderTrackMetrics.searchLeadingGap,
+          ),
           Expanded(
             child: macos_ui.MacosTextField(
               controller: _controller,
@@ -390,6 +393,122 @@ class _MessageEvidenceSearchControlsPresentationState
               onModeChanged: widget.onModeChanged!,
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One stable row describing the current Search investigation and its state.
+class SearchInvestigationStatusPresentation extends StatefulWidget {
+  const SearchInvestigationStatusPresentation({
+    required this.description,
+    required this.isSearching,
+    required this.style,
+    this.activityDelay = const Duration(milliseconds: 175),
+    super.key,
+  });
+
+  final String description;
+  final bool isSearching;
+  final TextStyle style;
+  final Duration activityDelay;
+
+  @override
+  State<SearchInvestigationStatusPresentation> createState() {
+    return _SearchInvestigationStatusPresentationState();
+  }
+}
+
+class _SearchInvestigationStatusPresentationState
+    extends State<SearchInvestigationStatusPresentation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _activityDelayController;
+  bool _showActivity = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _activityDelayController = AnimationController(
+      vsync: this,
+      duration: widget.activityDelay,
+    )..addStatusListener(_handleActivityDelayStatus);
+    _synchronizeActivity();
+  }
+
+  @override
+  void didUpdateWidget(SearchInvestigationStatusPresentation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isSearching != widget.isSearching ||
+        oldWidget.description != widget.description ||
+        oldWidget.activityDelay != widget.activityDelay) {
+      _activityDelayController.duration = widget.activityDelay;
+      _synchronizeActivity();
+    }
+  }
+
+  @override
+  void dispose() {
+    _activityDelayController.dispose();
+    super.dispose();
+  }
+
+  void _synchronizeActivity() {
+    _activityDelayController.reset();
+    if (!widget.isSearching) {
+      _showActivity = false;
+      return;
+    }
+    _showActivity = false;
+    _activityDelayController.forward();
+  }
+
+  void _handleActivityDelayStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && widget.isSearching) {
+      setState(() {
+        _showActivity = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final description = _showActivity
+        ? '${widget.description} · Searching...'
+        : widget.description;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 460),
+      child: Row(
+        children: [
+          SizedBox(
+            width: MessageEvidenceHeaderTrackMetrics.searchLeadingSlotWidth,
+            child: _showActivity
+                ? const Align(
+                    alignment: Alignment.centerLeft,
+                    child: macos_ui.ProgressCircle(
+                      radius: MessageEvidenceHeaderTrackMetrics
+                          .investigationStatusIndicatorRadius,
+                      semanticLabel: 'Searching',
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(
+            width: MessageEvidenceHeaderTrackMetrics.searchLeadingGap,
+          ),
+          const SizedBox(
+            width:
+                MessageEvidenceHeaderTrackMetrics.searchStatusFieldChromeInset,
+          ),
+          Expanded(
+            child: Text(
+              description,
+              style: widget.style,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

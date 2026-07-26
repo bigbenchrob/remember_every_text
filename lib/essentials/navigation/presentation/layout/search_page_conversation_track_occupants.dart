@@ -4,8 +4,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
-import '../../../../features/conversations/application/conversation_signatures/conversation_signature_display_provider.dart';
 import '../../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
+import '../../../../features/conversations/feature_level_providers.dart'
+    show
+        ConversationSignatureDisplayByIdsRequest,
+        conversationExcerptAnchorDateProvider,
+        conversationSignatureDisplayByIdsProvider;
 import '../../../../features/conversations/presentation/view/conversation_excerpt_panel_track_metrics.dart';
 import '../../../../features/conversations/presentation/widgets/conversation_signature_card_presentation.dart';
 import '../../../../features/conversations/presentation/widgets/conversation_signature_card_track_occupant.dart';
@@ -15,16 +19,14 @@ final class SearchPageConversationExcerptTrackOccupants {
   const SearchPageConversationExcerptTrackOccupants({
     required this.title,
     required this.card,
-    required this.excerptLabel,
+    required this.temporalOrientation,
     required this.cardMinimumReservedHeight,
-    required this.excerptLabelMinimumReservedHeight,
   });
 
   final TrackOccupant title;
   final TrackOccupant? card;
-  final TrackOccupant? excerptLabel;
+  final TrackOccupant? temporalOrientation;
   final double cardMinimumReservedHeight;
-  final double excerptLabelMinimumReservedHeight;
 }
 
 SearchPageConversationExcerptTrackOccupants
@@ -40,30 +42,44 @@ searchPageConversationExcerptTrackOccupants({
     colors,
     typography,
   );
-  final excerptStyle = conversationExcerptLabelStyle(colors, typography);
   final cardMinimumReservedHeight =
       ConversationSignatureCardTrackOccupant.minimumNaturalHeight(
         style: cardStyle,
         constraints: constraints,
       );
-  final excerptLabelMinimumReservedHeight =
-      ConversationExcerptPanelTrackMetrics.excerptLabelMinimumNaturalHeight(
-        style: excerptStyle,
-        constraints: constraints,
-      );
   final title = TextTrackOccupant(
-    text: 'Conversation',
+    text: 'Conversation excerpt',
     style: typography.title1,
   );
   if (request == null) {
     return SearchPageConversationExcerptTrackOccupants(
       title: title,
       card: null,
-      excerptLabel: null,
+      temporalOrientation: null,
       cardMinimumReservedHeight: cardMinimumReservedHeight,
-      excerptLabelMinimumReservedHeight: excerptLabelMinimumReservedHeight,
     );
   }
+
+  final anchorDate = ref
+      .watch(
+        conversationExcerptAnchorDateProvider(
+          conversationId: request.conversationId,
+          anchorMessageId: request.anchorMessageId,
+        ),
+      )
+      .valueOrNull;
+  final temporalOrientationLabel = conversationExcerptTemporalOrientationLabel(
+    anchorDate,
+  );
+  final temporalOrientation = temporalOrientationLabel == null
+      ? null
+      : ConversationExcerptTemporalOrientationTrackOccupant(
+          label: temporalOrientationLabel,
+          style: conversationExcerptTemporalOrientationStyle(
+            colors,
+            typography,
+          ),
+        );
 
   final signatures = ref
       .watch(
@@ -79,12 +95,8 @@ searchPageConversationExcerptTrackOccupants({
     return SearchPageConversationExcerptTrackOccupants(
       title: title,
       card: null,
-      excerptLabel: ConversationExcerptLabelTrackOccupant(
-        label: conversationExcerptLabel(request.messageCount),
-        style: excerptStyle,
-      ),
+      temporalOrientation: temporalOrientation,
       cardMinimumReservedHeight: cardMinimumReservedHeight,
-      excerptLabelMinimumReservedHeight: excerptLabelMinimumReservedHeight,
     );
   }
 
@@ -96,25 +108,19 @@ searchPageConversationExcerptTrackOccupants({
       style: cardStyle,
       horizontalPlacement: Alignment.center,
     ),
-    excerptLabel: ConversationExcerptLabelTrackOccupant(
-      label: conversationExcerptLabel(request.messageCount),
-      style: excerptStyle,
-    ),
+    temporalOrientation: temporalOrientation,
     cardMinimumReservedHeight: cardMinimumReservedHeight,
-    excerptLabelMinimumReservedHeight: excerptLabelMinimumReservedHeight,
   );
 }
 
-({int conversationId, int messageCount})? _conversationExcerptRequest(
+({int conversationId, int anchorMessageId})? _conversationExcerptRequest(
   ViewSpec? spec,
 ) {
   return spec?.maybeWhen(
     conversations: (conversationsSpec) => conversationsSpec.when(
       conversationMessages: (_, __, ___) => null,
-      conversationExcerpt: (conversationId, _, beforeCount, afterCount) => (
-        conversationId: conversationId,
-        messageCount: beforeCount + afterCount + 1,
-      ),
+      conversationExcerpt: (conversationId, anchorMessageId, _, __, ___) =>
+          (conversationId: conversationId, anchorMessageId: anchorMessageId),
     ),
     orElse: () => null,
   );

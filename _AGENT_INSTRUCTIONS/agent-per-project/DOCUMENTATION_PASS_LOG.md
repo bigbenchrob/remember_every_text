@@ -1,4 +1,3 @@
----
 tier: project
 scope: documentation-pass
 owner: agent-per-project
@@ -8,6 +7,72 @@ links:
   - ./README.md
   - ./01-PROJECT/05-CURRENT-STATE.md
 tests: []
+---
+
+# Column-Specific Shared Track Boundary Refinement
+
+Date: 2026-07-26
+
+Scope: Tightened the new shared-boundary documentation to distinguish matrix
+resolution from per-column renderer consumption and to prevent implementation
+examples from becoming architectural prescriptions.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Defined native flow, replaced “stops rendering matrix cells” with precise `TrackCellView` consumption language, marked Unknown Sources occupants as current examples, and added the explicit non-goal that boundaries are not performance optimizations. | Keeps complete-matrix resolution distinct from column rendering lifetime and centers truthful composition as the purpose. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Elevated common y-positioning and independent shared lifetimes into governing principles. | Gives the conceptual leap constitutional weight in the canonical layout contract. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Clarified that column-specific boundaries affect rendering lifetime only. | Prevents readers from interpreting the matrix, resolver, or composition authority as partial. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Replaced cell-level “after A1” boundary wording with Track-level “Column 1 participates through Track A” wording. | Keeps occupancy coordinates distinct from the column's declared shared Track boundary. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this refinement. | Maintains the project documentation audit trail. |
+
+---
+
+# Sidebar Native-Flow Spacing Handoff
+
+Date: 2026-07-26
+
+Scope: Corrected the Track-to-cassette handoff so column-specific shared
+boundaries do not unconditionally erase the sidebar cassette coordinator's
+resolved section rhythm.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/essentials/navigation/application/panel_widget_providers.dart` | Added a generic native-flow spacing handoff policy. Unknown Sources preserves coordinator-resolved cassette rhythm; Search remains flush because its shared Track composition already supplies separation. | Keeps Track geometry and cassette-stack spacing under their proper owners without feature padding or filler Tracks. |
+| `test/essentials/navigation/application/panel_widget_providers_test.dart` | Added focused assertions that Unknown Sources preserves its first native cassette gap while Search's explicit flush handoff ignores an otherwise supplied leading cassette gap. | Protects both sides of the generic seam contract. |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Codified Native-Flow Ownership Restoration as the governing seam principle and documented the two generic spacing handoff modes. | Makes clear that ending shared Matrix participation restores the native layout system's complete responsibilities, not merely its rendering order. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Cross-referenced Native-Flow Ownership Restoration from the concrete cassette seam. | Directs future sidebar work to the ownership rule instead of inventing Tracks or local margins for native-flow rhythm. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Recorded that the app-control-to-filter gap is cassette-owned after Column 1 leaves the Matrix at Track A. | Keeps the concrete page description aligned with the canonical ownership rule. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation and documentation pass. | Maintains the project documentation audit trail. |
+
+---
+
+# Column-Specific Shared Track Boundaries
+
+Date: 2026-07-24
+
+Scope: Promoted the Unknown Sources sidebar boundary into a general
+PageTrackLayoutMatrix rule distinguishing the final page Track from each
+column's explicitly declared final shared Track.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Added the canonical rule, relationship test, non-inference constraint, native-flow seam, Unknown Sources and Search examples, and durable invariants. | Makes column-specific shared lifetimes discoverable as a general Matrix capability rather than an Unknown Sources implementation detail. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Added the new document to folder ownership and reading order. | Gives future developers an obvious route to the boundary contract. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Added per-column shared participation to the core contract and ownership model. | Prevents the final page Track from being mistaken for every column's rendering lifetime. |
+| `09-CROSS-COLUMN-LAYOUT/01-column-band-wrappers.md` | Documented how a renderer consumes an explicit column boundary without inferring it from occupancy. | Connects the architectural rule to current cell rendering mechanics. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Reframed the sidebar seam as one application of the general column-specific boundary. | Preserves cassette ownership while avoiding a sidebar-only interpretation of the capability. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded Search's explicit F boundary and clarified that it is not inferred from occupancy or cassette type. | Provides a second current page example demonstrating that boundaries are composition-specific. |
+| `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Added the declared rendering lifetime to the mechanical rendering chain. | Explains why empty cells inside a boundary render while trailing cells after it do not. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Linked the page-specific implementation to the canonical general rule. | Keeps the example subordinate to the architecture it demonstrated. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Extended the matrix architecture and invariants with explicit per-column shared lifetimes. | Preserves the architectural evolution in the original matrix work package. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation pass. | Maintains the project documentation audit trail. |
+
 ---
 
 # Documentation Pass Log
@@ -2052,8 +2117,6 @@ their live occupants appeared.
 | `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added full-suite verification to the package status. | Keeps package orientation aligned with the completed automated proof. |
 | `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
 
----
-
 # Search Page Matrix Tuning — Conversation Card B3
 
 Date: 2026-07-16
@@ -2109,5 +2172,526 @@ Search-page matrix migration and final top-menu interaction fix were verified.
 
 Other MessageLens pages remain separately reviewed future adoption work; they
 are not incomplete scope in this Search-page feature package.
+
+---
+
+# Search Investigation Compatibility
+
+Date: 2026-07-18
+
+Scope: Replaced the temporary imperative Conversation-excerpt dismissal with a
+Search-owned generation identity and stored-versus-effective compatibility.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md` | Defined stored panel state, effective panel presentation, opaque investigation provenance, and derived visibility. | Makes declarative compatibility the canonical panel rule rather than scattered clearing commands. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/All-Messages/search_investigation_compatibility.md` | Recorded Search identity semantics, transitions, excerpt compatibility, restoration, and ownership. | Gives the All Messages UI walk one durable reference for the implemented investigation seam. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/All-Messages/01-PENDING-IMPLEMENTATIONS.md` | Recorded the deferred Context action for every Search-displayed message. | Preserves the next UI slice without expanding this state-management correction. |
+| `CHANGELOG.md` | Reframed the 0.2.2 fix around investigation compatibility and restorable stored context. | Accurately describes the final user-visible behavior after removing the temporary imperative workaround. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# Search Investigation Compatibility Canonicalization
+
+Date: 2026-07-18
+
+Scope: Promoted the verified Search investigation generation and
+stored-versus-effective panel behavior from an implementation/UI-walk record
+into current project, feature, essentials, and canonical spec documentation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `00-START-HERE.md` and `README.md` | Added Search investigation compatibility to the cold-start and canonical documentation maps. | Makes the owning documents discoverable without searching historical UI-walk material. |
+| `01-PROJECT/05-CURRENT-STATE.md` and `DEVELOPER_GUIDE.md` | Added the primary-investigation/subordinate-context mental model and declarative effective-panel rule. | Establishes the behavior as current project architecture, not a local Search workaround. |
+| `30-ESSENTIALS/README.md` | Distinguished stored from effective panel state and documented the ownership boundary between shared Search execution, Messages interaction state, Conversations provenance, and navigation compatibility. | Prevents app orchestration and feature semantics from drifting together. |
+| `40-FEATURES/README.md` and `40-FEATURES/search/` | Updated the Search charter, provider inventory, interaction rules, and verification requirements for `SearchInvestigationId`. | Gives Search one canonical feature-level explanation of transitions and restoration semantics. |
+| `40-FEATURES/conversations/README.md` | Recorded that Conversation excerpts carry opaque originating provenance without owning or interpreting it. | Preserves the Search/Conversations ownership boundary. |
+| `42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/20-sidebar-cassette-system.md`, `30-panel-viewspec-system.md`, and `90-invariants-and-contracts.md` | Replaced imperative clearing language with the invariant that incompatible stored state must cease to be effective; added Search cross-reference. | Codifies derivation over repair for all future panel work. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/All-Messages/search_investigation_compatibility.md` | Linked the UI-walk record to its canonical feature and panel owners. | Preserves implementation context without competing with canonical documentation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this canonicalization pass. | Maintains the project documentation change log. |
+
+No application source, tests, configuration, generated files, databases, or
+assets were changed by this documentation pass.
+
+---
+
+# Search Investigation Status Row
+
+Date: 2026-07-18
+
+Scope: Replaced the Search page's static supporting-context line with one
+state-aware Track occupant derived from the existing evidence request.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/search/STATE_AND_PROVIDER_INVENTORY.md` | Recorded the existing presentation provider as the owner of derived investigation status and distinguished semantic state from presentation-local delay. | Prevents a second loading-state authority from emerging. |
+| `40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md` | Documented the stable status-row lifecycle, 175 ms activity delay, shared leading-slot alignment, and explicit spacing ownership. | Makes the user-visible behavior and ownership durable. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Replaced D2's former supporting-context description with the Search Investigation Status occupant and current geometry contract. | Keeps the canonical Search matrix synchronized with source. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Updated the final matrix and resting-reservation record for the new D2 occupant. | Preserves the implementation history without assigning semantics to Track D itself. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/All-Messages/search_investigation_compatibility.md` | Added the implemented status presentation to the Search UI-walk record. | Connects investigation compatibility and visible investigation feedback. |
+| `CHANGELOG.md` | Recorded the delayed, stable Search status row under version 0.2.2. | Keeps release metadata synchronized with the user-visible change. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Conversation Excerpt Header Simplification
+
+Date: 2026-07-19
+
+Scope: Renamed the right Search-page panel to `Conversation excerpt` and
+removed the redundant bounded-window caption from E3.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/essentials/navigation/presentation/layout/search_page_conversation_track_occupants.dart` and `search_page_track_plan.dart` | Renamed the A3 title occupant and made E3 explicitly empty. | Makes the panel identity precise and removes obsolete caption geometry from the authoritative matrix. |
+| `lib/features/conversations/presentation/view/conversation_excerpt_panel_track_metrics.dart` and `conversation_excerpt_panel_view.dart` | Removed the excerpt-label presentation contract and updated matrix and fallback panel titles. | Keeps Conversations as the presentation owner without retaining an unused label path. |
+| `lib/essentials/navigation/presentation/view/macos_app_shell.dart` | Removed retired E3 occupant and reservation inputs. | Keeps page composition synchronized with the smaller Conversations-owned input boundary. |
+| Focused matrix and Conversation excerpt tests | Updated title, occupancy, and retired-caption expectations. | Protects the exact requested hierarchy and explicit empty E3 cell. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md`, `05-anatomy-of-track-cell-rendering.md`, the matrix implementation record, and the Message Evidence UI-walk documents | Replaced the earlier caption-based hierarchy with the current title, temporal orientation, and excerpt composition. | Gives future maintainers one accurate description while retaining historical evolution where useful. |
+| `CHANGELOG.md` | Updated version 0.2.3's user-visible description. | Keeps release metadata synchronized with the refinement. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation and documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Search Investigation Status Alignment
+
+Date: 2026-07-18
+
+Scope: Aligned the Search Investigation Status presentation with the visible
+text-field edge and represented its vertical separation as an explicit matrix
+occupant.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Updated the Search sidebar seam to render A1 through F1. | Keeps sidebar participation synchronized with the complete page matrix. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded D1's 2 px occupant, E2/E3 status and excerpt occupancy, F1's existing final separation, and the visible field-edge alignment contract. | Makes current page composition and spacing ownership discoverable without assigning semantics to tracks. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Updated the final matrix and implementation evidence from A-E to A-F. | Preserves an accurate implementation record. |
+| `CHANGELOG.md` | Added the visible alignment and explicit matrix-spacing refinement to version 0.2.2. | Keeps release notes synchronized with the user-facing Search polish. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Conversation Excerpt Temporal Orientation
+
+Date: 2026-07-19
+
+Scope: Added explicit month/year orientation to the Search page's Conversation
+excerpt without changing its established Track sequence.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded the C3 temporal-orientation occupant, its source, hierarchy, and lack of a separate resting reservation. | Keeps the canonical matrix description synchronized with current composition. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Added temporal orientation to the reviewed Conversation-context behavior and issue resolution. | Preserves the user-experience rationale alongside the evidence-surface review. |
+| `CHANGELOG.md` | Recorded the user-visible Conversation excerpt orientation refinement. | Keeps release notes synchronized with current behavior. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Mechanical Impossibility Principle
+
+Date: 2026-07-19
+
+Scope: Named and codified the architectural preference for making invalid
+states structurally impossible rather than relying on procedural detection or
+cleanup.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/00-READ-FIRST.md` and `10-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION.md` | Added the canonical Mechanical Impossibility Principle, its practical limits, the Cricket Ball, PageTrackLayoutMatrix, Search investigation compatibility, and Valve #3 examples; named it in the mandatory entry document; and linked to the owning mechanism documents. | Gives an organically recurring project pattern a durable constitutional name without presenting it as absolute dogma. |
+| `DEVELOPER_GUIDE.md` | Named the existing derivation-over-repair guidance and linked it to the canonical constitutional section. | Gives new developers the principle's mental model near the start of the guide without duplicating the full explanation. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Linked matrix composition authority to the Mechanical Impossibility Principle. | Connects the current layout contract to its higher-order architectural rationale. |
+| `40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md` | Linked investigation-aware effective presentation to the Mechanical Impossibility Principle. | Makes clear that incompatible stored context is rendered impossible rather than imperatively cleared. |
+| `55-READERS-INTEGRATORS-ORCHESTRATORS/10-ARCHITECTURE-CONTRACT.md` | Linked exclusive execution ownership to the Mechanical Impossibility Principle. | Records why the execution gate is authority, not merely contention detection. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation pass. | Maintains the project documentation change log. |
+
+No application source, tests, configuration, generated files, databases, or
+assets were changed by this documentation pass.
+
+---
+
+# Conversation Excerpt Temporal Accent
+
+Date: 2026-07-19
+
+Scope: Refined the existing month/year orientation heading with the established
+orange organizing-value accent while preserving its matrix placement and
+typographic hierarchy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/features/conversations/presentation/view/conversation_excerpt_panel_track_metrics.dart` | Changed the shared temporal-orientation `title3` style from primary text to system orange at 84% opacity. | Makes the excerpt's temporal anchor immediately legible while keeping it subordinate to the panel title. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded the temporal heading's semantic color treatment and unchanged no-divider layout. | Keeps the canonical Search matrix presentation description synchronized with the UI. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Documented orange as the temporal organizing-value accent for this surface. | Preserves the reviewed rationale in the UI-walk record. |
+| `CHANGELOG.md` | Extended the 0.2.3 temporal-orientation release note with the color refinement. | Keeps release metadata synchronized with the in-progress user-facing change. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# All Messages Conversation Navigation
+
+Date: 2026-07-19
+
+Scope: Extended the existing `In conversation` workflow from text-search
+results to every eligible All Messages row carrying canonical Conversation
+identity.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/features/messages/presentation/view/global_messages_evidence_view.dart` | Replaced query/scope eligibility checks with canonical Conversation identity while preserving active-excerpt suppression and investigation provenance. | Makes Conversation navigation consistent across ordinary, month-browsed, and searched All Messages evidence. |
+| `test/features/messages/presentation/view/global_messages_evidence_view_test.dart` | Added unfiltered open, missing-identity, and exact-active-excerpt coverage. | Protects the broadened workflow and its eligibility boundaries. |
+| `40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md` and the shared Message Evidence UI-walk review | Documented that Search text is not an eligibility gate for Conversation navigation. | Keeps feature and UX guidance aligned with the shared evidence-row behavior. |
+| `CHANGELOG.md` | Added the user-visible workflow under version 0.2.3. | Keeps release metadata synchronized with the current release slice. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation and documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Message Evidence Counterpart Labels
+
+Date: 2026-07-19
+
+Scope: Replaced ambiguous message sender metadata with explicit direction and
+counterpart language across the shared message evidence surface.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/features/messages/domain/message_evidence/message_evidence_row_data.dart` and `application/message_evidence/message_evidence_spine_provider.dart` | Added optional canonical Conversation display identity to prepared evidence rows, including batched initial hydration. | Gives outgoing evidence the recipient identity that sender-only message facts cannot provide. |
+| `lib/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart` | Changed metadata to `received from <sender>` and `from me to <Conversation>`, with an honest `from me` fallback when canonical identity is unavailable. | Makes direction and counterpart immediately understandable without route-specific presentation logic. |
+| Focused message evidence provider and widget tests | Added canonical-title hydration and outgoing-label coverage; updated incoming-label expectations. | Protects both the read path and rendered language. |
+| Shared Message Evidence UI-walk review and `CHANGELOG.md` | Recorded the common metadata grammar and user-visible correction. | Keeps UX and release documentation synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation and documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Self-Conversation Identity And Evidence Labels
+
+Date: 2026-07-19
+
+Scope: Added source-derived local-account handle identity so messages sent
+between the user's own devices use one stable `self` metadata label.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `10-DATABASES/12-identity-model-contacts-handles-participants.md` | Documented local account handles as imported source evidence, their derivation from Messages account fields, and their projection into Conversation identity. | Prevents future code from mistaking message direction or a matching display title for self identity. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Added the `self` metadata grammar and its Conversation-level ownership. | Keeps the shared evidence UX contract aligned with the implemented behavior. |
+| `CHANGELOG.md` | Recorded the user-visible self-conversation label correction. | Keeps release metadata synchronized with the implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Self-Conversation Graph Migration Correction
+
+Date: 2026-07-19
+
+Scope: Corrected the graph database migration lifecycle so existing
+`working_ss.db` files receive the new `handles.is_me` column before reads.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `CHANGELOG.md` | Recorded the existing-database migration correction. | Makes the release-visible failure and its resolution explicit. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the correction and regression coverage. | Maintains the project documentation change log. |
+
+---
+
+# Historical Local-Account Handle Reconciliation
+
+Date: 2026-07-19
+
+Scope: Added startup reconciliation for historical self-owned Messages
+endpoints without reimporting message records.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `10-DATABASES/12-identity-model-contacts-handles-participants.md` | Documented metadata-only startup reconciliation and canonical matching of phone URI/number variants. | Clarifies how historical local identities become graph facts without conflating direction with endpoint identity. |
+| `CHANGELOG.md` | Recorded the existing-data correction under version 0.2.3. | Keeps release metadata synchronized with the user-visible fix. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Local-Account Identity Documentation Consolidation
+
+Date: 2026-07-19
+
+Scope: Propagated the historical local-account reconciliation contract from the
+canonical identity document into the source, lifecycle, orchestration,
+Conversation ownership, current-state, and message-evidence guides.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `10-DATABASES/12-identity-model-contacts-handles-participants.md` | Added lifecycle ownership, execution-gate, and read-model invalidation details to the canonical local-account identity section. | Makes the complete implemented path discoverable in the identity source of truth. |
+| `10-DATABASES/04-db-chat.md` | Documented `chat.account_login`, incoming `message.destination_caller_id`, `message.is_from_me`, canonical endpoint matching, and the metadata-only historical scan. | Records precisely which Apple source facts support local-account identity and what they do not mean. |
+| `20-DATA-IMPORT-MIGRATION/01-overview.md` | Added startup local-account reconciliation to the active graph lifecycle and clarified that the monitor calls the graph-build service rather than importer/projector internals. | Keeps current import/build orchestration aligned with the implemented ownership boundary. |
+| `55-READERS-INTEGRATORS-ORCHESTRATORS/30-INVARIANTS.md` | Added the source-fact-to-presentation invariant for local-account identity. | Prevents future display heuristics and direct orchestration across importer/projector boundaries. |
+| `40-FEATURES/conversations/README.md` | Added the Conversations feature's consumption rule for projected self-conversation identity. | Clarifies that Conversations owns semantics and read-model exposure, not source derivation. |
+| `01-PROJECT/05-CURRENT-STATE.md` | Added a concise current-state summary of historical reconciliation and self-conversation derivation. | Gives new contributors the current behavior without duplicating the canonical details. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Linked the `self` UX grammar to historical reconciliation and the canonical identity document. | Connects user-facing language to its source-derived architectural basis. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this consolidation pass. | Maintains the documentation audit trail. |
+
+---
+
+# Canonical First-Person Identity Presentation
+
+Date: 2026-07-19
+
+Scope: Extended canonical `handles.is_me` identity through ordinary
+Conversation, Contact, handle, and message-evidence presentation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `10-DATABASES/12-identity-model-contacts-handles-participants.md` | Defined local-account precedence and the `Me` / `me` / `self` presentation grammar. | Establishes one canonical source and prevents widget-local name comparisons. |
+| `40-FEATURES/conversations/README.md` | Documented group-participant, self-only title, and chat-hook behavior. | Keeps Conversation-owned presentation aligned with the shared identity resolver. |
+| `DEVELOPER_GUIDE.md` and `01-PROJECT/05-CURRENT-STATE.md` | Added the first-person identity model to contributor orientation and current-state guidance. | Makes the implemented rule discoverable without requiring schema archaeology. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Extended the evidence grammar beyond row metadata to titles and participant lists. | Keeps UX language consistent across ordinary evidence surfaces. |
+| Shared recovered-evidence presentation | Routed recovered and unlinked sender labels through the same canonical resolver and documented `received from me` when no self-only Conversation relationship is available. | Prevents an incomplete relationship from leaking the user's imported personal name. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible change as version `0.2.4+22`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unknown Sources Total Center Projection
+
+Date: 2026-07-20
+
+Scope: Recorded the explicit idle/selected-source target model for the active
+Unknown Sources investigation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md` | Added the total-presentation projection rule and linked the first implemented example. | Establishes that an active investigation without a selection owns a truthful idle target rather than an absent center ViewSpec. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the single Messages-owned `handleInvestigation` spec with explicit idle and selected-source targets. | Keeps the feature architecture aligned with implementation and preserves Handles-owned investigation meaning. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Replaced the obsolete no-occupant idle description with the real A2/B2 idle occupancy and truthful omission of source-specific cells. | Clarifies that layout stability follows from real investigation presentation, not minimum Track heights or fillers. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible change as version `0.2.11+29`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Review Row Geometry
+
+Date: 2026-07-19
+
+Scope: Corrected the unfamiliar-source review list's narrow-sidebar geometry
+so its feature-owned dismiss rail is not also reserved by the cassette frame.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/20-sidebar-cassette-system.md` | Clarified that trailing action space has one owner: either the shared cassette envelope or the feature-owned body. | Prevents double-gutter layouts from clipping row metadata and displacing actions. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible correction as version `0.2.5+23`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Evidence Scope Parity
+
+Date: 2026-07-19
+
+Scope: Unified unfamiliar-source counts, timeline enumeration, hydration, and
+search around canonical sender identity rather than optional chat membership.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/messages/DOMAIN_AND_DATA_MAP.md` | Defined standalone handle scope as canonical sender evidence and made chat membership optional provenance. | Prevents valid sender-only records from disappearing from the shared evidence spine. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Recorded the reported badge/timeline mismatch and the cross-surface scope-parity rule. | Keeps unfamiliar-source counts, evidence, and search tied to one user-visible meaning. |
+| `CHANGELOG.md` | Recorded the user-visible unfamiliar-source evidence correction under version `0.2.5`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unknown-Source Investigation Separation
+
+Date: 2026-07-19
+
+Scope: Defined and recorded the first implemented separation between unknown
+source identification and neutral numeric-sender review.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/UNKNOWN_SOURCES/PROPOSAL.md` | Promoted the approved proposal to first-slice implementation status and recorded the typed endpoint, compatible read-model, cassette-navigation, and recovery boundaries. | Keeps the architectural decision and its implemented extent in one discoverable working package. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible investigation separation as version `0.2.6+24`. | Keeps release metadata synchronized with the new workflow. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this architecture and release-documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Investigation Compatibility
+
+Date: 2026-07-20
+
+Scope: Made selected handle evidence subordinate to the unfamiliar-source
+investigation episode that created it.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/chat-handles/INTERACTIONS_AND_NAVIGATION.md` | Documented opaque unfamiliar-source investigation provenance and the controls that begin a new episode. | Establishes the canonical Handles navigation rule and prevents imperative panel cleanup. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the implemented sidebar/center compatibility seam. | Keeps the approved proposal aligned with the shipped architectural correction. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible correction as version `0.2.7+25`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Cross-Column Composition
+
+Date: 2026-07-20
+
+Scope: Applied the canonical page matrix to the unfamiliar-source sidebar and
+selected-handle evidence header.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Recorded the page-specific matrix occupancy, shared handle-lens session, and post-matrix cassette continuation. | Gives future developers one direct explanation of how the sidebar and center evidence align without sharing ownership. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` and `02-sidebar-cassette-content-start-seam.md` | Added the unfamiliar-source composition to the canonical reading path and generalized the seam from Search-only wording. | Keeps the generic seam accurate now that a second cassette-driven page participates. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the implemented cross-column composition slice. | Keeps the feature work package aligned with the implemented page architecture. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible layout change as version `0.2.8+26`. | Keeps release metadata synchronized with the implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Track Contract Audit
+
+Date: 2026-07-20
+
+Scope: Clarified page/feature ownership, made finite-width source metrics
+dimensionally truthful, and named fixed-height diagnostics by composition
+purpose.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Added the Navigation/app-shell/Messages/Handles ownership chain, documented the adaptive metrics claim, and clarified the page-wide separator contributed from I1. | Preserves the intentional feature boundary and explains shared geometry without assigning semantics to ordinal Tracks. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Handle-Lens Center-Panel Responsibility Correction
+
+Date: 2026-07-20
+
+Scope: Corrected source-review workflow and identity ownership while preserving
+the Messages-owned ViewSpec and presentation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/chat-handles/CHARTER.md` | Defined Handles ownership of source identity and source-review semantics. | Prevents rendering features from reimplementing Handles business rules. |
+| `40-FEATURES/messages/CHARTER.md` | Defined Messages ownership of the complete handle-lens ViewSpec presentation and its dependency on Handles seams. | Preserves one-feature/one-ViewSpec ownership without semantic leakage. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the implemented per-source payload, workflow facade, and corrected dismissal behavior. | Keeps the feature package aligned with implementation. |
+| `95-WALK-UI-TREE/20-Responsibility-for-center-panel/completion-report.md` | Added the requested implementation and verification report. | Provides a durable close-out adjacent to the task and audit. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible correction as version `0.2.9+27`. | Keeps release metadata synchronized with the fixed Dismiss behavior. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Dismissal Transition
+
+Date: 2026-07-20
+
+Scope: Completed Dismiss as a source-granular projection update and a
+declarative unfamiliar-source investigation transition.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/chat-handles/INTERACTIONS_AND_NAVIGATION.md` | Defined successful dismissal as a post-persistence investigation transition and recorded source-granular projection updates. | Prevents stale center evidence and whole-list loading resets without imperative panel cleanup. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the implemented dismissal lifecycle and independent active/dismissed projection behavior. | Keeps the feature package aligned with the completed user workflow. |
+| `95-WALK-UI-TREE/20-Responsibility-for-center-panel/completion-report.md` | Added the follow-up correction, event order, and regression coverage. | Completes the prior ownership report with the observed runtime transition. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible fix as version `0.2.10+28`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Persistent Center-Panel Identity Proposal Refinement
+
+Date: 2026-07-21
+
+Scope: Refined the Unknown Sources persistent center-panel identity proposal
+before implementation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/01-PERSISTENT-CENTER-PANEL-IDENTITY/proposal.md` | Defined persistent identity as header content, investigation orientation as the first post-header reading content, and center identity as a derived projection of the active investigation. Clarified that the idle explanation replaces evidence rather than the header and retained the Matrix boundary. | Records why the presentation hierarchy exists without turning its current body placement into a universal rule. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Persistent Center-Panel Identity Implementation
+
+Date: 2026-07-21
+
+Scope: Implemented stable investigation-derived identity, selected-source
+subject hierarchy, and explanatory Unknown Sources idle evidence.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/01-PERSISTENT-CENTER-PANEL-IDENTITY/proposal.md` | Recorded the implemented presentation contract, selected hierarchy, loading behavior, and Matrix boundary. | Closes the approved work package without promoting the pattern into a universal framework. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Added the implemented persistent center-panel identity slice. | Keeps the parent feature proposal synchronized with current behavior. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Updated A2/B2 occupancy and the idle evidence-region presentation. | Keeps the canonical page composition accurate. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible hierarchy and orientation change as version `0.2.12+30`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation documentation pass. | Maintains the project documentation audit trail. |
+
+---
+
+# Unknown Sources Sidebar Shared-Track Boundary
+
+Date: 2026-07-24
+
+Scope: Ended Unknown Sources sidebar Matrix participation after the persistent
+A1/A2 identity row so transient selected-source center details cannot move the
+independent cassette flow.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Documented page-declared sidebar shared-track boundaries and the Unknown Sources A-row boundary. | Makes the generic renderer consume explicit page composition instead of assuming every Matrix row precedes every cassette chain. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Replaced the obsolete B1-I1 continuation with independent sidebar flow after A1 and moved the 16 px center header/evidence occupant to I2. | Records the truthful persistent peer relationship and removes accidental coupling to transient center details. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible layout correction as version `0.2.13+31`. | Keeps release metadata synchronized with the fixed sidebar behavior. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
 
 ---

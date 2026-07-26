@@ -7,7 +7,7 @@ part of 'stray_handles_review_resolver.dart';
 // **************************************************************************
 
 String _$strayHandlesReviewResolverHash() =>
-    r'5f011843738934ad42c68abfd98b2c5ca8f65639';
+    r'af7995d079d30dea5a6a06809d995cbb50121219';
 
 /// Resolver for the unified stray handles review list cassette.
 ///

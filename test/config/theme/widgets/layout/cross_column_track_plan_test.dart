@@ -127,10 +127,11 @@ void main() {
     );
 
     testWidgets(
-      'message evidence supporting context declares its own track height',
+      'Search investigation status declares its stable track height',
       (tester) async {
-        const occupant = MessageEvidenceSupportingContextTrackOccupant(
-          text: 'Message text contains "test"',
+        const occupant = SearchInvestigationStatusTrackOccupant(
+          description: 'Message text contains "test"',
+          isSearching: true,
           style: TextStyle(fontSize: 15, height: 1),
         );
 
@@ -149,9 +150,7 @@ void main() {
                   isA<OccupantDimensionalClaim>().having(
                     (claim) => claim.naturalHeight,
                     'naturalHeight',
-                    15 +
-                        MessageEvidenceHeaderTrackMetrics
-                            .supportingContextBottomInset,
+                    15,
                   ),
                 );
                 return const SizedBox.shrink();
@@ -162,59 +161,50 @@ void main() {
       },
     );
 
-    testWidgets('conversation excerpt label uses its canonical render width', (
-      tester,
-    ) async {
-      const occupant = ConversationExcerptLabelTrackOccupant(
-        label: '21-message excerpt centered on the chosen message',
-        style: TextStyle(fontSize: 15, height: 1),
-      );
+    testWidgets(
+      'conversation temporal orientation uses subordinate heading geometry',
+      (tester) async {
+        const occupant = ConversationExcerptTemporalOrientationTrackOccupant(
+          label: 'February 2026',
+          style: TextStyle(fontSize: 15, height: 1),
+        );
 
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: Builder(
-            builder: (context) {
-              final presentationConstraints =
-                  PresentationConstraints.fromBuildContext(
-                    context,
-                    availableWidth: double.infinity,
-                  );
-              expect(
-                occupant.dimensionalClaim(presentationConstraints),
-                isA<OccupantDimensionalClaim>().having(
-                  (claim) => claim.naturalHeight,
-                  'naturalHeight',
-                  30,
-                ),
-              );
-              return SizedBox(
-                width: 500,
-                height: 60,
-                child: occupant.buildPresentation(
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Builder(
+              builder: (context) {
+                final constraints = PresentationConstraints.fromBuildContext(
                   context,
-                  const ResolvedTrackAllocation(
-                    trackId: TrackId.trackD,
-                    height: 30,
-                    availableWidth: double.infinity,
+                  availableWidth: double.infinity,
+                );
+                expect(
+                  occupant.dimensionalClaim(constraints).naturalHeight,
+                  15,
+                );
+                return SizedBox(
+                  width: 500,
+                  height: 30,
+                  child: occupant.buildPresentation(
+                    context,
+                    const ResolvedTrackAllocation(
+                      trackId: TrackId.trackC,
+                      height: 30,
+                      availableWidth: double.infinity,
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(
-        tester.getSize(
-          find.text('21-message excerpt centered on the chosen message'),
-        ),
-        const Size(
+        expect(
+          tester.getSize(find.text('February 2026')).width,
           ConversationExcerptPanelTrackMetrics.canonicalContentWidth,
-          30,
-        ),
-      );
-    });
+        );
+      },
+    );
 
     testWidgets(
       'a fixed E occupant can contribute an ordinary 16 px allocation',

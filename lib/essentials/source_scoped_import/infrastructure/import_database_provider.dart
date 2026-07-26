@@ -23,7 +23,7 @@ class ImportDatabase implements ImportLedger {
 
     final db = await openDatabase(
       path.join(databaseDirectory, databaseName),
-      version: 9,
+      version: 10,
       onCreate: (db, version) async {
         await _createSchema(db);
       },
@@ -57,6 +57,9 @@ class ImportDatabase implements ImportLedger {
         }
         if (oldVersion < 9) {
           await _createIncrementalProjectionIndexes(db);
+        }
+        if (oldVersion < 10) {
+          await _addHandleSelfIdentityColumn(db);
         }
       },
       onOpen: (db) async {
@@ -534,6 +537,7 @@ class ImportDatabase implements ImportLedger {
         source_rowid INTEGER NOT NULL,
         id TEXT NOT NULL,
         service TEXT,
+        is_me INTEGER NOT NULL DEFAULT 0 CHECK(is_me IN (0,1)),
         batch_id INTEGER NOT NULL,
         UNIQUE(source_id, source_rowid),
         FOREIGN KEY (source_id) REFERENCES source_registry(source_id),
@@ -546,6 +550,14 @@ class ImportDatabase implements ImportLedger {
     );
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_handles_id ON handles(id)',
+    );
+  }
+
+  static Future<void> _addHandleSelfIdentityColumn(Database db) async {
+    await _addColumnIfMissing(
+      db,
+      'handles',
+      'is_me INTEGER NOT NULL DEFAULT 0 CHECK(is_me IN (0,1))',
     );
   }
 

@@ -5,7 +5,6 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
 import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../../core/util/date_range_formatter.dart';
@@ -69,7 +68,10 @@ class ConversationExcerptPanelView extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Conversation', style: typography.headline),
+                        Text(
+                          'Conversation excerpt',
+                          style: typography.headline,
+                        ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           'The selected message could not be loaded from conversation $conversationId.',
@@ -82,14 +84,15 @@ class ConversationExcerptPanelView extends ConsumerWidget {
 
                 return _ConversationExcerptColumnFrame(
                   title: _ConversationTrackTitle(
-                    title: 'Conversation',
+                    title: 'Conversation excerpt',
                     style: typography.title1.copyWith(
                       color: colors.content.textPrimary,
                     ),
                   ),
                   contextContent: _ConversationExcerptContextBand(
-                    label: conversationExcerptLabel(
-                      beforeCount + afterCount + 1,
+                    temporalOrientationLabel: _anchorTemporalOrientationLabel(
+                      skeleton.entries,
+                      anchorMessageId,
                     ),
                     colors: colors,
                     typography: typography,
@@ -120,7 +123,7 @@ class ConversationExcerptPanelView extends ConsumerWidget {
               },
               loading: () => _ConversationExcerptColumnFrame(
                 title: _ConversationTrackTitle(
-                  title: 'Conversation',
+                  title: 'Conversation excerpt',
                   style: typography.title1.copyWith(
                     color: colors.content.textPrimary,
                   ),
@@ -135,7 +138,7 @@ class ConversationExcerptPanelView extends ConsumerWidget {
               ),
               error: (error, _) => _ConversationExcerptColumnFrame(
                 title: _ConversationTrackTitle(
-                  title: 'Conversation',
+                  title: 'Conversation excerpt',
                   style: typography.title1.copyWith(
                     color: colors.content.textPrimary,
                   ),
@@ -266,10 +269,11 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
     final hasResolvedMatrix =
         ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
     if (hasResolvedMatrix) {
+      final trackIds = ResolvedTrackLayoutMatrixScope.of(context).trackIds;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final trackId in TrackId.values)
+          for (final trackId in trackIds)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: TrackCellView(
@@ -319,23 +323,24 @@ class _ConversationExcerptColumnFrame extends StatelessWidget {
 
 class _ConversationExcerptContextBand extends StatelessWidget {
   const _ConversationExcerptContextBand({
-    required this.label,
+    required this.temporalOrientationLabel,
     required this.colors,
     required this.typography,
   });
 
-  final String label;
+  final String? temporalOrientationLabel;
   final ThemeColors colors;
   final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, style: conversationExcerptLabelStyle(colors, typography)),
-      ],
+    final temporalLabel = temporalOrientationLabel;
+    if (temporalLabel == null) {
+      return const SizedBox.shrink();
+    }
+    return Text(
+      temporalLabel,
+      style: conversationExcerptTemporalOrientationStyle(colors, typography),
     );
   }
 }
@@ -358,6 +363,20 @@ class _ConversationContextFallbackHeader extends StatelessWidget {
       style: typography.headline.copyWith(color: colors.content.textPrimary),
     );
   }
+}
+
+String? _anchorTemporalOrientationLabel(
+  List<MessageEvidenceSkeletonEntry> entries,
+  int anchorMessageId,
+) {
+  for (final entry in entries) {
+    if (entry.messageId == anchorMessageId) {
+      return conversationExcerptTemporalOrientationLabel(
+        _parseDate(entry.dateUtc),
+      );
+    }
+  }
+  return null;
 }
 
 String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {

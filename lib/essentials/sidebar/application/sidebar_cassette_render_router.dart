@@ -17,6 +17,7 @@ import '../../../features/conversations/feature_level_providers.dart'
 import '../../../features/handles/feature_level_providers.dart'
     as handles_feature
     show
+        StrayHandlesInvestigationSwitcherCassettePayload,
         StrayHandlesModeSwitcherCassettePayload,
         StrayHandlesReviewCassettePayload,
         StrayHandlesTypeSwitcherCassettePayload,
@@ -222,6 +223,8 @@ Widget _buildPlacementGovernedCassetteBody({
       contacts_feature.buildPlacementGovernedCassetteBody(payload: payload),
     contacts_feature.HandleFilterCassettePayload() =>
       contacts_feature.buildPlacementGovernedCassetteBody(payload: payload),
+    handles_feature.StrayHandlesInvestigationSwitcherCassettePayload() =>
+      handles_feature.buildPlacementGovernedCassetteBody(payload: payload),
     handles_feature.StrayHandlesModeSwitcherCassettePayload() =>
       handles_feature.buildPlacementGovernedCassetteBody(payload: payload),
     handles_feature.StrayHandlesReviewCassettePayload() =>

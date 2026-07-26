@@ -92,6 +92,11 @@ storage, but ordinary message UI must not depend on them.
 - `message_ss_id` is canonical message identity for graph-backed evidence.
 - Timeline-like scopes preserve the full logical selected message universe
   before row hydration.
+- A standalone handle/unfamiliar-source scope means messages whose canonical
+  sender is that handle. Timeline enumeration, row hydration, header counts,
+  and scoped search must use that same sender relationship. A
+  `chat_to_handle` edge is not required because valid sender evidence can exist
+  without recovered chat membership.
 - Source-specific scopes are allowed; source-specific message renderers are not.
 - Destructive reset/rebuild flows must not leave stale evidence scopes reading
   partially cleared databases.

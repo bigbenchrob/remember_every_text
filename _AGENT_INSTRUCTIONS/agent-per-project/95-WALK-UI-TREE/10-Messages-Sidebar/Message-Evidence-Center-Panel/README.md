@@ -32,5 +32,5 @@ should feel like one coherent MessageLens reading environment.
   metadata cleanup, search parity, message-context sidebar behaviour, and
   orange correspondence highlighting. Also records the right-side
   search-result context sidebar as a Conversation-through-Search lens using the
-  canonical Conversation Card, excerpt label, and highlighted correspondence
-  message.
+  canonical Conversation Card, temporal orientation, and highlighted
+  correspondence message.

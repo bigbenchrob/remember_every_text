@@ -7,7 +7,7 @@ part of 'contact_profile_provider.dart';
 // **************************************************************************
 
 String _$contactProfileReaderHash() =>
-    r'8c5fe1e92baa43c37a673e02da609869e3caea02';
+    r'c790d72c2f0f05879d0ba95bc7034e7dfaba2929';
 
 /// See also [contactProfileReader].
 @ProviderFor(contactProfileReader)

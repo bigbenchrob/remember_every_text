@@ -17,7 +17,7 @@ import '../../../features/handles/feature_level_providers.dart'
     show
         handlesCassetteCoordinatorProvider,
         handlesInfoCassetteCoordinatorProvider,
-        strayHandleModeSettingProvider;
+        strayHandleReviewModeSettingProvider;
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature
     show
@@ -215,14 +215,17 @@ Future<SidebarCassettePayload> _buildPayloadForSpec(
     handles: (handlesSpec) async {
       handlesSpec.when(
         strayHandlesReview: (_, __) {
-          ref.watch(handles_feature.strayHandleModeSettingProvider);
+          ref.watch(handles_feature.strayHandleReviewModeSettingProvider);
           return null;
         },
-        strayHandlesModeSwitcher: (_) {
-          ref.watch(handles_feature.strayHandleModeSettingProvider);
+        strayHandlesModeSwitcher: (_, __) {
+          ref.watch(handles_feature.strayHandleReviewModeSettingProvider);
           return null;
         },
         strayHandlesTypeSwitcher: (_) {
+          return null;
+        },
+        strayHandlesInvestigationSwitcher: (_) {
           return null;
         },
       );

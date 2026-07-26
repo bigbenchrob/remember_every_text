@@ -286,6 +286,7 @@ const Set<String> _providerInvalidationAllowedFiles = {
   'lib/features/handles/application/review/handle_review_provider.dart',
   'lib/features/handles/application/settings_cassette_spec/resolver_tools/manual_linking_provider.dart',
   'lib/features/handles/application/settings_cassette_spec/resolver_tools/spam_management_provider.dart',
+  'lib/features/handles/application/source_review/handle_source_review_actions_provider.dart',
   'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/message_heatmap_refresh_actions_provider.dart',
 };
 
@@ -405,6 +406,7 @@ const Set<String> _timerAllowedFiles = {
   'lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart',
   'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
   'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+  'lib/features/messages/application/message_evidence/contact_evidence_cache_policy.dart',
   'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart',
   'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
   'lib/main.dart',
@@ -472,6 +474,7 @@ const Set<String> _contactPageGraphIdentityBridgeAllowedFiles = {
 
 const Set<String> _messageEvidenceTextMatchProviderAllowedFiles = {
   'lib/features/conversations/presentation/view/conversation_messages_view.dart',
+  'lib/features/messages/presentation/layout/unfamiliar_sources_message_track_occupants.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
@@ -486,6 +489,7 @@ const Set<String> _messageEvidenceTimelineSkeletonProviderAllowedFiles = {
   'lib/features/conversations/presentation/view/conversation_messages_view.dart',
   'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
   'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart',
+  'lib/features/messages/presentation/layout/unfamiliar_sources_message_track_occupants.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
@@ -516,6 +520,7 @@ const Set<String> _messageEvidenceHeaderModelAllowedFiles = {
   'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/handle_investigation_idle_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
@@ -559,13 +564,14 @@ const Set<String> _recoveredMessageNavigationActionProviderAllowedFiles = {
   'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
 };
 
-const Set<String> _handleLensActionProviderAllowedFiles = {
+const Set<String> _handleSourceReviewActionProviderAllowedFiles = {
+  'lib/features/messages/application/handle_lens/handle_lens_investigation_actions_provider.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
 };
 
 const Set<String> _handleReviewActionProviderAllowedFiles = {
   'lib/essentials/sidebar/application/sidebar_action_dispatcher.dart',
-  'lib/features/messages/application/handle_lens/handle_lens_actions_provider.dart',
+  'lib/features/handles/application/source_review/handle_source_review_actions_provider.dart',
 };
 
 const Set<String>
@@ -619,6 +625,7 @@ const Set<String> _settingsActionListActionProviderAllowedFiles = {
 };
 
 const Set<String> _strayHandleSidebarActionProviderAllowedFiles = {
+  'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_investigation_switcher_cassette.dart',
   'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_mode_switcher_cassette.dart',
   'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_review_cassette.dart',
   'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_type_switcher_cassette.dart',
@@ -3953,7 +3960,8 @@ void main() {
         ),
         reason:
             'Text matching for in-scope message evidence should be requested '
-            'only by the source views composing a MessageEvidenceScope. '
+            'only by source views or explicit feature-owned presentation '
+            'preparers composing a MessageEvidenceScope. '
             'Matching semantics belong to the evidence spine provider, and '
             'ordinary widgets should receive skeletons/highlight text rather '
             'than performing their own matching lookups.\n'
@@ -4397,24 +4405,26 @@ void main() {
         reason:
             'HandleLensView may render unfamiliar-source evidence and collect '
             'form/dialog input, but link/create/dismiss side effects belong '
-            'behind HandleLensActions. It must not import central database '
+            'behind the Handles-owned source-review facade. It must not import central database '
             'providers, overlay infrastructure, or manual-link/review '
             'services directly.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
 
-    test('Handle lens action provider stays view-owned', () async {
-      final offenders = await _findHandleLensActionProviderOffenders();
+    test('Handle source-review facade stays handle-lens-owned', () async {
+      final offenders = await _findHandleSourceReviewActionProviderOffenders();
 
       expect(
         offenders,
-        orderedEquals(_handleLensActionProviderAllowedFiles.toList()..sort()),
+        orderedEquals(
+          _handleSourceReviewActionProviderAllowedFiles.toList()..sort(),
+        ),
         reason:
-            'handleLensActionsProvider should be consumed only by the handle '
-            'lens view boundary. Other surfaces should receive typed handle '
-            'review/link workflows instead of borrowing unfamiliar-source '
-            'screen actions directly.\n'
+            'handleSourceReviewActionsProvider is the Handles-owned workflow '
+            'facade for the Messages-owned handle lens. It should be consumed '
+            'only by that presentation and investigation boundary; Messages '
+            'must not reconstruct source review semantics elsewhere.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -9935,13 +9945,15 @@ Future<List<String>> _findConversationSignatureCardPurityOffenders() async {
 Future<List<String>> _findMessageEvidenceHeaderDirectRenderOffenders() async {
   const allowedFile =
       'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart';
+  const idleViewFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_idle_view.dart';
   const headerFile =
       'lib/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart';
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    if (path == allowedFile || path == headerFile) {
+    if (path == allowedFile || path == idleViewFile || path == headerFile) {
       return false;
     }
     return path.startsWith('lib/');
@@ -10510,9 +10522,9 @@ Future<List<String>> _findHandleLensOverlayDatabaseOffenders() async {
   return offenders..sort();
 }
 
-Future<List<String>> _findHandleLensActionProviderOffenders() async {
+Future<List<String>> _findHandleSourceReviewActionProviderOffenders() async {
   const actionsFile =
-      'lib/features/messages/application/handle_lens/handle_lens_actions_provider.dart';
+      'lib/features/handles/application/source_review/handle_source_review_actions_provider.dart';
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
@@ -10527,7 +10539,7 @@ Future<List<String>> _findHandleLensActionProviderOffenders() async {
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
-    if (uncommented.contains('handleLensActionsProvider')) {
+    if (uncommented.contains('handleSourceReviewActionsProvider')) {
       offenders.add(filePath);
     }
   }

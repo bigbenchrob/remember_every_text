@@ -1,10 +1,12 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/global_timeline_builder.dart';
-import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/handle_lens_builder.dart';
+import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/handle_investigation_builder.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/messages_for_contact_builder.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/messages_for_handle_builder.dart';
 import 'package:remember_this_text/features/messages/application/view_spec/widget_builders/recovered_unlinked_messages_builder.dart';
+import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/messages/presentation/view/contact_messages_evidence_view.dart';
 import 'package:remember_this_text/features/messages/presentation/view/global_messages_evidence_view.dart';
 import 'package:remember_this_text/features/messages/presentation/view/handle_lens_view.dart';
@@ -74,7 +76,13 @@ void main() {
         buildRecoveredUnlinkedMessagesView(contactId: 42),
         isA<RecoveredMessagesEvidenceView>(),
       );
-      expect(buildHandleLensView(handleId: 12), isA<HandleLensView>());
+      expect(
+        buildHandleInvestigationView(
+          target: const HandleInvestigationTarget.selectedSource(handleId: 12),
+          investigation: StrayHandleInvestigation.identifySources,
+        ),
+        isA<HandleLensView>(),
+      );
     });
   });
 }

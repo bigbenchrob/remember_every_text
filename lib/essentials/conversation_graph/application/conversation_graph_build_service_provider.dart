@@ -30,13 +30,42 @@ part 'conversation_graph_build_service_provider.g.dart';
 class ConversationGraphBuildService {
   const ConversationGraphBuildService({
     required ConversationGraphBuildOrchestrator orchestrator,
-  }) : _orchestrator = orchestrator;
+    Future<LocalAccountHandleIdentityReconciliationReport> Function()?
+    reconcileLocalAccountHandleIdentity,
+  }) : _orchestrator = orchestrator,
+       _reconcileLocalAccountHandleIdentity =
+           reconcileLocalAccountHandleIdentity;
 
   final ConversationGraphBuildOrchestrator _orchestrator;
+  final Future<LocalAccountHandleIdentityReconciliationReport> Function()?
+  _reconcileLocalAccountHandleIdentity;
 
   Future<ConversationGraphBuildReport> runOnce() {
     return _orchestrator.runOnce();
   }
+
+  Future<LocalAccountHandleIdentityReconciliationReport>
+  reconcileLocalAccountHandleIdentity() async {
+    final reconcile = _reconcileLocalAccountHandleIdentity;
+    if (reconcile == null) {
+      return const LocalAccountHandleIdentityReconciliationReport();
+    }
+    return reconcile();
+  }
+}
+
+class LocalAccountHandleIdentityReconciliationReport {
+  const LocalAccountHandleIdentityReconciliationReport({
+    this.examinedHandleCount = 0,
+    this.localAccountHandleCount = 0,
+    this.updatedImportHandleCount = 0,
+    this.updatedGraphHandleCount = 0,
+  });
+
+  final int examinedHandleCount;
+  final int localAccountHandleCount;
+  final int updatedImportHandleCount;
+  final int updatedGraphHandleCount;
 }
 
 @visibleForTesting
@@ -98,6 +127,17 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
   );
 
   return ConversationGraphBuildService(
+    reconcileLocalAccountHandleIdentity: () async {
+      final importResult = await handleImporter.reconcileLocalAccountIdentity();
+      final projectionResult = await handleProjector
+          .projectLocalAccountIdentity();
+      return LocalAccountHandleIdentityReconciliationReport(
+        examinedHandleCount: importResult.examinedHandleCount,
+        localAccountHandleCount: importResult.localAccountHandleCount,
+        updatedImportHandleCount: importResult.updatedHandleCount,
+        updatedGraphHandleCount: projectionResult.updatedHandleCount,
+      );
+    },
     orchestrator: ConversationGraphBuildOrchestrator(
       importChats: () async {
         await chatImporter.importChats();

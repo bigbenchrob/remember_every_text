@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
+import 'current_search_investigation_provider.dart';
 
 part 'global_messages_search_session_provider.g.dart';
 
@@ -30,7 +31,7 @@ final class GlobalMessagesSearchSessionState {
 ///
 /// The month is a family key so changing the center-panel context preserves
 /// the previous behavior of starting a fresh Search interaction.
-@riverpod
+@Riverpod(keepAlive: true)
 class GlobalMessagesSearchSession extends _$GlobalMessagesSearchSession {
   @override
   GlobalMessagesSearchSessionState build({DateTime? monthAnchor}) {
@@ -41,6 +42,7 @@ class GlobalMessagesSearchSession extends _$GlobalMessagesSearchSession {
     if (state.query == query) {
       return;
     }
+    ref.read(currentSearchInvestigationProvider.notifier).advance();
     state = state.copyWith(query: query);
   }
 
@@ -48,6 +50,7 @@ class GlobalMessagesSearchSession extends _$GlobalMessagesSearchSession {
     if (state.mode == mode) {
       return;
     }
+    ref.read(currentSearchInvestigationProvider.notifier).advance();
     state = state.copyWith(mode: mode);
   }
 }

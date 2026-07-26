@@ -25,7 +25,7 @@ final handleReviewStoreProvider =
 // ignore: unused_element
 typedef HandleReviewStoreRef = AutoDisposeFutureProviderRef<HandleReviewStore>;
 String _$handleReviewActionsHash() =>
-    r'ef49c7e52dd93bdd6f42c80a8b0a58be24bed9b9';
+    r'd17783c8344403feb84df39c703acbf73408c430';
 
 /// See also [HandleReviewActions].
 @ProviderFor(HandleReviewActions)

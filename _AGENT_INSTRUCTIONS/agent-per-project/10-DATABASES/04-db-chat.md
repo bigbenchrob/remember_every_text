@@ -2,12 +2,13 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-20
+last_reviewed: 2026-07-19
 source_of_truth: doc
 links:
   - ./00-all-databases-accessed.md
   - ./01-db-import.md
   - ./10-group-import-working.md
+  - ./12-identity-model-contacts-handles-participants.md
   - ../15-MACOS-SOURCE-DATABASES/00-overview.md
   - ../15-MACOS-SOURCE-DATABASES/10-chat-db-orphan-messages.md
   - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
@@ -64,6 +65,28 @@ Do not assume `message` plus `chat_message_join` gives a complete picture of all
 | `attachment` / `message_attachment_join` | Attachments tied to messages. |
 
 Source-scoped importers persist these tables into ledger equivalents (`chats`, `handles`, `messages`, recovered/orphan message facts, `chat_to_handle`, `chat_to_message`, `attachments`, `message_attachments`) while preserving source identifiers and deriving canonical `ss_id` endpoints for graph projection. Retired `db-import` cleanup files may contain equivalent facts from the retired importer era, but they are cleanup inventory only and must not be treated as an active compatibility import path.
+
+## Local Account Identity Evidence
+
+`chat.db` also provides source evidence for identifying handles that belong to
+the local Messages user:
+
+- `chat.account_login` values with a non-empty payload after any type prefix
+  identify account endpoints;
+- incoming `message.destination_caller_id` values identify the local endpoint
+  that received those messages;
+- `message.is_from_me` constrains which destination values are incoming local
+  account evidence, but does not identify an endpoint by itself.
+
+The source-scoped lifecycle reconciles this metadata across historical rows and
+matches it to imported handles by canonical endpoint identity. URI and display
+variants such as `tel:+16046858506`, `+16046858506`, and `(604) 685-8506`
+must therefore converge before `handles.is_me` is projected into the graph.
+This is a read-only source scan and a narrow metadata annotation, not a message
+reimport.
+
+See `12-identity-model-contacts-handles-participants.md` for the canonical
+identity meaning and the resulting self-conversation read-model rule.
 
 ## Usage Rules
 

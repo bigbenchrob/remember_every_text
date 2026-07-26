@@ -2,6 +2,8 @@
 // PUBLIC API — Barrel exports
 // =============================================================================
 
+export './application/message_evidence/current_search_investigation_provider.dart'
+    show currentSearchInvestigationProvider;
 export './application/message_evidence/recovered_message_evidence_provider.dart';
 export './application/sidebar_cassette_spec/coordinators/cassette_coordinator.dart';
 export './application/sidebar_cassette_spec/coordinators/info_cassette_coordinator.dart';

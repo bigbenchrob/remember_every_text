@@ -103,12 +103,10 @@ void main() {
     expect(matches, [olderMessageId, newerMessageId]);
   });
 
-  test('reads handle message timeline through canonical aliases', () async {
+  test('reads sender-only handle timeline through canonical aliases', () async {
     final canonicalHandleId = _id(5);
     final aliasHandleId = _id(42);
     final otherHandleId = _id(77);
-    final chatId = _id(301);
-    final otherChatId = _id(302);
     final olderMessageId = _id(201);
     final newerMessageId = _id(202);
     final otherMessageId = _id(203);
@@ -149,43 +147,22 @@ void main() {
       messageId: newerMessageId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'newer alias chat',
+      senderHandleId: aliasHandleId,
     );
     await _insertMessage(
       graphDatabase,
       messageId: olderMessageId,
       dateUtc: '2026-04-19T10:00:00.000Z',
       text: 'older alias chat',
+      senderHandleId: canonicalHandleId,
+      senderCanonicalHandleId: canonicalHandleId,
     );
     await _insertMessage(
       graphDatabase,
       messageId: otherMessageId,
       dateUtc: '2026-03-18T10:00:00.000Z',
       text: 'other chat',
-    );
-    await _insertChatToMessage(
-      graphDatabase,
-      chatId: chatId,
-      messageId: newerMessageId,
-    );
-    await _insertChatToMessage(
-      graphDatabase,
-      chatId: chatId,
-      messageId: olderMessageId,
-    );
-    await _insertChatToMessage(
-      graphDatabase,
-      chatId: otherChatId,
-      messageId: otherMessageId,
-    );
-    await _insertChatToHandle(
-      graphDatabase,
-      chatId: chatId,
-      handleId: aliasHandleId,
-    );
-    await _insertChatToHandle(
-      graphDatabase,
-      chatId: otherChatId,
-      handleId: otherHandleId,
+      senderHandleId: otherHandleId,
     );
 
     final timeline = await _reader(
@@ -201,7 +178,7 @@ void main() {
 
   test('hydrates only messages inside the requested handle scope', () async {
     final handleId = _id(5);
-    final chatId = _id(301);
+    final otherHandleId = _id(6);
     final inScopeMessageId = _id(201);
     final outOfScopeMessageId = _id(202);
 
@@ -210,27 +187,24 @@ void main() {
       handleId: handleId,
       rawIdentifier: '+16049995969',
     );
+    await _insertHandle(
+      graphDatabase,
+      handleId: otherHandleId,
+      rawIdentifier: '+17789908506',
+    );
     await _insertMessage(
       graphDatabase,
       messageId: inScopeMessageId,
       dateUtc: '2026-05-20T10:00:00.000Z',
       text: 'in handle scope',
+      senderHandleId: handleId,
     );
     await _insertMessage(
       graphDatabase,
       messageId: outOfScopeMessageId,
       dateUtc: '2026-05-21T10:00:00.000Z',
       text: 'out of handle scope',
-    );
-    await _insertChatToMessage(
-      graphDatabase,
-      chatId: chatId,
-      messageId: inScopeMessageId,
-    );
-    await _insertChatToHandle(
-      graphDatabase,
-      chatId: chatId,
-      handleId: handleId,
+      senderHandleId: otherHandleId,
     );
 
     final message = await _reader(
@@ -241,6 +215,7 @@ void main() {
     ).readHandleMessageById(handleId: handleId, messageId: outOfScopeMessageId);
 
     expect(message?.text, 'in handle scope');
+    expect(message?.conversationId, isNull);
     expect(missing, isNull);
   });
 
@@ -340,6 +315,8 @@ Future<void> _insertMessage(
   required int messageId,
   required String dateUtc,
   required String text,
+  int? senderHandleId,
+  int? senderCanonicalHandleId,
 }) {
   return graphDatabase.database.insert('messages', <String, Object?>{
     'ss_id': messageId,
@@ -347,6 +324,8 @@ Future<void> _insertMessage(
     'is_from_me': 0,
     'date_utc': dateUtc,
     'text': text,
+    'sender_handle_ss_id': senderHandleId,
+    'sender_canonical_handle_ss_id': senderCanonicalHandleId,
   });
 }
 
@@ -419,16 +398,5 @@ Future<void> _insertChatToMessage(
   return graphDatabase.database.insert('chat_to_message', <String, Object?>{
     'chat_ss_id': chatId,
     'message_ss_id': messageId,
-  });
-}
-
-Future<void> _insertChatToHandle(
-  ConversationGraphDatabase graphDatabase, {
-  required int chatId,
-  required int handleId,
-}) {
-  return graphDatabase.database.insert('chat_to_handle', <String, Object?>{
-    'chat_ss_id': chatId,
-    'handle_ss_id': handleId,
   });
 }

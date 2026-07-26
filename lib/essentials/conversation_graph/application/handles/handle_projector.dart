@@ -7,4 +7,7 @@ class HandleProjector {
 
   Future<HandleProjectionResult> projectHandles() =>
       repository.projectHandles();
+
+  Future<HandleIdentityProjectionResult> projectLocalAccountIdentity() =>
+      repository.projectLocalAccountIdentity();
 }

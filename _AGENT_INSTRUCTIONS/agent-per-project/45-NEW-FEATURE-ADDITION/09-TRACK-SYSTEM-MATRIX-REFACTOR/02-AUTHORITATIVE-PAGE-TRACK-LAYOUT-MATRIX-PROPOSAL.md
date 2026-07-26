@@ -2,13 +2,14 @@
 tier: project
 scope: page-track-layout-matrix-architecture
 owner: agent-per-project
-last_reviewed: 2026-07-16
+last_reviewed: 2026-07-26
 source_of_truth: doc
 links:
   - ./README.md
   - ./01-CURRENT-TRACK-SYSTEM-ANATOMY.md
   - ./03-PAGE-TRACK-LAYOUT-MATRIX-MIGRATION-PLAN.md
   - ./01-SEED-DOCUMENTS/02%20%E2%80%94%20AUTHORITATIVE%20TRACK-CELL%20MATRIX%20PROPOSAL.md
+  - ../../09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md
 tests: []
 ---
 
@@ -57,6 +58,15 @@ The matrix is the sole source of:
 - occupant placement;
 - cell alignment;
 - the inputs from which Track geometry is resolved.
+
+Page composition also declares the final shared Track for each participating
+column. The final page Track and a column's final shared Track are distinct.
+This affects rendering lifetime only. It does not change matrix ownership,
+geometry resolution, or page composition authority.
+
+The matrix may continue through later Tracks for one column after another
+column has resumed its native flow, meaning its established column-owned
+rendering mechanism.
 
 The resolver calculates geometry from the matrix and stores the result in one
 immutable resolved matrix.
@@ -340,6 +350,31 @@ What do I present?           C2 occupant
 The renderer does not reconstruct page composition or accept a competing local
 placement decision.
 
+### Column-Specific Shared Lifetimes
+
+Shared participation is a page-owned, column-specific declaration.
+
+For each column, page composition identifies the final ordinal Track through
+which that column has a genuine cross-column alignment responsibility. The
+renderer emits resolved cells through that boundary and then allows the column
+to resume its established native flow.
+
+The boundary is not inferred from:
+
+- the final occupied cell;
+- the first empty cell;
+- current optional content;
+- a run of empty cells; or
+- the final Track on the page.
+
+An empty cell inside the declared shared lifetime still receives shared
+geometry. A cell after the boundary is not emitted merely because another
+column continues through later Tracks.
+
+This preserves the matrix as composition authority without inventing false
+pairings between unrelated content. The Matrix coordinates shared geometry; it
+does not require unrelated columns to share a common vertical lifetime.
+
 ## Page Lifecycle Invariant
 
 The observed initial-layout defect appears to involve incomplete composition at
@@ -440,6 +475,11 @@ require coordinated Track edits inside feature widget trees.
     not create placeholder occupants, hidden padding, semantic Track roles, or
     frozen geometry.
 15. Diagnostic labels never affect layout.
+16. The final page Track and a column's final shared Track are distinct.
+17. Page composition explicitly declares each column's final shared Track.
+18. Shared boundaries are never inferred from current cell occupancy.
+19. Different columns may have different shared lifetimes on the same page.
+20. After its declared boundary, a column resumes its established native flow.
 
 ## Deferred Work
 

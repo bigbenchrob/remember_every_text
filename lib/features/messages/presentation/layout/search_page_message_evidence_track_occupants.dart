@@ -19,15 +19,15 @@ final class SearchPageMessageEvidenceTrackOccupants {
     required this.title,
     required this.metadata,
     required this.searchControls,
-    required this.supportingContext,
-    required this.supportingContextMinimumReservedHeight,
+    required this.investigationStatus,
+    required this.investigationStatusMinimumReservedHeight,
   });
 
   final TrackOccupant title;
   final TrackOccupant metadata;
   final TrackOccupant searchControls;
-  final TrackOccupant supportingContext;
-  final double supportingContextMinimumReservedHeight;
+  final TrackOccupant investigationStatus;
+  final double investigationStatusMinimumReservedHeight;
 }
 
 SearchPageMessageEvidenceTrackOccupants
@@ -66,12 +66,13 @@ searchPageMessageEvidenceTrackOccupants({
       onQueryChanged: actions.setQuery,
       onModeChanged: actions.setMode,
     ),
-    supportingContext: MessageEvidenceSupportingContextTrackOccupant(
-      text: labels?.supportingContext ?? '',
+    investigationStatus: SearchInvestigationStatusTrackOccupant(
+      description: presentation.investigationStatus?.description ?? '',
+      isSearching: presentation.investigationStatus?.isSearching ?? false,
       style: supportingStyle,
     ),
-    supportingContextMinimumReservedHeight:
-        MessageEvidenceHeaderTrackMetrics.supportingContextMinimumNaturalHeight(
+    investigationStatusMinimumReservedHeight:
+        MessageEvidenceHeaderTrackMetrics.investigationStatusMinimumNaturalHeight(
           style: supportingStyle,
           constraints: constraints,
         ),

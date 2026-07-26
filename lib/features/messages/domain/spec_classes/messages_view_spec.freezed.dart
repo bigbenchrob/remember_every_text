@@ -55,7 +55,7 @@ extension MessagesSpecPatterns on MessagesSpec {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _MessagesForContact value)?  forContact,TResult Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult Function( _MessagesForHandle value)?  forHandle,TResult Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult Function( _MessagesHandleLens value)?  handleLens,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _MessagesForContact value)?  forContact,TResult Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult Function( _MessagesForHandle value)?  forHandle,TResult Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult Function( _MessagesHandleInvestigation value)?  handleInvestigation,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _MessagesForContact() when forContact != null:
@@ -64,8 +64,8 @@ return globalTimeline(_that);case _MessagesForHandle() when forHandle != null:
 return forHandle(_that);case _RecoveredUnlinkedMessages() when recoveredUnlinkedMessages != null:
 return recoveredUnlinkedMessages(_that);case _RecoveredNoHandleFromMeMessages() when recoveredNoHandleFromMeMessages != null:
 return recoveredNoHandleFromMeMessages(_that);case _RecoveredAttachmentViewer() when recoveredAttachmentViewer != null:
-return recoveredAttachmentViewer(_that);case _MessagesHandleLens() when handleLens != null:
-return handleLens(_that);case _:
+return recoveredAttachmentViewer(_that);case _MessagesHandleInvestigation() when handleInvestigation != null:
+return handleInvestigation(_that);case _:
   return orElse();
 
 }
@@ -83,7 +83,7 @@ return handleLens(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _MessagesForContact value)  forContact,required TResult Function( _MessagesGlobalTimeline value)  globalTimeline,required TResult Function( _MessagesForHandle value)  forHandle,required TResult Function( _RecoveredUnlinkedMessages value)  recoveredUnlinkedMessages,required TResult Function( _RecoveredNoHandleFromMeMessages value)  recoveredNoHandleFromMeMessages,required TResult Function( _RecoveredAttachmentViewer value)  recoveredAttachmentViewer,required TResult Function( _MessagesHandleLens value)  handleLens,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _MessagesForContact value)  forContact,required TResult Function( _MessagesGlobalTimeline value)  globalTimeline,required TResult Function( _MessagesForHandle value)  forHandle,required TResult Function( _RecoveredUnlinkedMessages value)  recoveredUnlinkedMessages,required TResult Function( _RecoveredNoHandleFromMeMessages value)  recoveredNoHandleFromMeMessages,required TResult Function( _RecoveredAttachmentViewer value)  recoveredAttachmentViewer,required TResult Function( _MessagesHandleInvestigation value)  handleInvestigation,}){
 final _that = this;
 switch (_that) {
 case _MessagesForContact():
@@ -92,8 +92,8 @@ return globalTimeline(_that);case _MessagesForHandle():
 return forHandle(_that);case _RecoveredUnlinkedMessages():
 return recoveredUnlinkedMessages(_that);case _RecoveredNoHandleFromMeMessages():
 return recoveredNoHandleFromMeMessages(_that);case _RecoveredAttachmentViewer():
-return recoveredAttachmentViewer(_that);case _MessagesHandleLens():
-return handleLens(_that);case _:
+return recoveredAttachmentViewer(_that);case _MessagesHandleInvestigation():
+return handleInvestigation(_that);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -110,7 +110,7 @@ return handleLens(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _MessagesForContact value)?  forContact,TResult? Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult? Function( _MessagesForHandle value)?  forHandle,TResult? Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult? Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult? Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult? Function( _MessagesHandleLens value)?  handleLens,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _MessagesForContact value)?  forContact,TResult? Function( _MessagesGlobalTimeline value)?  globalTimeline,TResult? Function( _MessagesForHandle value)?  forHandle,TResult? Function( _RecoveredUnlinkedMessages value)?  recoveredUnlinkedMessages,TResult? Function( _RecoveredNoHandleFromMeMessages value)?  recoveredNoHandleFromMeMessages,TResult? Function( _RecoveredAttachmentViewer value)?  recoveredAttachmentViewer,TResult? Function( _MessagesHandleInvestigation value)?  handleInvestigation,}){
 final _that = this;
 switch (_that) {
 case _MessagesForContact() when forContact != null:
@@ -119,8 +119,8 @@ return globalTimeline(_that);case _MessagesForHandle() when forHandle != null:
 return forHandle(_that);case _RecoveredUnlinkedMessages() when recoveredUnlinkedMessages != null:
 return recoveredUnlinkedMessages(_that);case _RecoveredNoHandleFromMeMessages() when recoveredNoHandleFromMeMessages != null:
 return recoveredNoHandleFromMeMessages(_that);case _RecoveredAttachmentViewer() when recoveredAttachmentViewer != null:
-return recoveredAttachmentViewer(_that);case _MessagesHandleLens() when handleLens != null:
-return handleLens(_that);case _:
+return recoveredAttachmentViewer(_that);case _MessagesHandleInvestigation() when handleInvestigation != null:
+return handleInvestigation(_that);case _:
   return null;
 
 }
@@ -137,7 +137,7 @@ return handleLens(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult Function( DateTime? scrollToDate)?  globalTimeline,TResult Function( int handleId)?  forHandle,TResult Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult Function( int handleId)?  handleLens,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult Function( DateTime? scrollToDate)?  globalTimeline,TResult Function( int handleId)?  forHandle,TResult Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult Function( StrayHandleInvestigationId investigationId,  StrayHandleInvestigation investigation,  HandleInvestigationTarget target)?  handleInvestigation,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MessagesForContact() when forContact != null:
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline() when globalTimeline != null:
@@ -145,8 +145,8 @@ return globalTimeline(_that.scrollToDate);case _MessagesForHandle() when forHand
 return forHandle(_that.handleId);case _RecoveredUnlinkedMessages() when recoveredUnlinkedMessages != null:
 return recoveredUnlinkedMessages(_that.contactId,_that.scrollToDate);case _RecoveredNoHandleFromMeMessages() when recoveredNoHandleFromMeMessages != null:
 return recoveredNoHandleFromMeMessages(_that.scrollToDate);case _RecoveredAttachmentViewer() when recoveredAttachmentViewer != null:
-return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesHandleLens() when handleLens != null:
-return handleLens(_that.handleId);case _:
+return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesHandleInvestigation() when handleInvestigation != null:
+return handleInvestigation(_that.investigationId,_that.investigation,_that.target);case _:
   return orElse();
 
 }
@@ -164,7 +164,7 @@ return handleLens(_that.handleId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)  forContact,required TResult Function( DateTime? scrollToDate)  globalTimeline,required TResult Function( int handleId)  forHandle,required TResult Function( int? contactId,  DateTime? scrollToDate)  recoveredUnlinkedMessages,required TResult Function( DateTime? scrollToDate)  recoveredNoHandleFromMeMessages,required TResult Function( int messageId,  AttachmentInfo attachment)  recoveredAttachmentViewer,required TResult Function( int handleId)  handleLens,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)  forContact,required TResult Function( DateTime? scrollToDate)  globalTimeline,required TResult Function( int handleId)  forHandle,required TResult Function( int? contactId,  DateTime? scrollToDate)  recoveredUnlinkedMessages,required TResult Function( DateTime? scrollToDate)  recoveredNoHandleFromMeMessages,required TResult Function( int messageId,  AttachmentInfo attachment)  recoveredAttachmentViewer,required TResult Function( StrayHandleInvestigationId investigationId,  StrayHandleInvestigation investigation,  HandleInvestigationTarget target)  handleInvestigation,}) {final _that = this;
 switch (_that) {
 case _MessagesForContact():
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline():
@@ -172,8 +172,8 @@ return globalTimeline(_that.scrollToDate);case _MessagesForHandle():
 return forHandle(_that.handleId);case _RecoveredUnlinkedMessages():
 return recoveredUnlinkedMessages(_that.contactId,_that.scrollToDate);case _RecoveredNoHandleFromMeMessages():
 return recoveredNoHandleFromMeMessages(_that.scrollToDate);case _RecoveredAttachmentViewer():
-return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesHandleLens():
-return handleLens(_that.handleId);case _:
+return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesHandleInvestigation():
+return handleInvestigation(_that.investigationId,_that.investigation,_that.target);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -190,7 +190,7 @@ return handleLens(_that.handleId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult? Function( DateTime? scrollToDate)?  globalTimeline,TResult? Function( int handleId)?  forHandle,TResult? Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult? Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult? Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult? Function( int handleId)?  handleLens,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int contactId,  DateTime? scrollToDate,  int? filterHandleId)?  forContact,TResult? Function( DateTime? scrollToDate)?  globalTimeline,TResult? Function( int handleId)?  forHandle,TResult? Function( int? contactId,  DateTime? scrollToDate)?  recoveredUnlinkedMessages,TResult? Function( DateTime? scrollToDate)?  recoveredNoHandleFromMeMessages,TResult? Function( int messageId,  AttachmentInfo attachment)?  recoveredAttachmentViewer,TResult? Function( StrayHandleInvestigationId investigationId,  StrayHandleInvestigation investigation,  HandleInvestigationTarget target)?  handleInvestigation,}) {final _that = this;
 switch (_that) {
 case _MessagesForContact() when forContact != null:
 return forContact(_that.contactId,_that.scrollToDate,_that.filterHandleId);case _MessagesGlobalTimeline() when globalTimeline != null:
@@ -198,8 +198,8 @@ return globalTimeline(_that.scrollToDate);case _MessagesForHandle() when forHand
 return forHandle(_that.handleId);case _RecoveredUnlinkedMessages() when recoveredUnlinkedMessages != null:
 return recoveredUnlinkedMessages(_that.contactId,_that.scrollToDate);case _RecoveredNoHandleFromMeMessages() when recoveredNoHandleFromMeMessages != null:
 return recoveredNoHandleFromMeMessages(_that.scrollToDate);case _RecoveredAttachmentViewer() when recoveredAttachmentViewer != null:
-return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesHandleLens() when handleLens != null:
-return handleLens(_that.handleId);case _:
+return recoveredAttachmentViewer(_that.messageId,_that.attachment);case _MessagesHandleInvestigation() when handleInvestigation != null:
+return handleInvestigation(_that.investigationId,_that.investigation,_that.target);case _:
   return null;
 
 }
@@ -614,23 +614,300 @@ as AttachmentInfo,
 /// @nodoc
 
 
-class _MessagesHandleLens implements MessagesSpec {
-  const _MessagesHandleLens({required this.handleId});
+class _MessagesHandleInvestigation implements MessagesSpec {
+  const _MessagesHandleInvestigation({required this.investigationId, required this.investigation, required this.target});
   
 
- final  int handleId;
+ final  StrayHandleInvestigationId investigationId;
+ final  StrayHandleInvestigation investigation;
+ final  HandleInvestigationTarget target;
 
 /// Create a copy of MessagesSpec
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$MessagesHandleLensCopyWith<_MessagesHandleLens> get copyWith => __$MessagesHandleLensCopyWithImpl<_MessagesHandleLens>(this, _$identity);
+_$MessagesHandleInvestigationCopyWith<_MessagesHandleInvestigation> get copyWith => __$MessagesHandleInvestigationCopyWithImpl<_MessagesHandleInvestigation>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessagesHandleLens&&(identical(other.handleId, handleId) || other.handleId == handleId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MessagesHandleInvestigation&&(identical(other.investigationId, investigationId) || other.investigationId == investigationId)&&(identical(other.investigation, investigation) || other.investigation == investigation)&&(identical(other.target, target) || other.target == target));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,investigationId,investigation,target);
+
+@override
+String toString() {
+  return 'MessagesSpec.handleInvestigation(investigationId: $investigationId, investigation: $investigation, target: $target)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$MessagesHandleInvestigationCopyWith<$Res> implements $MessagesSpecCopyWith<$Res> {
+  factory _$MessagesHandleInvestigationCopyWith(_MessagesHandleInvestigation value, $Res Function(_MessagesHandleInvestigation) _then) = __$MessagesHandleInvestigationCopyWithImpl;
+@useResult
+$Res call({
+ StrayHandleInvestigationId investigationId, StrayHandleInvestigation investigation, HandleInvestigationTarget target
+});
+
+
+$HandleInvestigationTargetCopyWith<$Res> get target;
+
+}
+/// @nodoc
+class __$MessagesHandleInvestigationCopyWithImpl<$Res>
+    implements _$MessagesHandleInvestigationCopyWith<$Res> {
+  __$MessagesHandleInvestigationCopyWithImpl(this._self, this._then);
+
+  final _MessagesHandleInvestigation _self;
+  final $Res Function(_MessagesHandleInvestigation) _then;
+
+/// Create a copy of MessagesSpec
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? investigationId = null,Object? investigation = null,Object? target = null,}) {
+  return _then(_MessagesHandleInvestigation(
+investigationId: null == investigationId ? _self.investigationId : investigationId // ignore: cast_nullable_to_non_nullable
+as StrayHandleInvestigationId,investigation: null == investigation ? _self.investigation : investigation // ignore: cast_nullable_to_non_nullable
+as StrayHandleInvestigation,target: null == target ? _self.target : target // ignore: cast_nullable_to_non_nullable
+as HandleInvestigationTarget,
+  ));
+}
+
+/// Create a copy of MessagesSpec
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$HandleInvestigationTargetCopyWith<$Res> get target {
+  
+  return $HandleInvestigationTargetCopyWith<$Res>(_self.target, (value) {
+    return _then(_self.copyWith(target: value));
+  });
+}
+}
+
+/// @nodoc
+mixin _$HandleInvestigationTarget {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HandleInvestigationTarget);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'HandleInvestigationTarget()';
+}
+
+
+}
+
+/// @nodoc
+class $HandleInvestigationTargetCopyWith<$Res>  {
+$HandleInvestigationTargetCopyWith(HandleInvestigationTarget _, $Res Function(HandleInvestigationTarget) __);
+}
+
+
+/// Adds pattern-matching-related methods to [HandleInvestigationTarget].
+extension HandleInvestigationTargetPatterns on HandleInvestigationTarget {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _HandleInvestigationTargetIdle value)?  idle,TResult Function( _HandleInvestigationTargetSelectedSource value)?  selectedSource,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _HandleInvestigationTargetIdle() when idle != null:
+return idle(_that);case _HandleInvestigationTargetSelectedSource() when selectedSource != null:
+return selectedSource(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _HandleInvestigationTargetIdle value)  idle,required TResult Function( _HandleInvestigationTargetSelectedSource value)  selectedSource,}){
+final _that = this;
+switch (_that) {
+case _HandleInvestigationTargetIdle():
+return idle(_that);case _HandleInvestigationTargetSelectedSource():
+return selectedSource(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _HandleInvestigationTargetIdle value)?  idle,TResult? Function( _HandleInvestigationTargetSelectedSource value)?  selectedSource,}){
+final _that = this;
+switch (_that) {
+case _HandleInvestigationTargetIdle() when idle != null:
+return idle(_that);case _HandleInvestigationTargetSelectedSource() when selectedSource != null:
+return selectedSource(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  idle,TResult Function( int handleId)?  selectedSource,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _HandleInvestigationTargetIdle() when idle != null:
+return idle();case _HandleInvestigationTargetSelectedSource() when selectedSource != null:
+return selectedSource(_that.handleId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  idle,required TResult Function( int handleId)  selectedSource,}) {final _that = this;
+switch (_that) {
+case _HandleInvestigationTargetIdle():
+return idle();case _HandleInvestigationTargetSelectedSource():
+return selectedSource(_that.handleId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  idle,TResult? Function( int handleId)?  selectedSource,}) {final _that = this;
+switch (_that) {
+case _HandleInvestigationTargetIdle() when idle != null:
+return idle();case _HandleInvestigationTargetSelectedSource() when selectedSource != null:
+return selectedSource(_that.handleId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _HandleInvestigationTargetIdle implements HandleInvestigationTarget {
+  const _HandleInvestigationTargetIdle();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HandleInvestigationTargetIdle);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'HandleInvestigationTarget.idle()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class _HandleInvestigationTargetSelectedSource implements HandleInvestigationTarget {
+  const _HandleInvestigationTargetSelectedSource({required this.handleId});
+  
+
+ final  int handleId;
+
+/// Create a copy of HandleInvestigationTarget
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$HandleInvestigationTargetSelectedSourceCopyWith<_HandleInvestigationTargetSelectedSource> get copyWith => __$HandleInvestigationTargetSelectedSourceCopyWithImpl<_HandleInvestigationTargetSelectedSource>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HandleInvestigationTargetSelectedSource&&(identical(other.handleId, handleId) || other.handleId == handleId));
 }
 
 
@@ -639,15 +916,15 @@ int get hashCode => Object.hash(runtimeType,handleId);
 
 @override
 String toString() {
-  return 'MessagesSpec.handleLens(handleId: $handleId)';
+  return 'HandleInvestigationTarget.selectedSource(handleId: $handleId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$MessagesHandleLensCopyWith<$Res> implements $MessagesSpecCopyWith<$Res> {
-  factory _$MessagesHandleLensCopyWith(_MessagesHandleLens value, $Res Function(_MessagesHandleLens) _then) = __$MessagesHandleLensCopyWithImpl;
+abstract mixin class _$HandleInvestigationTargetSelectedSourceCopyWith<$Res> implements $HandleInvestigationTargetCopyWith<$Res> {
+  factory _$HandleInvestigationTargetSelectedSourceCopyWith(_HandleInvestigationTargetSelectedSource value, $Res Function(_HandleInvestigationTargetSelectedSource) _then) = __$HandleInvestigationTargetSelectedSourceCopyWithImpl;
 @useResult
 $Res call({
  int handleId
@@ -658,17 +935,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$MessagesHandleLensCopyWithImpl<$Res>
-    implements _$MessagesHandleLensCopyWith<$Res> {
-  __$MessagesHandleLensCopyWithImpl(this._self, this._then);
+class __$HandleInvestigationTargetSelectedSourceCopyWithImpl<$Res>
+    implements _$HandleInvestigationTargetSelectedSourceCopyWith<$Res> {
+  __$HandleInvestigationTargetSelectedSourceCopyWithImpl(this._self, this._then);
 
-  final _MessagesHandleLens _self;
-  final $Res Function(_MessagesHandleLens) _then;
+  final _HandleInvestigationTargetSelectedSource _self;
+  final $Res Function(_HandleInvestigationTargetSelectedSource) _then;
 
-/// Create a copy of MessagesSpec
+/// Create a copy of HandleInvestigationTarget
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? handleId = null,}) {
-  return _then(_MessagesHandleLens(
+  return _then(_HandleInvestigationTargetSelectedSource(
 handleId: null == handleId ? _self.handleId : handleId // ignore: cast_nullable_to_non_nullable
 as int,
   ));

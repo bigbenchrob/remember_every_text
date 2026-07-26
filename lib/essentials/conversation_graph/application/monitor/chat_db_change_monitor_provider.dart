@@ -7,11 +7,14 @@ import '../../../../features/attachments/feature_level_providers.dart'
     show BulkArchivePhase, attachmentArchiveServiceProvider;
 import '../../../db/feature_level_providers/conversation_graph_readiness_provider.dart'
     show conversationGraphReadinessProvider;
+import '../../../db/feature_level_providers/message_data_version_provider.dart'
+    show messageDataVersionProvider;
 import '../../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../../paths/feature_level_providers.dart' show pathsHelperProvider;
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../conversation_graph_build_controller_provider.dart';
 import '../conversation_graph_build_report.dart';
+import '../conversation_graph_build_service_provider.dart';
 import '../orchestration/graph_maintenance_execution_gate_provider.dart';
 import 'chat_db_monitor_runtime_environment_provider.dart';
 import 'chat_db_source_probe_reader.dart';
@@ -199,6 +202,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
       final chatDbPath = pathsHelper.chatDBPath;
       _chatDbPath = chatDbPath;
 
+      await _reconcileLocalAccountHandleIdentity();
       await _primeMaxRowId(chatDbPath);
 
       // Immediate startup check catches messages that arrived while the app
@@ -209,6 +213,52 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
       _startAttachmentSweep();
     } catch (error, stackTrace) {
       _handleError('Failed to initialize chat.db monitor: $error', stackTrace);
+    }
+  }
+
+  Future<void> _reconcileLocalAccountHandleIdentity() async {
+    final executionGate = ref.read(
+      graphMaintenanceExecutionGateProvider.notifier,
+    );
+    if (!executionGate.tryAcquire(_chatDbMonitorExecutionOwner)) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Skipped local-account handle reconciliation because another graph maintenance operation owns execution authority.',
+            source: 'ChatDbMonitor',
+          );
+      return;
+    }
+
+    try {
+      final graphBuildService = await ref.read(
+        conversationGraphBuildServiceProvider.future,
+      );
+      final report = await graphBuildService
+          .reconcileLocalAccountHandleIdentity();
+      if (report.updatedGraphHandleCount > 0) {
+        ref.read(messageDataVersionProvider.notifier).bump();
+      }
+      ref
+          .read(appLoggerProvider.notifier)
+          .info(
+            'Local-account handle reconciliation examined '
+            '${report.examinedHandleCount} imported handle(s), identified '
+            '${report.localAccountHandleCount} local handle(s), updated '
+            '${report.updatedImportHandleCount} import annotation(s), and projected '
+            '${report.updatedGraphHandleCount} graph annotation(s).',
+            source: 'ChatDbMonitor',
+          );
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Local-account handle reconciliation failed: $error',
+            source: 'ChatDbMonitor',
+            context: {'stackTrace': '$stackTrace'},
+          );
+    } finally {
+      executionGate.release(_chatDbMonitorExecutionOwner);
     }
   }
 

@@ -19,7 +19,9 @@ import 'package:remember_this_text/features/contacts/domain/spec_classes/contact
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
 import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_cassette_spec.dart';
 import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
+import 'package:remember_this_text/features/handles/domain/entities/stray_handle_investigation_id.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
+import 'package:remember_this_text/features/messages/domain/search_investigation_id.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_view_spec.dart';
@@ -882,6 +884,7 @@ void main() {
             ConversationsSpec.conversationExcerpt(
               conversationId: 5,
               anchorMessageId: 99,
+              originatingInvestigationId: SearchInvestigationId(0),
             ),
           ),
         );
@@ -940,7 +943,18 @@ void main() {
       );
 
       expect(flowState.topMenuChoice, TopChatMenuChoice.strayHandles);
-      expect(_activeSpec(container, WindowPanel.center), isNull);
+      expect(
+        flowState.projectedCenterSpec,
+        equals(
+          const ViewSpec.messages(
+            MessagesSpec.handleInvestigation(
+              investigationId: StrayHandleInvestigationId.initial,
+              investigation: StrayHandleInvestigation.identifySources,
+              target: HandleInvestigationTarget.idle(),
+            ),
+          ),
+        ),
+      );
       expect(
         rack.cassettes,
         equals([
@@ -950,15 +964,20 @@ void main() {
             ),
           ),
           const CassetteSpec.handles(
+            HandlesCassetteSpec.strayHandlesInvestigationSwitcher(),
+          ),
+          const CassetteSpec.handles(
             HandlesCassetteSpec.strayHandlesTypeSwitcher(),
           ),
           const CassetteSpec.handles(
             HandlesCassetteSpec.strayHandlesModeSwitcher(
+              investigation: StrayHandleInvestigation.identifySources,
               filter: StrayHandleFilter.phones,
             ),
           ),
           const CassetteSpec.handles(
             HandlesCassetteSpec.strayHandlesReview(
+              investigation: StrayHandleInvestigation.identifySources,
               filter: StrayHandleFilter.phones,
             ),
           ),
@@ -986,9 +1005,73 @@ void main() {
       );
       expect(
         _activeSpec(container, WindowPanel.center),
-        equals(const ViewSpec.messages(MessagesSpec.handleLens(handleId: 7))),
+        equals(
+          ViewSpec.messages(
+            MessagesSpec.handleInvestigation(
+              investigationId: flowState.strayHandleInvestigationId!,
+              investigation: StrayHandleInvestigation.identifySources,
+              target: const HandleInvestigationTarget.selectedSource(
+                handleId: 7,
+              ),
+            ),
+          ),
+        ),
       );
     });
+
+    testWidgets(
+      'new stray handle investigation makes stored handle evidence ineffective',
+      (tester) async {
+        await _mountMessagesPanelReconciliation(tester, container);
+
+        final flow = container.read(sidebarFlowProvider.notifier);
+        flow.openStrayHandleLens(handleId: 7);
+        await _flushMessagesPanelReconciliation(tester);
+
+        final originatingInvestigationId = container
+            .read(sidebarFlowProvider)
+            .selectedHandleEvidenceInvestigationId;
+        expect(originatingInvestigationId, isNotNull);
+        expect(
+          _activeSpec(container, WindowPanel.center),
+          equals(
+            ViewSpec.messages(
+              MessagesSpec.handleInvestigation(
+                investigationId: originatingInvestigationId!,
+                investigation: StrayHandleInvestigation.identifySources,
+                target: const HandleInvestigationTarget.selectedSource(
+                  handleId: 7,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        flow.beginNewStrayHandleInvestigation();
+        await _flushMessagesPanelReconciliation(tester);
+
+        final flowState = container.read(sidebarFlowProvider);
+        expect(flowState.selectedHandleEvidenceId, 7);
+        expect(
+          flowState.selectedHandleEvidenceInvestigationId,
+          originatingInvestigationId,
+        );
+        expect(flowState.effectiveSelectedHandleEvidenceId, isNull);
+        expect(
+          flowState.projectedCenterSpec,
+          equals(
+            ViewSpec.messages(
+              MessagesSpec.handleInvestigation(
+                investigationId: flowState.strayHandleInvestigationId!,
+                investigation: StrayHandleInvestigation.identifySources,
+                target: const HandleInvestigationTarget.idle(),
+              ),
+            ),
+          ),
+        );
+        expect(_activeSpec(container, WindowPanel.center), isNotNull);
+      },
+    );
 
     testWidgets('handle messages derive standalone handle center spec', (
       tester,

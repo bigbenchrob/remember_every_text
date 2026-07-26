@@ -6,6 +6,15 @@ import '../../../../features/sidebar_utilities/application/sidebar_cassette_spec
 import '../../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../domain/sidebar_mode.dart';
 
+const _searchPageTrackIds = [
+  TrackId.trackA,
+  TrackId.trackB,
+  TrackId.trackC,
+  TrackId.trackD,
+  TrackId.trackE,
+  TrackId.trackF,
+];
+
 /// Prepared occupants needed to compose the current Search-page Track region.
 ///
 /// These names explain the page composition to humans. Generic Track
@@ -17,10 +26,11 @@ final class SearchPageTrackOccupants {
     required this.rightTitle,
     required this.centerMetadata,
     required this.centerSearchControls,
-    required this.centerSupportingContext,
+    required this.centerInvestigationStatus,
+    required this.searchStatusSpacing,
     required this.bottomSpacing,
     this.rightConversationCard,
-    this.rightExcerptLabel,
+    this.rightTemporalOrientation,
   });
 
   final TrackOccupant sidebarTopMenu;
@@ -28,23 +38,22 @@ final class SearchPageTrackOccupants {
   final TrackOccupant rightTitle;
   final TrackOccupant centerMetadata;
   final TrackOccupant centerSearchControls;
-  final TrackOccupant centerSupportingContext;
+  final TrackOccupant centerInvestigationStatus;
+  final TrackOccupant searchStatusSpacing;
   final TrackOccupant bottomSpacing;
   final TrackOccupant? rightConversationCard;
-  final TrackOccupant? rightExcerptLabel;
+  final TrackOccupant? rightTemporalOrientation;
 }
 
 /// Page-owned resting geometry for optional or temporarily small Search cells.
 final class SearchPageTrackMinimumReservations {
   const SearchPageTrackMinimumReservations({
-    required this.centerSupportingContext,
+    required this.centerInvestigationStatus,
     required this.rightConversationCard,
-    required this.rightExcerptLabel,
   });
 
-  final double centerSupportingContext;
+  final double centerInvestigationStatus;
   final double rightConversationCard;
-  final double rightExcerptLabel;
 }
 
 /// One authoritative Search-page composition and resolved geometry.
@@ -65,13 +74,12 @@ SearchPageTrackComposition composeSearchPageTrackLayout({
   required TrackOccupant centerTitle,
   required TrackOccupant centerMetadata,
   required TrackOccupant centerSearchControls,
-  required TrackOccupant centerSupportingContext,
+  required TrackOccupant centerInvestigationStatus,
   required TrackOccupant rightTitle,
-  required double centerSupportingContextMinimumReservedHeight,
+  required double centerInvestigationStatusMinimumReservedHeight,
   required double rightConversationCardMinimumReservedHeight,
-  required double rightExcerptLabelMinimumReservedHeight,
   TrackOccupant? rightConversationCard,
-  TrackOccupant? rightExcerptLabel,
+  TrackOccupant? rightTemporalOrientation,
 }) {
   final occupants = SearchPageTrackOccupants(
     sidebarTopMenu: TopMenuTrackOccupant(
@@ -84,17 +92,17 @@ SearchPageTrackComposition composeSearchPageTrackLayout({
     rightTitle: rightTitle,
     centerMetadata: centerMetadata,
     centerSearchControls: centerSearchControls,
-    centerSupportingContext: centerSupportingContext,
+    centerInvestigationStatus: centerInvestigationStatus,
+    searchStatusSpacing: const FixedHeightTrackOccupant(height: 2),
     bottomSpacing: const FixedHeightTrackOccupant(height: 16),
     rightConversationCard: rightConversationCard,
-    rightExcerptLabel: rightExcerptLabel,
+    rightTemporalOrientation: rightTemporalOrientation,
   );
   final matrix = buildSearchPageTrackLayoutMatrix(
     occupants: occupants,
     minimumReservations: SearchPageTrackMinimumReservations(
-      centerSupportingContext: centerSupportingContextMinimumReservedHeight,
+      centerInvestigationStatus: centerInvestigationStatusMinimumReservedHeight,
       rightConversationCard: rightConversationCardMinimumReservedHeight,
-      rightExcerptLabel: rightExcerptLabelMinimumReservedHeight,
     ),
   );
 
@@ -118,7 +126,7 @@ PageTrackLayoutMatrix<TrackOccupant> buildSearchPageTrackLayoutMatrix({
   required SearchPageTrackMinimumReservations minimumReservations,
 }) {
   return PageTrackLayoutMatrix<TrackOccupant>(
-    trackIds: TrackId.values,
+    trackIds: _searchPageTrackIds,
     columnIds: TrackColumnId.values,
     cells: [
       _occupied(
@@ -140,7 +148,7 @@ PageTrackLayoutMatrix<TrackOccupant> buildSearchPageTrackLayoutMatrix({
         columnId: TrackColumnId.column3,
         occupant: occupants.rightTitle,
         alignment: TrackCellAlignment.center,
-        debugLabel: 'Conversation title',
+        debugLabel: 'Conversation excerpt title',
       ),
       _empty(trackId: TrackId.trackB, columnId: TrackColumnId.column1),
       _occupied(
@@ -164,30 +172,38 @@ PageTrackLayoutMatrix<TrackOccupant> buildSearchPageTrackLayoutMatrix({
         alignment: TrackCellAlignment.center,
         debugLabel: 'Message search controls',
       ),
-      _empty(trackId: TrackId.trackC, columnId: TrackColumnId.column3),
-      _empty(trackId: TrackId.trackD, columnId: TrackColumnId.column1),
+      _optionalOccupied(
+        trackId: TrackId.trackC,
+        columnId: TrackColumnId.column3,
+        occupant: occupants.rightTemporalOrientation,
+        alignment: TrackCellAlignment.center,
+        debugLabel: 'Conversation temporal orientation',
+      ),
       _occupied(
         trackId: TrackId.trackD,
-        columnId: TrackColumnId.column2,
-        occupant: occupants.centerSupportingContext,
-        minimumReservedHeight: minimumReservations.centerSupportingContext,
-        debugLabel: 'Message search supporting context',
+        columnId: TrackColumnId.column1,
+        occupant: occupants.searchStatusSpacing,
+        debugLabel: 'Fixed spacing',
       ),
-      _optionalOccupied(
-        trackId: TrackId.trackD,
-        columnId: TrackColumnId.column3,
-        occupant: occupants.rightExcerptLabel,
-        minimumReservedHeight: minimumReservations.rightExcerptLabel,
-        debugLabel: 'Conversation excerpt label',
-      ),
+      _empty(trackId: TrackId.trackD, columnId: TrackColumnId.column2),
+      _empty(trackId: TrackId.trackD, columnId: TrackColumnId.column3),
+      _empty(trackId: TrackId.trackE, columnId: TrackColumnId.column1),
       _occupied(
         trackId: TrackId.trackE,
+        columnId: TrackColumnId.column2,
+        occupant: occupants.centerInvestigationStatus,
+        minimumReservedHeight: minimumReservations.centerInvestigationStatus,
+        debugLabel: 'Search investigation status',
+      ),
+      _empty(trackId: TrackId.trackE, columnId: TrackColumnId.column3),
+      _occupied(
+        trackId: TrackId.trackF,
         columnId: TrackColumnId.column1,
         occupant: occupants.bottomSpacing,
         debugLabel: 'Fixed spacing',
       ),
-      _empty(trackId: TrackId.trackE, columnId: TrackColumnId.column2),
-      _empty(trackId: TrackId.trackE, columnId: TrackColumnId.column3),
+      _empty(trackId: TrackId.trackF, columnId: TrackColumnId.column2),
+      _empty(trackId: TrackId.trackF, columnId: TrackColumnId.column3),
     ],
   );
 }
