@@ -10,7 +10,10 @@ import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
+import '../../../../features/conversations/presentation/layout/contacts_page_conversation_track_occupants.dart';
 import '../../../../features/conversations/presentation/widgets/conversation_signature_card.dart';
+import '../../../../features/messages/presentation/layout/contacts_page_message_track_occupants.dart';
+import '../../../../features/messages/presentation/layout/recovered_messages_page_track_occupants.dart';
 import '../../../../features/messages/presentation/layout/search_page_message_evidence_track_occupants.dart';
 import '../../../../features/messages/presentation/layout/unfamiliar_sources_message_track_occupants.dart';
 import '../../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
@@ -31,6 +34,8 @@ import '../../application/app_shell_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/sidebar_mode.dart';
+import '../layout/contacts_page_track_plan.dart';
+import '../layout/recovered_messages_page_track_plan.dart';
 import '../layout/search_page_conversation_track_occupants.dart';
 import '../layout/search_page_track_plan.dart';
 import '../layout/unfamiliar_sources_page_track_plan.dart';
@@ -133,9 +138,21 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     final useUnfamiliarSourcesTrackPlan =
         activeMode == SidebarMode.messages &&
         sidebarFlowState.topMenuChoice == TopChatMenuChoice.strayHandles;
+    final useRecoveredMessagesTrackPlan =
+        activeMode == SidebarMode.messages &&
+        (sidebarFlowState.topMenuChoice ==
+                TopChatMenuChoice.recoveredUnlinkedMessages ||
+            sidebarFlowState.topMenuChoice ==
+                TopChatMenuChoice.recoveredNoHandleFromMeMessages);
+    final useContactsTrackPlan =
+        activeMode == SidebarMode.messages &&
+        sidebarFlowState.topMenuChoice == TopChatMenuChoice.contacts;
     final SearchPageTrackComposition? searchPageTrackComposition;
     final UnfamiliarSourcesPageTrackComposition?
     unfamiliarSourcesTrackComposition;
+    final RecoveredMessagesPageTrackComposition?
+    recoveredMessagesTrackComposition;
+    final ContactsPageTrackComposition? contactsPageTrackComposition;
     if (useSearchTrackPlan) {
       final typography = ref.watch(themeTypographyProvider);
       ref.watch(themeColorsProvider);
@@ -178,6 +195,8 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         rightTemporalOrientation: conversationOccupants.temporalOrientation,
       );
       unfamiliarSourcesTrackComposition = null;
+      recoveredMessagesTrackComposition = null;
+      contactsPageTrackComposition = null;
     } else {
       searchPageTrackComposition = null;
       if (useUnfamiliarSourcesTrackPlan) {
@@ -204,8 +223,61 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
               typography: typography,
               messageOccupants: messageOccupants,
             );
+        recoveredMessagesTrackComposition = null;
+        contactsPageTrackComposition = null;
+      } else if (useRecoveredMessagesTrackPlan) {
+        unfamiliarSourcesTrackComposition = null;
+        final typography = ref.watch(themeTypographyProvider);
+        final presentationConstraints =
+            PresentationConstraints.fromBuildContext(
+              context,
+              availableWidth: MediaQuery.sizeOf(context).width,
+            );
+        final messageOccupants = recoveredMessagesPageTrackOccupants(
+          onlyNoHandleFromMe:
+              sidebarFlowState.topMenuChoice ==
+              TopChatMenuChoice.recoveredNoHandleFromMeMessages,
+          typography: typography,
+        );
+        recoveredMessagesTrackComposition =
+            composeRecoveredMessagesPageTrackLayout(
+              presentationConstraints: presentationConstraints,
+              typography: typography,
+              topMenuChoice: sidebarFlowState.topMenuChoice,
+              messageOccupants: messageOccupants,
+            );
+        contactsPageTrackComposition = null;
+      } else if (useContactsTrackPlan) {
+        unfamiliarSourcesTrackComposition = null;
+        recoveredMessagesTrackComposition = null;
+        final typography = ref.watch(themeTypographyProvider);
+        final presentationConstraints =
+            PresentationConstraints.fromBuildContext(
+              context,
+              availableWidth: MediaQuery.sizeOf(context).width,
+            );
+        final centerSpec = ref.watch(
+          effectiveCenterPanelSpecProvider(activeMode),
+        );
+        final messageOccupants = contactsPageMessageTrackOccupants(
+          ref: ref,
+          centerSpec: centerSpec,
+          typography: typography,
+        );
+        final conversationOccupants = contactsPageConversationTrackOccupants(
+          ref: ref,
+          centerSpec: centerSpec,
+          typography: typography,
+        );
+        contactsPageTrackComposition = composeContactsPageTrackLayout(
+          presentationConstraints: presentationConstraints,
+          typography: typography,
+          centerTitle: messageOccupants.title ?? conversationOccupants.title,
+        );
       } else {
         unfamiliarSourcesTrackComposition = null;
+        recoveredMessagesTrackComposition = null;
+        contactsPageTrackComposition = null;
       }
     }
 
@@ -336,7 +408,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     );
     final resolvedTrackMatrix =
         searchPageTrackComposition?.resolvedMatrix ??
-        unfamiliarSourcesTrackComposition?.resolvedMatrix;
+        unfamiliarSourcesTrackComposition?.resolvedMatrix ??
+        recoveredMessagesTrackComposition?.resolvedMatrix ??
+        contactsPageTrackComposition?.resolvedMatrix;
     if (resolvedTrackMatrix != null) {
       window = ResolvedTrackLayoutMatrixScope(
         matrix: resolvedTrackMatrix,

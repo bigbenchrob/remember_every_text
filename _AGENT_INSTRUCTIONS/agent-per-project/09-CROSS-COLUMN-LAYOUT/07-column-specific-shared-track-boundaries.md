@@ -225,6 +225,43 @@ because its page composition has a longer truthful pre-content relationship.
 This does not make F a globally meaningful boundary. Another page or column may
 declare a different final shared Track.
 
+## Recovered Messages Example
+
+Recovered Deleted Messages and Recovered No-Handle Messages have one durable
+cross-column relationship:
+
+```text
+A1: sidebar top menu
+A2: recovered-message center-panel title
+```
+
+Both columns end shared participation after Track A. The sidebar resumes its
+native cassette chain; the center panel resumes its Messages-owned supporting
+context, search controls, and evidence flow. Neither continuation determines
+the other's vertical position because no later cross-column relationship
+exists.
+
+See
+[`08-recovered-messages-page-current-implementation.md`](08-recovered-messages-page-current-implementation.md)
+for the concrete composition.
+
+## Contacts Example
+
+Contacts also has one durable cross-column relationship:
+
+```text
+A1: sidebar top menu
+A2: effective center-panel ViewSpec title, when one exists
+```
+
+The effective A2 occupant may be prepared by Messages or Conversations. The
+page matrix owns its placement without taking ownership of either feature's
+presentation. Both columns resume their native flows after Track A.
+
+See
+[`09-contacts-page-current-implementation.md`](09-contacts-page-current-implementation.md)
+for the concrete composition.
+
 ## Invariants
 
 1. The final page Track and a column's final shared Track are distinct.

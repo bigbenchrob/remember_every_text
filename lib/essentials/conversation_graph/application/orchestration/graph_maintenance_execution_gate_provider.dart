@@ -44,12 +44,12 @@ class GraphMaintenanceExecutionGateState {
   }
 }
 
-/// Global graph-maintenance execution gate.
+/// Process-local graph-maintenance execution gate.
 ///
-/// This acts as a single source of truth for who currently owns derived-data
-/// maintenance. Only one owner may run source import, graph build, or archive
-/// import/removal work at a time. Re-entrant acquisition by the same owner is
-/// allowed.
+/// Within the one admitted MessageLens process, this acts as the single source
+/// of truth for who currently owns derived-data maintenance. Only one owner may
+/// run source import, graph build, or archive import/removal work at a time.
+/// Re-entrant acquisition by the same owner is allowed.
 @Riverpod(keepAlive: true)
 class GraphMaintenanceExecutionGate extends _$GraphMaintenanceExecutionGate {
   @override

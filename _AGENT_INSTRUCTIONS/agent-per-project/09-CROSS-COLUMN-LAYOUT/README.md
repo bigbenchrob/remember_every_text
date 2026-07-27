@@ -11,6 +11,8 @@ links:
   - ./03-search-page-current-implementation.md
   - ./06-unfamiliar-sources-page-current-implementation.md
   - ./07-column-specific-shared-track-boundaries.md
+  - ./08-recovered-messages-page-current-implementation.md
+  - ./09-contacts-page-current-implementation.md
   - ./04-design-history-and-cross-references.md
   - ./05-anatomy-of-track-cell-rendering.md
   - ../07-CENTER-PANEL-LAYOUTS/README.md
@@ -51,6 +53,8 @@ using content appropriate to their lens.
 - column-specific shared Track lifetimes and native-flow continuation
 - the sidebar cassette content-start seam
 - current Search-page application of the contract
+- current Unknown Sources, Recovered Messages, and Contacts applications of
+  column-specific shared lifetimes
 - links to the UI-walk and feature-package history that produced the design
 
 ## What This Folder Does Not Own
@@ -87,6 +91,12 @@ documentation.
 8. [`07-column-specific-shared-track-boundaries.md`](07-column-specific-shared-track-boundaries.md)
    defines the general distinction between the final page Track and each
    column's explicitly declared final shared Track.
+9. [`08-recovered-messages-page-current-implementation.md`](08-recovered-messages-page-current-implementation.md)
+   records the deliberately narrow Track A relationship used by both recovered
+   message investigations.
+10. [`09-contacts-page-current-implementation.md`](09-contacts-page-current-implementation.md)
+    records the Track A relationship between the Contacts top menu and whichever
+    feature owns the effective center ViewSpec.
 
 ## Relationship To UI Walk
 

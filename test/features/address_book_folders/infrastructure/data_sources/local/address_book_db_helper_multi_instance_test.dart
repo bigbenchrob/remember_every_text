@@ -60,4 +60,25 @@ void main() {
       throwsA(isA<StateError>()),
     );
   });
+
+  test(
+    'closing one helper does not close another helper for the same path',
+    () async {
+      final first = AddressBookDbHelperMultiInstance(databasePath);
+      final second = AddressBookDbHelperMultiInstance(databasePath);
+      addTearDown(first.close);
+      addTearDown(second.close);
+
+      await first.verifyReadable();
+      await second.verifyReadable();
+      await first.close();
+
+      expect(
+        await second.readRows('SELECT Z_PK FROM ZABCDRECORD'),
+        <Map<String, Object?>>[
+          <String, Object?>{'Z_PK': 1},
+        ],
+      );
+    },
+  );
 }

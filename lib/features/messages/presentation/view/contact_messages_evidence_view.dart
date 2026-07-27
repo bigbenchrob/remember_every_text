@@ -11,6 +11,7 @@ import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../view_model/contact_messages_evidence_presentation.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
@@ -90,6 +91,12 @@ class _ContactMessagesEvidenceViewState
               mode: _searchMode,
             ),
           );
+    final headerPresentation = ContactMessagesEvidencePresentation.from(
+      headerContext: headerContextAsync.valueOrNull,
+      filterHandleId: widget.filterHandleId,
+      isHeaderLoading:
+          headerContextAsync.isLoading && !headerContextAsync.hasValue,
+    );
 
     return skeletonAsync.when(
       skipLoadingOnReload: true,
@@ -101,11 +108,13 @@ class _ContactMessagesEvidenceViewState
             skeleton: skeleton,
             isInitialRowsLoading: true,
             headerData: MessageEvidenceHeaderModel(
-              title: 'Loading contact messages',
+              title: headerPresentation.title,
               countLabel: CountLabelFormatter.messages(skeleton.totalCount),
             ),
             emptyMessage: 'No messages found for this contact.',
             monthAnchor: widget.monthAnchor,
+            useFixedPanelFrame: true,
+            continueHeaderInNativeFlowAfterTracks: true,
           );
         }
 
@@ -131,9 +140,24 @@ class _ContactMessagesEvidenceViewState
           },
         );
       },
-      loading: () => const Center(child: Text('Loading contact timeline...')),
-      error: (error, stackTrace) =>
-          Center(child: Text('Contact message timeline failed: $error')),
+      loading: () => MessageEvidenceTimelineView(
+        evidenceScope: evidenceScope,
+        skeleton: const MessageEvidenceTimelineSkeleton(entries: []),
+        headerData: MessageEvidenceHeaderModel(title: headerPresentation.title),
+        emptyMessage: 'Loading contact timeline...',
+        monthAnchor: widget.monthAnchor,
+        useFixedPanelFrame: true,
+        continueHeaderInNativeFlowAfterTracks: true,
+      ),
+      error: (error, stackTrace) => MessageEvidenceTimelineView(
+        evidenceScope: evidenceScope,
+        skeleton: const MessageEvidenceTimelineSkeleton(entries: []),
+        headerData: MessageEvidenceHeaderModel(title: headerPresentation.title),
+        emptyMessage: 'Contact message timeline failed: $error',
+        monthAnchor: widget.monthAnchor,
+        useFixedPanelFrame: true,
+        continueHeaderInNativeFlowAfterTracks: true,
+      ),
     );
   }
 }
@@ -200,6 +224,8 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
       emptyMessage: _emptyMessage(),
       monthAnchor: monthAnchor,
       highlightQuery: searchQuery,
+      useFixedPanelFrame: true,
+      continueHeaderInNativeFlowAfterTracks: true,
       onVisibleMonthChanged: (monthKey) {
         ref
             .read(
@@ -299,10 +325,11 @@ class _ContactMessagesEvidenceTimeline extends ConsumerWidget {
   }
 
   String _title() {
-    if (filterHandleId != null) {
-      return 'Messages from ${_contactLabel()}';
-    }
-    return 'All messages from ${_contactLabel()}';
+    return ContactMessagesEvidencePresentation.from(
+      headerContext: headerContext,
+      filterHandleId: filterHandleId,
+      isHeaderLoading: false,
+    ).title;
   }
 
   String? _selectedHandleContextLine() {

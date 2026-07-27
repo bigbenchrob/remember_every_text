@@ -10,6 +10,7 @@ import '../../../messages/domain/message_evidence/message_evidence_skeleton.dart
 import '../../../messages/presentation/widgets/message_evidence/message_evidence_header.dart';
 import '../../../messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart';
 import '../../application/message_evidence/conversation_evidence_header_context_provider.dart';
+import '../view_model/conversation_messages_evidence_presentation.dart';
 
 class ConversationMessagesView extends ConsumerStatefulWidget {
   const ConversationMessagesView({
@@ -79,6 +80,9 @@ class _ConversationMessagesViewState
         conversationId: widget.conversationId,
       ),
     );
+    final headerPresentation = ConversationMessagesEvidencePresentation.from(
+      headerContext: headerContextAsync.valueOrNull,
+    );
 
     return skeletonAsync.when(
       skipLoadingOnReload: true,
@@ -97,8 +101,9 @@ class _ConversationMessagesViewState
           evidenceScope: evidenceScope,
           skeleton: visibleSkeleton,
           headerData: MessageEvidenceHeaderModel(
-            title:
-                'Conversation with ${headerContext?.title ?? 'Unknown participants'}',
+            title: ConversationMessagesEvidencePresentation.from(
+              headerContext: headerContext,
+            ).title,
             dateRangeLabel: _dateRangeLabel(headerContext),
             countLabel: _countLabel(
               headerContext,
@@ -125,12 +130,30 @@ class _ConversationMessagesViewState
           ),
           anchorMessageId: widget.anchorMessageId,
           highlightQuery: normalizedQuery,
+          useFixedPanelFrame: true,
+          continueHeaderInNativeFlowAfterTracks: true,
         );
       },
-      loading: () =>
-          const Center(child: Text('Loading conversation graph timeline...')),
-      error: (error, stackTrace) =>
-          Center(child: Text('Conversation graph timeline failed: $error')),
+      loading: () => MessageEvidenceTimelineView(
+        evidenceScope: evidenceScope,
+        skeleton: const MessageEvidenceTimelineSkeleton(entries: []),
+        headerData: MessageEvidenceHeaderModel(title: headerPresentation.title),
+        emptyMessage: 'Loading conversation graph timeline...',
+        anchorMessageId: widget.anchorMessageId,
+        highlightQuery: normalizedQuery,
+        useFixedPanelFrame: true,
+        continueHeaderInNativeFlowAfterTracks: true,
+      ),
+      error: (error, stackTrace) => MessageEvidenceTimelineView(
+        evidenceScope: evidenceScope,
+        skeleton: const MessageEvidenceTimelineSkeleton(entries: []),
+        headerData: MessageEvidenceHeaderModel(title: headerPresentation.title),
+        emptyMessage: 'Conversation graph timeline failed: $error',
+        anchorMessageId: widget.anchorMessageId,
+        highlightQuery: normalizedQuery,
+        useFixedPanelFrame: true,
+        continueHeaderInNativeFlowAfterTracks: true,
+      ),
     );
   }
 

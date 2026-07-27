@@ -61,6 +61,7 @@ class MessageEvidenceHeader extends ConsumerWidget {
     this.details,
     this.padding = AppPanelBands.centerPanelPadding,
     this.useFixedPanelFrame = false,
+    this.continueInNativeFlowAfterTracks = false,
     super.key,
   });
 
@@ -68,6 +69,14 @@ class MessageEvidenceHeader extends ConsumerWidget {
   final Widget? details;
   final EdgeInsets padding;
   final bool useFixedPanelFrame;
+
+  /// Continues the Messages-owned header flow after the page's shared Track
+  /// region ends.
+  ///
+  /// This is used when a page shares only its title row across columns. The
+  /// remaining header content has no cross-column relationship and therefore
+  /// returns to the feature's native layout rather than occupying false Tracks.
+  final bool continueInNativeFlowAfterTracks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -107,13 +116,61 @@ class MessageEvidenceHeader extends ConsumerWidget {
     return ColoredBox(
       color: colors.messagePanels.coolPanelSurface,
       child: useFixedPanelFrame && hasResolvedMatrix
-          ? const _MessageEvidenceTrackCells()
+          ? _MessageEvidenceTrackedHeader(
+              primary: primary,
+              secondary: secondary,
+              padding: padding,
+              continueInNativeFlowAfterTracks: continueInNativeFlowAfterTracks,
+            )
           : _MessageEvidenceFallbackHeader(
               padding: padding,
               title: title,
               primary: primary,
               secondary: secondary,
             ),
+    );
+  }
+}
+
+class _MessageEvidenceTrackedHeader extends StatelessWidget {
+  const _MessageEvidenceTrackedHeader({
+    required this.primary,
+    required this.secondary,
+    required this.padding,
+    required this.continueInNativeFlowAfterTracks,
+  });
+
+  final Widget primary;
+  final Widget secondary;
+  final EdgeInsets padding;
+  final bool continueInNativeFlowAfterTracks;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const _MessageEvidenceTrackCells(),
+        if (continueInNativeFlowAfterTracks)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              padding.left,
+              AppPanelBands.titleToPrimaryGap,
+              padding.right,
+              padding.bottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                primary,
+                const SizedBox(height: AppPanelBands.primaryToSecondaryGap),
+                secondary,
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

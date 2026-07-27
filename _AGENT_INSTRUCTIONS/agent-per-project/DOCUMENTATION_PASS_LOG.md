@@ -2695,3 +2695,41 @@ independent cassette flow.
 | `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
 
 ---
+
+# Recovered Messages Track A Composition
+
+Date: 2026-07-26
+
+Scope: Aligned the recovered-message sidebar menu and center title through one
+truthful shared Track while preserving independent layout below it.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/08-recovered-messages-page-current-implementation.md` | Added the canonical current composition for Recovered Deleted Messages and Recovered No-Handle Messages. | Establishes that only A1/A2 share geometry and that both columns resume their native flows immediately afterward. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Added the recovered-message composition to the canonical index and reading order. | Makes the page-specific application discoverable from the cross-column layout entry point. |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Added Recovered Messages as a second concrete shared-boundary example. | Shows that a page may truthfully end both sidebar and center shared lifetimes at Track A. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible alignment change as version `0.2.15+33`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Contacts Track A Composition
+
+Date: 2026-07-26
+
+Scope: Aligned the Contacts sidebar menu with the title supplied by the feature
+that owns the effective center ViewSpec.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/09-contacts-page-current-implementation.md` | Added the canonical current Contacts composition and its Messages/Conversations occupant ownership chain. | Establishes that only A1/A2 share geometry and that both columns resume native flow after Track A. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Added the Contacts composition to the canonical index and reading order. | Makes the page-specific application discoverable from the cross-column layout entry point. |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Added Contacts as a concrete shared-boundary example. | Demonstrates that Navigation may place an occupant prepared by the effective center ViewSpec owner without taking presentation ownership. |
+| `CHANGELOG.md` | Recorded the user-visible Contacts title alignment in the current release entry. | Keeps release notes synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---

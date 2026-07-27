@@ -2,7 +2,7 @@
 tier: project
 scope: build
 owner: agent-per-project
-last_reviewed: 2026-03-29
+last_reviewed: 2026-07-26
 source_of_truth: doc
 links:
   - ./README.md
@@ -46,6 +46,29 @@ The repository is currently configured so production builds can preserve FDA con
    - Release signing identity: `Developer ID Application`
 
 Do not change these casually.
+
+## Single-Instance Execution Authority
+
+MessageLens establishes application-instance authority in native macOS
+bootstrap before creating the Flutter engine. The authority combines:
+
+1. same-bundle running-application detection, so a duplicate can activate the
+   already running app; and
+2. an application-lifetime advisory lock at
+   `~/Library/Application Support/com.bigbenchsoftware.MessageLens/MessageLens.instance.lock`.
+
+Only the process holding that authority may proceed into Flutter and open
+application databases. A second ordinary launch exits before providers start.
+The operating system releases the advisory lock when the process exits or
+crashes, so a stale lock file does not block a later launch.
+
+This matters during development and upgrade testing as well as production. A
+debug build, an older beta, or a second copy launched from another location
+must not compete with the active app for writable import, graph, or overlay
+databases. Stable production bundle identity also lets the duplicate launch
+activate the existing app consistently. Signing identity and Full Disk Access
+remain separate concerns: possession of FDA never grants a second process
+database-write authority.
 
 ## Required Production-Build Contract
 
@@ -91,3 +114,5 @@ This fallback should be the exception, not the planned path.
 2. NEVER hand off a debug or ad hoc signed macOS app as a production build.
 3. ALWAYS verify release signing identity before claiming that a build should preserve FDA continuity.
 4. ALWAYS treat “production build” as including app-identity continuity, not just successful compilation.
+5. NEVER move single-instance admission after Flutter/database startup; the
+   exclusion must exist before writable providers can be constructed.

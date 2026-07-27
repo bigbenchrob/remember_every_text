@@ -619,6 +619,12 @@ _SidebarContentSeamLayout? _contentSeamLayoutForRack({
           TopChatMenuChoice.strayHandles => const _SidebarContentSeamLayout(
             lastSharedTrackId: TrackId.trackA,
           ),
+          TopChatMenuChoice.recoveredUnlinkedMessages ||
+          TopChatMenuChoice.recoveredNoHandleFromMeMessages =>
+            const _SidebarContentSeamLayout(lastSharedTrackId: TrackId.trackA),
+          TopChatMenuChoice.contacts => const _SidebarContentSeamLayout(
+            lastSharedTrackId: TrackId.trackA,
+          ),
           _ => null,
         };
       },

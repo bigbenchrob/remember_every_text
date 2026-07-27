@@ -18,6 +18,7 @@ import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_inte
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_model.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_option.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
+import 'package:remember_this_text/essentials/sidebar/presentation/view/sidebar_info_card.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import 'package:remember_this_text/features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
@@ -382,6 +383,213 @@ void main() {
         await tester.pump();
       },
     );
+
+    testWidgets(
+      'recovered messages resumes native cassette flow immediately after A1',
+      (tester) async {
+        const topMenuSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(
+            selectedChoice: TopChatMenuChoice.recoveredUnlinkedMessages,
+          ),
+        );
+        const infoSpec = CassetteSpec.contactsInfo(
+          ContactsInfoCassetteSpec.infoCard(
+            key: ContactsInfoKey.pickerContentSources,
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
+            ),
+            ...cassetteRackTestHarnessOverrides(),
+            sidebarCassetteResolutionStateProvider(
+              SidebarMode.messages,
+            ).overrideWith((ref) {
+              return ref.watch(_testSidebarResolutionStateProvider);
+            }),
+          ],
+        );
+        final rackSubscription = container.listen(
+          cassetteRackStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        final resolutionSubscription = container.listen(
+          sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        container
+            .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+            .setRackForTesting([topMenuSpec, infoSpec]);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'legacy-top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: infoSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'recovered-info',
+              ),
+              topSpacing: 24,
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: ResolvedTrackLayoutMatrixScope(
+                matrix: _testRecoveredMessagesSidebarMatrix(),
+                child: const SizedBox(
+                  width: 320,
+                  height: 600,
+                  child: LeftPanelHost(mode: SidebarMode.messages),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('matrix-top-menu'), findsOneWidget);
+        expect(find.text('legacy-top-menu'), findsNothing);
+        expect(find.text('recovered-info'), findsOneWidget);
+        expect(_renderedTrackCellIds(tester), const [
+          CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column1),
+        ]);
+        final trackABottom = tester
+            .getBottomLeft(find.byType(TrackCellView))
+            .dy;
+        final infoTop = tester.getTopLeft(find.byType(SidebarInfoCard)).dy;
+        expect(infoTop - trackABottom, 24);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        resolutionSubscription.close();
+        rackSubscription.close();
+        await tester.idle();
+        container.dispose();
+        await tester.pump();
+      },
+    );
+
+    testWidgets('Contacts resumes native cassette flow immediately after A1', (
+      tester,
+    ) async {
+      const topMenuSpec = CassetteSpec.sidebarUtility(
+        SidebarUtilityCassetteSpec.topChatMenu(
+          selectedChoice: TopChatMenuChoice.contacts,
+        ),
+      );
+      const contactControlSpec = CassetteSpec.contactsInfo(
+        ContactsInfoCassetteSpec.infoCard(
+          key: ContactsInfoKey.pickerContentSources,
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          conversationGraphPopulatedProvider.overrideWith(
+            _AlwaysPopulatedGraph.new,
+          ),
+          ...cassetteRackTestHarnessOverrides(),
+          sidebarCassetteResolutionStateProvider(
+            SidebarMode.messages,
+          ).overrideWith((ref) {
+            return ref.watch(_testSidebarResolutionStateProvider);
+          }),
+        ],
+      );
+      final rackSubscription = container.listen(
+        cassetteRackStateProvider(SidebarMode.messages),
+        (_, __) {},
+        fireImmediately: true,
+      );
+      final resolutionSubscription = container.listen(
+        sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+        (_, __) {},
+        fireImmediately: true,
+      );
+      container
+          .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+          .setRackForTesting([topMenuSpec, contactControlSpec]);
+      container
+          .read(_testSidebarResolutionStateProvider.notifier)
+          .state = const SidebarCassetteResolutionState(
+        resolvedCassettes: <ResolvedSidebarCassette>[
+          ResolvedSidebarCassette(
+            spec: topMenuSpec,
+            cassetteIndex: 0,
+            payload: StaticFeatureInfoSidebarCassettePayload(
+              bodyText: 'legacy-top-menu',
+              role: SidebarCassetteRole.appControl,
+            ),
+          ),
+          ResolvedSidebarCassette(
+            spec: contactControlSpec,
+            cassetteIndex: 1,
+            payload: StaticFeatureInfoSidebarCassettePayload(
+              bodyText: 'contact-control',
+            ),
+            topSpacing: 24,
+          ),
+        ],
+        expectedVisibleCount: 2,
+        isLoading: false,
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: ResolvedTrackLayoutMatrixScope(
+              matrix: _testContactsSidebarMatrix(),
+              child: const SizedBox(
+                width: 320,
+                height: 600,
+                child: LeftPanelHost(mode: SidebarMode.messages),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('matrix-top-menu'), findsOneWidget);
+      expect(find.text('legacy-top-menu'), findsNothing);
+      expect(find.text('contact-control'), findsOneWidget);
+      expect(_renderedTrackCellIds(tester), const [
+        CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column1),
+      ]);
+      final trackABottom = tester.getBottomLeft(find.byType(TrackCellView)).dy;
+      final contactControlTop = tester
+          .getTopLeft(find.byType(SidebarInfoCard))
+          .dy;
+      expect(contactControlTop - trackABottom, 24);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      resolutionSubscription.close();
+      rackSubscription.close();
+      await tester.idle();
+      container.dispose();
+      await tester.pump();
+    });
 
     testWidgets(
       'pins app controls and uses expanding layout from descriptors',
@@ -1777,6 +1985,56 @@ ResolvedTrackLayoutMatrix _testUnfamiliarSourcesSidebarMatrix({
     cells: cells,
   );
 
+  return ResolvedTrackLayoutMatrix.resolve(
+    matrix: matrix,
+    constraints: const PresentationConstraints(
+      availableWidth: 288,
+      textScaler: TextScaler.noScaling,
+      textDirection: TextDirection.ltr,
+    ),
+  );
+}
+
+ResolvedTrackLayoutMatrix _testRecoveredMessagesSidebarMatrix() {
+  const columnId = TrackColumnId.column1;
+  final matrix = PageTrackLayoutMatrix<TrackOccupant>(
+    trackIds: const [TrackId.trackA],
+    columnIds: const [columnId],
+    cells: const [
+      MatrixCell<TrackOccupant>.occupied(
+        cellId: CellId(trackId: TrackId.trackA, columnId: columnId),
+        occupant: TextTrackOccupant(
+          text: 'matrix-top-menu',
+          style: TextStyle(fontSize: 14),
+        ),
+      ),
+    ],
+  );
+  return ResolvedTrackLayoutMatrix.resolve(
+    matrix: matrix,
+    constraints: const PresentationConstraints(
+      availableWidth: 288,
+      textScaler: TextScaler.noScaling,
+      textDirection: TextDirection.ltr,
+    ),
+  );
+}
+
+ResolvedTrackLayoutMatrix _testContactsSidebarMatrix() {
+  const columnId = TrackColumnId.column1;
+  final matrix = PageTrackLayoutMatrix<TrackOccupant>(
+    trackIds: const [TrackId.trackA],
+    columnIds: const [columnId],
+    cells: const [
+      MatrixCell<TrackOccupant>.occupied(
+        cellId: CellId(trackId: TrackId.trackA, columnId: columnId),
+        occupant: TextTrackOccupant(
+          text: 'matrix-top-menu',
+          style: TextStyle(fontSize: 14),
+        ),
+      ),
+    ],
+  );
   return ResolvedTrackLayoutMatrix.resolve(
     matrix: matrix,
     constraints: const PresentationConstraints(

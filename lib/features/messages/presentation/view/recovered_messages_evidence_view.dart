@@ -11,6 +11,7 @@ import '../../application/message_evidence/message_evidence_spine_provider.dart'
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../view_model/recovered_evidence_presentation.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
@@ -78,7 +79,7 @@ class _RecoveredMessagesEvidenceViewState
               mode: _searchMode,
             ),
           );
-    final presentation = _RecoveredEvidencePresentation.from(
+    final presentation = RecoveredEvidencePresentation.from(
       contactId: widget.contactId,
       onlyNoHandleFromMe: widget.onlyNoHandleFromMe,
     );
@@ -131,6 +132,8 @@ class _RecoveredMessagesEvidenceViewState
                 : 'No recovered messages match "$normalizedQuery".',
             monthAnchor: widget.scrollToDate,
             highlightQuery: normalizedQuery,
+            useFixedPanelFrame: true,
+            continueHeaderInNativeFlowAfterTracks: true,
           );
         },
         loading: () => Center(
@@ -209,47 +212,6 @@ DateTime? _parseDate(String? value) {
     return null;
   }
   return DateTime.tryParse(value);
-}
-
-class _RecoveredEvidencePresentation {
-  const _RecoveredEvidencePresentation({
-    required this.title,
-    required this.description,
-    required this.emptyMessage,
-  });
-
-  factory _RecoveredEvidencePresentation.from({
-    required int? contactId,
-    required bool onlyNoHandleFromMe,
-  }) {
-    if (onlyNoHandleFromMe) {
-      return const _RecoveredEvidencePresentation(
-        title: 'Recovered no-handle messages',
-        description:
-            'Recovered orphaned records that look outgoing but no longer retain handle linkage.',
-        emptyMessage: 'No recovered no-handle outgoing messages were found.',
-      );
-    }
-    if (contactId != null) {
-      return const _RecoveredEvidencePresentation(
-        title: 'Recovered deleted messages',
-        description:
-            'Recovered deleted-message candidates associated with this contact.',
-        emptyMessage:
-            'No recovered deleted messages matched this contact scope.',
-      );
-    }
-    return const _RecoveredEvidencePresentation(
-      title: 'Recovered deleted messages',
-      description:
-          'Source records recovered without normal conversation linkage.',
-      emptyMessage: 'No recovered deleted messages have been projected yet.',
-    );
-  }
-
-  final String title;
-  final String description;
-  final String emptyMessage;
 }
 
 class _RecoveredScrollIndicator extends StatelessWidget {

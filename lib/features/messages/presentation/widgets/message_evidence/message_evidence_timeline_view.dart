@@ -32,6 +32,7 @@ class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
     this.isInitialRowsLoading = false,
     this.showHeader = true,
     this.useFixedPanelFrame = false,
+    this.continueHeaderInNativeFlowAfterTracks = false,
     this.resolveRowAction,
     this.onVisibleMonthChanged,
     super.key,
@@ -48,6 +49,7 @@ class MessageEvidenceTimelineView extends ConsumerStatefulWidget {
   final bool isInitialRowsLoading;
   final bool showHeader;
   final bool useFixedPanelFrame;
+  final bool continueHeaderInNativeFlowAfterTracks;
   final MessageEvidenceRowActionResolver? resolveRowAction;
   final ValueChanged<String?>? onVisibleMonthChanged;
 
@@ -133,6 +135,8 @@ class _MessageEvidenceTimelineViewState
             MessageEvidenceHeader(
               data: widget.headerData,
               useFixedPanelFrame: widget.useFixedPanelFrame,
+              continueInNativeFlowAfterTracks:
+                  widget.continueHeaderInNativeFlowAfterTracks,
             ),
           Expanded(
             child: Stack(

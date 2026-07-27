@@ -10,6 +10,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.15] — 2026-07-26
+
+### Changed
+
+- Contacts now aligns its sidebar menu with the effective center-panel title
+  through one shared page Track. Contact messages, recovered contact evidence,
+  and selected Conversation evidence retain their feature-owned presentations,
+  while both columns resume independent layout immediately below the title row.
+- Recovered Deleted Messages and Recovered No-Handle Messages now align their
+  sidebar menu and center-panel title in one shared page Track. Both columns
+  resume their own native layout immediately afterward, avoiding false
+  alignment between sidebar guidance and center evidence controls.
+
+## [0.2.14] — 2026-07-26
+
+### Fixed
+
+- Incremental message imports no longer stop when overlapping AddressBook
+  validation probes close. Each read-only probe now owns an isolated SQLite
+  handle, allowing the change monitor to import newly detected Messages rows
+  instead of repeatedly aborting the graph build with `database_closed`.
+- macOS now admits only one ordinary MessageLens process into Flutter and
+  database startup. A duplicate launch activates the existing instance and
+  exits, preventing separately launched app copies from competing for writable
+  graph, import, or overlay databases.
+
 ## [0.2.13] — 2026-07-24
 
 ### Fixed

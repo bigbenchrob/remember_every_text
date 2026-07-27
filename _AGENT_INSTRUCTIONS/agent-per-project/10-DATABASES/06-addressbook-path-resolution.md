@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-04-21
+last_reviewed: 2026-07-26
 source_of_truth: doc
 links:
   - ./03-db-address-book.md
@@ -122,6 +122,21 @@ Avoid replicating the provider chain in tests. Override once, supply fixture dat
 2. **Most Recent Wins**: Always choose the bundle with the latest modification date.
 3. **Full Disk Access Required**: Import services should surface actionable errors if permissions are missing.
 4. **No Direct Paths**: Any code that instantiates `AddressBookFolderAggregate` from raw strings is a code review blocker.
+
+## Probe Lifecycle
+
+AddressBook discovery and validation may inspect the same source file through
+overlapping, short-lived readers. Each reader must own an isolated read-only
+SQLite handle. For sqflite probes, this requires `singleInstance: false`.
+
+The isolation is an execution invariant, not an optimization. Closing one
+viability or metadata probe must not close a peer that is still reading the
+same AddressBook file. A shared sqflite instance can otherwise abort the entire
+incremental graph build with `database_closed`, preventing newly detected
+Messages rows from reaching the source-scoped import ledger.
+
+Probe readers must still enable `PRAGMA query_only`, set the standard busy
+timeout, and close their own handle when finished.
 
 ## Debugging Checklist
 

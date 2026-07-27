@@ -1,6 +1,10 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/page_track_layout_matrix.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_graph_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
@@ -129,6 +133,52 @@ void main() {
   });
 
   testWidgets(
+    'renders its title in A2 then continues its native evidence header',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._contactGraphOverrides(
+              messages: const [
+                ConversationMessage(
+                  messageId: 3,
+                  dateUtc: '2026-05-20T10:00:00.000Z',
+                  isFromMe: true,
+                  text: 'tracked contact message',
+                  associatedMessageId: null,
+                  attachmentCount: 0,
+                ),
+              ],
+            ),
+          ],
+          child: MacosApp(
+            home: ResolvedTrackLayoutMatrixScope(
+              matrix: _resolvedContactsHeaderMatrix(
+                title: 'All messages from Claire',
+              ),
+              child: const SizedBox(
+                width: 960,
+                height: 720,
+                child: ContactMessagesEvidenceView(contactId: 24),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('All messages from Claire'), findsOneWidget);
+      expect(find.text('Search messages from Claire'), findsOneWidget);
+      expect(find.byType(TrackCellView), findsOneWidget);
+      expect(
+        tester.widget<TrackCellView>(find.byType(TrackCellView)).cellId,
+        const CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column2),
+      );
+    },
+  );
+
+  testWidgets(
     'publishes filtered selected contact month for heatmap feedback',
     (tester) async {
       final visibleMonthWrites = <String?>[];
@@ -219,6 +269,48 @@ void main() {
       expect(find.text('other message'), findsNothing);
       expect(find.text('1 of 2 messages match "settlement"'), findsOneWidget);
     },
+  );
+}
+
+ResolvedTrackLayoutMatrix _resolvedContactsHeaderMatrix({
+  required String title,
+}) {
+  final matrix = PageTrackLayoutMatrix<TrackOccupant>(
+    trackIds: const [TrackId.trackA],
+    columnIds: TrackColumnId.values,
+    cells: [
+      const MatrixCell<TrackOccupant>.occupied(
+        cellId: CellId(
+          trackId: TrackId.trackA,
+          columnId: TrackColumnId.column1,
+        ),
+        occupant: FixedHeightTrackOccupant(height: 40),
+      ),
+      MatrixCell<TrackOccupant>.occupied(
+        cellId: const CellId(
+          trackId: TrackId.trackA,
+          columnId: TrackColumnId.column2,
+        ),
+        occupant: TextTrackOccupant(
+          text: title,
+          style: const TextStyle(fontSize: 20),
+        ),
+      ),
+      const MatrixCell<TrackOccupant>.empty(
+        cellId: CellId(
+          trackId: TrackId.trackA,
+          columnId: TrackColumnId.column3,
+        ),
+      ),
+    ],
+  );
+  return ResolvedTrackLayoutMatrix.resolve(
+    matrix: matrix,
+    constraints: const PresentationConstraints(
+      availableWidth: 960,
+      textScaler: TextScaler.noScaling,
+      textDirection: TextDirection.ltr,
+    ),
   );
 }
 
