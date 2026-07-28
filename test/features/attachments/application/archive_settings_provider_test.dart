@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show admittedArchiveAccessAuthorityProvider;
 import 'package:remember_this_text/features/attachments/application/archive_settings_provider.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_archive_file_operations.dart';
 import 'package:remember_this_text/features/attachments/application/attachment_archive_runtime_providers.dart';
@@ -7,13 +9,19 @@ import 'package:remember_this_text/features/attachments/application/attachment_a
 import 'package:remember_this_text/features/attachments/application/attachment_archive_stats_reader.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/attachment_archive_stats.dart';
 
+import '../../../test_support/test_archive_fixture.dart';
+
 void main() {
   late _FakeArchiveSettingsStore settingsStore;
   late _FakeArchiveStatsReader statsReader;
   late _FakeArchiveFileOperations fileOperations;
   late ProviderContainer container;
+  late TestArchiveFixture archiveFixture;
 
-  setUp(() {
+  setUp(() async {
+    archiveFixture = await TestArchiveFixture.create(
+      prefix: 'archive_settings_test_',
+    );
     settingsStore = _FakeArchiveSettingsStore();
     statsReader = const _FakeArchiveStatsReader(
       AttachmentArchiveStats(recordCount: 12, sizeBytes: 1536),
@@ -21,6 +29,9 @@ void main() {
     fileOperations = _FakeArchiveFileOperations();
     container = ProviderContainer(
       overrides: [
+        admittedArchiveAccessAuthorityProvider.overrideWithValue(
+          archiveFixture.authority,
+        ),
         attachmentArchiveSettingsStoreProvider.overrideWith(
           (ref) async => settingsStore,
         ),
@@ -31,14 +42,15 @@ void main() {
           (ref) => fileOperations,
         ),
         attachmentArchiveDirectoryPathProvider.overrideWith(
-          (ref) => '/tmp/archive',
+          (ref) => archiveFixture.authority.resolvePath('attachment_archive'),
         ),
       ],
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
+    await archiveFixture.dispose();
   });
 
   test('defaults archive enabled and reads stats', () async {
@@ -119,7 +131,9 @@ void main() {
 
       await container.read(archiveSettingsProvider.notifier).clearArchive();
 
-      expect(fileOperations.resetPaths, <String>['/tmp/archive']);
+      expect(fileOperations.resetPaths, <String>[
+        archiveFixture.authority.resolvePath('attachment_archive'),
+      ]);
       expect(settingsStore.archiveRecordsCleared, isTrue);
       final state = await container.read(archiveSettingsProvider.future);
       expect(state.isEnabled, isTrue);

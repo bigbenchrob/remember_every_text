@@ -10,6 +10,55 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.18] — 2026-07-28
+
+### Fixed
+
+- Delayed attachment retry now revisits conventional attachments with declared
+  MIME types, including video, audio, PDF, and document files, rather than
+  limiting recovery to images. Opaque NULL/blank-MIME payloads remain excluded
+  pending an explicit preservation policy.
+
+## [0.2.17] — 2026-07-28
+
+### Fixed
+
+- Production archive adoption now accepts legacy overlay databases whose schema
+  version predates already-completed retired-column cleanup. Overlay migrations
+  remove retired columns only when they are present, preserving existing user
+  intent while allowing the adopted archive to open normally.
+
+## [0.2.16] — 2026-07-27
+
+### Added
+
+- MessageLens now admits each process to an explicitly identified production,
+  development, or test archive before constructing persistent providers.
+- High-risk archive mutations use one reentrant operation authority, and
+  production maintenance can require a verified checkpoint receipt.
+- Offline checkpoint tooling can inventory, hash, integrity-check, restore, and
+  compare a disposable archive without using the active production archive.
+
+### Changed
+
+- Debug and Profile macOS builds now use the distinct
+  `com.bigbenchsoftware.MessageLens.development` identity and the
+  `MessageLens Development` product name. Production keeps its existing bundle
+  identity, signing contract, archive location, and Full Disk Access continuity.
+- All app-owned databases, attachments, logs, operational evidence, and window
+  state now derive their paths from admitted archive authority.
+- Development machines may select one complete machine-local archive root
+  without creating attachment-specific path authority. Native and Dart
+  admission must agree on the canonical external directory, and startup fails
+  closed if it is unavailable.
+
+### Security
+
+- Development and tests fail closed instead of falling back to the production
+  archive. The production packaging script verifies production archive
+  metadata before signing and verifies identity, signature, and entitlements
+  before packaging.
+
 ## [0.2.15] — 2026-07-26
 
 ### Changed

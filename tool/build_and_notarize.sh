@@ -21,6 +21,10 @@
 # Usage:
 #   ./tool/build_and_notarize.sh               # Default distribution pipeline -> ~/Desktop/MessageLens-latest.dmg
 #   ./tool/build_and_notarize.sh --skip-build  # Repackage existing release build
+#   ./tool/build_and_notarize.sh --candidate-only
+#                                               # Build, sign, and verify without publishing
+#   ./tool/build_and_notarize.sh --artifact-only
+#                                               # Build, sign, notarize, and stop before publishing
 #
 set -euo pipefail
 
@@ -29,6 +33,9 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP_ROOT="${APP_ROOT:-$PROJECT_DIR}"
 APP_NAME="MessageLens"
 APP_PATH="$PROJECT_DIR/build/macos/Build/Products/Release/$APP_NAME.app"
+CANDIDATE_ROOT="$PROJECT_DIR/build/production-candidate"
+CANDIDATE_APP_PATH="$CANDIDATE_ROOT/$APP_NAME.app"
+ARCHIVE_IDENTITY_VERIFIER="$PROJECT_DIR/tool/verify_macos_archive_identity.sh"
 DMG_PATH="$HOME/Desktop/$APP_NAME-latest.dmg"
 KEYCHAIN_PROFILE="notarytool-password"
 SIGNING_IDENTITY="Developer ID Application: Robert Campbell (FQHT2QP3NE)"
@@ -43,6 +50,9 @@ PORTAL_BUILD_STATUS="${PORTAL_BUILD_STATUS:-Beta}"
 PORTAL_BUILD_PLATFORM="${PORTAL_BUILD_PLATFORM:-macOS}"
 PORTAL_BUILD_CHANNEL="${PORTAL_BUILD_CHANNEL:-Production tester build}"
 PORTAL_REQUIRES_DATA_RESET="${PORTAL_REQUIRES_DATA_RESET:-false}"
+SKIP_BUILD=false
+CANDIDATE_ONLY=false
+ARTIFACT_ONLY=false
 
 # ── Helpers ───────────────────────────────────────────────────────────
 
@@ -57,6 +67,31 @@ fail() {
   echo "❌ $1" >&2
   exit 1
 }
+
+for argument in "$@"; do
+  case "$argument" in
+    --skip-build)
+      SKIP_BUILD=true
+      ;;
+    --candidate-only)
+      CANDIDATE_ONLY=true
+      ;;
+    --artifact-only)
+      ARTIFACT_ONLY=true
+      ;;
+    --help|-h)
+      sed -n '1,32p' "$0"
+      exit 0
+      ;;
+    *)
+      fail "Unknown argument: $argument"
+      ;;
+  esac
+done
+
+if [[ "$CANDIDATE_ONLY" == "true" && "$ARTIFACT_ONLY" == "true" ]]; then
+  fail "--candidate-only and --artifact-only cannot be used together"
+fi
 
 extract_app_version() {
   local version_line
@@ -92,7 +127,7 @@ EOF
 
 # ── Step 1: Build ─────────────────────────────────────────────────────
 
-if [[ "${1:-}" != "--skip-build" ]]; then
+if [[ "$SKIP_BUILD" != "true" ]]; then
   step "Step 1/9: Building release"
   cd "$PROJECT_DIR"
   flutter build macos --release
@@ -101,6 +136,14 @@ else
 fi
 
 [[ -d "$APP_PATH" ]] || fail "App not found at $APP_PATH"
+[[ -x "$ARCHIVE_IDENTITY_VERIFIER" ]] \
+  || fail "Archive identity verifier is missing or not executable"
+
+step "Verifying production archive identity metadata"
+"$ARCHIVE_IDENTITY_VERIFIER" \
+  --app "$APP_PATH" \
+  --environment production \
+  --metadata-only
 
 # ── Step 2: Re-sign embedded frameworks and the app ──────────────────
 
@@ -139,9 +182,26 @@ codesign --force --sign "$SIGNING_IDENTITY" \
 # ── Step 3: Verify code signature ────────────────────────────────────
 
 step "Step 3/9: Verifying code signature"
-codesign --verify --deep --strict "$APP_PATH" 2>&1
+"$ARCHIVE_IDENTITY_VERIFIER" \
+  --app "$APP_PATH" \
+  --environment production
 echo "Signing identity:"
 codesign -dvv "$APP_PATH" 2>&1 | grep "Authority=" | head -1
+
+if [[ "$CANDIDATE_ONLY" == "true" ]]; then
+  step "Preparing non-publishing production candidate"
+  rm -rf "$CANDIDATE_APP_PATH"
+  mkdir -p "$CANDIDATE_ROOT"
+  ditto "$APP_PATH" "$CANDIDATE_APP_PATH"
+  "$ARCHIVE_IDENTITY_VERIFIER" \
+    --app "$CANDIDATE_APP_PATH" \
+    --environment production
+  echo ""
+  echo "✅ Signed production candidate ready at: $CANDIDATE_APP_PATH"
+  echo "✅ No DMG, notarization submission, tester-portal build, or publication was performed."
+  echo "✅ The candidate was not installed or launched."
+  exit 0
+fi
 
 # ── Step 4: Create DMG ───────────────────────────────────────────────
 
@@ -177,6 +237,13 @@ echo "Notarization ticket is stapled to DMG."
 echo ""
 echo "Verifying app bundle signature:"
 spctl --assess --verbose=2 "$APP_PATH" 2>&1 || true
+
+if [[ "$ARTIFACT_ONLY" == "true" ]]; then
+  echo ""
+  echo "✅ Signed and notarized production artifact ready at: $DMG_PATH"
+  echo "✅ No tester-portal build, metadata update, publication, installation, or launch was performed."
+  exit 0
+fi
 
 # ── Step 8: Build tester portal pages ────────────────────────────────
 

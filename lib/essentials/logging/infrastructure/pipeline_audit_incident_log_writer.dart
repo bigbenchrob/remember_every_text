@@ -3,13 +3,17 @@ import '../domain/pipeline_incident_report.dart';
 import 'pipeline_audit_logger.dart';
 
 class PipelineAuditIncidentLogWriter implements PipelineIncidentLogWriter {
-  const PipelineAuditIncidentLogWriter();
+  const PipelineAuditIncidentLogWriter({required this.directoryPath});
 
   static const _logFile = 'pipeline_incident_log';
+  final String directoryPath;
 
   @override
   Future<void> appendReport({required PipelineIncidentReport report}) async {
-    final log = await PipelineAuditLogger.open(_logFile);
+    final log = await PipelineAuditLogger.open(
+      _logFile,
+      directoryPath: directoryPath,
+    );
 
     try {
       log.header(

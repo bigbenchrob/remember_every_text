@@ -4,9 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/domain.dart'
+    show ArchiveMutationDeniedException, ArchiveMutationOperation;
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveAccessAuthorityProvider, archiveMutationCoordinatorProvider;
 import '../../conversation_graph/feature_level_providers.dart'
     show conversationGraphBuildControllerProvider;
-import '../../db/database_directory.dart';
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/feature_level_providers.dart'
     show SidebarMode, activeSidebarModeProvider;
@@ -169,7 +172,9 @@ class OnboardingGate extends _$OnboardingGate {
     final checker = DatabaseExistenceChecker(
       ref.read(onboardingDatabaseProbeReaderProvider),
     );
-    final hasData = checker.hasPopulatedDatabases(databaseDirectoryPath);
+    final hasData = checker.hasPopulatedDatabases(
+      ref.read(archiveAccessAuthorityProvider).rootPath,
+    );
     if (hasData) {
       return OnboardingStatus.notNeeded;
     }
@@ -185,6 +190,16 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
+    await ref
+        .read(archiveMutationCoordinatorProvider.notifier)
+        .run<void>(
+          operation: ArchiveMutationOperation.onboardingImport,
+          ownerLabel: 'onboarding-first-run',
+          action: _startImportAndGraphBuild,
+        );
+  }
+
+  Future<void> _startImportAndGraphBuild() async {
     ref
         .read(appLoggerProvider.notifier)
         .info(
@@ -282,6 +297,16 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
+    await ref
+        .read(archiveMutationCoordinatorProvider.notifier)
+        .run<void>(
+          operation: ArchiveMutationOperation.onboardingImport,
+          ownerLabel: 'settings-reimport',
+          action: _startReimport,
+        );
+  }
+
+  Future<void> _startReimport() async {
     // Clean out previous derived graph/import data so the build reimports
     // everything from the live source while preserving overlays and archive
     // files.
@@ -346,6 +371,31 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   Future<void> _runAutomaticRecovery(OnboardingEnvironmentReport report) async {
+    try {
+      await ref
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<void>(
+            operation: ArchiveMutationOperation.automaticRecovery,
+            ownerLabel: 'onboarding-automatic-recovery',
+            action: () => _runAdmittedAutomaticRecovery(report),
+          );
+    } on ArchiveMutationDeniedException catch (error) {
+      _automaticRecoveryInFlight = false;
+      _automaticRecoverySuppressed = false;
+      _clearWorkflowOverride();
+      ref
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Deferred automatic onboarding recovery because archive mutation authority is busy: $error',
+            source: 'OnboardingGate',
+          );
+      ref.invalidateSelf();
+    }
+  }
+
+  Future<void> _runAdmittedAutomaticRecovery(
+    OnboardingEnvironmentReport report,
+  ) async {
     try {
       ref
           .read(appLoggerProvider.notifier)

@@ -32,8 +32,14 @@
 
     override func applicationDidFinishLaunching(_ notification: Notification) {
       // Register the LinkPreviewPlugin
-      let controller =
-        NSApplication.shared.windows.first?.contentViewController as! FlutterViewController
+      guard
+        let controller =
+          NSApplication.shared.windows.first?.contentViewController as? FlutterViewController
+      else {
+        // Native archive admission and duplicate-instance handling may
+        // intentionally terminate before a Flutter controller is installed.
+        return
+      }
       let messenger = controller.engine.binaryMessenger
 
       let linkChannel = FlutterMethodChannel(

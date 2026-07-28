@@ -1,5 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../essentials/archive_environment/domain.dart'
+    show ArchiveMutationOperation;
+import '../../../essentials/archive_environment/feature_level_providers.dart'
+    show archiveMutationCoordinatorProvider;
 import '../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
 import 'deterministic_recovery_runtime_providers.dart'
@@ -118,6 +122,22 @@ class DeterministicRecovery extends _$DeterministicRecovery {
 
   /// Run the full deterministic recovery pipeline.
   Future<void> recover({
+    required String chatDbPath,
+    required String attachmentsFolderPath,
+  }) {
+    return ref
+        .read(archiveMutationCoordinatorProvider.notifier)
+        .run<void>(
+          operation: ArchiveMutationOperation.automaticRecovery,
+          ownerLabel: 'deterministic-attachment-recovery',
+          action: () => _recover(
+            chatDbPath: chatDbPath,
+            attachmentsFolderPath: attachmentsFolderPath,
+          ),
+        );
+  }
+
+  Future<void> _recover({
     required String chatDbPath,
     required String attachmentsFolderPath,
   }) async {

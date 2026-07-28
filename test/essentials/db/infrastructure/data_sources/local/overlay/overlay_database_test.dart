@@ -154,6 +154,98 @@ void main() {
       );
     });
 
+    test(
+      'migrates an adopted v1 schema whose retired columns are already absent',
+      () async {
+        await db.close();
+
+        final tempDir = await Directory.systemTemp.createTemp(
+          'overlay_adopted_v1_migration_test_',
+        );
+        final dbPath = appDatabasePath(
+          AppDatabaseFile.overlay,
+          databaseDirectory: tempDir.path,
+        );
+        addTearDown(() async {
+          if (tempDir.existsSync()) {
+            await tempDir.delete(recursive: true);
+          }
+        });
+
+        final existingDatabase = await databaseFactoryFfi.openDatabase(dbPath);
+        await existingDatabase.execute('''
+          CREATE TABLE participant_overrides (
+            participant_id INTEGER NOT NULL PRIMARY KEY,
+            display_name_override TEXT,
+            created_at_utc TEXT NOT NULL,
+            updated_at_utc TEXT NOT NULL
+          )
+        ''');
+        await existingDatabase.execute('''
+          INSERT INTO participant_overrides (
+            participant_id,
+            display_name_override,
+            created_at_utc,
+            updated_at_utc
+          )
+          VALUES (
+            7,
+            'Preserved Name',
+            '2026-07-28T00:00:00.000Z',
+            '2026-07-28T00:00:00.000Z'
+          )
+        ''');
+        await existingDatabase.execute('''
+          CREATE TABLE virtual_participants (
+            id INTEGER NOT NULL PRIMARY KEY CHECK (id >= 1000000000),
+            display_name TEXT NOT NULL,
+            notes TEXT,
+            created_at_utc TEXT NOT NULL,
+            updated_at_utc TEXT NOT NULL
+          )
+        ''');
+        await existingDatabase.execute('''
+          INSERT INTO virtual_participants (
+            id,
+            display_name,
+            notes,
+            created_at_utc,
+            updated_at_utc
+          )
+          VALUES (
+            1000000001,
+            'Preserved Virtual Person',
+            NULL,
+            '2026-07-28T00:00:00.000Z',
+            '2026-07-28T00:00:00.000Z'
+          )
+        ''');
+        await existingDatabase.execute('PRAGMA user_version = 1');
+        await existingDatabase.close();
+
+        final migratedDatabase = OverlayDatabase(NativeDatabase(File(dbPath)));
+        addTearDown(migratedDatabase.close);
+
+        final participantOverride = await migratedDatabase
+            .getParticipantOverride(7);
+        final virtualParticipants = await migratedDatabase
+            .getVirtualParticipants();
+        final schemaVersion = await migratedDatabase
+            .customSelect('PRAGMA user_version')
+            .getSingle();
+
+        expect(
+          participantOverride?.displayNameOverride,
+          equals('Preserved Name'),
+        );
+        expect(
+          virtualParticipants.map((row) => row.displayName),
+          contains('Preserved Virtual Person'),
+        );
+        expect(schemaVersion.read<int>('user_version'), equals(8));
+      },
+    );
+
     test('migrates v6 schema by adding conversation tag tables', () async {
       await db.close();
 

@@ -5,6 +5,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../features/attachments/feature_level_providers.dart'
     show BulkArchivePhase, attachmentArchiveServiceProvider;
+import '../../../archive_environment/domain.dart'
+    show ArchiveMutationDeniedException, ArchiveMutationOperation;
+import '../../../archive_environment/feature_level_providers.dart'
+    show ArchiveMutationCoordinatorState, archiveMutationCoordinatorProvider;
 import '../../../db/feature_level_providers/conversation_graph_readiness_provider.dart'
     show conversationGraphReadinessProvider;
 import '../../../db/feature_level_providers/message_data_version_provider.dart'
@@ -15,7 +19,6 @@ import '../../../source_scoped_import/domain/known_sources.dart';
 import '../conversation_graph_build_controller_provider.dart';
 import '../conversation_graph_build_report.dart';
 import '../conversation_graph_build_service_provider.dart';
-import '../orchestration/graph_maintenance_execution_gate_provider.dart';
 import 'chat_db_monitor_runtime_environment_provider.dart';
 import 'chat_db_source_probe_reader.dart';
 import 'chat_db_source_probe_reader_provider.dart';
@@ -178,10 +181,7 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     }
 
     //#FLOW:chatdb:gate-listener
-    ref.listen(
-      graphMaintenanceExecutionGateProvider,
-      _handleExecutionGateChange,
-    );
+    ref.listen(archiveMutationCoordinatorProvider, _handleExecutionGateChange);
     // #FLOW:chatdb:init
     // Resolves chat.db path and starts monitor setup.
     //#FLOW:chatdb:init-call
@@ -217,36 +217,39 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   }
 
   Future<void> _reconcileLocalAccountHandleIdentity() async {
-    final executionGate = ref.read(
-      graphMaintenanceExecutionGateProvider.notifier,
-    );
-    if (!executionGate.tryAcquire(_chatDbMonitorExecutionOwner)) {
+    try {
+      await ref
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<void>(
+            operation:
+                ArchiveMutationOperation.localAccountIdentityReconciliation,
+            ownerLabel: _chatDbMonitorExecutionOwner,
+            action: () async {
+              final graphBuildService = await ref.read(
+                conversationGraphBuildServiceProvider.future,
+              );
+              final report = await graphBuildService
+                  .reconcileLocalAccountHandleIdentity();
+              if (report.updatedGraphHandleCount > 0) {
+                ref.read(messageDataVersionProvider.notifier).bump();
+              }
+              ref
+                  .read(appLoggerProvider.notifier)
+                  .info(
+                    'Local-account handle reconciliation examined '
+                    '${report.examinedHandleCount} imported handle(s), identified '
+                    '${report.localAccountHandleCount} local handle(s), updated '
+                    '${report.updatedImportHandleCount} import annotation(s), and projected '
+                    '${report.updatedGraphHandleCount} graph annotation(s).',
+                    source: 'ChatDbMonitor',
+                  );
+            },
+          );
+    } on ArchiveMutationDeniedException {
       ref
           .read(appLoggerProvider.notifier)
           .warn(
-            'Skipped local-account handle reconciliation because another graph maintenance operation owns execution authority.',
-            source: 'ChatDbMonitor',
-          );
-      return;
-    }
-
-    try {
-      final graphBuildService = await ref.read(
-        conversationGraphBuildServiceProvider.future,
-      );
-      final report = await graphBuildService
-          .reconcileLocalAccountHandleIdentity();
-      if (report.updatedGraphHandleCount > 0) {
-        ref.read(messageDataVersionProvider.notifier).bump();
-      }
-      ref
-          .read(appLoggerProvider.notifier)
-          .info(
-            'Local-account handle reconciliation examined '
-            '${report.examinedHandleCount} imported handle(s), identified '
-            '${report.localAccountHandleCount} local handle(s), updated '
-            '${report.updatedImportHandleCount} import annotation(s), and projected '
-            '${report.updatedGraphHandleCount} graph annotation(s).',
+            'Skipped local-account handle reconciliation because another archive mutation owns execution authority.',
             source: 'ChatDbMonitor',
           );
     } catch (error, stackTrace) {
@@ -257,9 +260,83 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
             source: 'ChatDbMonitor',
             context: {'stackTrace': '$stackTrace'},
           );
-    } finally {
-      executionGate.release(_chatDbMonitorExecutionOwner);
     }
+  }
+
+  Future<void> _runLiveGraphUpdate({
+    required StartupProbeTrigger pendingTrigger,
+    required int currentMaxRowId,
+    required DateTime now,
+    required DateTime updateStartedAt,
+    required int newMessageCount,
+  }) async {
+    await ref
+        .read(archiveMutationCoordinatorProvider.notifier)
+        .run<void>(
+          operation: ArchiveMutationOperation.liveGraphUpdate,
+          ownerLabel: _chatDbMonitorExecutionOwner,
+          action: () async {
+            ref
+                .read(appLoggerProvider.notifier)
+                .info(
+                  'Building app-facing conversation graph before attachment archive',
+                  source: 'ChatDbMonitor',
+                );
+            ref
+                .read(appLoggerProvider.notifier)
+                .info(
+                  'Triggering conversation graph build',
+                  source: 'ChatDbMonitor',
+                );
+
+            final graphBuildReport = await ref
+                .read(conversationGraphBuildControllerProvider.notifier)
+                .runOnce(owner: _chatDbMonitorExecutionOwner);
+            ref
+                .read(appLoggerProvider.notifier)
+                .info(
+                  buildConversationGraphBuildSummaryLog(
+                    report: graphBuildReport,
+                  ),
+                  source: 'ChatDbMonitor',
+                );
+            final archiveService = ref.read(
+              attachmentArchiveServiceProvider.notifier,
+            );
+            final archiveResult = await archiveService
+                .archiveGraphMessageSourceRange(
+                  sourceId: liveChatDbSourceId,
+                  startedAfterSourceRowId: graphBuildReport
+                      .messageImportResult
+                      .startedAfterSourceRowId,
+                  lastImportedSourceRowId: graphBuildReport
+                      .messageImportResult
+                      .lastImportedSourceRowId,
+                );
+            ref
+                .read(appLoggerProvider.notifier)
+                .info(
+                  'Graph attachment archive completed: '
+                  '${archiveResult.newlyArchived} archived, '
+                  '${archiveResult.skipped} skipped, '
+                  '${archiveResult.failed} failed.',
+                  source: 'ChatDbMonitor',
+                );
+
+            state = state.copyWith(
+              lastMaxRowId: currentMaxRowId,
+              lastChangeDetected: now,
+              clearError: true,
+            );
+
+            _logLiveGraphUpdateComplete(
+              pendingTrigger: pendingTrigger,
+              updateStartedAt: updateStartedAt,
+              newMessageCount: newMessageCount,
+              graphBuildReport: graphBuildReport,
+            );
+          },
+        );
   }
 
   /// Check for new messages immediately on startup.
@@ -510,10 +587,15 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
             .read(appLoggerProvider.notifier)
             .info('Triggering live graph update', source: 'ChatDbMonitor');
 
-        final executionGate = ref.read(
-          graphMaintenanceExecutionGateProvider.notifier,
-        );
-        if (!executionGate.tryAcquire(_chatDbMonitorExecutionOwner)) {
+        try {
+          await _runLiveGraphUpdate(
+            pendingTrigger: pendingTrigger,
+            currentMaxRowId: currentMaxRowId,
+            now: now,
+            updateStartedAt: updateStartedAt,
+            newMessageCount: newMessageCount,
+          );
+        } on ArchiveMutationDeniedException {
           _retryWhenGateReleases = true;
           ref
               .read(appLoggerProvider.notifier)
@@ -522,75 +604,6 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
                 source: 'ChatDbMonitor',
               );
           continue;
-        }
-
-        try {
-          ref
-              .read(appLoggerProvider.notifier)
-              .info(
-                'Building app-facing conversation graph before attachment archive',
-                source: 'ChatDbMonitor',
-              );
-          ref
-              .read(appLoggerProvider.notifier)
-              .info(
-                'Triggering conversation graph build',
-                source: 'ChatDbMonitor',
-              );
-
-          final graphBuildReport = await ref
-              .read(conversationGraphBuildControllerProvider.notifier)
-              .runOnce(owner: _chatDbMonitorExecutionOwner);
-          ref
-              .read(appLoggerProvider.notifier)
-              .info(
-                buildConversationGraphBuildSummaryLog(report: graphBuildReport),
-                source: 'ChatDbMonitor',
-              );
-          final archiveService = ref.read(
-            attachmentArchiveServiceProvider.notifier,
-          );
-          final archiveResult = await archiveService
-              .archiveGraphMessageSourceRange(
-                sourceId: liveChatDbSourceId,
-                startedAfterSourceRowId: graphBuildReport
-                    .messageImportResult
-                    .startedAfterSourceRowId,
-                lastImportedSourceRowId: graphBuildReport
-                    .messageImportResult
-                    .lastImportedSourceRowId,
-              );
-          ref
-              .read(appLoggerProvider.notifier)
-              .info(
-                'Graph attachment archive completed: '
-                '${archiveResult.newlyArchived} archived, '
-                '${archiveResult.skipped} skipped, '
-                '${archiveResult.failed} failed.',
-                source: 'ChatDbMonitor',
-              );
-
-          state = state.copyWith(
-            lastMaxRowId: currentMaxRowId,
-            lastChangeDetected: now,
-            clearError: true,
-          );
-
-          // Signal to UI providers that new message data is available.
-          // This causes graph evidence providers to rebuild with updated counts.
-          // Note: Do NOT invalidate the graph database provider here!
-          // It closes the isolate connection and causes "connection was closed"
-          // errors for in-flight queries. Drift's reactive streams automatically
-          // detect data changes via its internal watch mechanisms.
-
-          _logLiveGraphUpdateComplete(
-            pendingTrigger: pendingTrigger,
-            updateStartedAt: updateStartedAt,
-            newMessageCount: newMessageCount,
-            graphBuildReport: graphBuildReport,
-          );
-        } finally {
-          executionGate.release(_chatDbMonitorExecutionOwner);
         }
 
         _retryWhenGateReleases = false;
@@ -661,10 +674,11 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
   }
 
   void _handleExecutionGateChange(
-    GraphMaintenanceExecutionGateState? previous,
-    GraphMaintenanceExecutionGateState next,
+    ArchiveMutationCoordinatorState? previous,
+    ArchiveMutationCoordinatorState next,
   ) {
-    final gateJustReleased = previous?.owner != null && next.owner == null;
+    final gateJustReleased =
+        previous?.isLocked == true && next.isLocked == false;
     if (!gateJustReleased || !_retryWhenGateReleases) {
       return;
     }

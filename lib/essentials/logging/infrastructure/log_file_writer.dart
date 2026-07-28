@@ -6,18 +6,17 @@ import '../domain/log_entry.dart';
 
 /// Appends [LogEntry] objects as JSONL lines to a rotating log file.
 ///
-/// Location: `~/Library/Logs/MessageLens/app.log`
+/// Location: `<admitted archive>/application_logs/app.log`
 /// Rotation: current + 1 previous file, ~2 MB cap per file.
 class LogFileWriter {
-  LogFileWriter({Directory? logDirectory})
+  LogFileWriter({required Directory logDirectory})
     : _configuredLogDirectory = logDirectory;
 
   static const _maxBytes = 2 * 1024 * 1024; // 2 MB
-  static const _logDirName = 'MessageLens';
   static const _logFileName = 'app.log';
   static const _prevLogFileName = 'app.log.1';
 
-  final Directory? _configuredLogDirectory;
+  final Directory _configuredLogDirectory;
 
   late final Directory _logDir;
   late final File _logFile;
@@ -41,16 +40,7 @@ class LogFileWriter {
       return;
     }
 
-    final configuredLogDirectory = _configuredLogDirectory;
-    if (configuredLogDirectory != null) {
-      _logDir = configuredLogDirectory;
-    } else {
-      final home = Platform.environment['HOME'];
-      if (home == null) {
-        return; // Can't determine home dir — logging will be in-memory only.
-      }
-      _logDir = Directory(path.join(home, 'Library', 'Logs', _logDirName));
-    }
+    _logDir = _configuredLogDirectory;
     _logFile = File(path.join(_logDir.path, _logFileName));
     _prevLogFile = File(path.join(_logDir.path, _prevLogFileName));
 

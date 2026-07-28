@@ -73,52 +73,148 @@ void main() {
     },
   );
 
-  test('sweep selects only unarchived live image candidates', () async {
+  test(
+    'sweep selects unarchived live attachments with declared MIME types',
+    () async {
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 100,
+        attachmentSourceRowId: 200,
+        messageGuid: 'archived-message-guid',
+        filename: '~/Library/Messages/Attachments/already-archived.jpg',
+        mimeType: 'image/jpeg',
+      );
+      await _insertArchiveRow(
+        overlayDatabase,
+        messageGuid: 'archived-message-guid',
+        importAttachmentId: 200,
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 101,
+        attachmentSourceRowId: 201,
+        messageGuid: 'unarchived-message-guid',
+        filename: '~/Library/Messages/Attachments/unarchived.png',
+        mimeType: 'image/png',
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 102,
+        attachmentSourceRowId: 202,
+        messageGuid: 'video-message-guid',
+        filename: '~/Library/Messages/Attachments/video.mov',
+        mimeType: 'video/quicktime',
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 103,
+        attachmentSourceRowId: 203,
+        messageGuid: 'audio-message-guid',
+        filename: '~/Library/Messages/Attachments/audio.m4a',
+        mimeType: 'audio/mp4',
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 104,
+        attachmentSourceRowId: 204,
+        messageGuid: 'pdf-message-guid',
+        filename: '~/Library/Messages/Attachments/document.pdf',
+        mimeType: 'application/pdf',
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 105,
+        attachmentSourceRowId: 205,
+        messageGuid: 'document-message-guid',
+        filename: '~/Library/Messages/Attachments/document.docx',
+        mimeType:
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 106,
+        attachmentSourceRowId: 206,
+        messageGuid: 'plugin-payload-message-guid',
+        filename:
+            '~/Library/Messages/Attachments/payload.pluginPayloadAttachment',
+        mimeType: null,
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 107,
+        attachmentSourceRowId: 207,
+        messageGuid: 'blank-mime-message-guid',
+        filename: '~/Library/Messages/Attachments/opaque-payload',
+        mimeType: ' ',
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 108,
+        attachmentSourceRowId: 208,
+        messageGuid: 'empty-path-message-guid',
+        filename: ' ',
+        mimeType: 'image/jpeg',
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        sourceId: 2,
+        messageSourceRowId: 109,
+        attachmentSourceRowId: 209,
+        messageGuid: 'other-source-message-guid',
+        filename: '~/Library/Messages/Attachments/other-source.jpg',
+        mimeType: 'image/jpeg',
+      );
+
+      final selection = await reader.selectSweepCandidates(
+        afterAttachmentId: 0,
+        limit: 10,
+        pageSize: 10,
+      );
+
+      expect(selection.rows.map((row) => row.graphAttachmentId), <int>[
+        _ss(201),
+        _ss(202),
+        _ss(203),
+        _ss(204),
+        _ss(205),
+      ]);
+      expect(selection.rows.map((row) => row.mimeType), <String>[
+        'image/png',
+        'video/quicktime',
+        'audio/mp4',
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ]);
+      expect(
+        selection.rows.map((row) => row.archiveCompatibilityKey!.messageGuid),
+        <String>[
+          'unarchived-message-guid',
+          'video-message-guid',
+          'audio-message-guid',
+          'pdf-message-guid',
+          'document-message-guid',
+        ],
+      );
+    },
+  );
+
+  test('sweep excludes opaque NULL and blank MIME payloads', () async {
     await _insertGraphAttachment(
       graphDatabase,
       messageSourceRowId: 100,
       attachmentSourceRowId: 200,
-      messageGuid: 'archived-message-guid',
-      filename: '~/Library/Messages/Attachments/already-archived.jpg',
-      mimeType: 'image/jpeg',
-    );
-    await _insertArchiveRow(
-      overlayDatabase,
-      messageGuid: 'archived-message-guid',
-      importAttachmentId: 200,
+      messageGuid: 'null-mime-plugin-message-guid',
+      filename:
+          '~/Library/Messages/Attachments/payload.pluginPayloadAttachment',
+      mimeType: null,
     );
     await _insertGraphAttachment(
       graphDatabase,
       messageSourceRowId: 101,
       attachmentSourceRowId: 201,
-      messageGuid: 'unarchived-message-guid',
-      filename: '~/Library/Messages/Attachments/unarchived.png',
-      mimeType: 'image/png',
-    );
-    await _insertGraphAttachment(
-      graphDatabase,
-      messageSourceRowId: 102,
-      attachmentSourceRowId: 202,
-      messageGuid: 'pdf-message-guid',
-      filename: '~/Library/Messages/Attachments/file.pdf',
-      mimeType: 'application/pdf',
-    );
-    await _insertGraphAttachment(
-      graphDatabase,
-      messageSourceRowId: 103,
-      attachmentSourceRowId: 203,
-      messageGuid: 'empty-path-message-guid',
-      filename: ' ',
-      mimeType: 'image/jpeg',
-    );
-    await _insertGraphAttachment(
-      graphDatabase,
-      sourceId: 2,
-      messageSourceRowId: 104,
-      attachmentSourceRowId: 204,
-      messageGuid: 'other-source-message-guid',
-      filename: '~/Library/Messages/Attachments/other-source.jpg',
-      mimeType: 'image/jpeg',
+      messageGuid: 'blank-mime-plugin-message-guid',
+      filename: '~/Library/Messages/Attachments/blank.pluginPayloadAttachment',
+      mimeType: ' ',
     );
 
     final selection = await reader.selectSweepCandidates(
@@ -127,24 +223,8 @@ void main() {
       pageSize: 10,
     );
 
-    expect(selection.rows, hasLength(1));
-    expect(selection.rows.single.graphAttachmentId, _ss(201));
-    expect(
-      selection.rows.single.localPath,
-      '~/Library/Messages/Attachments/unarchived.png',
-    );
-    expect(
-      selection.rows.single.archiveCompatibilityKey!.messageGuid,
-      'unarchived-message-guid',
-    );
-    expect(
-      selection
-          .rows
-          .single
-          .archiveCompatibilityKey!
-          .archiveCompatibilityAttachmentId,
-      201,
-    );
+    expect(selection.rows, isEmpty);
+    expect(selection.nextCursor, 0);
   });
 }
 
@@ -155,7 +235,7 @@ Future<void> _insertGraphAttachment(
   required int attachmentSourceRowId,
   required String messageGuid,
   required String filename,
-  required String mimeType,
+  required String? mimeType,
 }) async {
   await graphDatabase.executeSql(
     '''

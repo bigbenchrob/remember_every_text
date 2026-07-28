@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
+import '../../archive_environment/domain/archive_access_authority.dart';
 import '../../db/application/database_health_audit/database_health_audit_service.dart';
-import '../../db/database_directory.dart';
 import 'log_file_writer.dart';
 
 class SupportBundleExportResult {
@@ -23,10 +23,15 @@ class SupportBundleExportResult {
 ///
 /// The bundle never includes raw database files or row-level sampling.
 class SupportBundleExportService {
-  SupportBundleExportService(this._writer, this._databaseHealthAuditService);
+  SupportBundleExportService(
+    this._writer,
+    this._databaseHealthAuditService,
+    this._archiveAuthority,
+  );
 
   final LogFileWriter _writer;
   final DatabaseHealthAuditService _databaseHealthAuditService;
+  final ArchiveAccessAuthority _archiveAuthority;
 
   Future<SupportBundleExportResult> export({
     List<String> headerLines = const <String>[],
@@ -225,15 +230,15 @@ class SupportBundleExportService {
         files: [
           (
             'Retired Import Audit Log',
-            File(path.join(databaseDirectoryPath, 'import_log')),
+            File(_archiveAuthority.resolvePath('import_log')),
           ),
           (
             'Retired Projection Audit Log',
-            File(path.join(databaseDirectoryPath, 'migrate_log')),
+            File(_archiveAuthority.resolvePath('migrate_log')),
           ),
           (
             'Pipeline Incident Log',
-            File(path.join(databaseDirectoryPath, 'pipeline_incident_log')),
+            File(_archiveAuthority.resolvePath('pipeline_incident_log')),
           ),
         ],
       );

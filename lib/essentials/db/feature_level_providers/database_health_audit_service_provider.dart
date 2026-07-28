@@ -1,13 +1,14 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveAccessAuthorityProvider;
 import '../../onboarding/feature_level_providers.dart'
     show onboardingFullDiskAccessProvider;
 import '../app_database_files.dart';
 import '../application/database_health_audit/database_health_audit_service.dart';
 import '../application/database_health_audit/database_health_database_keys.dart';
 import '../application/database_health_audit/database_health_query_layer.dart';
-import '../database_directory.dart';
 import '../infrastructure/repositories/database_health_audit_queries.dart';
 import '../infrastructure/repositories/filesystem_database_health_audit_report_writer.dart';
 import '../infrastructure/repositories/local_database_health_runtime_environment.dart';
@@ -21,6 +22,7 @@ part 'database_health_audit_service_provider.g.dart';
 
 @Riverpod(keepAlive: true)
 Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
+  final authority = ref.watch(archiveAccessAuthorityProvider);
   final sourceScopedImportDb = await ref.read(
     sourceScopedImportDatabaseProvider.future,
   );
@@ -40,7 +42,7 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
         role: databaseHealthRoleRetiredMacosImportCleanup,
         databasePath: appDatabasePath(
           AppDatabaseFile.retiredMacosImport,
-          databaseDirectory: databaseDirectoryPath,
+          databaseDirectory: authority.rootPath,
         ),
       ),
       RetiredCleanupSqliteFileHealthQueryLayer(
@@ -48,28 +50,28 @@ Future<DatabaseHealthAuditService> databaseHealthAuditService(Ref ref) async {
         role: databaseHealthRoleRetiredWorkingCleanup,
         databasePath: appDatabasePath(
           AppDatabaseFile.retiredWorking,
-          databaseDirectory: databaseDirectoryPath,
+          databaseDirectory: authority.rootPath,
         ),
       ),
       SourceScopedImportDatabaseHealthQueryLayer(
         database: sourceScopedImportDb,
         databasePath: appDatabasePath(
           AppDatabaseFile.sourceScopedImport,
-          databaseDirectory: databaseDirectoryPath,
+          databaseDirectory: authority.rootPath,
         ),
       ),
       ConversationGraphDatabaseHealthQueryLayer(
         database: conversationGraphDb,
         databasePath: appDatabasePath(
           AppDatabaseFile.conversationGraph,
-          databaseDirectory: databaseDirectoryPath,
+          databaseDirectory: authority.rootPath,
         ),
       ),
       OverlayDatabaseHealthQueryLayer(
         database: overlayDb,
         databasePath: appDatabasePath(
           AppDatabaseFile.overlay,
-          databaseDirectory: databaseDirectoryPath,
+          databaseDirectory: authority.rootPath,
         ),
       ),
     ],

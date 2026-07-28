@@ -144,17 +144,23 @@ const Set<String> _appDatabaseFileHelperAllowedFiles = {
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
 };
 
-const Set<String> _databaseDirectoryPathAllowedFiles = {
-  'lib/essentials/db/database_directory.dart',
-  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
+const Set<String> _archiveAccessAuthorityConsumerFiles = {
+  'lib/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart',
+  'lib/essentials/conversation_graph/application/status/conversation_graph_status_log_writer_provider.dart',
   'lib/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart',
+  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
-  'lib/essentials/logging/infrastructure/pipeline_audit_logger.dart',
-  'lib/essentials/logging/infrastructure/support_bundle_export_service.dart',
-  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/logging/application/app_logger.dart',
+  'lib/essentials/logging/application/diagnostic_report_provider.dart',
+  'lib/essentials/logging/application/pipeline_incident_storage_provider.dart',
+  'lib/essentials/onboarding/application/derived_message_data_file_store_provider.dart',
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
-  'lib/essentials/onboarding/infrastructure/persistence/filesystem_derived_message_data_file_store.dart',
+  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/features/attachments/application/video_thumbnail_cache_provider.dart',
+  'lib/main.dart',
 };
+
+const Set<String> _applicationSupportResolutionAllowedFiles = {'lib/main.dart'};
 
 const Set<String> _broadConversationGraphApplicationProviderImportAllowedFiles =
     {};
@@ -239,7 +245,6 @@ const Set<String> _debugPrintAllowedFiles = {
   'lib/essentials/window_state/application/window_state_service.dart',
   'lib/essentials/window_state/infrastructure/persistence/macos_window_manager.dart',
   'lib/essentials/window_state/infrastructure/persistence/overlay_window_storage.dart',
-  'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
   'lib/main.dart',
 };
 
@@ -291,6 +296,8 @@ const Set<String> _providerInvalidationAllowedFiles = {
 };
 
 const Set<String> _directSqliteImportAllowedFiles = {
+  'lib/essentials/archive_environment/infrastructure/file_system_archive_checkpoint_service.dart',
+  'lib/essentials/archive_environment/infrastructure/file_system_production_archive_adoption_inventory_service.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/conversation_graph_status_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart',
@@ -358,6 +365,7 @@ const Set<String> _macosWindowUtilsAllowedFiles = {
 };
 
 const Set<String> _platformChannelAllowedFiles = {
+  'lib/essentials/archive_environment/infrastructure/method_channel_native_archive_claim_reader.dart',
   'lib/essentials/logging/infrastructure/macos_unified_log_bridge.dart',
   'lib/essentials/services/native_link_preview_service.dart',
   'lib/essentials/services/startup_flags_service.dart',
@@ -376,15 +384,14 @@ const Set<String> _fileSelectorAllowedFiles = {
 
 const Set<String> _pathProviderImportAllowedFiles = {
   'lib/core/util/paths_helper.dart',
-  'lib/essentials/db/database_directory.dart',
-  'lib/features/attachments/infrastructure/services/video_thumbnail_cache_service.dart',
+  'lib/main.dart',
 };
 
 const Set<String> _platformEnvironmentAllowedFiles = {
+  'lib/essentials/archive_environment/infrastructure/development_archive_root_override_resolver.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/chat_summary_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
   'lib/essentials/db/infrastructure/repositories/local_database_health_runtime_environment.dart',
-  'lib/essentials/logging/infrastructure/log_file_writer.dart',
   'lib/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart',
   'lib/features/attachments/infrastructure/repositories/filesystem_attachment_archive_file_store.dart',
   'lib/features/attachments/infrastructure/repositories/local_attachment_file_access.dart',
@@ -424,9 +431,7 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/main.dart',
 };
 
-const Set<String> _sharedPreferencesAllowedFiles = {
-  'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
-};
+const Set<String> _sharedPreferencesAllowedFiles = {};
 
 const Set<String> _rootProvidersImportAllowedFiles = {};
 
@@ -3089,55 +3094,66 @@ void main() {
       },
     );
 
-    test('Database directory path stays in lifecycle boundaries', () async {
+    test('Retired database directory path primitive stays absent', () async {
       final offenders = await _findDatabaseDirectoryPathOffenders();
-
-      expect(
-        offenders,
-        orderedEquals(_databaseDirectoryPathAllowedFiles.toList()..sort()),
-        reason:
-            'databaseDirectoryPath exposes the physical Application Support '
-            'database directory. It must stay inside central DB construction, '
-            'onboarding readiness/reset file checks, and logging/support '
-            'bundle infrastructure. Ordinary features should consume semantic '
-            'providers or repositories instead.\n'
-            'Actual users:\n${offenders.join('\n')}',
-      );
-    });
-
-    test(
-      'Database directory path users import the directory boundary',
-      () async {
-        final offenders =
-            await _findDatabaseDirectoryPathBarrelImportOffenders();
-
-        expect(
-          offenders,
-          isEmpty,
-          reason:
-              'Files that need databaseDirectoryPath should import '
-              'essentials/db/database_directory.dart directly. The DB '
-              'feature_level_providers.dart seam is for provider access, not '
-              'physical path primitive convenience imports.\n'
-              'Actual users:\n${offenders.join('\n')}',
-        );
-      },
-    );
-
-    test('Database provider seam does not export directory primitive', () async {
-      final offenders = await _findDatabaseDirectoryExportOffenders();
 
       expect(
         offenders,
         isEmpty,
         reason:
-            'databaseDirectoryPath is a physical bootstrap/path primitive, not '
-            'part of the public database provider seam. Import '
-            'essentials/db/database_directory.dart directly only from approved '
-            'bootstrap, lifecycle, reset, support, and diagnostics boundaries.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
+            'databaseDirectoryPath is retired. App-owned persistent paths must '
+            'derive from admitted ArchiveAccessAuthority; ordinary features '
+            'should consume semantic providers or repositories.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test('Archive access authority consumers remain inventoried', () async {
+      final consumers = await _findArchiveAccessAuthorityConsumers();
+
+      expect(
+        consumers,
+        orderedEquals(_archiveAccessAuthorityConsumerFiles.toList()..sort()),
+        reason:
+            'ArchiveAccessAuthority is the complete app-owned persistent-root '
+            'capability. New consumers require explicit architecture review '
+            'so persistent writes cannot bypass admission.\n'
+            'Actual consumers:\n${consumers.join('\n')}',
+      );
+    });
+
+    test('Application Support resolution stays in bootstrap', () async {
+      final offenders = await _findApplicationSupportResolutionOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _applicationSupportResolutionAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'Physical Application Support resolution belongs to app bootstrap '
+            'before archive admission. Persistent providers must consume the '
+            'admitted authority rather than resolving a platform root.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test(
+      'Database provider seam does not export retired root primitive',
+      () async {
+        final offenders = await _findDatabaseDirectoryExportOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'The retired database_directory.dart primitive must not return '
+              'through the public provider seam. Persistent paths derive from '
+              'ArchiveAccessAuthority.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Database provider seam does not export file identity helpers', () async {
       final offenders = await _findAppDatabaseFileExportOffenders();
@@ -3311,6 +3327,21 @@ void main() {
             'essentials/db/feature_level_providers.dart. Direct imports of the '
             'maintenance-lock provider file recreate a database provider '
             'island.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Archive mutation authority remains a single provider island', () async {
+      final offenders = await _findArchiveMutationCoordinatorIslandOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Archive mutation operations must request the shared coordinator '
+            'through essentials/archive_environment/feature_level_providers.dart. '
+            'Direct imports of its provider file would create another '
+            'operation-authority island.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -7446,7 +7477,7 @@ Future<List<String>> _findDatabaseDirectoryPathOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findDatabaseDirectoryPathBarrelImportOffenders() async {
+Future<List<String>> _findArchiveAccessAuthorityConsumers() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
@@ -7454,29 +7485,38 @@ Future<List<String>> _findDatabaseDirectoryPathBarrelImportOffenders() async {
     return path.startsWith('lib/');
   });
   final offenders = <String>{};
-  final dbProviderImportPattern = RegExp(
-    r'''import\s+['"][^'"]*db/feature_level_providers\.dart['"][^;]*;''',
-    multiLine: true,
-  );
+
+  for (final filePath in files) {
+    if (filePath ==
+        'lib/essentials/archive_environment/application/'
+            'archive_access_authority_provider.dart') {
+      continue;
+    }
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('archiveAccessAuthorityProvider') ||
+        uncommented.contains('admittedArchiveAccessAuthorityProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findApplicationSupportResolutionOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
-    if (!uncommented.contains('databaseDirectoryPath')) {
-      continue;
-    }
-    final importDirectives = dbProviderImportPattern
-        .allMatches(uncommented)
-        .map((match) => match.group(0) ?? '');
-
-    for (final line in importDirectives) {
-      final isExplicitNonDirectoryImport =
-          line.contains(' show ') && !line.contains('databaseDirectoryPath');
-      if (isExplicitNonDirectoryImport) {
-        continue;
-      }
+    if (uncommented.contains('getApplicationSupportDirectory(')) {
       offenders.add(filePath);
-      break;
     }
   }
 
@@ -8758,6 +8798,35 @@ Future<List<String>> _findDbMaintenanceLockProviderIslandOffenders() async {
   for (final filePath in files) {
     if (filePath ==
         'lib/essentials/db/feature_level_providers/db_maintenance_lock_provider.dart') {
+      continue;
+    }
+    final source = await File(filePath).readAsString();
+    final imports = _extractImports(_stripComments(source));
+    if (imports.any((target) => target.endsWith(directProviderImport))) {
+      offenders.add('$filePath imports $directProviderImport');
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findArchiveMutationCoordinatorIslandOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == 'test/architecture/forbidden_imports_test.dart') {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  const directProviderImport =
+      'archive_environment/application/archive_mutation_coordinator_provider.dart';
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    if (filePath ==
+        'lib/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart') {
       continue;
     }
     final source = await File(filePath).readAsString();
@@ -11861,9 +11930,6 @@ Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
           ) ||
           importTarget.endsWith(
             'conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart',
-          ) ||
-          importTarget.endsWith(
-            'conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart',
           )) {
         offenders.add(
           '$filePath imports concrete graph workflow provider $importTarget',
@@ -12836,6 +12902,12 @@ Future<List<String>> _findRetiredContactNameVariantOffenders() async {
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source)
+        .replaceAll(
+          RegExp(
+            r'''await\s+_dropColumnIfPresent\(\s*m\s*,\s*(participantOverrides|virtualParticipants)\s*,\s*['"](nickname|name_mode|short_name)['"]\s*\)\s*;''',
+          ),
+          '',
+        )
         .replaceAll(
           RegExp(
             r'''await\s+m\.dropColumn\(\s*participantOverrides\s*,\s*['"]nickname['"]\s*\)\s*;''',

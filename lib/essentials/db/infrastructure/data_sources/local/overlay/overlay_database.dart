@@ -48,14 +48,14 @@ class OverlayDatabase extends _$OverlayDatabase {
         await m.createTable(messageUserTags);
       }
       if (from < 4) {
-        await m.dropColumn(participantOverrides, 'nickname');
+        await _dropColumnIfPresent(m, participantOverrides, 'nickname');
       }
       if (from < 5) {
         await _createGraphMessageIntentTables();
       }
       if (from < 6) {
-        await m.dropColumn(participantOverrides, 'name_mode');
-        await m.dropColumn(virtualParticipants, 'short_name');
+        await _dropColumnIfPresent(m, participantOverrides, 'name_mode');
+        await _dropColumnIfPresent(m, virtualParticipants, 'short_name');
       }
       if (from < 7) {
         await m.createTable(conversationTags);
@@ -67,6 +67,24 @@ class OverlayDatabase extends _$OverlayDatabase {
       await _createOverlayIndexes();
     },
   );
+
+  Future<void> _dropColumnIfPresent<T extends Table, D>(
+    Migrator migrator,
+    TableInfo<T, D> table,
+    String columnName,
+  ) async {
+    final escapedTableName = table.actualTableName.replaceAll('"', '""');
+    final columns = await customSelect(
+      'PRAGMA table_info("$escapedTableName")',
+    ).get();
+    final isPresent = columns.any(
+      (column) => column.read<String>('name') == columnName,
+    );
+
+    if (isPresent) {
+      await migrator.dropColumn(table, columnName);
+    }
+  }
 
   Future<void> _createOverlayIndexes() async {
     await customStatement(

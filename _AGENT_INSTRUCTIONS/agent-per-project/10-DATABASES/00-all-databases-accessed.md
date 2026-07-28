@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-06-20
+last_reviewed: 2026-07-27
 source_of_truth: doc
 links:
        - ../01-PROJECT/03-data-locations.md
@@ -12,6 +12,7 @@ links:
        - ./06-addressbook-path-resolution.md
        - ./07-overlay-database-independence.md
        - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
+       - ../50-ENVIRONMENT-SAFETY/00-overview.md
 tests: []
 ---
 
@@ -30,25 +31,26 @@ This is the canonical index for every SQLite database the project touches. Treat
   may open source/probe SQLite files directly only for named one-off
   read-only queries, and must close/dispose the connection before returning.
   Extra persistent connections will lock app database files.
+- **Archive admission precedes persistent construction.** Every app-owned
+  persistent provider requires the immutable `ArchiveAccessAuthority` injected
+  after native claim and archive-marker validation. Debug/Profile use the
+  development root, production uses the stable production root, and tests must
+  inject a temporary root. There is no Application Support fallback.
 - **Path access uses the paths seam.** Code that needs `PathsHelper` should
   import `pathsHelperProvider` from
   `lib/essentials/paths/feature_level_providers.dart`, not the root
   `providers.dart` barrel. The root provider barrel is retired; add or consume
   owned essential seams instead.
-- **Physical file identity stays explicit.** Database file names and app
-  database paths are centralized in `lib/essentials/db/app_database_files.dart`.
-  The mutable Application Support directory primitive lives in
-  `lib/essentials/db/database_directory.dart` for bootstrap, lifecycle, reset,
-  support, and diagnostics only. Do not re-export or import it through
-  `feature_level_providers.dart`; likewise, do not re-export file-name/path
-  helpers through that seam. `feature_level_providers.dart` is for provider
-  access, not physical file identity convenience.
-- **Maintenance lock access uses the DB public seam.** The global database
-  maintenance lock coordinates reset/rebuild/archive operations across feature
-  boundaries. Consumers must import `dbMaintenanceLockProvider` from
-  `lib/essentials/db/feature_level_providers.dart`, not from its implementation
-  subfile. The subfile owns provider implementation; the public DB seam owns
-  cross-feature access.
+- **Physical file identity stays explicit.** Database file names are
+  centralized in `lib/essentials/db/app_database_files.dart`. Physical roots
+  come only from admitted archive authority. The retired mutable
+  `database_directory.dart` path primitive must not be recreated or replaced
+  with another process-global path.
+- **Mutation authority is archive-scoped.** Protected reset, rebuild, import,
+  historical archive, and attachment operations use
+  `ArchiveMutationCoordinator`. `dbMaintenanceLockProvider` remains a derived
+  readiness/UI signal exposed through the DB seam; it is not an independent
+  write authority.
 - **Public provider seam imports stay narrow.** When a file imports
   `feature_level_providers.dart` from another feature or essential module, it
   must use an explicit `show` list. Broad seam imports hide database and
@@ -65,15 +67,15 @@ Use these aliases consistently across docs, code comments, and conversations.
 | --- | --- | --- | --- | --- |
 | `db-address-book` | `AddressBook-v22.abcddb` inside the most recent `/Library/Application Support/AddressBook/Sources/<UUID>/` | macOS contact source of truth | `getFolderAggregateEitherProvider` → `AddressBookFolderAggregate.mostRecentFolderPath` | Resolved dynamically at runtime |
 | `db-chat` | `chat.db` | macOS Messages source ledger | `pathsHelperProvider` from `lib/essentials/paths/feature_level_providers.dart` → `PathsHelper.messagesDatabasePath` (import pipeline) | `~/Library/Messages/chat.db` |
-| `db-import-ss` | `macos_import_ss.db` | Production source-scoped import ledger for Messages + AddressBook facts | Physical access: `sourceScopedImportDatabaseProvider` exported by `lib/essentials/db/feature_level_providers.dart`; ordinary import/projection semantics: `sourceScopedImportLedgerProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import_ss.db` |
-| `db-graph-working` | `working_ss.db` | Production source-scoped conversation graph consumed by graph readers and Message Evidence Spine | `driftConversationGraphDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working_ss.db` |
-| `db-import` | `macos_import.db` | Retired import cleanup file; old files may contain historical ledger tables, but current diagnostics name only archive-source cleanup inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/macos_import.db` |
-| `db-working` | `working.db` | Retired working cleanup file; old projection tables may exist, but current diagnostics name only recovered-message cleanup inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/working.db` |
-| `db-overlay` | `user_overlays.db` | Long-lived user overrides and preferences | `overlayDatabaseProvider` | `~/Library/Application Support/com.bigbenchsoftware.MessageLens/user_overlays.db` |
+| `db-import-ss` | `macos_import_ss.db` | Environment-scoped source import ledger for Messages + AddressBook facts | Physical access: `sourceScopedImportDatabaseProvider` exported by `lib/essentials/db/feature_level_providers.dart`; ordinary import/projection semantics: `sourceScopedImportLedgerProvider` | Admitted archive root |
+| `db-graph-working` | `working_ss.db` | Environment-scoped conversation graph consumed by graph readers and Message Evidence Spine | `driftConversationGraphDatabaseProvider` | Admitted archive root |
+| `db-import` | `macos_import.db` | Retired import cleanup file; old files may contain historical ledger tables, but current diagnostics name only archive-source cleanup inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | Admitted archive root, if present |
+| `db-working` | `working.db` | Retired working cleanup file; old projection tables may exist, but current diagnostics name only recovered-message cleanup inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | Admitted archive root, if present |
+| `db-overlay` | `user_overlays.db` | Long-lived user overrides, archive metadata, and window state | `overlayDatabaseProvider` | Admitted archive root |
 
 ## Coupled Database Groups
 
-- **`group-source-scoped-graph-db`**: `db-import-ss` and `db-graph-working` are the production source-scoped graph pipeline. Source data lands in the import ledger, then graph projectors translate it into canonical `ss_id` rows and topology.
+- **`group-source-scoped-graph-db`**: `db-import-ss` and `db-graph-working` are the environment-scoped graph pipeline. Source data lands in the import ledger, then graph projectors translate it into canonical `ss_id` rows and topology.
 - **`group-retired-import-working-db`**: `db-import` and `db-working` are retired storage references, not an active pipeline. Old retired files may be inspected read-only by diagnostics or removed by reset cleanup. Do not use this group for new ordinary app reads or archive-source metadata writes.
 
 ## Source → Projection Flow

@@ -1,12 +1,117 @@
 tier: project
 scope: documentation-pass
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-28
 source_of_truth: doc
 links:
   - ./README.md
   - ./01-PROJECT/05-CURRENT-STATE.md
 tests: []
+---
+
+# Generalized Delayed Attachment Retry
+
+Date: 2026-07-28
+
+Scope: Replaced the historical image-only maintenance-sweep contract with a
+declared-MIME eligibility policy for conventional attachments while retaining
+an explicit boundary around opaque plugin payloads.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md` | Documented type-agnostic delayed retry for conventional declared-MIME attachments and the separate NULL/blank-MIME payload policy question. | Makes the canonical archive contract match the corrected candidate policy. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Split the former 12-row residual into three retryable QuickTime rows and nine policy-blocked plugin payloads. | Distinguishes implementation capability, pending production validation, and unresolved preservation semantics. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-AUTHORITY.md` | Replaced the image-only limitation with the declared-MIME policy and production verification gate. | Keeps live-preservation authority accurate without claiming an undeployed production recovery. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/COMPLETION-REPORT.md` | Refined remaining follow-up into QuickTime deployment validation and plugin-payload policy. | Preserves a bounded, actionable production closeout. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-facing recovery correction and advanced the release version. | Keeps release metadata synchronized with a significant preservation fix. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/DELAYED-ATTACHMENT-RETRY.md` | Added a concise implementation record describing the image-only defect, declared-MIME correction, plugin-payload boundary, and production follow-up. | Gives the bounded correction one direct reference without rewriting historical cutover evidence. |
+
+---
+
+# External Development Archive Root
+
+Date: 2026-07-27
+
+Scope: Recorded the machine-local, development-only relocation of the complete
+MessageLens development archive to the external WD Elements volume.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `50-ENVIRONMENT-SAFETY/00-overview.md` | Added the development root-override contract, native/Dart agreement, fail-closed behavior, complete-root ownership, and preservation of the internal archive. | Makes the operational safety rule canonical without changing production or test policy. |
+| `01-PROJECT/03-data-locations.md` | Documented default and machine-local development roots and clarified that all listed archive paths derive from one admitted root. | Prevents future attachment-specific or provider-specific path authority. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Added the current external development root and its bounded status. | Keeps the workstream index synchronized with the implemented development environment. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/COMPLETION-REPORT.md` | Recorded the override as a bounded implementation adjustment and summarized runtime evidence. | Preserves why and how the complete archive was relocated. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/development-path-manifest.md` | Added external-root startup evidence and retained the remaining full-workflow validation obligation. | Distinguishes verified admission/routing from the still-pending complete interactive manifest. |
+| `CHANGELOG.md` | Added the development external-root capability to the current release entry. | Records the tester-facing development environment change. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Data Protection Non-Production Completion
+
+Date: 2026-07-27
+
+Scope: Promoted the verified Slices 0-8 implementation into canonical
+environment, database, build, and Production Readiness documentation while
+keeping production adoption explicitly blocked.
+
+## Changes
+
+| File or folder | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Replaced planning status with the implemented non-production boundary and adoption gate. | Makes the workstream entry point reflect current code. |
+| `PROPOSAL.md`, `IMPLEMENTATION-PLAN.md`, `QUESTIONS.md`, and `VALIDATION.md` | Recorded implemented status, bounded Profile/Release adjustment, completed slices, and remaining evidence. | Separates validated architecture from production claims. |
+| `COMPLETION-REPORT.md` | Added the Slices 0-8 implementation record, deviations, evidence, and remaining production prerequisites. | Provides one authoritative implementation closeout. |
+| `PRODUCTION-ADOPTION-RUNBOOK.md` | Added a blocked planning runbook with preconditions, procedure, and abort rules. | Prepares Slice 9 without authorizing or touching production. |
+| `VALIDATION-RESULTS/` | Added retained static, native, path, test, operation, checkpoint, and artifact evidence. | Records objective non-production validation and its limitations. |
+| `50-ENVIRONMENT-SAFETY/00-overview.md` | Replaced the placeholder with the canonical archive admission, mutation authority, recovery, and current production-status contract. | Promotes the implemented safety boundary to its permanent owner. |
+| `10-DATABASES/00-all-databases-accessed.md` | Replaced mutable physical-root guidance with admitted authority and environment-scoped storage. | Prevents recreation of the retired global path seam. |
+| `60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md` | Documented development identity, archive-scoped native admission, and artifact verification. | Preserves production FDA identity while making development separation explicit. |
+| `90-DATA-INGESTION-REVIEW/00-PRODUCTION-READINESS-MASTER-PLAN.md` and index files | Updated project status and links. | Keeps top-level orientation consistent with the completed boundary. |
+
+No production archive, marker, or adoption report was created.
+
+# Production Readiness Master Plan
+
+Date: 2026-07-27
+
+Scope: Established the authoritative project overview for the coordinated
+review of onboarding, production protection, historical ingestion, archive
+integrity, validation, and production health.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/00-PRODUCTION-READINESS-MASTER-PLAN.md` | Created the authoritative project purpose, authority boundary, development/production contract, shared workstream requirements, seven workstreams, progression, invariants, non-goals, and completion criteria. | Gives every subsequent ingestion and onboarding task one governing project contract while preserving existing runtime ownership. |
+| `90-DATA-INGESTION-REVIEW/README.md` | Promoted the folder into the project index, linked the master plan and seed, and documented the planned workstream package structure. | Makes the master plan the obvious entry point and keeps future focused packages collected under one shared program. |
+| `README.md` | Updated the canonical project map to describe sequence 90 as the authoritative Production Readiness project. | Makes the new program discoverable to future developers and agents. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation pass. | Maintains the documentation audit trail. |
+
+---
+
+# Data Ingestion Review Folder Reuse
+
+Date: 2026-07-27
+
+Scope: Reassigned documentation sequence 90 from the unused use-case
+illustration collection to the forthcoming onboarding and archival-ingestion
+review.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/README.md` | Created the new working-package entry point and linked current canonical ingestion, onboarding/archive, and database documentation. | Gives the coming review a clear scope without prematurely replacing current architecture. |
+| `90-DATA-INGESTION-REVIEW/archive/legacy-use-case-illustrations/` | Preserved the former sequence-90 narrative material as explicitly historical reference. | Reuses the top-level sequence without discarding prior information or letting it define the new review. |
+| `README.md` and `_ui_renders/old/documentation_tree` | Replaced the old use-case folder entry with the Data Ingestion Review package. | Keeps the canonical project map and retained documentation-tree rendering free of the retired path. |
+| `40-FEATURES/README.md`, `40-FEATURES/chat-handles/CHARTER.md`, and completed feature packages | Removed inbound references to the retired sequence-90 and older sequence-50 use-case folders. | Prevents stale documentation paths from implying that the retired collection remains an active authority. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation maintenance pass. | Maintains the documentation audit trail. |
+
 ---
 
 # Column-Specific Shared Track Boundary Refinement
@@ -2733,3 +2838,204 @@ that owns the effective center ViewSpec.
 | `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
 
 ---
+
+# Production Data Protection Current-State Audit
+
+Date: 2026-07-27
+
+Scope: Completed the read-only static audit of environment resolution,
+production archive reachability, mutation authority, safeguards, and runtime
+verification requirements for Production Readiness Workstream 1.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/CURRENT-STATE-AUDIT.md` | Added the complete current-state audit, evidence classifications, escape paths, runtime verification matrix, and minimum conditions before onboarding work. | Establishes that ordinary debug launches can currently mutate the production archive while preserving the distinction between read-only Apple sources and writable app-owned stores. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Marked the static audit complete, linked the report, and summarized its central findings. | Makes the workstream status and next evidence boundary immediately discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Data Protection Architecture Proposal
+
+Date: 2026-07-27
+
+Scope: Converted the Workstream 1 audit findings into a fail-closed production
+archive identity, admission, mutation-authority, and recovery architecture.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PROPOSAL.md` | Defined production/development/test archive identities, pre-provider validation, archive-scoped process admission, operation-specific mutation authority, recovery evidence, migration phases, invariants, and acceptance criteria. | Establishes the mechanical boundary that prevents ordinary development and tests from mutating the permanent archive while preserving production FDA continuity. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Advanced the workstream status, linked the proposal, and summarized the proposed boundary. | Keeps the workstream reading order and implementation authorization state explicit. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Data Protection Decisions And Plans
+
+Date: 2026-07-27
+
+Scope: Resolved the proposal's bounded implementation decisions and defined the
+phased implementation and validation programs without authorizing code or
+production operations.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/QUESTIONS.md` | Settled development identity, native/Dart handoff, archive marker, environment-scoped state, initial mutation authority, checkpoint evidence, production adoption, development FDA, and production build decisions. | Removes architectural ambiguity before implementation planning while preserving runtime verification obligations. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/IMPLEMENTATION-PLAN.md` | Defined ten reviewable slices from baseline tripwires through production adoption and canonical documentation promotion. | Prevents partial isolation from being mistaken for safety and keeps production adoption separately authorized. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION.md` | Defined static, native, disposable runtime, operation-concurrency, recovery, artifact, and production-adoption validation gates. | Specifies the objective evidence required before claiming production protection. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Advanced workstream status and linked the decisions and plans. | Makes the complete Workstream 1 planning sequence discoverable and preserves the no-implementation authorization boundary. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Preservation Authority Refinement
+
+Date: 2026-07-27
+
+Scope: Clarified the architectural distinction between archive admission and
+the authority responsible for preserving newly arriving production data.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-AUTHORITY.md` | Defined authority assignment to one production archive identity, single-process exercise, redundant development preservation, heartbeat freshness, cursor evidence, preservation-pass outcomes, and the provisional operating procedure. | Makes preservation responsibility and liveness objectively demonstrable without conflating them with archive admission. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Added the preservation-authority document to metadata, reading order, and the next production planning gate. | Makes the follow-on requirement discoverable without implying that production adoption or authority designation has been authorized. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Preservation Continuity Gate
+
+Date: 2026-07-27
+
+Scope: Promoted continuity of live production preservation from follow-on work
+to a blocking prerequisite for every Production Readiness implementation slice.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-AUTHORITY.md` | Marked the architecture blocking and added the per-slice authority, evidence, continuity, and handoff admission contract. | Prevents implementation from proceeding while newly arriving production data lacks an actively verified preservation owner. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Changed workstream status and next gate to block subsequent slices on preservation continuity. | Makes the prerequisite visible at the workstream entry point. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/IMPLEMENTATION-PLAN.md` | Added preservation continuity as the third sequencing constraint and a mandatory slice-admission checklist. | Applies the authority contract mechanically to every implementation slice rather than treating it as deferred health work. |
+| `90-DATA-INGESTION-REVIEW/00-PRODUCTION-READINESS-MASTER-PLAN.md` | Added a project-wide blocking preservation principle and constrained Production Health to observing, not owning, the guarantee. | Propagates the prerequisite across all workstreams while preserving responsibility boundaries. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Preservation Slice Admission And Implementation Plan
+
+Date: 2026-07-27
+
+Scope: Applied the blocking preservation-continuity gate before further code
+implementation and defined the implementation sequence required to make
+production preservation authority mechanically enforceable.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/preservation-continuity-admission-2026-07-27.md` | Recorded the legacy Debug process, production-root activity, preservation evidence, and the initially incomplete transition diagnosis; the later correction is recorded below. | Demonstrates that process presence is not authority or liveness and preserves the audit trail leading to the corrected handoff plan. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRESERVATION-AUTHORITY-IMPLEMENTATION-PLAN.md` | Defined ownership, durable evidence, freshness, exclusivity, phased implementation, validation, and production handoff. | Converts the blocking architecture into a bounded implementation sequence without authorizing production adoption. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Linked the new plan and admission report and summarized the current blocked state. | Makes the gate and required next action visible from the workstream entry point. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/IMPLEMENTATION-PLAN.md` | Linked the dedicated preservation-authority sequence and current admission result. | Keeps the master implementation plan synchronized with the blocking prerequisite. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/README.md` | Indexed the read-only admission report and distinguished it from disposable runtime validation. | Preserves the production-contact boundary while making operational evidence discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+# 2026-07-27 - Correct production preservation transition authority
+
+- Updated
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-AUTHORITY.md`
+  to recognize the already-running legacy Debug process as the bounded
+  provisional preservation process and to reject the months-old installed app
+  as an automatic successor.
+- Added
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-HANDOFF-PLAN.md`
+  defining preparation, rehearsal, staging, authorized cutover, rollback, and
+  normal production/development coexistence.
+- Corrected
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/preservation-continuity-admission-2026-07-27.md`
+  so it no longer instructs the developer to stop the preservation process and
+  launch an obsolete installed build.
+- Updated the workstream README, implementation plans, adoption runbook, and
+  validation index to use the corrected transition sequence.
+- No process was stopped or launched, no application was installed, and no
+  production archive content was changed.
+
+---
+
+# 2026-07-27 - Prepare production candidate and adoption rehearsal
+
+- Updated the Production Data Protection README, implementation plan,
+  preservation-authority contract, handoff plan, adoption runbook, validation
+  plan, completion report, and validation index to reflect the revised
+  operational fact: Debug is isolated and production preservation is currently
+  interrupted.
+- Added
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/production-candidate-and-adoption-rehearsal-2026-07-27.md`
+  with signed-candidate identity evidence, disposable checkpoint/adoption
+  evidence, catch-up and attachment-preservation rehearsal results, rollback
+  limits, and remaining authorization boundaries.
+- Marked the earlier preservation-continuity admission conclusion as
+  historical and superseded without deleting its audit evidence.
+- Documented the exact checkpoint, restore, adoption, admission, and
+  pre-mutation rollback commands for the separately authorized real cutover.
+- Recorded 68 focused regression tests, 352 architecture tripwires, 1,442 full
+  Flutter regression tests, and a clean analyzer result.
+- No production application was installed or launched, and no production
+  archive content was marked, restored, adopted, or mutated.
+
+---
+
+# 2026-07-28 - Verify backup and separate adoption inventory
+
+- Added
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/final-cutover-preparation-2026-07-28.md`
+  with signed-artifact identity, notarization failure, external recovery-backup
+  verification, production archive inventory, cutover sequence, and remaining
+  authorization boundary.
+- Updated the Production Data Protection README, implementation plan,
+  validation plan, completion report, preservation-authority contract, handoff
+  plan, adoption runbook, and validation index.
+- Replaced the real-cutover requirement for a second full archive copy with the
+  verified existing external backup plus a small read-only in-place adoption
+  inventory. Full checkpoint/restore remains the disposable recovery rehearsal
+  mechanism.
+- Recorded that Apple notarization is blocked by a missing or expired developer
+  agreement. The signed DMG was not installed, launched, or represented as a
+  final cutover artifact.
+- No production marker was created, no application was installed or launched,
+  and neither the production archive nor external backup was modified.
+
+---
+
+# 2026-07-28 - Execute production archive cutover
+
+- Added
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/production-cutover-2026-07-28.md`
+  as the authoritative execution record for the authorized in-place adoption,
+  installed artifact, migration incident and correction, catch-up, live
+  preservation, overlay retention, development isolation, and bounded
+  attachment residual.
+- Updated the Production Data Protection README, implementation plan,
+  validation plan, completion report, adoption runbook, preservation-authority
+  contract, preservation handoff plan, and Production Readiness master plan to
+  reflect that production adoption is complete.
+- Updated the validation-results index and marked the final preparation report
+  as historical preparation evidence superseded by the executed cutover
+  record.
+- Recorded that all 12 image attachments from the interrupted initial catch-up
+  were recovered, while nine plugin payload attachments and three QuickTime
+  videos remain a bounded reconciliation gap because delayed retry is currently
+  image-only.
+- Recorded that Debug used only the configured external development archive and
+  that the installed production application remained the production
+  preservation process.

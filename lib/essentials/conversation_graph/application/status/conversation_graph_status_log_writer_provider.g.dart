@@ -7,7 +7,7 @@ part of 'conversation_graph_status_log_writer_provider.dart';
 // **************************************************************************
 
 String _$conversationGraphStatusLogWriterHash() =>
-    r'67be5950fe6c1eeed840c84f1500aa5addfbc916';
+    r'24d6584c7bbccb9eebb2e19b4377ff1ad8c88fbd';
 
 /// See also [conversationGraphStatusLogWriter].
 @ProviderFor(conversationGraphStatusLogWriter)

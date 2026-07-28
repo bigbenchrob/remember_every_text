@@ -3,10 +3,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/domain.dart' show ArchiveMutationOperation;
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveMutationCoordinatorProvider;
 import '../../db/app_database_files.dart';
 import '../../db/feature_level_providers.dart'
     show
-        dbMaintenanceLockProvider,
         driftConversationGraphDatabaseProvider,
         sourceScopedImportDatabaseProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart'
@@ -58,14 +60,17 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
   final _MessageDataResetDependencies _dependencies;
 
   @override
-  Future<void> resetDerivedData() async {
+  Future<void> resetDerivedData() {
+    return _dependencies.runWithMutationAuthority(_resetDerivedData);
+  }
+
+  Future<void> _resetDerivedData() async {
     final logger = _dependencies.logger;
     logger.warn(
       'Reset Message Data requested',
       source: 'MessageDataResetService',
     );
 
-    _dependencies.beginMaintenance();
     try {
       logger.info(
         'Closing source-scoped import database before reset',
@@ -147,8 +152,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         },
       );
       rethrow;
-    } finally {
-      _dependencies.endMaintenance();
     }
   }
 
@@ -358,8 +361,7 @@ final class _MessageDataResetDependencies {
   const _MessageDataResetDependencies({
     required this.logger,
     required this.fileStore,
-    required this.beginMaintenance,
-    required this.endMaintenance,
+    required this.runWithMutationAuthority,
     required this.bumpMessageDataVersion,
     required this.invalidateDerivedMessageDataProviders,
     required this.closeSourceScopedImportDatabase,
@@ -371,8 +373,8 @@ final class _MessageDataResetDependencies {
 
   final _MessageDataResetLogSink logger;
   final DerivedMessageDataFileStore fileStore;
-  final VoidCallback beginMaintenance;
-  final VoidCallback endMaintenance;
+  final Future<void> Function(Future<void> Function() action)
+  runWithMutationAuthority;
   final VoidCallback bumpMessageDataVersion;
   final VoidCallback invalidateDerivedMessageDataProviders;
   final Future<void> Function() closeSourceScopedImportDatabase;
@@ -423,8 +425,15 @@ MessageDataResetService messageDataResetService(Ref ref) {
         error: logger.error,
       ),
       fileStore: ref.read(derivedMessageDataFileStoreProvider),
-      beginMaintenance: ref.read(dbMaintenanceLockProvider.notifier).begin,
-      endMaintenance: ref.read(dbMaintenanceLockProvider.notifier).end,
+      runWithMutationAuthority: (action) {
+        return ref
+            .read(archiveMutationCoordinatorProvider.notifier)
+            .run(
+              operation: ArchiveMutationOperation.messageDataReset,
+              ownerLabel: 'message-data-reset',
+              action: action,
+            );
+      },
       bumpMessageDataVersion: ref
           .read(messageDataVersionProvider.notifier)
           .bump,

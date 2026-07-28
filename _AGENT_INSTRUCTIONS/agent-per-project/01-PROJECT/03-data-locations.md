@@ -2,7 +2,7 @@
 tier: project
 scope: data
 owner: agent-per-project
-last_reviewed: 2026-06-08
+last_reviewed: 2026-07-27
 source_of_truth: code
 links:
   - ../10-DATABASES/00-all-databases-accessed.md
@@ -28,6 +28,26 @@ The production macOS bundle stores runtime app data under:
 ~/Library/Application Support/com.bigbenchsoftware.MessageLens/
 ```
 
+Development normally uses:
+
+```text
+~/Library/Application Support/com.bigbenchsoftware.MessageLens.development/
+```
+
+A machine-local development launch may override that complete root through
+`MESSAGELENS_DEVELOPMENT_ARCHIVE_ROOT`. The primary development machine
+currently uses:
+
+```text
+/Volumes/WD_ELEMENTS/DEVELOPMENT_DATA_FOLDER/MessageLens Development/
+```
+
+The override is development-only and fail-closed. Native and Dart admission
+must independently resolve the same canonical existing directory. If the
+configured external root is unavailable, MessageLens stops before persistent
+provider construction rather than falling back. Production and test root
+policies are unchanged.
+
 Current app-owned files/directories include:
 
 | Data | Path | Owner |
@@ -42,6 +62,9 @@ Current app-owned files/directories include:
 
 The repository folder may still be named `remember_every_text`; do not confuse
 the repo path with runtime storage paths.
+
+All relative paths in the table are children of the admitted archive root.
+Attachments do not have separate root-selection authority.
 
 ## macOS Source Files
 

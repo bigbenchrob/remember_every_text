@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show admittedArchiveAccessAuthorityProvider;
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_report.dart';
@@ -13,11 +15,28 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/a
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 
+import '../../../test_support/test_archive_fixture.dart';
+
 void main() {
+  late TestArchiveFixture archiveFixture;
+
+  setUp(() async {
+    archiveFixture = await TestArchiveFixture.create(
+      prefix: 'graph_build_controller_test_',
+    );
+  });
+
+  tearDown(() async {
+    await archiveFixture.dispose();
+  });
+
   test('records successful graph build lifecycle state', () async {
     final report = _report();
     final container = ProviderContainer(
       overrides: [
+        admittedArchiveAccessAuthorityProvider.overrideWithValue(
+          archiveFixture.authority,
+        ),
         conversationGraphBuildServiceProvider.overrideWith(
           (ref) async => ConversationGraphBuildService(
             orchestrator: _orchestrator(report: report),
@@ -42,6 +61,9 @@ void main() {
   test('records failed graph build lifecycle state', () async {
     final container = ProviderContainer(
       overrides: [
+        admittedArchiveAccessAuthorityProvider.overrideWithValue(
+          archiveFixture.authority,
+        ),
         conversationGraphBuildServiceProvider.overrideWith(
           (ref) async => ConversationGraphBuildService(
             orchestrator: _orchestrator(error: StateError('boom')),
@@ -71,6 +93,9 @@ void main() {
     final report = _report();
     final container = ProviderContainer(
       overrides: [
+        admittedArchiveAccessAuthorityProvider.overrideWithValue(
+          archiveFixture.authority,
+        ),
         conversationGraphBuildServiceProvider.overrideWith(
           (ref) async => ConversationGraphBuildService(
             orchestrator: _orchestrator(

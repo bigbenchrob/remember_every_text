@@ -174,7 +174,10 @@ class SqliteGraphAttachmentArchiveCandidateReader
             AND ${SourceScopedRowSql.sourceId('a.ss_id')} = ?
             AND a.filename IS NOT NULL
             AND LENGTH(TRIM(a.filename)) > 0
-            AND a.mime_type LIKE 'image/%'
+            -- A declared MIME type identifies a conventional attachment that
+            -- the type-agnostic archive pipeline may retry. NULL or blank MIME
+            -- rows remain opaque pending an explicit plugin-payload policy.
+            AND NULLIF(TRIM(a.mime_type), '') IS NOT NULL
           ORDER BY a.ss_id
           LIMIT ?
       ''',

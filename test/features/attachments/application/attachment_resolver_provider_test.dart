@@ -5,6 +5,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show admittedArchiveAccessAuthorityProvider;
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show attachmentArchiveDirectoryProvider, overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
@@ -15,14 +17,20 @@ import 'package:remember_this_text/features/attachments/domain/constants/resolve
 import 'package:remember_this_text/features/attachments/domain/entities/attachment_recovery_metadata.dart';
 import 'package:remember_this_text/features/messages/domain/entities/attachment_info.dart';
 
+import '../../../test_support/test_archive_fixture.dart';
+
 void main() {
   group('attachmentResolverProvider', () {
     late OverlayDatabase overlayDb;
     late Directory tempDir;
+    late TestArchiveFixture archiveFixture;
     ProviderContainer? container;
 
     setUp(() async {
       overlayDb = OverlayDatabase(NativeDatabase.memory());
+      archiveFixture = await TestArchiveFixture.create(
+        prefix: 'attachment_resolver_archive_',
+      );
       tempDir = await Directory.systemTemp.createTemp(
         'attachment-resolver-test-',
       );
@@ -31,6 +39,7 @@ void main() {
     tearDown(() async {
       container?.dispose();
       await overlayDb.close();
+      await archiveFixture.dispose();
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
@@ -46,6 +55,9 @@ void main() {
 
       return ProviderContainer(
         overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           attachmentArchiveDirectoryProvider.overrideWith(
             (ref) => tempDir.path,

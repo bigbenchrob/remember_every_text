@@ -1,5 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../essentials/archive_environment/domain.dart'
+    show ArchiveMutationOperation;
+import '../../../essentials/archive_environment/feature_level_providers.dart'
+    show archiveMutationCoordinatorProvider;
 import 'attachment_archive_runtime_providers.dart'
     show
         attachmentArchiveDirectoryPathProvider,
@@ -80,19 +84,27 @@ class ArchiveSettings extends _$ArchiveSettings {
     ref.invalidateSelf();
   }
 
-  Future<void> clearArchive() async {
-    final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
-    final archiveFileOperations = ref.read(
-      attachmentArchiveFileOperationsProvider,
-    );
-    final settingsStore = await ref.read(
-      attachmentArchiveSettingsStoreProvider.future,
-    );
+  Future<void> clearArchive() {
+    return ref
+        .read(archiveMutationCoordinatorProvider.notifier)
+        .run<void>(
+          operation: ArchiveMutationOperation.attachmentClearing,
+          ownerLabel: 'attachment-archive-clear',
+          action: () async {
+            final archiveDir = ref.read(attachmentArchiveDirectoryPathProvider);
+            final archiveFileOperations = ref.read(
+              attachmentArchiveFileOperationsProvider,
+            );
+            final settingsStore = await ref.read(
+              attachmentArchiveSettingsStoreProvider.future,
+            );
 
-    await archiveFileOperations.resetArchiveDirectory(archiveDir);
-    await settingsStore.clearArchivedAttachmentRecords();
+            await archiveFileOperations.resetArchiveDirectory(archiveDir);
+            await settingsStore.clearArchivedAttachmentRecords();
 
-    ref.invalidateSelf();
+            ref.invalidateSelf();
+          },
+        );
   }
 
   /// Returns the number of files copied, or `null` if the user cancelled.

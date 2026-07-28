@@ -1,8 +1,9 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveAccessAuthorityProvider;
 import '../app_database_files.dart';
 import '../application/conversation_graph_readiness.dart';
-import '../database_directory.dart';
 import '../infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart';
 import 'message_data_version_provider.dart';
 
@@ -13,9 +14,10 @@ Future<ConversationGraphReadiness> conversationGraphReadiness(
   ConversationGraphReadinessRef ref,
 ) async {
   ref.watch(messageDataVersionProvider);
+  final authority = ref.watch(archiveAccessAuthorityProvider);
   final dbPath = appDatabasePath(
     AppDatabaseFile.conversationGraph,
-    databaseDirectory: databaseDirectoryPath,
+    databaseDirectory: authority.rootPath,
   );
   return const SqliteConversationGraphReadinessChecker().checkPath(dbPath);
 }

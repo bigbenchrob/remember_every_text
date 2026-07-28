@@ -2,14 +2,13 @@
 tier: project
 scope: features
 owner: agent-per-project
-last_reviewed: 2026-07-18
+last_reviewed: 2026-07-27
 source_of_truth: doc
 links:
 	- ../45-NEW-FEATURE-ADDITION/README.md
 	- ../42-SPEC-SYSTEM/README.md
 	- ./chat-handles/CHARTER.md
 	- ./conversations/README.md
-	- ../90-USE-CASE-ILLUSTRATIONS/README.md
 tests: []
 ---
 

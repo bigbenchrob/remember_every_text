@@ -2,10 +2,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../essentials/archive_environment/domain.dart'
+    show ArchiveMutationDeniedException, ArchiveMutationOperation;
+import '../../../essentials/archive_environment/feature_level_providers.dart'
+    show ArchiveMutationCoordinatorState, archiveMutationCoordinatorProvider;
 import '../../../essentials/conversation_graph/feature_level_providers.dart'
     show
-        GraphMaintenanceExecutionGateState,
-        graphMaintenanceExecutionGateProvider,
         sourceScopedArchiveGraphImportServiceProvider,
         sourceScopedArchiveGraphRemovalServiceProvider;
 import '../../../essentials/db/feature_level_providers.dart'
@@ -466,71 +468,69 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    final executionGate = ref.read(
-      graphMaintenanceExecutionGateProvider.notifier,
-    );
-    if (!executionGate.tryAcquire(_historicalArchivesTestingOwner)) {
-      final currentOwner = ref
-          .read(graphMaintenanceExecutionGateProvider)
-          .owner;
+    try {
+      await ref
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<void>(
+            operation: ArchiveMutationOperation.historicalArchiveRemoval,
+            ownerLabel: _historicalArchivesTestingOwner,
+            action: () async {
+              state = state.copyWith(
+                preflight: const HistoricalArchivesPreflightViewModel(
+                  status: HistoricalArchivesPreflightStatus.running,
+                  statusLabel: 'Removing imported archive data',
+                  detail:
+                      'Deleting previously imported source-scoped import rows for this source and refreshing graph-visible data.',
+                ),
+                activityLog: [
+                  HistoricalArchivesLogEntryViewModel(
+                    label: 'Removing imported archive data…',
+                    message:
+                        'Deleting previously imported archive rows for ${path.basename(selectedFolderPath)} and preparing a full rebuild.',
+                  ),
+                  ...state.activityLog,
+                ],
+                phases: _runningArchiveRemovalPhases(),
+              );
+
+              final removalService = await ref.read(
+                sourceScopedArchiveGraphRemovalServiceProvider.future,
+              );
+              final removalResult = await removalService.removeArchiveSource(
+                folderPath: selectedFolderPath,
+              );
+              ref.read(messageDataVersionProvider.notifier).bump();
+
+              if (!removalResult.sourceWasRegistered ||
+                  removalResult.deletionResult == null ||
+                  removalResult.deletedSourceFactCount == 0) {
+                await loadFolder(folderPath: selectedFolderPath);
+                _prependActivityLog(
+                  const HistoricalArchivesLogEntryViewModel(
+                    label: 'No imported archive data found',
+                    message:
+                        'MessageLens did not find source-scoped imported rows for the selected archive source.',
+                  ),
+                );
+                return;
+              }
+
+              await loadFolder(folderPath: selectedFolderPath);
+              _prependActivityLog(
+                HistoricalArchivesLogEntryViewModel(
+                  label: 'Imported archive data removed',
+                  message:
+                      'Deleted ${removalResult.deletedSourceFactCount} source fact rows and ${removalResult.deletedTopologyEdgeCount} topology rows for this source, then reprojected the conversation graph.',
+                ),
+              );
+            },
+          );
+    } on ArchiveMutationDeniedException catch (error) {
       _prependActivityLog(
         HistoricalArchivesLogEntryViewModel(
           label: 'Execution gate busy',
           message:
-              '${_describeExecutionOwnerLabel(currentOwner)} currently owns the execution gate. Archive removal must wait.',
-        ),
-      );
-      return;
-    }
-
-    ref.read(dbMaintenanceLockProvider.notifier).begin();
-    state = state.copyWith(
-      preflight: const HistoricalArchivesPreflightViewModel(
-        status: HistoricalArchivesPreflightStatus.running,
-        statusLabel: 'Removing imported archive data',
-        detail:
-            'Deleting previously imported source-scoped import rows for this source and refreshing graph-visible data.',
-      ),
-      activityLog: [
-        HistoricalArchivesLogEntryViewModel(
-          label: 'Removing imported archive data…',
-          message:
-              'Deleting previously imported archive rows for ${path.basename(selectedFolderPath)} and preparing a full rebuild.',
-        ),
-        ...state.activityLog,
-      ],
-      phases: _runningArchiveRemovalPhases(),
-    );
-
-    try {
-      final removalService = await ref.read(
-        sourceScopedArchiveGraphRemovalServiceProvider.future,
-      );
-      final removalResult = await removalService.removeArchiveSource(
-        folderPath: selectedFolderPath,
-      );
-      ref.read(messageDataVersionProvider.notifier).bump();
-
-      if (!removalResult.sourceWasRegistered ||
-          removalResult.deletionResult == null ||
-          removalResult.deletedSourceFactCount == 0) {
-        await loadFolder(folderPath: selectedFolderPath);
-        _prependActivityLog(
-          const HistoricalArchivesLogEntryViewModel(
-            label: 'No imported archive data found',
-            message:
-                'MessageLens did not find source-scoped imported rows for the selected archive source.',
-          ),
-        );
-        return;
-      }
-
-      await loadFolder(folderPath: selectedFolderPath);
-      _prependActivityLog(
-        HistoricalArchivesLogEntryViewModel(
-          label: 'Imported archive data removed',
-          message:
-              'Deleted ${removalResult.deletedSourceFactCount} source fact rows and ${removalResult.deletedTopologyEdgeCount} topology rows for this source, then reprojected the conversation graph.',
+              '${_describeExecutionOwnerLabel(error.currentOwner)} currently owns archive mutation authority. Archive removal must wait.',
         ),
       );
     } catch (error) {
@@ -550,9 +550,6 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         ],
         phases: _failedArchiveRemovalPhases(detail: detail),
       );
-    } finally {
-      ref.read(dbMaintenanceLockProvider.notifier).end();
-      executionGate.release(_historicalArchivesTestingOwner);
     }
   }
 
@@ -586,123 +583,126 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    final executionGate = ref.read(
-      graphMaintenanceExecutionGateProvider.notifier,
-    );
-    if (!executionGate.tryAcquire('historical-archives-import')) {
-      final currentOwner = ref
-          .read(graphMaintenanceExecutionGateProvider)
-          .owner;
+    try {
+      await ref
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<void>(
+            operation: ArchiveMutationOperation.historicalArchiveImport,
+            ownerLabel: 'historical-archives-import',
+            action: () async {
+              state = state.copyWith(
+                preflight: const HistoricalArchivesPreflightViewModel(
+                  status: HistoricalArchivesPreflightStatus.running,
+                  statusLabel: 'Import running',
+                  detail:
+                      'Importing archive messages from the selected folder, then preparing them for browsing.',
+                ),
+                activityLog: [
+                  HistoricalArchivesLogEntryViewModel(
+                    label: 'Beginning import…',
+                    message:
+                        'Starting archive import for ${path.basename(selectedFolderPath)}.',
+                  ),
+                  ...state.activityLog,
+                ],
+                phases: _runningArchiveImportPhases(),
+                resultSummaryLines: const [
+                  'Archive import is running.',
+                  'Imported archive messages will become visible after MessageLens finishes preparing them.',
+                ],
+              );
+
+              final archiveSources = await ref.read(
+                historicalArchiveSourcesProvider.future,
+              );
+              final archiveGraphImportService = await ref.read(
+                sourceScopedArchiveGraphImportServiceProvider.future,
+              );
+              final archiveResult = await archiveGraphImportService
+                  .importAndProject(
+                    folderPath: selectedFolderPath,
+                    sourceLabel: state.sourceLabel,
+                  );
+              ref.read(messageDataVersionProvider.notifier).bump();
+
+              ArchiveSourceInspector? archiveSourceInspector;
+              try {
+                archiveSourceInspector = await ref.read(
+                  archiveSourceInspectorProvider.future,
+                );
+              } catch (error, stackTrace) {
+                _logHistoricalArchivesWarning(
+                  ref,
+                  message: 'Archive source inspector unavailable after import',
+                  error: error,
+                  stackTrace: stackTrace,
+                );
+              }
+
+              final refreshedResult = await preflightHistoricalArchivesFolder(
+                folderPath: selectedFolderPath,
+                archiveSourceInspector: archiveSourceInspector,
+              );
+              final importedMessageCount =
+                  archiveResult.importResult.messages.insertedMessageCount;
+
+              final completedAtUtc = DateTime.now().toUtc().toIso8601String();
+              await archiveSources.upsertSourceMetadata(
+                HistoricalArchiveSourceMetadataUpdate(
+                  sourceChatDb: selectedChatDbPath,
+                  folderPath: selectedFolderPath,
+                  sourceLabel: refreshedResult.sourceLabel,
+                  chatDbStatusLabel: refreshedResult.chatDbStatusLabel,
+                  attachmentsStatusLabel:
+                      refreshedResult.attachmentsStatusLabel,
+                  preflightStatusLabel: 'Imported successfully',
+                  preflightDetail:
+                      'Archive import completed and messages were prepared for browsing.',
+                  totalMessages: refreshedResult.totalMessages,
+                  totalChats: refreshedResult.totalChats,
+                  totalHandles: refreshedResult.totalHandles,
+                  missingGuids: refreshedResult.missingGuids,
+                  earliestMessageUtc: refreshedResult.earliestMessageUtc,
+                  latestMessageUtc: refreshedResult.latestMessageUtc,
+                  dryRunNewMessages: refreshedResult.dryRunNewMessages,
+                  dryRunDuplicateMessages:
+                      refreshedResult.dryRunDuplicateMessages,
+                  lastImportFinishedAtUtc: completedAtUtc,
+                  lastImportSuccess: true,
+                  lastImportedMessageCount: importedMessageCount,
+                  updatedAtUtc: completedAtUtc,
+                ),
+              );
+
+              final refreshedState = _workflowStateFromPreflightResult(
+                refreshedResult,
+              );
+              state = refreshedState.copyWith(
+                activityLog: [
+                  HistoricalArchivesLogEntryViewModel(
+                    label: 'Import complete',
+                    message:
+                        'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)} and refreshed browsing data.',
+                  ),
+                  ...refreshedState.activityLog,
+                ],
+                phases: _completedArchiveImportPhases(
+                  importedMessageCount: importedMessageCount,
+                ),
+                resultSummaryLines: [
+                  'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)}.',
+                  'Archive messages are ready to browse in MessageLens.',
+                ],
+              );
+            },
+          );
+    } on ArchiveMutationDeniedException catch (error) {
       _prependActivityLog(
         HistoricalArchivesLogEntryViewModel(
           label: 'Execution gate busy',
           message:
-              '${_describeExecutionOwnerLabel(currentOwner)} currently owns the execution gate. Archive import must wait.',
+              '${_describeExecutionOwnerLabel(error.currentOwner)} currently owns archive mutation authority. Archive import must wait.',
         ),
-      );
-      return;
-    }
-
-    ref.read(dbMaintenanceLockProvider.notifier).begin();
-    state = state.copyWith(
-      preflight: const HistoricalArchivesPreflightViewModel(
-        status: HistoricalArchivesPreflightStatus.running,
-        statusLabel: 'Import running',
-        detail:
-            'Importing archive messages from the selected folder, then preparing them for browsing.',
-      ),
-      activityLog: [
-        HistoricalArchivesLogEntryViewModel(
-          label: 'Beginning import…',
-          message:
-              'Starting archive import for ${path.basename(selectedFolderPath)}.',
-        ),
-        ...state.activityLog,
-      ],
-      phases: _runningArchiveImportPhases(),
-      resultSummaryLines: const [
-        'Archive import is running.',
-        'Imported archive messages will become visible after MessageLens finishes preparing them.',
-      ],
-    );
-
-    try {
-      final archiveSources = await ref.read(
-        historicalArchiveSourcesProvider.future,
-      );
-      final archiveGraphImportService = await ref.read(
-        sourceScopedArchiveGraphImportServiceProvider.future,
-      );
-      final archiveResult = await archiveGraphImportService.importAndProject(
-        folderPath: selectedFolderPath,
-        sourceLabel: state.sourceLabel,
-      );
-      ref.read(messageDataVersionProvider.notifier).bump();
-
-      ArchiveSourceInspector? archiveSourceInspector;
-      try {
-        archiveSourceInspector = await ref.read(
-          archiveSourceInspectorProvider.future,
-        );
-      } catch (error, stackTrace) {
-        _logHistoricalArchivesWarning(
-          ref,
-          message: 'Archive source inspector unavailable after import',
-          error: error,
-          stackTrace: stackTrace,
-        );
-      }
-
-      final refreshedResult = await preflightHistoricalArchivesFolder(
-        folderPath: selectedFolderPath,
-        archiveSourceInspector: archiveSourceInspector,
-      );
-      final importedMessageCount =
-          archiveResult.importResult.messages.insertedMessageCount;
-
-      final completedAtUtc = DateTime.now().toUtc().toIso8601String();
-      await archiveSources.upsertSourceMetadata(
-        HistoricalArchiveSourceMetadataUpdate(
-          sourceChatDb: selectedChatDbPath,
-          folderPath: selectedFolderPath,
-          sourceLabel: refreshedResult.sourceLabel,
-          chatDbStatusLabel: refreshedResult.chatDbStatusLabel,
-          attachmentsStatusLabel: refreshedResult.attachmentsStatusLabel,
-          preflightStatusLabel: 'Imported successfully',
-          preflightDetail:
-              'Archive import completed and messages were prepared for browsing.',
-          totalMessages: refreshedResult.totalMessages,
-          totalChats: refreshedResult.totalChats,
-          totalHandles: refreshedResult.totalHandles,
-          missingGuids: refreshedResult.missingGuids,
-          earliestMessageUtc: refreshedResult.earliestMessageUtc,
-          latestMessageUtc: refreshedResult.latestMessageUtc,
-          dryRunNewMessages: refreshedResult.dryRunNewMessages,
-          dryRunDuplicateMessages: refreshedResult.dryRunDuplicateMessages,
-          lastImportFinishedAtUtc: completedAtUtc,
-          lastImportSuccess: true,
-          lastImportedMessageCount: importedMessageCount,
-          updatedAtUtc: completedAtUtc,
-        ),
-      );
-
-      final refreshedState = _workflowStateFromPreflightResult(refreshedResult);
-      state = refreshedState.copyWith(
-        activityLog: [
-          HistoricalArchivesLogEntryViewModel(
-            label: 'Import complete',
-            message:
-                'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)} and refreshed browsing data.',
-          ),
-          ...refreshedState.activityLog,
-        ],
-        phases: _completedArchiveImportPhases(
-          importedMessageCount: importedMessageCount,
-        ),
-        resultSummaryLines: [
-          'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)}.',
-          'Archive messages are ready to browse in MessageLens.',
-        ],
       );
     } catch (error) {
       final detail = 'Archive import failed: $error';
@@ -768,9 +768,6 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
           detail,
         ],
       );
-    } finally {
-      ref.read(dbMaintenanceLockProvider.notifier).end();
-      executionGate.release('historical-archives-import');
     }
   }
 
@@ -816,7 +813,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 HistoricalArchivesWorkflowPanelViewModel historicalArchivesWorkflowPanelModel(
   Ref ref,
 ) {
-  final executionGateState = ref.watch(graphMaintenanceExecutionGateProvider);
+  final executionGateState = ref.watch(archiveMutationCoordinatorProvider);
   final isMaintenanceLocked = ref.watch(dbMaintenanceLockProvider);
   final workflowState = ref.watch(historicalArchivesWorkflowProvider);
   final currentMessagesDatabasePath = ref.watch(
@@ -833,7 +830,7 @@ HistoricalArchivesWorkflowPanelViewModel historicalArchivesWorkflowPanelModel(
 
 HistoricalArchivesWorkflowPanelViewModel
 buildHistoricalArchivesWorkflowPanelModel({
-  required GraphMaintenanceExecutionGateState executionGateState,
+  required ArchiveMutationCoordinatorState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
   required String currentMessagesDatabasePath,
@@ -868,7 +865,7 @@ buildHistoricalArchivesWorkflowPanelModel({
         currentMessagesDatabasePath: currentMessagesDatabasePath,
       ),
     HistoricalArchivesExecutionGateStatus.busy =>
-      'Import is unavailable because ${_describeExecutionOwnerPhrase(executionGateState.owner)} currently owns the execution gate.',
+      'Import is unavailable because ${_describeExecutionOwnerPhrase(executionGateState.ownerLabel)} currently owns archive mutation authority.',
     HistoricalArchivesExecutionGateStatus.blocked =>
       'Import is unavailable while reset or another maintenance operation is holding the message-data lock.',
   };
@@ -921,24 +918,24 @@ buildHistoricalArchivesWorkflowPanelModel({
 }
 
 HistoricalArchivesExecutionGateViewModel _buildExecutionGateViewModel({
-  required GraphMaintenanceExecutionGateState executionGateState,
+  required ArchiveMutationCoordinatorState executionGateState,
   required bool isMaintenanceLocked,
 }) {
-  if (executionGateState.isLocked) {
-    return HistoricalArchivesExecutionGateViewModel(
-      status: HistoricalArchivesExecutionGateStatus.busy,
-      statusLabel: 'Busy',
-      detail:
-          '${_describeExecutionOwnerLabel(executionGateState.owner)} currently owns the execution gate.',
-    );
-  }
-
   if (isMaintenanceLocked) {
     return const HistoricalArchivesExecutionGateViewModel(
       status: HistoricalArchivesExecutionGateStatus.blocked,
       statusLabel: 'Blocked',
       detail:
           'Message data reset or another maintenance operation is currently active.',
+    );
+  }
+
+  if (executionGateState.isLocked) {
+    return HistoricalArchivesExecutionGateViewModel(
+      status: HistoricalArchivesExecutionGateStatus.busy,
+      statusLabel: 'Busy',
+      detail:
+          '${_describeExecutionOwnerLabel(executionGateState.ownerLabel)} currently owns archive mutation authority.',
     );
   }
 
@@ -950,21 +947,10 @@ HistoricalArchivesExecutionGateViewModel _buildExecutionGateViewModel({
 }
 
 List<HistoricalArchivesLogEntryViewModel> _buildActivityLog({
-  required GraphMaintenanceExecutionGateState executionGateState,
+  required ArchiveMutationCoordinatorState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
 }) {
-  if (executionGateState.isLocked) {
-    return [
-      ...workflowState.activityLog,
-      HistoricalArchivesLogEntryViewModel(
-        label: 'Execution gate busy',
-        message:
-            '${_describeExecutionOwnerLabel(executionGateState.owner)} is running now. Historical archive import must wait until that pipeline owner finishes.',
-      ),
-    ];
-  }
-
   if (isMaintenanceLocked) {
     return [
       ...workflowState.activityLog,
@@ -972,6 +958,17 @@ List<HistoricalArchivesLogEntryViewModel> _buildActivityLog({
         label: 'Maintenance lock active',
         message:
             'Reset or another maintenance flow is active. Historical archive import cannot begin until that lock is released.',
+      ),
+    ];
+  }
+
+  if (executionGateState.isLocked) {
+    return [
+      ...workflowState.activityLog,
+      HistoricalArchivesLogEntryViewModel(
+        label: 'Execution gate busy',
+        message:
+            '${_describeExecutionOwnerLabel(executionGateState.ownerLabel)} is running now. Historical archive import must wait until that operation owner finishes.',
       ),
     ];
   }
@@ -1142,14 +1139,14 @@ bool _removeImportedArchiveDataEnabled({
 }
 
 String _removeImportedArchiveDataDetail({
-  required GraphMaintenanceExecutionGateState executionGateState,
+  required ArchiveMutationCoordinatorState executionGateState,
   required bool isMaintenanceLocked,
   required HistoricalArchivesWorkflowState workflowState,
   required String currentMessagesDatabasePath,
 }) {
   final targetPath = workflowState.archiveRemovalTargetChatDbPath;
   if (executionGateState.isLocked) {
-    return 'Removal is unavailable because ${_describeExecutionOwnerPhrase(executionGateState.owner)} currently owns the execution gate.';
+    return 'Removal is unavailable because ${_describeExecutionOwnerPhrase(executionGateState.ownerLabel)} currently owns archive mutation authority.';
   }
   if (isMaintenanceLocked) {
     return 'Removal is unavailable while reset or another maintenance operation is holding the message-data lock.';

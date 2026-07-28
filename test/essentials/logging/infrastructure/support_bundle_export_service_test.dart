@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:remember_this_text/essentials/archive_environment/domain.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_models.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_report_writer.dart';
 import 'package:remember_this_text/essentials/db/application/database_health_audit/database_health_audit_service.dart';
@@ -32,6 +33,7 @@ void main() {
           runtimeEnvironment: const _FakeRuntimeEnvironment(),
           reportWriter: const _FakeDatabaseHealthReportWriter(),
         ),
+        _testAuthority(tempDirectory),
       );
 
       final result = await service.export();
@@ -67,6 +69,7 @@ void main() {
         runtimeEnvironment: const _FakeRuntimeEnvironment(),
         reportWriter: const _RawDatabasePathHealthReportWriter(),
       ),
+      _testAuthority(tempDirectory),
     );
 
     final result = await service.export();
@@ -101,6 +104,7 @@ void main() {
         runtimeEnvironment: const _FakeRuntimeEnvironment(),
         reportWriter: _OutsideBundleHealthReportWriter(outsideDirectory),
       ),
+      _testAuthority(tempDirectory),
     );
 
     final result = await service.export();
@@ -145,6 +149,7 @@ void main() {
           runtimeEnvironment: const _FakeRuntimeEnvironment(),
           reportWriter: _SymlinkHealthReportWriter(outsideFile),
         ),
+        _testAuthority(tempDirectory),
       );
 
       final result = await service.export();
@@ -182,6 +187,7 @@ void main() {
         runtimeEnvironment: const _FakeRuntimeEnvironment(),
         reportWriter: const _FakeDatabaseHealthReportWriter(),
       ),
+      _testAuthority(tempDirectory),
     );
 
     final result = await service.export();
@@ -196,8 +202,23 @@ void main() {
   });
 }
 
+ArchiveAccessAuthority _testAuthority(Directory root) {
+  return ArchiveAccessAuthority(
+    identity: ResolvedArchiveIdentity(
+      environment: ArchiveEnvironment.test,
+      buildIdentity: ArchiveBuildIdentity.testHarness,
+      archiveInstanceId: ArchiveInstanceId(
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      ),
+      canonicalRootPath: root.path,
+      bundleIdentifier: 'com.bigbenchsoftware.MessageLens.tests',
+      productName: 'MessageLens Tests',
+    ),
+  );
+}
+
 class _FakeLogFileWriter extends LogFileWriter {
-  _FakeLogFileWriter(this._logDir);
+  _FakeLogFileWriter(this._logDir) : super(logDirectory: _logDir);
 
   final Directory _logDir;
 

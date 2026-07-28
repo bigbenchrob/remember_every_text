@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show archiveAccessAuthorityProvider;
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_service_provider.dart';
@@ -16,7 +18,6 @@ import 'package:remember_this_text/essentials/conversation_graph/application/mes
 import 'package:remember_this_text/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
-import 'package:remember_this_text/essentials/db/database_directory.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
@@ -32,25 +33,23 @@ import 'package:remember_this_text/features/address_book_folders/application/add
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
+import '../../../test_support/test_archive_fixture.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('onboardingGateProvider', () {
-    late Directory sharedDatabaseDir;
+    late TestArchiveFixture archiveFixture;
     late ProviderContainer container;
 
     setUpAll(() async {
-      sharedDatabaseDir = await Directory.systemTemp.createTemp(
-        'onboarding_gate_provider_shared_db_dir',
+      archiveFixture = await TestArchiveFixture.create(
+        prefix: 'onboarding_gate_provider_shared_db_dir_',
       );
-      databaseDirectoryPath = sharedDatabaseDir.path;
     });
 
     tearDownAll(() async {
-      if (sharedDatabaseDir.existsSync()) {
-        await sharedDatabaseDir.delete(recursive: true);
-      }
+      await archiveFixture.dispose();
     });
 
     tearDown(() {
@@ -60,6 +59,9 @@ void main() {
     test('maps permission-blocked environment to awaitingFda', () async {
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.permissionBlocked,
@@ -76,6 +78,9 @@ void main() {
     test('maps ready environment to notNeeded', () async {
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.ready,
@@ -91,6 +96,9 @@ void main() {
     test('keeps import failures inside awaitingUserAction contract', () async {
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.importFailed,
@@ -111,6 +119,9 @@ void main() {
       () async {
         container = ProviderContainer(
           overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
             onboardingEnvironmentReportProvider.overrideWith(
               (ref) async => _report(
                 state: OnboardingEnvironmentState.graphProjectionFailed,
@@ -132,6 +143,9 @@ void main() {
       () async {
         container = ProviderContainer(
           overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
             onboardingEnvironmentReportProvider.overrideWith(
               (ref) async => _report(
                 state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
@@ -229,6 +243,9 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           ..._lifecycleOverrides(),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           onboardingFullDiskAccessProvider.overrideWith(
@@ -270,6 +287,9 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
@@ -319,6 +339,9 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingEnvironmentReportProvider.overrideWith(
               (ref) async => _report(
@@ -376,6 +399,9 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
             onboardingEnvironmentReportProvider.overrideWith((ref) async {
               return _report(
                 state: shouldReset

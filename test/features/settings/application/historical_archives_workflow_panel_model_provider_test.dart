@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart';
+import 'package:remember_this_text/essentials/archive_environment/domain.dart'
+    show ArchiveMutationOperation;
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show ArchiveMutationCoordinatorState;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart';
@@ -16,7 +19,7 @@ void main() {
       'reports available execution gate when no shared pipeline owns it',
       () {
         final model = buildHistoricalArchivesWorkflowPanelModel(
-          executionGateState: const GraphMaintenanceExecutionGateState(),
+          executionGateState: const ArchiveMutationCoordinatorState(),
           isMaintenanceLocked: false,
           workflowState: buildInitialHistoricalArchivesWorkflowState(),
           currentMessagesDatabasePath: currentMessagesDatabasePath,
@@ -38,11 +41,13 @@ void main() {
       'reports busy execution gate when source-scoped import pipeline owns it',
       () {
         final model = buildHistoricalArchivesWorkflowPanelModel(
-          executionGateState: const GraphMaintenanceExecutionGateState(
-            owner: 'db-import-control',
+          executionGateState: const ArchiveMutationCoordinatorState(
+            operation: ArchiveMutationOperation.graphBuild,
+            ownerId: 'db-import-control#1',
+            ownerLabel: 'db-import-control',
             holdCount: 1,
           ),
-          isMaintenanceLocked: true,
+          isMaintenanceLocked: false,
           workflowState: buildInitialHistoricalArchivesWorkflowState(),
           currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
@@ -72,7 +77,7 @@ void main() {
       'reports blocked execution gate when maintenance lock is active without gate ownership',
       () {
         final model = buildHistoricalArchivesWorkflowPanelModel(
-          executionGateState: const GraphMaintenanceExecutionGateState(),
+          executionGateState: const ArchiveMutationCoordinatorState(),
           isMaintenanceLocked: true,
           workflowState: buildInitialHistoricalArchivesWorkflowState(),
           currentMessagesDatabasePath: currentMessagesDatabasePath,
@@ -113,7 +118,7 @@ void main() {
           );
 
       final model = buildHistoricalArchivesWorkflowPanelModel(
-        executionGateState: const GraphMaintenanceExecutionGateState(),
+        executionGateState: const ArchiveMutationCoordinatorState(),
         isMaintenanceLocked: false,
         workflowState: workflowState,
         currentMessagesDatabasePath: currentMessagesDatabasePath,

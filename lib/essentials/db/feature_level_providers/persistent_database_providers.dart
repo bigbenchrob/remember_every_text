@@ -1,21 +1,21 @@
 import 'dart:io';
 
 import 'package:drift/native.dart';
-import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveAccessAuthorityProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../source_scoped_import/infrastructure/import_database_provider.dart';
 import '../app_database_files.dart';
-import '../database_directory.dart';
 import '../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'db_maintenance_lock_provider.dart';
 
 part 'persistent_database_providers.g.dart';
 
-Future<void> _ensureDatabaseDirectoryExists() async {
-  final directory = Directory(databaseDirectoryPath);
+Future<void> _ensureDatabaseDirectoryExists(String rootPath) async {
+  final directory = Directory(rootPath);
   if (!directory.existsSync()) {
     await directory.create(recursive: true);
   }
@@ -26,10 +26,11 @@ Future<void> _ensureDatabaseDirectoryExists() async {
 Future<ImportDatabase> sourceScopedImportDatabase(
   SourceScopedImportDatabaseRef ref,
 ) async {
-  await _ensureDatabaseDirectoryExists();
+  final authority = ref.watch(archiveAccessAuthorityProvider);
+  await _ensureDatabaseDirectoryExists(authority.rootPath);
 
   final database = await ImportDatabase.open(
-    databaseDirectory: databaseDirectoryPath,
+    databaseDirectory: authority.rootPath,
     databaseName: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
   );
 
@@ -51,10 +52,11 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
     );
   }
 
-  await _ensureDatabaseDirectoryExists();
+  final authority = ref.watch(archiveAccessAuthorityProvider);
+  await _ensureDatabaseDirectoryExists(authority.rootPath);
   final dbPath = appDatabasePath(
     AppDatabaseFile.conversationGraph,
-    databaseDirectory: databaseDirectoryPath,
+    databaseDirectory: authority.rootPath,
   );
 
   final database = ConversationGraphDatabase(
@@ -80,10 +82,11 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
 /// Provides access to the overlay database for user preferences and customizations.
 @Riverpod(keepAlive: true)
 Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
-  await _ensureDatabaseDirectoryExists();
+  final authority = ref.watch(archiveAccessAuthorityProvider);
+  await _ensureDatabaseDirectoryExists(authority.rootPath);
   final dbPath = appDatabasePath(
     AppDatabaseFile.overlay,
-    databaseDirectory: databaseDirectoryPath,
+    databaseDirectory: authority.rootPath,
   );
 
   final database = OverlayDatabase(
@@ -103,9 +106,10 @@ Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
 
 /// Root path for the content-addressable attachment archive.
 ///
-/// Lives alongside the databases under Application Support:
-/// `~/Library/Application Support/com.bigbenchsoftware.MessageLens/attachment_archive/`
+/// Lives inside the admitted archive root alongside its databases.
 @Riverpod(keepAlive: true)
 String attachmentArchiveDirectory(AttachmentArchiveDirectoryRef ref) {
-  return path.join(databaseDirectoryPath, 'attachment_archive');
+  return ref
+      .watch(archiveAccessAuthorityProvider)
+      .resolvePath('attachment_archive');
 }

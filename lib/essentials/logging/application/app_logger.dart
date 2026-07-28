@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/feature_level_providers.dart'
+    show admittedArchiveAccessAuthorityProvider;
 import '../domain/log_entry.dart';
 import '../infrastructure/log_file_writer.dart';
 import '../infrastructure/macos_unified_log_bridge.dart';
@@ -22,18 +25,33 @@ const _kMaxInMemoryEntries = 500;
 /// contain `info`, `warn`, and `error` entries.
 @Riverpod(keepAlive: true)
 class AppLogger extends _$AppLogger {
-  final LogFileWriter _writer = LogFileWriter();
+  LogFileWriter? _writer;
   final MacosUnifiedLogBridge _unifiedLogBridge = MacosUnifiedLogBridge();
 
   @override
   List<LogEntry> build() {
-    _writer.init();
-    ref.onDispose(_writer.close);
+    final authority = ref.watch(admittedArchiveAccessAuthorityProvider);
+    if (authority != null) {
+      final writer = LogFileWriter(
+        logDirectory: Directory(authority.resolvePath('application_logs')),
+      );
+      _writer = writer;
+      unawaited(writer.init());
+      ref.onDispose(writer.close);
+    }
     return [];
   }
 
   /// The underlying file writer, exposed for the export service.
-  LogFileWriter get writer => _writer;
+  LogFileWriter get writer {
+    final writer = _writer;
+    if (writer == null) {
+      throw StateError(
+        'Persistent log access was requested before archive admission.',
+      );
+    }
+    return writer;
+  }
 
   void log(
     LogLevel level,
@@ -58,7 +76,7 @@ class AppLogger extends _$AppLogger {
     }
 
     // Async file write (fire-and-forget).
-    _writer.append(entry);
+    _writer?.append(entry);
 
     if (entry.level != LogLevel.debug) {
       unawaited(_unifiedLogBridge.log(entry));
