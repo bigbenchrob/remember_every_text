@@ -2,7 +2,7 @@
 tier: project
 scope: navigation
 owner: agent-per-project
-last_reviewed: 2026-07-18
+last_reviewed: 2026-07-29
 source_of_truth: doc
 links:
   - ./README.md
@@ -65,6 +65,7 @@ correctness, or an active UI-walk review.
 | Feature ownership | `40-FEATURES/` |
 | Cross-column vertical alignment | `09-CROSS-COLUMN-LAYOUT/` |
 | Cross-surface specs and ViewSpec/cassette architecture | `42-SPEC-SYSTEM/` |
+| Project-wide Presence interaction system | `43-PRESENCE/` |
 | Message Evidence Spine and graph-migration history | `55-READERS-INTEGRATORS-ORCHESTRATORS/` |
 | Active UI/UX walk and design language | `95-WALK-UI-TREE/` |
 
