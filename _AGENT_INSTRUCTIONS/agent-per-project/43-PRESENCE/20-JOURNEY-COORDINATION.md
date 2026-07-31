@@ -736,12 +736,12 @@ Every Presence Journey implementation must preserve these invariants:
 - [`10-EPISODE-MODEL.md`](10-EPISODE-MODEL.md) defines which interaction
   protocols exist.
 - This document defines how Journeys advance through truthful state.
-- [`30-RENDERING.md`](30-RENDERING.md) will define how Episodes become
+- [`30-RENDERING.md`](30-RENDERING.md) defines how Episodes become
   presentation.
-- [`40-AMBIENT-MOMENTS.md`](40-AMBIENT-MOMENTS.md) will define transient
-  content within suitable Episodes.
-- [`50-FEATURE-INTEGRATION.md`](50-FEATURE-INTEGRATION.md) will define how
-  features participate.
+- [`40-AMBIENT-MOMENTS.md`](40-AMBIENT-MOMENTS.md) defines transient content
+  within suitable Episodes.
+- [`50-FEATURE-INTEGRATION.md`](50-FEATURE-INTEGRATION.md) defines how features
+  participate.
 
 ## Review Checklist
 
