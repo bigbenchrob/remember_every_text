@@ -1,0 +1,266 @@
+Begin Iteration 1A implementation.
+
+Read first:
+
+- 21-PRESENCE-ITERATION-SIMPLE/00-START-HERE.md
+- 21-PRESENCE-ITERATION-SIMPLE/10-IMPLEMENTATION-PRINCIPLES.md
+- 21-PRESENCE-ITERATION-SIMPLE/20-CODEX-INSTRUCTIONS.md
+- the latest 03-BASIC-DB-AND-DART-ENTITIES-RESPONSE.md
+
+The controlling premise remains implementation-led redesign from first principles.
+
+Do not consult the historical 43-PRESENCE package as authority.
+
+This task implements only the persisted Journey definition and loading boundary.
+
+--------------------------------------------------------------------
+Goal
+--------------------------------------------------------------------
+
+Implement the smallest shared Presence data slice capable of loading:
+
+Journey 42
+    Three-step Tell Journey
+
+with ordered Steps:
+
+1. Hello one
+2. Hello two
+3. Hello three
+
+No runtime progress, Next, Done, page, fade, or interaction logic belongs in this task.
+
+--------------------------------------------------------------------
+Shared ownership
+--------------------------------------------------------------------
+
+Create the narrow shared subsystem under:
+
+lib/essentials/presence/
+
+Use the repository’s established DDD conventions.
+
+The shared subsystem owns only:
+
+- Journey;
+- Step;
+- their relational schema;
+- deterministic Step ordering;
+- the one-method loading contract;
+- the concrete Drift implementation.
+
+The disposable Journey 42 fixture remains test-owned in this slice.
+
+--------------------------------------------------------------------
+Domain entities
+--------------------------------------------------------------------
+
+Create plain Dart entities:
+
+Journey
+- int id
+- String name
+- List<Step> steps
+
+Step
+- int id
+- String text
+
+Requirements:
+
+- ordinary constructors;
+- final fields;
+- no Freezed;
+- no equality override unless a current test genuinely requires it;
+- no inheritance;
+- no Step subtype;
+- no position field on Step;
+- no runtime state.
+
+Place them using the repository’s established essentials/domain entity convention.
+
+--------------------------------------------------------------------
+Repository contract
+--------------------------------------------------------------------
+
+Create one domain-facing repository contract:
+
+Future<Journey> loadJourney(int id);
+
+Nothing else.
+
+Do not add:
+
+- create;
+- update;
+- delete;
+- search;
+- list;
+- caching;
+- generic queries;
+- abstract database interfaces;
+- future-facing methods.
+
+The contract exists so clients do not import Drift or generated row types.
+
+--------------------------------------------------------------------
+Drift schema
+--------------------------------------------------------------------
+
+Create an executor-backed Drift store named:
+
+JourneyDefinitionStore
+
+Use:
+
+journeys
+- id: integer primary key
+- name: text not null
+
+steps
+- id: integer primary key
+- journey_id: integer not null, foreign key to journeys.id
+- position: integer not null, non-negative
+- text: text not null
+
+Required relational constraints:
+
+- primary key on journeys.id;
+- primary key on steps.id;
+- foreign key from steps.journey_id to journeys.id;
+- unique (journey_id, position);
+- position >= 0;
+- foreign-key enforcement enabled.
+
+Do not add:
+
+- cascade deletion;
+- timestamps;
+- status;
+- version;
+- Step type;
+- action;
+- completion criterion;
+- JSON;
+- metadata;
+- physical filename;
+- provider;
+- migration policy beyond the minimum schema version required by Drift.
+
+The store accepts a Drift executor.
+
+Do not decide physical storage.
+
+--------------------------------------------------------------------
+Concrete repository
+--------------------------------------------------------------------
+
+Create:
+
+DriftJourneyRepository
+
+It implements JourneyRepository.
+
+Its loadJourney(int id) method must:
+
+1. load the Journey row;
+2. load its Step rows ordered by position ascending;
+3. create Step entities;
+4. return one Journey containing the ordered Steps.
+
+Use neutral generated row names such as JourneyRow and StepRow if needed to avoid collisions with the domain entities.
+
+Do not add a mapper hierarchy or DTO layer.
+
+--------------------------------------------------------------------
+Test fixture
+--------------------------------------------------------------------
+
+Keep Journey 42 fixture data under test support.
+
+Seed:
+
+journeys
+42 | Three-step Tell Journey
+
+steps
+1 | 42 | 0 | Hello one
+2 | 42 | 1 | Hello two
+3 | 42 | 2 | Hello three
+
+Insert the Step rows out of order so the test proves that repository ordering is authoritative.
+
+Do not place this fixture in shared production infrastructure or a migration.
+
+--------------------------------------------------------------------
+Tests
+--------------------------------------------------------------------
+
+Add focused tests using an in-memory Drift executor.
+
+Required tests:
+
+1. Journey 42 loads with the expected id and name.
+2. It contains exactly three Steps.
+3. Steps are returned in position order despite out-of-order insertion.
+4. Step ids and text match the seed.
+5. Duplicate position within one Journey is rejected.
+6. An orphan Step is rejected.
+7. Negative position is rejected.
+8. The client-facing test imports JourneyRepository and domain entities, not Drift row types.
+
+Do not add runtime-progress, presentation, interaction, restart, or animation tests.
+
+--------------------------------------------------------------------
+Scope discipline
+--------------------------------------------------------------------
+
+Do not implement:
+
+- current Step;
+- Next;
+- Done;
+- progress state;
+- Journey run;
+- persistence across application launches;
+- physical presence.db;
+- providers;
+- page integration;
+- Tell subtype;
+- Ask;
+- Wait;
+- Coordinator;
+- Renderer;
+- historical Presence entities.
+
+Nothing may be added because it will probably be needed later.
+
+--------------------------------------------------------------------
+Validation
+--------------------------------------------------------------------
+
+Run:
+
+- Drift/Freezed code generation as required;
+- the focused tests;
+- analyzer;
+- architecture/dependency tripwires;
+- git diff --check.
+
+Do not manually edit generated files.
+
+--------------------------------------------------------------------
+Completion report
+--------------------------------------------------------------------
+
+Report:
+
+1. Every handwritten file created or modified.
+2. Every generated file created.
+3. The final file tree.
+4. The exact schema and constraints.
+5. How loadJourney preserves Step order.
+6. The fixture location.
+7. Test and analyzer results.
+8. Anything the project’s conventions forced beyond the conceptual model.
+9. Confirmation that no runtime, UI, or future Step behaviour was introduced.

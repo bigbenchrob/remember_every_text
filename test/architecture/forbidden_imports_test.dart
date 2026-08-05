@@ -319,6 +319,7 @@ const Set<String> _directSqliteWriteOpenAllowedFiles = {
 
 const Set<String> _nativeDriftExecutorAllowedFiles = {
   'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
+  'lib/features/presence_iteration_simple/infrastructure/development/journey_42_fixture.dart',
 };
 
 const Set<String> _physicalDatabaseConstructionAllowedFiles = {
@@ -428,6 +429,7 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/essentials/onboarding/application/onboarding_failure_storage_provider.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
   'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
+  'lib/features/presence_iteration_simple/presentation/view/steps/tell_step_view.dart',
   'lib/main.dart',
 };
 
@@ -1311,7 +1313,9 @@ void main() {
             'Production NativeDatabase construction should stay at the '
             'database provider implementation boundary. Feature code should '
             'consume injected Drift databases, repositories, or typed stores '
-            'instead of opening its own executor island.\n'
+            'instead of opening its own executor island. The explicitly '
+            'development-only Presence iteration fixture is the narrow '
+            'laboratory exception.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -2206,7 +2210,8 @@ void main() {
           reason:
               'Post-frame callbacks and microtasks can become hidden repair '
               'logic. Keep them inside explicit startup, onboarding, panel-stack, '
-              'or evidence-timeline lifecycle boundaries.\n'
+              'presentation-transition, or evidence-timeline lifecycle '
+              'boundaries.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },

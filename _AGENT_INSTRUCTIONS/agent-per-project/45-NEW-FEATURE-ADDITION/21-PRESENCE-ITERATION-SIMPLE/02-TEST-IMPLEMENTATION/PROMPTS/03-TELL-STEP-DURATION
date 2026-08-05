@@ -1,0 +1,198 @@
+Begin the next onboarding implementation experiment.
+
+Read first:
+
+- 00-ONBOARDING-STORY.md
+- 10-STARTUP-HOOK.md
+- SYSTEM-BOUNDARIES.md
+- the current onboarding implementation
+- the current TellStep implementation
+
+This remains implementation-led redesign from first principles.
+
+Do not consult the historical 43-PRESENCE package as authority.
+
+---
+
+## Purpose
+
+The current implementation has revealed a real interaction problem.
+
+Every Tell remains visible for the same duration.
+
+Watching the onboarding experience demonstrated that this feels unnatural.
+
+A short welcome message lingers too long.
+
+A long explanatory message requires more time.
+
+The implementation should therefore be revised.
+
+---
+
+## Important architectural clarification
+
+Do NOT think of this as "Journey waiting."
+
+Journey still knows nothing about timing.
+
+Journey still knows only one thing:
+
+The current Step reports success.
+
+The ownership is:
+
+Journey
+waits only for success.
+
+TellStep
+determines for itself when it has successfully completed its own presentation lifecycle.
+
+A Tell therefore owns:
+
+- fade in
+- visible presentation
+- visible hold duration
+- fade out
+- transparent pause
+- reporting success
+
+Journey must never know how long any of those phases lasted.
+
+---
+
+## Goal
+
+Each Tell Step should define how long it remains fully visible.
+
+TellStepView should continue to own:
+
+- fade timing
+- pause timing
+
+The Tell definition should own only:
+
+visible hold duration
+
+The visible hold duration is therefore part of the Tell Step's own completion rule.
+
+---
+
+## Implementation
+
+Revise the Tell definition to contain one additional Tell-specific field:
+
+visible hold duration
+
+Represent it in the simplest durable form suitable for the current schema.
+
+Likely:
+
+hold_duration_ms
+
+Do not introduce:
+
+- timing profiles
+- presentation policy
+- timing services
+- calculated reading speed
+- word-count heuristics
+- animation configuration objects
+
+The field exists only because the onboarding experiment demonstrated a real need.
+
+---
+
+## Tell lifecycle
+
+Tell completion becomes:
+
+fade in
+↓
+
+remain visible for this Tell's own hold duration
+↓
+
+fade out
+↓
+
+transparent pause
+↓
+
+report success
+
+Journey advances only after Tell reports success.
+
+---
+
+## Initial onboarding timings
+
+Use provisional values only.
+
+For example:
+
+Welcome
+≈ 2 seconds
+
+Before you get started...
+≈ 4 seconds
+
+Apple Full Disk Access explanation
+≈ 9–10 seconds
+
+Database explanation
+≈ 5–6 seconds
+
+These are intentionally approximate.
+
+The running experience will determine better values later.
+
+---
+
+## Ownership review
+
+After implementation answer explicitly:
+
+1.  Why is hold duration part of the Tell Step rather than Journey?
+
+2.  What now determines Tell completion?
+
+3.  Does Journey know anything more than it did before?
+
+4.  Does this preserve the rule:
+
+Journey knows only whether the current Step has completed successfully?
+
+5.  What future Step types would likely define completion differently?
+
+---
+
+## Scope
+
+Do not modify:
+
+- Journey
+- JourneyProgress
+- Ask
+- repository loading algorithm
+- production onboarding
+- startup
+- providers
+
+Do not introduce any abstraction beyond the one additional Tell-specific field.
+
+---
+
+## Verification
+
+Run:
+
+- all Presence tests
+- onboarding tests
+- analyzer
+- architecture tripwires
+- debug build
+- formatting
+- git diff --check
+
+Do not broaden the implementation.

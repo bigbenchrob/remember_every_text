@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' as sched;
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
@@ -37,6 +38,7 @@ import 'essentials/navigation/application/router.dart';
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart'
     show windowStateServiceProvider;
+import 'features/presence_iteration_simple/presentation/presence_iteration_simple_host.dart';
 import 'frb_generated.dart';
 
 /// This method initializes macos_window_utils and styles the window.
@@ -583,9 +585,21 @@ class App extends ConsumerWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(switchableDarkModeProvider);
+
+    if (kDebugMode) {
+      return MacosApp(
+        title: 'Presence Iteration Simple',
+        theme: MacosThemeData.light().copyWith(),
+        darkTheme: MacosThemeData.dark().copyWith(),
+        themeMode: themeMode,
+        debugShowCheckedModeBanner: false,
+        home: const PresenceIterationSimpleHost(),
+      );
+    }
+
     final router = ref.watch(goRouterProvider);
     ref.watch(chatDbChangeMonitorProvider);
-    final themeMode = ref.watch(switchableDarkModeProvider);
 
     return MacosApp.router(
       title: 'remember_that_text',
