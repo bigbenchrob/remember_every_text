@@ -20,6 +20,7 @@ import '../../db/feature_level_providers.dart'
     show attachmentArchiveDirectoryProvider, dbMaintenanceLockProvider;
 import '../domain/onboarding_environment_report.dart';
 import 'full_disk_access_provider.dart';
+import 'messages_source_history_sufficiency_policy.dart';
 import 'onboarding_database_probe_reader.dart';
 import 'onboarding_database_probe_reader_provider.dart';
 import 'onboarding_failure_storage_provider.dart';
@@ -27,7 +28,6 @@ import 'onboarding_failure_store.dart';
 
 part 'onboarding_environment_report_provider.g.dart';
 
-const int _sparseMessagesThreshold = 10;
 const int _automaticRecoveryMinimumImportRows = 25;
 const double _automaticRecoveryGraphToImportRatio = 0.5;
 
@@ -415,7 +415,7 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (sourceMessageCount != null &&
-        sourceMessageCount <= _sparseMessagesThreshold) {
+        !isMessagesSourceHistorySufficient(sourceMessageCount)) {
       return OnboardingEnvironmentState.sourceSparseOrUnsynced;
     }
 
@@ -490,7 +490,7 @@ class _OnboardingEnvironmentEvaluator {
 
     if (state == OnboardingEnvironmentState.sourceSparseOrUnsynced ||
         (sourceMessageCount != null &&
-            sourceMessageCount <= _sparseMessagesThreshold)) {
+            !isMessagesSourceHistorySufficient(sourceMessageCount))) {
       return OnboardingBlockerKind.sourceDataSparseOrUnsynced;
     }
 
@@ -594,7 +594,7 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingSyncPlausibility.unknown;
     }
 
-    if (sourceMessageCount <= _sparseMessagesThreshold) {
+    if (!isMessagesSourceHistorySufficient(sourceMessageCount)) {
       return OnboardingSyncPlausibility.likelySparseOrUnsynced;
     }
 
@@ -641,7 +641,7 @@ class _OnboardingEnvironmentEvaluator {
         usingPersistedImportFailure || usingPersistedGraphProjectionFailure;
     final importTracksSource =
         sourceMessageCount == null ||
-        sourceMessageCount <= _sparseMessagesThreshold ||
+        !isMessagesSourceHistorySufficient(sourceMessageCount) ||
         importCount >=
             (sourceMessageCount * _automaticRecoveryGraphToImportRatio).round();
     final graphClearlyIncomplete =

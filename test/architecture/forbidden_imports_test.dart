@@ -157,6 +157,7 @@ const Set<String> _archiveAccessAuthorityConsumerFiles = {
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
   'lib/features/attachments/application/video_thumbnail_cache_provider.dart',
+  'lib/features/presence_iteration_simple/application/development_contacts_source_provider.dart',
   'lib/main.dart',
 };
 
@@ -319,7 +320,6 @@ const Set<String> _directSqliteWriteOpenAllowedFiles = {
 
 const Set<String> _nativeDriftExecutorAllowedFiles = {
   'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
-  'lib/features/presence_iteration_simple/infrastructure/development/journey_42_fixture.dart',
 };
 
 const Set<String> _physicalDatabaseConstructionAllowedFiles = {
@@ -429,7 +429,6 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/essentials/onboarding/application/onboarding_failure_storage_provider.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
   'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
-  'lib/features/presence_iteration_simple/presentation/view/steps/tell_step_view.dart',
   'lib/main.dart',
 };
 
@@ -732,6 +731,250 @@ const Set<String> _archiveCompatibilityKeyConstructionAllowedFiles = {
 
 void main() {
   group('Architecture tripwires', () {
+    test('Presence remains independent of MessageLens features', () async {
+      final presenceFiles = await Directory('lib/essentials/presence')
+          .list(recursive: true)
+          .where((entry) => entry.path.endsWith('.dart'))
+          .toList();
+      final offenders = <String>[];
+      for (final file in presenceFiles.whereType<File>()) {
+        final source = await file.readAsString();
+        if (source.contains('/features/')) {
+          offenders.add(file.path);
+        }
+      }
+
+      expect(offenders, isEmpty);
+    });
+
+    test('Generic Test Agent contracts remain specialist agnostic', () async {
+      final offenders = <String>[];
+      for (final path in <String>[
+        'lib/essentials/presence/domain/entities/test_agent_id.dart',
+        'lib/essentials/presence/domain/services/test_agent.dart',
+        'lib/essentials/presence/domain/services/test_agent_resolver.dart',
+      ]) {
+        final source = await File(path).readAsString();
+        if (RegExp(
+          r'(?:package:flutter/|/onboarding/|/conversation_graph/|'
+          r'/address_book_folders/|chat\.db|\bSELECT\b|\bFDA\b|'
+          r'Full Disk Access)',
+          caseSensitive: false,
+        ).hasMatch(source)) {
+          offenders.add(path);
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Generic Test Agent identity, evaluation, and resolution must not '
+            'learn workflow or specialist meaning.',
+      );
+    });
+
+    test('Presence does not know Onboarding Agent identities', () async {
+      final offenders = <String>[];
+      await for (final entity in Directory(
+        'lib/essentials/presence',
+      ).list(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) {
+          continue;
+        }
+        final source = await entity.readAsString();
+        if (source.contains('onboarding.messages-source-history-sufficient') ||
+            source.contains('messagesSourceHistorySufficientTestAgentId')) {
+          offenders.add(entity.path);
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding owns its opaque Agent identities; Presence receives '
+            'only resolved generic TestAgent contracts.',
+      );
+    });
+
+    test('Generic TestStep reconstruction is workflow agnostic', () async {
+      final stepSource = await File(
+        'lib/essentials/presence/domain/entities/step.dart',
+      ).readAsString();
+      final testStepSource = stepSource.substring(
+        stepSource.indexOf('final class TestStep'),
+        stepSource.indexOf('final class OpenFdaSettingsStep'),
+      );
+      expect(testStepSource, contains('TestAgentId'));
+      expect(testStepSource, contains('TestAgent'));
+      expect(testStepSource, contains('trueDestinationTripDefinitionId'));
+      expect(testStepSource, contains('falseDestinationTripDefinitionId'));
+      expect(
+        testStepSource,
+        isNot(
+          matches(
+            RegExp(
+              r'(?:Onboarding|Messages|Contacts|AddressBook|FDA|Full Disk '
+              r'Access|chat\.db)',
+              caseSensitive: false,
+            ),
+          ),
+        ),
+      );
+
+      final repositorySource = await File(
+        'lib/essentials/presence/infrastructure/repositories/drift_presence_schedule_repository.dart',
+      ).readAsString();
+      final testReconstructionSource = repositorySource.substring(
+        repositorySource.indexOf('case testStepType:'),
+        repositorySource.indexOf('case openFdaSettingsStepType:'),
+      );
+      expect(testReconstructionSource, contains('TestAgentId'));
+      expect(testReconstructionSource, contains('_testAgentResolver.resolve'));
+      expect(testReconstructionSource, contains('TestStep'));
+      expect(
+        testReconstructionSource,
+        isNot(
+          matches(
+            RegExp(
+              r'(?:Onboarding|Messages|Contacts|AddressBook|FDA|Full Disk '
+              r'Access|chat\.db)',
+              caseSensitive: false,
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('Onboarding TestAgents remain routing agnostic', () async {
+      final offenders = <String>[];
+      for (final path in <String>[
+        'lib/essentials/onboarding/application/messages_source_readiness_test_agent.dart',
+        'lib/essentials/onboarding/application/contacts_source_readiness_test_agent.dart',
+        'lib/essentials/onboarding/application/messages_source_history_sufficiency_test_agent.dart',
+      ]) {
+        final source = await File(path).readAsString();
+        if (RegExp(
+          r'(?:entities/(?:step|trip|schedule_definition)\.dart|'
+          r'presence_scheduler\.dart|TripDefinitionId|TestStep|ScheduleDefinition)',
+        ).hasMatch(source)) {
+          offenders.add(path);
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding TestAgents establish Boolean facts and must not know '
+            'Presence routing or workflow geometry.',
+      );
+    });
+
+    test('Specialist source readers do not depend on Presence routing', () async {
+      final offenders = <String>[];
+      for (final path in <String>[
+        'lib/essentials/conversation_graph/application/monitor/chat_db_source_probe_reader.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart',
+        'lib/features/address_book_folders/infrastructure/repositories/address_book_folder_repository.dart',
+        'lib/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart',
+        'lib/essentials/onboarding/application/messages_source_history_count_reader.dart',
+        'lib/essentials/onboarding/infrastructure/persistence/probe_messages_source_history_count_reader.dart',
+      ]) {
+        final source = await File(path).readAsString();
+        if (RegExp(
+          r'(?:/presence/|PresenceScheduler|ScheduleDefinition|TripDefinition|'
+          r'TestStep|TestAgentResolver)',
+        ).hasMatch(source)) {
+          offenders.add(path);
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Specialists establish facts or perform platform work; they do '
+            'not know Presence routing or composition.',
+      );
+    });
+
+    test(
+      'Presence and Onboarding do not depend on the development harness',
+      () async {
+        final offenders = <String>[];
+        for (final root in <String>[
+          'lib/essentials/presence',
+          'lib/essentials/onboarding',
+        ]) {
+          await for (final entity in Directory(root).list(recursive: true)) {
+            if (entity is! File || !entity.path.endsWith('.dart')) {
+              continue;
+            }
+            final source = await entity.readAsString();
+            if (source.contains('presence_iteration_simple')) {
+              offenders.add(entity.path);
+            }
+          }
+        }
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'The development harness may consume Presence and Onboarding; '
+              'neither permanent subsystem may import the harness.',
+        );
+      },
+    );
+
+    test('Active repository ignores frozen Boolean subtype tables', () async {
+      final source = await File(
+        'lib/essentials/presence/infrastructure/repositories/drift_presence_schedule_repository.dart',
+      ).readAsString();
+
+      expect(source, isNot(contains('fdaTestStepDefinitions')));
+      expect(source, isNot(contains('contactsSourceReadinessStepDefinitions')));
+    });
+
+    test('application composition constructs the TestAgent resolver', () async {
+      final source = await File(
+        'lib/features/presence_iteration_simple/application/presence_experiment_test_agent_resolver_provider.dart',
+      ).readAsString();
+
+      expect(source, contains('buildOnboardingTestAgentBindings'));
+      expect(source, contains('ImmutableTestAgentResolver'));
+      expect(source, contains('developmentContactsSourceReadinessTestAgent'));
+    });
+
+    test(
+      'Presence Scheduler and Trip depend only on Step completion',
+      () async {
+        final offenders = <String>[];
+        for (final path in <String>[
+          'lib/essentials/presence/domain/services/presence_scheduler.dart',
+          'lib/essentials/presence/domain/entities/trip.dart',
+        ]) {
+          final source = await File(path).readAsString();
+          if (RegExp(
+            r'\b(?:TestAgent|TestAgentResolver|OpenFdaSettingsStep|'
+            r'FdaSettingsOpeningAuthority)\b|/onboarding/',
+          ).hasMatch(source)) {
+            offenders.add(path);
+          }
+        }
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Source-readiness and Settings behavior belongs to concrete '
+              'Steps and supplied Agents, not Trip or PresenceScheduler.',
+        );
+      },
+    );
+
     test('Do not import flutter_riverpod', () async {
       final libDir = Directory('lib');
       final bad = <String>[];
@@ -1313,9 +1556,7 @@ void main() {
             'Production NativeDatabase construction should stay at the '
             'database provider implementation boundary. Feature code should '
             'consume injected Drift databases, repositories, or typed stores '
-            'instead of opening its own executor island. The explicitly '
-            'development-only Presence iteration fixture is the narrow '
-            'laboratory exception.\n'
+            'instead of opening its own executor island.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -1350,8 +1591,8 @@ void main() {
             'provider implementation boundary. Infrastructure repositories may '
             'open source/probe SQLite databases for one-off reads, but they '
             'must not construct ImportDatabase, OverlayDatabase, '
-            'ConversationGraphDatabase, or native Drift executors as provider '
-            'islands.\n'
+            'ConversationGraphDatabase, PresenceDatabase, or native Drift '
+            'executors as provider islands.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });

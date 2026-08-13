@@ -24,11 +24,18 @@ final class DevelopmentArchiveRootOverrideResolver {
   String resolveExpectedRoot({
     required ArchiveEnvironment environment,
     required String defaultRootPath,
+    bool requireConfiguredOverride = false,
     Map<String, String>? processEnvironment,
   }) {
     final environmentValues = processEnvironment ?? Platform.environment;
     final configuredValue = environmentValues[environmentVariableName]?.trim();
     if (configuredValue == null || configuredValue.isEmpty) {
+      if (requireConfiguredOverride) {
+        throw ArchiveAdmissionException(
+          ArchiveAdmissionFailure.unavailableDevelopmentRootOverride,
+          '$environmentVariableName is required by this development build.',
+        );
+      }
       return path.normalize(defaultRootPath);
     }
 

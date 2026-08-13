@@ -26,6 +26,86 @@ class RunnerTests: XCTestCase {
     XCTAssertTrue(claim.productionSignatureIsValid)
   }
 
+  func testFDAExperimentClaimUsesDevelopmentRoot() throws {
+    let configuredRootURL = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(
+      at: configuredRootURL,
+      withIntermediateDirectories: true
+    )
+    addTeardownBlock {
+      try? FileManager.default.removeItem(at: configuredRootURL)
+    }
+
+    let resolver = MessageLensNativeArchiveClaimResolver(
+      bundleInfo: [
+        "MessageLensArchiveEnvironment": "development",
+        "MessageLensArchiveBuildIdentity": "fdaExperiment",
+        "MessageLensExpectedSigningIdentity": "",
+        "CFBundleDisplayName": "MessageLens FDA Experiment",
+      ],
+      bundleIdentifier: "com.bigbenchsoftware.MessageLens.fdaexperiment",
+      applicationSupportURL: URL(fileURLWithPath: "/tmp/ApplicationSupport"),
+      processEnvironment: [
+        "MESSAGELENS_DEVELOPMENT_ARCHIVE_ROOT": configuredRootURL.path
+      ],
+      signatureValidator: { _ in false }
+    )
+
+    let claim = try resolver.resolve()
+
+    XCTAssertEqual(claim.environment, .development)
+    XCTAssertEqual(claim.buildIdentity, .fdaExperiment)
+    XCTAssertEqual(
+      claim.canonicalRootURL,
+      configuredRootURL.resolvingSymlinksInPath().standardizedFileURL
+    )
+  }
+
+  func testFDAExperimentRejectsMissingDevelopmentRootOverride() {
+    let resolver = MessageLensNativeArchiveClaimResolver(
+      bundleInfo: [
+        "MessageLensArchiveEnvironment": "development",
+        "MessageLensArchiveBuildIdentity": "fdaExperiment",
+        "MessageLensExpectedSigningIdentity": "",
+        "CFBundleDisplayName": "MessageLens FDA Experiment",
+      ],
+      bundleIdentifier: "com.bigbenchsoftware.MessageLens.fdaexperiment",
+      applicationSupportURL: URL(fileURLWithPath: "/tmp/ApplicationSupport"),
+      processEnvironment: [:],
+      signatureValidator: { _ in false }
+    )
+
+    XCTAssertThrowsError(try resolver.resolve()) { error in
+      XCTAssertEqual(
+        error as? MessageLensNativeArchiveClaimError,
+        .missingConfiguration("MESSAGELENS_DEVELOPMENT_ARCHIVE_ROOT")
+      )
+    }
+  }
+
+  func testDevelopmentClaimRejectsFDAExperimentApplicationIdentity() {
+    let resolver = MessageLensNativeArchiveClaimResolver(
+      bundleInfo: [
+        "MessageLensArchiveEnvironment": "development",
+        "MessageLensArchiveBuildIdentity": "developmentDebug",
+        "MessageLensExpectedSigningIdentity": "",
+        "CFBundleDisplayName": "MessageLens FDA Experiment",
+      ],
+      bundleIdentifier: "com.bigbenchsoftware.MessageLens.fdaexperiment",
+      applicationSupportURL: URL(fileURLWithPath: "/tmp/ApplicationSupport"),
+      processEnvironment: [:],
+      signatureValidator: { _ in false }
+    )
+
+    XCTAssertThrowsError(try resolver.resolve()) { error in
+      XCTAssertEqual(
+        error as? MessageLensNativeArchiveClaimError,
+        .applicationIdentityMismatch
+      )
+    }
+  }
+
   func testBuildEnvironmentMismatchIsRejected() {
     var bundleInfo = developmentBundleInfo()
     bundleInfo["MessageLensArchiveBuildIdentity"] = "productionRelease"

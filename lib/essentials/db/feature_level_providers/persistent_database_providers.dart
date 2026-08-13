@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../archive_environment/feature_level_providers.dart'
     show archiveAccessAuthorityProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
+import '../../presence/infrastructure/data_sources/local/presence_database.dart';
 import '../../source_scoped_import/infrastructure/import_database_provider.dart';
 import '../app_database_files.dart';
 import '../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
@@ -90,6 +91,31 @@ Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
   );
 
   final database = OverlayDatabase(
+    NativeDatabase.createInBackground(File(dbPath)),
+  );
+
+  await database.doWhenOpened((_) async {
+    await database.customStatement('PRAGMA foreign_keys = ON');
+  });
+
+  ref.onDispose(() async {
+    await database.close();
+  });
+
+  return database;
+}
+
+/// Provides the durable Schedule/Trip experiment database.
+@Riverpod(keepAlive: true)
+Future<PresenceDatabase> presenceDatabase(PresenceDatabaseRef ref) async {
+  final authority = ref.watch(archiveAccessAuthorityProvider);
+  await _ensureDatabaseDirectoryExists(authority.rootPath);
+  final dbPath = appDatabasePath(
+    AppDatabaseFile.presence,
+    databaseDirectory: authority.rootPath,
+  );
+
+  final database = PresenceDatabase(
     NativeDatabase.createInBackground(File(dbPath)),
   );
 

@@ -35,6 +35,51 @@ void main() {
       );
     });
 
+    test('admits the exact FDA experiment identity as development', () {
+      final resolved = validator.validate(
+        claim: _claim(
+          environment: ArchiveEnvironment.development,
+          buildIdentity: ArchiveBuildIdentity.fdaExperiment,
+          rootPath: developmentRoot,
+        ),
+        marker: _marker(ArchiveEnvironment.development),
+      );
+
+      expect(resolved.environment, ArchiveEnvironment.development);
+      expect(
+        resolved.bundleIdentifier,
+        ArchiveIdentityValidator.fdaExperimentBundleIdentifier,
+      );
+      expect(
+        resolved.productName,
+        ArchiveIdentityValidator.fdaExperimentProductName,
+      );
+    });
+
+    test('normal development identity cannot claim the FDA experiment app', () {
+      expect(
+        () => validator.validate(
+          claim: const NativeArchiveClaim(
+            environment: ArchiveEnvironment.development,
+            buildIdentity: ArchiveBuildIdentity.developmentDebug,
+            bundleIdentifier:
+                ArchiveIdentityValidator.fdaExperimentBundleIdentifier,
+            productName: ArchiveIdentityValidator.fdaExperimentProductName,
+            canonicalRootPath: developmentRoot,
+            productionSignatureIsValid: true,
+          ),
+          marker: _marker(ArchiveEnvironment.development),
+        ),
+        throwsA(
+          isA<ArchiveAdmissionException>().having(
+            (error) => error.failure,
+            'failure',
+            ArchiveAdmissionFailure.bundleIdentifierMismatch,
+          ),
+        ),
+      );
+    });
+
     test('admits production only with valid signature evidence', () {
       expect(
         () => validator.validate(
@@ -173,11 +218,20 @@ NativeArchiveClaim _claim({
     ),
   };
 
+  final resolvedApplicationIdentity =
+      buildIdentity == ArchiveBuildIdentity.fdaExperiment
+      ? (
+          bundleIdentifier:
+              ArchiveIdentityValidator.fdaExperimentBundleIdentifier,
+          productName: ArchiveIdentityValidator.fdaExperimentProductName,
+        )
+      : applicationIdentity;
+
   return NativeArchiveClaim(
     environment: environment,
     buildIdentity: buildIdentity,
-    bundleIdentifier: applicationIdentity.bundleIdentifier,
-    productName: applicationIdentity.productName,
+    bundleIdentifier: resolvedApplicationIdentity.bundleIdentifier,
+    productName: resolvedApplicationIdentity.productName,
     canonicalRootPath: rootPath,
     productionSignatureIsValid: productionSignatureIsValid,
   );

@@ -1,4 +1,5 @@
 import 'archive_admission_exception.dart';
+import 'archive_build_identity.dart';
 import 'archive_environment.dart';
 import 'archive_marker.dart';
 import 'canonical_archive_root_policy.dart';
@@ -21,6 +22,9 @@ final class ArchiveIdentityValidator {
   static const String defaultDevelopmentBundleIdentifier =
       'com.bigbenchsoftware.MessageLens.development';
   static const String defaultDevelopmentProductName = 'MessageLens Development';
+  static const String fdaExperimentBundleIdentifier =
+      'com.bigbenchsoftware.MessageLens.fdaexperiment';
+  static const String fdaExperimentProductName = 'MessageLens FDA Experiment';
 
   final CanonicalArchiveRootPolicy rootPolicy;
   final String productionBundleIdentifier;
@@ -53,7 +57,7 @@ final class ArchiveIdentityValidator {
       );
     }
 
-    final expectedIdentity = _expectedApplicationIdentity(claim.environment);
+    final expectedIdentity = _expectedApplicationIdentity(claim.buildIdentity);
     if (claim.bundleIdentifier != expectedIdentity.bundleIdentifier) {
       throw ArchiveAdmissionException(
         ArchiveAdmissionFailure.bundleIdentifierMismatch,
@@ -114,18 +118,24 @@ final class ArchiveIdentityValidator {
   }
 
   ({String bundleIdentifier, String productName}) _expectedApplicationIdentity(
-    ArchiveEnvironment environment,
+    ArchiveBuildIdentity buildIdentity,
   ) {
-    return switch (environment) {
-      ArchiveEnvironment.production => (
+    return switch (buildIdentity) {
+      ArchiveBuildIdentity.productionRelease => (
         bundleIdentifier: productionBundleIdentifier,
         productName: productionProductName,
       ),
-      ArchiveEnvironment.development => (
+      ArchiveBuildIdentity.developmentDebug ||
+      ArchiveBuildIdentity.developmentProfile ||
+      ArchiveBuildIdentity.developmentRelease => (
         bundleIdentifier: developmentBundleIdentifier,
         productName: developmentProductName,
       ),
-      ArchiveEnvironment.test => (
+      ArchiveBuildIdentity.fdaExperiment => (
+        bundleIdentifier: fdaExperimentBundleIdentifier,
+        productName: fdaExperimentProductName,
+      ),
+      ArchiveBuildIdentity.testHarness => (
         bundleIdentifier: 'com.bigbenchsoftware.MessageLens.tests',
         productName: 'MessageLens Tests',
       ),

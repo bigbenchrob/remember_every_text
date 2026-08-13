@@ -2,15 +2,18 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-07-27
+last_reviewed: 2026-08-12
 source_of_truth: doc
 links:
+       - ./access_authority_documentation/010-DATABASE-ACCESS-IN-PLAIN-ENGLISH.md
        - ../01-PROJECT/03-data-locations.md
        - ./03-db-address-book.md
        - ./04-db-chat.md
        - ./05-db-overlay.md
        - ./06-addressbook-path-resolution.md
        - ./07-overlay-database-independence.md
+       - ../45-NEW-FEATURE-ADDITION/21-PRESENCE-ITERATION-SIMPLE/15-PRESENCE-DATABASE-IN-PLAIN-ENGLISH.md
+       - ../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md
        - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
        - ../50-ENVIRONMENT-SAFETY/00-overview.md
 tests: []
@@ -19,6 +22,11 @@ tests: []
 # All Databases Accessed
 
 This is the canonical index for every SQLite database the project touches. Treat it as the jumping-off point before drilling into individual docs.
+
+For a plain-language explanation of archive roots, access authority, persistent
+providers, operation coordination, maintenance locking, and source identity,
+start with
+[`access_authority_documentation/010-DATABASE-ACCESS-IN-PLAIN-ENGLISH.md`](access_authority_documentation/010-DATABASE-ACCESS-IN-PLAIN-ENGLISH.md).
 
 ## 🚨 Read This First
 
@@ -72,6 +80,7 @@ Use these aliases consistently across docs, code comments, and conversations.
 | `db-import` | `macos_import.db` | Retired import cleanup file; old files may contain historical ledger tables, but current diagnostics name only archive-source cleanup inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | Admitted archive root, if present |
 | `db-working` | `working.db` | Retired working cleanup file; old projection tables may exist, but current diagnostics name only recovered-message cleanup inventory | No central app provider; reset/diagnostics treat as retired cleanup inventory | Admitted archive root, if present |
 | `db-overlay` | `user_overlays.db` | Long-lived user overrides, archive metadata, and window state | `overlayDatabaseProvider` | Admitted archive root |
+| `db-presence` | `presence.db` | Presence definitions, composition, run checkpoints, and execution trace | Physical access: `presenceDatabaseProvider`; ordinary execution: `presenceScheduleRepositoryProvider` | Admitted archive root |
 
 ## Coupled Database Groups
 
@@ -110,6 +119,10 @@ macOS AddressBook (db-address-book)
 - `db-import`: no central app provider remains; retired transitional cleanup file only.
 - `db-working`: no central app provider remains; retired transitional cleanup file only.
 - `db-overlay`: `overlayDatabaseProvider` (generated from `overlayDatabase`) for user intent and archive-source metadata.
+- `db-presence`: physical construction uses `presenceDatabaseProvider` from
+  the public DB seam. Presence execution consumes
+  `presenceScheduleRepositoryProvider`, which injects runtime Agent resolution
+  into generic persisted definitions.
 
 ## Concrete Import-Ledger Provider Access
 
@@ -129,8 +142,9 @@ instead of reaching for the concrete physical provider.
 
 ## Persistent vs One-Off Database Access
 
-- Persistent DB instances: import ledger, conversation graph, overlay, and any
-  future long-lived app database must be physically constructed in named files
+- Persistent DB instances: import ledger, conversation graph, overlay,
+  Presence, and any future long-lived app database must be physically
+  constructed in named files
   under `lib/essentials/db/feature_level_providers/` and exported by
   `lib/essentials/db/feature_level_providers.dart`.
 - Cross-feature DB lifecycle signals: the maintenance lock is consumed through
@@ -162,6 +176,7 @@ instead of reaching for the concrete physical provider.
 | Debug app-visible graph state | `db-graph-working` | Graph projection backing ordinary app reads. Manual edits are overwritten by graph rebuild. |
 | Inspect retired cleanup/diagnostic storage | `db-import` / `db-working` | Diagnostics/cleanup only; do not use as the authority for ordinary UI behavior or archive-source metadata. |
 | Review manual overrides (handles, UI prefs) | `db-overlay` | Persistent user customizations. Follow overlay independence rules before editing. |
+| Inspect Presence definitions, checkpoints, or trace | `db-presence` | Prefer the repository and development inspection tools. Agent identities are persisted declarations; runtime Agent implementations are supplied by composition. |
 
 ## Next References
 
@@ -172,5 +187,7 @@ instead of reaching for the concrete physical provider.
 - `05-db-overlay.md` — Persistent user overrides and preferences.
 - `06-addressbook-path-resolution.md` — Provider chain for locating the live AddressBook.
 - `07-overlay-database-independence.md` — Non-negotiable rule set for overlay/working separation.
+- `../45-NEW-FEATURE-ADDITION/21-PRESENCE-ITERATION-SIMPLE/15-PRESENCE-DATABASE-IN-PLAIN-ENGLISH.md` — Plain-language guide to `presence.db`.
+- `../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md` — Current generic Test persistence and ownership audit.
 - `10-group-import-working.md` — Retired import/working contract and source-scoped graph replacement note.
 - `../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md` — Table schemas for all ledger/projection databases.

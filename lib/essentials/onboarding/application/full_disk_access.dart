@@ -1,3 +1,5 @@
+typedef MessagesDatabaseReadProbe = int Function(String databasePath);
+
 abstract interface class FullDiskAccess {
   String get messagesDatabasePath;
 

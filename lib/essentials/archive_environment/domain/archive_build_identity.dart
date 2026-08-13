@@ -5,6 +5,7 @@ enum ArchiveBuildIdentity {
   developmentDebug(ArchiveEnvironment.development),
   developmentProfile(ArchiveEnvironment.development),
   developmentRelease(ArchiveEnvironment.development),
+  fdaExperiment(ArchiveEnvironment.development),
   productionRelease(ArchiveEnvironment.production),
   testHarness(ArchiveEnvironment.test);
 

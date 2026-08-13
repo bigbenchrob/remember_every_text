@@ -68,6 +68,25 @@ final overlayDatabaseProvider = FutureProvider<OverlayDatabase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef OverlayDatabaseRef = FutureProviderRef<OverlayDatabase>;
+String _$presenceDatabaseHash() => r'235e6a89c9ccc79a1605f7621fe3f41f712a360f';
+
+/// Provides the durable Schedule/Trip experiment database.
+///
+/// Copied from [presenceDatabase].
+@ProviderFor(presenceDatabase)
+final presenceDatabaseProvider = FutureProvider<PresenceDatabase>.internal(
+  presenceDatabase,
+  name: r'presenceDatabaseProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$presenceDatabaseHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef PresenceDatabaseRef = FutureProviderRef<PresenceDatabase>;
 String _$attachmentArchiveDirectoryHash() =>
     r'6f38c8d253932232572f43db5df683c9459ddd2d';
 

@@ -2,7 +2,7 @@
 tier: project
 scope: navigation
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-08-12
 source_of_truth: doc
 links:
   - ./README.md
@@ -46,6 +46,7 @@ the time of this IA pass. Verify status before implementation.
 | [`07-TAG-VISIBILITY-POLICY/`](07-TAG-VISIBILITY-POLICY/) | Planning package for visibility policy attached to Tag definitions, including suppressing low-value Conversation classes from ordinary browsing while keeping them explicitly retrievable. |
 | [`08-CROSS-COLUMN-LAYOUT-TRACKS/`](08-CROSS-COLUMN-LAYOUT-TRACKS/) | Foundational architecture package that evolved fixed title/context column bands into page-resolved horizontal layout tracks. Its Track and occupant model is now implemented and further refined by package 09; current operating guidance lives in `09-CROSS-COLUMN-LAYOUT/`. |
 | [`09-TRACK-SYSTEM-MATRIX-REFACTOR/`](09-TRACK-SYSTEM-MATRIX-REFACTOR/) | Completed Search-page migration to one authoritative `PageTrackLayoutMatrix`, placement-independent occupants, complete `CellId` rendering, and stable optional-panel geometry. Canonical operating guidance now lives in `09-CROSS-COLUMN-LAYOUT/`; this package preserves architecture, migration, and verification evidence. |
+| [`23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/`](23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/) | Completed generic Boolean Test consolidation. The [final audit](23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md) confirms opaque Agent resolution; the [next-concern plan](23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/10-NEXT-REAL-WORKFLOW-CONCERN-PLAN.md) identifies local history sufficiency, and the [Agent implementation record](23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md) establishes its factual boundary without extending the Schedule. |
 | [`archive-canonical-attachments/`](archive-canonical-attachments/) | Attachment/archive planning material. Verify against `25-ONBOARDING-AND-ARCHIVE/`, `55/84`, and current archive/recovery work before implementation. |
 | [`ephemeral-sidebar-projection/`](ephemeral-sidebar-projection/) | Sidebar projection planning material. Verify against the canonical spec/cassette system and current UI-walk direction before implementation. |
 

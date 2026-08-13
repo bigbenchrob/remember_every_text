@@ -30,6 +30,24 @@ void main() {
     expect(root, '/default/development');
   });
 
+  test('rejects a missing override when the build requires one', () {
+    expect(
+      () => resolver.resolveExpectedRoot(
+        environment: ArchiveEnvironment.development,
+        defaultRootPath: '/default/development',
+        requireConfiguredOverride: true,
+        processEnvironment: const <String, String>{},
+      ),
+      throwsA(
+        isA<ArchiveAdmissionException>().having(
+          (error) => error.failure,
+          'failure',
+          ArchiveAdmissionFailure.unavailableDevelopmentRootOverride,
+        ),
+      ),
+    );
+  });
+
   test('resolves an available development override canonically', () {
     final root = resolver.resolveExpectedRoot(
       environment: ArchiveEnvironment.development,

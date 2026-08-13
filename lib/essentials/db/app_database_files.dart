@@ -9,6 +9,7 @@ enum AppDatabaseFile {
   sourceScopedImport,
   conversationGraph,
   overlay,
+  presence,
   retiredMacosImport,
   retiredWorking,
 }
@@ -16,6 +17,7 @@ enum AppDatabaseFile {
 const _sourceScopedImportFile = 'macos_import_ss.db';
 const _conversationGraphFile = 'working_ss.db';
 const _overlayFile = 'user_overlays.db';
+const _presenceFile = 'presence.db';
 const _retiredMacosImportFile = 'macos_import.db';
 const _retiredWorkingFile = 'working.db';
 
@@ -24,6 +26,7 @@ String appDatabaseFileName(AppDatabaseFile databaseFile) {
     AppDatabaseFile.sourceScopedImport => _sourceScopedImportFile,
     AppDatabaseFile.conversationGraph => _conversationGraphFile,
     AppDatabaseFile.overlay => _overlayFile,
+    AppDatabaseFile.presence => _presenceFile,
     AppDatabaseFile.retiredMacosImport => _retiredMacosImportFile,
     AppDatabaseFile.retiredWorking => _retiredWorkingFile,
   };

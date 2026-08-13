@@ -13,12 +13,14 @@ enum MessageLensArchiveBuildIdentity: String {
   case developmentDebug
   case developmentProfile
   case developmentRelease
+  case fdaExperiment
   case productionRelease
   case testHarness
 
   var environment: MessageLensArchiveEnvironment {
     switch self {
-    case .developmentDebug, .developmentProfile, .developmentRelease:
+    case .developmentDebug, .developmentProfile, .developmentRelease,
+         .fdaExperiment:
       return .development
     case .productionRelease:
       return .production
@@ -184,7 +186,9 @@ final class MessageLensNativeArchiveClaimResolver {
 
     let bundleIdentifier = try requiredBundleIdentifier()
     let productName = try requiredInfoValue(named: "CFBundleDisplayName")
-    let expectedIdentity = Self.expectedApplicationIdentity(for: environment)
+    let expectedIdentity = Self.expectedApplicationIdentity(
+      for: buildIdentity
+    )
     guard bundleIdentifier == expectedIdentity.bundleIdentifier,
           productName == expectedIdentity.productName
     else {
@@ -204,6 +208,7 @@ final class MessageLensNativeArchiveClaimResolver {
 
     let canonicalRootURL = try resolveCanonicalRoot(
       for: environment,
+      buildIdentity: buildIdentity,
       bundleIdentifier: bundleIdentifier
     )
 
@@ -219,6 +224,7 @@ final class MessageLensNativeArchiveClaimResolver {
 
   private func resolveCanonicalRoot(
     for environment: MessageLensArchiveEnvironment,
+    buildIdentity: MessageLensArchiveBuildIdentity,
     bundleIdentifier: String
   ) throws -> URL {
     let variableName = "MESSAGELENS_DEVELOPMENT_ARCHIVE_ROOT"
@@ -226,6 +232,11 @@ final class MessageLensNativeArchiveClaimResolver {
       .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
     guard !configuredValue.isEmpty else {
+      if buildIdentity == .fdaExperiment {
+        throw MessageLensNativeArchiveClaimError.missingConfiguration(
+          variableName
+        )
+      }
       return applicationSupportURL.appendingPathComponent(
         bundleIdentifier,
         isDirectory: true
@@ -277,17 +288,22 @@ final class MessageLensNativeArchiveClaimResolver {
   }
 
   private static func expectedApplicationIdentity(
-    for environment: MessageLensArchiveEnvironment
+    for buildIdentity: MessageLensArchiveBuildIdentity
   ) -> (bundleIdentifier: String, productName: String) {
-    switch environment {
-    case .production:
+    switch buildIdentity {
+    case .productionRelease:
       return ("com.bigbenchsoftware.MessageLens", "MessageLens")
-    case .development:
+    case .developmentDebug, .developmentProfile, .developmentRelease:
       return (
         "com.bigbenchsoftware.MessageLens.development",
         "MessageLens Development"
       )
-    case .test:
+    case .fdaExperiment:
+      return (
+        "com.bigbenchsoftware.MessageLens.fdaexperiment",
+        "MessageLens FDA Experiment"
+      )
+    case .testHarness:
       return (
         "com.bigbenchsoftware.MessageLens.tests",
         "MessageLens Tests"

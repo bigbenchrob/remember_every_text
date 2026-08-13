@@ -3039,3 +3039,451 @@ production preservation authority mechanically enforceable.
 - Recorded that Debug used only the configured external development archive and
   that the installed production application remained the production
   preservation process.
+
+---
+
+# 2026-08-09 - Explain database access authority in plain English
+
+- Added
+  `10-DATABASES/access_authority_documentation/010-DATABASE-ACCESS-IN-PLAIN-ENGLISH.md`
+  as a human-oriented translation guide for the post-production-readiness data
+  access architecture.
+- Explained the development/production motivation, archive root as the complete
+  MessageLens data folder, archive admission as folder/build validation,
+  `ArchiveAccessAuthority` as the validated ticket, and persistent providers as
+  individual store openers beneath that ticket.
+- Distinguished archive access authority, protected mutation coordination,
+  the narrower derived maintenance/read-suppression signal, and source-scoped
+  imported-record identity.
+- Preserved the three-question summary and translation dictionary while
+  correcting historical filenames and avoiding the inaccurate implication
+  that maintenance locking universally revokes all database access.
+- Linked the guide from the canonical database inventory. No application code,
+  tests, configuration, databases, or assets were changed.
+
+---
+
+# 2026-08-09 - Implement the real FDA Presence slice
+
+- Added
+  `21-PRESENCE-ITERATION-SIMPLE/03-SCHEDULE-TRIP-EXPERIMENT/90-REAL-FDA-ONBOARDING-IMPLEMENTATION.md`
+  as the implementation record for the development-only five-Trip FDA
+  Schedule.
+- Updated `30-SYSTEM-BOUNDARIES.md` for the concrete Settings-opening authority,
+  real FDA client adapter, new Step subtype, and real fixture boundaries.
+- Updated the two plain-English Presence database guides for the schema-v5
+  payload-free `open_fda_settings` subtype.
+- Generated the real FDA topology artifact from persisted definitions. No
+  production onboarding architecture was changed.
+- Recorded successful verification: 52 focused Presence tests, 354
+  architecture tripwires, clean analyzer output, successful debug macOS build,
+  code generation, formatting, and whitespace validation.
+
+---
+
+# 2026-08-09 - Investigate the inaccurate FDA test
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/03-INACCURATE-FDA-TEST-INVESTIGATION.md`
+  with the concrete Presence-to-onboarding provider trace, exact protected
+  source path, and exact file operation used by the current FDA probe.
+- Recorded that the runtime uses `MacosFullDiskAccess` without a fake,
+  provider override, or cached result, but only opens and closes a plain
+  read-only file descriptor rather than performing an SQLite source read.
+- Distinguished the proven effective-access result from the unobservable macOS
+  authority behind it, recording the evidenced responsible-process,
+  development-signing, and file-specific `com.apple.macl` considerations.
+- Recorded that production onboarding shares the same narrow probe and that a
+  future truthful check should execute a minimal read-only query against the
+  protected `message` table. No FDA behavior, Presence route, Schedule, source
+  access policy, application code, or tests were changed.
+
+---
+
+# 2026-08-09 - Implement truthful Messages source readiness
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/04-TRUTHFUL-MESSAGES-SOURCE-READINESS-IMPLEMENTATION.md`
+  as the implementation record for the corrected protected-source probe,
+  operational authority naming, copy revision, five-Trip assessment, restart
+  seam, and specialist/Step/user knowledge boundaries.
+- Linked the preceding inaccurate-probe investigation to its corrective
+  implementation record.
+- Updated `21-PRESENCE-ITERATION-SIMPLE/30-SYSTEM-BOUNDARIES.md` so the narrow
+  Presence authority means Messages source readability rather than claiming
+  knowledge of the macOS Full Disk Access switch.
+- Recorded that the existing Conversation Graph source-probe reader is reused,
+  the exact SQLite operation is read-only and schema-specific, diagnostic
+  failures remain specialist-owned, and production onboarding remains outside
+  this development-only Presence slice.
+
+---
+
+# 2026-08-10 - Record the manual FDA-off readiness result
+
+- Updated the truthful Messages source-readiness implementation record with the
+  observed FDA-off development run.
+- Recorded from the append-only Presence trace that a fresh Trip 202 readiness
+  Step ran at 06:32:18 and selected readable Trip 205; this was not stale run
+  restoration.
+- Recorded that the app was launched beneath the VS Code Flutter debug chain,
+  the Debug artifact was ad hoc signed, and `chat.db` carried `com.apple.macl`.
+- Clarified that the operational probe truthfully established effective SQLite
+  readability for that process, while a controlled unreadable-path test needs
+  a directly launched, stably signed development artifact without a privileged
+  launcher in its responsible-process chain. No application code changed.
+
+---
+
+# 2026-08-10 - Prepare the isolated FDA experiment artifact
+
+- Updated the truthful Messages source-readiness implementation record with the
+  exact standalone experiment identity, development-root contract, mutual
+  native/Dart admission rule, process-lock consequence, and isolated build
+  procedure.
+- Recorded that the experiment uses
+  `com.bigbenchsoftware.MessageLens.fdaexperiment`, embeds only the established
+  external development archive root, and is signed with the installed Apple
+  Development identity.
+- Recorded that the build path neither changes nor launches production or the
+  normal development application and performs no TCC/Full Disk Access changes.
+
+---
+
+# 2026-08-10 - Validate the isolated FDA restart route
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/05-MANUAL-FDA-RESTART-VALIDATION.md`
+  as the focused manual evidence record for the directly launched, separately
+  signed FDA experiment.
+- Updated the truthful source-readiness implementation record with the exact
+  unreadable -> remediation -> Settings -> restart -> verification -> readable
+  route and the first presentation observed after restart.
+- Traced the initial apparently stale confirmation to Schedule 5 run 10, which
+  was still active at occurrence `5105` in the shared development
+  `presence.db`; the experiment host rendered that checkpoint truthfully.
+- Recorded that `Run Again` completed the transition to new run 11 at
+  occurrence `5101`, and that restart later reconstructed run 11 at verification
+  occurrence `5104` before a fresh SQLite source read selected confirmation.
+- Confirmed that no code correction, run-history deletion, database reset,
+  bundle-specific run rule, second runtime authority, or change to Schedule,
+  Trip, Step routing, Scheduler, or checkpoint semantics was warranted.
+
+---
+
+# 2026-08-10 - Plan the next real onboarding concern
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/06-NEXT-REAL-ONBOARDING-CONCERN-PLAN.md`
+  from the current production onboarding evaluator, gate, Environment
+  Readiness presentation, and Address Book source-resolution implementation.
+- Recorded the complete blocker precedence after Messages readability and
+  identified viable local Address Book discovery/readability as the immediate
+  next independent source blocker.
+- Proposed a bounded Schedule extension with one narrow
+  `ContactsSourceReadinessStep`, one Contacts remediation loop, and a combined
+  source-readiness confirmation, while preserving existing FDA Steps.
+- Recorded that the Messages-only confirmation has no independent semantic or
+  restart value once the Contacts test follows and should be replaced by the
+  combined final confirmation in a newly identified Schedule definition.
+- Confirmed that Trip, Scheduler, routing, checkpoint, restart, and trace
+  semantics need no change, and isolated the separate product decision created
+  by production treating Contacts as mandatory while current copy describes it
+  as primarily contextual enrichment.
+- No application code, tests, configuration, databases, generated files, or
+  production onboarding behavior changed.
+
+---
+
+# 2026-08-10 - Implement Contacts source readiness
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/07-CONTACTS-SOURCE-READINESS-IMPLEMENTATION.md`
+  as the implementation and manual-validation record for the next source
+  readiness slice.
+- Recorded reuse of the existing Address Book repository through a disposable
+  development-client adapter and a narrow Presence-owned Boolean authority.
+- Recorded schema version 6, the class-table Contacts readiness subtype, the
+  new Schedule 6 identities and topology, and preservation of Schedule 5
+  history.
+- Recorded removal of the Messages-only confirmation from the active fixture,
+  the ordinary Contacts remediation loop, restart behavior, user-facing copy,
+  and focused test evidence.
+- Updated the current Presence system-boundary document for the fifth concrete
+  Step subtype and its specialist ownership chain.
+- Preserved the unresolved production contradiction between Contacts as a hard
+  blocker and Contacts as contextual enrichment; no production integration or
+  product-policy change was made.
+
+---
+
+# 2026-08-10 - Add disposable Contacts-source test seam
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/08-DISPOSABLE-CONTACTS-SOURCE-TEST-SEAM.md`
+  as the implementation and manual-test record for controlled Contacts
+  unavailability.
+- Recorded the explicit Address Book `Sources` root as the chosen injection
+  point, preserving ordinary repository discovery, candidate validation, and
+  read-only SQLite querying.
+- Documented the development-archive paths for the deliberately missing source
+  root and the machine-local source-mode file needed to preserve the laboratory
+  condition across restart.
+- Added the exact unavailable, restart, retry, source-switch, and recovery
+  procedure, including the requirement that Contacts-only failure never enter
+  FDA remediation.
+- Updated the Contacts readiness implementation record to link to the controlled
+  procedure instead of suggesting manipulation of a live source.
+- Confirmed that production Contacts composition and all Presence semantics
+  remain unchanged.
+
+---
+
+# 2026-08-10 - Correct Schedule 6 definition-name collisions
+
+- Recorded that Trip and Step definition names are globally unique persisted
+  identities in the current Presence schema, not Schedule-local labels.
+- Updated the required-sources implementation record with Schedule 6's own
+  `required_sources_*` diagnostic names while preserving IDs, routing, copy,
+  and execution behavior.
+- Added regression coverage that preloads Schedule 5's retained Trip and Step
+  names before inserting Schedule 6, protecting coexistence in an established
+  development `presence.db`.
+
+---
+
+# 2026-08-12 - Consolidate Presence and onboarding ownership
+
+- Created
+  `45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/`
+  with a start page, repository-wide ownership inventory, target ownership
+  proposal, first-moves record, and prompt/response folders.
+- Established the distinction between generic Presence execution machinery,
+  onboarding-owned workflow meaning, specialist expertise, and disposable
+  development/inspection tooling.
+- Moved the required-sources Schedule, FDA and Contacts integration adapters,
+  and their real provider composition from the experiment feature into the
+  permanent `lib/essentials/onboarding/application/` home.
+- Moved the corresponding focused tests under
+  `test/essentials/onboarding/application/` and updated consumers/imports.
+- Recorded the onboarding-specific Step classes, subtype tables, authority
+  contracts, and repository reconstruction branches as unresolved boundary
+  pressure requiring the later TestStep/Agent design; no such generalization
+  was attempted.
+- Updated feature-planning, onboarding/archive, Essentials, Presence boundary,
+  and real-onboarding documentation for the clarified ownership model.
+- Preserved production `OnboardingGate`, `presence.db`, routing, checkpoint,
+  restart, trace, diagram, visualization, and source-readiness behavior.
+- Verified the move with 65 focused Onboarding tests, 47 Presence/harness
+  tests, 354 architecture tripwires, a clean analyzer, a successful macOS
+  Debug build, formatting, checked Mermaid regeneration, and
+  `git diff --check`.
+
+---
+
+# 2026-08-12 - Propose generic TestStep and opaque Agent resolution
+
+- Added the design-only
+  `04-GENERIC-TESTSTEP-AND-OPAQUE-AGENT-RESOLUTION-PROPOSAL.md` to the Presence
+  consolidation package.
+- Evaluated numeric, stable-string, scoped/versioned, and hybrid persisted
+  Agent identities; recommended a typed owner-qualified opaque string.
+- Recommended one Boolean-only `TestAgent`, an immutable explicitly injected
+  `TestAgentResolver`, and Schedule-scoped fail-fast resolution during
+  executable definition reconstruction.
+- Defined generic Test Agent/Test Step persistence, SQLite/runtime integrity
+  boundaries, onboarding and future-consumer walkthroughs, migration of the
+  two proven tests, and bounded failure semantics.
+- Kept `OpenFdaSettingsStep` outside TestStep and recorded it as transitional
+  debt rather than prematurely designing an Action Step.
+- Updated the consolidation package navigation and corrected its Onboarding
+  package cross-reference. No application source, tests, generated files,
+  database, schema, or build configuration changed.
+
+---
+
+# 2026-08-12 - Implement generic Test Agent contracts
+
+- Added the opaque `TestAgentId`, minimal Boolean `TestAgent` contract, and
+  immutable explicit `TestAgentResolver` under `essentials/presence`.
+- Added explicit duplicate-binding and missing-binding configuration failures;
+  ordinary `false` results and Agent exceptions retain their original meaning.
+- Recorded why explicit bindings and immutable construction make duplicate and
+  order-dependent composition failures mechanically rejectable.
+- Added focused identity, Agent, resolver, immutability, and architecture
+  coverage while leaving the current FDA and Contacts execution paths intact.
+- Added
+  `05-GENERIC-TEST-AGENT-CONTRACTS-IMPLEMENTATION.md` and linked it from the
+  consolidation start page and feature-addition index.
+- Made no database, schema, generic TestStep, repository reconstruction,
+  provider composition, or onboarding behavior change.
+
+---
+
+# 2026-08-12 - Add generic persisted Test grammar
+
+- Advanced `presence.db` from schema version 6 to 7 and added the identity-only
+  `test_agent_definitions` table plus the generic Boolean-routing
+  `test_step_definitions` table.
+- Added `test` to the permitted base Step discriminator without introducing
+  executable generic `TestStep` reconstruction.
+- Declared the stable Messages- and Contacts-readiness Agent identities and
+  prepared identity-preserving generic rows from existing specialized
+  definitions while retaining their active specialized base types.
+- Applied the approved stop condition because current runtime reconstruction
+  cannot consume `type = test`; documented the required atomic Slice 3 type
+  cutover rather than introducing a half-runnable live database.
+- Added file-backed migration evidence preserving Schedule, Trip, Step,
+  occurrence, run, checkpoint, trace, and route identities, plus fresh-schema
+  foreign-key and uniqueness coverage.
+- Updated both plain-language Presence database guides and added
+  `06-GENERIC-TESTSTEP-ADDITIVE-SCHEMA-IMPLEMENTATION.md` to the consolidation
+  package navigation.
+- Left runtime Agent resolution, current specialized Steps and authorities,
+  providers, Schedule behavior, and production onboarding unchanged.
+
+---
+
+# 2026-08-12 - Activate the generic TestStep runtime
+
+- Advanced `presence.db` from schema version 7 to 8 and atomically activated
+  the generic `test` discriminator for the already-prepared FDA and Contacts
+  test definitions without changing their IDs, routes, runs, checkpoints, or
+  trace history.
+- Added the generic `TestStep`, whose opaque `TestAgentId` is resolved through
+  the repository's injected `TestAgentResolver`; Presence contains no active
+  Messages- or Contacts-specific test reconstruction.
+- Made Schedule definition reconstruction the fail-fast executable-definition
+  boundary before run creation, replacement, or advancement so a missing Agent
+  binding cannot create a run, append trace, or move a checkpoint.
+- Retained the old FDA and Contacts subtype tables as frozen migration evidence;
+  active reconstruction and subtype integrity ignore them.
+- Added a deliberately temporary onboarding composition bridge that binds the
+  two existing source-readiness specialists to their stable Agent identities;
+  broader onboarding ownership cleanup remains Slice 4 work.
+- Added focused runtime, migration-continuation, resolver, routing, no-mutation,
+  exception, topology, and architecture coverage.
+- Updated the Presence database teaching guides and created
+  `07-GENERIC-TESTSTEP-RUNTIME-CUTOVER-IMPLEMENTATION.md` as the Slice 3
+  implementation record.
+- Regenerated Drift/Riverpod outputs and the checked Schedule Mermaid artifact;
+  verified 139 Presence, Onboarding, and harness tests, all 356 architecture
+  tripwires, a clean analyzer, a successful macOS Debug build, formatting, and
+  `git diff --check`.
+
+---
+
+# 2026-08-12 - Finalize Onboarding Test Agent composition
+
+- Made Onboarding the single owner of the two persisted source-readiness Agent
+  identities, their concrete Boolean Test Agents, and the explicit two-binding
+  contribution consumed by application composition.
+- Retired the redundant Messages and Contacts readiness-authority interfaces
+  and their transitional providers/adapters; each Test Agent now delegates
+  directly to the existing Messages or Address Book specialist boundary.
+- Moved immutable resolver construction out of the onboarding Schedule builder
+  and into the current Presence experiment application-composition provider.
+- Preserved fresh development Contacts source substitution by selecting the
+  concrete real/unavailable Agent on every evaluation.
+- Kept generic Presence ignorant of Onboarding IDs, providers, and specialist
+  meaning; `OpenFdaSettingsStep` remains the one explicitly deferred
+  Onboarding-specific dependency.
+- Created
+  `08-ONBOARDING-TEST-AGENT-COMPOSITION-IMPLEMENTATION.md` and updated the
+  consolidation package, feature index, and Onboarding ownership summary.
+- Verified 145 Presence, Onboarding, and development-harness tests, all 359
+  architecture tripwires, a clean analyzer, current generated outputs, checked
+  Mermaid regeneration, a successful macOS Debug build, formatting, and
+  `git diff --check`.
+
+---
+
+# 2026-08-12 - Consolidate Presence TestStep architecture
+
+- Created
+  `09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md` as the canonical post-Slice-4
+  ownership, runtime, persistence, migration-evidence, and remaining-debt
+  audit.
+- Confirmed the active persisted path is generic from
+  `step_definitions.type = test` through opaque `TestAgentId` resolution,
+  `TestStep`, `Trip`, and `PresenceScheduler`; no workflow-specific Boolean
+  branch remains in repository reconstruction.
+- Confirmed Onboarding owns its Agent IDs, concrete Agents, binding
+  contribution, workflow copy, and routes, while specialist source readers
+  retain SQL, Address Book, and platform expertise.
+- Classified the retained FDA and Contacts Boolean subtype tables as frozen
+  migration evidence. Active repository code neither reads nor writes them;
+  generated Drift APIs remain because mechanically removing their write
+  surface would require an unjustified schema-level change.
+- Replaced obsolete architecture checks centered on retired classes with
+  positive dependency-boundary checks for generic Test reconstruction,
+  specialist independence, application composition, frozen-table inactivity,
+  and Scheduler/Trip ignorance.
+- Updated the consolidation navigation, feature indexes, Essentials and
+  Onboarding ownership guides, the canonical database index, and both
+  plain-language `presence.db` guides. Marked the pre-generic inventory and
+  first mechanical move as historical records without rewriting Slices 1-4.
+- Confirmed `OpenFdaSettingsStep`, `FdaSettingsOpeningAuthority`, and their
+  active subtype table are the sole remaining domain-specific Presence debt;
+  no `ActionStep` or replacement abstraction was introduced.
+- Made no schema, migration, runtime, Schedule topology, copy, production
+  onboarding, provider, or generated-source change in this consolidation pass.
+- Verified 145 Presence, Onboarding, migration, and development-harness tests;
+  all 361 architecture tripwires; a clean analyzer; checked Mermaid
+  regeneration; a successful macOS Debug build; formatting; and
+  `git diff --check`. Code generation was not required.
+
+---
+
+# 2026-08-12 - Plan the next real Presence workflow concern
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/10-NEXT-REAL-WORKFLOW-CONCERN-PLAN.md`
+  from a code-first trace of the production Onboarding environment classifier,
+  gate, source probes, user actions, import state, and graph readiness.
+- Identified local Messages history sufficiency as the immediate concern after
+  required-source readability and retained Onboarding as the owner of its
+  meaning and threshold policy.
+- Confirmed the factual assessment fits the completed generic Boolean
+  `TestStep` and opaque Agent architecture, while the production `Import
+  Anyway` path exposes one concrete two-destination user-choice requirement.
+- Confirmed no second operation-shaped Step appeared and that `ActionStep` has
+  not earned a design pass.
+- Preserved `confirm_required_sources_readable` as an independently meaningful
+  restart checkpoint separating source access from source-history sufficiency.
+- Recorded the current `COUNT(*)` versus importable-message-count distinction
+  as an explicit pre-implementation measurement-contract decision rather than
+  silently changing production semantics.
+- Updated the package start page and feature-addition indexes for
+  discoverability. No application code, schema, generated source, production
+  onboarding, Schedule topology, or runtime behavior changed.
+
+---
+
+# 2026-08-12 - Implement the Messages history sufficiency TestAgent
+
+- Created
+  `11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md` as the
+  bounded implementation record for the next Onboarding factual specialist.
+- Preserved production's `COUNT(*) FROM message` semantics and shared its
+  existing 10/11 Onboarding policy with the new Agent without changing state,
+  blocker, gate, or presentation behavior.
+- Added the stable opaque identity
+  `onboarding.messages-source-history-sufficient`, a routing-agnostic concrete
+  Test Agent, and a narrow count reader over the existing read-only Onboarding
+  database probe.
+- Made unavailable counts fail truthfully instead of fabricating a Boolean and
+  verified every evaluation performs a fresh factual read.
+- Extended the Onboarding binding contribution and development resolver
+  composition to three distinct Agents while leaving generic Presence
+  contracts unchanged.
+- Added focused threshold, real SQLite all-row count, missing-GUID, failure,
+  fresh-read, provider, binding, resolver, parity, and architecture coverage.
+- Updated the package navigation, feature indexes, and Onboarding ownership
+  guide. The active required-sources Schedule, Mermaid topology, `presence.db`,
+  production gate, copy, presentation, routing, checkpointing, and trace were
+  unchanged.
+- Verified 17 focused tests, 82 complete Onboarding tests, 61 complete Presence
+  tests, 14 development-harness tests, all 362 architecture tripwires, clean
+  analysis, provider regeneration, unchanged Schedule diagram regeneration, a
+  successful macOS Debug build, formatting, and `git diff --check`.

@@ -25,7 +25,15 @@ wording as legacy/transitional.
 
 ## Key Ownership Boundaries
 
-- **`lib/essentials/onboarding/`** — bootstrap gate, environment evaluation, overlay presentation for workflow phases
+- **`lib/essentials/onboarding/`** — bootstrap gate, environment evaluation,
+  overlay presentation, onboarding-owned Presence Schedule meaning, stable
+  Test Agent identities, concrete specialist adapters, local Messages-history
+  sufficiency policy, and the explicit onboarding Test Agent binding
+  contribution
+- **`lib/essentials/presence/`** — generic Schedule, Trip, Step, routing,
+  checkpoint, run, trace, and persistence machinery; a shared `presence.db`
+  does not make Presence the semantic owner of onboarding, and Presence
+  receives an already-composed opaque Test Agent resolver
 - **`lib/features/environment_readiness/`** — current readiness panel content for `ViewSpec.environmentReadiness`
 - **`lib/essentials/navigation/`** — readiness panel synchronization, panel stack ownership, and sidebar parking
 - **`lib/essentials/source_scoped_import/`** — source-scoped import ledger
@@ -50,6 +58,8 @@ wording as legacy/transitional.
 
 ## Related Documentation
 
+- [`45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md`](../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md) — current generic TestAgent/TestStep ownership result
+- [`45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md`](../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md) — current Onboarding-owned local-history sufficiency Agent boundary
 - [`10-DATABASES/00-all-databases-accessed.md`](../10-DATABASES/00-all-databases-accessed.md) — database locations and access patterns
 - [`10-DATABASES/INVIOLATE_RULES.md`](../10-DATABASES/INVIOLATE_RULES.md) — overlay/working separation, no suppression
 - [`20-DATA-IMPORT-MIGRATION/01-overview.md`](../20-DATA-IMPORT-MIGRATION/01-overview.md) — source import, graph build, and retired storage cleanup/diagnostic boundaries

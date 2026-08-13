@@ -6,7 +6,7 @@ part of 'full_disk_access_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$fullDiskAccessHash() => r'563735492a74d978c31e7b88e1391090b1ddcec7';
+String _$fullDiskAccessHash() => r'bf81bb10c786210c9cad4ee145b3cc95d1333ff1';
 
 /// See also [fullDiskAccess].
 @ProviderFor(fullDiskAccess)

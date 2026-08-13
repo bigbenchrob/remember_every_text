@@ -21,7 +21,7 @@ import 'essentials/app_mode/feature_level_providers.dart'
 import 'essentials/archive_environment/application.dart'
     show ArchiveAdmissionService, admittedArchiveAccessAuthorityProvider;
 import 'essentials/archive_environment/domain.dart'
-    show ArchiveAccessAuthority, ArchiveIdentityValidator;
+    show ArchiveAccessAuthority, ArchiveBuildIdentity, ArchiveIdentityValidator;
 import 'essentials/archive_environment/infrastructure.dart'
     show
         DevelopmentArchiveRootOverrideResolver,
@@ -38,7 +38,7 @@ import 'essentials/navigation/application/router.dart';
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart'
     show windowStateServiceProvider;
-import 'features/presence_iteration_simple/presentation/presence_iteration_simple_host.dart';
+import 'features/presence_iteration_simple/presentation/linear_presence_experiment_host.dart';
 import 'frb_generated.dart';
 
 /// This method initializes macos_window_utils and styles the window.
@@ -127,6 +127,8 @@ Future<ArchiveAccessAuthority> _admitArchive() async {
   final expectedRoot = rootOverrideResolver.resolveExpectedRoot(
     environment: claim.environment,
     defaultRootPath: applicationSupportDirectory.path,
+    requireConfiguredOverride:
+        claim.buildIdentity == ArchiveBuildIdentity.fdaExperiment,
   );
   final rootPolicy = ExactCanonicalArchiveRootPolicy(
     canonicalRoots: {claim.environment: expectedRoot},
@@ -594,7 +596,7 @@ class App extends ConsumerWidget {
         darkTheme: MacosThemeData.dark().copyWith(),
         themeMode: themeMode,
         debugShowCheckedModeBanner: false,
-        home: const PresenceIterationSimpleHost(),
+        home: const LinearPresenceExperimentHost(),
       );
     }
 

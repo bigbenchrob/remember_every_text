@@ -43,7 +43,8 @@ Current `lib/essentials/` top-level areas include:
 | `navigation/` | App shell, active sidebar mode, center/right panel stacks, `ViewSpec` routing, sidebar parking, panel host widgets. |
 | `sidebar/` | `CassetteSpec`, stable cassette rack projection, ephemeral cassette projection, topology dispatch, cassette payload resolution, shared sidebar rendering. |
 | `search/` | Shared graph message search service, evidence selection, and retired search bridge handling where explicitly documented. |
-| `onboarding/` | Full Disk Access, graph readiness/build gate state, onboarding overlay lifecycle, environment reports, reset/recovery behavior. |
+| `onboarding/` | Full Disk Access, graph readiness/build gate state, onboarding overlay lifecycle, environment reports, reset/recovery behavior, and onboarding-owned Presence workflow definitions/integration. |
+| `presence/` | Generic Schedule, Trip, Step, routing, checkpoint, run, trace, and persistence machinery. It does not semantically own workflows merely because their definitions are stored in `presence.db`. |
 | `db/` | Centralized physical database providers, app database filename registry, and database infrastructure. |
 | `source_scoped_import/` | Production source-scoped import semantics, ledger schema, and importers for the source-scoped import ledger; physical DB provider construction remains in `db/`. |
 | `conversation_graph/` | Production graph projection/build/read semantics for the conversation graph projection; physical graph DB provider construction remains in `db/`. |
@@ -58,6 +59,11 @@ content is routed through essentials because essentials owns the surface.
 Path location alone does not determine architectural ownership; some
 contact-related logic is shared infrastructure while other contact-related
 logic remains feature-owned.
+
+The current generic Boolean Test boundary is recorded in the
+[`Presence TestStep consolidation audit`](../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md).
+Presence persists opaque Agent identities and generic Test routing; workflow
+owners supply concrete Agents through application composition.
 
 ## Global Flow State
 
@@ -218,6 +224,13 @@ Current essentials onboarding responsibilities:
   reimport, completion, and recovery.
 * `OnboardingCenterPanelSyncObserver` synchronizes FDA/user-action onboarding
   states into the center panel with `ViewSpec.environmentReadiness`.
+* Onboarding-owned Presence definitions decide what should be said, tested, and
+  remediated, and in what order; specialist systems retain the expertise used
+  to establish facts or perform operations.
+
+Presence is a separate essential. It owns how workflow definitions are stored,
+assembled, executed, routed, checkpointed, and traced. It does not own the
+business meaning of onboarding, archive ingestion, or future workflows.
 * `OnboardingStatus` and environment reports classify readiness and recovery
   states.
 
