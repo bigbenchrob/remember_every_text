@@ -1,3 +1,5 @@
+import '../../presence/domain/entities/choice_option.dart';
+import '../../presence/domain/entities/choice_value.dart';
 import '../../presence/domain/entities/schedule_definition.dart';
 import '../../presence/domain/entities/step.dart';
 import '../../presence/domain/entities/trip.dart';
@@ -24,6 +26,11 @@ const TripDefinitionId guideUnavailableContactsSourceTripId = TripDefinitionId(
 const TripDefinitionId confirmRequiredSourcesReadableTripId = TripDefinitionId(
   307,
 );
+const TripDefinitionId determineMessagesSourceHistorySufficiencyTripId =
+    TripDefinitionId(308);
+const TripDefinitionId guideSparseMessagesSourceHistoryTripId =
+    TripDefinitionId(309);
+
 ScheduleDefinition buildRequiredSourcesReadinessDefinition({
   required TestAgentResolver testAgentResolver,
   required FdaSettingsOpeningAuthority fdaSettingsOpeningAuthority,
@@ -33,6 +40,9 @@ ScheduleDefinition buildRequiredSourcesReadinessDefinition({
   );
   final contactsSourceReadinessTestAgent = testAgentResolver.resolve(
     contactsSourceReadableTestAgentId,
+  );
+  final messagesSourceHistorySufficiencyTestAgent = testAgentResolver.resolve(
+    messagesSourceHistorySufficientTestAgentId,
   );
   return ScheduleDefinition(
     id: requiredSourcesReadinessScheduleId,
@@ -148,7 +158,7 @@ ScheduleDefinition buildRequiredSourcesReadinessDefinition({
               testAgentId: contactsSourceReadableTestAgentId,
               testAgent: contactsSourceReadinessTestAgent,
               trueDestinationTripDefinitionId:
-                  confirmRequiredSourcesReadableTripId,
+                  determineMessagesSourceHistorySufficiencyTripId,
               falseDestinationTripDefinitionId: null,
             ),
           ],
@@ -186,8 +196,71 @@ ScheduleDefinition buildRequiredSourcesReadinessDefinition({
         ),
       ),
       ScheduleTripDefinition(
-        occurrenceId: 6107,
+        occurrenceId: 6108,
         position: 6,
+        trip: TripDefinition(
+          id: determineMessagesSourceHistorySufficiencyTripId,
+          name: 'determine_messages_source_history_sufficiency',
+          steps: <Step>[
+            TestStep(
+              id: 6801,
+              name: 'test_messages_source_history_sufficiency',
+              testAgentId: messagesSourceHistorySufficientTestAgentId,
+              testAgent: messagesSourceHistorySufficiencyTestAgent,
+              trueDestinationTripDefinitionId:
+                  confirmRequiredSourcesReadableTripId,
+              falseDestinationTripDefinitionId:
+                  guideSparseMessagesSourceHistoryTripId,
+            ),
+          ],
+        ),
+      ),
+      ScheduleTripDefinition(
+        occurrenceId: 6109,
+        position: 7,
+        trip: TripDefinition(
+          id: guideSparseMessagesSourceHistoryTripId,
+          name: 'guide_sparse_or_unsynced_messages_source',
+          steps: <Step>[
+            const TellStep(
+              id: 6901,
+              name: 'explain_sparse_messages_source_history',
+              text:
+                  'MessageLens found very little Messages history stored '
+                  'locally on this Mac.',
+            ),
+            const TellStep(
+              id: 6902,
+              name: 'guide_sparse_messages_source_history_choice',
+              text:
+                  'Messages history may still be synchronizing. You can allow '
+                  'more time and re-check, or continue with the local history '
+                  'currently available.',
+            ),
+            ChoiceStep(
+              id: 6903,
+              name: 'choose_sparse_messages_source_history_action',
+              options: <ChoiceOption>[
+                ChoiceOption(
+                  value: ChoiceValue('recheck'),
+                  label: 'Re-check',
+                  destinationTripDefinitionId:
+                      determineMessagesSourceHistorySufficiencyTripId,
+                ),
+                ChoiceOption(
+                  value: ChoiceValue('import_anyway'),
+                  label: 'Import Anyway',
+                  destinationTripDefinitionId:
+                      confirmRequiredSourcesReadableTripId,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      ScheduleTripDefinition(
+        occurrenceId: 6107,
+        position: 8,
         trip: TripDefinition(
           id: confirmRequiredSourcesReadableTripId,
           name: 'required_sources_confirmation',

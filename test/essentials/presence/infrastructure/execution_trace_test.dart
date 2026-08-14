@@ -57,7 +57,7 @@ void main() {
           .customSelect('PRAGMA user_version')
           .getSingle();
       final run = await repository.loadRun(1);
-      expect(version.read<int>('user_version'), 8);
+      expect(version.read<int>('user_version'), 9);
       expect(run.currentTripOccurrenceId, 1010);
       expect(run.currentTripDefinition?.id, const TripDefinitionId(10));
       final traceColumns = await opened

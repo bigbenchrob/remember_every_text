@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import '../../domain/entities/choice_option.dart';
+import '../../domain/entities/choice_value.dart';
 import '../../domain/entities/execution_trace_event.dart';
 import '../../domain/entities/schedule_definition.dart';
 import '../../domain/entities/schedule_run.dart';
@@ -34,6 +36,22 @@ final class DriftPresenceScheduleRepository
               ..where((table) => table.id.equals(scheduleDefinitionId)))
             .getSingleOrNull();
     return row != null;
+  }
+
+  @override
+  Stream<bool> watchLatestRunCompletion(int scheduleDefinitionId) {
+    final query = _database.select(_database.scheduleRuns)
+      ..where(
+        (table) => table.scheduleDefinitionId.equals(scheduleDefinitionId),
+      )
+      ..orderBy(<OrderClauseGenerator<ScheduleRuns>>[
+        (table) => OrderingTerm.desc(table.id),
+      ])
+      ..limit(1);
+
+    return query.watchSingleOrNull().map((run) {
+      return run != null && run.currentTripOccurrenceId == null;
+    }).distinct();
   }
 
   @override
@@ -94,6 +112,307 @@ final class DriftPresenceScheduleRepository
             );
       }
     });
+  }
+
+  @override
+  Future<void> installOrExtendDefinition(ScheduleDefinition definition) async {
+    _validateDefinition(definition);
+    if (!await definitionExists(definition.id)) {
+      await insertDefinition(definition);
+      return;
+    }
+
+    final existing = await loadDefinition(definition.id);
+    if (_sameScheduleDefinition(existing, definition)) {
+      return;
+    }
+    _validateAdditiveExtension(existing: existing, target: definition);
+
+    await _database.transaction(() async {
+      final existingTripIds = existing.trips
+          .map((scheduledTrip) => scheduledTrip.trip.id)
+          .toSet();
+      final addedTrips = definition.trips
+          .where(
+            (scheduledTrip) => !existingTripIds.contains(scheduledTrip.trip.id),
+          )
+          .map((scheduledTrip) => scheduledTrip.trip)
+          .toList(growable: false);
+
+      for (final trip in addedTrips) {
+        final storedTrip = await (_database.select(
+          _database.tripDefinitions,
+        )..where((table) => table.id.equals(trip.id.value))).getSingleOrNull();
+        if (storedTrip == null) {
+          await _database
+              .into(_database.tripDefinitions)
+              .insert(
+                TripDefinitionsCompanion.insert(
+                  id: Value<int>(trip.id.value),
+                  name: trip.name,
+                ),
+              );
+        } else {
+          final loadedTrip = await _loadTrip(trip.id);
+          if (!_sameTrip(loadedTrip, trip)) {
+            throw StateError('Trip ${trip.id} has conflicting definitions.');
+          }
+        }
+      }
+
+      for (final trip in addedTrips) {
+        final hasComposition =
+            await (_database.select(_database.tripStepOccurrences)
+                  ..where(
+                    (table) => table.tripDefinitionId.equals(trip.id.value),
+                  )
+                  ..limit(1))
+                .getSingleOrNull();
+        if (hasComposition == null) {
+          await _insertTripComposition(trip);
+        }
+      }
+
+      await _updateExistingTestRoutes(existing: existing, target: definition);
+      await _reconcileScheduleOccurrences(
+        existing: existing,
+        target: definition,
+      );
+    });
+  }
+
+  void _validateAdditiveExtension({
+    required ScheduleDefinition existing,
+    required ScheduleDefinition target,
+  }) {
+    if (existing.id != target.id || existing.name != target.name) {
+      throw StateError(
+        'Schedule ${existing.id} cannot be replaced by a different identity.',
+      );
+    }
+
+    final targetByOccurrenceId = <int, ScheduleTripDefinition>{
+      for (final scheduledTrip in target.trips)
+        scheduledTrip.occurrenceId: scheduledTrip,
+    };
+    for (final existingTrip in existing.trips) {
+      final targetTrip = targetByOccurrenceId[existingTrip.occurrenceId];
+      if (targetTrip == null) {
+        throw StateError(
+          'Schedule ${existing.id} cannot remove occurrence '
+          '${existingTrip.occurrenceId}.',
+        );
+      }
+      if (targetTrip.trip.id != existingTrip.trip.id) {
+        throw StateError(
+          'Schedule occurrence ${existingTrip.occurrenceId} cannot change '
+          'from ${existingTrip.trip.id} to ${targetTrip.trip.id}.',
+        );
+      }
+      _validateExistingTripExtension(
+        existing: existingTrip.trip,
+        target: targetTrip.trip,
+      );
+    }
+  }
+
+  void _validateExistingTripExtension({
+    required TripDefinition existing,
+    required TripDefinition target,
+  }) {
+    if (existing.id != target.id ||
+        existing.name != target.name ||
+        existing.steps.length != target.steps.length) {
+      throw StateError('Existing Trip ${existing.id} cannot be redefined.');
+    }
+    for (var index = 0; index < existing.steps.length; index += 1) {
+      final existingStep = existing.steps[index];
+      final targetStep = target.steps[index];
+      final compatible = switch ((existingStep, targetStep)) {
+        (
+          TestStep(
+            id: final existingId,
+            name: final existingName,
+            testAgentId: final existingAgentId,
+          ),
+          TestStep(
+            id: final targetId,
+            name: final targetName,
+            testAgentId: final targetAgentId,
+          ),
+        ) =>
+          existingId == targetId &&
+              existingName == targetName &&
+              existingAgentId == targetAgentId,
+        _ => _sameStep(existingStep, targetStep),
+      };
+      if (!compatible) {
+        throw StateError(
+          'Existing Step ${existingStep.id} in Trip ${existing.id} cannot be '
+          'redefined.',
+        );
+      }
+    }
+  }
+
+  Future<void> _updateExistingTestRoutes({
+    required ScheduleDefinition existing,
+    required ScheduleDefinition target,
+  }) async {
+    final targetTrips = <TripDefinitionId, TripDefinition>{
+      for (final scheduledTrip in target.trips)
+        scheduledTrip.trip.id: scheduledTrip.trip,
+    };
+    for (final existingScheduledTrip in existing.trips) {
+      final targetTrip = targetTrips[existingScheduledTrip.trip.id];
+      if (targetTrip == null) {
+        throw StateError(
+          'Target Schedule omits Trip ${existingScheduledTrip.trip.id}.',
+        );
+      }
+      for (var index = 0; index < targetTrip.steps.length; index += 1) {
+        final existingStep = existingScheduledTrip.trip.steps[index];
+        final targetStep = targetTrip.steps[index];
+        if (existingStep case TestStep() when targetStep is TestStep) {
+          if (existingStep.trueDestinationTripDefinitionId !=
+                  targetStep.trueDestinationTripDefinitionId ||
+              existingStep.falseDestinationTripDefinitionId !=
+                  targetStep.falseDestinationTripDefinitionId) {
+            await _requireScheduleLocalTripForRouteUpdate(
+              scheduleDefinitionId: target.id,
+              tripDefinitionId: targetTrip.id,
+            );
+            final updated =
+                await (_database.update(_database.testStepDefinitions)..where(
+                      (table) => table.stepDefinitionId.equals(targetStep.id),
+                    ))
+                    .write(
+                      TestStepDefinitionsCompanion(
+                        trueDestinationTripDefinitionId: Value<int?>(
+                          targetStep.trueDestinationTripDefinitionId?.value,
+                        ),
+                        falseDestinationTripDefinitionId: Value<int?>(
+                          targetStep.falseDestinationTripDefinitionId?.value,
+                        ),
+                      ),
+                    );
+            if (updated != 1) {
+              throw StateError(
+                'Test Step ${targetStep.id} route update was not written.',
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _requireScheduleLocalTripForRouteUpdate({
+    required int scheduleDefinitionId,
+    required TripDefinitionId tripDefinitionId,
+  }) async {
+    final occurrences =
+        await (_database.select(_database.scheduleTripOccurrences)..where(
+              (table) => table.tripDefinitionId.equals(tripDefinitionId.value),
+            ))
+            .get();
+    if (occurrences.any(
+      (occurrence) => occurrence.scheduleDefinitionId != scheduleDefinitionId,
+    )) {
+      throw StateError(
+        'Trip $tripDefinitionId is shared by another Schedule and its routes '
+        'cannot be updated in place.',
+      );
+    }
+  }
+
+  Future<void> _reconcileScheduleOccurrences({
+    required ScheduleDefinition existing,
+    required ScheduleDefinition target,
+  }) async {
+    final existingOccurrenceIds = existing.trips
+        .map((scheduledTrip) => scheduledTrip.occurrenceId)
+        .toSet();
+    final maximumPosition = <int>[
+      ...existing.trips.map((scheduledTrip) => scheduledTrip.position),
+      ...target.trips.map((scheduledTrip) => scheduledTrip.position),
+    ].reduce((left, right) => left > right ? left : right);
+    final temporaryPositionStart = maximumPosition + 1;
+
+    for (var index = 0; index < existing.trips.length; index += 1) {
+      final occurrence = existing.trips[index];
+      await (_database.update(_database.scheduleTripOccurrences)..where(
+            (table) =>
+                table.scheduleDefinitionId.equals(existing.id) &
+                table.id.equals(occurrence.occurrenceId),
+          ))
+          .write(
+            ScheduleTripOccurrencesCompanion(
+              position: Value<int>(temporaryPositionStart + index),
+            ),
+          );
+    }
+
+    for (final occurrence in target.trips) {
+      if (!existingOccurrenceIds.contains(occurrence.occurrenceId)) {
+        await _database
+            .into(_database.scheduleTripOccurrences)
+            .insert(
+              ScheduleTripOccurrencesCompanion.insert(
+                id: Value<int>(occurrence.occurrenceId),
+                scheduleDefinitionId: target.id,
+                tripDefinitionId: occurrence.trip.id.value,
+                position: occurrence.position,
+              ),
+            );
+      }
+    }
+
+    for (final occurrence in target.trips) {
+      if (existingOccurrenceIds.contains(occurrence.occurrenceId)) {
+        final updated =
+            await (_database.update(_database.scheduleTripOccurrences)..where(
+                  (table) =>
+                      table.scheduleDefinitionId.equals(target.id) &
+                      table.id.equals(occurrence.occurrenceId),
+                ))
+                .write(
+                  ScheduleTripOccurrencesCompanion(
+                    position: Value<int>(occurrence.position),
+                  ),
+                );
+        if (updated != 1) {
+          throw StateError(
+            'Schedule occurrence ${occurrence.occurrenceId} position update '
+            'was not written.',
+          );
+        }
+      }
+    }
+  }
+
+  bool _sameScheduleDefinition(
+    ScheduleDefinition left,
+    ScheduleDefinition right,
+  ) {
+    if (left.id != right.id ||
+        left.name != right.name ||
+        left.trips.length != right.trips.length) {
+      return false;
+    }
+    final rightByOccurrenceId = <int, ScheduleTripDefinition>{
+      for (final scheduledTrip in right.trips)
+        scheduledTrip.occurrenceId: scheduledTrip,
+    };
+    for (final leftTrip in left.trips) {
+      final rightTrip = rightByOccurrenceId[leftTrip.occurrenceId];
+      if (rightTrip == null ||
+          leftTrip.position != rightTrip.position ||
+          !_sameTrip(leftTrip.trip, rightTrip.trip)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @override
@@ -663,6 +982,38 @@ final class DriftPresenceScheduleRepository
                 stepDefinitionId: Value<int>(step.id),
               ),
             );
+      case ChoiceStep():
+        await _database
+            .into(_database.stepDefinitions)
+            .insert(
+              StepDefinitionsCompanion.insert(
+                id: Value<int>(step.id),
+                name: step.name,
+                stepType: choiceStepType,
+              ),
+            );
+        await _database
+            .into(_database.choiceStepDefinitions)
+            .insert(
+              ChoiceStepDefinitionsCompanion.insert(
+                stepDefinitionId: Value<int>(step.id),
+              ),
+            );
+        for (var position = 0; position < step.options.length; position += 1) {
+          final option = step.options[position];
+          await _database
+              .into(_database.choiceStepOptions)
+              .insert(
+                ChoiceStepOptionsCompanion.insert(
+                  stepDefinitionId: step.id,
+                  value: option.value.value,
+                  position: position,
+                  label: option.label,
+                  destinationTripDefinitionId:
+                      option.destinationTripDefinitionId.value,
+                ),
+              );
+        }
     }
   }
 
@@ -786,12 +1137,32 @@ final class DriftPresenceScheduleRepository
                 (table) => table.stepDefinitionId.equals(stepDefinitionId),
               ))
             .getSingleOrNull();
+    final choice =
+        await (_database.select(_database.choiceStepDefinitions)..where(
+              (table) => table.stepDefinitionId.equals(stepDefinitionId),
+            ))
+            .getSingleOrNull();
+    final choiceOptions =
+        await (_database.select(_database.choiceStepOptions)
+              ..where(
+                (table) => table.stepDefinitionId.equals(stepDefinitionId),
+              )
+              ..orderBy(<OrderClauseGenerator<ChoiceStepOptions>>[
+                (table) => OrderingTerm.asc(table.position),
+              ]))
+            .get();
+    if (choice == null && choiceOptions.isNotEmpty) {
+      throw StateError(
+        'Choice Step $stepDefinitionId has options without a subtype marker.',
+      );
+    }
 
     final activeSubtypeCount = <Object?>[
       tell,
       fixedDestination,
       test,
       openFdaSettings,
+      choice,
     ].where((row) => row != null).length;
     if (activeSubtypeCount != 1) {
       throw StateError(
@@ -847,6 +1218,27 @@ final class DriftPresenceScheduleRepository
           id: step.id,
           name: step.name,
           settingsOpeningAuthority: _fdaSettingsOpeningAuthority,
+        );
+      case choiceStepType:
+        if (choice == null) {
+          throw StateError(
+            'Choice Step $stepDefinitionId has no subtype marker.',
+          );
+        }
+        return ChoiceStep(
+          id: step.id,
+          name: step.name,
+          options: choiceOptions
+              .map(
+                (option) => ChoiceOption(
+                  value: ChoiceValue(option.value),
+                  label: option.label,
+                  destinationTripDefinitionId: TripDefinitionId(
+                    option.destinationTripDefinitionId,
+                  ),
+                ),
+              )
+              .toList(),
         );
       default:
         throw StateError(
@@ -939,6 +1331,23 @@ final class DriftPresenceScheduleRepository
             '${scheduledTrip.trip.id}.',
           );
         }
+        if (step case ChoiceStep(options: final options)) {
+          for (final option in options) {
+            final destination = option.destinationTripDefinitionId;
+            if (!tripIds.contains(destination)) {
+              throw ArgumentError(
+                'Choice Step ${step.id} points to $destination, which is '
+                'absent from Schedule ${definition.id}.',
+              );
+            }
+          }
+        }
+        if (step is ChoiceStep && index != steps.length - 1) {
+          throw ArgumentError(
+            'Choice Step ${step.id} must be terminal in Trip '
+            '${scheduledTrip.trip.id}.',
+          );
+        }
       }
     }
   }
@@ -995,8 +1404,35 @@ final class DriftPresenceScheduleRepository
         OpenFdaSettingsStep(id: final rightId, name: final rightName),
       ) =>
         leftId == rightId && leftName == rightName,
+      (
+        ChoiceStep(
+          id: final leftId,
+          name: final leftName,
+          options: final leftOptions,
+        ),
+        ChoiceStep(
+          id: final rightId,
+          name: final rightName,
+          options: final rightOptions,
+        ),
+      ) =>
+        leftId == rightId &&
+            leftName == rightName &&
+            _sameChoiceOptions(leftOptions, rightOptions),
       _ => false,
     };
+  }
+
+  bool _sameChoiceOptions(List<ChoiceOption> left, List<ChoiceOption> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var index = 0; index < left.length; index += 1) {
+      if (left[index] != right[index]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   bool _sameTrip(TripDefinition left, TripDefinition right) {

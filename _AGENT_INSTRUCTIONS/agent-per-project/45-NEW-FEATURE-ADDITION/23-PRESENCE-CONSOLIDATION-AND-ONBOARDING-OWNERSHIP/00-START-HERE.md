@@ -2,7 +2,7 @@
 tier: project
 scope: presence-onboarding-consolidation
 owner: agent-per-project
-last_reviewed: 2026-08-12
+last_reviewed: 2026-08-14
 source_of_truth: doc
 links:
   - ../21-PRESENCE-ITERATION-SIMPLE/30-SYSTEM-BOUNDARIES.md
@@ -12,6 +12,19 @@ links:
   - 09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md
   - 10-NEXT-REAL-WORKFLOW-CONCERN-PLAN.md
   - 11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md
+  - 12-CHOICESTEP-AND-WORKFLOW-PRESENTATION-PROPOSAL.md
+  - 13-CHOICESTEP-PURE-DOMAIN-IMPLEMENTATION.md
+  - 14-CHOICESTEP-ADDITIVE-PERSISTENCE-IMPLEMENTATION.md
+  - 15-CHOICESTEP-RUNTIME-COMPLETION-IMPLEMENTATION.md
+  - 16-GENERIC-PRESENCE-PRESENTATION-IMPLEMENTATION.md
+  - 17-ONBOARDING-MESSAGES-HISTORY-CHOICE-WORKFLOW-IMPLEMENTATION.md
+  - 18-PRODUCTION-GENERIC-PRESENCE-RUNNER-INTEGRATION.md
+  - 19-POST-READINESS-ONBOARDING-HANDOFF-AUDIT.md
+  - 20-DURABLE-ACCEPTED-READINESS-IMPORT-HANDOFF-IMPLEMENTATION.md
+  - 21-INITIAL-IMPORT-GRAPH-BUILD-LIFECYCLE-AUDIT.md
+  - 22-REMOVE-MISLEADING-ABORT-IMPORT-IMPLEMENTATION.md
+  - 23-PRODUCTION-IMPORT-PROGRESS-SURFACE-AUDIT.md
+  - 24-TRUTHFUL-KEEP-OPEN-PROGRESS-GUIDANCE-IMPLEMENTATION.md
 tests: []
 ---
 
@@ -74,6 +87,54 @@ The consolidation has now:
 - implemented and bound the Onboarding-owned local-history sufficiency Agent
   with production-parity `COUNT(*)` semantics, truthful unknown-count failure,
   and fresh reads, without adding it to the active Schedule.
+- implemented the pure generic `ChoiceValue`, `ChoiceOption`, and `ChoiceStep`
+  domain grammar, including finite-choice validation and opaque
+  value-to-destination lookup, without persistence, runtime, or presentation.
+- added schema-v9 persistence for that generic Choice grammar, including
+  ordered option rows, exactly-one-subtype accounting, Schedule-local
+  destination validation, and additive migration coverage, while leaving
+  runtime choice submission and presentation unimplemented.
+- added a context-bound Choice runtime callable which accepts only the selected
+  opaque value, rejects stale or repeated interactions, and reuses ordinary
+  Trip checkpoint and trace machinery without adding presentation or active
+  Onboarding usage.
+- added permanent generic Presence Step presentation, including a
+  destination-free Choice label:value projection and context-bound selection,
+  while keeping workflow meaning, FDA presentation, and development
+  diagnostics outside the generic presenter.
+- added the real Messages-history sufficiency branch to the active Onboarding
+  Schedule, including sparse-history guidance, generic Re-check / Import Anyway
+  Choice routing, additive definition evolution, and existing-run preservation.
+- made the permanent generic Presence runner the production renderer for the
+  required-source Onboarding Schedule, including autonomous Test and fixed
+  routing, destination-free Choice interaction, and explicit delegation of the
+  remaining FDA Settings specialist Step to Onboarding.
+- audited the exact post-readiness production handoff and found that Presence
+  completion currently reveals an independently selected legacy readiness
+  panel rather than advancing `OnboardingGate`; this loses the durable sparse-
+  history `import_anyway` acceptance before the existing import action.
+- repaired that handoff by exposing completion of the canonical required-
+  sources Schedule as a narrow, read-only Onboarding acceptance fact and
+  composing it with unchanged environment facts at the Environment Readiness
+  surface boundary. Sparse accepted sources now expose the existing import
+  action across restart; sparse unaccepted sources still expose only Re-check.
+- audited the complete production lifecycle after that action and established
+  that one admitted Gate operation resets derived data and then awaits one
+  non-cancellable 17-stage controller build. The operation currently supports
+  only coarse live progress, probe-based restart/recovery, and no truthful
+  Abort behavior.
+- removed the mechanically false **Abort Import** affordance and its dead
+  presentation-only forwarding APIs. First-run and reimport progress are now
+  explicitly non-cancellable while all reset, build, failure, recovery, and
+  restart behavior remains unchanged.
+- audited the complete production progress surface against facts currently
+  exposed by the Gate and graph-build controller. The best supported design is
+  minimal calm with indeterminate activity and explicit keep-open guidance;
+  elapsed time and live stage narration are not yet earned.
+- replaced the repetitive active-progress paragraph with shared, truthful
+  guidance to keep MessageLens open while confirming that other applications
+  may be used. First-run and direct-reimport progress retain their existing
+  coarse headlines, indeterminate activity, and non-cancellable behavior.
 
 > The generic Boolean Test architecture is complete. Read the
 > [consolidation audit](09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md) for the
@@ -84,7 +145,8 @@ The consolidation has now:
 The completed slices do not:
 
 - change Step results, Trip, Scheduler, routing, checkpointing, or trace;
-- change production `OnboardingGate` behavior;
+- change the `OnboardingGate`'s ownership of import, graph construction,
+  recovery, or reimport operations;
 - generalize the still-transitional FDA Settings-opening Step;
 - extend onboarding with another blocker;
 - redesign the development host.
@@ -102,6 +164,19 @@ The completed slices do not:
 - [Presence TestStep consolidation audit](09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md)
 - [Next real workflow concern plan](10-NEXT-REAL-WORKFLOW-CONCERN-PLAN.md)
 - [Messages source history sufficiency TestAgent implementation](11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md)
+- [ChoiceStep and generic Presence presentation proposal](12-CHOICESTEP-AND-WORKFLOW-PRESENTATION-PROPOSAL.md)
+- [ChoiceStep pure domain implementation](13-CHOICESTEP-PURE-DOMAIN-IMPLEMENTATION.md)
+- [ChoiceStep additive persistence implementation](14-CHOICESTEP-ADDITIVE-PERSISTENCE-IMPLEMENTATION.md)
+- [ChoiceStep runtime completion implementation](15-CHOICESTEP-RUNTIME-COMPLETION-IMPLEMENTATION.md)
+- [Generic Presence presentation implementation](16-GENERIC-PRESENCE-PRESENTATION-IMPLEMENTATION.md)
+- [Onboarding Messages-history Choice workflow implementation](17-ONBOARDING-MESSAGES-HISTORY-CHOICE-WORKFLOW-IMPLEMENTATION.md)
+- [Production generic Presence runner integration](18-PRODUCTION-GENERIC-PRESENCE-RUNNER-INTEGRATION.md)
+- [Post-readiness Onboarding handoff audit](19-POST-READINESS-ONBOARDING-HANDOFF-AUDIT.md)
+- [Durable accepted-readiness import handoff implementation](20-DURABLE-ACCEPTED-READINESS-IMPORT-HANDOFF-IMPLEMENTATION.md)
+- [Initial import and graph-build lifecycle audit](21-INITIAL-IMPORT-GRAPH-BUILD-LIFECYCLE-AUDIT.md)
+- [Remove misleading Abort Import implementation](22-REMOVE-MISLEADING-ABORT-IMPORT-IMPLEMENTATION.md)
+- [Production import progress surface audit](23-PRODUCTION-IMPORT-PROGRESS-SURFACE-AUDIT.md)
+- [Truthful keep-open progress guidance implementation](24-TRUTHFUL-KEEP-OPEN-PROGRESS-GUIDANCE-IMPLEMENTATION.md)
 
 Prompts are retained under [`prompts/`](prompts/). Future response artifacts
 may be collected under [`responses/`](responses/README.md).

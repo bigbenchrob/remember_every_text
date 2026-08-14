@@ -10,6 +10,42 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.22] — 2026-08-14
+
+### Changed
+
+- Active first-run and rebuild progress now asks the human to keep MessageLens
+  open while confirming that other applications may be used. The operation
+  remains coarse, indeterminate, and explicitly non-cancellable.
+
+## [0.2.21] — 2026-08-13
+
+### Fixed
+
+- Completing required-source onboarding after accepting sparse local Messages
+  history now reveals the existing **Import My Messages** action and preserves
+  that handoff across restart. Environment facts remain unchanged, and import
+  still runs through the existing Onboarding gate.
+
+## [0.2.20] — 2026-08-13
+
+### Changed
+
+- Production required-source onboarding now runs generic Tell, Test, fixed
+  destination, and finite Choice Steps through the permanent Presence runner.
+  Full Disk Access opening remains an explicit Onboarding-owned specialist
+  integration, while import and graph construction remain owned by the
+  existing Onboarding gate.
+
+## [0.2.19] — 2026-08-13
+
+### Added
+
+- The Presence onboarding experiment now checks whether local Messages history
+  is sufficiently populated. Sparse history receives calm guidance and a
+  generic persisted choice to re-check a fresh source fact or continue with
+  the currently available history.
+
 ## [0.2.18] — 2026-07-28
 
 ### Fixed

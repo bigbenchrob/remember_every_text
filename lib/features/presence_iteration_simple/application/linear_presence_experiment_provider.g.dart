@@ -7,7 +7,7 @@ part of 'linear_presence_experiment_provider.dart';
 // **************************************************************************
 
 String _$linearPresenceExperimentHash() =>
-    r'd0835970713276f2e4e5f6124ce346ae8d867094';
+    r'6c5cab16892d115f38a252ec18b6bd5a8f46baa3';
 
 /// See also [linearPresenceExperiment].
 @ProviderFor(linearPresenceExperiment)

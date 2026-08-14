@@ -29,6 +29,7 @@ import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/feature_level_providers.dart'
     show onboardingGateProvider;
 import '../../../onboarding/presentation/onboarding_overlay.dart';
+import '../../../onboarding/presentation/onboarding_presence_host.dart';
 import '../../../sidebar/application/sidebar_flow_state_provider.dart';
 import '../../application/app_shell_actions_provider.dart';
 import '../../application/panel_widget_providers.dart';
@@ -128,6 +129,11 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       OnboardingStatus.reimporting ||
       OnboardingStatus.reimportBuildingGraph ||
       OnboardingStatus.reimportComplete => true,
+      _ => false,
+    };
+    final showRequiredSourcesPresence = switch (onboardingStatus) {
+      OnboardingStatus.awaitingFda ||
+      OnboardingStatus.awaitingUserAction => true,
       _ => false,
     };
     final activeMode = ref.watch(activeSidebarModeProvider);
@@ -419,7 +425,11 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     }
 
     return Stack(
-      children: [window, if (showOnboardingOverlay) const OnboardingOverlay()],
+      children: <Widget>[
+        window,
+        if (showRequiredSourcesPresence) const OnboardingPresenceHost(),
+        if (showOnboardingOverlay) const OnboardingOverlay(),
+      ],
     );
   }
 }

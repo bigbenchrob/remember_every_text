@@ -399,6 +399,7 @@ class $StepDefinitionsTable extends StepDefinitions
       tellStepType,
       fixedDestinationStepType,
       testStepType,
+      choiceStepType,
       fdaTestStepType,
       contactsSourceReadinessStepType,
       openFdaSettingsStepType,
@@ -3194,6 +3195,583 @@ class TestStepDefinitionsCompanion
   }
 }
 
+class $ChoiceStepDefinitionsTable extends ChoiceStepDefinitions
+    with TableInfo<$ChoiceStepDefinitionsTable, ChoiceStepDefinitionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChoiceStepDefinitionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _stepDefinitionIdMeta = const VerificationMeta(
+    'stepDefinitionId',
+  );
+  @override
+  late final GeneratedColumn<int> stepDefinitionId = GeneratedColumn<int>(
+    'step_definition_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES step_definitions (id)',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [stepDefinitionId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'choice_step_definitions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChoiceStepDefinitionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('step_definition_id')) {
+      context.handle(
+        _stepDefinitionIdMeta,
+        stepDefinitionId.isAcceptableOrUnknown(
+          data['step_definition_id']!,
+          _stepDefinitionIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {stepDefinitionId};
+  @override
+  ChoiceStepDefinitionRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChoiceStepDefinitionRow(
+      stepDefinitionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}step_definition_id'],
+      )!,
+    );
+  }
+
+  @override
+  $ChoiceStepDefinitionsTable createAlias(String alias) {
+    return $ChoiceStepDefinitionsTable(attachedDatabase, alias);
+  }
+}
+
+class ChoiceStepDefinitionRow extends DataClass
+    implements Insertable<ChoiceStepDefinitionRow> {
+  final int stepDefinitionId;
+  const ChoiceStepDefinitionRow({required this.stepDefinitionId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['step_definition_id'] = Variable<int>(stepDefinitionId);
+    return map;
+  }
+
+  ChoiceStepDefinitionsCompanion toCompanion(bool nullToAbsent) {
+    return ChoiceStepDefinitionsCompanion(
+      stepDefinitionId: Value(stepDefinitionId),
+    );
+  }
+
+  factory ChoiceStepDefinitionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChoiceStepDefinitionRow(
+      stepDefinitionId: serializer.fromJson<int>(json['stepDefinitionId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'stepDefinitionId': serializer.toJson<int>(stepDefinitionId),
+    };
+  }
+
+  ChoiceStepDefinitionRow copyWith({int? stepDefinitionId}) =>
+      ChoiceStepDefinitionRow(
+        stepDefinitionId: stepDefinitionId ?? this.stepDefinitionId,
+      );
+  ChoiceStepDefinitionRow copyWithCompanion(
+    ChoiceStepDefinitionsCompanion data,
+  ) {
+    return ChoiceStepDefinitionRow(
+      stepDefinitionId: data.stepDefinitionId.present
+          ? data.stepDefinitionId.value
+          : this.stepDefinitionId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChoiceStepDefinitionRow(')
+          ..write('stepDefinitionId: $stepDefinitionId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => stepDefinitionId.hashCode;
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChoiceStepDefinitionRow &&
+          other.stepDefinitionId == this.stepDefinitionId);
+}
+
+class ChoiceStepDefinitionsCompanion
+    extends UpdateCompanion<ChoiceStepDefinitionRow> {
+  final Value<int> stepDefinitionId;
+  const ChoiceStepDefinitionsCompanion({
+    this.stepDefinitionId = const Value.absent(),
+  });
+  ChoiceStepDefinitionsCompanion.insert({
+    this.stepDefinitionId = const Value.absent(),
+  });
+  static Insertable<ChoiceStepDefinitionRow> custom({
+    Expression<int>? stepDefinitionId,
+  }) {
+    return RawValuesInsertable({
+      if (stepDefinitionId != null) 'step_definition_id': stepDefinitionId,
+    });
+  }
+
+  ChoiceStepDefinitionsCompanion copyWith({Value<int>? stepDefinitionId}) {
+    return ChoiceStepDefinitionsCompanion(
+      stepDefinitionId: stepDefinitionId ?? this.stepDefinitionId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (stepDefinitionId.present) {
+      map['step_definition_id'] = Variable<int>(stepDefinitionId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChoiceStepDefinitionsCompanion(')
+          ..write('stepDefinitionId: $stepDefinitionId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChoiceStepOptionsTable extends ChoiceStepOptions
+    with TableInfo<$ChoiceStepOptionsTable, ChoiceStepOptionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChoiceStepOptionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    check: () => ComparableExpr(position).isBiggerOrEqualValue(0),
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stepDefinitionIdMeta = const VerificationMeta(
+    'stepDefinitionId',
+  );
+  @override
+  late final GeneratedColumn<int> stepDefinitionId = GeneratedColumn<int>(
+    'step_definition_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES choice_step_definitions (step_definition_id)',
+    ),
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _destinationTripDefinitionIdMeta =
+      const VerificationMeta('destinationTripDefinitionId');
+  @override
+  late final GeneratedColumn<int> destinationTripDefinitionId =
+      GeneratedColumn<int>(
+        'destination_trip_definition_id',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: true,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trip_definitions (id)',
+        ),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    position,
+    stepDefinitionId,
+    value,
+    label,
+    destinationTripDefinitionId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'choice_step_options';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ChoiceStepOptionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    if (data.containsKey('step_definition_id')) {
+      context.handle(
+        _stepDefinitionIdMeta,
+        stepDefinitionId.isAcceptableOrUnknown(
+          data['step_definition_id']!,
+          _stepDefinitionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_stepDefinitionIdMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('destination_trip_definition_id')) {
+      context.handle(
+        _destinationTripDefinitionIdMeta,
+        destinationTripDefinitionId.isAcceptableOrUnknown(
+          data['destination_trip_definition_id']!,
+          _destinationTripDefinitionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_destinationTripDefinitionIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {stepDefinitionId, value};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {stepDefinitionId, position},
+  ];
+  @override
+  ChoiceStepOptionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ChoiceStepOptionRow(
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      stepDefinitionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}step_definition_id'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      )!,
+      destinationTripDefinitionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}destination_trip_definition_id'],
+      )!,
+    );
+  }
+
+  @override
+  $ChoiceStepOptionsTable createAlias(String alias) {
+    return $ChoiceStepOptionsTable(attachedDatabase, alias);
+  }
+}
+
+class ChoiceStepOptionRow extends DataClass
+    implements Insertable<ChoiceStepOptionRow> {
+  final int position;
+  final int stepDefinitionId;
+  final String value;
+  final String label;
+  final int destinationTripDefinitionId;
+  const ChoiceStepOptionRow({
+    required this.position,
+    required this.stepDefinitionId,
+    required this.value,
+    required this.label,
+    required this.destinationTripDefinitionId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['position'] = Variable<int>(position);
+    map['step_definition_id'] = Variable<int>(stepDefinitionId);
+    map['value'] = Variable<String>(value);
+    map['label'] = Variable<String>(label);
+    map['destination_trip_definition_id'] = Variable<int>(
+      destinationTripDefinitionId,
+    );
+    return map;
+  }
+
+  ChoiceStepOptionsCompanion toCompanion(bool nullToAbsent) {
+    return ChoiceStepOptionsCompanion(
+      position: Value(position),
+      stepDefinitionId: Value(stepDefinitionId),
+      value: Value(value),
+      label: Value(label),
+      destinationTripDefinitionId: Value(destinationTripDefinitionId),
+    );
+  }
+
+  factory ChoiceStepOptionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ChoiceStepOptionRow(
+      position: serializer.fromJson<int>(json['position']),
+      stepDefinitionId: serializer.fromJson<int>(json['stepDefinitionId']),
+      value: serializer.fromJson<String>(json['value']),
+      label: serializer.fromJson<String>(json['label']),
+      destinationTripDefinitionId: serializer.fromJson<int>(
+        json['destinationTripDefinitionId'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'position': serializer.toJson<int>(position),
+      'stepDefinitionId': serializer.toJson<int>(stepDefinitionId),
+      'value': serializer.toJson<String>(value),
+      'label': serializer.toJson<String>(label),
+      'destinationTripDefinitionId': serializer.toJson<int>(
+        destinationTripDefinitionId,
+      ),
+    };
+  }
+
+  ChoiceStepOptionRow copyWith({
+    int? position,
+    int? stepDefinitionId,
+    String? value,
+    String? label,
+    int? destinationTripDefinitionId,
+  }) => ChoiceStepOptionRow(
+    position: position ?? this.position,
+    stepDefinitionId: stepDefinitionId ?? this.stepDefinitionId,
+    value: value ?? this.value,
+    label: label ?? this.label,
+    destinationTripDefinitionId:
+        destinationTripDefinitionId ?? this.destinationTripDefinitionId,
+  );
+  ChoiceStepOptionRow copyWithCompanion(ChoiceStepOptionsCompanion data) {
+    return ChoiceStepOptionRow(
+      position: data.position.present ? data.position.value : this.position,
+      stepDefinitionId: data.stepDefinitionId.present
+          ? data.stepDefinitionId.value
+          : this.stepDefinitionId,
+      value: data.value.present ? data.value.value : this.value,
+      label: data.label.present ? data.label.value : this.label,
+      destinationTripDefinitionId: data.destinationTripDefinitionId.present
+          ? data.destinationTripDefinitionId.value
+          : this.destinationTripDefinitionId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChoiceStepOptionRow(')
+          ..write('position: $position, ')
+          ..write('stepDefinitionId: $stepDefinitionId, ')
+          ..write('value: $value, ')
+          ..write('label: $label, ')
+          ..write('destinationTripDefinitionId: $destinationTripDefinitionId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    position,
+    stepDefinitionId,
+    value,
+    label,
+    destinationTripDefinitionId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChoiceStepOptionRow &&
+          other.position == this.position &&
+          other.stepDefinitionId == this.stepDefinitionId &&
+          other.value == this.value &&
+          other.label == this.label &&
+          other.destinationTripDefinitionId ==
+              this.destinationTripDefinitionId);
+}
+
+class ChoiceStepOptionsCompanion extends UpdateCompanion<ChoiceStepOptionRow> {
+  final Value<int> position;
+  final Value<int> stepDefinitionId;
+  final Value<String> value;
+  final Value<String> label;
+  final Value<int> destinationTripDefinitionId;
+  final Value<int> rowid;
+  const ChoiceStepOptionsCompanion({
+    this.position = const Value.absent(),
+    this.stepDefinitionId = const Value.absent(),
+    this.value = const Value.absent(),
+    this.label = const Value.absent(),
+    this.destinationTripDefinitionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ChoiceStepOptionsCompanion.insert({
+    required int position,
+    required int stepDefinitionId,
+    required String value,
+    required String label,
+    required int destinationTripDefinitionId,
+    this.rowid = const Value.absent(),
+  }) : position = Value(position),
+       stepDefinitionId = Value(stepDefinitionId),
+       value = Value(value),
+       label = Value(label),
+       destinationTripDefinitionId = Value(destinationTripDefinitionId);
+  static Insertable<ChoiceStepOptionRow> custom({
+    Expression<int>? position,
+    Expression<int>? stepDefinitionId,
+    Expression<String>? value,
+    Expression<String>? label,
+    Expression<int>? destinationTripDefinitionId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (position != null) 'position': position,
+      if (stepDefinitionId != null) 'step_definition_id': stepDefinitionId,
+      if (value != null) 'value': value,
+      if (label != null) 'label': label,
+      if (destinationTripDefinitionId != null)
+        'destination_trip_definition_id': destinationTripDefinitionId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ChoiceStepOptionsCompanion copyWith({
+    Value<int>? position,
+    Value<int>? stepDefinitionId,
+    Value<String>? value,
+    Value<String>? label,
+    Value<int>? destinationTripDefinitionId,
+    Value<int>? rowid,
+  }) {
+    return ChoiceStepOptionsCompanion(
+      position: position ?? this.position,
+      stepDefinitionId: stepDefinitionId ?? this.stepDefinitionId,
+      value: value ?? this.value,
+      label: label ?? this.label,
+      destinationTripDefinitionId:
+          destinationTripDefinitionId ?? this.destinationTripDefinitionId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (stepDefinitionId.present) {
+      map['step_definition_id'] = Variable<int>(stepDefinitionId.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (destinationTripDefinitionId.present) {
+      map['destination_trip_definition_id'] = Variable<int>(
+        destinationTripDefinitionId.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChoiceStepOptionsCompanion(')
+          ..write('position: $position, ')
+          ..write('stepDefinitionId: $stepDefinitionId, ')
+          ..write('value: $value, ')
+          ..write('label: $label, ')
+          ..write('destinationTripDefinitionId: $destinationTripDefinitionId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ScheduleRunsTable extends ScheduleRuns
     with TableInfo<$ScheduleRunsTable, ScheduleRunRow> {
   @override
@@ -4171,6 +4749,10 @@ abstract class _$PresenceDatabase extends GeneratedDatabase {
       $TestAgentDefinitionsTable(this);
   late final $TestStepDefinitionsTable testStepDefinitions =
       $TestStepDefinitionsTable(this);
+  late final $ChoiceStepDefinitionsTable choiceStepDefinitions =
+      $ChoiceStepDefinitionsTable(this);
+  late final $ChoiceStepOptionsTable choiceStepOptions =
+      $ChoiceStepOptionsTable(this);
   late final $ScheduleRunsTable scheduleRuns = $ScheduleRunsTable(this);
   late final $ExecutionTraceEventsTable executionTraceEvents =
       $ExecutionTraceEventsTable(this);
@@ -4203,6 +4785,10 @@ abstract class _$PresenceDatabase extends GeneratedDatabase {
     'test_step_false_destination_trip',
     'CREATE INDEX test_step_false_destination_trip ON test_step_definitions (false_destination_trip_definition_id)',
   );
+  late final Index choiceStepOptionDestinationTrip = Index(
+    'choice_step_option_destination_trip',
+    'CREATE INDEX choice_step_option_destination_trip ON choice_step_options (destination_trip_definition_id)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4220,6 +4806,8 @@ abstract class _$PresenceDatabase extends GeneratedDatabase {
     openFdaSettingsStepDefinitions,
     testAgentDefinitions,
     testStepDefinitions,
+    choiceStepDefinitions,
+    choiceStepOptions,
     scheduleRuns,
     executionTraceEvents,
     fixedDestinationStepDestinationTrip,
@@ -4229,6 +4817,7 @@ abstract class _$PresenceDatabase extends GeneratedDatabase {
     contactsSourceReadinessStepUnavailableDestinationTrip,
     testStepTrueDestinationTrip,
     testStepFalseDestinationTrip,
+    choiceStepOptionDestinationTrip,
   ];
 }
 
@@ -4908,6 +5497,35 @@ final class $$TripDefinitionsTableReferences
     );
   }
 
+  static MultiTypedResultKey<$ChoiceStepOptionsTable, List<ChoiceStepOptionRow>>
+  _choiceStepOptionsRefsTable(_$PresenceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.choiceStepOptions,
+        aliasName: $_aliasNameGenerator(
+          db.tripDefinitions.id,
+          db.choiceStepOptions.destinationTripDefinitionId,
+        ),
+      );
+
+  $$ChoiceStepOptionsTableProcessedTableManager get choiceStepOptionsRefs {
+    final manager =
+        $$ChoiceStepOptionsTableTableManager(
+          $_db,
+          $_db.choiceStepOptions,
+        ).filter(
+          (f) => f.destinationTripDefinitionId.id.sqlEquals(
+            $_itemColumn<int>('id')!,
+          ),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _choiceStepOptionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
   static MultiTypedResultKey<
     $ExecutionTraceEventsTable,
     List<ExecutionTraceEventRow>
@@ -5192,6 +5810,31 @@ class $$TripDefinitionsTableFilterComposer
           }) => $$TestStepDefinitionsTableFilterComposer(
             $db: $db,
             $table: $db.testStepDefinitions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> choiceStepOptionsRefs(
+    Expression<bool> Function($$ChoiceStepOptionsTableFilterComposer f) f,
+  ) {
+    final $$ChoiceStepOptionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.choiceStepOptions,
+      getReferencedColumn: (t) => t.destinationTripDefinitionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChoiceStepOptionsTableFilterComposer(
+            $db: $db,
+            $table: $db.choiceStepOptions,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5508,6 +6151,32 @@ class $$TripDefinitionsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> choiceStepOptionsRefs<T extends Object>(
+    Expression<T> Function($$ChoiceStepOptionsTableAnnotationComposer a) f,
+  ) {
+    final $$ChoiceStepOptionsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.choiceStepOptions,
+          getReferencedColumn: (t) => t.destinationTripDefinitionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ChoiceStepOptionsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.choiceStepOptions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
   Expression<T> executionTraceEventsRefs<T extends Object>(
     Expression<T> Function($$ExecutionTraceEventsTableAnnotationComposer a) f,
   ) {
@@ -5558,6 +6227,7 @@ class $$TripDefinitionsTableTableManager
             bool unavailableContactsSourceReadinessStepDefinitions,
             bool trueTestStepDefinitions,
             bool falseTestStepDefinitions,
+            bool choiceStepOptionsRefs,
             bool executionTraceEventsRefs,
           })
         > {
@@ -5601,6 +6271,7 @@ class $$TripDefinitionsTableTableManager
                 unavailableContactsSourceReadinessStepDefinitions = false,
                 trueTestStepDefinitions = false,
                 falseTestStepDefinitions = false,
+                choiceStepOptionsRefs = false,
                 executionTraceEventsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -5619,6 +6290,7 @@ class $$TripDefinitionsTableTableManager
                       db.contactsSourceReadinessStepDefinitions,
                     if (trueTestStepDefinitions) db.testStepDefinitions,
                     if (falseTestStepDefinitions) db.testStepDefinitions,
+                    if (choiceStepOptionsRefs) db.choiceStepOptions,
                     if (executionTraceEventsRefs) db.executionTraceEvents,
                   ],
                   addJoins: null,
@@ -5829,6 +6501,27 @@ class $$TripDefinitionsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (choiceStepOptionsRefs)
+                        await $_getPrefetchedData<
+                          TripDefinitionRow,
+                          $TripDefinitionsTable,
+                          ChoiceStepOptionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TripDefinitionsTableReferences
+                              ._choiceStepOptionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripDefinitionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).choiceStepOptionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.destinationTripDefinitionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (executionTraceEventsRefs)
                         await $_getPrefetchedData<
                           TripDefinitionRow,
@@ -5881,6 +6574,7 @@ typedef $$TripDefinitionsTableProcessedTableManager =
         bool unavailableContactsSourceReadinessStepDefinitions,
         bool trueTestStepDefinitions,
         bool falseTestStepDefinitions,
+        bool choiceStepOptionsRefs,
         bool executionTraceEventsRefs,
       })
     >;
@@ -6102,6 +6796,34 @@ final class $$StepDefinitionsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $ChoiceStepDefinitionsTable,
+    List<ChoiceStepDefinitionRow>
+  >
+  _choiceStepDefinitionsRefsTable(_$PresenceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.choiceStepDefinitions,
+        aliasName: $_aliasNameGenerator(
+          db.stepDefinitions.id,
+          db.choiceStepDefinitions.stepDefinitionId,
+        ),
+      );
+
+  $$ChoiceStepDefinitionsTableProcessedTableManager
+  get choiceStepDefinitionsRefs {
+    final manager = $$ChoiceStepDefinitionsTableTableManager(
+      $_db,
+      $_db.choiceStepDefinitions,
+    ).filter((f) => f.stepDefinitionId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _choiceStepDefinitionsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$StepDefinitionsTableFilterComposer
@@ -6313,6 +7035,32 @@ class $$StepDefinitionsTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> choiceStepDefinitionsRefs(
+    Expression<bool> Function($$ChoiceStepDefinitionsTableFilterComposer f) f,
+  ) {
+    final $$ChoiceStepDefinitionsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.choiceStepDefinitions,
+          getReferencedColumn: (t) => t.stepDefinitionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ChoiceStepDefinitionsTableFilterComposer(
+                $db: $db,
+                $table: $db.choiceStepDefinitions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -6550,6 +7298,32 @@ class $$StepDefinitionsTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> choiceStepDefinitionsRefs<T extends Object>(
+    Expression<T> Function($$ChoiceStepDefinitionsTableAnnotationComposer a) f,
+  ) {
+    final $$ChoiceStepDefinitionsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.choiceStepDefinitions,
+          getReferencedColumn: (t) => t.stepDefinitionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ChoiceStepDefinitionsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.choiceStepDefinitions,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$StepDefinitionsTableTableManager
@@ -6573,6 +7347,7 @@ class $$StepDefinitionsTableTableManager
             bool contactsSourceReadinessStepDefinitionsRefs,
             bool openFdaSettingsStepDefinitionsRefs,
             bool testStepDefinitionsRefs,
+            bool choiceStepDefinitionsRefs,
           })
         > {
   $$StepDefinitionsTableTableManager(
@@ -6625,6 +7400,7 @@ class $$StepDefinitionsTableTableManager
                 contactsSourceReadinessStepDefinitionsRefs = false,
                 openFdaSettingsStepDefinitionsRefs = false,
                 testStepDefinitionsRefs = false,
+                choiceStepDefinitionsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -6639,6 +7415,7 @@ class $$StepDefinitionsTableTableManager
                     if (openFdaSettingsStepDefinitionsRefs)
                       db.openFdaSettingsStepDefinitions,
                     if (testStepDefinitionsRefs) db.testStepDefinitions,
+                    if (choiceStepDefinitionsRefs) db.choiceStepDefinitions,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -6792,6 +7569,27 @@ class $$StepDefinitionsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (choiceStepDefinitionsRefs)
+                        await $_getPrefetchedData<
+                          StepDefinitionRow,
+                          $StepDefinitionsTable,
+                          ChoiceStepDefinitionRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StepDefinitionsTableReferences
+                              ._choiceStepDefinitionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StepDefinitionsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).choiceStepDefinitionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.stepDefinitionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -6820,6 +7618,7 @@ typedef $$StepDefinitionsTableProcessedTableManager =
         bool contactsSourceReadinessStepDefinitionsRefs,
         bool openFdaSettingsStepDefinitionsRefs,
         bool testStepDefinitionsRefs,
+        bool choiceStepDefinitionsRefs,
       })
     >;
 typedef $$ScheduleTripOccurrencesTableCreateCompanionBuilder =
@@ -10923,6 +11722,591 @@ typedef $$TestStepDefinitionsTableProcessedTableManager =
         bool falseDestinationTripDefinitionId,
       })
     >;
+typedef $$ChoiceStepDefinitionsTableCreateCompanionBuilder =
+    ChoiceStepDefinitionsCompanion Function({Value<int> stepDefinitionId});
+typedef $$ChoiceStepDefinitionsTableUpdateCompanionBuilder =
+    ChoiceStepDefinitionsCompanion Function({Value<int> stepDefinitionId});
+
+final class $$ChoiceStepDefinitionsTableReferences
+    extends
+        BaseReferences<
+          _$PresenceDatabase,
+          $ChoiceStepDefinitionsTable,
+          ChoiceStepDefinitionRow
+        > {
+  $$ChoiceStepDefinitionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StepDefinitionsTable _stepDefinitionIdTable(_$PresenceDatabase db) =>
+      db.stepDefinitions.createAlias(
+        $_aliasNameGenerator(
+          db.choiceStepDefinitions.stepDefinitionId,
+          db.stepDefinitions.id,
+        ),
+      );
+
+  $$StepDefinitionsTableProcessedTableManager get stepDefinitionId {
+    final $_column = $_itemColumn<int>('step_definition_id')!;
+
+    final manager = $$StepDefinitionsTableTableManager(
+      $_db,
+      $_db.stepDefinitions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_stepDefinitionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ChoiceStepDefinitionsTableFilterComposer
+    extends Composer<_$PresenceDatabase, $ChoiceStepDefinitionsTable> {
+  $$ChoiceStepDefinitionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$StepDefinitionsTableFilterComposer get stepDefinitionId {
+    final $$StepDefinitionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.stepDefinitionId,
+      referencedTable: $db.stepDefinitions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StepDefinitionsTableFilterComposer(
+            $db: $db,
+            $table: $db.stepDefinitions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChoiceStepDefinitionsTableOrderingComposer
+    extends Composer<_$PresenceDatabase, $ChoiceStepDefinitionsTable> {
+  $$ChoiceStepDefinitionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$StepDefinitionsTableOrderingComposer get stepDefinitionId {
+    final $$StepDefinitionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.stepDefinitionId,
+      referencedTable: $db.stepDefinitions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StepDefinitionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.stepDefinitions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChoiceStepDefinitionsTableAnnotationComposer
+    extends Composer<_$PresenceDatabase, $ChoiceStepDefinitionsTable> {
+  $$ChoiceStepDefinitionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$StepDefinitionsTableAnnotationComposer get stepDefinitionId {
+    final $$StepDefinitionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.stepDefinitionId,
+      referencedTable: $db.stepDefinitions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StepDefinitionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stepDefinitions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChoiceStepDefinitionsTableTableManager
+    extends
+        RootTableManager<
+          _$PresenceDatabase,
+          $ChoiceStepDefinitionsTable,
+          ChoiceStepDefinitionRow,
+          $$ChoiceStepDefinitionsTableFilterComposer,
+          $$ChoiceStepDefinitionsTableOrderingComposer,
+          $$ChoiceStepDefinitionsTableAnnotationComposer,
+          $$ChoiceStepDefinitionsTableCreateCompanionBuilder,
+          $$ChoiceStepDefinitionsTableUpdateCompanionBuilder,
+          (ChoiceStepDefinitionRow, $$ChoiceStepDefinitionsTableReferences),
+          ChoiceStepDefinitionRow,
+          PrefetchHooks Function({bool stepDefinitionId})
+        > {
+  $$ChoiceStepDefinitionsTableTableManager(
+    _$PresenceDatabase db,
+    $ChoiceStepDefinitionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChoiceStepDefinitionsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ChoiceStepDefinitionsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ChoiceStepDefinitionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({Value<int> stepDefinitionId = const Value.absent()}) =>
+                  ChoiceStepDefinitionsCompanion(
+                    stepDefinitionId: stepDefinitionId,
+                  ),
+          createCompanionCallback:
+              ({Value<int> stepDefinitionId = const Value.absent()}) =>
+                  ChoiceStepDefinitionsCompanion.insert(
+                    stepDefinitionId: stepDefinitionId,
+                  ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChoiceStepDefinitionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({stepDefinitionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (stepDefinitionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.stepDefinitionId,
+                                referencedTable:
+                                    $$ChoiceStepDefinitionsTableReferences
+                                        ._stepDefinitionIdTable(db),
+                                referencedColumn:
+                                    $$ChoiceStepDefinitionsTableReferences
+                                        ._stepDefinitionIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ChoiceStepDefinitionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PresenceDatabase,
+      $ChoiceStepDefinitionsTable,
+      ChoiceStepDefinitionRow,
+      $$ChoiceStepDefinitionsTableFilterComposer,
+      $$ChoiceStepDefinitionsTableOrderingComposer,
+      $$ChoiceStepDefinitionsTableAnnotationComposer,
+      $$ChoiceStepDefinitionsTableCreateCompanionBuilder,
+      $$ChoiceStepDefinitionsTableUpdateCompanionBuilder,
+      (ChoiceStepDefinitionRow, $$ChoiceStepDefinitionsTableReferences),
+      ChoiceStepDefinitionRow,
+      PrefetchHooks Function({bool stepDefinitionId})
+    >;
+typedef $$ChoiceStepOptionsTableCreateCompanionBuilder =
+    ChoiceStepOptionsCompanion Function({
+      required int position,
+      required int stepDefinitionId,
+      required String value,
+      required String label,
+      required int destinationTripDefinitionId,
+      Value<int> rowid,
+    });
+typedef $$ChoiceStepOptionsTableUpdateCompanionBuilder =
+    ChoiceStepOptionsCompanion Function({
+      Value<int> position,
+      Value<int> stepDefinitionId,
+      Value<String> value,
+      Value<String> label,
+      Value<int> destinationTripDefinitionId,
+      Value<int> rowid,
+    });
+
+final class $$ChoiceStepOptionsTableReferences
+    extends
+        BaseReferences<
+          _$PresenceDatabase,
+          $ChoiceStepOptionsTable,
+          ChoiceStepOptionRow
+        > {
+  $$ChoiceStepOptionsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TripDefinitionsTable _destinationTripDefinitionIdTable(
+    _$PresenceDatabase db,
+  ) => db.tripDefinitions.createAlias(
+    $_aliasNameGenerator(
+      db.choiceStepOptions.destinationTripDefinitionId,
+      db.tripDefinitions.id,
+    ),
+  );
+
+  $$TripDefinitionsTableProcessedTableManager get destinationTripDefinitionId {
+    final $_column = $_itemColumn<int>('destination_trip_definition_id')!;
+
+    final manager = $$TripDefinitionsTableTableManager(
+      $_db,
+      $_db.tripDefinitions,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(
+      _destinationTripDefinitionIdTable($_db),
+    );
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ChoiceStepOptionsTableFilterComposer
+    extends Composer<_$PresenceDatabase, $ChoiceStepOptionsTable> {
+  $$ChoiceStepOptionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripDefinitionsTableFilterComposer get destinationTripDefinitionId {
+    final $$TripDefinitionsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.destinationTripDefinitionId,
+      referencedTable: $db.tripDefinitions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripDefinitionsTableFilterComposer(
+            $db: $db,
+            $table: $db.tripDefinitions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChoiceStepOptionsTableOrderingComposer
+    extends Composer<_$PresenceDatabase, $ChoiceStepOptionsTable> {
+  $$ChoiceStepOptionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripDefinitionsTableOrderingComposer get destinationTripDefinitionId {
+    final $$TripDefinitionsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.destinationTripDefinitionId,
+      referencedTable: $db.tripDefinitions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripDefinitionsTableOrderingComposer(
+            $db: $db,
+            $table: $db.tripDefinitions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChoiceStepOptionsTableAnnotationComposer
+    extends Composer<_$PresenceDatabase, $ChoiceStepOptionsTable> {
+  $$ChoiceStepOptionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  $$TripDefinitionsTableAnnotationComposer get destinationTripDefinitionId {
+    final $$TripDefinitionsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.destinationTripDefinitionId,
+      referencedTable: $db.tripDefinitions,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripDefinitionsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tripDefinitions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChoiceStepOptionsTableTableManager
+    extends
+        RootTableManager<
+          _$PresenceDatabase,
+          $ChoiceStepOptionsTable,
+          ChoiceStepOptionRow,
+          $$ChoiceStepOptionsTableFilterComposer,
+          $$ChoiceStepOptionsTableOrderingComposer,
+          $$ChoiceStepOptionsTableAnnotationComposer,
+          $$ChoiceStepOptionsTableCreateCompanionBuilder,
+          $$ChoiceStepOptionsTableUpdateCompanionBuilder,
+          (ChoiceStepOptionRow, $$ChoiceStepOptionsTableReferences),
+          ChoiceStepOptionRow,
+          PrefetchHooks Function({bool destinationTripDefinitionId})
+        > {
+  $$ChoiceStepOptionsTableTableManager(
+    _$PresenceDatabase db,
+    $ChoiceStepOptionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChoiceStepOptionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChoiceStepOptionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChoiceStepOptionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> position = const Value.absent(),
+                Value<int> stepDefinitionId = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<String> label = const Value.absent(),
+                Value<int> destinationTripDefinitionId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ChoiceStepOptionsCompanion(
+                position: position,
+                stepDefinitionId: stepDefinitionId,
+                value: value,
+                label: label,
+                destinationTripDefinitionId: destinationTripDefinitionId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int position,
+                required int stepDefinitionId,
+                required String value,
+                required String label,
+                required int destinationTripDefinitionId,
+                Value<int> rowid = const Value.absent(),
+              }) => ChoiceStepOptionsCompanion.insert(
+                position: position,
+                stepDefinitionId: stepDefinitionId,
+                value: value,
+                label: label,
+                destinationTripDefinitionId: destinationTripDefinitionId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChoiceStepOptionsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({destinationTripDefinitionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (destinationTripDefinitionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn:
+                                    table.destinationTripDefinitionId,
+                                referencedTable:
+                                    $$ChoiceStepOptionsTableReferences
+                                        ._destinationTripDefinitionIdTable(db),
+                                referencedColumn:
+                                    $$ChoiceStepOptionsTableReferences
+                                        ._destinationTripDefinitionIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ChoiceStepOptionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PresenceDatabase,
+      $ChoiceStepOptionsTable,
+      ChoiceStepOptionRow,
+      $$ChoiceStepOptionsTableFilterComposer,
+      $$ChoiceStepOptionsTableOrderingComposer,
+      $$ChoiceStepOptionsTableAnnotationComposer,
+      $$ChoiceStepOptionsTableCreateCompanionBuilder,
+      $$ChoiceStepOptionsTableUpdateCompanionBuilder,
+      (ChoiceStepOptionRow, $$ChoiceStepOptionsTableReferences),
+      ChoiceStepOptionRow,
+      PrefetchHooks Function({bool destinationTripDefinitionId})
+    >;
 typedef $$ScheduleRunsTableCreateCompanionBuilder =
     ScheduleRunsCompanion Function({
       Value<int> id,
@@ -12215,6 +13599,10 @@ class $PresenceDatabaseManager {
       $$TestAgentDefinitionsTableTableManager(_db, _db.testAgentDefinitions);
   $$TestStepDefinitionsTableTableManager get testStepDefinitions =>
       $$TestStepDefinitionsTableTableManager(_db, _db.testStepDefinitions);
+  $$ChoiceStepDefinitionsTableTableManager get choiceStepDefinitions =>
+      $$ChoiceStepDefinitionsTableTableManager(_db, _db.choiceStepDefinitions);
+  $$ChoiceStepOptionsTableTableManager get choiceStepOptions =>
+      $$ChoiceStepOptionsTableTableManager(_db, _db.choiceStepOptions);
   $$ScheduleRunsTableTableManager get scheduleRuns =>
       $$ScheduleRunsTableTableManager(_db, _db.scheduleRuns);
   $$ExecutionTraceEventsTableTableManager get executionTraceEvents =>

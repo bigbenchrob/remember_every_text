@@ -7,6 +7,7 @@ part 'presence_database.g.dart';
 const String tellStepType = 'tell';
 const String fixedDestinationStepType = 'fixed_destination';
 const String testStepType = 'test';
+const String choiceStepType = 'choice';
 const String fdaTestStepType = 'fda_test';
 const String contactsSourceReadinessStepType = 'contacts_source_readiness';
 const String openFdaSettingsStepType = 'open_fda_settings';
@@ -51,6 +52,7 @@ class StepDefinitions extends Table {
           tellStepType,
           fixedDestinationStepType,
           testStepType,
+          choiceStepType,
           fdaTestStepType,
           contactsSourceReadinessStepType,
           openFdaSettingsStepType,
@@ -242,6 +244,49 @@ class TestStepDefinitions extends Table {
   Set<Column<Object>> get primaryKey => <Column<Object>>{stepDefinitionId};
 }
 
+@DataClassName('ChoiceStepDefinitionRow')
+class ChoiceStepDefinitions extends Table {
+  IntColumn get stepDefinitionId =>
+      integer().named('step_definition_id').references(StepDefinitions, #id)();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{stepDefinitionId};
+}
+
+@TableIndex(
+  name: 'choice_step_option_destination_trip',
+  columns: <Symbol>{#destinationTripDefinitionId},
+)
+@DataClassName('ChoiceStepOptionRow')
+class ChoiceStepOptions extends Table {
+  IntColumn get stepDefinitionId => integer()
+      .named('step_definition_id')
+      .references(ChoiceStepDefinitions, #stepDefinitionId)();
+
+  TextColumn get value => text()();
+
+  late final IntColumn position = integer().check(
+    position.isBiggerOrEqualValue(0),
+  )();
+
+  TextColumn get label => text()();
+
+  IntColumn get destinationTripDefinitionId => integer()
+      .named('destination_trip_definition_id')
+      .references(TripDefinitions, #id)();
+
+  @override
+  Set<Column<Object>> get primaryKey => <Column<Object>>{
+    stepDefinitionId,
+    value,
+  };
+
+  @override
+  List<Set<Column<Object>>> get uniqueKeys => <Set<Column<Object>>>[
+    <Column<Object>>{stepDefinitionId, position},
+  ];
+}
+
 @DataClassName('ScheduleRunRow')
 class ScheduleRuns extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -351,6 +396,8 @@ class ExecutionTraceEvents extends Table {
     OpenFdaSettingsStepDefinitions,
     TestAgentDefinitions,
     TestStepDefinitions,
+    ChoiceStepDefinitions,
+    ChoiceStepOptions,
     ScheduleRuns,
     ExecutionTraceEvents,
   ],
@@ -359,7 +406,7 @@ class PresenceDatabase extends _$PresenceDatabase {
   PresenceDatabase(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -395,6 +442,11 @@ class PresenceDatabase extends _$PresenceDatabase {
       }
       if (from < 8) {
         await _activateGenericTestGrammar();
+      }
+      if (from < 9) {
+        await migrator.alterTable(TableMigration(stepDefinitions));
+        await migrator.createTable(choiceStepDefinitions);
+        await migrator.createTable(choiceStepOptions);
       }
     },
     beforeOpen: (_) async {

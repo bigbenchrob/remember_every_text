@@ -428,6 +428,7 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/essentials/onboarding/application/onboarding_database_probe_reader_provider.dart',
   'lib/essentials/onboarding/application/onboarding_failure_storage_provider.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/presence/presentation/presence_runner.dart',
   'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
   'lib/main.dart',
 };
@@ -774,6 +775,212 @@ void main() {
       );
     });
 
+    test(
+      'ChoiceStep domain grammar remains workflow and presentation agnostic',
+      () async {
+        final choiceSources = <String>[];
+        for (final path in <String>[
+          'lib/essentials/presence/domain/entities/choice_value.dart',
+          'lib/essentials/presence/domain/entities/choice_option.dart',
+        ]) {
+          choiceSources.add(await File(path).readAsString());
+        }
+
+        final stepSource = await File(
+          'lib/essentials/presence/domain/entities/step.dart',
+        ).readAsString();
+        choiceSources.add(
+          stepSource.substring(stepSource.indexOf('final class ChoiceStep')),
+        );
+
+        final forbidden = RegExp(
+          r'(?:package:flutter/|hooks_riverpod|flutter_riverpod|/onboarding/|'
+          r'/conversation_graph/|/infrastructure/|TestAgent|Riverpod|Widget|'
+          r'archive ingestion|chat\.db)',
+          caseSensitive: false,
+        );
+        final offenders = <int>[];
+        for (var index = 0; index < choiceSources.length; index += 1) {
+          if (forbidden.hasMatch(choiceSources[index])) {
+            offenders.add(index);
+          }
+        }
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'ChoiceValue, ChoiceOption, and ChoiceStep are generic finite '
+              'choice grammar and must not learn workflow, specialist, '
+              'database, provider, or presentation concerns.',
+        );
+      },
+    );
+
+    test(
+      'ChoiceStep persistence reconstructs only generic Presence grammar',
+      () async {
+        final schemaSource = await File(
+          'lib/essentials/presence/infrastructure/data_sources/local/'
+          'presence_database.dart',
+        ).readAsString();
+        final repositorySource = await File(
+          'lib/essentials/presence/infrastructure/repositories/'
+          'drift_presence_schedule_repository.dart',
+        ).readAsString();
+        final choiceSchema = schemaSource.substring(
+          schemaSource.indexOf("@DataClassName('ChoiceStepDefinitionRow')"),
+          schemaSource.indexOf("@DataClassName('ScheduleRunRow')"),
+        );
+
+        expect(choiceSchema, contains('class ChoiceStepDefinitions'));
+        expect(choiceSchema, contains('class ChoiceStepOptions'));
+        expect(repositorySource, contains('ChoiceValue(option.value)'));
+        expect(repositorySource, contains('ChoiceOption('));
+        expect(
+          repositorySource,
+          contains('option.destinationTripDefinitionId'),
+        );
+
+        final forbiddenWorkflowValues = RegExp(
+          r'\b(?:pause|recheck|import_anyway)\b',
+          caseSensitive: false,
+        );
+        expect(
+          forbiddenWorkflowValues.hasMatch('$choiceSchema\n$repositorySource'),
+          isFalse,
+          reason:
+              'Choice persistence stores and reconstructs opaque values; it '
+              'must not parse workflow-specific choices.',
+        );
+
+        final repositoryImports = repositorySource
+            .split('\n')
+            .where((line) => line.startsWith('import '))
+            .join('\n');
+        expect(
+          RegExp(
+            r'(?:package:flutter/|hooks_riverpod|flutter_riverpod|/onboarding/|'
+            r'/presentation/)',
+          ).hasMatch(repositoryImports),
+          isFalse,
+          reason:
+              'Generic Choice persistence may depend on Presence domain but '
+              'must not depend on Flutter, presentation, or Onboarding.',
+        );
+      },
+    );
+
+    test(
+      'ChoiceStep runtime accepts only a context-bound opaque value',
+      () async {
+        final schedulerSource = await File(
+          'lib/essentials/presence/domain/services/presence_scheduler.dart',
+        ).readAsString();
+        final publicChoiceBoundary = schedulerSource.substring(
+          schedulerSource.indexOf('typedef CurrentChoiceSelection'),
+          schedulerSource.indexOf('Future<void> _selectCurrentChoice'),
+        );
+
+        expect(
+          publicChoiceBoundary,
+          contains(
+            'typedef CurrentChoiceSelection = '
+            'Future<void> Function(ChoiceValue value);',
+          ),
+        );
+        expect(
+          publicChoiceBoundary,
+          contains('CurrentChoiceSelection issueCurrentChoiceSelection()'),
+        );
+        expect(
+          RegExp(
+            r'(?:StepDefinitionId|TripDefinitionId|ScheduleTripOccurrenceId|'
+            r'\bdestination\b|Map<String, dynamic>|Object\? payload|'
+            r'completeStepWithInput|submitStepResult|requiresInput)',
+          ).hasMatch(publicChoiceBoundary),
+          isFalse,
+          reason:
+              'The public Choice boundary carries only the selected opaque '
+              'ChoiceValue; current execution identity and routing stay '
+              'private to Presence.',
+        );
+
+        final schedulerImports = schedulerSource
+            .split('\n')
+            .where((line) => line.startsWith('import '))
+            .join('\n');
+        expect(
+          RegExp(
+            r'(?:package:flutter/|hooks_riverpod|flutter_riverpod|/onboarding/|'
+            r'/presentation/)',
+          ).hasMatch(schedulerImports),
+          isFalse,
+        );
+        expect(
+          RegExp(
+            r'\b(?:pause|recheck|import_anyway)\b',
+            caseSensitive: false,
+          ).hasMatch(schedulerSource),
+          isFalse,
+          reason: 'Choice runtime must not interpret workflow-specific values.',
+        );
+      },
+    );
+
+    test(
+      'generic Presence presentation receives no routing or workflow meaning',
+      () async {
+        final projectionSource = await File(
+          'lib/essentials/presence/application/'
+          'presence_step_presentation.dart',
+        ).readAsString();
+        final presenterSource = await File(
+          'lib/essentials/presence/presentation/'
+          'presence_step_presenter.dart',
+        ).readAsString();
+        final safePresentationContract = projectionSource.substring(
+          projectionSource.indexOf('typedef PresenceStepCompletion'),
+          projectionSource.indexOf(
+            '/// Removes execution geometry before the current Step reaches',
+          ),
+        );
+
+        expect(
+          RegExp(
+            r'(?:TripDefinitionId|StepDefinitionId|ScheduleTripOccurrenceId|'
+            r'ChoiceOption|\bdestination\b|\bid\b)',
+          ).hasMatch(safePresentationContract),
+          isFalse,
+          reason:
+              'The presentation contract may expose persisted copy, opaque '
+              'values, and bound operations, but no execution identity or '
+              'routing geometry.',
+        );
+        expect(presenterSource, isNot(contains('ChoiceOption')));
+        expect(presenterSource, isNot(contains('TripDefinitionId')));
+        expect(presenterSource, isNot(contains('destination')));
+        expect(
+          RegExp(
+            r'(?:/onboarding/|/features/|import_anyway|recheck|'
+            r'messages-source-history)',
+            caseSensitive: false,
+          ).hasMatch('$projectionSource\n$presenterSource'),
+          isFalse,
+          reason:
+              'Generic Presence presentation must not depend on Onboarding, '
+              'feature implementations, or interpret workflow values.',
+        );
+        expect(
+          RegExp(
+            r'(?:RendererRegistry|registerRenderer|Map<Type)',
+          ).hasMatch(presenterSource),
+          isFalse,
+          reason: 'The first presenter remains one direct exhaustive switch.',
+        );
+      },
+    );
+
     test('Presence does not know Onboarding Agent identities', () async {
       final offenders = <String>[];
       await for (final entity in Directory(
@@ -928,6 +1135,169 @@ void main() {
         );
       },
     );
+
+    test(
+      'production Presence composition uses only real Onboarding Agents',
+      () async {
+        final source = await File(
+          'lib/essentials/onboarding/application/'
+          'required_sources_readiness_scheduler_provider.dart',
+        ).readAsString();
+
+        expect(source, contains('buildOnboardingTestAgentBindings'));
+        expect(source, contains('ImmutableTestAgentResolver'));
+        expect(
+          source,
+          contains('realMessagesSourceReadinessTestAgentProvider'),
+        );
+        expect(
+          source,
+          contains('realContactsSourceReadinessTestAgentProvider'),
+        );
+        expect(
+          source,
+          contains('realMessagesSourceHistorySufficiencyTestAgentProvider'),
+        );
+        expect(source, isNot(contains('presence_iteration_simple')));
+        expect(source, isNot(contains('developmentContactsSource')));
+      },
+    );
+
+    test(
+      'production Onboarding host delegates generic Steps to Presence',
+      () async {
+        final source = await File(
+          'lib/essentials/onboarding/presentation/onboarding_presence_host.dart',
+        ).readAsString();
+
+        expect(source, contains('PresenceRunner'));
+        expect(source, contains('OnboardingFdaContent'));
+        expect(source, isNot(contains('ChoiceValue')));
+        expect(source, isNot(contains('TripDefinitionId')));
+        expect(source, isNot(contains("'recheck'")));
+        expect(source, isNot(contains("'import_anyway'")));
+        expect(source, isNot(contains('presence_iteration_simple')));
+      },
+    );
+
+    test('permanent Presence runner remains workflow agnostic', () async {
+      final source = await File(
+        'lib/essentials/presence/presentation/presence_runner.dart',
+      ).readAsString();
+
+      expect(source, isNot(contains('/onboarding/')));
+      expect(source, isNot(contains('Onboarding')));
+      expect(source, isNot(contains('recheck')));
+      expect(source, isNot(contains('import_anyway')));
+      expect(source, isNot(contains('OpenFdaSettingsStep')));
+    });
+
+    test(
+      'accepted readiness handoff reads only durable Schedule completion',
+      () async {
+        final providerSource = await File(
+          'lib/essentials/onboarding/application/'
+          'required_sources_readiness_scheduler_provider.dart',
+        ).readAsString();
+        final onboardingProviderSeam = await File(
+          'lib/essentials/onboarding/feature_level_providers.dart',
+        ).readAsString();
+        final surfaceSource = await File(
+          'lib/features/environment_readiness/application/view_spec/'
+          'resolver_tools/environment_readiness_surface_provider.dart',
+        ).readAsString();
+        final repositorySource = await File(
+          'lib/essentials/presence/infrastructure/repositories/'
+          'drift_presence_schedule_repository.dart',
+        ).readAsString();
+        final completionQuery = repositorySource.substring(
+          repositorySource.indexOf('Stream<bool> watchLatestRunCompletion'),
+          repositorySource.indexOf('Future<void> insertDefinition'),
+        );
+
+        expect(providerSource, contains('watchLatestRunCompletion'));
+        expect(providerSource, isNot(contains('loadExecutionTrace')));
+        expect(providerSource, isNot(contains('ChoiceValue')));
+        expect(providerSource, isNot(contains("'import_anyway'")));
+        expect(
+          onboardingProviderSeam,
+          contains('show requiredSourcesReadinessAcceptedProvider;'),
+        );
+        expect(
+          onboardingProviderSeam,
+          isNot(contains('requiredSourcesReadinessRepositoryProvider')),
+        );
+        expect(
+          onboardingProviderSeam,
+          isNot(contains('requiredSourcesReadinessSchedulerProvider')),
+        );
+        expect(
+          surfaceSource,
+          contains('requiredSourcesReadinessAcceptedProvider'),
+        );
+        expect(surfaceSource, isNot(contains('ChoiceValue')));
+        expect(surfaceSource, isNot(contains("'import_anyway'")));
+        expect(completionQuery, contains('currentTripOccurrenceId == null'));
+        expect(completionQuery, isNot(contains('executionTrace')));
+        expect(completionQuery, isNot(contains('choice')));
+      },
+    );
+
+    test(
+      'environment facts and import operation remain outside Presence',
+      () async {
+        final reportSource = await File(
+          'lib/essentials/onboarding/application/'
+          'onboarding_environment_report_provider.dart',
+        ).readAsString();
+        final actionSource = await File(
+          'lib/features/environment_readiness/application/'
+          'environment_readiness_actions_provider.dart',
+        ).readAsString();
+        final schemaSource = await File(
+          'lib/essentials/presence/infrastructure/data_sources/local/'
+          'presence_database.dart',
+        ).readAsString();
+
+        expect(reportSource, isNot(contains('/presence/')));
+        expect(
+          actionSource,
+          contains('onboardingGateProvider.notifier'),
+          reason: 'The existing import action must still delegate to the Gate.',
+        );
+        expect(actionSource, isNot(contains('/presence/')));
+        expect(
+          schemaSource,
+          isNot(
+            matches(
+              RegExp(
+                r'(?:acceptedSparseHistory|sourceReadinessAccepted|'
+                r'importAnywayAccepted|readyToImportOverride)',
+              ),
+            ),
+          ),
+          reason: 'Schedule completion is the only durable acceptance fact.',
+        );
+      },
+    );
+
+    test('Presence does not depend on OnboardingGate', () async {
+      final offenders = <String>[];
+      await for (final entity in Directory(
+        'lib/essentials/presence',
+      ).list(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) {
+          continue;
+        }
+        final source = await entity.readAsString();
+        if (source.contains('OnboardingGate') ||
+            source.contains('onboardingGateProvider')) {
+          offenders.add(entity.path);
+        }
+      }
+
+      expect(offenders, isEmpty);
+    });
 
     test('Active repository ignores frozen Boolean subtype tables', () async {
       final source = await File(

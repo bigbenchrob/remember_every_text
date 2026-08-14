@@ -4,7 +4,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
 import '../../../../../essentials/onboarding/domain/onboarding_status.dart';
 import '../../../../../essentials/onboarding/feature_level_providers.dart'
-    show onboardingEnvironmentReportProvider, onboardingGateProvider;
+    show
+        onboardingEnvironmentReportProvider,
+        onboardingGateProvider,
+        requiredSourcesReadinessAcceptedProvider;
 import '../../../domain/entities/environment_readiness_surface_view_model.dart';
 
 part 'environment_readiness_surface_provider.g.dart';
@@ -13,11 +16,22 @@ part 'environment_readiness_surface_provider.g.dart';
 EnvironmentReadinessSurfaceViewModel environmentReadinessSurface(Ref ref) {
   final status = ref.watch(onboardingGateProvider);
   final report = ref.watch(onboardingEnvironmentReportProvider).valueOrNull;
-  final activeStep = _activeStepFor(status: status, report: report);
+  final requiredSourcesAccepted = ref
+      .watch(requiredSourcesReadinessAcceptedProvider)
+      .valueOrNull;
+  final activeStep = _activeStepFor(
+    status: status,
+    report: report,
+    requiredSourcesAccepted: requiredSourcesAccepted ?? false,
+  );
   final isReady = report?.state == OnboardingEnvironmentState.ready;
   final detailsByStep = {
     for (final step in EnvironmentReadinessStepKey.values)
-      step: _detailFor(activeStep: step, report: report),
+      step: _detailFor(
+        activeStep: step,
+        report: report,
+        requiredSourcesAccepted: requiredSourcesAccepted ?? false,
+      ),
   };
 
   return EnvironmentReadinessSurfaceViewModel(
@@ -31,6 +45,7 @@ EnvironmentReadinessSurfaceViewModel environmentReadinessSurface(Ref ref) {
 EnvironmentReadinessStepKey _activeStepFor({
   required OnboardingStatus status,
   required OnboardingEnvironmentReport? report,
+  required bool requiredSourcesAccepted,
 }) {
   if (status == OnboardingStatus.awaitingFda) {
     return EnvironmentReadinessStepKey.fullDiskAccess;
@@ -43,9 +58,12 @@ EnvironmentReadinessStepKey _activeStepFor({
   return switch (report.blockerKind) {
     OnboardingBlockerKind.fullDiskAccessMissing =>
       EnvironmentReadinessStepKey.fullDiskAccess,
-    OnboardingBlockerKind.messagesDatabaseMissing ||
-    OnboardingBlockerKind.sourceDataSparseOrUnsynced =>
+    OnboardingBlockerKind.messagesDatabaseMissing =>
       EnvironmentReadinessStepKey.messagesDatabase,
+    OnboardingBlockerKind.sourceDataSparseOrUnsynced =>
+      requiredSourcesAccepted
+          ? EnvironmentReadinessStepKey.importReadiness
+          : EnvironmentReadinessStepKey.messagesDatabase,
     OnboardingBlockerKind.addressBookUnavailable =>
       EnvironmentReadinessStepKey.contactsDatabase,
     _ => EnvironmentReadinessStepKey.importReadiness,
@@ -106,6 +124,7 @@ List<EnvironmentReadinessStepViewModel> _buildSteps(
 EnvironmentReadinessDetailViewModel _detailFor({
   required EnvironmentReadinessStepKey activeStep,
   required OnboardingEnvironmentReport? report,
+  required bool requiredSourcesAccepted,
 }) {
   switch (activeStep) {
     case EnvironmentReadinessStepKey.fullDiskAccess:
@@ -175,6 +194,9 @@ EnvironmentReadinessDetailViewModel _detailFor({
       );
     case EnvironmentReadinessStepKey.importReadiness:
       final isReady = report?.state == OnboardingEnvironmentState.ready;
+      final isAcceptedSparseSource =
+          requiredSourcesAccepted &&
+          report?.state == OnboardingEnvironmentState.sourceSparseOrUnsynced;
       final isGraphProjectionRetry =
           report?.state == OnboardingEnvironmentState.graphProjectionFailed ||
           report?.blockerKind == OnboardingBlockerKind.graphProjectionFailed;
@@ -199,6 +221,8 @@ EnvironmentReadinessDetailViewModel _detailFor({
             ? 'MessageLens can read the required local sources and its conversation browsing data is ready.'
             : isRetry
             ? 'MessageLens reached the import pipeline, but the last setup attempt did not finish cleanly. You can retry from here or send a report to the developer with diagnostic logs.'
+            : isAcceptedSparseSource
+            ? 'MessageLens found limited local Messages history, and you chose to continue with what is currently available on this Mac.'
             : 'The required local permissions and sources appear ready. The next step is importing your Messages and Contacts data into the app.',
         instructions: isReady
             ? [

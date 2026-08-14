@@ -8,10 +8,16 @@ recovery, import, graph-build, and reimport lifecycle.
 
 Current surface split:
 
-- `awaitingFda` and `awaitingUserAction` are projected into the center panel
-  with `ViewSpec.environmentReadiness`.
+- `awaitingFda` and `awaitingUserAction` mount the production Onboarding
+  Presence host. The generic Presence runner presents the active
+  required-source Schedule, while Onboarding supplies the explicit FDA
+  Settings specialist presentation.
 - `recoveringFailedAttempt`, import/graph-build progress, completion, and
   reimport completion use the blocking `OnboardingOverlay`.
+
+This is a staged ownership boundary. Presence owns the required-source
+readiness interaction. The gate remains the operational authority for recovery,
+import, graph construction, completion, and reimport.
 
 ## Ownership
 
@@ -51,14 +57,20 @@ App Start
   │
   ├─ environment report → FDA blocked?
   │   └─ YES → awaitingFda
-  │       └─ center panel shows environment readiness
-  │       └─ user grants FDA → refreshEnvironment()
-  │           └─ awaitingUserAction
+  │       └─ Presence resumes the required-source readiness Schedule
+  │       └─ explicit Onboarding FDA specialist opens System Settings
+  │       └─ restart resumes the current Trip from Step 1
+  │           └─ generic TestStep performs a fresh source-readiness check
   │
   ├─ environment report → sources readable, DBs empty?
   │   └─ YES → awaitingUserAction
-  │       └─ center panel shows environment readiness
-  │       └─ user clicks "Import" → startImportAndGraphBuild()
+  │       └─ Presence presents and advances the required-source Schedule
+  │       └─ Schedule completion releases the blocking Presence surface
+  │       └─ Environment Readiness combines unchanged environment facts with
+  │          durable Schedule completion
+  │           ├─ sparse + incomplete → Re-check only
+  │           └─ sparse + complete → existing import action available
+  │       └─ existing import action → startImportAndGraphBuild()
   │           ├─ importing (source-scoped import/projection begins)
   │           ├─ buildingGraph (conversation graph build running)
   │           └─ complete (show summary, "Get Started" button)
@@ -115,6 +127,24 @@ completion, or reimport is in progress. The environment report can also set
 `shouldResetAppDatabasesBeforeImport`, which triggers automatic recovery into
 `recoveringFailedAttempt`.
 
+### Accepted-Readiness Handoff
+
+`OnboardingEnvironmentReport` remains the authority for current machine facts.
+It may continue to report `sourceSparseOrUnsynced` after the human has knowingly
+chosen to continue. Completion of the canonical required-sources Presence
+Schedule is the separate durable acceptance authority.
+
+The Environment Readiness surface composes those facts. Sparse and incomplete
+continues to show **Confirm Local Messages History** with **Re-check**. Sparse
+and complete shows the existing **Ready To Import** presentation and **Import
+My Messages** action. Import and graph-build failures retain their existing
+retry behavior and are never overridden by Presence completion.
+
+The completion query reads the latest Schedule run checkpoint
+(`currentTripOccurrenceId == null`). It does not inspect trace or recover a
+Choice value, and it adds no second acceptance flag. The import action still
+delegates to `OnboardingGate.startImportAndGraphBuild()`.
+
 ## Overlay Rendering
 
 `OnboardingOverlay` is a full-window widget rendered above the main app shell
@@ -133,7 +163,9 @@ for blocking workflow phases. It switches content based on the current status:
 
 Legacy note: `OnboardingOverlay` still contains branches for `awaitingFda` and
 `awaitingUserAction`, but the current app shell normally presents those states
-through the readiness center panel instead of mounting the overlay.
+through `OnboardingPresenceHost` instead of mounting the overlay. The extracted
+`OnboardingFdaContent` presentation is shared with the explicit specialist Step
+without moving platform authority into generic Presence.
 
 ### Overlay Blocking
 
@@ -163,6 +195,8 @@ Import and graph-projection failures are persisted as JSON in the overlay databa
 | `domain/import_spec.dart` | Retired import-control route tagging for diagnostics/compatibility |
 | `domain/spec_classes/onboarding_view_spec.dart` | Onboarding panel spec for dev/debug surfaces |
 | `infrastructure/overlay_onboarding_failure_storage.dart` | Failure persistence |
-| `presentation/onboarding_overlay.dart` | Full-window blocking overlay |
+| `application/required_sources_readiness_scheduler_provider.dart` | Production composition root for real Onboarding agents, Schedule installation, and Scheduler initialization |
+| `presentation/onboarding_presence_host.dart` | Production shell around the generic Presence runner and explicit FDA specialist |
+| `presentation/onboarding_overlay.dart` | Full-window operational overlay and shared FDA presentation |
 | `presentation/onboarding_dev_panel.dart` | Debug/simulation overrides |
 | `navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart` | Syncs onboarding gate states into `ViewSpec.environmentReadiness` |

@@ -1,3 +1,4 @@
+import 'choice_value.dart';
 import 'step.dart';
 import 'trip_definition_id.dart';
 
@@ -55,6 +56,24 @@ final class Trip {
       return (tripCompleted: false, routingResultTripDefinitionId: null);
     }
 
+    _isComplete = true;
+    return (tripCompleted: true, routingResultTripDefinitionId: routingResult);
+  }
+
+  Future<TripStepCompletion> completeCurrentChoice(ChoiceValue value) async {
+    final step = currentStep;
+    if (step is! ChoiceStep) {
+      throw StateError(
+        'The current Step in Trip ${definition.id} is not a ChoiceStep.',
+      );
+    }
+    if (_currentStepIndex != definition.steps.length - 1) {
+      throw StateError(
+        'ChoiceStep ${step.id} must be terminal in Trip ${definition.id}.',
+      );
+    }
+
+    final routingResult = step.destinationFor(value);
     _isComplete = true;
     return (tripCompleted: true, routingResultTripDefinitionId: routingResult);
   }

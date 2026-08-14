@@ -8,7 +8,7 @@ import 'package:remember_this_text/essentials/presence/infrastructure/repositori
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
 void main() {
-  test('v4 to v8 preserves definitions, active run, and trace', () async {
+  test('v4 to v9 preserves definitions, active run, and trace', () async {
     final directory = await Directory.systemTemp.createTemp(
       'presence_v5_migration_',
     );
@@ -38,7 +38,7 @@ void main() {
       final run = await repository.loadRun(1);
       final trace = await repository.loadExecutionTrace(1);
 
-      expect(version.read<int>('user_version'), 8);
+      expect(version.read<int>('user_version'), 9);
       expect(
         openSettingsSubtypeTable?.read<String>('name'),
         'open_fda_settings_step_definitions',

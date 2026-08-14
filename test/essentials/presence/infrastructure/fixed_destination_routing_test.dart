@@ -88,7 +88,7 @@ void main() {
       final repository = DriftPresenceScheduleRepository(database: opened);
       final run = await repository.loadRun(1);
 
-      expect(schemaVersion.read<int>('user_version'), 8);
+      expect(schemaVersion.read<int>('user_version'), 9);
       expect(
         subtypeTable?.read<String>('name'),
         'fixed_destination_step_definitions',

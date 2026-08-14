@@ -20,12 +20,13 @@ Future<void> main() async {
   try {
     const messagesAgent = _DiagramOnlyTestAgent('Messages source');
     const contactsAgent = _DiagramOnlyTestAgent('Contacts source');
+    const historyAgent = _DiagramOnlyTestAgent('Messages history');
     const settingsAuthority = _DiagramOnlyFdaSettingsOpeningAuthority();
     final testAgentResolver = ImmutableTestAgentResolver(
       buildOnboardingTestAgentBindings(
         messagesSourceReadinessTestAgent: messagesAgent,
         contactsSourceReadinessTestAgent: contactsAgent,
-        messagesSourceHistorySufficiencyTestAgent: messagesAgent,
+        messagesSourceHistorySufficiencyTestAgent: historyAgent,
       ),
     );
     final repository = DriftPresenceScheduleRepository(

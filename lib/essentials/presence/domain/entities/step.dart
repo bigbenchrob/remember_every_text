@@ -1,5 +1,7 @@
 import '../services/fda_settings_opening_authority.dart';
 import '../services/test_agent.dart';
+import 'choice_option.dart';
+import 'choice_value.dart';
 import 'test_agent_id.dart';
 import 'trip_definition_id.dart';
 
@@ -75,5 +77,55 @@ final class OpenFdaSettingsStep extends Step {
   Future<TripDefinitionId?> complete() async {
     await _settingsOpeningAuthority.openSettings();
     return null;
+  }
+}
+
+/// A finite human choice whose selected opaque value determines a destination.
+final class ChoiceStep extends Step {
+  ChoiceStep({
+    required super.id,
+    required super.name,
+    required List<ChoiceOption> options,
+  }) : options = List<ChoiceOption>.unmodifiable(options) {
+    if (options.length < 2) {
+      throw ArgumentError.value(
+        options,
+        'options',
+        'A ChoiceStep requires at least two options.',
+      );
+    }
+
+    final values = <ChoiceValue>{};
+    for (final option in options) {
+      if (!values.add(option.value)) {
+        throw ArgumentError.value(
+          options,
+          'options',
+          'Choice values must be unique within a ChoiceStep.',
+        );
+      }
+    }
+  }
+
+  final List<ChoiceOption> options;
+
+  TripDefinitionId destinationFor(ChoiceValue value) {
+    for (final option in options) {
+      if (option.value == value) {
+        return option.destinationTripDefinitionId;
+      }
+    }
+    throw ArgumentError.value(
+      value,
+      'value',
+      'The value is not configured for this ChoiceStep.',
+    );
+  }
+
+  @override
+  Never complete() {
+    throw UnsupportedError(
+      'ChoiceStep requires an externally supplied human ChoiceValue.',
+    );
   }
 }

@@ -25,14 +25,12 @@ Future<PresenceScheduler> linearPresenceExperiment(Ref ref) async {
       fdaSettingsAuthority,
     ).future,
   );
-  if (!await repository.definitionExists(requiredSourcesReadinessScheduleId)) {
-    await repository.insertDefinition(
-      buildRequiredSourcesReadinessDefinition(
-        testAgentResolver: testAgentResolver,
-        fdaSettingsOpeningAuthority: fdaSettingsAuthority,
-      ),
-    );
-  }
+  await repository.installOrExtendDefinition(
+    buildRequiredSourcesReadinessDefinition(
+      testAgentResolver: testAgentResolver,
+      fdaSettingsOpeningAuthority: fdaSettingsAuthority,
+    ),
+  );
 
   final scheduler = PresenceScheduler(
     repository: repository,

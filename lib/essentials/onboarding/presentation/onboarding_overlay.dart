@@ -19,13 +19,16 @@ import '../application/onboarding_overlay_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_status.dart';
 
-/// Full-window blocking overlay shown during first-run onboarding.
+/// Full-window blocking overlay for Onboarding-owned operational phases.
 ///
 /// Renders a semi-transparent barrier over the entire app and presents
 /// a centered card whose content switches based on [OnboardingStatus]:
-///   - [awaitingUserAction] → welcome panel with "Import" button
 ///   - [importing] / [buildingGraph] → live stage progress
 ///   - [complete] → success summary with "Get Started" button
+///
+/// Production required-source readiness is normally presented by the generic
+/// Presence runner. The FDA content remains public because that runner delegates
+/// the explicit platform-specific Step back to Onboarding.
 class OnboardingOverlay extends ConsumerWidget {
   const OnboardingOverlay({super.key});
 
@@ -72,10 +75,20 @@ class OnboardingOverlay extends ConsumerWidget {
                   colors: colors,
                   typography: typography,
                 ),
-                OnboardingStatus.awaitingFda => _FdaContent(
+                OnboardingStatus.awaitingFda => OnboardingFdaContent(
                   report: report,
                   colors: colors,
                   typography: typography,
+                  openSettings: () async {
+                    await ref
+                        .read(onboardingOverlayActionsProvider.notifier)
+                        .openFullDiskAccessSettings();
+                  },
+                  recheckEnvironment: () {
+                    ref
+                        .read(onboardingOverlayActionsProvider.notifier)
+                        .recheckEnvironment();
+                  },
                 ),
                 OnboardingStatus.awaitingUserAction => _WelcomeContent(
                   report: report,
@@ -118,19 +131,26 @@ class OnboardingOverlay extends ConsumerWidget {
 /// shows the "Open System Settings" button.  On relaunch the FDA check
 /// in [OnboardingGate.build] will pass and the import welcome screen
 /// appears automatically.
-class _FdaContent extends ConsumerWidget {
-  const _FdaContent({
+class OnboardingFdaContent extends StatelessWidget {
+  const OnboardingFdaContent({
     required this.report,
     required this.colors,
     required this.typography,
+    required this.openSettings,
+    required this.recheckEnvironment,
+    this.isOpeningSettings = false,
+    super.key,
   });
 
   final OnboardingEnvironmentReport? report;
   final ThemeColors colors;
   final ThemeTypography typography;
+  final Future<void> Function() openSettings;
+  final VoidCallback? recheckEnvironment;
+  final bool isOpeningSettings;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final bodyText = _permissionBodyText(report);
 
     return Column(
@@ -213,11 +233,7 @@ class _FdaContent extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         FilledButton(
-          onPressed: () async {
-            await ref
-                .read(onboardingOverlayActionsProvider.notifier)
-                .openFullDiskAccessSettings();
-          },
+          onPressed: isOpeningSettings ? null : openSettings,
           style: FilledButton.styleFrom(
             backgroundColor: colors.buttons.primaryBackground,
             foregroundColor: colors.buttons.primaryForeground,
@@ -226,22 +242,24 @@ class _FdaContent extends ConsumerWidget {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          child: const Text('Open System Settings'),
-        ),
-        const SizedBox(height: 12),
-        TextButton(
-          onPressed: () {
-            ref
-                .read(onboardingOverlayActionsProvider.notifier)
-                .recheckEnvironment();
-          },
           child: Text(
-            'Re-check environment',
-            style: typography.caption.copyWith(
-              color: colors.content.textTertiary,
-            ),
+            isOpeningSettings
+                ? 'Opening System Settings...'
+                : 'Open System Settings',
           ),
         ),
+        if (recheckEnvironment case final recheck?) ...[
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: recheck,
+            child: Text(
+              'Re-check environment',
+              style: typography.caption.copyWith(
+                color: colors.content.textTertiary,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1101,31 +1119,11 @@ class _ProgressContent extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          isReimport
-              ? 'MessageLens is rebuilding its local browsing data from Messages.'
-              : 'MessageLens is building its local browsing data from Messages.',
+          'Keep MessageLens open while it prepares your messages. '
+          'You can use other apps in the meantime.',
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
-        if (!isReimport) ...[
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                ref
-                    .read(onboardingOverlayActionsProvider.notifier)
-                    .abortImport();
-              },
-              child: Text(
-                'Abort Import',
-                style: typography.caption.copyWith(
-                  color: colors.content.textTertiary,
-                ),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }

@@ -9,3 +9,5 @@ export 'application/real_contacts_source_readiness_test_agent_provider.dart';
 export 'application/real_fda_settings_opening_authority_provider.dart';
 export 'application/real_messages_source_history_sufficiency_test_agent_provider.dart';
 export 'application/real_messages_source_readiness_test_agent_provider.dart';
+export 'application/required_sources_readiness_scheduler_provider.dart'
+    show requiredSourcesReadinessAcceptedProvider;

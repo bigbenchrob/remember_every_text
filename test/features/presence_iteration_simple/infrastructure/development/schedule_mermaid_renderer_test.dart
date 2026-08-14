@@ -92,23 +92,43 @@ void main() {
 
         final document = renderer.render(persisted);
 
-        expect(document.battingOrder, <int>[301, 302, 303, 304, 305, 306, 307]);
+        expect(document.battingOrder, <int>[
+          301,
+          302,
+          303,
+          304,
+          305,
+          306,
+          308,
+          309,
+          307,
+        ]);
         expect(document.mermaid, contains('T302 -->|"True: Trip 305"| T305'));
         expect(document.mermaid, contains('T302 -->|"False: default"| T303'));
         expect(document.mermaid, contains('T303 -->|"default"| T304'));
         expect(document.mermaid, contains('T304 -->|"True: default"| T305'));
         expect(document.mermaid, contains('T304 -->|"False: Trip 303"| T303'));
-        expect(document.mermaid, contains('T305 -->|"True: Trip 307"| T307'));
+        expect(document.mermaid, contains('T305 -->|"True: Trip 308"| T308'));
         expect(document.mermaid, contains('T305 -->|"False: default"| T306'));
         expect(
           document.mermaid,
           contains('T306 -->|"explicit: Trip 305"| T305'),
         );
+        expect(document.mermaid, contains('T308 -->|"True: Trip 307"| T307'));
+        expect(document.mermaid, contains('T308 -->|"False: Trip 309"| T309'));
+        expect(
+          document.mermaid,
+          contains('T309 -->|"Re-check: Trip 308"| T308'),
+        );
+        expect(
+          document.mermaid,
+          contains('T309 -->|"Import Anyway: Trip 307"| T307'),
+        );
         expect(document.mermaid, contains('T307 -->|"default"| Complete'));
         expect(document.mermaid, isNot(contains('null')));
-        expect(document.facts.tripCount, 7);
-        expect(document.facts.conditionalAlternativeCount, 6);
-        expect(document.facts.backwardEdgeCount, 2);
+        expect(document.facts.tripCount, 9);
+        expect(document.facts.conditionalAlternativeCount, 10);
+        expect(document.facts.backwardEdgeCount, 3);
         expect(messagesAgent.invocationCount, 0);
         expect(contactsAgent.invocationCount, 0);
         expect(settingsAuthority.invocationCount, 0);

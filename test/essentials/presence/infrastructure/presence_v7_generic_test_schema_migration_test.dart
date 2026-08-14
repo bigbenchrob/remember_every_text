@@ -189,7 +189,7 @@ void main() {
             .customSelect('SELECT id, type FROM step_definitions ORDER BY id')
             .get();
 
-        expect(version.read<int>('user_version'), 8);
+        expect(version.read<int>('user_version'), 9);
         expect(scheduleIds, <int>[900]);
         expect(tripIds, <int>[901, 902, 903, 904]);
         expect(stepIds, <int>[9101, 9102, 9103, 9104]);

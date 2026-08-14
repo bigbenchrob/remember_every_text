@@ -152,8 +152,8 @@ void main() {
 
     expect(capabilities.callCount, 0);
     expect(capabilities.settingsCallCount, 0);
-    expect(topology.trips, hasLength(7));
-    expect(topology.edges, hasLength(10));
+    expect(topology.trips, hasLength(9));
+    expect(topology.edges, hasLength(14));
   });
 }
 

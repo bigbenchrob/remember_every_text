@@ -2,10 +2,11 @@
 tier: project
 scope: presence
 owner: agent-per-project
-last_reviewed: 2026-08-12
+last_reviewed: 2026-08-13
 source_of_truth: doc
 links:
   - ../23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md
+  - ../23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/17-ONBOARDING-MESSAGES-HISTORY-CHOICE-WORKFLOW-IMPLEMENTATION.md
 tests: []
 ---
 
@@ -69,6 +70,7 @@ The currently implemented values are conceptually:
 tellStepType
 fixedDestinationStepType
 testStepType
+choiceStepType
 openFdaSettingsStepType
 ```
 
@@ -245,7 +247,7 @@ immutable resolver. Presence receives the finished resolver; it does not
 discover clients, inspect provider containers, or infer Agent meaning from the
 stored ID.
 
-### The active schema 8 state
+### The schema 8 activation
 
 Version 7 prepared generic Test rows for the two proven readiness definitions.
 Version 8 activates them by changing the corresponding base discriminators to
@@ -274,7 +276,60 @@ database-access redesign, not a consolidation cleanup.
 
 ---
 
-## 4. Definition Versus Occurrence
+## 4. The Generic Choice Grammar
+
+Schema version 9 adds durable definitions for finite human choices. It stores
+what may be selected; it does not store a current or previous selection.
+
+```text
+choice_step_definitions
+    stepDefinitionId
+
+choice_step_options
+    stepDefinitionId
+    value
+    position
+    label
+    destinationTripDefinitionId
+```
+
+The first table is a subtype marker. The second stores the ordered options.
+`value` is opaque execution identity, `label` is display copy, `position` is
+durable ordering, and the destination is the configured next Trip. Presence
+does not infer workflow meaning from either the value or label.
+
+The database guarantees unique values and positions within one Choice Step.
+The repository orders options by position, requires the marker, constructs the
+generic `ChoiceStep`, and rejects a destination outside the containing
+Schedule. The domain object rejects definitions with fewer than two options.
+
+Choice execution now has one deliberately narrow runtime seam. Presence issues
+a function bound privately to the current Choice activation; its caller
+supplies only `ChoiceValue`. Presence validates that the function is still
+current, resolves the value through the reconstructed `ChoiceStep`, and sends
+the resulting Trip identity through the ordinary Trip checkpoint path.
+
+No selection is added to `schedule_runs` or `execution_trace_events`. Before
+acceptance, restart returns to the Choice Trip at Step 1. After the ordinary
+destination checkpoint succeeds, restart begins at the selected destination
+Trip.
+
+Generic Presence presentation now receives only each option's ordered label
+and opaque value plus a context-bound selection function. It does not receive
+the destination. The active required-sources Onboarding Schedule uses this
+grammar for its sparse Messages-history choice:
+
+```text
+recheck       -> evaluate the history Test Agent again
+import_anyway -> continue to the existing confirmation
+```
+
+Onboarding authors those rods in the definition. It does not translate either
+value at runtime.
+
+---
+
+## 5. Definition Versus Occurrence
 
 Presence then has two ordered composition tables:
 
@@ -361,7 +416,7 @@ That is the complete Step at that position in the Trip.
 
 ---
 
-## 5. Why Occurrences Have Their Own IDs
+## 6. Why Occurrences Have Their Own IDs
 
 The occurrence itself has meaning because runtime code needs to identify a
 specific placement in the execution structure.
@@ -404,9 +459,26 @@ default-next means:
 
 The same rule applies to Steps inside a Trip.
 
+### Extending a canonical definition without resetting runs
+
+The active Onboarding definition can now be extended additively inside the
+same schema. The repository preserves every existing occurrence identity and
+its associated Trip identity, then transactionally adds new definitions and
+occurrences, updates ordinal positions, and applies approved generic Test-route
+changes.
+
+This matters because `schedule_runs.current_trip_occurrence_id` points to the
+occurrence identity, not its position. Moving confirmation occurrence `6107`
+from position 6 to position 8 therefore leaves a run already waiting there at
+the same semantic checkpoint.
+
+The extension rejects removal or Trip remapping of an existing occurrence. It
+does not delete runs or traces. This is definition evolution, not a schema
+migration and not a run reset.
+
 ---
 
-## 6. Why A Trip Definition May Appear Only Once Per Schedule
+## 7. Why A Trip Definition May Appear Only Once Per Schedule
 
 The current model permits a canonical Trip definition to appear at most once
 within one Schedule.
@@ -463,7 +535,7 @@ This assumption should be revisited only if a real workflow proves otherwise.
 
 ---
 
-## 7. `schedule_runs`: One Actual Execution Of A Schedule
+## 8. `schedule_runs`: One Actual Execution Of A Schedule
 
 Definitions contain no runtime progress.
 
@@ -535,7 +607,7 @@ means:
 
 ---
 
-## 8. Why Runtime State Lives In `presence.db`
+## 9. Why Runtime State Lives In `presence.db`
 
 It would have been possible to store Presence definitions in `presence.db`
 while putting current-run state somewhere like `user_overlays.db`.
@@ -587,7 +659,7 @@ Presence relational model across databases.
 
 ---
 
-## 9. `execution_trace_events`: The Append-Only Diary
+## 10. `execution_trace_events`: The Append-Only Diary
 
 `execution_trace_events` records what actually happened during one
 `ScheduleRun`.
@@ -664,7 +736,7 @@ analysis.
 
 ---
 
-## 10. Trace Is Not Runtime Authority
+## 11. Trace Is Not Runtime Authority
 
 This distinction is critical:
 
@@ -707,7 +779,7 @@ Presence merely records repeated ordinary Trip entries and route decisions.
 
 ---
 
-## 11. A Complete Walk-Through
+## 12. A Complete Walk-Through
 
 Suppose Onboarding contains:
 
@@ -795,7 +867,7 @@ trace
 
 ---
 
-## 12. Translation Dictionary
+## 13. Translation Dictionary
 
 | Database concept          | Plain-English meaning                                               |
 | ------------------------- | ------------------------------------------------------------------- |
@@ -814,7 +886,7 @@ trace
 
 ---
 
-## 13. The Question To Ask When Lost
+## 14. The Question To Ask When Lost
 
 If the schema becomes confusing, ask:
 

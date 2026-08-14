@@ -274,18 +274,6 @@ class OnboardingGate extends _$OnboardingGate {
     ref.invalidateSelf();
   }
 
-  /// Abort the in-progress import, delete the partially-created database
-  /// files, and reset state to [OnboardingStatus.awaitingUserAction] so the
-  /// next launch triggers a clean onboarding.
-  Future<void> abortImport() async {
-    await ref.read(messageDataResetServiceProvider).resetDerivedData();
-
-    // Reset to awaiting so the next launch shows the welcome screen.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      state = OnboardingStatus.awaitingUserAction;
-    });
-  }
-
   /// Trigger a full reimport from settings.
   ///
   /// Unlike [startImportAndGraphBuild], this can be called when the app is

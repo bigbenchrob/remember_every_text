@@ -310,7 +310,7 @@ void main() {
         .getSingleOrNull();
     final run = await repository(opened).loadRun(1);
 
-    expect(version.read<int>('user_version'), 8);
+    expect(version.read<int>('user_version'), 9);
     expect(table?.read<String>('name'), 'fda_test_step_definitions');
     expect(run.currentTripDefinition?.id, const TripDefinitionId(20));
     expect(

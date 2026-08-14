@@ -3487,3 +3487,382 @@ production preservation authority mechanically enforceable.
   tests, 14 development-harness tests, all 362 architecture tripwires, clean
   analysis, provider regeneration, unchanged Schedule diagram regeneration, a
   successful macOS Debug build, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Propose ChoiceStep and generic Presence presentation
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/12-CHOICESTEP-AND-WORKFLOW-PRESENTATION-PROPOSAL.md`
+  as the bounded design for finite persisted user choices and generic Presence
+  rendering.
+- Established the mechanical routing distinction: configuration chooses for
+  `FixedDestinationStep`, an Agent result chooses for `TestStep`, and human
+  selection of an opaque configured option chooses for `ChoiceStep`.
+- Recommended a durable Step-scoped `ChoiceValue`, ordered persisted options,
+  required configured destinations, and a context-bound choice selection
+  operation which receives only that value.
+- Elevated the governing definition: `ChoiceStep` is distinguished by a human
+  selecting one durable opaque value from two or more persisted options, not
+  by whether those options appear as buttons, radio controls, menus, or lists.
+- Made labels explicitly mutable presentation copy while values, destinations,
+  and routing identity remain stable; Presence displays labels and resolves
+  values without understanding either semantically.
+- Preserved Trip-granular restart and checkpoint authority: no pending choice
+  or current Step is persisted before the selected Trip destination commits.
+- Kept Presence domain and execution free of Flutter and workflow meaning.
+  Onboarding's workflow definition owns labels, opaque values, destinations,
+  and Agent bindings; a permanent Presence presentation layer owns ordinary
+  rendering for self-describing generic Step shapes.
+- Distinguished generic Step mechanics already evidenced by the development
+  host from its disposable trace, Mermaid, live-map, source-substitution,
+  Run Again, and diagnostic controls.
+- Retained a narrow workflow/specialist presentation escape hatch only for a
+  Step whose UI requires domain expertise not expressed by generic grammar;
+  `OpenFdaSettingsStep` remains the current unresolved example.
+- Preserved stale-interaction rejection without exposing Step or Trip identity
+  to presentation by binding the selection callback privately to the current
+  ChoiceStep execution context.
+- Rejected presentation-side routing, fake Test Agents, specialized sparse
+  history Steps, generic interaction payloads, widget-owning Steps, and any
+  inference that this requirement justifies `ActionStep`.
+- Updated package navigation. No application code, schema, generated source,
+  Schedule topology, production onboarding, or onboarding copy changed.
+
+---
+
+# 2026-08-13 - Implement the pure ChoiceStep domain contract
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/13-CHOICESTEP-PURE-DOMAIN-IMPLEMENTATION.md`
+  as the bounded implementation record for ChoiceStep Slice 1.
+- Added generic immutable `ChoiceValue` and `ChoiceOption` domain values plus
+  a finite `ChoiceStep` which maps only configured opaque values to persisted
+  Trip identities.
+- Enforced two-or-more cardinality, Step-scoped value uniqueness, explicit
+  unknown-value failure, preserved ordering, and defensive immutability while
+  allowing duplicate labels and shared destinations.
+- Kept Choice grammar free of UI, workflow meaning, Agents, providers,
+  database infrastructure, and Onboarding dependencies.
+- Left `presence.db`, repository reconstruction, Scheduler, Trip routing,
+  presentation, active Schedule topology, and production onboarding unchanged.
+- Added explicit fail-closed compatibility cases where the new sealed subtype
+  made existing persistence and development-topology switches exhaustive;
+  neither boundary gained Choice support.
+- Added focused domain and architecture coverage and updated package indexes.
+- Verified 19 focused Choice tests, 94 complete Presence/development-harness
+  tests, 82 complete Onboarding tests, all 363 architecture tripwires, clean
+  analysis, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Persist the generic ChoiceStep grammar
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/14-CHOICESTEP-ADDITIVE-PERSISTENCE-IMPLEMENTATION.md`
+  as the bounded implementation record for ChoiceStep Slice 2.
+- Advanced `presence.db` additively to schema version 9 with a Choice subtype
+  marker and ordered option rows carrying only opaque value, label, position,
+  and required Trip destination.
+- Extended the definition writer and repository reconstruction path while
+  preserving the existing exactly-one-active-subtype invariant, domain-owned
+  minimum cardinality, terminal placement, and Schedule-local destination
+  closure.
+- Added file-backed v8-to-v9 migration evidence proving existing Schedule,
+  Trip, Tell Step, run checkpoint, and append-only trace preservation plus
+  active foreign-key enforcement for the new tables.
+- Kept Scheduler, Trip runtime, development topology, presentation, active
+  Onboarding topology, selected-choice state, and execution trace behavior
+  unchanged.
+- Updated the package indexes, Slice 1 cross-reference, and plain-English
+  Presence database guide to distinguish persisted Choice grammar from later
+  runtime support.
+- Verified 34 focused Choice domain/persistence/migration tests, all 63
+  Presence infrastructure tests, all 109 Presence/development-harness tests,
+  all 82 Onboarding tests, all 364 architecture tripwires, clean analysis,
+  regenerated Drift output, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Complete the current terminal ChoiceStep at runtime
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/15-CHOICESTEP-RUNTIME-COMPLETION-IMPLEMENTATION.md`
+  as the bounded implementation record for ChoiceStep Slice 3.
+- Added one Choice-specific, context-bound runtime callable through which a
+  caller reports only the selected opaque `ChoiceValue`.
+- Kept current Step, Trip, occurrence, destination, and Schedule geometry
+  private to Presence; no general Step-input or interaction-token framework
+  was introduced.
+- Reused the existing Trip result, repository checkpoint, restart authority,
+  and universal execution-trace path rather than creating Choice-specific
+  routing or persistence.
+- Added private activation and exact-current-Step checks so an interaction can
+  complete only the ChoiceStep for which it was issued, including when a later
+  ChoiceStep uses the same opaque value.
+- Added fail-closed handling for unknown values, autonomous Choice completion,
+  nonterminal ChoiceSteps, stale interactions, and rapid repeated selection.
+- Left Flutter presentation, active Onboarding topology, selected-value
+  persistence, current-Step persistence, Choice trace fields, and development
+  topology visualization outside this slice.
+- Updated package indexes and the plain-English Presence database guide with
+  the runtime boundary and unchanged Trip-granular restart semantics.
+- Verified 12 focused Choice runtime tests, 46 combined Choice domain,
+  persistence, migration, and runtime tests, all 121 Presence/development-
+  harness tests, all 82 Onboarding tests, all 365 architecture tripwires,
+  clean analysis, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Render generic Presence Step shapes
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/16-GENERIC-PRESENCE-PRESENTATION-IMPLEMENTATION.md`
+  as the bounded implementation record for ChoiceStep Slice 4.
+- Added a permanent Presence application projection that consumes full domain
+  Steps and emits only presentation-safe generic shapes and bound operations.
+- Added one permanent exhaustive presenter for Tell, Test, Fixed Destination,
+  and finite Choice mechanics, with an explicit specialist marker for the
+  transitional FDA Settings Step.
+- Projected each Choice option to ordered persisted label plus opaque
+  `ChoiceValue`; no destination, Step identity, Trip identity, occurrence, or
+  Schedule geometry reaches Flutter.
+- Rendered finite choices as ordinary ordered macOS buttons without persisted
+  styling metadata or semantic interpretation of opaque values.
+- Added in-flight disabling as UX feedback while preserving Slice 3's runtime
+  activation and repeated-selection checks as correctness authority.
+- Kept source substitution, Mermaid, live topology, execution trace,
+  diagnostics, Run Again, and FDA-specific copy/behavior in the development
+  harness.
+- Relocated the already-proven minimal Presence presentation tokens from the
+  disposable host to the permanent Presence presentation home.
+- Left the active Onboarding Schedule, `presence.db`, checkpointing, trace,
+  restart semantics, and all workflow copy unchanged.
+- Updated package indexes and added a positive architecture tripwire protecting
+  the destination-free, workflow-agnostic presentation boundary.
+- Verified 12 focused projection/widget tests, 58 combined Choice tests, all
+  133 Presence/development-harness tests, all 82 Onboarding tests, all 366
+  architecture tripwires, clean analysis, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Use generic ChoiceStep in active Onboarding
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/17-ONBOARDING-MESSAGES-HISTORY-CHOICE-WORKFLOW-IMPLEMENTATION.md`
+  as the implementation record for ChoiceStep Slice 5.
+- Extended the active required-sources Schedule with a Messages-history
+  sufficiency Test Trip and a sparse-history guidance Trip containing two Tell
+  Steps and one generic terminal ChoiceStep.
+- Persisted the exact opaque Choice values `recheck` and `import_anyway` with
+  their labels and destination geometry in the Schedule definition; no
+  workflow-specific presentation or runtime translation was introduced.
+- Routed Re-check back through the factual TestAgent so each attempt performs
+  a fresh `COUNT(*) FROM message` evaluation, while Import Anyway converges on
+  the existing required-sources confirmation Trip.
+- Added a transactional, fail-closed definition-extension path that preserves
+  existing run checkpoints and trace history while retaining stable
+  occurrence-to-Trip identity.
+- Extended the generic topology projector to render persisted Choice options
+  as ordinary explicit edges and regenerated the checked Onboarding Schedule
+  artifact.
+- Updated the package indexes, release metadata, and plain-English Presence
+  database guide to record active Choice usage and distinguish additive
+  definition evolution from schema migration.
+- Documented that a real sparse-source manual run remains blocked on a safe,
+  development-only Messages-source substitution; no real `chat.db` data was
+  changed for this slice.
+- Verified all 230 Presence, development-harness, and Onboarding tests, all 366
+  architecture tripwires, clean analysis, formatting, `git diff --check`, and
+  a successful debug macOS build.
+
+---
+
+# 2026-08-13 - Integrate generic Presence runner into production Onboarding
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/18-PRODUCTION-GENERIC-PRESENCE-RUNNER-INTEGRATION.md`
+  as the production-integration implementation record.
+- Added the permanent, workflow-agnostic `PresenceRunner` for generic Tell,
+  Test, Fixed Destination, and Choice execution/presentation.
+- Added the production Onboarding composition provider and blocking host for
+  the real required-source Schedule and real specialist TestAgent bindings.
+- Preserved `OpenFdaSettingsStep` as an explicit Onboarding specialist and
+  reused the established FDA presentation without introducing an Action Step.
+- Kept import, graph construction, recovery, completion, and reimport under the
+  existing `OnboardingGate` and operational overlay.
+- Added production-host tests for sufficient history, sparse-history Re-check,
+  Import Anyway, and the FDA specialist path, plus permanent-runner tests for
+  generic and autonomous Step behavior.
+- Added architecture tripwires preventing workflow-value translation,
+  development-harness leakage, and Onboarding semantics in permanent Presence.
+- Updated the package indexes, Onboarding gate guide, release notes, and app
+  version to `0.2.20+38`.
+- Verified all 237 Presence, development-harness, and Onboarding tests, all 369
+  architecture tripwires, clean analysis, formatting, `git diff --check`, and
+  a successful debug macOS build.
+
+---
+
+# 2026-08-13 - Audit the post-readiness Onboarding handoff
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/19-POST-READINESS-ONBOARDING-HANDOFF-AUDIT.md`
+  as the code-grounded audit of the production boundary after required-source
+  Presence completion.
+- Established that Presence completion checkpoints the final Trip and removes
+  only its presentation; `OnboardingGate` observes no completion event and
+  continues to derive its independent state from `OnboardingEnvironmentReport`.
+- Documented that import does not start automatically. The existing
+  Environment Readiness panel invokes `OnboardingGate.startImportAndGraphBuild`
+  only after a human presses the import action.
+- Identified the concrete sparse-history handoff defect: the route reached
+  through the persisted `import_anyway` option completes Presence, but the
+  unchanged sparse report reveals a legacy source-warning panel with no import
+  action.
+- Inventoried source import, graph projection, reset, progress, failure,
+  recovery, completion, restart, and attachment-archive ownership using current
+  code as authority where older documentation was stale.
+- Recommended one bounded next slice: derive the existing import-readiness
+  handoff from the completed required-sources Schedule without adding schema,
+  another acceptance flag, a new import screen, or a generic operation Step.
+- Concluded that `ActionStep` remains unearned because FDA Settings opening and
+  initial graph construction have materially different mutation, progress,
+  restart, recovery, and result semantics.
+- Updated the package start page and Feature Addition index. No application
+  code, schema, workflow definition, run state, FDA behavior, import behavior,
+  recovery behavior, or presentation was changed.
+
+---
+
+# 2026-08-13 - Repair durable accepted-readiness import handoff
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/20-DURABLE-ACCEPTED-READINESS-IMPORT-HANDOFF-IMPLEMENTATION.md`
+  as the implementation record for the post-Presence Onboarding handoff.
+- Documented the separate authorities of current environment facts and durable
+  required-sources Schedule completion, and the Environment Readiness surface
+  that composes them.
+- Recorded that sparse accepted sources now expose the existing **Import My
+  Messages** action while sparse unaccepted sources remain at **Re-check**.
+- Recorded restart reconciliation from the existing Schedule run checkpoint,
+  with no trace lookup, Choice-value recovery, or duplicate acceptance flag.
+- Updated the package start page, Feature Addition indexes, Onboarding gate
+  guide, release notes, and app version to `0.2.21+39`.
+- Preserved historical implementation records and left environment facts,
+  Schedule geometry, Presence completion, FDA, import, graph build, recovery,
+  and failure semantics unchanged.
+
+---
+
+# 2026-08-13 - Audit initial import and Conversation Graph build lifecycle
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/21-INITIAL-IMPORT-GRAPH-BUILD-LIFECYCLE-AUDIT.md`
+  as the code-grounded audit of the production operation beginning with
+  **Import My Messages**.
+- Traced the action through Environment Readiness, `OnboardingGate`, archive
+  mutation admission, destructive derived-data reset, the controller, and all
+  17 source-import and graph-projection stages.
+- Distinguished one outer admitted Gate action from the nested, single
+  `ConversationGraphBuildController.runOnce()` data-construction lifecycle.
+- Inventoried live, completion-only, durable, and ephemeral progress evidence;
+  documented that current APIs support calm coarse progress but not truthful
+  stage names, percentage, remaining time, resume, or cancellation.
+- Established that **Abort Import** neither signals nor stops the active build
+  and that its attempted reset is denied by the active mutation owner, making
+  the control materially misleading.
+- Documented caught failure, abrupt termination, partial-store, recovery, and
+  restart semantics, including the limits of import batches and readiness
+  probes as durable evidence.
+- Recorded the nested mutation-policy caveat: the outer `onboardingImport`
+  policy is not currently a superset of nested `messageDataReset` reopen and
+  checkpoint policy.
+- Recommended exactly one next implementation slice: remove the false Abort
+  affordance while preserving all current operation and restart behavior.
+- Confirmed that a generic operation Step remains unearned and that Presence
+  may eventually own the surrounding human sequence but not the destructive
+  operation.
+- Updated the package start page and Feature Addition index. No application
+  code, UI, import logic, recovery, persistence, schema, or Presence behavior
+  was changed.
+
+---
+
+# 2026-08-14 - Remove misleading Abort Import affordance
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/22-REMOVE-MISLEADING-ABORT-IMPORT-IMPLEMENTATION.md`
+  as the implementation record for Audit 21's single recommended correction.
+- Removed **Abort Import** from active first-run progress without introducing a
+  replacement Cancel, Stop, cleanup, return, or retry command.
+- Removed the now-unused `OnboardingOverlayActions.abortImport()` and
+  `OnboardingGate.abortImport()` forwarding path after repository-wide caller
+  search confirmed it was presentation-only.
+- Preserved `MessageDataResetService` and all legitimate first-run preparation,
+  reimport, explicit reset, failure, and automatic-recovery uses.
+- Added focused production-overlay tests proving first-run and reimport progress
+  remain visible and explicitly non-cancellable.
+- Preserved mutation admission, reset, controller, orchestrator, source import,
+  graph projection, failure persistence, recovery, restart, completion,
+  Presence, and schema behavior.
+- Updated the package start page and Feature Addition index.
+- Verified 28 focused tests, all 113 Onboarding and Environment Readiness
+  tests, all 372 architecture tripwires, clean analysis and formatting,
+  `git diff --check`, and a successful debug macOS build without launching the
+  app or accessing the production archive.
+
+---
+
+# 2026-08-14 - Audit production import progress surface
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/23-PRODUCTION-IMPORT-PROGRESS-SURFACE-AUDIT.md`
+  as a code-grounded inventory of the first-run, direct-reimport, completion,
+  failure, and recovery presentations.
+- Mapped every active-progress, completion, and failure statement to its
+  supporting operational fact and identified coarse truth, diagnostic detail,
+  and unsupported implications.
+- Documented that `importing` and `buildingGraph` are visually shared staging
+  states rather than two real operations, and that production Reset Message
+  Data currently returns through the ordinary import gate instead of calling
+  the otherwise implemented direct-reimport API.
+- Inventoried all currently available live facts and concluded that process-
+  local elapsed time is technically supportable but not yet useful enough to
+  add.
+- Established the narrow truthful guidance that MessageLens must remain open
+  while work runs, while the human may use other applications.
+- Rejected live stage telemetry, percentage, ETA, resume, and cancellation as
+  unsupported or unearned by current human need.
+- Selected **minimal calm** as the best presentation philosophy and recommended
+  exactly one next slice: replace the repetitive active-progress paragraph
+  with concise keep-open and use-other-apps guidance.
+- Updated the package start page and Feature Addition index. No application
+  code, copy in code, Gate state, telemetry, persistence, operation lifecycle,
+  or Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Add truthful keep-open progress guidance
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/24-TRUTHFUL-KEEP-OPEN-PROGRESS-GUIDANCE-IMPLEMENTATION.md`
+  as the implementation record for Audit 23's single recommended slice.
+- Replaced the repetitive first-run/direct-reimport progress paragraph with
+  shared guidance to keep MessageLens open while confirming that other
+  applications may be used in the meantime.
+- Preserved controller-derived coarse headlines, the indeterminate activity
+  indicator, layout, completion, failure/recovery, and explicit
+  non-cancellability.
+- Expanded production-overlay tests to prove the shared guidance, truthful
+  first-run/reimport headings, indeterminate progress, absence of old copy,
+  absence of unsupported stage/percentage/ETA/resume claims, and absence of
+  cancellation controls.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.22+40`.
+- No Gate, archive mutation, reset, controller, orchestrator, restart,
+  persistence, Presence, or schema behavior changed.
+- Verified both focused progress cases, all 113 Onboarding and Environment
+  Readiness tests, all 372 architecture tripwires, clean analysis and targeted
+  formatting, `git diff --check`, and a successful debug macOS build without
+  launching the app.

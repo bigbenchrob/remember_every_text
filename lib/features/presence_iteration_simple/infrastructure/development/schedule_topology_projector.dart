@@ -46,7 +46,8 @@ final class ScheduleTopologyProjector {
           tripDefinitionId: occurrence.trip.id,
           name: occurrence.trip.name,
           stepSummary: _stepSummary(occurrence.trip.steps),
-          usesDecisionShape: terminalStep is TestStep,
+          usesDecisionShape:
+              terminalStep is TestStep || terminalStep is ChoiceStep,
         ),
       );
 
@@ -98,6 +99,25 @@ final class ScheduleTopologyProjector {
               outcome: 'False',
             ),
           );
+        case ChoiceStep():
+          for (final option in terminalStep.options) {
+            final destination = _resolveExplicit(
+              definition: definition,
+              byTripId: byTripId,
+              destination: option.destinationTripDefinitionId,
+            );
+            edges.add(
+              _edge(
+                from: occurrence,
+                to: destination,
+                routingResultTripDefinitionId:
+                    option.destinationTripDefinitionId,
+                label: '${option.label}: Trip ${destination.trip.id.value}',
+                kind: ScheduleTopologyEdgeKind.explicit,
+                isConditional: true,
+              ),
+            );
+          }
       }
     }
 
@@ -187,6 +207,8 @@ final class ScheduleTopologyProjector {
       FixedDestinationStep() => 'Fixed destination',
       TestStep(testAgentId: final id) => 'Test: ${id.value}',
       OpenFdaSettingsStep() => 'Open FDA Settings',
+      ChoiceStep(options: final options) =>
+        'Choice: ${options.map((option) => option.label).join(' / ')}',
     };
   }
 
@@ -196,6 +218,7 @@ final class ScheduleTopologyProjector {
       FixedDestinationStep() => 'Fixed destination',
       TestStep(testAgentId: final id) => 'Test: ${id.value}',
       OpenFdaSettingsStep() => 'Open FDA Settings',
+      ChoiceStep() => 'Choice',
     };
   }
 }

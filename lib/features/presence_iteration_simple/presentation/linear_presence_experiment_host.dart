@@ -5,16 +5,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import '../../../config/theme/theme_typography.dart';
+import '../../../essentials/presence/application/presence_step_presentation.dart';
+import '../../../essentials/presence/domain/entities/choice_value.dart';
 import '../../../essentials/presence/domain/entities/execution_trace_event.dart';
-import '../../../essentials/presence/domain/entities/step.dart';
 import '../../../essentials/presence/domain/services/presence_scheduler.dart';
+import '../../../essentials/presence/presentation/presence_presentation_tokens.dart';
+import '../../../essentials/presence/presentation/presence_step_presenter.dart';
 import '../application/development_contacts_source_provider.dart';
 import '../application/linear_presence_experiment_diagram_provider.dart';
 import '../application/linear_presence_experiment_provider.dart';
 import '../application/linear_presence_experiment_trace_provider.dart';
 import '../application/linear_presence_experiment_visualization_provider.dart';
 import '../infrastructure/development/development_contacts_source_mode_store.dart';
-import 'presence_presentation_tokens.dart';
 import 'schedule_run_visualization_view.dart';
 
 class LinearPresenceExperimentHost extends ConsumerStatefulWidget {
@@ -27,46 +29,69 @@ class LinearPresenceExperimentHost extends ConsumerStatefulWidget {
 
 class _LinearPresenceExperimentHostState
     extends ConsumerState<LinearPresenceExperimentHost> {
-  bool _isCompleting = false;
+  bool _isCompletingSpecialistStep = false;
   bool _isRestarting = false;
   bool _showDiagram = false;
   bool _showMap = false;
   bool _showTrace = false;
-  Object? _completionError;
+  Object? _specialistCompletionError;
 
-  Future<void> _completeCurrentStep(PresenceScheduler scheduler) async {
-    if (_isCompleting) {
+  Future<void> _completeGenericStep(PresenceScheduler scheduler) async {
+    await scheduler.completeCurrentStep();
+    await _refreshDiagnostics(scheduler);
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  CurrentChoiceSelection _issueChoiceSelection(PresenceScheduler scheduler) {
+    final select = scheduler.issueCurrentChoiceSelection();
+    return (ChoiceValue value) async {
+      await select(value);
+      await _refreshDiagnostics(scheduler);
+      if (mounted) {
+        setState(() {});
+      }
+    };
+  }
+
+  Future<void> _completeSpecialistStep(PresenceScheduler scheduler) async {
+    if (_isCompletingSpecialistStep) {
       return;
     }
     setState(() {
-      _isCompleting = true;
-      _completionError = null;
+      _isCompletingSpecialistStep = true;
+      _specialistCompletionError = null;
     });
     try {
       await scheduler.completeCurrentStep();
-      final runId = scheduler.run?.id;
-      if (_showTrace && runId != null) {
-        await ref
-            .read(linearPresenceExperimentTraceProvider(runId).notifier)
-            .refresh();
-      }
-      if (_showMap && runId != null) {
-        await ref
-            .read(linearPresenceExperimentVisualizationProvider(runId).notifier)
-            .refresh();
-      }
+      await _refreshDiagnostics(scheduler);
     } catch (error) {
       if (mounted) {
         setState(() {
-          _completionError = error;
+          _specialistCompletionError = error;
         });
       }
     } finally {
       if (mounted) {
         setState(() {
-          _isCompleting = false;
+          _isCompletingSpecialistStep = false;
         });
       }
+    }
+  }
+
+  Future<void> _refreshDiagnostics(PresenceScheduler scheduler) async {
+    final runId = scheduler.run?.id;
+    if (_showTrace && runId != null) {
+      await ref
+          .read(linearPresenceExperimentTraceProvider(runId).notifier)
+          .refresh();
+    }
+    if (_showMap && runId != null) {
+      await ref
+          .read(linearPresenceExperimentVisualizationProvider(runId).notifier)
+          .refresh();
     }
   }
 
@@ -309,38 +334,50 @@ class _LinearPresenceExperimentHostState
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      step is TellStep ? step.text : step.name,
-                      style: PresencePresentationTokens.primaryTellStyle(
-                        typography,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
                       'Step ${trip.currentStepIndex + 1} of '
                       '${trip.definition.steps.length}',
                       style: typography.caption,
                     ),
                     const SizedBox(height: 24),
-                    if (_completionError case final error?) ...<Widget>[
-                      Text(
-                        'Step did not complete: $error',
-                        style: typography.caption,
-                        textAlign: TextAlign.center,
+                    PresenceStepPresenter(
+                      presentation: PresenceStepPresentationProjector.project(
+                        step: step,
+                        complete: () => _completeGenericStep(scheduler),
+                        issueChoiceSelection: () =>
+                            _issueChoiceSelection(scheduler),
                       ),
-                      const SizedBox(height: 16),
-                    ],
-                    PushButton(
-                      controlSize: ControlSize.regular,
-                      onPressed: _isCompleting
-                          ? null
-                          : () => _completeCurrentStep(scheduler),
-                      child: Text(
-                        _isCompleting
-                            ? 'Checkpointing...'
-                            : step is OpenFdaSettingsStep
-                            ? 'Open System Settings'
-                            : 'Complete Step',
+                      specialistBuilder: (_) => Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            step.name,
+                            style: PresencePresentationTokens.primaryTellStyle(
+                              typography,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          if (_specialistCompletionError
+                              case final error?) ...<Widget>[
+                            Text(
+                              'Step did not complete: $error',
+                              style: typography.caption,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          PushButton(
+                            controlSize: ControlSize.regular,
+                            onPressed: _isCompletingSpecialistStep
+                                ? null
+                                : () => _completeSpecialistStep(scheduler),
+                            child: Text(
+                              _isCompletingSpecialistStep
+                                  ? 'Checkpointing...'
+                                  : 'Open System Settings',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
