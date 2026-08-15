@@ -78,12 +78,16 @@ Common reasons a user might re-import:
 
 ### Data Safety
 
-- Re-import prepares derived source-scoped import/graph data, then graph build
-  rebuilds `working_ss.db` from source-scoped import facts
+- Re-import resets only enumerated rebuildable source-scoped import/graph
+  stores, then graph build reconstructs `working_ss.db` from source-scoped
+  import facts
 - Overlay DB rows (archive metadata, user preferences, favorites, etc.)
   survive re-import because overlay is never touched by graph projection
 - Archive files on disk are preserved — archive maintenance is additive and
   idempotent
+- Archived payloads are preservation data, not a reimport source that may be
+  discarded and recreated. See
+  [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
 
 ## Archive Maintenance During Sync
 

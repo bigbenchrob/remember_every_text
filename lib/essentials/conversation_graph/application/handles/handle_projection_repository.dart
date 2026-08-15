@@ -8,6 +8,18 @@ class HandleProjectionResult {
   final int insertedHandleCount;
 }
 
+class HandleIdentityProjectionResult {
+  const HandleIdentityProjectionResult({
+    required this.examinedHandleCount,
+    required this.updatedHandleCount,
+  });
+
+  final int examinedHandleCount;
+  final int updatedHandleCount;
+}
+
 abstract interface class HandleProjectionRepository {
   Future<HandleProjectionResult> projectHandles();
+
+  Future<HandleIdentityProjectionResult> projectLocalAccountIdentity();
 }

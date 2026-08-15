@@ -27,11 +27,16 @@ import '../../../attachments/feature_level_providers.dart'
     show attachmentFileAccessProvider;
 import '../../../contacts/feature_level_providers.dart'
     show DisplayIdentityResolver, displayIdentityResolverProvider;
+import '../../../conversations/feature_level_providers.dart'
+    show
+        ConversationSignatureDisplayByIdsRequest,
+        conversationSignatureDisplayByIdsProvider;
 import '../../domain/message_evidence/message_evidence_row_data.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
 import '../../domain/message_evidence/message_evidence_skeleton.dart';
 import '../../domain/message_evidence/recovered_message_evidence.dart';
+import 'contact_evidence_cache_policy.dart';
 import 'message_attachment_evidence.dart';
 import 'recovered_message_evidence_provider.dart';
 
@@ -43,6 +48,10 @@ Future<MessageEvidenceTimelineSkeleton> messageEvidenceTimelineSkeleton(
   required MessageEvidenceScope scope,
 }) async {
   ref.watch(messageDataVersionProvider);
+  if (scope is ContactAllMessagesEvidenceScope ||
+      scope is ContactHandleMessagesEvidenceScope) {
+    retainPreparedContactEvidence(ref);
+  }
 
   return switch (scope) {
     ContactAllMessagesEvidenceScope(:final contactId) =>
@@ -166,12 +175,12 @@ Future<MessageEvidenceRowData?> messageEvidenceRow(
     return null;
   }
   if (scope is RecoveredMessagesEvidenceScope) {
-    return _messageEvidenceRowDataFromConversationMessage(message);
+    return _resolveRecoveredMessageSender(ref, message);
   }
   return _resolveGraphMessageSender(ref, message);
 }
 
-Future<MessageEvidenceRowData> _resolveGraphMessageSender(
+Future<MessageEvidenceRowData> _resolveRecoveredMessageSender(
   Ref ref,
   ConversationMessage message,
 ) async {
@@ -179,10 +188,29 @@ Future<MessageEvidenceRowData> _resolveGraphMessageSender(
   return _messageEvidenceRowDataFromGraphMessage(message, resolver);
 }
 
+Future<MessageEvidenceRowData> _resolveGraphMessageSender(
+  Ref ref,
+  ConversationMessage message,
+) async {
+  final resolver = await ref.watch(displayIdentityResolverProvider.future);
+  final conversationIdentities = await _conversationEvidenceIdentities(ref, [
+    message.conversationId,
+  ]);
+  final conversationIdentity = conversationIdentities[message.conversationId];
+  return _messageEvidenceRowDataFromGraphMessage(
+    message,
+    resolver,
+    conversationDisplayTitle: conversationIdentity?.title,
+    isSelfConversation: conversationIdentity?.isSelfConversation ?? false,
+  );
+}
+
 MessageEvidenceRowData _messageEvidenceRowDataFromGraphMessage(
   ConversationMessage message,
-  DisplayIdentityResolver resolver,
-) {
+  DisplayIdentityResolver resolver, {
+  String? conversationDisplayTitle,
+  bool isSelfConversation = false,
+}) {
   final rawHandleLabel =
       message.senderRawHandleLabel ?? message.senderDisplayHandle;
   final senderIdentity = resolver.resolveSender(
@@ -200,36 +228,13 @@ MessageEvidenceRowData _messageEvidenceRowDataFromGraphMessage(
     associatedMessageId: message.associatedMessageId,
     attachmentCount: message.attachmentCount,
     sourceConversationId: message.conversationId,
+    conversationDisplayTitle: conversationDisplayTitle,
+    isSelfConversation: isSelfConversation,
+    senderIsMe: senderIdentity.isSelf,
     senderHandleId: message.senderHandleId,
     senderCanonicalHandleId: message.senderCanonicalHandleId,
     senderDisplayHandle: senderIdentity.primaryLabel,
     senderRawHandleLabel: senderIdentity.rawHandleLabel,
-    semanticKind: message.semanticKind,
-    itemKind: message.itemKind,
-    isSystemMessage: message.isSystemMessage,
-    isSparseArtifact: message.isSparseArtifact,
-    hasAttributedBodySource: message.hasAttributedBodySource,
-    hasMessageSummaryInfo: message.hasMessageSummaryInfo,
-    hasPayloadDataSource: message.hasPayloadDataSource,
-    errorCode: message.errorCode,
-  );
-}
-
-MessageEvidenceRowData _messageEvidenceRowDataFromConversationMessage(
-  ConversationMessage message,
-) {
-  return MessageEvidenceRowData(
-    messageId: message.messageId,
-    dateUtc: message.dateUtc,
-    isFromMe: message.isFromMe,
-    text: message.text,
-    associatedMessageId: message.associatedMessageId,
-    attachmentCount: message.attachmentCount,
-    sourceConversationId: message.conversationId,
-    senderHandleId: message.senderHandleId,
-    senderCanonicalHandleId: message.senderCanonicalHandleId,
-    senderDisplayHandle: message.senderDisplayHandle,
-    senderRawHandleLabel: message.senderRawHandleLabel,
     semanticKind: message.semanticKind,
     itemKind: message.itemKind,
     isSystemMessage: message.isSystemMessage,
@@ -282,6 +287,10 @@ Future<Map<int, MessageEvidenceRowData>> messageEvidenceInitialRows(
   int hydrationLimit = 80,
 }) async {
   ref.watch(messageDataVersionProvider);
+  if (scope is ContactAllMessagesEvidenceScope ||
+      scope is ContactHandleMessagesEvidenceScope) {
+    retainPreparedContactEvidence(ref);
+  }
 
   final messages = await switch (scope) {
     ContactAllMessagesEvidenceScope(:final contactId) => ref.watch(
@@ -304,11 +313,54 @@ Future<Map<int, MessageEvidenceRowData>> messageEvidenceInitialRows(
   };
 
   final resolver = await ref.watch(displayIdentityResolverProvider.future);
+  final conversationIdentities = await _conversationEvidenceIdentities(
+    ref,
+    messages.map((message) {
+      return message.conversationId;
+    }),
+  );
   final rows = [
     for (final message in messages)
-      _messageEvidenceRowDataFromGraphMessage(message, resolver),
+      _messageEvidenceRowDataFromGraphMessage(
+        message,
+        resolver,
+        conversationDisplayTitle:
+            conversationIdentities[message.conversationId]?.title,
+        isSelfConversation:
+            conversationIdentities[message.conversationId]
+                ?.isSelfConversation ??
+            false,
+      ),
   ];
   return {for (final row in rows) row.messageId: row};
+}
+
+typedef _ConversationEvidenceIdentity = ({
+  String title,
+  bool isSelfConversation,
+});
+
+Future<Map<int, _ConversationEvidenceIdentity>> _conversationEvidenceIdentities(
+  Ref ref,
+  Iterable<int?> conversationIds,
+) async {
+  final ids = conversationIds.whereType<int>().toSet().toList()..sort();
+  if (ids.isEmpty) {
+    return const <int, _ConversationEvidenceIdentity>{};
+  }
+
+  final conversations = await ref.watch(
+    conversationSignatureDisplayByIdsProvider(
+      request: ConversationSignatureDisplayByIdsRequest(conversationIds: ids),
+    ).future,
+  );
+  return {
+    for (final conversation in conversations)
+      conversation.conversationId: (
+        title: conversation.title.trim(),
+        isSelfConversation: conversation.isSelfConversation,
+      ),
+  };
 }
 
 void _keepHydratedEvidenceAliveBriefly(Ref ref) {

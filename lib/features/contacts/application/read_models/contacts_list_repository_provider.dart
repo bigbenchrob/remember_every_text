@@ -9,6 +9,7 @@ import '../../../../essentials/db/feature_level_providers.dart'
 import '../../../../essentials/db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
 import '../../infrastructure/repositories/graph_contacts_list_reader.dart';
+import '../display_identity/display_identity_resolver_provider.dart';
 import 'contact_summary.dart';
 import 'contacts_list_reader.dart';
 
@@ -20,7 +21,14 @@ Future<ContactsListReader> contactsListReader(Ref ref) async {
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-  return GraphContactsListReader(graphDb: graphDb, overlayDb: overlayDb);
+  final displayIdentityResolver = await ref.watch(
+    displayIdentityResolverProvider.future,
+  );
+  return GraphContactsListReader(
+    graphDb: graphDb,
+    overlayDb: overlayDb,
+    displayIdentityResolver: displayIdentityResolver,
+  );
 }
 
 @riverpod

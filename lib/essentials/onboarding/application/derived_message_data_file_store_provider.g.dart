@@ -7,7 +7,7 @@ part of 'derived_message_data_file_store_provider.dart';
 // **************************************************************************
 
 String _$derivedMessageDataFileStoreHash() =>
-    r'61dfd6397256cc0dc2f49c5cb967173190826231';
+    r'0b1a547318c5d9f4e777804a0c369fc1bb93c3a8';
 
 /// See also [derivedMessageDataFileStore].
 @ProviderFor(derivedMessageDataFileStore)

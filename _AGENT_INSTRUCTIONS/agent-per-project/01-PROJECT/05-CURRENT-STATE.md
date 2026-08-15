@@ -2,7 +2,7 @@
 tier: project
 scope: current-state
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-18
 source_of_truth: doc
 links:
   - ./02-architecture-overview.md
@@ -71,8 +71,11 @@ consume Conversation presentation, but it must not define Conversation cards or
 Conversation identity UI.
 
 `essentials/search` owns shared graph search infrastructure and evidence
-selection. Search can request a Conversation excerpt around a message, but the
-Conversation feature renders the Conversation panel.
+selection. `features/messages` owns Search All Messages query/mode interaction
+and the opaque generation identifying its current investigation. Search can
+request a Conversation excerpt around a message, but the Conversation feature
+renders the Conversation panel and only carries the originating investigation
+identity as opaque provenance.
 
 Older `chats` terminology is historical. Current user-facing work should use
 Conversation terminology unless a document is explicitly describing legacy or
@@ -101,6 +104,33 @@ A Conversation may appear in the Conversation browser, Contact pages, Search
 results, Favourites, Discovery views, or a right-side excerpt panel, but those
 are lenses onto the same graph entity. User actions on the Conversation, such
 as toggling Favourite, should affect the same Conversation everywhere.
+
+Local-account identity is also a graph fact. At startup, the source-scoped
+graph lifecycle reconciles historical Apple Messages account and incoming
+destination evidence against canonical handles, then projects only changed
+`is_me` annotations. This does not reimport messages. Conversation read models
+use that fact to identify self-conversations; presentation must not guess from
+names or message direction. The shared display resolver now applies this fact
+across ordinary Conversation, Contact, handle, and message-evidence read
+models, using `Me` for participants, `me` in prose metadata, and `self` for a
+self-only relationship.
+
+## Search Investigation Compatibility
+
+Search All Messages separates stored subordinate context from effective
+presentation. Query edits, query clearing, AND/OR changes, and heatmap month
+browsing advance an opaque `SearchInvestigationId`. Conversation excerpts
+opened from Search retain the identity that created them.
+
+Generic navigation derives whether the stored excerpt is effective by checking
+that Search All Messages is active and the originating identity still equals
+the current identity. It does not interpret Search values. Temporary navigation
+away and back can therefore restore unchanged context, while a new
+investigation makes old context ineffective without deleting it.
+
+The end sidebar, selected-message anchor, and Conversation excerpt visibility
+must consume effective panel state. Do not clear these imperatively from query,
+mode, or heatmap actions.
 
 ## UI Walk
 

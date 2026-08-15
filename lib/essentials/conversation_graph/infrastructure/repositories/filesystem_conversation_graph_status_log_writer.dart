@@ -8,10 +8,12 @@ import '../../domain/status/conversation_graph_status.dart';
 
 class FilesystemConversationGraphStatusLogWriter
     implements ConversationGraphStatusLogWriter {
-  const FilesystemConversationGraphStatusLogWriter({Directory? logsDirectory})
+  const FilesystemConversationGraphStatusLogWriter({
+    required Directory logsDirectory,
+  })
     : _logsDirectory = logsDirectory;
 
-  final Directory? _logsDirectory;
+  final Directory _logsDirectory;
 
   @override
   Future<String> writeRun({
@@ -22,18 +24,16 @@ class FilesystemConversationGraphStatusLogWriter
     StackTrace? stackTrace,
   }) async {
     final capturedAt = DateTime.now();
-    final logsDirectory =
-        _logsDirectory ?? Directory(path.join(_projectRootPath(), '_LOGS'));
-    if (_isSymlink(logsDirectory.path)) {
+    if (_isSymlink(_logsDirectory.path)) {
       throw StateError(
         'Conversation graph log directory must not be a symlink.',
       );
     }
-    logsDirectory.createSync(recursive: true);
+    _logsDirectory.createSync(recursive: true);
 
     final file = File(
       path.join(
-        logsDirectory.path,
+        _logsDirectory.path,
         'conversation_graph_status_${conversationGraphStatusLogFileTimestamp(capturedAt)}.md',
       ),
     );
@@ -54,26 +54,6 @@ class FilesystemConversationGraphStatusLogWriter
     );
 
     return file.path;
-  }
-}
-
-String _projectRootPath() {
-  var directory = Directory.current;
-
-  while (true) {
-    final pubspec = File(path.join(directory.path, 'pubspec.yaml'));
-    final agentInstructions = Directory(
-      path.join(directory.path, '_AGENT_INSTRUCTIONS'),
-    );
-    if (pubspec.existsSync() && agentInstructions.existsSync()) {
-      return directory.path;
-    }
-
-    final parent = directory.parent;
-    if (parent.path == directory.path) {
-      return Directory.current.path;
-    }
-    directory = parent;
   }
 }
 

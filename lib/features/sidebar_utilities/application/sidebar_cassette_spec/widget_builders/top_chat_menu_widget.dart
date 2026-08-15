@@ -5,12 +5,107 @@ import '../../../../../config/theme/colors/theme_colors.dart'
     show DropdownMenu, themeColorsProvider;
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../../essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart'
     show conversationGraphPopulatedProvider;
 import '../../../../../essentials/navigation/domain/sidebar_mode.dart';
 import '../../../domain/sidebar_utilities_constants.dart';
 import '../resolver_tools/sidebar_top_menu_actions_provider.dart';
+
+abstract final class TopChatMenuPresentationMetrics {
+  const TopChatMenuPresentationMetrics._();
+
+  static const EdgeInsets triggerPadding = EdgeInsets.only(
+    left: 12.0,
+    right: 16.0,
+    top: 10.0,
+    bottom: 10.0,
+  );
+  static const double trailingIconSize = 14.0;
+  static const double chevronBackgroundPadding = 4.0;
+
+  static double naturalTriggerHeight({
+    required TextStyle selectedValueStyle,
+    required PresentationConstraints constraints,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: TopChatMenuChoice.searchAllMessages.label,
+        style: selectedValueStyle,
+      ),
+      maxLines: 1,
+      textDirection: constraints.textDirection,
+      textScaler: constraints.textScaler,
+      locale: constraints.locale,
+    )..layout(maxWidth: constraints.availableWidth);
+    const chevronHeight = trailingIconSize + chevronBackgroundPadding * 2;
+    final contentHeight = painter.height > chevronHeight
+        ? painter.height
+        : chevronHeight;
+    return triggerPadding.vertical + contentHeight;
+  }
+}
+
+class TopMenuTrackOccupant implements TrackOccupant {
+  const TopMenuTrackOccupant({
+    required this.currentChoice,
+    required this.cassetteIndex,
+    required this.sidebarMode,
+    required this.selectedValueStyle,
+  });
+
+  final TopChatMenuChoice currentChoice;
+  final int cassetteIndex;
+  final SidebarMode sidebarMode;
+  final TextStyle selectedValueStyle;
+
+  @override
+  OccupantDimensionalClaim dimensionalClaim(
+    PresentationConstraints constraints,
+  ) {
+    return OccupantDimensionalClaim(
+      naturalHeight: TopChatMenuPresentationMetrics.naturalTriggerHeight(
+        selectedValueStyle: selectedValueStyle,
+        constraints: constraints,
+      ),
+    );
+  }
+
+  @override
+  Widget buildPresentation(
+    BuildContext context,
+    ResolvedTrackAllocation allocation,
+  ) {
+    return TopChatMenuWidget(
+      currentChoice: currentChoice,
+      cassetteIndex: cassetteIndex,
+      sidebarMode: sidebarMode,
+    );
+  }
+}
+
+class TopMenuCassetteView extends StatelessWidget {
+  const TopMenuCassetteView({
+    required this.currentChoice,
+    required this.cassetteIndex,
+    required this.sidebarMode,
+    super.key,
+  });
+
+  final TopChatMenuChoice currentChoice;
+  final int cassetteIndex;
+  final SidebarMode sidebarMode;
+
+  @override
+  Widget build(BuildContext context) {
+    return TopChatMenuWidget(
+      currentChoice: currentChoice,
+      cassetteIndex: cassetteIndex,
+      sidebarMode: sidebarMode,
+    );
+  }
+}
 
 /// Top Chat Menu Widget Builder
 ///
@@ -147,16 +242,13 @@ class TopChatMenuWidget extends ConsumerWidget {
       // Naked card wrapper provides 12px horizontal margin
       outerPadding: EdgeInsets.zero,
       // Match card internal padding: 12px left for text alignment
-      triggerPadding: const EdgeInsets.only(
-        left: 12.0,
-        right: 16.0,
-        top: 10.0,
-        bottom: 10.0,
-      ),
+      triggerPadding: TopChatMenuPresentationMetrics.triggerPadding,
       // Typography tokens for control header hierarchy:
       // - controlValue for selected option (confident, primary)
       // - Brand-tinted chevron background for intentional feel
       selectedValueStyle: typography.controlValue,
+      trailingIconSize: TopChatMenuPresentationMetrics.trailingIconSize,
+      panelPresentation: AppDropdownPanelPresentation.anchoredOverlay,
       chevronColor: colors.dropdownMenu(DropdownMenu.chevronIcon),
       chevronBackgroundColor: colors.dropdownMenu(DropdownMenu.chevronBg),
     );

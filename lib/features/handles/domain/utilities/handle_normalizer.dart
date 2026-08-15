@@ -33,8 +33,8 @@ String normalizeHandleIdentifier(String raw) {
 /// Returns true if the handle appears to be a short code (3-8 digits, no
 /// country code prefix).
 ///
-/// Short codes are often used for commercial messaging (2FA, promotions, etc.)
-/// and are strong indicators of non-personal communication.
+/// This describes endpoint shape only. It does not classify the sender as
+/// automated, unwanted, or spam.
 bool isShortCode(String handleValue) {
   final normalized = normalizeHandleIdentifier(handleValue);
 

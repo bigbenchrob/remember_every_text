@@ -1,6 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveAccessAuthorityProvider;
 import '../../db/feature_level_providers.dart'
     show databaseHealthAuditServiceProvider;
 import '../infrastructure/log_export_service.dart';
@@ -20,7 +22,11 @@ Future<DiagnosticReportExporter> diagnosticReportExporter(Ref ref) async {
 
   return SupportBundleDiagnosticReportExporter(
     LogExportService(
-      SupportBundleExportService(writer, databaseHealthAuditService),
+      SupportBundleExportService(
+        writer,
+        databaseHealthAuditService,
+        ref.watch(archiveAccessAuthorityProvider),
+      ),
     ),
   );
 }

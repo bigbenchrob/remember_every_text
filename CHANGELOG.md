@@ -8,7 +8,413 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-- No unreleased changes yet.
+No unreleased changes yet.
+
+## [0.2.36] — 2026-08-15
+
+### Fixed
+
+- Existing installations can now adopt the truthful Messages-source onboarding
+  branches without redefining persisted FDA instruction Step 6302. Presence
+  history and active Trip checkpoints remain intact, and canonical definition
+  mutation is still rejected.
+
+## [0.2.35] — 2026-08-15
+
+### Fixed
+
+- Messages-source onboarding now enters Full Disk Access remediation only for
+  explicit permission-denial evidence. Missing, invalid, and otherwise
+  unusable sources receive calm source-specific guidance and a fresh retry.
+
+## [0.2.34] — 2026-08-15
+
+### Fixed
+
+- Automatic setup recovery now defers silently while another archive mutation
+  is active, rechecks current environment truth when mutation authority becomes
+  idle, and resumes only if recovery is still required. Denied work no longer
+  loops or briefly displays recovery progress before admission.
+
+## [0.2.33] — 2026-08-15
+
+### Fixed
+
+- Setup preparation and automatic-recovery failures now remain visible in the
+  current process with calm **Try Again** and support actions instead of
+  disappearing behind environment re-evaluation. Retry starts a fresh ordinary
+  setup attempt; refresh and restart still derive truth from current files and
+  probes.
+
+## [0.2.32] — 2026-08-15
+
+### Changed
+
+- Automatic setup recovery now uses calm, phase-neutral wording that explains
+  MessageLens found incomplete browsing data, is preparing another setup
+  attempt, and requires the human to wait. It no longer implies a previous
+  launch, broad local-data deletion, or an automatic setup restart.
+
+## [0.2.31] — 2026-08-14
+
+### Changed
+
+- Automatic setup recovery no longer exposes import-ledger, Conversation-
+  Graph, or projection heuristics in the ordinary recovery surface. The
+  diagnostic reason remains available to classification, logs, development
+  tooling, and support evidence; recovery behavior is unchanged.
+
+## [0.2.30] — 2026-08-14
+
+### Changed
+
+- Calendar heatmaps and Conversation activity glyphs now share a discrete,
+  two-regime activity scale: neutral greys distinguish sparse months, while
+  sustained activity progresses from yellow through green, teal, blue, and
+  deep purple. The complete legend now reflects the actual logarithmic-style
+  bins, and month selection preserves the encoded activity fill.
+
+## [0.2.29] — 2026-08-14
+
+### Changed
+
+- Stable setup failure screens now present only the failure orientation, retry
+  action, and **Send Report To Developer** action. The redundant pre-action
+  email/Finder explanation is gone, while report transport and all
+  result-specific feedback remain unchanged.
+
+## [0.2.28] — 2026-08-14
+
+### Changed
+
+- Stable setup failure screens no longer display the implementation-facing
+  **Environment summary**. Retry and support actions remain visible, all probe
+  and failure evidence remains in support reports, and readiness/FDA uses of
+  the summary are unchanged.
+
+## [0.2.27] — 2026-08-14
+
+### Changed
+
+- Stable setup failure screens no longer expose raw exceptions, timestamps,
+  unsupported phase/launch claims, or duplicate support instructions in a
+  **What to check** card. Diagnostic evidence remains available in support
+  reports, while retry and support actions are unchanged.
+
+## [0.2.26] — 2026-08-14
+
+### Changed
+
+- Stable setup failure screens now use one calm, phase-neutral heading and
+  explanation instead of asking the human to distinguish import from graph
+  preparation. Existing retry actions, support reporting, and diagnostic
+  details remain available and unchanged.
+
+## [0.2.25] — 2026-08-14
+
+### Fixed
+
+- Setup and direct-reimport progress now show one bounded, phase-neutral
+  failure headline during controller-to-Gate handoff instead of exposing raw
+  exception text. Full diagnostic errors remain available to logging,
+  persistence, and support reporting.
+
+## [0.2.24] — 2026-08-14
+
+### Changed
+
+- Successful initial setup and direct reimport now end with a calm
+  **MessageLens is ready** handoff instead of exposing import, projection, and
+  text-enrichment counters. The existing **Get Started** and **Done** actions
+  retain their behavior, and diagnostic build reports remain available outside
+  the primary completion surface.
+
+## [0.2.23] — 2026-08-14
+
+### Fixed
+
+- First-run setup now displays the existing **Preparing setup…** progress
+  surface while derived browsing data is reset, instead of leaving the import
+  action apparently idle. Reset failure restores the existing readiness
+  surface, and stale prior build results no longer mislabel preparation.
+
+## [0.2.22] — 2026-08-14
+
+### Changed
+
+- Active first-run and rebuild progress now asks the human to keep MessageLens
+  open while confirming that other applications may be used. The operation
+  remains coarse, indeterminate, and explicitly non-cancellable.
+
+## [0.2.21] — 2026-08-13
+
+### Fixed
+
+- Completing required-source onboarding after accepting sparse local Messages
+  history now reveals the existing **Import My Messages** action and preserves
+  that handoff across restart. Environment facts remain unchanged, and import
+  still runs through the existing Onboarding gate.
+
+## [0.2.20] — 2026-08-13
+
+### Changed
+
+- Production required-source onboarding now runs generic Tell, Test, fixed
+  destination, and finite Choice Steps through the permanent Presence runner.
+  Full Disk Access opening remains an explicit Onboarding-owned specialist
+  integration, while import and graph construction remain owned by the
+  existing Onboarding gate.
+
+## [0.2.19] — 2026-08-13
+
+### Added
+
+- The Presence onboarding experiment now checks whether local Messages history
+  is sufficiently populated. Sparse history receives calm guidance and a
+  generic persisted choice to re-check a fresh source fact or continue with
+  the currently available history.
+
+## [0.2.18] — 2026-07-28
+
+### Fixed
+
+- Delayed attachment retry now revisits conventional attachments with declared
+  MIME types, including video, audio, PDF, and document files, rather than
+  limiting recovery to images. Opaque NULL/blank-MIME payloads remain excluded
+  pending an explicit preservation policy.
+
+## [0.2.17] — 2026-07-28
+
+### Fixed
+
+- Production archive adoption now accepts legacy overlay databases whose schema
+  version predates already-completed retired-column cleanup. Overlay migrations
+  remove retired columns only when they are present, preserving existing user
+  intent while allowing the adopted archive to open normally.
+
+## [0.2.16] — 2026-07-27
+
+### Added
+
+- MessageLens now admits each process to an explicitly identified production,
+  development, or test archive before constructing persistent providers.
+- High-risk archive mutations use one reentrant operation authority, and
+  production maintenance can require a verified checkpoint receipt.
+- Offline checkpoint tooling can inventory, hash, integrity-check, restore, and
+  compare a disposable archive without using the active production archive.
+
+### Changed
+
+- Debug and Profile macOS builds now use the distinct
+  `com.bigbenchsoftware.MessageLens.development` identity and the
+  `MessageLens Development` product name. Production keeps its existing bundle
+  identity, signing contract, archive location, and Full Disk Access continuity.
+- All app-owned databases, attachments, logs, operational evidence, and window
+  state now derive their paths from admitted archive authority.
+- Development machines may select one complete machine-local archive root
+  without creating attachment-specific path authority. Native and Dart
+  admission must agree on the canonical external directory, and startup fails
+  closed if it is unavailable.
+
+### Security
+
+- Development and tests fail closed instead of falling back to the production
+  archive. The production packaging script verifies production archive
+  metadata before signing and verifies identity, signature, and entitlements
+  before packaging.
+
+## [0.2.15] — 2026-07-26
+
+### Changed
+
+- Contacts now aligns its sidebar menu with the effective center-panel title
+  through one shared page Track. Contact messages, recovered contact evidence,
+  and selected Conversation evidence retain their feature-owned presentations,
+  while both columns resume independent layout immediately below the title row.
+- Recovered Deleted Messages and Recovered No-Handle Messages now align their
+  sidebar menu and center-panel title in one shared page Track. Both columns
+  resume their own native layout immediately afterward, avoiding false
+  alignment between sidebar guidance and center evidence controls.
+
+## [0.2.14] — 2026-07-26
+
+### Fixed
+
+- Incremental message imports no longer stop when overlapping AddressBook
+  validation probes close. Each read-only probe now owns an isolated SQLite
+  handle, allowing the change monitor to import newly detected Messages rows
+  instead of repeatedly aborting the graph build with `database_closed`.
+- macOS now admits only one ordinary MessageLens process into Flutter and
+  database startup. A duplicate launch activates the existing instance and
+  exits, preventing separately launched app copies from competing for writable
+  graph, import, or overlay databases.
+
+## [0.2.13] — 2026-07-24
+
+### Fixed
+
+- Unknown Sources investigation controls and source lists now continue
+  immediately below the shared page identity row. Selecting, clearing, or
+  dismissing a source no longer moves the sidebar when transient center-panel
+  detail tracks expand or collapse.
+
+## [0.2.12] — 2026-07-21
+
+### Changed
+
+- Unknown Sources center panels now retain a stable Messages identity derived
+  from the active investigation. Selecting a source changes the subject beneath
+  that identity, while idle states use the evidence region to explain what the
+  current category contains and how it can be reviewed.
+
+## [0.2.11] — 2026-07-20
+
+### Changed
+
+- Unknown Sources now retains a truthful center-panel investigation when no
+  source is selected. Identify and Numeric IDs render their own quiet idle
+  guidance instead of dropping the center ViewSpec and collapsing the page
+  matrix; selecting or dismissing a source transitions between explicit idle
+  and selected-source targets within the same Messages-owned presentation.
+
+## [0.2.10] — 2026-07-20
+
+### Fixed
+
+- Dismissing an unfamiliar source now removes only that source from the loaded
+  sidebar projection without replacing the list with a loading state. A
+  successful dismissal also advances unfamiliar-source investigation
+  provenance, so the dismissed source's center evidence becomes incompatible
+  and disappears immediately.
+
+## [0.2.9] — 2026-07-20
+
+### Fixed
+
+- The unfamiliar-source `Dismiss` action now uses the recoverable dismissed
+  source workflow instead of merely marking the source reviewed. Source
+  identity and Create/Link/Dismiss semantics are centralized behind Handles,
+  while the complete message-evidence presentation remains Messages-owned.
+
+## [0.2.8] — 2026-07-20
+
+### Changed
+
+- Unfamiliar-source review now uses the shared cross-column matrix: the sidebar
+  top menu aligns with the selected source title, source details and controls
+  occupy explicit center cells with visible breathing room, and the remaining
+  cassette list begins level with the message evidence list.
+
+## [0.2.7] — 2026-07-20
+
+### Fixed
+
+- Unfamiliar-source center evidence now carries opaque investigation
+  provenance. Changing Identify/Numeric IDs, endpoint type, or Active/Dismissed
+  makes evidence from the previous investigation mechanically incompatible, so
+  stale Phone messages cannot persist beneath an Email or Numeric IDs list.
+
+## [0.2.6] — 2026-07-19
+
+### Changed
+
+- Unfamiliar-source review now separates identity discovery from numeric sender
+  ID review. Short codes are classified neutrally by endpoint shape, cannot
+  enter the source-identification list, and no longer receive an unsupported
+  `SPAM` verdict.
+- Source-identification rows now focus on opening evidence and no longer carry
+  routine per-row dismissal buttons. Dismissal remains available in the source
+  evidence context, with overlay-backed recovery preserved.
+
+## [0.2.5] — 2026-07-19
+
+### Fixed
+
+- Unfamiliar-source rows now use the full sidebar content lane while retaining
+  their dedicated dismiss-action rail, preventing dates from being cropped and
+  keeping the dismiss button aligned at the trailing edge.
+- Unfamiliar-source message badges, timelines, hydrated rows, and in-scope
+  searches now use the same canonical sender relationship, so sender-only
+  evidence remains visible even when Apple Messages supplied no chat-membership
+  edge.
+
+## [0.2.4] — 2026-07-19
+
+### Changed
+
+- Canonical local-account identity now appears consistently in the first
+  person across ordinary Conversation, Contact, handle, and message-evidence
+  presentation: `Me` for participants, `me` in prose metadata, and `self` for
+  self-only relationships. Personal contact names and local endpoints remain
+  available only where identity or handle provenance is explicitly inspected.
+
+## [0.2.3] — 2026-07-19
+
+### Fixed
+
+- Message evidence metadata now states direction and counterpart clearly as
+  `received from <sender>` or `from me to <Conversation>`, instead of showing
+  the ambiguous `received | ...` and incorrect `from me | me` labels.
+- Messages in self-conversations now use the single metadata label `self` for
+  both directions. MessageLens derives this from local account handles in the
+  Messages source rather than comparing display names.
+- Existing conversation graph databases now migrate their handle schema before
+  self-conversation reads begin, preventing `no such column: h.is_me` failures.
+- Startup now reconciles historical local-account handles from Apple Messages
+  account and incoming-destination evidence, then projects only changed
+  identity annotations. Existing self-conversations therefore acquire the
+  `self` label without reimporting message history.
+
+### Changed
+
+- The right panel is now titled `Conversation excerpt` and identifies the
+  selected message's month and year before the evidence begins, making temporal
+  movement from broad Search results into Conversation context immediately
+  visible. The temporal heading uses the established orange organizing-value
+  accent, while the redundant `21-message excerpt...` caption has been removed.
+- Every eligible All Messages row now offers `In conversation`, including
+  ordinary and month-browsed messages outside text-search results.
+
+## [0.2.2] — 2026-07-18
+
+### Fixed
+
+- Search query, mode, and heatmap changes now derive Conversation-context
+  visibility from opaque investigation compatibility, preventing stale excerpts
+  from overriding the current message evidence while preserving restorable
+  stored context.
+
+### Changed
+
+- Search All Messages now presents a structurally aligned investigation status
+  row, with delayed activity feedback for searches that take noticeable time
+  and stable geometry when results complete. Its text now aligns with the
+  visible Search-field edge, with explicit matrix spacing separating the rows.
+
+## [0.2.1] — 2026-07-16
+
+### Added
+
+- Added the Search-page cross-column layout matrix so the Search, Messages,
+  and Conversation workspaces negotiate one responsive vertical rhythm.
+- Added developer diagnostics for inspecting resolved matrix cells and Track
+  geometry across all three columns.
+
+### Changed
+
+- Search-page layout composition now lives in one explicit matrix, with
+  feature-owned presentation metrics, placement-independent occupants, and
+  complete cell-based rendering.
+- Optional Conversation-panel content now preserves stable resting geometry
+  before it appears, while larger live content can still expand the shared
+  layout naturally.
+
+### Fixed
+
+- Opening the Conversation panel no longer causes the Search header controls
+  and message results to jump from collapsed Track geometry.
+- The sidebar top selector now opens its choices in an anchored overlay instead
+  of overflowing its resolved cell and blocking page interaction.
 
 ## [0.2.0] — 2026-06-30
 

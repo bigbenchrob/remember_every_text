@@ -229,6 +229,33 @@ rather than collapsing all concerns internally.
 
 ---
 
+# Execution Authority Scope
+
+The graph-maintenance execution gate is authoritative among orchestrators
+inside one MessageLens process. It is not a cross-process lock.
+
+On macOS, application bootstrap first establishes application-instance
+authority. Only the admitted process may construct the Flutter engine and open
+application databases. Orchestrators in that process then use the
+graph-maintenance gate to decide which operation may mutate derived data.
+
+```text
+macOS application-instance authority
+        ↓
+one admitted MessageLens process
+        ↓
+process-local graph-maintenance execution gate
+        ↓
+one admitted maintenance orchestrator
+```
+
+This layering follows the Mechanical Impossibility Principle: a second
+ordinary app process cannot enter the provider/database lifecycle, while two
+orchestrators in the admitted process cannot simultaneously own graph
+maintenance.
+
+---
+
 ## Preferred Characteristics
 
 Orchestrators should preferably be:
@@ -360,6 +387,12 @@ This prevents:
 - overlapping orchestration
 - conflicting mutations
 - inconsistent projection state
+
+The gate is an application of the
+[Mechanical Impossibility Principle](../00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/10-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION.md#the-mechanical-impossibility-principle):
+mutation authority is exclusive, so a non-holder cannot enter the protected
+execution path rather than merely being diagnosed after concurrent work has
+begun.
 
 ---
 

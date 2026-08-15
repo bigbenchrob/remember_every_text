@@ -1,14 +1,18 @@
 import 'dart:io';
 
+import '../../../conversation_graph/application/monitor/chat_db_source_probe_reader.dart';
 import '../../application/full_disk_access.dart';
 
 class MacosFullDiskAccess implements FullDiskAccess {
   const MacosFullDiskAccess({
+    required MessagesDatabaseReadProbe messagesDatabaseReadProbe,
     String? messagesDatabasePath,
     void Function(Object error, StackTrace stackTrace)? onReadFailure,
-  }) : _messagesDatabasePath = messagesDatabasePath,
+  }) : _messagesDatabaseReadProbe = messagesDatabaseReadProbe,
+       _messagesDatabasePath = messagesDatabasePath,
        _onReadFailure = onReadFailure;
 
+  final MessagesDatabaseReadProbe _messagesDatabaseReadProbe;
   final String? _messagesDatabasePath;
   final void Function(Object error, StackTrace stackTrace)? _onReadFailure;
 
@@ -24,20 +28,23 @@ class MacosFullDiskAccess implements FullDiskAccess {
   }
 
   @override
-  bool canReadMessagesDatabase() {
+  MessagesSourceAccessResult inspectMessagesSourceAccess() {
     try {
-      final file = File(messagesDatabasePath);
-      if (!file.existsSync()) {
-        return false;
-      }
-
-      final raf = file.openSync(mode: FileMode.read);
-      raf.closeSync();
-      return true;
+      _messagesDatabaseReadProbe(messagesDatabasePath);
+      return MessagesSourceAccessResult.readable;
     } catch (error, stackTrace) {
       _onReadFailure?.call(error, stackTrace);
-      return false;
+      if (error is ChatDbSourceProbeException &&
+          error.kind == ChatDbSourceProbeFailureKind.accessDenied) {
+        return MessagesSourceAccessResult.accessDenied;
+      }
+      return MessagesSourceAccessResult.unavailable;
     }
+  }
+
+  @override
+  bool canReadMessagesDatabase() {
+    return inspectMessagesSourceAccess() == MessagesSourceAccessResult.readable;
   }
 
   @override

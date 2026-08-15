@@ -2,7 +2,7 @@
 tier: feature
 scope: charter
 owner: agent-per-project
-last_reviewed: 2026-06-05
+last_reviewed: 2026-07-20
 links:
   - ./DOMAIN_AND_DATA_MAP.md
   - ./STATE_AND_PROVIDER_INVENTORY.md
@@ -10,7 +10,7 @@ tests: []
 feature: messages
 doc_type: charter
 status: current
-last_updated: 2026-06-05
+last_updated: 2026-07-20
 ---
 
 # Feature Charter - Messages
@@ -71,6 +71,18 @@ last_updated: 2026-06-05
 - Consumed by: messages center panel surfaces, sidebar heatmaps/navigators,
   recovered-message sidebars, search result context surfaces, and conversation
   evidence views.
+
+## Handle-Lens Ownership
+
+Messages owns `MessagesSpec.handleLens` and its complete center-panel
+presentation: evidence, controls, dialogs, transient form state, busy state, and
+presentation errors. Handles supplies the canonical per-source identity payload
+and owns the meaning of create/link/dismiss source-review workflows. Contacts
+owns the Contact primitives delegated to by Handles.
+
+Messages may orchestrate the user experience, but it must not reconstruct
+Handles fallback identity, normalization, persistence, invalidation, or workflow
+ordering merely because it renders the ViewSpec.
 
 ## Open Questions
 

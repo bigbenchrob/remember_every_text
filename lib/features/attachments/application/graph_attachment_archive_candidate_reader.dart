@@ -33,6 +33,10 @@ abstract interface class GraphAttachmentArchiveCandidateReader {
     required int lastSourceRowId,
   });
 
+  /// Selects unarchived live attachments with a declared MIME type.
+  ///
+  /// NULL or blank MIME rows are opaque payloads and remain outside delayed
+  /// retry until their preservation semantics are explicitly defined.
   Future<GraphAttachmentSweepSelection> selectSweepCandidates({
     required int afterAttachmentId,
     required int limit,

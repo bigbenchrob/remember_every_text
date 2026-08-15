@@ -19,15 +19,20 @@ void main() {
         final payload = await container
             .read(strayHandlesModeSwitcherResolverProvider.notifier)
             .resolve(
+              investigation: StrayHandleInvestigation.identifySources,
               filter: StrayHandleFilter.phones,
-              mode: StrayHandleMode.spamCandidates,
+              mode: StrayHandleReviewMode.dismissed,
             );
 
         expect(payload, isA<StrayHandlesModeSwitcherCassettePayload>());
         final viewModel = payload as StrayHandlesModeSwitcherCassettePayload;
 
         expect(viewModel.filter, StrayHandleFilter.phones);
-        expect(viewModel.mode, StrayHandleMode.spamCandidates);
+        expect(
+          viewModel.investigation,
+          StrayHandleInvestigation.identifySources,
+        );
+        expect(viewModel.mode, StrayHandleReviewMode.dismissed);
         expect(viewModel.placementMode, SidebarBodyPlacementMode.fullWidth);
         expect(viewModel.isNaked, isTrue);
       },

@@ -2,15 +2,14 @@
 tier: feature
 scope: charter
 owner: agent-per-project
-last_reviewed: 2026-06-05
+last_reviewed: 2026-07-27
 links:
 	- ../chat-handles/DOMAIN_AND_DATA_MAP.md
-	- ../../50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md
 tests: []
 feature: chat-handles
 doc_type: charter
 status: current
-last_updated: 2026-06-05
+last_updated: 2026-07-20
 ---
 
 # Feature Charter - Chat Handles
@@ -39,6 +38,18 @@ last_updated: 2026-06-05
 ## Stakeholders & Dependencies
 - Depends on source-scoped import/projection for source data fidelity.
 - Provides graph endpoints consumed by conversations, contacts, message evidence, and search features.
+
+## Cross-Feature Presentation Boundary
+
+Handles owns source identity projection and the meaning of source-review
+workflows. Its public source-review facade may coordinate Contacts-owned Contact
+creation and linking primitives, but callers do not choose Handles persistence,
+normalization, workflow ordering, or invalidation semantics.
+
+Messages owns the complete `MessagesSpec.handleLens` ViewSpec presentation and
+consumes the Handles-owned per-source payload and workflow facade. Cross-feature
+presentation ownership does not permit the rendering feature to reimplement the
+collaborating feature's business semantics.
 
 ## Open Questions
 - How do we stage alternative normalization strategies (e.g., phone formatting) without breaking projections?

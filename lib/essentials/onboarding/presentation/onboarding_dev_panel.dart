@@ -136,6 +136,11 @@ class OnboardingDevPanel extends ConsumerWidget {
                         typography: typography,
                         report: report,
                       ),
+                    OnboardingStatus.preparationFailed =>
+                      _DevPreparationFailureContent(
+                        colors: colors,
+                        typography: typography,
+                      ),
                     OnboardingStatus.awaitingFda => _DevFdaContent(
                       colors: colors,
                       typography: typography,
@@ -630,6 +635,38 @@ class _DevProgressContent extends StatelessWidget {
             style: typography.caption.copyWith(color: colors.status.warning),
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _DevPreparationFailureContent extends StatelessWidget {
+  const _DevPreparationFailureContent({
+    required this.colors,
+    required this.typography,
+  });
+
+  final ThemeColors colors;
+  final ThemeTypography typography;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "MessageLens couldn't finish setup",
+          style: typography.headline.copyWith(
+            color: colors.content.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "MessageLens couldn't finish preparing your browsing data. "
+          'You can try again.',
+          style: typography.body.copyWith(color: colors.content.textSecondary),
+        ),
       ],
     );
   }

@@ -8,6 +8,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../features/contacts/domain/spec_classes/contacts_cassette_spec.dart';
 import '../../../features/contacts/domain/spec_classes/contacts_info_cassette_spec.dart';
 import '../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
+import '../../../features/handles/domain/entities/stray_handle_investigation_id.dart';
+import '../../../features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
@@ -106,6 +108,8 @@ class SidebarFlowNavigationPreference {
       'chosenContactId': restorableState.chosenContactId,
       'selectedHandleId': restorableState.selectedHandleId,
       'selectedConversationId': restorableState.selectedConversationId,
+      'strayHandleInvestigation':
+          restorableState.strayHandleInvestigation?.name,
       'messageScope': restorableState.messageScope.storageValue,
       'contactProjection': restorableState.contactProjection.storageValue,
     });
@@ -135,6 +139,9 @@ class SidebarFlowNavigationPreference {
         chosenContactId: decoded['chosenContactId'] as int?,
         selectedHandleId: decoded['selectedHandleId'] as int?,
         selectedConversationId: decoded['selectedConversationId'] as int?,
+        strayHandleInvestigation: _strayHandleInvestigationFromStorage(
+          decoded['strayHandleInvestigation'] as String?,
+        ),
         messageScope: SidebarFlowMessageScopeStorage.fromStorage(
           decoded['messageScope'] as String?,
         ),
@@ -181,8 +188,12 @@ SidebarFlowState _restorableSidebarFlowState(SidebarFlowState state) {
             : state.contactProjection,
       );
     case TopChatMenuChoice.strayHandles:
-      return const SidebarFlowState(
+      return SidebarFlowState(
         topMenuChoice: TopChatMenuChoice.strayHandles,
+        strayHandleInvestigation:
+            state.strayHandleInvestigation ??
+            StrayHandleInvestigation.identifySources,
+        strayHandleInvestigationId: StrayHandleInvestigationId.initial,
       );
     case TopChatMenuChoice.searchAllMessages:
       return const SidebarFlowState(
@@ -198,6 +209,14 @@ SidebarFlowState _restorableSidebarFlowState(SidebarFlowState state) {
         topMenuChoice: TopChatMenuChoice.recoveredNoHandleFromMeMessages,
       );
   }
+}
+
+StrayHandleInvestigation? _strayHandleInvestigationFromStorage(String? raw) {
+  return switch (raw) {
+    'identifySources' => StrayHandleInvestigation.identifySources,
+    'numericSenderIds' => StrayHandleInvestigation.numericSenderIds,
+    _ => null,
+  };
 }
 
 @visibleForTesting
@@ -219,19 +238,33 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
 
   final handleEvidenceSelected =
       state.selectedHandleEvidenceId != null ||
-      state.selectedHandleEvidenceKind != null;
+      state.selectedHandleEvidenceKind != null ||
+      state.selectedHandleEvidenceInvestigationId != null;
   if (handleEvidenceSelected &&
       (state.selectedHandleEvidenceId == null ||
-          state.selectedHandleEvidenceKind == null)) {
+          state.selectedHandleEvidenceKind == null ||
+          state.selectedHandleEvidenceInvestigationId == null)) {
     throw StateError(
-      'Handle evidence selection requires both handle id and evidence kind.',
+      'Handle evidence selection requires handle id, evidence kind, and '
+      'originating investigation.',
     );
   }
 
+  final hasStrayHandleInvestigation =
+      state.strayHandleInvestigationId != null ||
+      state.strayHandleInvestigation != null;
   if (state.topMenuChoice != TopChatMenuChoice.strayHandles &&
-      handleEvidenceSelected) {
+      (handleEvidenceSelected || hasStrayHandleInvestigation)) {
     throw StateError(
-      'Handle evidence selection belongs only to the stray handles branch.',
+      'Handle investigation state belongs only to the stray handles branch.',
+    );
+  }
+
+  if (state.topMenuChoice == TopChatMenuChoice.strayHandles &&
+      (state.strayHandleInvestigationId == null ||
+          state.strayHandleInvestigation == null)) {
+    throw StateError(
+      'Unknown Sources requires investigation identity and kind.',
     );
   }
 
@@ -309,6 +342,12 @@ void debugAssertValidSidebarFlowState(SidebarFlowState state) {
       }
 
     case TopChatMenuChoice.strayHandles:
+      if (state.strayHandleInvestigationId == null) {
+        throw StateError(
+          'Stray handles branch requires a current investigation identity.',
+        );
+      }
+
       if (state.chosenContactId != null ||
           state.selectedHandleId != null ||
           state.selectedConversationId != null) {
@@ -409,6 +448,9 @@ abstract class SidebarFlowState with _$SidebarFlowState {
     String? selectedConversationSearchQuery,
     int? selectedHandleEvidenceId,
     SidebarFlowHandleEvidenceKind? selectedHandleEvidenceKind,
+    StrayHandleInvestigationId? selectedHandleEvidenceInvestigationId,
+    StrayHandleInvestigationId? strayHandleInvestigationId,
+    StrayHandleInvestigation? strayHandleInvestigation,
     SettingsMenuActionId? persistentSettingsContext,
     DateTime? scrollToDate,
     @Default(SidebarFlowMessageScope.regular)
@@ -421,6 +463,22 @@ abstract class SidebarFlowState with _$SidebarFlowState {
 
   bool get isContactsBranch {
     return topMenuChoice == TopChatMenuChoice.contacts;
+  }
+
+  bool get hasCompatibleSelectedHandleEvidence {
+    final currentInvestigationId = strayHandleInvestigationId;
+    final originatingInvestigationId = selectedHandleEvidenceInvestigationId;
+    return topMenuChoice == TopChatMenuChoice.strayHandles &&
+        currentInvestigationId != null &&
+        originatingInvestigationId != null &&
+        currentInvestigationId == originatingInvestigationId;
+  }
+
+  int? get effectiveSelectedHandleEvidenceId {
+    if (!hasCompatibleSelectedHandleEvidence) {
+      return null;
+    }
+    return selectedHandleEvidenceId;
   }
 
   ViewSpec? get projectedCenterSpec {
@@ -480,15 +538,34 @@ abstract class SidebarFlowState with _$SidebarFlowState {
             );
         }
       case TopChatMenuChoice.strayHandles:
-        final handleEvidenceId = selectedHandleEvidenceId;
+        final investigationId = strayHandleInvestigationId;
+        final investigation = strayHandleInvestigation;
+        if (investigationId == null || investigation == null) {
+          throw StateError(
+            'Unknown Sources cannot project without investigation identity '
+            'and kind.',
+          );
+        }
+        final handleEvidenceId = effectiveSelectedHandleEvidenceId;
         final handleEvidenceKind = selectedHandleEvidenceKind;
         if (handleEvidenceId == null || handleEvidenceKind == null) {
-          return null;
+          return ViewSpec.messages(
+            MessagesSpec.handleInvestigation(
+              investigationId: investigationId,
+              investigation: investigation,
+              target: const HandleInvestigationTarget.idle(),
+            ),
+          );
         }
         return ViewSpec.messages(switch (handleEvidenceKind) {
-          SidebarFlowHandleEvidenceKind.lens => MessagesSpec.handleLens(
-            handleId: handleEvidenceId,
-          ),
+          SidebarFlowHandleEvidenceKind.lens =>
+            MessagesSpec.handleInvestigation(
+              investigationId: investigationId,
+              investigation: investigation,
+              target: HandleInvestigationTarget.selectedSource(
+                handleId: handleEvidenceId,
+              ),
+            ),
           SidebarFlowHandleEvidenceKind.messages => MessagesSpec.forHandle(
             handleId: handleEvidenceId,
           ),
@@ -591,6 +668,8 @@ class SidebarFlow extends _$SidebarFlow {
       ),
       TopChatMenuChoice.strayHandles => const SidebarFlowState(
         topMenuChoice: TopChatMenuChoice.strayHandles,
+        strayHandleInvestigation: StrayHandleInvestigation.identifySources,
+        strayHandleInvestigationId: StrayHandleInvestigationId.initial,
       ),
       TopChatMenuChoice.searchAllMessages => const SidebarFlowState(
         topMenuChoice: TopChatMenuChoice.searchAllMessages,
@@ -672,6 +751,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: contactProjection,
       ),
@@ -715,6 +797,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
       ),
@@ -765,6 +850,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
       ),
@@ -803,6 +891,9 @@ class SidebarFlow extends _$SidebarFlow {
           selectedConversationSearchQuery: null,
           selectedHandleEvidenceId: null,
           selectedHandleEvidenceKind: null,
+          selectedHandleEvidenceInvestigationId: null,
+          strayHandleInvestigationId: null,
+          strayHandleInvestigation: null,
           scrollToDate: null,
           messageScope: SidebarFlowMessageScope.regular,
           contactProjection: SidebarFlowContactProjection.allMessages,
@@ -835,6 +926,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -868,6 +962,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -886,6 +983,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -904,6 +1004,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.conversations,
@@ -933,6 +1036,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: searchQuery,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.conversations,
@@ -957,6 +1063,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -975,6 +1084,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -997,6 +1109,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: scrollToDate,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -1047,6 +1162,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: null,
         selectedHandleEvidenceKind: null,
+        selectedHandleEvidenceInvestigationId: null,
+        strayHandleInvestigationId: null,
+        strayHandleInvestigation: null,
         scrollToDate: startDate,
         messageScope: SidebarFlowMessageScope.recoveredDeleted,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -1055,6 +1173,11 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void openStrayHandleLens({required int handleId}) {
+    final investigationId =
+        state.strayHandleInvestigationId ?? StrayHandleInvestigationId.initial;
+    final investigation =
+        state.strayHandleInvestigation ??
+        StrayHandleInvestigation.identifySources;
     _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.strayHandles,
@@ -1065,6 +1188,9 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: handleId,
         selectedHandleEvidenceKind: SidebarFlowHandleEvidenceKind.lens,
+        selectedHandleEvidenceInvestigationId: investigationId,
+        strayHandleInvestigationId: investigationId,
+        strayHandleInvestigation: investigation,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
@@ -1073,6 +1199,11 @@ class SidebarFlow extends _$SidebarFlow {
   }
 
   void openHandleMessages({required int handleId}) {
+    final investigationId =
+        state.strayHandleInvestigationId ?? StrayHandleInvestigationId.initial;
+    final investigation =
+        state.strayHandleInvestigation ??
+        StrayHandleInvestigation.identifySources;
     _setState(
       state.copyWith(
         topMenuChoice: TopChatMenuChoice.strayHandles,
@@ -1083,9 +1214,38 @@ class SidebarFlow extends _$SidebarFlow {
         selectedConversationSearchQuery: null,
         selectedHandleEvidenceId: handleId,
         selectedHandleEvidenceKind: SidebarFlowHandleEvidenceKind.messages,
+        selectedHandleEvidenceInvestigationId: investigationId,
+        strayHandleInvestigationId: investigationId,
+        strayHandleInvestigation: investigation,
         scrollToDate: null,
         messageScope: SidebarFlowMessageScope.regular,
         contactProjection: SidebarFlowContactProjection.allMessages,
+      ),
+    );
+  }
+
+  /// Begins a new unfamiliar-source investigation episode.
+  ///
+  /// Existing handle evidence remains stored with its original provenance but
+  /// ceases to project into the center panel because it is no longer compatible
+  /// with the current investigation.
+  void beginNewStrayHandleInvestigation({
+    StrayHandleInvestigation? investigation,
+  }) {
+    if (state.topMenuChoice != TopChatMenuChoice.strayHandles) {
+      throw StateError(
+        'A stray-handle investigation can begin only on the stray handles '
+        'branch.',
+      );
+    }
+
+    final currentInvestigationId =
+        state.strayHandleInvestigationId ?? StrayHandleInvestigationId.initial;
+    _setState(
+      state.copyWith(
+        strayHandleInvestigationId: currentInvestigationId.next(),
+        strayHandleInvestigation:
+            investigation ?? state.strayHandleInvestigation,
       ),
     );
   }

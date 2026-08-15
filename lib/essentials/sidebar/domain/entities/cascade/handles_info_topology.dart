@@ -13,11 +13,13 @@ CassetteSpec? resolveHandlesInfoChild(HandlesInfoCassetteSpec spec) {
         HandlesCassetteChildVariant.strayPhoneNumbers =>
           const CassetteSpec.handles(
             HandlesCassetteSpec.strayHandlesModeSwitcher(
+              investigation: StrayHandleInvestigation.identifySources,
               filter: StrayHandleFilter.phones,
             ),
           ),
         HandlesCassetteChildVariant.strayEmails => const CassetteSpec.handles(
           HandlesCassetteSpec.strayHandlesModeSwitcher(
+            investigation: StrayHandleInvestigation.identifySources,
             filter: StrayHandleFilter.emails,
           ),
         ),

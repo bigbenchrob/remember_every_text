@@ -430,14 +430,11 @@ void main() {
             attachmentArchiveDirectoryProvider.overrideWith(
               (ref) => '${tempDir.path}/attachment_archive',
             ),
+            dbMaintenanceLockProvider.overrideWith((ref) => true),
             futureGetFolderAggregateProvider.overrideWith(
               (ref) async => right(_addressBookAggregate(addressBookPath)),
             ),
           ],
-        );
-        container.read(dbMaintenanceLockProvider.notifier).begin();
-        addTearDown(
-          () => container.read(dbMaintenanceLockProvider.notifier).end(),
         );
 
         final report = await container.read(

@@ -6,12 +6,38 @@ The `OnboardingGate` is the top-level bootstrap coordinator. It evaluates
 whether the app is ready for normal use and coordinates the readiness,
 recovery, import, graph-build, and reimport lifecycle.
 
+> **Safety:** Gate reset/recovery means resetting only enumerated rebuildable
+> derived stores. Archived attachment payloads are preservation data and are
+> outside every Gate reset. See
+> [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
+
 Current surface split:
 
-- `awaitingFda` and `awaitingUserAction` are projected into the center panel
-  with `ViewSpec.environmentReadiness`.
+- `awaitingFda` and `awaitingUserAction` mount the production Onboarding
+  Presence host. The generic Presence runner presents the active
+  required-source Schedule, while Onboarding supplies the explicit FDA
+  Settings specialist presentation.
 - `recoveringFailedAttempt`, import/graph-build progress, completion, and
   reimport completion use the blocking `OnboardingOverlay`.
+
+This is a staged ownership boundary. Presence owns the required-source
+readiness interaction. The gate remains the operational authority for recovery,
+import, graph construction, completion, and reimport.
+
+### Messages Source Truthfulness
+
+The required-source Schedule no longer treats every failed Messages read as
+evidence of missing Full Disk Access. The Messages/Onboarding specialist
+classifies the protected read as `readable`, `accessDenied`, or `unavailable`.
+Only explicit filesystem permission denial warrants FDA guidance. Missing,
+invalid-schema, query, and ambiguous I/O failures receive bounded
+source-unavailable guidance instead.
+
+Onboarding projects that specialist result through generic Boolean TestAgents;
+Presence remains unaware of Messages, SQLite, or FDA meaning. Adjacent readable
+and access-denied Tests share one process-local observation, while every retry
+begins a fresh protected read. The Gate still owns only operational admission
+and mounts the same real Onboarding Presence host for prerequisite interaction.
 
 ## Ownership
 
@@ -22,7 +48,7 @@ Current surface split:
 
 ## State Machine
 
-The gate tracks a single `OnboardingStatus` enum with 10 states:
+The gate tracks a single `OnboardingStatus` enum with 11 states:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -30,6 +56,7 @@ The gate tracks a single `OnboardingStatus` enum with 10 states:
 ├─────────────────────────────────────────────────────────────┤
 │ notNeeded               — App databases populated, skip     │
 │ recoveringFailedAttempt — Reset incomplete DBs before retry │
+│ preparationFailed       — Current preparation attempt failed│
 │ awaitingFda             — FDA not granted, show instructions│
 │ awaitingUserAction      — FDA OK, databases empty, show UI  │
 │ importing               — Import pipeline running           │
@@ -51,22 +78,35 @@ App Start
   │
   ├─ environment report → FDA blocked?
   │   └─ YES → awaitingFda
-  │       └─ center panel shows environment readiness
-  │       └─ user grants FDA → refreshEnvironment()
-  │           └─ awaitingUserAction
+  │       └─ Presence resumes the required-source readiness Schedule
+  │       └─ explicit Onboarding FDA specialist opens System Settings
+  │       └─ restart resumes the current Trip from Step 1
+  │           └─ generic TestStep performs a fresh source-readiness check
   │
   ├─ environment report → sources readable, DBs empty?
   │   └─ YES → awaitingUserAction
-  │       └─ center panel shows environment readiness
-  │       └─ user clicks "Import" → startImportAndGraphBuild()
+  │       └─ Presence presents and advances the required-source Schedule
+  │       └─ Schedule completion releases the blocking Presence surface
+  │       └─ Environment Readiness combines unchanged environment facts with
+  │          durable Schedule completion
+  │           ├─ sparse + incomplete → Re-check only
+  │           └─ sparse + complete → existing import action available
+  │       └─ existing import action → startImportAndGraphBuild()
   │           ├─ importing (source-scoped import/projection begins)
   │           ├─ buildingGraph (conversation graph build running)
   │           └─ complete (show summary, "Get Started" button)
   │
   ├─ environment report → incomplete partial app DBs?
-  │   └─ recoveringFailedAttempt
-  │       └─ reset app-owned source-scoped import/graph DBs
-  │           └─ awaitingUserAction
+  │   └─ request automatic-recovery mutation authority
+  │       ├─ busy → defer silently until locked → idle
+  │       │   └─ fresh environment report still requires recovery?
+  │       │       ├─ NO → ordinary environment-derived state
+  │       │       └─ YES → request authority once again
+  │       └─ admitted → recoveringFailedAttempt
+  │           └─ reset rebuildable source-scoped import/graph DBs
+  │               ├─ success → awaitingUserAction
+  │               └─ failure → preparationFailed
+  │                   └─ Try Again → ordinary first-run entry point
   │
   └─ environment report → import/graph projection previously failed?
       └─ awaitingUserAction (show failure details + retry)
@@ -111,9 +151,32 @@ class OnboardingGate extends _$OnboardingGate {
    `sourceSparseOrUnsynced`, and `readyToImport` → `awaitingUserAction`
 
 Workflow override states are preserved while recovery, import, graph build,
-completion, or reimport is in progress. The environment report can also set
+completion, reimport, or process-local preparation failure is in progress. The
+environment report can also set
 `shouldResetAppDatabasesBeforeImport`, which triggers automatic recovery into
-`recoveringFailedAttempt`.
+`recoveringFailedAttempt` only after mutation authority is admitted. Ordinary
+mutation contention remains process-local and silent. The Gate observes the
+coordinator's locked-to-idle transition, invalidates the environment report,
+and consumes only the completed fresh result; it never replays the denied
+report or persists a pending recovery command.
+
+### Accepted-Readiness Handoff
+
+`OnboardingEnvironmentReport` remains the authority for current machine facts.
+It may continue to report `sourceSparseOrUnsynced` after the human has knowingly
+chosen to continue. Completion of the canonical required-sources Presence
+Schedule is the separate durable acceptance authority.
+
+The Environment Readiness surface composes those facts. Sparse and incomplete
+continues to show **Confirm Local Messages History** with **Re-check**. Sparse
+and complete shows the existing **Ready To Import** presentation and **Import
+My Messages** action. Import and graph-build failures retain their existing
+retry behavior and are never overridden by Presence completion.
+
+The completion query reads the latest Schedule run checkpoint
+(`currentTripOccurrenceId == null`). It does not inspect trace or recover a
+Choice value, and it adds no second acceptance flag. The import action still
+delegates to `OnboardingGate.startImportAndGraphBuild()`.
 
 ## Overlay Rendering
 
@@ -123,6 +186,7 @@ for blocking workflow phases. It switches content based on the current status:
 | Status | Overlay Content |
 |--------|-----------------|
 | `recoveringFailedAttempt` | Recovery/reset progress |
+| `preparationFailed` | Calm setup failure with **Try Again** and support actions |
 | `importing` | Progress view with row counts and duration per table |
 | `buildingGraph` | Progress view continuing from import |
 | `complete` | Summary (total counts, warnings, archive size), "Get Started" button |
@@ -133,7 +197,9 @@ for blocking workflow phases. It switches content based on the current status:
 
 Legacy note: `OnboardingOverlay` still contains branches for `awaitingFda` and
 `awaitingUserAction`, but the current app shell normally presents those states
-through the readiness center panel instead of mounting the overlay.
+through `OnboardingPresenceHost` instead of mounting the overlay. The extracted
+`OnboardingFdaContent` presentation is shared with the explicit specialist Step
+without moving platform authority into generic Presence.
 
 ### Overlay Blocking
 
@@ -150,6 +216,11 @@ Import and graph-projection failures are persisted as JSON in the overlay databa
 - Distinguishing "never tried" from "tried and failed"
 - Clearing on successful completion
 
+Pre-controller `preparationFailed` is deliberately not persisted. It records
+only the current process's operation outcome. Refresh or restart returns
+authority to current filesystem and environment probes; it is never written
+into the import or graph-projection failure buckets.
+
 ## File Inventory
 
 | File | Role |
@@ -163,6 +234,8 @@ Import and graph-projection failures are persisted as JSON in the overlay databa
 | `domain/import_spec.dart` | Retired import-control route tagging for diagnostics/compatibility |
 | `domain/spec_classes/onboarding_view_spec.dart` | Onboarding panel spec for dev/debug surfaces |
 | `infrastructure/overlay_onboarding_failure_storage.dart` | Failure persistence |
-| `presentation/onboarding_overlay.dart` | Full-window blocking overlay |
+| `application/required_sources_readiness_scheduler_provider.dart` | Production composition root for real Onboarding agents, Schedule installation, and Scheduler initialization |
+| `presentation/onboarding_presence_host.dart` | Production shell around the generic Presence runner and explicit FDA specialist |
+| `presentation/onboarding_overlay.dart` | Full-window operational overlay and shared FDA presentation |
 | `presentation/onboarding_dev_panel.dart` | Debug/simulation overrides |
 | `navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart` | Syncs onboarding gate states into `ViewSpec.environmentReadiness` |

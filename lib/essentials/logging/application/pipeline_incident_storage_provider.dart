@@ -1,6 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveAccessAuthorityProvider;
 import '../../db/feature_level_providers.dart' show overlayDatabaseProvider;
 import '../infrastructure/pipeline_audit_incident_log_writer.dart';
 import '../infrastructure/pipeline_incident_storage.dart';
@@ -18,5 +20,7 @@ PipelineIncidentStore pipelineIncidentStore(Ref ref) {
 
 @riverpod
 PipelineIncidentLogWriter pipelineIncidentLogWriter(Ref ref) {
-  return const PipelineAuditIncidentLogWriter();
+  return PipelineAuditIncidentLogWriter(
+    directoryPath: ref.watch(archiveAccessAuthorityProvider).rootPath,
+  );
 }

@@ -149,10 +149,13 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
           ELSE strftime('%Y-%m', m.date_utc)
         END AS month_key
       FROM messages m
-      JOIN chat_to_message ctm ON ctm.message_ss_id = m.ss_id
-      JOIN chat_to_handle cth ON cth.chat_ss_id = ctm.chat_ss_id
-      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
-      WHERE COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id)
+      LEFT JOIN handle_aliases scope_sender_alias
+        ON scope_sender_alias.handle_ss_id = m.sender_handle_ss_id
+      WHERE COALESCE(
+          m.sender_canonical_handle_ss_id,
+          scope_sender_alias.canonical_handle_ss_id,
+          m.sender_handle_ss_id
+        )
         IN (${_placeholders(canonicalHandleIds.length)})
       ORDER BY COALESCE(m.date_utc, '') ASC, m.ss_id ASC
       ''', canonicalHandleIds);
@@ -199,23 +202,35 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
         m.has_message_summary_info,
         m.has_payload_data_source,
         m.error_code,
-        ctm.chat_ss_id AS conversation_id,
+        (
+          SELECT ctm.chat_ss_id
+          FROM chat_to_message ctm
+          WHERE ctm.message_ss_id = m.ss_id
+          ORDER BY ctm.chat_ss_id ASC
+          LIMIT 1
+        ) AS conversation_id,
         (
           SELECT COUNT(*)
           FROM message_to_attachment mta
           WHERE mta.message_ss_id = m.ss_id
         ) AS attachment_count
       FROM messages m
-      JOIN chat_to_message ctm ON ctm.message_ss_id = m.ss_id
-      JOIN chat_to_handle cth ON cth.chat_ss_id = ctm.chat_ss_id
-      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
+      LEFT JOIN handle_aliases scope_sender_alias
+        ON scope_sender_alias.handle_ss_id = m.sender_handle_ss_id
       LEFT JOIN handles sender_handle ON sender_handle.ss_id =
         m.sender_handle_ss_id
       LEFT JOIN canonical_handles sender_canonical
         ON sender_canonical.canonical_handle_ss_id =
-          m.sender_canonical_handle_ss_id
+          COALESCE(
+            m.sender_canonical_handle_ss_id,
+            scope_sender_alias.canonical_handle_ss_id
+          )
       WHERE m.ss_id = ?
-        AND COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id)
+        AND COALESCE(
+            m.sender_canonical_handle_ss_id,
+            scope_sender_alias.canonical_handle_ss_id,
+            m.sender_handle_ss_id
+          )
           IN (${_placeholders(canonicalHandleIds.length)})
       LIMIT 1
       ''',
@@ -264,15 +279,21 @@ class SqliteMessageGraphRepository implements MessageGraphRepository {
       '''
       SELECT DISTINCT m.ss_id AS message_id
       FROM messages m
-      JOIN chat_to_message ctm ON ctm.message_ss_id = m.ss_id
-      JOIN chat_to_handle cth ON cth.chat_ss_id = ctm.chat_ss_id
-      LEFT JOIN handle_aliases ha ON ha.handle_ss_id = cth.handle_ss_id
+      LEFT JOIN handle_aliases scope_sender_alias
+        ON scope_sender_alias.handle_ss_id = m.sender_handle_ss_id
       LEFT JOIN handles sender_handle ON sender_handle.ss_id =
         m.sender_handle_ss_id
       LEFT JOIN canonical_handles sender_canonical
         ON sender_canonical.canonical_handle_ss_id =
-          m.sender_canonical_handle_ss_id
-      WHERE COALESCE(ha.canonical_handle_ss_id, cth.handle_ss_id)
+          COALESCE(
+            m.sender_canonical_handle_ss_id,
+            scope_sender_alias.canonical_handle_ss_id
+          )
+      WHERE COALESCE(
+            m.sender_canonical_handle_ss_id,
+            scope_sender_alias.canonical_handle_ss_id,
+            m.sender_handle_ss_id
+          )
           IN (${_placeholders(canonicalHandleIds.length)})
         AND (${clauses.join(matchAnyTerm ? ' OR ' : ' AND ')})
       ORDER BY COALESCE(m.date_utc, '') ASC, m.ss_id ASC

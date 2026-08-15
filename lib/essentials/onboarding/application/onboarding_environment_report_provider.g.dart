@@ -43,7 +43,7 @@ final onboardingMessagesDatabasePathProvider = Provider<String>.internal(
 // ignore: unused_element
 typedef OnboardingMessagesDatabasePathRef = ProviderRef<String>;
 String _$onboardingDatabaseDirectoryPathHash() =>
-    r'f5eb8f781a856617956584efacb5f3a099894d67';
+    r'072495dd9818dd3ca20e838bd37cd72d527c86f8';
 
 /// See also [onboardingDatabaseDirectoryPath].
 @ProviderFor(onboardingDatabaseDirectoryPath)
@@ -61,7 +61,7 @@ final onboardingDatabaseDirectoryPathProvider = Provider<String>.internal(
 // ignore: unused_element
 typedef OnboardingDatabaseDirectoryPathRef = ProviderRef<String>;
 String _$onboardingEnvironmentReportHash() =>
-    r'669f3613290598171e8f0acef36769924e240adb';
+    r'4168f12528fd32b453e96c96ce14b8992a80b18d';
 
 /// See also [onboardingEnvironmentReport].
 @ProviderFor(onboardingEnvironmentReport)

@@ -3,11 +3,20 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:macos_ui/macos_ui.dart';
 
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
+import 'package:remember_this_text/essentials/archive_environment/domain.dart'
+    show ArchiveMutationDeniedException, ArchiveMutationOperation;
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show
+        ArchiveMutationCoordinator,
+        ArchiveMutationCoordinatorState,
+        archiveAccessAuthorityProvider,
+        archiveMutationCoordinatorProvider;
 import 'package:remember_this_text/essentials/conversation_graph/application/contacts/contact_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_controller_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_graph_build_service_provider.dart';
@@ -16,15 +25,18 @@ import 'package:remember_this_text/essentials/conversation_graph/application/mes
 import 'package:remember_this_text/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/orchestrators/conversation_graph_build_orchestrator.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
-import 'package:remember_this_text/essentials/db/database_directory.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/navigation/feature_level_providers.dart'
+    show SidebarMode, activeSidebarModeProvider;
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_failure_storage_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
+import 'package:remember_this_text/essentials/onboarding/presentation/onboarding_overlay.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
@@ -32,25 +44,23 @@ import 'package:remember_this_text/features/address_book_folders/application/add
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
+import '../../../test_support/test_archive_fixture.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('onboardingGateProvider', () {
-    late Directory sharedDatabaseDir;
+    late TestArchiveFixture archiveFixture;
     late ProviderContainer container;
 
     setUpAll(() async {
-      sharedDatabaseDir = await Directory.systemTemp.createTemp(
-        'onboarding_gate_provider_shared_db_dir',
+      archiveFixture = await TestArchiveFixture.create(
+        prefix: 'onboarding_gate_provider_shared_db_dir_',
       );
-      databaseDirectoryPath = sharedDatabaseDir.path;
     });
 
     tearDownAll(() async {
-      if (sharedDatabaseDir.existsSync()) {
-        await sharedDatabaseDir.delete(recursive: true);
-      }
+      await archiveFixture.dispose();
     });
 
     tearDown(() {
@@ -60,6 +70,9 @@ void main() {
     test('maps permission-blocked environment to awaitingFda', () async {
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.permissionBlocked,
@@ -76,6 +89,9 @@ void main() {
     test('maps ready environment to notNeeded', () async {
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.ready,
@@ -91,6 +107,9 @@ void main() {
     test('keeps import failures inside awaitingUserAction contract', () async {
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.importFailed,
@@ -111,6 +130,9 @@ void main() {
       () async {
         container = ProviderContainer(
           overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
             onboardingEnvironmentReportProvider.overrideWith(
               (ref) async => _report(
                 state: OnboardingEnvironmentState.graphProjectionFailed,
@@ -132,6 +154,9 @@ void main() {
       () async {
         container = ProviderContainer(
           overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
             onboardingEnvironmentReportProvider.overrideWith(
               (ref) async => _report(
                 state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
@@ -193,6 +218,25 @@ void main() {
       expect(status, OnboardingStatus.recoveringFailedAttempt);
     });
 
+    test(
+      'preserves process-local preparation failure during report rebuilds',
+      () {
+        final status = OnboardingGate.resolveBuildStatus(
+          reportAsync: AsyncData(
+            _report(
+              state: OnboardingEnvironmentState.readyToImport,
+              blockerKind:
+                  OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
+            ),
+          ),
+          workflowOverrideStatus: OnboardingStatus.preparationFailed,
+          fallbackBuildStatus: () => OnboardingStatus.awaitingUserAction,
+        );
+
+        expect(status, OnboardingStatus.preparationFailed);
+      },
+    );
+
     test('falls back to derived status when no workflow override exists', () {
       final status = OnboardingGate.resolveBuildStatus(
         reportAsync: AsyncData(
@@ -229,6 +273,9 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           ..._lifecycleOverrides(),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           onboardingFullDiskAccessProvider.overrideWith(
@@ -257,7 +304,104 @@ void main() {
       expect(await _readGateStatus(container), OnboardingStatus.awaitingFda);
     });
 
-    testWidgets('settings reimport completes when graph rebuild succeeds', (
+    testWidgets(
+      'first-run preparation is visible while reset is pending and starts only once',
+      (tester) async {
+        final resetCompleter = Completer<void>();
+        final resetService = _FakeMessageDataResetService()
+          ..resetCompleter = resetCompleter;
+        final graphBuildCompleter = Completer<void>();
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+        var graphBuildCallCount = 0;
+
+        addTearDown(() async {
+          resetService.resetCompleter = null;
+          await overlayDb.close();
+        });
+
+        container = ProviderContainer(
+          overrides: _firstRunOverrides(
+            archiveFixture: archiveFixture,
+            overlayDb: overlayDb,
+            resetService: resetService,
+            onGraphBuild: () {
+              graphBuildCallCount += 1;
+            },
+            graphBuildCompleter: graphBuildCompleter,
+          ),
+        );
+
+        await _pumpGateOverlay(tester, container);
+        expect(
+          await _readGateStatus(container),
+          OnboardingStatus.awaitingUserAction,
+        );
+
+        final firstStart = container
+            .read(onboardingGateProvider.notifier)
+            .startImportAndGraphBuild();
+        await tester.pump();
+
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.importing,
+        );
+        expect(resetService.resetDerivedDataCallCount, 1);
+        expect(graphBuildCallCount, 0);
+        expect(find.text('Preparing setup…'), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+        await container
+            .read(onboardingGateProvider.notifier)
+            .startImportAndGraphBuild();
+        expect(resetService.resetDerivedDataCallCount, 1);
+        expect(graphBuildCallCount, 0);
+
+        resetCompleter.complete();
+        await tester.pump();
+        await tester.pump();
+
+        expect(graphBuildCallCount, 1);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.buildingGraph,
+        );
+        expect(find.text('Building browsing data…'), findsOneWidget);
+
+        graphBuildCompleter.complete();
+        await tester.pump();
+        await firstStart;
+        await tester.pump();
+
+        expect(graphBuildCallCount, 1);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.complete,
+        );
+
+        final sidebarModeSubscription = container.listen<SidebarMode>(
+          activeSidebarModeProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(sidebarModeSubscription.close);
+        container
+            .read(activeSidebarModeProvider.notifier)
+            .setMode(SidebarMode.settings);
+
+        await tester.tap(find.text('Get Started'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.notNeeded,
+        );
+        expect(container.read(activeSidebarModeProvider), SidebarMode.messages);
+      },
+    );
+
+    testWidgets('first-run FDA failure does not publish preparation', (
       tester,
     ) async {
       final resetService = _FakeMessageDataResetService();
@@ -269,42 +413,281 @@ void main() {
       });
 
       container = ProviderContainer(
-        overrides: [
-          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-          onboardingEnvironmentReportProvider.overrideWith(
-            (ref) async => _report(
-              state: OnboardingEnvironmentState.ready,
-              blockerKind: OnboardingBlockerKind.none,
-            ),
-          ),
-          conversationGraphBuildServiceProvider.overrideWith(
-            (ref) async => _fakeGraphBuildService(
-              onBuild: () {
-                graphBuildCallCount += 1;
-              },
-            ),
-          ),
-          messageDataResetServiceProvider.overrideWith((ref) => resetService),
-        ],
+        overrides: _firstRunOverrides(
+          archiveFixture: archiveFixture,
+          overlayDb: overlayDb,
+          resetService: resetService,
+          hasFullDiskAccess: false,
+          onGraphBuild: () {
+            graphBuildCallCount += 1;
+          },
+        ),
       );
 
       await tester.pumpWidget(_GateHarness(container: container));
-      expect(await _readGateStatus(container), OnboardingStatus.notNeeded);
+      expect(
+        await _readGateStatus(container),
+        OnboardingStatus.awaitingUserAction,
+      );
 
-      final reimportFuture = container
+      await container
           .read(onboardingGateProvider.notifier)
-          .startReimport();
+          .startImportAndGraphBuild();
       await tester.pump();
-      await tester.pump();
-      await reimportFuture;
 
       expect(
         container.read(onboardingGateProvider),
-        OnboardingStatus.reimportComplete,
+        OnboardingStatus.awaitingFda,
       );
-      expect(graphBuildCallCount, 1);
-      expect(resetService.resetDerivedDataCallCount, 1);
+      expect(resetService.resetDerivedDataCallCount, 0);
+      expect(graphBuildCallCount, 0);
     });
+
+    testWidgets(
+      'first-run reset failure presents stable process-local retry and support',
+      (tester) async {
+        final resetError = StateError('synthetic reset failure');
+        final resetService = _FakeMessageDataResetService()
+          ..resetError = resetError;
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+        var graphBuildCallCount = 0;
+
+        addTearDown(() async {
+          await overlayDb.close();
+        });
+
+        container = ProviderContainer(
+          overrides: _firstRunOverrides(
+            archiveFixture: archiveFixture,
+            overlayDb: overlayDb,
+            resetService: resetService,
+            onGraphBuild: () {
+              graphBuildCallCount += 1;
+            },
+          ),
+        );
+
+        await _pumpGateOverlay(tester, container);
+        expect(
+          await _readGateStatus(container),
+          OnboardingStatus.awaitingUserAction,
+        );
+
+        final startFuture = container
+            .read(onboardingGateProvider.notifier)
+            .startImportAndGraphBuild();
+        await tester.pump();
+        await startFuture;
+        await tester.pump();
+
+        expect(resetService.resetDerivedDataCallCount, 1);
+        expect(graphBuildCallCount, 0);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.preparationFailed,
+        );
+        await tester.pump();
+        expect(resetService.resetDerivedDataCallCount, 1);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.preparationFailed,
+        );
+        expect(find.text('Preparing setup…'), findsNothing);
+        expect(find.text("MessageLens couldn't finish setup"), findsOneWidget);
+        expect(
+          find.text(
+            "MessageLens couldn't finish preparing your browsing data. "
+            'You can try again.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Try Again'), findsOneWidget);
+        expect(find.text('Send Report To Developer'), findsOneWidget);
+        expect(find.textContaining('synthetic reset failure'), findsNothing);
+
+        resetService.resetError = null;
+        await tester.tap(find.text('Try Again'));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(resetService.resetDerivedDataCallCount, 2);
+        expect(graphBuildCallCount, 1);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.complete,
+        );
+      },
+    );
+
+    testWidgets(
+      'refresh clears process-local preparation failure and reprojects environment',
+      (tester) async {
+        final resetService = _FakeMessageDataResetService()
+          ..resetError = StateError('synthetic reset failure');
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+
+        addTearDown(() async {
+          await overlayDb.close();
+        });
+
+        container = ProviderContainer(
+          overrides: _firstRunOverrides(
+            archiveFixture: archiveFixture,
+            overlayDb: overlayDb,
+            resetService: resetService,
+            onGraphBuild: () {},
+          ),
+        );
+
+        await tester.pumpWidget(_GateHarness(container: container));
+        expect(
+          await _readGateStatus(container),
+          OnboardingStatus.awaitingUserAction,
+        );
+        final startFuture = container
+            .read(onboardingGateProvider.notifier)
+            .startImportAndGraphBuild();
+        await tester.pump();
+        await startFuture;
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.preparationFailed,
+        );
+
+        container.read(onboardingGateProvider.notifier).refreshEnvironment();
+
+        expect(
+          await _readGateStatus(container),
+          OnboardingStatus.awaitingUserAction,
+        );
+      },
+    );
+
+    testWidgets(
+      'process-local preparation failure is not reconstructed by a new Gate',
+      (tester) async {
+        final resetService = _FakeMessageDataResetService()
+          ..resetError = StateError('synthetic reset failure');
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+
+        addTearDown(() async {
+          await overlayDb.close();
+        });
+
+        container = ProviderContainer(
+          overrides: _firstRunOverrides(
+            archiveFixture: archiveFixture,
+            overlayDb: overlayDb,
+            resetService: resetService,
+            onGraphBuild: () {},
+          ),
+        );
+        await tester.pumpWidget(_GateHarness(container: container));
+        expect(
+          await _readGateStatus(container),
+          OnboardingStatus.awaitingUserAction,
+        );
+        final startFuture = container
+            .read(onboardingGateProvider.notifier)
+            .startImportAndGraphBuild();
+        await tester.pump();
+        await startFuture;
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.preparationFailed,
+        );
+
+        container.dispose();
+        container = ProviderContainer(
+          overrides: _firstRunOverrides(
+            archiveFixture: archiveFixture,
+            overlayDb: overlayDb,
+            resetService: _FakeMessageDataResetService(),
+            onGraphBuild: () {},
+          ),
+        );
+
+        expect(
+          await _readGateStatus(container),
+          OnboardingStatus.awaitingUserAction,
+        );
+      },
+    );
+
+    testWidgets(
+      'settings reimport completes and Done returns to ordinary Messages',
+      (tester) async {
+        final resetService = _FakeMessageDataResetService();
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+        var graphBuildCallCount = 0;
+
+        addTearDown(() async {
+          await overlayDb.close();
+        });
+
+        container = ProviderContainer(
+          overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            onboardingEnvironmentReportProvider.overrideWith(
+              (ref) async => _report(
+                state: OnboardingEnvironmentState.ready,
+                blockerKind: OnboardingBlockerKind.none,
+              ),
+            ),
+            conversationGraphBuildServiceProvider.overrideWith(
+              (ref) async => _fakeGraphBuildService(
+                onBuild: () {
+                  graphBuildCallCount += 1;
+                },
+              ),
+            ),
+            messageDataResetServiceProvider.overrideWith((ref) => resetService),
+          ],
+        );
+
+        await _pumpGateOverlay(tester, container);
+        expect(await _readGateStatus(container), OnboardingStatus.notNeeded);
+
+        final reimportFuture = container
+            .read(onboardingGateProvider.notifier)
+            .startReimport();
+        await tester.pump();
+        await tester.pump();
+        await reimportFuture;
+        await tester.pump();
+
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.reimportComplete,
+        );
+        expect(graphBuildCallCount, 1);
+        expect(resetService.resetDerivedDataCallCount, 1);
+
+        final sidebarModeSubscription = container.listen<SidebarMode>(
+          activeSidebarModeProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(sidebarModeSubscription.close);
+        container
+            .read(activeSidebarModeProvider.notifier)
+            .setMode(SidebarMode.settings);
+
+        await tester.tap(find.text('Done'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.notNeeded,
+        );
+        expect(container.read(activeSidebarModeProvider), SidebarMode.messages);
+      },
+    );
 
     testWidgets(
       'settings reimport returns to awaitingUserAction when graph rebuild fails',
@@ -319,6 +702,9 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingEnvironmentReportProvider.overrideWith(
               (ref) async => _report(
@@ -376,6 +762,9 @@ void main() {
 
         container = ProviderContainer(
           overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
             onboardingEnvironmentReportProvider.overrideWith((ref) async {
               return _report(
                 state: shouldReset
@@ -421,6 +810,407 @@ void main() {
         expect(resetService.resetDerivedDataCallCount, 1);
       },
     );
+
+    testWidgets('automatic reset failure ends recovery in preparationFailed', (
+      tester,
+    ) async {
+      final resetService = _FakeMessageDataResetService()
+        ..resetError = StateError('synthetic automatic reset failure');
+      container = ProviderContainer(
+        overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _automaticRecoveryReport(),
+          ),
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
+
+      await tester.pumpWidget(_GateHarness(container: container));
+      await container.read(onboardingEnvironmentReportProvider.future);
+      await tester.pump();
+      await tester.pump();
+
+      expect(resetService.resetDerivedDataCallCount, 1);
+      expect(
+        container.read(onboardingGateProvider),
+        OnboardingStatus.preparationFailed,
+      );
+    });
+
+    testWidgets(
+      'non-contention automatic admission error unwinds into preparationFailed',
+      (tester) async {
+        _AdmissionErrorArchiveMutationCoordinator.runCallCount = 0;
+        final resetService = _FakeMessageDataResetService();
+        container = ProviderContainer(
+          overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
+            archiveMutationCoordinatorProvider.overrideWith(
+              _AdmissionErrorArchiveMutationCoordinator.new,
+            ),
+            onboardingEnvironmentReportProvider.overrideWith(
+              (ref) async => _automaticRecoveryReport(),
+            ),
+            messageDataResetServiceProvider.overrideWith((ref) => resetService),
+          ],
+        );
+
+        await tester.pumpWidget(_GateHarness(container: container));
+        await container.read(onboardingEnvironmentReportProvider.future);
+        await tester.pump();
+        await tester.pump();
+
+        expect(_AdmissionErrorArchiveMutationCoordinator.runCallCount, 1);
+        expect(resetService.resetDerivedDataCallCount, 0);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.preparationFailed,
+        );
+
+        container.read(onboardingGateProvider.notifier).refreshEnvironment();
+        await container.read(onboardingEnvironmentReportProvider.future);
+        await tester.pump();
+        await tester.pump();
+
+        expect(_AdmissionErrorArchiveMutationCoordinator.runCallCount, 2);
+        expect(resetService.resetDerivedDataCallCount, 0);
+      },
+    );
+
+    testWidgets(
+      'busy automatic recovery stays silent and re-evaluates once on release',
+      (tester) async {
+        var environmentEvaluationCount = 0;
+        var report = _automaticRecoveryReport();
+        final seenStatuses = <OnboardingStatus>[];
+        final resetService = _FakeMessageDataResetService();
+        container = ProviderContainer(
+          overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
+            onboardingEnvironmentReportProvider.overrideWith((ref) async {
+              environmentEvaluationCount += 1;
+              return report;
+            }),
+            messageDataResetServiceProvider.overrideWith((ref) => resetService),
+          ],
+        );
+        final competingMutation = _holdMutationAuthority(container);
+
+        await tester.pumpWidget(
+          _GateHarness(container: container, seenStatuses: seenStatuses),
+        );
+        await container.read(onboardingEnvironmentReportProvider.future);
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          container.read(archiveMutationCoordinatorProvider).deniedRequests,
+          1,
+        );
+        expect(resetService.resetDerivedDataCallCount, 0);
+        expect(
+          seenStatuses,
+          isNot(contains(OnboardingStatus.recoveringFailedAttempt)),
+        );
+        expect(
+          seenStatuses,
+          isNot(contains(OnboardingStatus.preparationFailed)),
+        );
+
+        await tester.pump();
+        await tester.pump();
+        expect(
+          container.read(archiveMutationCoordinatorProvider).deniedRequests,
+          1,
+        );
+
+        report = _readyToImportReport();
+        competingMutation.release.complete();
+        await competingMutation.operation;
+        await tester.pump();
+        await container.read(onboardingEnvironmentReportProvider.future);
+        await tester.pump();
+
+        expect(environmentEvaluationCount, 2);
+        expect(resetService.resetDerivedDataCallCount, 0);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.awaitingUserAction,
+        );
+      },
+    );
+
+    testWidgets(
+      'fresh recovery requirement after release is admitted and shown once',
+      (tester) async {
+        var environmentEvaluationCount = 0;
+        final seenStatuses = <OnboardingStatus>[];
+        final resetCompleter = Completer<void>();
+        final resetService = _FakeMessageDataResetService()
+          ..resetCompleter = resetCompleter;
+        addTearDown(() {
+          resetService.resetCompleter = null;
+        });
+        container = ProviderContainer(
+          overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
+            onboardingEnvironmentReportProvider.overrideWith((ref) async {
+              environmentEvaluationCount += 1;
+              return _automaticRecoveryReport();
+            }),
+            messageDataResetServiceProvider.overrideWith((ref) => resetService),
+          ],
+        );
+        final competingMutation = _holdMutationAuthority(container);
+
+        await tester.pumpWidget(
+          _GateHarness(container: container, seenStatuses: seenStatuses),
+        );
+        await container.read(onboardingEnvironmentReportProvider.future);
+        await tester.pump();
+        await tester.pump();
+        expect(resetService.resetDerivedDataCallCount, 0);
+
+        competingMutation.release.complete();
+        await competingMutation.operation;
+        await tester.pump();
+        await container.read(onboardingEnvironmentReportProvider.future);
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(environmentEvaluationCount, 2);
+        expect(resetService.resetDerivedDataCallCount, 1);
+        expect(
+          seenStatuses,
+          contains(OnboardingStatus.recoveringFailedAttempt),
+        );
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.recoveringFailedAttempt,
+        );
+
+        resetCompleter.complete();
+        await tester.pump();
+        await tester.pump();
+        expect(resetService.resetDerivedDataCallCount, 1);
+      },
+    );
+
+    testWidgets('a second mutation owner returns recovery to deferral', (
+      tester,
+    ) async {
+      var environmentEvaluationCount = 0;
+      final freshReport = Completer<OnboardingEnvironmentReport>();
+      final resetService = _FakeMessageDataResetService();
+      container = ProviderContainer(
+        overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
+          onboardingEnvironmentReportProvider.overrideWith((ref) async {
+            environmentEvaluationCount += 1;
+            if (environmentEvaluationCount == 1) {
+              return _automaticRecoveryReport();
+            }
+            if (environmentEvaluationCount == 2) {
+              return freshReport.future;
+            }
+            return _readyToImportReport();
+          }),
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
+      final firstMutation = _holdMutationAuthority(
+        container,
+        ownerLabel: 'first-owner',
+      );
+
+      await tester.pumpWidget(_GateHarness(container: container));
+      await container.read(onboardingEnvironmentReportProvider.future);
+      await tester.pump();
+      await tester.pump();
+      expect(
+        container.read(archiveMutationCoordinatorProvider).deniedRequests,
+        1,
+      );
+
+      firstMutation.release.complete();
+      await firstMutation.operation;
+      await tester.pump();
+      expect(environmentEvaluationCount, 2);
+
+      final secondMutation = _holdMutationAuthority(
+        container,
+        ownerLabel: 'second-owner',
+      );
+      freshReport.complete(_automaticRecoveryReport());
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        container.read(archiveMutationCoordinatorProvider).deniedRequests,
+        2,
+      );
+      expect(resetService.resetDerivedDataCallCount, 0);
+      expect(
+        container.read(onboardingGateProvider),
+        isNot(OnboardingStatus.preparationFailed),
+      );
+
+      secondMutation.release.complete();
+      await secondMutation.operation;
+      await tester.pump();
+      await container.read(onboardingEnvironmentReportProvider.future);
+      await tester.pump();
+
+      expect(environmentEvaluationCount, 3);
+      expect(resetService.resetDerivedDataCallCount, 0);
+    });
+
+    testWidgets(
+      'release before denial handling still causes fresh evaluation',
+      (tester) async {
+        var environmentEvaluationCount = 0;
+        final resetService = _FakeMessageDataResetService();
+        container = ProviderContainer(
+          overrides: [
+            archiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
+            archiveMutationCoordinatorProvider.overrideWith(
+              _ReleaseBeforeDenialHandlingCoordinator.new,
+            ),
+            onboardingEnvironmentReportProvider.overrideWith((ref) async {
+              environmentEvaluationCount += 1;
+              return environmentEvaluationCount == 1
+                  ? _automaticRecoveryReport()
+                  : _readyToImportReport();
+            }),
+            messageDataResetServiceProvider.overrideWith((ref) => resetService),
+          ],
+        );
+
+        await tester.pumpWidget(_GateHarness(container: container));
+        await container.read(onboardingEnvironmentReportProvider.future);
+        await tester.pump();
+        await tester.pump();
+        await container.read(onboardingEnvironmentReportProvider.future);
+        await tester.pump();
+
+        expect(environmentEvaluationCount, 2);
+        expect(resetService.resetDerivedDataCallCount, 0);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.awaitingUserAction,
+        );
+      },
+    );
+
+    testWidgets('disposed deferral is not replayed by a new Gate', (
+      tester,
+    ) async {
+      final resetService = _FakeMessageDataResetService();
+      container = ProviderContainer(
+        overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _automaticRecoveryReport(),
+          ),
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
+      final competingMutation = _holdMutationAuthority(container);
+
+      await tester.pumpWidget(_GateHarness(container: container));
+      await container.read(onboardingEnvironmentReportProvider.future);
+      await tester.pump();
+      await tester.pump();
+      expect(resetService.resetDerivedDataCallCount, 0);
+
+      container.dispose();
+      competingMutation.release.complete();
+      await competingMutation.operation;
+      expect(resetService.resetDerivedDataCallCount, 0);
+
+      container = ProviderContainer(
+        overrides: [
+          archiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _readyToImportReport(),
+          ),
+          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+        ],
+      );
+      await tester.pumpWidget(_GateHarness(container: container));
+      await tester.pump();
+      final reconstructedStatus = await _readGateStatus(container);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+
+      expect(reconstructedStatus, OnboardingStatus.awaitingUserAction);
+      expect(resetService.resetDerivedDataCallCount, 0);
+    });
+
+    testWidgets('controller failure keeps the persisted graph-failure path', (
+      tester,
+    ) async {
+      final resetService = _FakeMessageDataResetService();
+      final overlayDb = OverlayDatabase(NativeDatabase.memory());
+
+      addTearDown(() async {
+        await overlayDb.close();
+      });
+
+      container = ProviderContainer(
+        overrides: _firstRunOverrides(
+          archiveFixture: archiveFixture,
+          overlayDb: overlayDb,
+          resetService: resetService,
+          onGraphBuild: () {},
+          graphBuildError: StateError('synthetic graph failure'),
+        ),
+      );
+
+      await tester.pumpWidget(_GateHarness(container: container));
+      expect(
+        await _readGateStatus(container),
+        OnboardingStatus.awaitingUserAction,
+      );
+      final startFuture = container
+          .read(onboardingGateProvider.notifier)
+          .startImportAndGraphBuild();
+      await tester.pump();
+      await tester.pump();
+      await startFuture;
+
+      expect(
+        container.read(onboardingGateProvider),
+        OnboardingStatus.awaitingUserAction,
+      );
+      expect(
+        container.read(onboardingGateProvider),
+        isNot(OnboardingStatus.preparationFailed),
+      );
+      final failure = await container
+          .read(onboardingFailureStorageProvider)
+          .loadGraphProjectionFailure();
+      expect(failure?.message, contains('synthetic graph failure'));
+    });
   });
 }
 
@@ -446,6 +1236,31 @@ class _GateHarness extends StatelessWidget {
       ),
     );
   }
+}
+
+class _GateOverlayHarness extends StatelessWidget {
+  const _GateOverlayHarness({required this.container});
+
+  final ProviderContainer container;
+
+  @override
+  Widget build(BuildContext context) {
+    return UncontrolledProviderScope(
+      container: container,
+      child: const MacosApp(home: OnboardingOverlay()),
+    );
+  }
+}
+
+Future<void> _pumpGateOverlay(
+  WidgetTester tester,
+  ProviderContainer container,
+) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = const Size(1200, 1400);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
+  await tester.pumpWidget(_GateOverlayHarness(container: container));
 }
 
 Future<OnboardingStatus> _readGateStatus(ProviderContainer container) async {
@@ -504,22 +1319,138 @@ OnboardingEnvironmentReport _report({
   );
 }
 
+OnboardingEnvironmentReport _automaticRecoveryReport() {
+  return _report(
+    state: OnboardingEnvironmentState.graphProjectionFailed,
+    blockerKind: OnboardingBlockerKind.graphProjectionFailed,
+    shouldResetAppDatabasesBeforeImport: true,
+    resetAppDatabasesReason: 'Synthetic incomplete setup state',
+  );
+}
+
+OnboardingEnvironmentReport _readyToImportReport() {
+  return _report(
+    state: OnboardingEnvironmentState.readyToImport,
+    blockerKind: OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
+  );
+}
+
+({Completer<void> release, Future<void> operation}) _holdMutationAuthority(
+  ProviderContainer container, {
+  String ownerLabel = 'competing-owner',
+}) {
+  final release = Completer<void>();
+  final operation = container
+      .read(archiveMutationCoordinatorProvider.notifier)
+      .run<void>(
+        operation: ArchiveMutationOperation.graphBuild,
+        ownerLabel: ownerLabel,
+        action: () => release.future,
+      );
+  return (release: release, operation: operation);
+}
+
 final class _FakeMessageDataResetService implements MessageDataResetService {
   int resetDerivedDataCallCount = 0;
   int confirmResetAndPrepareReimportCallCount = 0;
   Completer<void>? resetCompleter;
+  Object? resetError;
   void Function()? onResetStarted;
 
   @override
   Future<void> resetDerivedData() async {
     resetDerivedDataCallCount += 1;
     onResetStarted?.call();
+    final error = resetError;
+    if (error != null) {
+      throw error;
+    }
     await resetCompleter?.future;
   }
 
   @override
   Future<void> confirmResetAndPrepareReimport() async {
     confirmResetAndPrepareReimportCallCount += 1;
+  }
+}
+
+List<Override> _firstRunOverrides({
+  required TestArchiveFixture archiveFixture,
+  required OverlayDatabase overlayDb,
+  required _FakeMessageDataResetService resetService,
+  required void Function() onGraphBuild,
+  Completer<void>? graphBuildCompleter,
+  Object? graphBuildError,
+  bool hasFullDiskAccess = true,
+}) {
+  return [
+    archiveAccessAuthorityProvider.overrideWithValue(archiveFixture.authority),
+    overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+    onboardingEnvironmentReportProvider.overrideWith(
+      (ref) async => _report(
+        state: OnboardingEnvironmentState.readyToImport,
+        blockerKind: OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
+      ),
+    ),
+    onboardingFullDiskAccessProvider.overrideWith((ref) => hasFullDiskAccess),
+    conversationGraphBuildServiceProvider.overrideWith(
+      (ref) async => _fakeGraphBuildService(
+        error: graphBuildError,
+        onBuild: onGraphBuild,
+        buildCompleter: graphBuildCompleter,
+      ),
+    ),
+    messageDataResetServiceProvider.overrideWith((ref) => resetService),
+  ];
+}
+
+final class _AdmissionErrorArchiveMutationCoordinator
+    extends ArchiveMutationCoordinator {
+  static int runCallCount = 0;
+
+  @override
+  ArchiveMutationCoordinatorState build() {
+    return const ArchiveMutationCoordinatorState();
+  }
+
+  @override
+  Future<T> run<T>({
+    required ArchiveMutationOperation operation,
+    required String ownerLabel,
+    required Future<T> Function() action,
+  }) async {
+    runCallCount += 1;
+    throw StateError('synthetic admission failure');
+  }
+}
+
+final class _ReleaseBeforeDenialHandlingCoordinator
+    extends ArchiveMutationCoordinator {
+  @override
+  ArchiveMutationCoordinatorState build() {
+    return const ArchiveMutationCoordinatorState(
+      operation: ArchiveMutationOperation.messageDataReset,
+      ownerId: 'released-owner#1',
+      ownerLabel: 'released-owner',
+      holdCount: 1,
+    );
+  }
+
+  @override
+  Future<T> run<T>({
+    required ArchiveMutationOperation operation,
+    required String ownerLabel,
+    required Future<T> Function() action,
+  }) async {
+    state = ArchiveMutationCoordinatorState(
+      lastReleasedAtUtc: DateTime.now().toUtc(),
+    );
+    throw ArchiveMutationDeniedException(
+      requestedOperation: operation,
+      requestedOwner: ownerLabel,
+      currentOperation: ArchiveMutationOperation.messageDataReset,
+      currentOwner: 'another-owner',
+    );
   }
 }
 
@@ -568,6 +1499,7 @@ AddressBookFolderAggregate _addressBookAggregate(String addressBookPath) {
 ConversationGraphBuildService _fakeGraphBuildService({
   Object? error,
   void Function()? onBuild,
+  Completer<void>? buildCompleter,
 }) {
   var reportedBuildStart = false;
   Future<void> step() async {
@@ -578,6 +1510,7 @@ ConversationGraphBuildService _fakeGraphBuildService({
     if (error != null) {
       throw error;
     }
+    await buildCompleter?.future;
   }
 
   return ConversationGraphBuildService(

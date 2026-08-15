@@ -1,6 +1,10 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/page_track_layout_matrix.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation_reader_provider.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
@@ -130,6 +134,75 @@ void main() {
     expect(find.text('View options'), findsNothing);
     expect(find.text('Latest 500'), findsNothing);
   });
+
+  testWidgets(
+    'renders its Contacts title in A2 then continues its native header',
+    (tester) async {
+      const scope = ConversationEvidenceScope(conversationId: 42);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            conversationOverviewByIdProvider(conversationId: 42).overrideWith((
+              ref,
+            ) async {
+              return const ConversationOverview(
+                conversationId: 42,
+                participantHandles: ['+17789908506'],
+                participantCount: 1,
+                isGroup: false,
+                messageCount: 1,
+                attachmentCount: 0,
+                firstMessageAtUtc: '2026-05-20T10:00:00.000Z',
+                lastMessageAtUtc: '2026-05-20T10:00:00.000Z',
+                lastMessageText: 'tracked conversation',
+              );
+            }),
+            displayIdentityResolverProvider.overrideWith((ref) async {
+              return const DisplayIdentityResolver(
+                identitiesByHandleKey: {
+                  '17789908506': ParticipantDisplayIdentity(
+                    primaryLabel: 'Claire',
+                    source: DisplayIdentitySource.userOverride,
+                    isKnownContact: true,
+                    contactId: 17,
+                  ),
+                },
+              );
+            }),
+            messageEvidenceTimelineSkeletonProvider(scope: scope).overrideWith((
+              ref,
+            ) async {
+              return const MessageEvidenceTimelineSkeleton(entries: []);
+            }),
+          ],
+          child: MacosApp(
+            home: ResolvedTrackLayoutMatrixScope(
+              matrix: _resolvedConversationHeaderMatrix(
+                title: 'Conversation with Claire',
+              ),
+              child: const SizedBox(
+                width: 960,
+                height: 720,
+                child: ConversationMessagesView(conversationId: 42),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Conversation with Claire'), findsOneWidget);
+      expect(find.text('Search this conversation'), findsOneWidget);
+      expect(find.byType(TrackCellView), findsOneWidget);
+      expect(
+        tester.widget<TrackCellView>(find.byType(TrackCellView)).cellId,
+        const CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column2),
+      );
+    },
+  );
 
   testWidgets('shows search and anchor context without batch controls', (
     tester,
@@ -329,4 +402,46 @@ void main() {
     expect(find.text('other message'), findsNothing);
     expect(find.text('1 of 2 messages match "settlement"'), findsOneWidget);
   });
+}
+
+ResolvedTrackLayoutMatrix _resolvedConversationHeaderMatrix({
+  required String title,
+}) {
+  final matrix = PageTrackLayoutMatrix<TrackOccupant>(
+    trackIds: const [TrackId.trackA],
+    columnIds: TrackColumnId.values,
+    cells: [
+      const MatrixCell<TrackOccupant>.occupied(
+        cellId: CellId(
+          trackId: TrackId.trackA,
+          columnId: TrackColumnId.column1,
+        ),
+        occupant: FixedHeightTrackOccupant(height: 40),
+      ),
+      MatrixCell<TrackOccupant>.occupied(
+        cellId: const CellId(
+          trackId: TrackId.trackA,
+          columnId: TrackColumnId.column2,
+        ),
+        occupant: TextTrackOccupant(
+          text: title,
+          style: const TextStyle(fontSize: 20),
+        ),
+      ),
+      const MatrixCell<TrackOccupant>.empty(
+        cellId: CellId(
+          trackId: TrackId.trackA,
+          columnId: TrackColumnId.column3,
+        ),
+      ),
+    ],
+  );
+  return ResolvedTrackLayoutMatrix.resolve(
+    matrix: matrix,
+    constraints: const PresentationConstraints(
+      availableWidth: 960,
+      textScaler: TextScaler.noScaling,
+      textDirection: TextDirection.ltr,
+    ),
+  );
 }

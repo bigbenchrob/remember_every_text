@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversation_signatures/conversation_signature.dart';
 import 'package:remember_this_text/features/conversations/presentation/widgets/conversation_signature_card.dart';
+import 'package:remember_this_text/features/conversations/presentation/widgets/conversation_signature_card_track_occupant.dart';
 
 void main() {
   testWidgets('renders supplied data and slot without provider dependencies', (
@@ -66,7 +68,7 @@ void main() {
     );
     expect(find.text('action'), findsOneWidget);
 
-    await tester.tap(find.byType(ConversationSignatureCard));
+    await tester.tap(find.byType(AnimatedContainer));
     expect(tapCount, 1);
   });
 
@@ -162,6 +164,353 @@ void main() {
     expect(find.text('Claire'), findsOneWidget);
     expect(find.text('claire@student.ubco.ca'), findsOneWidget);
   });
+
+  testWidgets(
+    'calculates one-row glyph requirement from presentation metrics',
+    (tester) async {
+      final months = _recentMonths(1);
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Builder(
+            builder: (context) {
+              expect(
+                ConversationSignatureCardPresentationMetrics.glyphNaturalHeight(
+                  months: months,
+                  availableWidth: 260,
+                ),
+                ConversationSignatureCardPresentationMetrics.glyphDotSize,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+    },
+  );
+
+  testWidgets('calculates multi-row glyph requirement from finite width', (
+    tester,
+  ) async {
+    final months = _recentMonths(36);
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Builder(
+          builder: (context) {
+            final wideHeight =
+                ConversationSignatureCardPresentationMetrics.glyphNaturalHeight(
+                  months: months,
+                  availableWidth: 260,
+                );
+            final narrowHeight =
+                ConversationSignatureCardPresentationMetrics.glyphNaturalHeight(
+                  months: months,
+                  availableWidth: 72,
+                );
+
+            expect(narrowHeight, greaterThan(wideHeight));
+            expect(
+              narrowHeight,
+              greaterThan(
+                ConversationSignatureCardPresentationMetrics.glyphDotSize,
+              ),
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  });
+
+  testWidgets('card occupant requirement increases with glyph height', (
+    tester,
+  ) async {
+    final oneRowSignature = _signature(activityMonths: _recentMonths(1));
+    final multiRowSignature = _signature(activityMonths: _recentMonths(36));
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Builder(
+          builder: (context) {
+            final constraints = PresentationConstraints.fromBuildContext(
+              context,
+              availableWidth: 120,
+            );
+            final oneRowClaim = ConversationSignatureCardTrackOccupant(
+              signature: oneRowSignature,
+              style: _testStyle,
+              includeFavouriteButton: false,
+            ).dimensionalClaim(constraints);
+            final multiRowClaim = ConversationSignatureCardTrackOccupant(
+              signature: multiRowSignature,
+              style: _testStyle,
+              includeFavouriteButton: false,
+            ).dimensionalClaim(constraints);
+
+            expect(
+              multiRowClaim.naturalHeight,
+              greaterThan(oneRowClaim.naturalHeight),
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  });
+
+  testWidgets('card occupant requirement uses canonical card width', (
+    tester,
+  ) async {
+    final signature = _signature(activityMonths: _recentMonths(36));
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Builder(
+          builder: (context) {
+            final narrowClaim =
+                ConversationSignatureCardTrackOccupant(
+                  signature: signature,
+                  style: _testStyle,
+                  includeFavouriteButton: false,
+                ).dimensionalClaim(
+                  PresentationConstraints.fromBuildContext(
+                    context,
+                    availableWidth: 120,
+                  ),
+                );
+            final wideClaim =
+                ConversationSignatureCardTrackOccupant(
+                  signature: signature,
+                  style: _testStyle,
+                  includeFavouriteButton: false,
+                ).dimensionalClaim(
+                  PresentationConstraints.fromBuildContext(
+                    context,
+                    availableWidth: 600,
+                  ),
+                );
+
+            expect(wideClaim.naturalHeight, narrowClaim.naturalHeight);
+            expect(
+              wideClaim.preferredWidth,
+              ConversationSignatureCardPresentationMetrics.canonicalWidth,
+            );
+            expect(
+              wideClaim.minimumWidth,
+              ConversationSignatureCardPresentationMetrics.canonicalWidth,
+            );
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  });
+
+  testWidgets('rendered card height matches calculated natural requirement', (
+    tester,
+  ) async {
+    const width = ConversationSignatureCardPresentationMetrics.canonicalWidth;
+    final signature = _signature(activityMonths: _recentMonths(18));
+    late final double calculatedHeight;
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Builder(
+          builder: (context) {
+            final constraints = PresentationConstraints.fromBuildContext(
+              context,
+              availableWidth: width,
+            );
+            calculatedHeight =
+                ConversationSignatureCardPresentationMetrics.naturalHeight(
+                  signature: signature,
+                  style: _testStyle,
+                  constraints: constraints,
+                );
+            return UnconstrainedBox(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: width,
+                child: ConversationSignatureCard(
+                  signature: signature,
+                  style: _testStyle,
+                  monthColorForMessageCount: (_) => const Color(0xFF00AA00),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byType(AnimatedContainer)).height,
+      closeTo(calculatedHeight, 0.001),
+    );
+  });
+
+  testWidgets('rendered card uses canonical width in wider containers', (
+    tester,
+  ) async {
+    final signature = _signature(activityMonths: _recentMonths(12));
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 520,
+            child: ConversationSignatureCard(
+              signature: signature,
+              style: _testStyle,
+              monthColorForMessageCount: (_) => const Color(0xFF00AA00),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getSize(find.byType(AnimatedContainer)).width,
+      ConversationSignatureCardPresentationMetrics.canonicalWidth,
+    );
+  });
+
+  testWidgets('defaults canonical card placement to the leading edge', (
+    tester,
+  ) async {
+    final signature = _signature(activityMonths: _recentMonths(12));
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 520,
+            child: ConversationSignatureCard(
+              signature: signature,
+              style: _testStyle,
+              monthColorForMessageCount: (_) => const Color(0xFF00AA00),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.getTopLeft(find.byType(AnimatedContainer)).dx, 0);
+  });
+
+  testWidgets('can center canonical card placement without changing width', (
+    tester,
+  ) async {
+    final signature = _signature(activityMonths: _recentMonths(12));
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 520,
+            child: ConversationSignatureCard(
+              signature: signature,
+              style: _testStyle,
+              monthColorForMessageCount: (_) => const Color(0xFF00AA00),
+              horizontalPlacement: Alignment.center,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final cardSize = tester.getSize(find.byType(AnimatedContainer));
+    expect(
+      cardSize.width,
+      ConversationSignatureCardPresentationMetrics.canonicalWidth,
+    );
+    expect(
+      tester.getTopLeft(find.byType(AnimatedContainer)).dx,
+      closeTo(
+        (520 - ConversationSignatureCardPresentationMetrics.canonicalWidth) / 2,
+        0.001,
+      ),
+    );
+  });
+
+  testWidgets('finite width changes glyph row count', (tester) async {
+    final months = _recentMonths(24);
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Builder(
+          builder: (context) {
+            final wideColumns =
+                ConversationSignatureCardPresentationMetrics.glyphColumnsForWidth(
+                  260,
+                );
+            final narrowColumns =
+                ConversationSignatureCardPresentationMetrics.glyphColumnsForWidth(
+                  72,
+                );
+            final wideRows =
+                ConversationSignatureCardPresentationMetrics.chunkMonthsFromNewest(
+                  ConversationSignatureCardPresentationMetrics.anchorMonthsToNow(
+                    months,
+                  ),
+                  columns: wideColumns,
+                ).length;
+            final narrowRows =
+                ConversationSignatureCardPresentationMetrics.chunkMonthsFromNewest(
+                  ConversationSignatureCardPresentationMetrics.anchorMonthsToNow(
+                    months,
+                  ),
+                  columns: narrowColumns,
+                ).length;
+
+            expect(narrowColumns, lessThan(wideColumns));
+            expect(narrowRows, greaterThan(wideRows));
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+  });
+}
+
+ConversationSignatureCardData _signature({
+  required List<ConversationSignatureMonth> activityMonths,
+}) {
+  return ConversationSignatureCardData(
+    conversationId: 42,
+    title: 'Claire',
+    participantCount: 1,
+    messageCount: 10,
+    firstMessageAtUtc: '2026-05-01T10:00:00.000Z',
+    lastMessageAtUtc: '2026-05-02T10:00:00.000Z',
+    activityMonths: activityMonths,
+  );
+}
+
+List<ConversationSignatureMonth> _recentMonths(int count) {
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month - count + 1);
+  return [
+    for (var index = 0; index < count; index++)
+      ConversationSignatureMonth(
+        year: DateTime(start.year, start.month + index).year,
+        month: DateTime(start.year, start.month + index).month,
+        messageCount: index + 1,
+      ),
+  ];
 }
 
 const _testStyle = ConversationSignatureCardStyle(

@@ -88,6 +88,11 @@ void main() {
         'batch_id',
       }),
     );
+
+    final handleColumns = await importDatabase.database.rawQuery(
+      'PRAGMA table_info(handles)',
+    );
+    expect(handleColumns.map((row) => row['name']), contains('is_me'));
   });
 
   test('registers live chat.db source identity', () async {
@@ -100,6 +105,71 @@ void main() {
     expect(rows, hasLength(1));
     expect(rows.single['source_key'], liveChatDbSourceKey);
     expect(rows.single['source_kind'], liveChatDbSourceKind);
+  });
+
+  test('upgrades existing handles with local account identity', () async {
+    const databaseName = 'version_9_import.db';
+    final legacyDatabase = await openDatabase(
+      '${tempDir.path}/$databaseName',
+      version: 9,
+      onCreate: (db, version) async {
+        await db.execute('''
+          CREATE TABLE source_registry (
+            source_id INTEGER PRIMARY KEY,
+            source_key TEXT NOT NULL UNIQUE,
+            source_kind TEXT NOT NULL,
+            source_label TEXT,
+            created_at_utc TEXT NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE handles (
+            ss_id INTEGER PRIMARY KEY,
+            source_id INTEGER NOT NULL,
+            source_rowid INTEGER NOT NULL,
+            id TEXT NOT NULL,
+            service TEXT,
+            batch_id INTEGER NOT NULL,
+            UNIQUE(source_id, source_rowid)
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE chat_to_message (
+            source_id INTEGER NOT NULL,
+            source_message_rowid INTEGER NOT NULL
+          )
+        ''');
+        await db.execute('''
+          CREATE TABLE message_to_attachment (
+            message_source_id INTEGER NOT NULL,
+            source_message_rowid INTEGER NOT NULL
+          )
+        ''');
+        await db.insert('handles', <String, Object?>{
+          'ss_id': 12,
+          'source_id': liveChatDbSourceId,
+          'source_rowid': 12,
+          'id': '+16046858506',
+          'service': 'iMessage',
+          'batch_id': 1,
+        });
+      },
+    );
+    await legacyDatabase.close();
+
+    final upgradedDatabase = await ImportDatabase.open(
+      databaseDirectory: tempDir.path,
+      databaseName: databaseName,
+    );
+    addTearDown(upgradedDatabase.close);
+
+    final columns = await upgradedDatabase.database.rawQuery(
+      'PRAGMA table_info(handles)',
+    );
+    final rows = await upgradedDatabase.database.query('handles');
+
+    expect(columns.map((row) => row['name']), contains('is_me'));
+    expect(rows.single['is_me'], 0);
   });
 
   test('registers live AddressBook source identity', () async {
@@ -402,6 +472,7 @@ void main() {
       'source_rowid',
       'id',
       'service',
+      'is_me',
       'batch_id',
     });
     expect(chatColumns.map((row) => row['name']).toSet(), <String>{

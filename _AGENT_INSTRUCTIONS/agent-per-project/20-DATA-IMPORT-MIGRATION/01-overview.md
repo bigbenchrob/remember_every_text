@@ -2,7 +2,7 @@
 tier: project
 scope: data-import-migration
 owner: agent-per-project
-last_reviewed: 2026-06-20
+last_reviewed: 2026-07-26
 source_of_truth: doc
 links:
       - ./02-import-migration-schema-reference.md
@@ -11,6 +11,7 @@ links:
       - ./20-migration-orchestrator.md
       - ./30-incremental-mode-flag.md
       - ../10-DATABASES/00-all-databases-accessed.md
+      - ../10-DATABASES/12-identity-model-contacts-handles-participants.md
 tests: []
 ---
 
@@ -55,8 +56,10 @@ is the ordinary live-sync, archive-source metadata, or user-facing read spine.
 
 | Component | Purpose |
 |-----------|---------|
+| macOS application-instance authority | Admits one ordinary MessageLens process before Flutter and database providers start; duplicate launches activate the existing app and exit |
 | `ChatDbChangeMonitor` | Polls `MAX(ROWID)` from `chat.db`; triggers source-scoped graph build on change |
 | Source-scoped graph build lifecycle | Imports source facts into `macos_import_ss.db` and projects canonical graph rows into `working_ss.db` |
+| Local-account identity reconciliation | At startup, scans historical Messages account/destination metadata, annotates matching imported handles, and projects only changed `is_me` graph facts without reimporting messages |
 | Graph/message data version providers | Bumped after successful graph import/projection so UI providers refresh without closing Drift connections |
 | `AttachmentArchiveService` | Orchestrates live graph archive runs and periodic graph sweeps; graph reads, overlay writes, archive settings, and filesystem work remain behind named attachment-feature ports |
 
@@ -65,6 +68,31 @@ is the ordinary live-sync, archive-source metadata, or user-facing read spine.
 See `10-import-orchestrator.md` for the current `ChatDbChangeMonitor`
 runbook and retired importer mechanics. Do not use the historical retired
 importer sections as live-sync guidance.
+
+The monitor remains an orchestration client. Historical local-account
+reconciliation is exposed through the Conversation Graph build service and
+runs under the same execution authority as other graph mutations; the monitor
+must not compose importer and projector internals itself.
+
+## Two Levels of Execution Authority
+
+MessageLens protects derived and user-intent storage at two distinct scopes:
+
+1. **Application-instance authority:** macOS bootstrap acquires an
+   application-lifetime advisory lock before constructing the Flutter engine.
+   An ordinary duplicate launch cannot reach providers or open application
+   databases. It activates the existing same-bundle app when available, then
+   exits. The operating system releases the authority when the owning process
+   exits or crashes; the lock file by itself carries no authority.
+2. **Graph-maintenance execution authority:** once inside the admitted
+   process, `GraphMaintenanceExecutionGate` coordinates source import, graph
+   build, archive import/removal, and other graph mutations. This Riverpod
+   authority is intentionally process-local.
+
+Neither layer replaces the other. The application-instance authority prevents
+multiple app processes from independently believing they may write. The graph
+maintenance gate decides which orchestrator may mutate derived data inside the
+one admitted process.
 
 ## Retired Storage Reference Flow
 
@@ -157,6 +185,9 @@ This is an app-side recovery heuristic, not a claim that the source database pro
 
 - **Never bypass the graph build lifecycle.** Manual SQL shortcuts risk breaking
   the source-scoped ID contracts that downstream providers rely on.
+- **Never remove or defer the macOS application-instance authority past Flutter
+  startup.** Cross-process exclusion must be established before providers can
+  open writable application databases.
 - **Do not edit ledger tables manually.** Source-scoped import and graph
   projection own derived data; overlay services own user intent.
 - **Run graph projection after source-scoped import.** Graph projection is disposable derived data; rebuilding is cheaper than debugging drift.

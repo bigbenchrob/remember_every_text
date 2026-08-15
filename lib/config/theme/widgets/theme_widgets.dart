@@ -55,6 +55,8 @@ abstract class AppThemeWidgets {
     double trailingIconSize = 14,
     IconData closedIcon = CupertinoIcons.chevron_down,
     IconData openIcon = CupertinoIcons.chevron_up,
+    AppDropdownPanelPresentation panelPresentation =
+        AppDropdownPanelPresentation.inline,
     ValueChanged<bool>? onMenuVisibilityChanged,
     Color? chevronColor,
     Color? chevronBackgroundColor,
@@ -84,6 +86,7 @@ abstract class AppThemeWidgets {
       trailingIconSize: trailingIconSize,
       closedIcon: closedIcon,
       openIcon: openIcon,
+      panelPresentation: panelPresentation,
       onMenuVisibilityChanged: onMenuVisibilityChanged,
       chevronColor: chevronColor,
       chevronBackgroundColor: chevronBackgroundColor,

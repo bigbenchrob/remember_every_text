@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:fc_native_video_thumbnail/fc_native_video_thumbnail.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../../application/video_thumbnail_cache.dart';
 
@@ -19,10 +18,9 @@ typedef VideoThumbnailFileGenerator =
 class VideoThumbnailCacheService implements VideoThumbnailCache {
   VideoThumbnailCacheService({
     VideoThumbnailFileGenerator? thumbnailGenerator,
-    Future<Directory> Function()? cacheDirectoryLoader,
+    required Future<Directory> Function() cacheDirectoryLoader,
   }) : _thumbnailGenerator = thumbnailGenerator ?? _defaultGenerateThumbnail,
-       _cacheDirectoryLoader =
-           cacheDirectoryLoader ?? _defaultCacheDirectoryLoader;
+       _cacheDirectoryLoader = cacheDirectoryLoader;
 
   final VideoThumbnailFileGenerator _thumbnailGenerator;
   final Future<Directory> Function() _cacheDirectoryLoader;
@@ -141,13 +139,6 @@ class VideoThumbnailCacheService implements VideoThumbnailCache {
       height: height,
       format: 'jpeg',
       quality: 80,
-    );
-  }
-
-  static Future<Directory> _defaultCacheDirectoryLoader() async {
-    final appSupportDirectory = await getApplicationSupportDirectory();
-    return Directory(
-      p.join(appSupportDirectory.path, 'derived_media', 'video_thumbnails'),
     );
   }
 }

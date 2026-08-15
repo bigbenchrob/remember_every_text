@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../db/database_directory.dart';
-
 /// Writes structured, human-readable audit logs for active graph lifecycle and
 /// diagnostic pipelines.
 ///
@@ -19,12 +17,10 @@ class PipelineAuditLogger {
   /// The path of the log file being written to.
   String get filePath => _filePath;
 
-  /// Open (or create) a log file in the database directory.
-  ///
-  /// [fileName] is relative to [databaseDirectoryPath].
+  /// Open (or create) a log file inside an admitted archive directory.
   static Future<PipelineAuditLogger> open(
     String fileName, {
-    String? directoryPath,
+    required String directoryPath,
   }) async {
     if (fileName.isEmpty ||
         path.isAbsolute(fileName) ||
@@ -32,12 +28,11 @@ class PipelineAuditLogger {
       throw StateError('Pipeline audit log file name must be a base name.');
     }
 
-    final baseDirectoryPath = directoryPath ?? databaseDirectoryPath;
-    if (_isSymlink(baseDirectoryPath)) {
+    if (_isSymlink(directoryPath)) {
       throw StateError('Pipeline audit log directory must not be a symlink.');
     }
 
-    final logPath = path.join(baseDirectoryPath, fileName);
+    final logPath = path.join(directoryPath, fileName);
     final file = File(logPath);
     if (_isSymlink(file.path) || _isDirectory(file.path)) {
       throw StateError('Pipeline audit log target must be a regular file.');

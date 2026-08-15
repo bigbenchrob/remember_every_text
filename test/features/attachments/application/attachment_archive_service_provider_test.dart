@@ -5,6 +5,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show admittedArchiveAccessAuthorityProvider;
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show
         attachmentArchiveDirectoryProvider,
@@ -18,6 +20,8 @@ import 'package:remember_this_text/features/attachments/application/attachment_a
 import 'package:remember_this_text/features/attachments/application/attachment_recovery_hint_storage.dart';
 import 'package:remember_this_text/features/attachments/application/current_messages_attachment_path_lookup.dart';
 import 'package:remember_this_text/features/attachments/application/graph_attachment_archive_providers.dart';
+
+import '../../../test_support/test_archive_fixture.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -72,12 +76,14 @@ void main() {
     late OverlayDatabase overlayDb;
     late Directory tempDir;
     late ProviderContainer container;
+    late TestArchiveFixture archiveFixture;
 
     setUp(() async {
       overlayDb = OverlayDatabase(NativeDatabase.memory());
-      tempDir = await Directory.systemTemp.createTemp(
-        'attachment-priority-test-',
+      archiveFixture = await TestArchiveFixture.create(
+        prefix: 'attachment-priority-test-',
       );
+      tempDir = archiveFixture.root;
       await overlayDb.writeOverlaySetting(
         settingKey: 'attachment_archive_enabled',
         settingValue: 'true',
@@ -85,6 +91,9 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           attachmentArchiveDirectoryProvider.overrideWith(
             (ref) => tempDir.path,
@@ -96,9 +105,7 @@ void main() {
     tearDown(() async {
       container.dispose();
       await overlayDb.close();
-      if (tempDir.existsSync()) {
-        await tempDir.delete(recursive: true);
-      }
+      await archiveFixture.dispose();
     });
 
     test(
@@ -160,13 +167,15 @@ void main() {
     late Directory tempDir;
     late ProviderContainer container;
     late _TestCurrentMessagesAttachmentPathLookup attachmentPathLookup;
+    late TestArchiveFixture archiveFixture;
 
     setUp(() async {
       overlayDb = OverlayDatabase(NativeDatabase.memory());
       graphDb = ConversationGraphDatabase(NativeDatabase.memory());
-      tempDir = await Directory.systemTemp.createTemp(
-        'attachment-working-sweep-test-',
+      archiveFixture = await TestArchiveFixture.create(
+        prefix: 'attachment-working-sweep-test-',
       );
+      tempDir = archiveFixture.root;
       attachmentPathLookup = _TestCurrentMessagesAttachmentPathLookup();
       await overlayDb.writeOverlaySetting(
         settingKey: 'attachment_archive_enabled',
@@ -175,6 +184,9 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(
+            archiveFixture.authority,
+          ),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           driftConversationGraphDatabaseProvider.overrideWith(
             (ref) async => graphDb,
@@ -193,20 +205,20 @@ void main() {
       container.dispose();
       await overlayDb.close();
       await graphDb.close();
-      if (tempDir.existsSync()) {
-        await tempDir.delete(recursive: true);
-      }
+      await archiveFixture.dispose();
     });
 
     test('sweeps forward in small chunks and persists its cursor', () async {
       final alreadyArchivedSource = File(
         '${tempDir.path}/already-archived.png',
       );
+      final delayedPdfSource = File('${tempDir.path}/delayed-document.pdf');
       final firstSweepSource = File('${tempDir.path}/first-sweep.png');
       final secondSweepSource = File('${tempDir.path}/second-sweep.png');
       final thirdSweepSource = File('${tempDir.path}/third-sweep.png');
 
       await alreadyArchivedSource.writeAsString('already-archived');
+      await delayedPdfSource.writeAsString('delayed-document');
       await firstSweepSource.writeAsString('first-sweep');
       await secondSweepSource.writeAsString('second-sweep');
       await thirdSweepSource.writeAsString('third-sweep');
@@ -220,9 +232,9 @@ void main() {
       );
       await insertGraphAttachment(
         graphDb,
-        messageGuid: 'message-ignored-pdf',
+        messageGuid: 'message-delayed-pdf',
         importAttachmentId: 12,
-        localPath: '${tempDir.path}/ignored.pdf',
+        localPath: delayedPdfSource.path,
         mimeType: 'application/pdf',
       );
       await insertGraphAttachment(
@@ -267,7 +279,7 @@ void main() {
       expect(firstResult.newlyArchived, 2);
       expect(
         await overlayDb.readOverlaySetting(kArchiveSweepCursorKey),
-        '${SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 14)}',
+        '${SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 13)}',
       );
       expect(
         await overlayDb.readOverlaySetting(kArchiveSweepLastTotalScannedKey),
@@ -301,6 +313,13 @@ void main() {
                     t.importAttachmentId.equals(13),
               ))
               .getSingleOrNull();
+      final pdfArchivedRow =
+          await (overlayDb.select(overlayDb.archivedAttachments)..where(
+                (t) =>
+                    t.messageGuid.equals('message-delayed-pdf') &
+                    t.importAttachmentId.equals(12),
+              ))
+              .getSingleOrNull();
       final secondArchivedRowAfterFirstSweep =
           await (overlayDb.select(overlayDb.archivedAttachments)..where(
                 (t) =>
@@ -309,16 +328,27 @@ void main() {
               ))
               .getSingleOrNull();
       expect(firstArchivedRow, isNotNull);
-      expect(secondArchivedRowAfterFirstSweep, isNotNull);
+      expect(pdfArchivedRow, isNotNull);
+      expect(secondArchivedRowAfterFirstSweep, isNull);
 
       final secondResult = await container
           .read(attachmentArchiveServiceProvider.notifier)
           .archiveNextGraphSweepChunk(limit: 2);
 
-      expect(secondResult.totalScanned, 1);
-      expect(secondResult.newlyArchived, 1);
-      expect(await overlayDb.readOverlaySetting(kArchiveSweepCursorKey), '0');
+      expect(secondResult.totalScanned, 2);
+      expect(secondResult.newlyArchived, 2);
+      expect(
+        await overlayDb.readOverlaySetting(kArchiveSweepCursorKey),
+        '${SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 15)}',
+      );
 
+      final secondArchivedRow =
+          await (overlayDb.select(overlayDb.archivedAttachments)..where(
+                (t) =>
+                    t.messageGuid.equals('message-second-sweep') &
+                    t.importAttachmentId.equals(14),
+              ))
+              .getSingleOrNull();
       final thirdArchivedRow =
           await (overlayDb.select(overlayDb.archivedAttachments)..where(
                 (t) =>
@@ -326,7 +356,15 @@ void main() {
                     t.importAttachmentId.equals(15),
               ))
               .getSingleOrNull();
+      expect(secondArchivedRow, isNotNull);
       expect(thirdArchivedRow, isNotNull);
+
+      final wrapResult = await container
+          .read(attachmentArchiveServiceProvider.notifier)
+          .archiveNextGraphSweepChunk(limit: 2);
+
+      expect(wrapResult.totalScanned, 0);
+      expect(await overlayDb.readOverlaySetting(kArchiveSweepCursorKey), '0');
     });
 
     test(

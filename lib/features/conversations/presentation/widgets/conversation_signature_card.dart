@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
+import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../core/util/date_label_formatter.dart';
 import '../../../../essentials/conversation_graph/application/conversation_signatures/conversation_signature.dart';
 
@@ -108,6 +109,7 @@ class ConversationSignatureCard extends StatefulWidget {
     this.onPressed,
     this.isSelected = false,
     this.trailing,
+    this.horizontalPlacement = Alignment.centerLeft,
     super.key,
   });
 
@@ -117,6 +119,7 @@ class ConversationSignatureCard extends StatefulWidget {
   final VoidCallback? onPressed;
   final bool isSelected;
   final Widget? trailing;
+  final AlignmentGeometry horizontalPlacement;
 
   @override
   State<ConversationSignatureCard> createState() =>
@@ -143,122 +146,143 @@ class _ConversationSignatureCardState extends State<ConversationSignatureCard> {
     final onPressed = widget.onPressed;
     final isInteractive = onPressed != null;
 
-    return MouseRegion(
-      cursor: isInteractive ? SystemMouseCursors.click : MouseCursor.defer,
-      onEnter: (_) {
-        if (!isInteractive) {
-          return;
-        }
-        setState(() {
-          _isHovered = true;
-        });
-      },
-      onExit: (_) {
-        if (!isInteractive) {
-          return;
-        }
-        setState(() {
-          _isHovered = false;
-        });
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: borderColor,
-              width: widget.isSelected || _isHovered ? 1 : 0.5,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+    return Align(
+      alignment: widget.horizontalPlacement,
+      child: SizedBox(
+        width: ConversationSignatureCardPresentationMetrics.canonicalWidth,
+        child: MouseRegion(
+          cursor: isInteractive ? SystemMouseCursors.click : MouseCursor.defer,
+          onEnter: (_) {
+            if (!isInteractive) {
+              return;
+            }
+            setState(() {
+              _isHovered = true;
+            });
+          },
+          onExit: (_) {
+            if (!isInteractive) {
+              return;
+            }
+            setState(() {
+              _isHovered = false;
+            });
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onPressed,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: borderColor,
+                  width: widget.isSelected || _isHovered ? 1 : 0.5,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ConversationSignatureCardPresentationMetrics
+                      .cardHorizontalPadding,
+                  vertical: ConversationSignatureCardPresentationMetrics
+                      .cardVerticalPadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(text: signature.title),
-                            if (signature.participantCount > 1)
-                              TextSpan(
-                                text: ' +${signature.participantCount}',
-                                style: widget.style.participantSuffixStyle,
-                              ),
-                          ],
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(text: signature.title),
+                                if (signature.participantCount > 1)
+                                  TextSpan(
+                                    text: ' +${signature.participantCount}',
+                                    style: widget.style.participantSuffixStyle,
+                                  ),
+                              ],
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: widget.isSelected
+                                ? widget.style.selectedTitleStyle
+                                : widget.style.titleStyle,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: widget.isSelected
-                            ? widget.style.selectedTitleStyle
-                            : widget.style.titleStyle,
-                      ),
+                        if (signature.titleContextLabel != null) ...[
+                          const SizedBox(width: AppSpacing.xs),
+                          Text(
+                            signature.titleContextLabel!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                widget.style.titleContextStyle ??
+                                widget.style.participantSuffixStyle,
+                          ),
+                        ],
+                        if (widget.trailing != null) ...[
+                          const SizedBox(width: AppSpacing.xs),
+                          widget.trailing!,
+                        ],
+                      ],
                     ),
-                    if (signature.titleContextLabel != null) ...[
-                      const SizedBox(width: AppSpacing.xs),
+                    if (signature.chatHookLabel != null) ...[
                       Text(
-                        signature.titleContextLabel!,
+                        signature.chatHookLabel!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            widget.style.titleContextStyle ??
-                            widget.style.participantSuffixStyle,
+                        style: widget.style.chatHookStyle,
                       ),
                     ],
-                    if (widget.trailing != null) ...[
-                      const SizedBox(width: AppSpacing.xs),
-                      widget.trailing!,
+                    const SizedBox(
+                      height: ConversationSignatureCardPresentationMetrics
+                          .identityGlyphGap,
+                    ),
+                    _ConversationMonthGlyph(
+                      months: signature.activityMonths,
+                      highlightedMonth: signature.highlightedMonth,
+                      monthColorForMessageCount:
+                          widget.monthColorForMessageCount,
+                      monthHighlightColor:
+                          widget.style.monthHighlightColor ??
+                          widget.style.emptyMonthBorderColor,
+                      emptyMonthBorderColor: widget.style.emptyMonthBorderColor,
+                    ),
+                    const SizedBox(
+                      height: ConversationSignatureCardPresentationMetrics
+                          .glyphSummaryGap,
+                    ),
+                    Text.rich(
+                      _signatureSummarySpan(
+                        signature,
+                        baseStyle: widget.style.summaryStyle,
+                        highlightStyle:
+                            widget.style.summaryHighlightStyle ??
+                            widget.style.summaryStyle.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (signature.tagLabels.isNotEmpty) ...[
+                      const SizedBox(
+                        height:
+                            ConversationSignatureCardPresentationMetrics.tagGap,
+                      ),
+                      _ConversationTagRow(
+                        labels: signature.tagLabels,
+                        style: widget.style,
+                      ),
                     ],
                   ],
                 ),
-                if (signature.chatHookLabel != null) ...[
-                  Text(
-                    signature.chatHookLabel!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: widget.style.chatHookStyle,
-                  ),
-                ],
-                const SizedBox(height: 7),
-                _ConversationMonthGlyph(
-                  months: signature.activityMonths,
-                  highlightedMonth: signature.highlightedMonth,
-                  monthColorForMessageCount: widget.monthColorForMessageCount,
-                  monthHighlightColor:
-                      widget.style.monthHighlightColor ??
-                      widget.style.emptyMonthBorderColor,
-                  emptyMonthBorderColor: widget.style.emptyMonthBorderColor,
-                ),
-                const SizedBox(height: 5),
-                Text.rich(
-                  _signatureSummarySpan(
-                    signature,
-                    baseStyle: widget.style.summaryStyle,
-                    highlightStyle:
-                        widget.style.summaryHighlightStyle ??
-                        widget.style.summaryStyle.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (signature.tagLabels.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  _ConversationTagRow(
-                    labels: signature.tagLabels,
-                    style: widget.style,
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
         ),
@@ -279,8 +303,8 @@ class _ConversationTagRow extends StatelessWidget {
     final hiddenCount = labels.length - visibleLabels.length;
 
     return Wrap(
-      spacing: 4,
-      runSpacing: 4,
+      spacing: ConversationSignatureCardPresentationMetrics.tagSpacing,
+      runSpacing: ConversationSignatureCardPresentationMetrics.tagRunSpacing,
       children: [
         for (final label in visibleLabels)
           _ConversationTagChip(label: label, style: style),
@@ -306,7 +330,10 @@ class _ConversationTagChip extends StatelessWidget {
         border: Border.all(color: style.tagBorderColor),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        padding: const EdgeInsets.symmetric(
+          horizontal: ConversationSignatureCardPresentationMetrics.tagPaddingX,
+          vertical: ConversationSignatureCardPresentationMetrics.tagPaddingY,
+        ),
         child: Text(
           label,
           maxLines: 1,
@@ -336,14 +363,26 @@ class _ConversationMonthGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (months.isEmpty) {
-      return const SizedBox(height: 9);
+      return const SizedBox(
+        height: ConversationSignatureCardPresentationMetrics.emptyGlyphHeight,
+      );
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = _glyphColumnsForWidth(constraints.maxWidth);
-        final anchoredMonths = _anchorMonthsToNow(months);
-        final rows = _chunkMonthsFromNewest(anchoredMonths, columns: columns);
+        final columns =
+            ConversationSignatureCardPresentationMetrics.glyphColumnsForWidth(
+              constraints.maxWidth,
+            );
+        final anchoredMonths =
+            ConversationSignatureCardPresentationMetrics.anchorMonthsToNow(
+              months,
+            );
+        final rows =
+            ConversationSignatureCardPresentationMetrics.chunkMonthsFromNewest(
+              anchoredMonths,
+              columns: columns,
+            );
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -355,7 +394,11 @@ class _ConversationMonthGlyph extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     for (var index = 0; index < row.length; index++) ...[
-                      if (index > 0) const SizedBox(width: _glyphSpacing),
+                      if (index > 0)
+                        const SizedBox(
+                          width: ConversationSignatureCardPresentationMetrics
+                              .glyphSpacing,
+                        ),
                       _MonthGlyphDot(
                         month: row[index],
                         isHighlighted:
@@ -368,7 +411,11 @@ class _ConversationMonthGlyph extends StatelessWidget {
                   ],
                 ),
               ),
-              if (row != rows.last) const SizedBox(height: _glyphSpacing),
+              if (row != rows.last)
+                const SizedBox(
+                  height:
+                      ConversationSignatureCardPresentationMetrics.glyphSpacing,
+                ),
             ],
           ],
         );
@@ -394,7 +441,9 @@ class _MonthGlyphDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = month.messageCount <= 0 ? _emptyGlyphDotSize : _glyphDotSize;
+    final size = month.messageCount <= 0
+        ? ConversationSignatureCardPresentationMetrics.emptyGlyphDotSize
+        : ConversationSignatureCardPresentationMetrics.glyphDotSize;
     final fillColor = month.messageCount <= 0
         ? null
         : monthColorForMessageCount(month.messageCount);
@@ -424,55 +473,6 @@ class _MonthGlyphDot extends StatelessWidget {
       child: Padding(padding: const EdgeInsets.all(1.5), child: dot),
     );
   }
-}
-
-int _glyphColumnsForWidth(double maxWidth) {
-  if (!maxWidth.isFinite || maxWidth <= 0) {
-    return _fallbackGlyphColumns;
-  }
-  return math.max(
-    1,
-    ((maxWidth + _glyphSpacing) / (_glyphDotSize + _glyphSpacing)).floor(),
-  );
-}
-
-List<ConversationSignatureMonth> _anchorMonthsToNow(
-  List<ConversationSignatureMonth> months,
-) {
-  final counts = <String, int>{
-    for (final month in months)
-      _monthKey(month.year, month.month): month.messageCount,
-  };
-  final firstMonth = months.first;
-  final now = DateTime.now();
-  final currentMonth = DateTime(now.year, now.month);
-  final anchoredMonths = <ConversationSignatureMonth>[];
-
-  var cursor = DateTime(firstMonth.year, firstMonth.month);
-  while (!cursor.isAfter(currentMonth)) {
-    anchoredMonths.add(
-      ConversationSignatureMonth(
-        year: cursor.year,
-        month: cursor.month,
-        messageCount: counts[_monthKey(cursor.year, cursor.month)] ?? 0,
-      ),
-    );
-    cursor = DateTime(cursor.year, cursor.month + 1);
-  }
-
-  return anchoredMonths;
-}
-
-List<List<ConversationSignatureMonth>> _chunkMonthsFromNewest(
-  List<ConversationSignatureMonth> months, {
-  required int columns,
-}) {
-  final rowsNewestFirst = <List<ConversationSignatureMonth>>[];
-  for (var end = months.length; end > 0; end -= columns) {
-    final start = math.max(0, end - columns);
-    rowsNewestFirst.add(months.sublist(start, end));
-  }
-  return rowsNewestFirst.reversed.toList(growable: false);
 }
 
 TextSpan _signatureSummarySpan(
@@ -563,7 +563,263 @@ String _monthKey(int year, int month) {
   return DateLabelFormatter.monthKey(DateTime(year, month));
 }
 
-const int _fallbackGlyphColumns = 24;
-const double _glyphDotSize = 6;
-const double _emptyGlyphDotSize = 5;
-const double _glyphSpacing = 3;
+class ConversationSignatureCardPresentationMetrics {
+  const ConversationSignatureCardPresentationMetrics._();
+
+  static const int fallbackGlyphColumns = 24;
+  static const double canonicalWidth = 296;
+  static const double cardBorderWidth = 0.5;
+  static const double cardHorizontalPadding = 8;
+  static const double cardVerticalPadding = 9;
+  static const double identityGlyphGap = 5;
+  static const double glyphSummaryGap = 5;
+  static const double tagGap = 6;
+  static const double tagSpacing = 4;
+  static const double tagRunSpacing = 4;
+  static const double tagPaddingX = 5;
+  static const double tagPaddingY = 2;
+  static const double glyphDotSize = 6;
+  static const double emptyGlyphDotSize = 5;
+  static const double glyphSpacing = 3;
+  static const double emptyGlyphHeight = 9;
+
+  static double naturalHeight({
+    required ConversationSignatureCardData signature,
+    required ConversationSignatureCardStyle style,
+    required PresentationConstraints constraints,
+    double trailingHeight = 0,
+  }) {
+    final contentWidth = math.max(
+      0.0,
+      canonicalWidth - (cardHorizontalPadding * 2),
+    );
+    final titleHeight = math.max(
+      _textHeight(
+        text: signature.title,
+        style: style.titleStyle,
+        constraints: constraints,
+        maxWidth: contentWidth,
+      ),
+      trailingHeight,
+    );
+    final chatHookHeight = signature.chatHookLabel == null
+        ? 0.0
+        : _textHeight(
+            text: signature.chatHookLabel!,
+            style: style.chatHookStyle,
+            constraints: constraints,
+            maxWidth: contentWidth,
+          );
+    final summaryHeight = _textHeight(
+      text: 'Summary',
+      style: style.summaryStyle,
+      constraints: constraints,
+      maxWidth: contentWidth,
+    );
+    final tagHeight = _tagRowHeight(
+      labels: signature.tagLabels,
+      style: style,
+      constraints: constraints,
+      maxWidth: contentWidth,
+    );
+
+    return (cardBorderWidth * 2) +
+        (cardVerticalPadding * 2) +
+        titleHeight +
+        chatHookHeight +
+        identityGlyphGap +
+        glyphNaturalHeight(
+          months: signature.activityMonths,
+          availableWidth: contentWidth,
+        ) +
+        glyphSummaryGap +
+        summaryHeight +
+        tagHeight;
+  }
+
+  /// Natural height of the smallest approved Conversation Card presentation.
+  ///
+  /// This uses the same typography, spacing, canonical width, glyph metrics,
+  /// and trailing-control contract as a rendered card. It represents one title
+  /// line, one glyph row, and one summary line without optional hook or tags.
+  static double minimumNaturalHeight({
+    required ConversationSignatureCardStyle style,
+    required PresentationConstraints constraints,
+    double trailingHeight = 0,
+  }) {
+    final contentWidth = math.max(
+      0.0,
+      canonicalWidth - (cardHorizontalPadding * 2),
+    );
+    final titleHeight = math.max(
+      _textHeight(
+        text: 'M',
+        style: style.titleStyle,
+        constraints: constraints,
+        maxWidth: contentWidth,
+      ),
+      trailingHeight,
+    );
+    final summaryHeight = _textHeight(
+      text: 'M',
+      style: style.summaryStyle,
+      constraints: constraints,
+      maxWidth: contentWidth,
+    );
+
+    return (cardBorderWidth * 2) +
+        (cardVerticalPadding * 2) +
+        titleHeight +
+        identityGlyphGap +
+        glyphDotSize +
+        glyphSummaryGap +
+        summaryHeight;
+  }
+
+  static double glyphNaturalHeight({
+    required List<ConversationSignatureMonth> months,
+    required double availableWidth,
+  }) {
+    if (months.isEmpty) {
+      return emptyGlyphHeight;
+    }
+
+    final columns = glyphColumnsForWidth(availableWidth);
+    final rowCount = math.max(
+      1,
+      chunkMonthsFromNewest(anchorMonthsToNow(months), columns: columns).length,
+    );
+    return (rowCount * glyphDotSize) + ((rowCount - 1) * glyphSpacing);
+  }
+
+  static int glyphColumnsForWidth(double maxWidth) {
+    if (!maxWidth.isFinite || maxWidth <= 0) {
+      return fallbackGlyphColumns;
+    }
+    return math.max(
+      1,
+      ((maxWidth + glyphSpacing) / (glyphDotSize + glyphSpacing)).floor(),
+    );
+  }
+
+  static List<ConversationSignatureMonth> anchorMonthsToNow(
+    List<ConversationSignatureMonth> months,
+  ) {
+    final counts = <String, int>{
+      for (final month in months)
+        _monthKey(month.year, month.month): month.messageCount,
+    };
+    final firstMonth = months.first;
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month);
+    final anchoredMonths = <ConversationSignatureMonth>[];
+
+    var cursor = DateTime(firstMonth.year, firstMonth.month);
+    while (!cursor.isAfter(currentMonth)) {
+      anchoredMonths.add(
+        ConversationSignatureMonth(
+          year: cursor.year,
+          month: cursor.month,
+          messageCount: counts[_monthKey(cursor.year, cursor.month)] ?? 0,
+        ),
+      );
+      cursor = DateTime(cursor.year, cursor.month + 1);
+    }
+
+    return anchoredMonths;
+  }
+
+  static List<List<ConversationSignatureMonth>> chunkMonthsFromNewest(
+    List<ConversationSignatureMonth> months, {
+    required int columns,
+  }) {
+    final rowsNewestFirst = <List<ConversationSignatureMonth>>[];
+    for (var end = months.length; end > 0; end -= columns) {
+      final start = math.max(0, end - columns);
+      rowsNewestFirst.add(months.sublist(start, end));
+    }
+    return rowsNewestFirst.reversed.toList(growable: false);
+  }
+
+  static double _tagRowHeight({
+    required List<String> labels,
+    required ConversationSignatureCardStyle style,
+    required PresentationConstraints constraints,
+    required double maxWidth,
+  }) {
+    if (labels.isEmpty) {
+      return 0;
+    }
+
+    final visibleLabels = labels.take(3).toList(growable: false);
+    final hiddenCount = labels.length - visibleLabels.length;
+    final renderedLabels = [
+      ...visibleLabels,
+      if (hiddenCount > 0) '+$hiddenCount',
+    ];
+    final chipHeight =
+        _textHeight(
+          text: renderedLabels.first,
+          style: style.tagTextStyle,
+          constraints: constraints,
+          maxWidth: maxWidth,
+        ) +
+        (tagPaddingY * 2) +
+        2;
+    var rowCount = 1;
+    var currentRowWidth = 0.0;
+    for (final label in renderedLabels) {
+      final chipWidth =
+          _textWidth(
+            text: label,
+            style: style.tagTextStyle,
+            constraints: constraints,
+          ) +
+          (tagPaddingX * 2) +
+          2;
+      final nextWidth = currentRowWidth == 0
+          ? chipWidth
+          : currentRowWidth + tagSpacing + chipWidth;
+      if (nextWidth > maxWidth && currentRowWidth > 0) {
+        rowCount++;
+        currentRowWidth = chipWidth;
+      } else {
+        currentRowWidth = nextWidth;
+      }
+    }
+
+    return tagGap + (rowCount * chipHeight) + ((rowCount - 1) * tagRunSpacing);
+  }
+
+  static double _textHeight({
+    required String text,
+    required TextStyle style,
+    required PresentationConstraints constraints,
+    required double maxWidth,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      ellipsis: '\u2026',
+      textDirection: constraints.textDirection,
+      textScaler: constraints.textScaler,
+      locale: constraints.locale,
+    )..layout(maxWidth: maxWidth);
+    return painter.height;
+  }
+
+  static double _textWidth({
+    required String text,
+    required TextStyle style,
+    required PresentationConstraints constraints,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: constraints.textDirection,
+      textScaler: constraints.textScaler,
+      locale: constraints.locale,
+    )..layout(maxWidth: double.infinity);
+    return painter.width;
+  }
+}

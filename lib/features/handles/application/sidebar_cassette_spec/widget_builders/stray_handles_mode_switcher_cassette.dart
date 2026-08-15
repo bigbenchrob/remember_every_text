@@ -10,7 +10,7 @@ import '../resolver_tools/stray_handle_sidebar_actions_provider.dart';
 
 /// Shared app dropdown for filtering stray handles by mode.
 ///
-/// This cassette reads and writes to [strayHandleModeSettingProvider], which
+/// This cassette reads and writes through the shared source-review mode state,
 /// the list cassette watches to determine which handles to display.
 ///
 /// Visually quieter than the primary segmented control, acting as a
@@ -18,7 +18,7 @@ import '../resolver_tools/stray_handle_sidebar_actions_provider.dart';
 class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
   const StrayHandlesModeSwitcherCassette({required this.mode, super.key});
 
-  final StrayHandleMode mode;
+  final StrayHandleReviewMode mode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,8 +32,8 @@ class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
     // section stays compact while the stack separates it from adjacent sections.
     return Padding(
       padding: EdgeInsets.zero,
-      child: AppThemeWidgets.dropdownMenu<StrayHandleMode>(
-        options: StrayHandleMode.values,
+      child: AppThemeWidgets.dropdownMenu<StrayHandleReviewMode>(
+        options: StrayHandleReviewMode.values,
         selectedOption: mode,
         onSelected: actions.changeMode,
         optionLabelBuilder: _modeLabel,
@@ -59,10 +59,9 @@ class StrayHandlesModeSwitcherCassette extends ConsumerWidget {
   }
 }
 
-String _modeLabel(StrayHandleMode mode) {
+String _modeLabel(StrayHandleReviewMode mode) {
   return switch (mode) {
-    StrayHandleMode.allStrays => 'All',
-    StrayHandleMode.spamCandidates => 'Spam',
-    StrayHandleMode.dismissed => 'Dismissed',
+    StrayHandleReviewMode.active => 'Active',
+    StrayHandleReviewMode.dismissed => 'Dismissed',
   };
 }

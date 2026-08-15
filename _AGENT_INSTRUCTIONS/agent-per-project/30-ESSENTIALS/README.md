@@ -43,7 +43,8 @@ Current `lib/essentials/` top-level areas include:
 | `navigation/` | App shell, active sidebar mode, center/right panel stacks, `ViewSpec` routing, sidebar parking, panel host widgets. |
 | `sidebar/` | `CassetteSpec`, stable cassette rack projection, ephemeral cassette projection, topology dispatch, cassette payload resolution, shared sidebar rendering. |
 | `search/` | Shared graph message search service, evidence selection, and retired search bridge handling where explicitly documented. |
-| `onboarding/` | Full Disk Access, graph readiness/build gate state, onboarding overlay lifecycle, environment reports, reset/recovery behavior. |
+| `onboarding/` | Full Disk Access, graph readiness/build gate state, onboarding overlay lifecycle, environment reports, reset/recovery behavior, and onboarding-owned Presence workflow definitions/integration. |
+| `presence/` | Generic Schedule, Trip, Step, routing, checkpoint, run, trace, and persistence machinery. It does not semantically own workflows merely because their definitions are stored in `presence.db`. |
 | `db/` | Centralized physical database providers, app database filename registry, and database infrastructure. |
 | `source_scoped_import/` | Production source-scoped import semantics, ledger schema, and importers for the source-scoped import ledger; physical DB provider construction remains in `db/`. |
 | `conversation_graph/` | Production graph projection/build/read semantics for the conversation graph projection; physical graph DB provider construction remains in `db/`. |
@@ -58,6 +59,11 @@ content is routed through essentials because essentials owns the surface.
 Path location alone does not determine architectural ownership; some
 contact-related logic is shared infrastructure while other contact-related
 logic remains feature-owned.
+
+The current generic Boolean Test boundary is recorded in the
+[`Presence TestStep consolidation audit`](../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md).
+Presence persists opaque Agent identities and generic Test routing; workflow
+owners supply concrete Agents through application composition.
 
 ## Global Flow State
 
@@ -81,8 +87,9 @@ Rules:
 * Durable flow meaning belongs in semantic state, not rendered widgets.
 * Do not reconstruct durable meaning by scanning built sidebar widgets.
 * Do not treat the cassette rack as the source of durable truth.
-* When flow changes, incompatible center/right panel content must be cleared or
-  replaced.
+* When flow changes, incompatible center/right panel content must cease to be
+  effective. Stored panel state may remain available for later restoration;
+  visibility and downstream projections must derive from effective state.
 * Transient settings actions must not be stored in persistent flow state.
 
 ## Sidebar Topology And Cassette Rack
@@ -140,6 +147,12 @@ panel navigation currency:
 projects flow-managed center content from `SidebarFlowState`, parks the sidebar
 for sidebar-independent specs, and hides incompatible right-panel content.
 
+Stored and effective panel state are intentionally different. A stored spec
+records a request that may remain useful after temporary navigation. The
+effective stack contains only stored specs compatible with the current flow or
+investigation. Callers must not delete stored specs merely to repair missing
+compatibility derivation.
+
 Panel rules:
 
 * Panel state stores `ViewSpec`, not arbitrary widgets.
@@ -148,6 +161,8 @@ Panel rules:
   sidebar-independent and can park the normal sidebar. Other system flows
   should declare sidebar independence explicitly in their current spec model.
 * Right-panel content is subordinate to center-panel compatibility.
+* Panel visibility and message anchors must consume effective panel state, not
+  the raw stored stack.
 * Features may interpret their approved inner specs, but essentials owns panel
   stack policy and cross-surface reconciliation.
 
@@ -183,8 +198,17 @@ Feature responsibilities are narrower:
 
 * `features/messages` owns timeline UI/search query state for message views and
   calls the essentials search service.
+* `features/messages` owns the opaque generation identifying the current
+  Search All Messages investigation. Query mutations, AND/OR changes, and
+  month browsing advance that generation.
 * contacts-specific picker filtering remains feature-local where it is not the
   shared message search/indexing system.
+
+Search-created subordinate presentations carry that investigation identity as
+opaque provenance. Generic navigation may compare the identity for equality
+when deriving effective panel state, but it must not understand query text,
+search modes, heatmaps, or result structure. Conversations may carry the
+identity on an excerpt request but does not generate or interpret it.
 
 Do not create a separate feature-level message search infrastructure that
 competes with `lib/essentials/search`.
@@ -200,6 +224,13 @@ Current essentials onboarding responsibilities:
   reimport, completion, and recovery.
 * `OnboardingCenterPanelSyncObserver` synchronizes FDA/user-action onboarding
   states into the center panel with `ViewSpec.environmentReadiness`.
+* Onboarding-owned Presence definitions decide what should be said, tested, and
+  remediated, and in what order; specialist systems retain the expertise used
+  to establish facts or perform operations.
+
+Presence is a separate essential. It owns how workflow definitions are stored,
+assembled, executed, routed, checkpointed, and traced. It does not own the
+business meaning of onboarding, archive ingestion, or future workflows.
 * `OnboardingStatus` and environment reports classify readiness and recovery
   states.
 

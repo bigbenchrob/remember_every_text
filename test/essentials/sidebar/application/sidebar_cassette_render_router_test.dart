@@ -9,6 +9,8 @@ import 'package:remember_this_text/essentials/sidebar/domain/entities/cassette_s
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_action_intent.dart';
 import 'package:remember_this_text/essentials/sidebar/domain/sidebar_body_model.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/payloads/stray_handles_investigation_switcher_cassette_payload.dart';
+import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/application/sidebar_cassette_spec/payloads/messages_heatmap_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/attachment_archive_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/settings_info_actions_cassette_payload.dart';
@@ -49,6 +51,38 @@ void main() {
         SidebarCassetteRenderKind.sharedBodyModel,
       );
     });
+
+    testWidgets(
+      'routes the unfamiliar-source investigation switcher through handles',
+      (tester) async {
+        final widget = buildSidebarCassettePayloadWidget(
+          mode: SidebarMode.messages,
+          resolvedCassette: const ResolvedSidebarCassette(
+            spec: CassetteSpec.handles(
+              HandlesCassetteSpec.strayHandlesInvestigationSwitcher(),
+            ),
+            cassetteIndex: 1,
+            payload: StrayHandlesInvestigationSwitcherCassettePayload(
+              selectedInvestigation: StrayHandleInvestigation.identifySources,
+              cassetteIndex: 1,
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: widget,
+            ),
+          ),
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Identify'), findsOneWidget);
+        expect(find.text('Numeric IDs'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'builds a flat mixed-row settings top menu widget open by default',

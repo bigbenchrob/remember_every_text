@@ -3,6 +3,7 @@ import '../../../../essentials/db/infrastructure/data_sources/local/overlay/over
 import '../../application/read_models/handle_identity.dart';
 import '../../application/read_models/stray_handle_summary.dart';
 import '../../application/read_models/stray_handles_read_repository.dart';
+import '../../domain/entities/stray_handle_endpoint_kind.dart';
 import '../../domain/utilities/handle_normalizer.dart';
 
 final class GraphStrayHandlesReadRepository
@@ -24,6 +25,60 @@ final class GraphStrayHandlesReadRepository
   @override
   Future<List<StrayHandleSummary>> readDismissedStrayHandles() {
     return _readGraphStrayHandles(includeDismissedOnly: true);
+  }
+
+  @override
+  Future<StrayHandleSummary?> readHandleSource({required int handleId}) async {
+    final canonicalHandleId = canonicalHandleIdentityKey(handleId);
+    final rows = await _graphDb.selectRows(
+      '''
+      SELECT
+        ch.canonical_handle_ss_id AS handle_id,
+        ch.display_handle AS handle_value,
+        COALESCE(ch.service, '') AS service_type,
+        COUNT(DISTINCT m.ss_id) AS total_messages,
+        MAX(m.date_utc) AS last_message_utc
+      FROM canonical_handles ch
+      LEFT JOIN messages m
+        ON m.sender_canonical_handle_ss_id = ch.canonical_handle_ss_id
+        OR EXISTS (
+          SELECT 1
+          FROM handle_aliases sender_alias
+          WHERE sender_alias.handle_ss_id = m.sender_handle_ss_id
+            AND sender_alias.canonical_handle_ss_id =
+              ch.canonical_handle_ss_id
+        )
+      WHERE ch.canonical_handle_ss_id = ?
+      GROUP BY ch.canonical_handle_ss_id
+      LIMIT 1
+      ''',
+      <Object?>[canonicalHandleId],
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+
+    final row = rows.single;
+    final rawHandle = (row['handle_value'] as String?)?.trim();
+    if (rawHandle == null || rawHandle.isEmpty) {
+      return null;
+    }
+
+    String? reviewedAt;
+    for (final candidateId in handleIdentityKeyVariants(canonicalHandleId)) {
+      final override = await _overlayDb.getHandleOverride(candidateId);
+      reviewedAt ??= override?.reviewedAt;
+    }
+
+    return StrayHandleSummary(
+      handleId: canonicalHandleId,
+      handleValue: rawHandle,
+      serviceType: (row['service_type'] as String?)?.trim() ?? '',
+      totalMessages: _readInt(row['total_messages']),
+      endpointKind: classifyStrayHandleEndpoint(rawHandle),
+      reviewedAt: reviewedAt,
+      lastMessageDate: _parseDate(row['last_message_utc'] as String?),
+    );
   }
 
   Future<List<StrayHandleSummary>> _readGraphStrayHandles({
@@ -103,16 +158,6 @@ final class GraphStrayHandlesReadRepository
       }
 
       final totalMessages = _readInt(row['total_messages']);
-      final handleIsShortCode = isShortCode(handleValue);
-      var junkScore = 0;
-      if (handleIsShortCode) {
-        junkScore += 3;
-      }
-      if (totalMessages == 1) {
-        junkScore += 2;
-      } else if (totalMessages <= 3) {
-        junkScore += 1;
-      }
 
       results.add(
         StrayHandleSummary(
@@ -120,10 +165,9 @@ final class GraphStrayHandlesReadRepository
           handleValue: handleValue,
           serviceType: (row['service_type'] as String?)?.trim() ?? '',
           totalMessages: totalMessages,
+          endpointKind: classifyStrayHandleEndpoint(handleValue),
           reviewedAt: reviewedAtByHandle[handleId],
           lastMessageDate: _parseDate(row['last_message_utc'] as String?),
-          junkScore: junkScore,
-          isShortCode: handleIsShortCode,
         ),
       );
     }

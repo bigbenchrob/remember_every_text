@@ -1,24 +1,32 @@
 import 'dart:async';
 
+import 'package:drift/native.dart';
+import 'package:flutter/widgets.dart'
+    show Directionality, SizedBox, TextDirection;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/conversations/conversation.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/identity/live_chat_graph_identity.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_reader_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_graph_repository.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
+    show overlayDatabaseProvider;
+import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity.dart';
 import 'package:remember_this_text/features/contacts/application/display_identity/display_identity_resolver_provider.dart';
-import 'package:remember_this_text/features/handles/application/read_models/handle_display_name_provider.dart';
-import 'package:remember_this_text/features/handles/application/read_models/stray_handle_summary.dart';
-import 'package:remember_this_text/features/handles/application/read_models/stray_handles_provider.dart';
+import 'package:remember_this_text/features/handles/application/read_models/handle_source_presentation.dart';
+import 'package:remember_this_text/features/handles/application/read_models/handle_source_presentation_provider.dart';
+import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
+import 'package:remember_this_text/features/handles/domain/utilities/handle_normalizer.dart';
 import 'package:remember_this_text/features/messages/presentation/view/handle_lens_view.dart';
 
 void main() {
   testWidgets('renders unfamiliar-source evidence with one unified header', (
     tester,
   ) async {
-    const handleId = 12;
+    final handleId = canonicalLiveChatGraphId(12);
     const handleValue = '1 (604) 307-8325';
     const repository = _FakeMessageGraphRepository(
       timeline: [
@@ -41,22 +49,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          strayHandlesProvider.overrideWith((ref) async {
-            return [
-              StrayHandleSummary(
-                handleId: handleId,
-                handleValue: handleValue,
-                serviceType: 'SMS',
-                totalMessages: 243,
-                lastMessageDate: DateTime.utc(2020, 6, 22),
-              ),
-            ];
-          }),
-          handleDisplayNameProvider(handleId: handleId).overrideWith((
-            ref,
-          ) async {
-            return handleValue;
-          }),
+          handleSourcePresentationProvider(handleId: handleId).overrideWith(
+            (ref) async => HandleSourcePresentation(
+              canonicalHandleId: handleId,
+              primaryDisplayLabel: handleValue,
+              rawEndpoint: handleValue,
+              statusLabel: 'Unfamiliar source',
+              messageCount: 243,
+            ),
+          ),
           messageGraphReaderProvider.overrideWith((ref) async {
             return const MessageGraphReader(repository: repository);
           }),
@@ -64,13 +65,19 @@ void main() {
             return const DisplayIdentityResolver(identitiesByHandleKey: {});
           }),
         ],
-        child: const MacosApp(home: HandleLensView(handleId: handleId)),
+        child: MacosApp(
+          home: HandleLensView(
+            handleId: handleId,
+            investigation: StrayHandleInvestigation.identifySources,
+          ),
+        ),
       ),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Unfamiliar source'), findsOneWidget);
+    expect(find.text('Messages not linked to a contact'), findsOneWidget);
+    expect(find.text('Unfamiliar source'), findsNothing);
     expect(find.text(handleValue), findsOneWidget);
     expect(find.text('Message evidence'), findsNothing);
     expect(find.textContaining('Handle scope'), findsNothing);
@@ -82,12 +89,11 @@ void main() {
     expect(find.text('Please forward the information.'), findsOneWidget);
   });
 
-  testWidgets('uses raw handle while semantic display name is loading', (
+  testWidgets('keeps the Messages ViewSpec while source identity is loading', (
     tester,
   ) async {
-    const handleId = 12;
-    const handleValue = '1 (604) 307-8325';
-    final displayNameCompleter = Completer<String>();
+    final handleId = canonicalLiveChatGraphId(12);
+    final presentationCompleter = Completer<HandleSourcePresentation>();
     const repository = _FakeMessageGraphRepository(
       timeline: [
         ConversationMessageTimelineEntry(
@@ -109,20 +115,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          strayHandlesProvider.overrideWith((ref) async {
-            return [
-              StrayHandleSummary(
-                handleId: handleId,
-                handleValue: handleValue,
-                serviceType: 'SMS',
-                totalMessages: 243,
-                lastMessageDate: DateTime.utc(2020, 6, 22),
-              ),
-            ];
-          }),
-          handleDisplayNameProvider(handleId: handleId).overrideWith((ref) {
-            return displayNameCompleter.future;
-          }),
+          handleSourcePresentationProvider(
+            handleId: handleId,
+          ).overrideWith((ref) => presentationCompleter.future),
           messageGraphReaderProvider.overrideWith((ref) async {
             return const MessageGraphReader(repository: repository);
           }),
@@ -130,15 +125,62 @@ void main() {
             return const DisplayIdentityResolver(identitiesByHandleKey: {});
           }),
         ],
-        child: const MacosApp(home: HandleLensView(handleId: handleId)),
+        child: MacosApp(
+          home: HandleLensView(
+            handleId: handleId,
+            investigation: StrayHandleInvestigation.numericSenderIds,
+          ),
+        ),
       ),
     );
 
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.text(handleValue), findsOneWidget);
-    expect(find.text('Handle #$handleId'), findsNothing);
+    expect(find.text('Loading source...'), findsOneWidget);
+    expect(find.text('Messages from numeric IDs'), findsOneWidget);
+    expect(find.text('Create Contact'), findsOneWidget);
+    expect(find.text('Dismiss'), findsOneWidget);
+  });
+
+  testWidgets('Dismiss button invokes recoverable Handles dismissal', (
+    tester,
+  ) async {
+    final handleId = canonicalLiveChatGraphId(12);
+    const handleValue = '1 (604) 307-8325';
+    final overlayDb = OverlayDatabase(NativeDatabase.memory());
+    addTearDown(overlayDb.close);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+          handleSourcePresentationProvider(handleId: handleId).overrideWith(
+            (ref) async => HandleSourcePresentation(
+              canonicalHandleId: handleId,
+              primaryDisplayLabel: handleValue,
+              rawEndpoint: handleValue,
+              statusLabel: 'Unfamiliar source',
+              messageCount: 0,
+            ),
+          ),
+        ],
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: HandleLensActionBar(handleId: handleId),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Dismiss'));
+    await tester.pumpAndSettle();
+
+    expect(
+      await overlayDb.getAllDismissedHandles(),
+      contains(normalizeHandleIdentifier(handleValue)),
+    );
+    expect(await overlayDb.getHandleOverride(handleId), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }
 

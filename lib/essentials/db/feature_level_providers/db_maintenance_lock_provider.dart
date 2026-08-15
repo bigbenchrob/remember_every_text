@@ -1,22 +1,17 @@
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveDatabaseReopenBlockedProvider;
 
 part 'db_maintenance_lock_provider.g.dart';
 
-/// Global maintenance lock used to temporarily suppress reads that would
-/// re-open databases while destructive maintenance operations are running.
+/// Compatibility read model for consumers that must not re-open databases
+/// during destructive archive mutations.
 ///
-/// This is intentionally simple: UI/features can watch this and either show a
-/// placeholder or avoid triggering DB provider creation.
+/// Operation admission is owned exclusively by ArchiveMutationCoordinator.
+/// This provider exposes only the derived read-suppression decision.
 @riverpod
-class DbMaintenanceLock extends _$DbMaintenanceLock {
-  @override
-  bool build() => false;
-
-  void begin() {
-    state = true;
-  }
-
-  void end() {
-    state = false;
-  }
+bool dbMaintenanceLock(Ref ref) {
+  return ref.watch(archiveDatabaseReopenBlockedProvider);
 }

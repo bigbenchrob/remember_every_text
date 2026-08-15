@@ -106,6 +106,67 @@ then the architecture has probably been violated upstream.
 ---
 
 
+## The Mechanical Impossibility Principle
+
+Whenever practical, arrange the system so that an invalid state cannot exist,
+rather than allowing it to occur and later detecting, repairing, or cleaning it
+up.
+
+The goal is not merely validation. The goal is to make the incorrect state
+mechanically impossible.
+
+This is an architectural preference, not dogma. External systems, failure
+recovery, and lifecycle boundaries sometimes require explicit cleanup. When a
+higher-order truth can determine the correct state, however, MessageLens
+prefers deriving from that truth over maintaining correctness through scattered
+commands.
+
+The recurring transition is:
+
+```text
+Remember to do X.
+
+becomes
+
+If X would be wrong, X cannot occur.
+```
+
+This principle emerged independently in several parts of MessageLens:
+
+1. **Import Execution Gate ("The Cricket Ball").** Inspired by the Indian
+   railway token system for a section of single track, the gate represents
+   exclusive authority rather than merely detecting contention. Only the
+   holder may perform import, migration, or related mutation-producing work. If
+   a component does not hold the ball, it cannot enter the track. See
+   [Execution Ownership](../55-READERS-INTEGRATORS-ORCHESTRATORS/10-ARCHITECTURE-CONTRACT.md#execution-ownership).
+2. **`PageTrackLayoutMatrix`.** The page declares one authoritative composition
+   matrix. Placement and resolved geometry follow from that structure; an
+   occupant cannot appear in a cell it does not occupy. The system does not
+   coordinate layout through imperative move, hide, or resize commands. See the
+   [Cross-Column Layout Contract](../09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md).
+3. **Search Investigation Compatibility.** Search owns an opaque investigation
+   identity, and a Conversation excerpt carries the identity of the
+   investigation that created it. Navigation derives effective presentation
+   from compatibility. An excerpt from another investigation may remain stored,
+   but it cannot become visible merely because a caller forgot to clear it. See
+   [Search Investigation Compatibility](../40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md#search-investigation-compatibility)
+   and [Stored and Effective Panel State](../42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md#stored-and-effective-panel-state).
+4. **Valve #3.** The useful question is not, "When should we remember to close
+   Valve #3?" It is, "Given the crankshaft position, can Valve #3 possibly be
+   open?" Correct valve state follows mechanically from the governing state
+   instead of being maintained by cleanup commands distributed around the
+   system.
+
+Structural prevention usually yields simpler reasoning, fewer edge cases,
+fewer cleanup paths, stronger invariants, and tests that assert governing truth
+instead of enumerating every place that must remember to repair its effects.
+It is the practical name for the constitutional preference for derivation,
+bounded authority, and effective-state projection over imperative repair.
+
+
+---
+
+
 ## Domain-Driven Design (ddd)
 
 ### Principle

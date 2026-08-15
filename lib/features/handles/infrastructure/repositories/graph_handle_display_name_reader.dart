@@ -1,7 +1,7 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import '../../../contacts/feature_level_providers.dart'
-    show DisplayIdentityResolver;
+    show DisplayIdentityResolver, ParticipantDisplayIdentity;
 import '../../application/read_models/handle_display_name_reader.dart';
 import '../../application/read_models/handle_identity.dart';
 
@@ -20,6 +20,11 @@ class GraphHandleDisplayNameReader implements HandleDisplayNameReader {
 
   @override
   Future<String> readHandleDisplayName({required int handleId}) async {
+    final canonicalIdentity = _readCanonicalIdentity(handleId);
+    if (canonicalIdentity?.isSelf == true) {
+      return canonicalIdentity!.primaryLabel;
+    }
+
     final override = await _readHandleOverride(handleId);
     if (override != null) {
       final virtualParticipantId = override.virtualParticipantId;
@@ -42,8 +47,7 @@ class GraphHandleDisplayNameReader implements HandleDisplayNameReader {
       }
     }
 
-    final graphIdentity =
-        _displayIdentityResolver.identitiesByHandleId[handleId];
+    final graphIdentity = canonicalIdentity;
     if (graphIdentity != null) {
       return graphIdentity.primaryLabel;
     }
@@ -73,6 +77,19 @@ class GraphHandleDisplayNameReader implements HandleDisplayNameReader {
     }
 
     return 'Handle #$handleId';
+  }
+
+  ParticipantDisplayIdentity? _readCanonicalIdentity(int handleId) {
+    ParticipantDisplayIdentity? fallbackIdentity;
+    for (final candidateId in handleIdentityKeyVariants(handleId)) {
+      final identity =
+          _displayIdentityResolver.identitiesByHandleId[candidateId];
+      if (identity?.isSelf == true) {
+        return identity;
+      }
+      fallbackIdentity ??= identity;
+    }
+    return fallbackIdentity;
   }
 
   Future<HandleToParticipantOverride?> _readHandleOverride(int handleId) async {

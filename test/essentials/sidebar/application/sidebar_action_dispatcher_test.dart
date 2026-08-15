@@ -153,6 +153,11 @@ void main() {
     test(
       'dispatches stray handle filter changes via cassette replacement',
       () async {
+        final flow = container.read(sidebarFlowProvider.notifier);
+        flow.openStrayHandleLens(handleId: 7);
+        final originatingInvestigationId = container
+            .read(sidebarFlowProvider)
+            .selectedHandleEvidenceInvestigationId;
         final rackNotifier = container.read(
           cassetteRackStateProvider(SidebarMode.messages).notifier,
         );
@@ -184,23 +189,136 @@ void main() {
             ),
             const CassetteSpec.handles(
               HandlesCassetteSpec.strayHandlesModeSwitcher(
+                investigation: StrayHandleInvestigation.identifySources,
                 filter: StrayHandleFilter.emails,
               ),
             ),
             const CassetteSpec.handles(
               HandlesCassetteSpec.strayHandlesReview(
+                investigation: StrayHandleInvestigation.identifySources,
                 filter: StrayHandleFilter.emails,
               ),
             ),
           ]),
         );
+        final flowState = container.read(sidebarFlowProvider);
+        expect(flowState.selectedHandleEvidenceId, 7);
+        expect(
+          flowState.selectedHandleEvidenceInvestigationId,
+          originatingInvestigationId,
+        );
+        expect(
+          flowState.strayHandleInvestigationId,
+          isNot(originatingInvestigationId),
+        );
+        expect(
+          flowState.strayHandleInvestigation,
+          StrayHandleInvestigation.identifySources,
+        );
+        expect(
+          flowState.projectedCenterSpec,
+          equals(
+            ViewSpec.messages(
+              MessagesSpec.handleInvestigation(
+                investigationId: flowState.strayHandleInvestigationId!,
+                investigation: StrayHandleInvestigation.identifySources,
+                target: const HandleInvestigationTarget.idle(),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'dispatches source investigation changes via cassette replacement',
+      () async {
+        final flow = container.read(sidebarFlowProvider.notifier);
+        flow.openStrayHandleLens(handleId: 7);
+        final originatingInvestigationId = container
+            .read(sidebarFlowProvider)
+            .selectedHandleEvidenceInvestigationId;
+        final rackNotifier = container.read(
+          cassetteRackStateProvider(SidebarMode.messages).notifier,
+        );
+        rackNotifier.seedRackForTest([
+          const CassetteSpec.handles(
+            HandlesCassetteSpec.strayHandlesInvestigationSwitcher(),
+          ),
+        ]);
+
+        await dispatcher.dispatch(
+          intent: const StrayHandleInvestigationChanged(
+            investigation: SidebarStrayHandleInvestigation.numericSenderIds,
+          ),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.messages,
+            cassetteIndex: 0,
+          ),
+        );
+
+        expect(
+          container
+              .read(cassetteRackStateProvider(SidebarMode.messages))
+              .cassettes,
+          equals([
+            const CassetteSpec.handles(
+              HandlesCassetteSpec.strayHandlesInvestigationSwitcher(
+                selectedInvestigation:
+                    StrayHandleInvestigation.numericSenderIds,
+              ),
+            ),
+            const CassetteSpec.handles(
+              HandlesCassetteSpec.strayHandlesModeSwitcher(
+                investigation: StrayHandleInvestigation.numericSenderIds,
+              ),
+            ),
+            const CassetteSpec.handles(
+              HandlesCassetteSpec.strayHandlesReview(
+                investigation: StrayHandleInvestigation.numericSenderIds,
+              ),
+            ),
+          ]),
+        );
+        final flowState = container.read(sidebarFlowProvider);
+        expect(flowState.selectedHandleEvidenceId, 7);
+        expect(
+          flowState.selectedHandleEvidenceInvestigationId,
+          originatingInvestigationId,
+        );
+        expect(
+          flowState.strayHandleInvestigationId,
+          isNot(originatingInvestigationId),
+        );
+        expect(
+          flowState.strayHandleInvestigation,
+          StrayHandleInvestigation.numericSenderIds,
+        );
+        expect(
+          flowState.projectedCenterSpec,
+          equals(
+            ViewSpec.messages(
+              MessagesSpec.handleInvestigation(
+                investigationId: flowState.strayHandleInvestigationId!,
+                investigation: StrayHandleInvestigation.numericSenderIds,
+                target: const HandleInvestigationTarget.idle(),
+              ),
+            ),
+          ),
+        );
       },
     );
 
     test('dispatches stray handle mode changes through mode state', () async {
+      final flow = container.read(sidebarFlowProvider.notifier);
+      flow.openStrayHandleLens(handleId: 7);
+      final originatingInvestigationId = container
+          .read(sidebarFlowProvider)
+          .selectedHandleEvidenceInvestigationId;
+
       await dispatcher.dispatch(
         intent: const StrayHandleModeChanged(
-          mode: SidebarStrayHandleMode.dismissed,
+          mode: SidebarStrayHandleReviewMode.dismissed,
         ),
         context: const SidebarActionDispatchContext(
           sidebarMode: SidebarMode.messages,
@@ -208,8 +326,30 @@ void main() {
       );
 
       expect(
-        container.read(strayHandleModeSettingProvider),
-        StrayHandleMode.dismissed,
+        container.read(strayHandleReviewModeSettingProvider),
+        StrayHandleReviewMode.dismissed,
+      );
+      final flowState = container.read(sidebarFlowProvider);
+      expect(flowState.selectedHandleEvidenceId, 7);
+      expect(
+        flowState.selectedHandleEvidenceInvestigationId,
+        originatingInvestigationId,
+      );
+      expect(
+        flowState.strayHandleInvestigationId,
+        isNot(originatingInvestigationId),
+      );
+      expect(
+        flowState.projectedCenterSpec,
+        equals(
+          ViewSpec.messages(
+            MessagesSpec.handleInvestigation(
+              investigationId: flowState.strayHandleInvestigationId!,
+              investigation: StrayHandleInvestigation.identifySources,
+              target: const HandleInvestigationTarget.idle(),
+            ),
+          ),
+        ),
       );
     });
 
@@ -252,7 +392,19 @@ void main() {
 
       expect(
         _activeSpec(container, WindowPanel.center),
-        equals(const ViewSpec.messages(MessagesSpec.handleLens(handleId: 7))),
+        equals(
+          ViewSpec.messages(
+            MessagesSpec.handleInvestigation(
+              investigationId: container
+                  .read(sidebarFlowProvider)
+                  .strayHandleInvestigationId!,
+              investigation: StrayHandleInvestigation.identifySources,
+              target: const HandleInvestigationTarget.selectedSource(
+                handleId: 7,
+              ),
+            ),
+          ),
+        ),
       );
     });
 

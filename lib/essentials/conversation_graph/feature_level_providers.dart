@@ -29,7 +29,6 @@ export 'application/monitor/chat_db_change_monitor_provider.dart';
 export 'application/monitor/chat_db_monitor_runtime_environment_provider.dart';
 export 'application/monitor/chat_db_source_probe_reader_provider.dart';
 export 'application/monitor/import_ledger_probe_reader_provider.dart';
-export 'application/orchestration/graph_maintenance_execution_gate_provider.dart';
 export 'application/status/archived_attachment_file_opener_provider.dart';
 export 'application/status/conversation_graph_status_log_writer_provider.dart';
 export 'application/status/conversation_graph_status_snapshot_provider.dart';

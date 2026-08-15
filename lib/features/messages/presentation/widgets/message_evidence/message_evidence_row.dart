@@ -285,14 +285,23 @@ String _messageDisplayText(String? value) {
 }
 
 String _conversationMessageSenderLabel(MessageEvidenceRowData message) {
-  final direction = message.isFromMe ? 'from me' : 'received';
-  return '$direction | ${_messageSenderLabel(message)}';
+  if (message.isSelfConversation) {
+    return 'self';
+  }
+  if (message.isFromMe) {
+    final recipient = message.conversationDisplayTitle?.trim();
+    if (recipient != null && recipient.isNotEmpty) {
+      return 'from me to $recipient';
+    }
+    return 'from me';
+  }
+  if (message.senderIsMe) {
+    return 'received from me';
+  }
+  return 'received from ${_messageSenderLabel(message)}';
 }
 
 String _messageSenderLabel(MessageEvidenceRowData message) {
-  if (message.isFromMe) {
-    return 'me';
-  }
   final handle = message.senderDisplayHandle?.trim();
   if (handle != null && handle.isNotEmpty) {
     return handle;

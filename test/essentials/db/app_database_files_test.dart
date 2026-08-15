@@ -8,6 +8,7 @@ void main() {
         AppDatabaseFile.sourceScopedImport,
         AppDatabaseFile.conversationGraph,
         AppDatabaseFile.overlay,
+        AppDatabaseFile.presence,
       };
       final retiredCleanupFiles = <AppDatabaseFile>{
         AppDatabaseFile.retiredMacosImport,
@@ -27,6 +28,7 @@ void main() {
           'macos_import_ss.db',
           'working_ss.db',
           'user_overlays.db',
+          'presence.db',
         }),
       );
       expect(

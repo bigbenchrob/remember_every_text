@@ -2,17 +2,15 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 
-import '../../../db/database_directory.dart';
 import '../../application/derived_message_data_file_store.dart';
 
 final class FilesystemDerivedMessageDataFileStore
     implements DerivedMessageDataFileStore {
-  const FilesystemDerivedMessageDataFileStore({String? databaseDirectory})
-    : _databaseDirectory = databaseDirectory;
+  const FilesystemDerivedMessageDataFileStore({
+    required this.databaseDirectory,
+  });
 
-  final String? _databaseDirectory;
-
-  String get databaseDirectory => _databaseDirectory ?? databaseDirectoryPath;
+  final String databaseDirectory;
 
   @override
   bool databaseBaseFileExists(String baseName) {

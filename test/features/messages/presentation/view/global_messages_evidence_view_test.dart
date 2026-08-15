@@ -14,10 +14,13 @@ import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dar
 import 'package:remember_this_text/essentials/search/application/graph_message_search.dart';
 import 'package:remember_this_text/essentials/search/application/graph_search_repository_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
+import 'package:remember_this_text/features/conversations/application/actions/conversation_excerpt_navigation_actions_provider.dart';
 import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
+import 'package:remember_this_text/features/messages/application/message_evidence/current_search_investigation_provider.dart';
 import 'package:remember_this_text/features/messages/application/message_evidence/message_evidence_spine_provider.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_row_data.dart';
 import 'package:remember_this_text/features/messages/domain/message_evidence/message_evidence_scope.dart';
+import 'package:remember_this_text/features/messages/domain/search_investigation_id.dart';
 import 'package:remember_this_text/features/messages/presentation/view/global_messages_evidence_view.dart';
 import 'package:remember_this_text/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart';
 
@@ -61,6 +64,137 @@ void main() {
 
     expect(find.text('All messages'), findsOneWidget);
     expect(find.text('global message'), findsOneWidget);
+    expect(find.text('In conversation'), findsNothing);
+  });
+
+  testWidgets(
+    'opens conversation context from an unfiltered canonical message',
+    (tester) async {
+      final messageId = canonicalLiveChatGraphId(10);
+      final conversationId = canonicalLiveChatGraphId(99);
+      final message = ConversationMessage(
+        messageId: messageId,
+        dateUtc: '2026-04-20T10:00:00.000Z',
+        isFromMe: true,
+        text: 'unfiltered canonical message',
+        associatedMessageId: null,
+        attachmentCount: 0,
+        conversationId: conversationId,
+      );
+      final repository = _FakeMessageGraphRepository(
+        timeline: [
+          ConversationMessageTimelineEntry(
+            messageId: messageId,
+            dateUtc: message.dateUtc,
+            monthKey: '2026-04',
+          ),
+        ],
+        messagesById: {messageId: message},
+      );
+      const scope = GlobalMessagesEvidenceScope();
+      final container = ProviderContainer(
+        overrides: [
+          messageGraphReaderProvider.overrideWith((ref) async {
+            return MessageGraphReader(repository: repository);
+          }),
+          messageEvidenceRowProvider(
+            scope: scope,
+            messageId: messageId,
+          ).overrideWith((ref) async => _rowData(message)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MacosApp(home: GlobalMessagesEvidenceView()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('In conversation'), findsOneWidget);
+      final investigationId = container.read(
+        currentSearchInvestigationProvider,
+      );
+
+      await tester.tap(find.text('In conversation'));
+      await tester.pump();
+
+      expect(
+        container
+            .read(
+              panelsViewStateProvider(SidebarMode.messages),
+            )[WindowPanel.right]
+            ?.activePage
+            ?.spec,
+        ViewSpec.conversations(
+          ConversationsSpec.conversationExcerpt(
+            conversationId: conversationId,
+            anchorMessageId: messageId,
+            originatingInvestigationId: investigationId,
+          ),
+        ),
+      );
+    },
+  );
+
+  testWidgets('hides action for the exact active unfiltered excerpt', (
+    tester,
+  ) async {
+    final messageId = canonicalLiveChatGraphId(11);
+    final conversationId = canonicalLiveChatGraphId(100);
+    final message = ConversationMessage(
+      messageId: messageId,
+      dateUtc: '2026-04-20T10:00:00.000Z',
+      isFromMe: true,
+      text: 'active context message',
+      associatedMessageId: null,
+      attachmentCount: 0,
+      conversationId: conversationId,
+    );
+    final repository = _FakeMessageGraphRepository(
+      timeline: [
+        ConversationMessageTimelineEntry(
+          messageId: messageId,
+          dateUtc: message.dateUtc,
+          monthKey: '2026-04',
+        ),
+      ],
+      messagesById: {messageId: message},
+    );
+    const scope = GlobalMessagesEvidenceScope();
+    final container = ProviderContainer(
+      overrides: [
+        messageGraphReaderProvider.overrideWith((ref) async {
+          return MessageGraphReader(repository: repository);
+        }),
+        messageEvidenceRowProvider(
+          scope: scope,
+          messageId: messageId,
+        ).overrideWith((ref) async => _rowData(message)),
+      ],
+    );
+    addTearDown(container.dispose);
+    container
+        .read(conversationExcerptNavigationActionsProvider.notifier)
+        .open(
+          conversationId: conversationId,
+          anchorMessageId: messageId,
+          originatingInvestigationId: container.read(
+            currentSearchInvestigationProvider,
+          ),
+        );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MacosApp(home: GlobalMessagesEvidenceView()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('In conversation'), findsNothing);
   });
 
   testWidgets('filters global timeline through evidence spine text matches', (
@@ -224,6 +358,7 @@ void main() {
               ConversationsSpec.conversationExcerpt(
                 conversationId: canonicalLiveChatGraphId(99),
                 anchorMessageId: targetMessageId,
+                originatingInvestigationId: const SearchInvestigationId(0),
               ),
             ),
           );
@@ -252,6 +387,25 @@ void main() {
 
       expect(targetRow.isAnchorMessage, isTrue);
       expect(otherRow.isAnchorMessage, isFalse);
+
+      container.read(currentSearchInvestigationProvider.notifier).advance();
+      await tester.pump();
+
+      final staleTargetRow = tester.widget<MessageEvidenceRow>(
+        find.ancestor(
+          of: find.text('context target message'),
+          matching: find.byType(MessageEvidenceRow),
+        ),
+      );
+      expect(staleTargetRow.isAnchorMessage, isFalse);
+      expect(
+        container
+            .read(
+              panelsViewStateProvider(SidebarMode.messages),
+            )[WindowPanel.right]
+            ?.isEmpty,
+        isFalse,
+      );
     },
   );
 }

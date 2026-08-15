@@ -24,7 +24,7 @@ class ViewSpecCoordinator extends _$ViewSpecCoordinator {
             searchQuery: searchQuery,
           ),
       conversationExcerpt:
-          (conversationId, anchorMessageId, beforeCount, afterCount) =>
+          (conversationId, anchorMessageId, _, beforeCount, afterCount) =>
               ConversationExcerptPanelResolver().resolve(
                 conversationId: conversationId,
                 anchorMessageId: anchorMessageId,

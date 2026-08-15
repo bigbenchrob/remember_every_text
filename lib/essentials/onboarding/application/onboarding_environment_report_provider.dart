@@ -6,6 +6,8 @@ import '../../../features/address_book_folders/domain/entities/address_book_fold
 import '../../../features/address_book_folders/domain/failures/folder_retrieval_failure.dart';
 import '../../../features/address_book_folders/feature_level_providers.dart'
     show futureGetFolderAggregateProvider;
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveAccessAuthorityProvider;
 import '../../conversation_graph/feature_level_providers.dart'
     show
         ChatDbChangeMonitorState,
@@ -14,11 +16,11 @@ import '../../conversation_graph/feature_level_providers.dart'
         conversationGraphBuildControllerProvider;
 import '../../db/app_database_files.dart';
 import '../../db/application/conversation_graph_readiness.dart';
-import '../../db/database_directory.dart';
 import '../../db/feature_level_providers.dart'
     show attachmentArchiveDirectoryProvider, dbMaintenanceLockProvider;
 import '../domain/onboarding_environment_report.dart';
 import 'full_disk_access_provider.dart';
+import 'messages_source_history_sufficiency_policy.dart';
 import 'onboarding_database_probe_reader.dart';
 import 'onboarding_database_probe_reader_provider.dart';
 import 'onboarding_failure_storage_provider.dart';
@@ -26,7 +28,6 @@ import 'onboarding_failure_store.dart';
 
 part 'onboarding_environment_report_provider.g.dart';
 
-const int _sparseMessagesThreshold = 10;
 const int _automaticRecoveryMinimumImportRows = 25;
 const double _automaticRecoveryGraphToImportRatio = 0.5;
 
@@ -130,7 +131,7 @@ String onboardingMessagesDatabasePath(Ref ref) {
 
 @Riverpod(keepAlive: true)
 String onboardingDatabaseDirectoryPath(Ref ref) {
-  return databaseDirectoryPath;
+  return ref.watch(archiveAccessAuthorityProvider).rootPath;
 }
 
 @Riverpod(keepAlive: true)
@@ -142,7 +143,7 @@ Future<OnboardingEnvironmentReport> onboardingEnvironmentReport(Ref ref) async {
     hasFullDiskAccess: ref.watch(onboardingFullDiskAccessProvider),
     messagesDatabasePath: ref.watch(onboardingMessagesDatabasePathProvider),
     addressBookEither: await ref.watch(futureGetFolderAggregateProvider.future),
-    databaseDirectoryPath: ref.watch(onboardingDatabaseDirectoryPathProvider),
+    archiveRootPath: ref.watch(onboardingDatabaseDirectoryPathProvider),
     attachmentArchiveDirectoryPath: ref.watch(
       attachmentArchiveDirectoryProvider,
     ),
@@ -162,7 +163,7 @@ class _OnboardingEnvironmentInputs {
     required this.hasFullDiskAccess,
     required this.messagesDatabasePath,
     required this.addressBookEither,
-    required this.databaseDirectoryPath,
+    required this.archiveRootPath,
     required this.attachmentArchiveDirectoryPath,
     required this.isMaintenanceLocked,
     required this.graphBuildState,
@@ -176,7 +177,7 @@ class _OnboardingEnvironmentInputs {
   final String messagesDatabasePath;
   final Either<FolderRetrievalFailure, AddressBookFolderAggregate>
   addressBookEither;
-  final String databaseDirectoryPath;
+  final String archiveRootPath;
   final String attachmentArchiveDirectoryPath;
   final bool isMaintenanceLocked;
   final ConversationGraphBuildState graphBuildState;
@@ -245,15 +246,15 @@ class _OnboardingEnvironmentEvaluator {
 
     final sourceScopedImportDbPath = appDatabasePath(
       AppDatabaseFile.sourceScopedImport,
-      databaseDirectory: inputs.databaseDirectoryPath,
+      databaseDirectory: inputs.archiveRootPath,
     );
     final overlayDbPath = appDatabasePath(
       AppDatabaseFile.overlay,
-      databaseDirectory: inputs.databaseDirectoryPath,
+      databaseDirectory: inputs.archiveRootPath,
     );
     final graphDbPath = appDatabasePath(
       AppDatabaseFile.conversationGraph,
-      databaseDirectory: inputs.databaseDirectoryPath,
+      databaseDirectory: inputs.archiveRootPath,
     );
     final attachmentArchiveProbe = databaseProbeReader.probeDirectory(
       inputs.attachmentArchiveDirectoryPath,
@@ -414,7 +415,7 @@ class _OnboardingEnvironmentEvaluator {
     }
 
     if (sourceMessageCount != null &&
-        sourceMessageCount <= _sparseMessagesThreshold) {
+        !isMessagesSourceHistorySufficient(sourceMessageCount)) {
       return OnboardingEnvironmentState.sourceSparseOrUnsynced;
     }
 
@@ -489,7 +490,7 @@ class _OnboardingEnvironmentEvaluator {
 
     if (state == OnboardingEnvironmentState.sourceSparseOrUnsynced ||
         (sourceMessageCount != null &&
-            sourceMessageCount <= _sparseMessagesThreshold)) {
+            !isMessagesSourceHistorySufficient(sourceMessageCount))) {
       return OnboardingBlockerKind.sourceDataSparseOrUnsynced;
     }
 
@@ -593,7 +594,7 @@ class _OnboardingEnvironmentEvaluator {
       return OnboardingSyncPlausibility.unknown;
     }
 
-    if (sourceMessageCount <= _sparseMessagesThreshold) {
+    if (!isMessagesSourceHistorySufficient(sourceMessageCount)) {
       return OnboardingSyncPlausibility.likelySparseOrUnsynced;
     }
 
@@ -640,7 +641,7 @@ class _OnboardingEnvironmentEvaluator {
         usingPersistedImportFailure || usingPersistedGraphProjectionFailure;
     final importTracksSource =
         sourceMessageCount == null ||
-        sourceMessageCount <= _sparseMessagesThreshold ||
+        !isMessagesSourceHistorySufficient(sourceMessageCount) ||
         importCount >=
             (sourceMessageCount * _automaticRecoveryGraphToImportRatio).round();
     final graphClearlyIncomplete =

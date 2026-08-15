@@ -1,9 +1,11 @@
 import 'package:flutter/widgets.dart';
 
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../payloads/stray_handles_investigation_switcher_cassette_payload.dart';
 import '../payloads/stray_handles_mode_switcher_cassette_payload.dart';
 import '../payloads/stray_handles_review_cassette_payload.dart';
 import '../payloads/stray_handles_type_switcher_cassette_payload.dart';
+import '../widget_builders/stray_handles_investigation_switcher_cassette.dart';
 import '../widget_builders/stray_handles_mode_switcher_cassette.dart';
 import '../widget_builders/stray_handles_review_cassette.dart';
 import '../widget_builders/stray_handles_type_switcher_cassette.dart';
@@ -14,6 +16,7 @@ Widget buildPlacementGovernedCassetteBody({
 }) {
   return switch (payload) {
     StrayHandlesReviewCassettePayload() => StrayHandlesReviewCassette(
+      investigation: payload.investigation,
       filter: payload.filter,
       mode: payload.mode,
     ),
@@ -22,6 +25,11 @@ Widget buildPlacementGovernedCassetteBody({
     StrayHandlesTypeSwitcherCassettePayload() =>
       StrayHandlesTypeSwitcherCassette(
         selectedFilter: payload.selectedFilter,
+        cassetteIndex: payload.cassetteIndex,
+      ),
+    StrayHandlesInvestigationSwitcherCassettePayload() =>
+      StrayHandlesInvestigationSwitcherCassette(
+        selectedInvestigation: payload.selectedInvestigation,
         cassetteIndex: payload.cassetteIndex,
       ),
     PlacementGovernedSidebarCassettePayload() => throw UnsupportedError(

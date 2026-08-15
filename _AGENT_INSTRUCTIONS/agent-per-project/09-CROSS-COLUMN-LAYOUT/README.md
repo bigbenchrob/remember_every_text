@@ -2,14 +2,19 @@
 tier: project
 scope: cross-column-layout
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-24
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
   - ./01-column-band-wrappers.md
   - ./02-sidebar-cassette-content-start-seam.md
   - ./03-search-page-current-implementation.md
+  - ./06-unfamiliar-sources-page-current-implementation.md
+  - ./07-column-specific-shared-track-boundaries.md
+  - ./08-recovered-messages-page-current-implementation.md
+  - ./09-contacts-page-current-implementation.md
   - ./04-design-history-and-cross-references.md
+  - ./05-anatomy-of-track-cell-rendering.md
   - ../07-CENTER-PANEL-LAYOUTS/README.md
   - ../08-SIDEBAR-LAYOUTS/README.md
   - ../95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/README.md
@@ -44,9 +49,12 @@ using content appropriate to their lens.
 ## What This Folder Owns
 
 - the durable cross-column alignment contract
-- the title and context column band wrapper mechanics
+- the page matrix, resolved geometry, and complete-cell rendering mechanics
+- column-specific shared Track lifetimes and native-flow continuation
 - the sidebar cassette content-start seam
 - current Search-page application of the contract
+- current Unknown Sources, Recovered Messages, and Contacts applications of
+  column-specific shared lifetimes
 - links to the UI-walk and feature-package history that produced the design
 
 ## What This Folder Does Not Own
@@ -65,7 +73,8 @@ documentation.
 1. [`00-cross-column-layout-contract.md`](00-cross-column-layout-contract.md)
    explains the invariant.
 2. [`01-column-band-wrappers.md`](01-column-band-wrappers.md) explains the
-   mechanics of `TitleColumnBand` and `ContextColumnBand`.
+   active matrix and `TrackCellView` mechanics. Its filename preserves an old
+   link; its content describes the current system.
 3. [`02-sidebar-cassette-content-start-seam.md`](02-sidebar-cassette-content-start-seam.md)
    explains how the sidebar participates without surrendering cassette
    ownership.
@@ -73,6 +82,21 @@ documentation.
    records the current applied Search-page state.
 5. [`04-design-history-and-cross-references.md`](04-design-history-and-cross-references.md)
    points to the UI-walk and feature-package history.
+6. [`05-anatomy-of-track-cell-rendering.md`](05-anatomy-of-track-cell-rendering.md)
+   explains the concrete rendering chain from feature preparation through
+   complete `CellId` rendering.
+7. [`06-unfamiliar-sources-page-current-implementation.md`](06-unfamiliar-sources-page-current-implementation.md)
+   records how the unfamiliar-source page aligns a cassette sidebar with its
+   selected-source evidence without making either system own the other.
+8. [`07-column-specific-shared-track-boundaries.md`](07-column-specific-shared-track-boundaries.md)
+   defines the general distinction between the final page Track and each
+   column's explicitly declared final shared Track.
+9. [`08-recovered-messages-page-current-implementation.md`](08-recovered-messages-page-current-implementation.md)
+   records the deliberately narrow Track A relationship used by both recovered
+   message investigations.
+10. [`09-contacts-page-current-implementation.md`](09-contacts-page-current-implementation.md)
+    records the Track A relationship between the Contacts top menu and whichever
+    feature owns the effective center ViewSpec.
 
 ## Relationship To UI Walk
 

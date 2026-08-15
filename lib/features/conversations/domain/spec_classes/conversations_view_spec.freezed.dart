@@ -154,11 +154,11 @@ return conversationExcerpt(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  conversationMessages,TResult Function( int conversationId,  int anchorMessageId,  int beforeCount,  int afterCount)?  conversationExcerpt,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  conversationMessages,TResult Function( int conversationId,  int anchorMessageId,  InvestigationIdentity originatingInvestigationId,  int beforeCount,  int afterCount)?  conversationExcerpt,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ConversationsConversationMessages() when conversationMessages != null:
 return conversationMessages(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _ConversationsConversationExcerpt() when conversationExcerpt != null:
-return conversationExcerpt(_that.conversationId,_that.anchorMessageId,_that.beforeCount,_that.afterCount);case _:
+return conversationExcerpt(_that.conversationId,_that.anchorMessageId,_that.originatingInvestigationId,_that.beforeCount,_that.afterCount);case _:
   return orElse();
 
 }
@@ -176,11 +176,11 @@ return conversationExcerpt(_that.conversationId,_that.anchorMessageId,_that.befo
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)  conversationMessages,required TResult Function( int conversationId,  int anchorMessageId,  int beforeCount,  int afterCount)  conversationExcerpt,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( int conversationId,  int? anchorMessageId,  String? searchQuery)  conversationMessages,required TResult Function( int conversationId,  int anchorMessageId,  InvestigationIdentity originatingInvestigationId,  int beforeCount,  int afterCount)  conversationExcerpt,}) {final _that = this;
 switch (_that) {
 case _ConversationsConversationMessages():
 return conversationMessages(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _ConversationsConversationExcerpt():
-return conversationExcerpt(_that.conversationId,_that.anchorMessageId,_that.beforeCount,_that.afterCount);case _:
+return conversationExcerpt(_that.conversationId,_that.anchorMessageId,_that.originatingInvestigationId,_that.beforeCount,_that.afterCount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,11 +197,11 @@ return conversationExcerpt(_that.conversationId,_that.anchorMessageId,_that.befo
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  conversationMessages,TResult? Function( int conversationId,  int anchorMessageId,  int beforeCount,  int afterCount)?  conversationExcerpt,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( int conversationId,  int? anchorMessageId,  String? searchQuery)?  conversationMessages,TResult? Function( int conversationId,  int anchorMessageId,  InvestigationIdentity originatingInvestigationId,  int beforeCount,  int afterCount)?  conversationExcerpt,}) {final _that = this;
 switch (_that) {
 case _ConversationsConversationMessages() when conversationMessages != null:
 return conversationMessages(_that.conversationId,_that.anchorMessageId,_that.searchQuery);case _ConversationsConversationExcerpt() when conversationExcerpt != null:
-return conversationExcerpt(_that.conversationId,_that.anchorMessageId,_that.beforeCount,_that.afterCount);case _:
+return conversationExcerpt(_that.conversationId,_that.anchorMessageId,_that.originatingInvestigationId,_that.beforeCount,_that.afterCount);case _:
   return null;
 
 }
@@ -283,11 +283,12 @@ as String?,
 
 
 class _ConversationsConversationExcerpt implements ConversationsSpec {
-  const _ConversationsConversationExcerpt({required this.conversationId, required this.anchorMessageId, this.beforeCount = 10, this.afterCount = 10});
+  const _ConversationsConversationExcerpt({required this.conversationId, required this.anchorMessageId, required this.originatingInvestigationId, this.beforeCount = 10, this.afterCount = 10});
   
 
 @override final  int conversationId;
 @override final  int anchorMessageId;
+ final  InvestigationIdentity originatingInvestigationId;
 @JsonKey() final  int beforeCount;
 @JsonKey() final  int afterCount;
 
@@ -301,16 +302,16 @@ _$ConversationsConversationExcerptCopyWith<_ConversationsConversationExcerpt> ge
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConversationsConversationExcerpt&&(identical(other.conversationId, conversationId) || other.conversationId == conversationId)&&(identical(other.anchorMessageId, anchorMessageId) || other.anchorMessageId == anchorMessageId)&&(identical(other.beforeCount, beforeCount) || other.beforeCount == beforeCount)&&(identical(other.afterCount, afterCount) || other.afterCount == afterCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ConversationsConversationExcerpt&&(identical(other.conversationId, conversationId) || other.conversationId == conversationId)&&(identical(other.anchorMessageId, anchorMessageId) || other.anchorMessageId == anchorMessageId)&&(identical(other.originatingInvestigationId, originatingInvestigationId) || other.originatingInvestigationId == originatingInvestigationId)&&(identical(other.beforeCount, beforeCount) || other.beforeCount == beforeCount)&&(identical(other.afterCount, afterCount) || other.afterCount == afterCount));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,conversationId,anchorMessageId,beforeCount,afterCount);
+int get hashCode => Object.hash(runtimeType,conversationId,anchorMessageId,originatingInvestigationId,beforeCount,afterCount);
 
 @override
 String toString() {
-  return 'ConversationsSpec.conversationExcerpt(conversationId: $conversationId, anchorMessageId: $anchorMessageId, beforeCount: $beforeCount, afterCount: $afterCount)';
+  return 'ConversationsSpec.conversationExcerpt(conversationId: $conversationId, anchorMessageId: $anchorMessageId, originatingInvestigationId: $originatingInvestigationId, beforeCount: $beforeCount, afterCount: $afterCount)';
 }
 
 
@@ -321,7 +322,7 @@ abstract mixin class _$ConversationsConversationExcerptCopyWith<$Res> implements
   factory _$ConversationsConversationExcerptCopyWith(_ConversationsConversationExcerpt value, $Res Function(_ConversationsConversationExcerpt) _then) = __$ConversationsConversationExcerptCopyWithImpl;
 @override @useResult
 $Res call({
- int conversationId, int anchorMessageId, int beforeCount, int afterCount
+ int conversationId, int anchorMessageId, InvestigationIdentity originatingInvestigationId, int beforeCount, int afterCount
 });
 
 
@@ -338,11 +339,12 @@ class __$ConversationsConversationExcerptCopyWithImpl<$Res>
 
 /// Create a copy of ConversationsSpec
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? conversationId = null,Object? anchorMessageId = null,Object? beforeCount = null,Object? afterCount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? conversationId = null,Object? anchorMessageId = null,Object? originatingInvestigationId = null,Object? beforeCount = null,Object? afterCount = null,}) {
   return _then(_ConversationsConversationExcerpt(
 conversationId: null == conversationId ? _self.conversationId : conversationId // ignore: cast_nullable_to_non_nullable
 as int,anchorMessageId: null == anchorMessageId ? _self.anchorMessageId : anchorMessageId // ignore: cast_nullable_to_non_nullable
-as int,beforeCount: null == beforeCount ? _self.beforeCount : beforeCount // ignore: cast_nullable_to_non_nullable
+as int,originatingInvestigationId: null == originatingInvestigationId ? _self.originatingInvestigationId : originatingInvestigationId // ignore: cast_nullable_to_non_nullable
+as InvestigationIdentity,beforeCount: null == beforeCount ? _self.beforeCount : beforeCount // ignore: cast_nullable_to_non_nullable
 as int,afterCount: null == afterCount ? _self.afterCount : afterCount // ignore: cast_nullable_to_non_nullable
 as int,
   ));

@@ -2,12 +2,18 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
-    show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
+    show
+        driftConversationGraphDatabaseProvider,
+        messageDataVersionProvider,
+        overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
+import 'package:remember_this_text/features/handles/application/read_models/stray_handle_summary.dart';
 import 'package:remember_this_text/features/handles/application/read_models/stray_handles_provider.dart';
+import 'package:remember_this_text/features/handles/application/read_models/stray_handles_read_repository.dart';
+import 'package:remember_this_text/features/handles/domain/entities/stray_handle_endpoint_kind.dart';
 import 'package:remember_this_text/features/handles/domain/utilities/handle_normalizer.dart'
     as handle_normalizer;
 
@@ -57,6 +63,43 @@ void main() {
         expect(results.single.handleId, 7001);
         expect(results.single.handleValue, '+16043078325');
         expect(results.single.totalMessages, 1);
+        expect(
+          results.single.endpointKind,
+          StrayHandleEndpointKind.phoneNumber,
+        );
+      },
+    );
+
+    test(
+      'projects identity and numeric-review investigations separately',
+      () async {
+        await _insertGraphHandleEvidence(
+          graphDb,
+          handleSsId: 7010,
+          handleValue: '+16043078325',
+          messageSsId: 8010,
+        );
+        await _insertGraphHandleEvidence(
+          graphDb,
+          handleSsId: 7011,
+          handleValue: '74720',
+          messageSsId: 8011,
+        );
+
+        await container.read(strayHandlesProvider.future);
+        final identityResults = container
+            .read(unknownSourceIdentificationHandlesProvider)
+            .requireValue;
+        final numericResults = container
+            .read(numericSenderIdHandlesProvider)
+            .requireValue;
+
+        expect(identityResults.map((handle) => handle.handleId), [7010]);
+        expect(numericResults.map((handle) => handle.handleId), [7011]);
+        expect(
+          numericResults.single.endpointKind,
+          StrayHandleEndpointKind.shortCode,
+        );
       },
     );
 
@@ -117,21 +160,116 @@ void main() {
         handleValue: '+16048173537',
         messageSsId: 8003,
       );
+      await _insertGraphHandleEvidence(
+        graphDb,
+        handleSsId: 7004,
+        handleValue: '74720',
+        messageSsId: 8005,
+      );
       await overlayDb.dismissHandle(
         handle_normalizer.normalizeHandleIdentifier('+16048173537'),
+      );
+      await overlayDb.dismissHandle(
+        handle_normalizer.normalizeHandleIdentifier('74720'),
       );
 
       final activeResults = await container.read(strayHandlesProvider.future);
       final dismissedResults = await container.read(
         dismissedHandlesProvider.future,
       );
+      final dismissedIdentityResults = container
+          .read(dismissedUnknownSourceIdentificationHandlesProvider)
+          .requireValue;
+      final dismissedNumericResults = container
+          .read(dismissedNumericSenderIdHandlesProvider)
+          .requireValue;
 
       expect(activeResults, isEmpty);
-      expect(dismissedResults, hasLength(1));
-      expect(dismissedResults.single.handleId, 7003);
-      expect(dismissedResults.single.handleValue, '+16048173537');
+      expect(dismissedResults.map((handle) => handle.handleId), [7003, 7004]);
+      expect(dismissedIdentityResults.map((handle) => handle.handleId), [7003]);
+      expect(dismissedNumericResults.map((handle) => handle.handleId), [7004]);
     });
   });
+
+  test(
+    'reuses one active snapshot across investigation category switches',
+    () async {
+      final repository = _CountingStrayHandlesReadRepository();
+      final container = ProviderContainer(
+        overrides: [
+          strayHandlesReadRepositoryProvider.overrideWith(
+            (ref) async => repository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final identifySubscription = container.listen(
+        unknownSourceIdentificationHandlesProvider,
+        (_, __) {},
+      );
+      await container.read(strayHandlesProvider.future);
+      expect(
+        container.read(unknownSourceIdentificationHandlesProvider).requireValue,
+        hasLength(1),
+      );
+      identifySubscription.close();
+      await Future<void>.delayed(Duration.zero);
+
+      final numericSubscription = container.listen(
+        numericSenderIdHandlesProvider,
+        (_, __) {},
+      );
+      expect(
+        container.read(numericSenderIdHandlesProvider).requireValue,
+        hasLength(1),
+      );
+
+      expect(repository.activeReadCount, 1);
+
+      container.read(messageDataVersionProvider.notifier).bump();
+      await container.read(strayHandlesProvider.future);
+
+      expect(repository.activeReadCount, 2);
+      numericSubscription.close();
+    },
+  );
+}
+
+final class _CountingStrayHandlesReadRepository
+    implements StrayHandlesReadRepository {
+  int activeReadCount = 0;
+
+  @override
+  Future<StrayHandleSummary?> readHandleSource({required int handleId}) async {
+    return null;
+  }
+
+  @override
+  Future<List<StrayHandleSummary>> readActiveStrayHandles() async {
+    activeReadCount += 1;
+    return const <StrayHandleSummary>[
+      StrayHandleSummary(
+        handleId: 1,
+        handleValue: '+16043078325',
+        serviceType: 'SMS',
+        totalMessages: 1,
+        endpointKind: StrayHandleEndpointKind.phoneNumber,
+      ),
+      StrayHandleSummary(
+        handleId: 2,
+        handleValue: '74720',
+        serviceType: 'SMS',
+        totalMessages: 1,
+        endpointKind: StrayHandleEndpointKind.shortCode,
+      ),
+    ];
+  }
+
+  @override
+  Future<List<StrayHandleSummary>> readDismissedStrayHandles() async {
+    return const <StrayHandleSummary>[];
+  }
 }
 
 Future<void> _insertGraphHandleEvidence(

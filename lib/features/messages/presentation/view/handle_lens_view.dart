@@ -6,18 +6,23 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/buttons/buttons.dart';
-import '../../../../core/util/count_label_formatter.dart';
-import '../../../../core/util/date_range_formatter.dart';
 import '../../../contacts/feature_level_providers.dart'
     show ContactPickerDialog;
+import '../../../handles/domain/spec_classes/handles_cassette_spec.dart';
 import '../../../handles/feature_level_providers.dart'
-    show handleDisplayNameProvider, strayHandlesProvider;
-import '../../application/handle_lens/handle_lens_actions_provider.dart';
+    show
+        HandleSourcePresentation,
+        handleSourcePresentationProvider,
+        handleSourceReviewActionsProvider;
+import '../../application/handle_lens/handle_lens_investigation_actions_provider.dart';
+import '../../application/handle_lens/handle_lens_session_provider.dart';
 import '../../application/message_evidence/message_evidence_spine_provider.dart';
 import '../../domain/message_evidence/message_evidence_scope.dart';
 import '../../domain/message_evidence/message_evidence_search_mode.dart';
-import '../../domain/message_evidence/message_evidence_skeleton.dart';
+import '../view_model/handle_investigation_presentation.dart';
+import '../view_model/handle_lens_header_labels.dart';
 import '../widgets/message_evidence/message_evidence_header.dart';
+import '../widgets/message_evidence/message_evidence_idle_view.dart';
 import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 
 /// Triage view for a single stray handle.
@@ -26,29 +31,39 @@ import '../widgets/message_evidence/message_evidence_timeline_view.dart';
 /// Link to Existing, Dismiss), and a shared graph-backed message evidence
 /// timeline for identifying the correspondent.
 class HandleLensView extends HookConsumerWidget {
-  const HandleLensView({required this.handleId, super.key});
+  const HandleLensView({
+    required this.handleId,
+    required this.investigation,
+    super.key,
+  });
 
   final int handleId;
+  final StrayHandleInvestigation investigation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(themeColorsProvider);
     final colors = _readThemeColors(ref);
     final typography = ref.watch(themeTypographyProvider);
-    final asyncHandles = ref.watch(strayHandlesProvider);
-    final asyncDisplayName = ref.watch(
-      handleDisplayNameProvider(handleId: handleId),
+    final asyncSourcePresentation = ref.watch(
+      handleSourcePresentationProvider(handleId: handleId),
     );
-    final isCreating = useState(false);
-    final nameController = useTextEditingController();
-    final searchController = useTextEditingController();
-    final searchQuery = useState('');
-    final searchMode = useState(MessageEvidenceSearchMode.allTerms);
-    final isBusy = useState(false);
+    final session = ref.watch(handleLensSessionProvider(handleId: handleId));
+    final sessionActions = ref.read(
+      handleLensSessionProvider(handleId: handleId).notifier,
+    );
+    final searchController = useTextEditingController(text: session.query);
+
+    if (searchController.text != session.query) {
+      searchController.value = TextEditingValue(
+        text: session.query,
+        selection: TextSelection.collapsed(offset: session.query.length),
+      );
+    }
 
     useEffect(() {
       void listener() {
-        searchQuery.value = searchController.text;
+        sessionActions.setQuery(searchController.text);
       }
 
       searchController.addListener(listener);
@@ -57,21 +72,7 @@ class HandleLensView extends HookConsumerWidget {
       };
     }, [searchController]);
 
-    // Find the stray handle summary for header info.
-    final handleSummary = asyncHandles.whenOrNull(
-      data: (handles) {
-        final matches = handles.where((h) => h.handleId == handleId);
-        return matches.isNotEmpty ? matches.first : null;
-      },
-    );
-
-    // Use resolved display name (virtual contact > real contact > raw handle).
-    // While identity resolution is loading, prefer the raw handle fact already
-    // present in the selected stray-handle summary over an internal id label.
-    final handleValue =
-        asyncDisplayName.valueOrNull ??
-        handleSummary?.handleValue ??
-        'Handle #$handleId';
+    final sourcePresentation = asyncSourcePresentation.valueOrNull;
 
     return MacosScaffold(
       children: [
@@ -83,26 +84,16 @@ class HandleLensView extends HookConsumerWidget {
                 Expanded(
                   child: _HandleLensEvidencePane(
                     handleId: handleId,
-                    handleValue: handleValue,
-                    messageCount: handleSummary?.totalMessages ?? 0,
+                    investigation: investigation,
+                    sourcePresentation: sourcePresentation,
                     searchController: searchController,
-                    searchQuery: searchQuery.value.trim(),
-                    searchMode: searchMode.value,
-                    onSearchModeChanged: (mode) {
-                      searchMode.value = mode;
-                    },
-                    actions: _ActionBar(
-                      handleId: handleId,
-                      isCreating: isCreating,
-                      nameController: nameController,
-                      isBusy: isBusy,
-                    ),
-                    details: isCreating.value
-                        ? _CreateContactForm(
+                    searchQuery: session.query.trim(),
+                    searchMode: session.searchMode,
+                    onSearchModeChanged: sessionActions.setSearchMode,
+                    actions: HandleLensActionBar(handleId: handleId),
+                    details: session.isCreatingContact
+                        ? HandleLensCreateContactForm(
                             handleId: handleId,
-                            nameController: nameController,
-                            isBusy: isBusy,
-                            isCreating: isCreating,
                             typography: typography,
                             errorColor: colors.buttons.destructiveForeground,
                           )
@@ -126,49 +117,40 @@ ThemeColors _readThemeColors(WidgetRef ref) {
 // Action bar
 // =============================================================================
 
-class _ActionBar extends HookConsumerWidget {
-  const _ActionBar({
-    required this.handleId,
-    required this.isCreating,
-    required this.nameController,
-    required this.isBusy,
-  });
+class HandleLensActionBar extends ConsumerWidget {
+  const HandleLensActionBar({required this.handleId, super.key});
 
   final int handleId;
-  final ValueNotifier<bool> isCreating;
-  final TextEditingController nameController;
-  final ValueNotifier<bool> isBusy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(handleLensSessionProvider(handleId: handleId));
+    final sessionActions = ref.read(
+      handleLensSessionProvider(handleId: handleId).notifier,
+    );
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         AppHeaderActionButton(
-          icon: isCreating.value
+          icon: session.isCreatingContact
               ? CupertinoIcons.xmark
               : CupertinoIcons.person_add,
-          label: isCreating.value ? 'Cancel' : 'Create Contact',
-          isEnabled: !isBusy.value,
-          onPressed: () {
-            isCreating.value = !isCreating.value;
-            if (!isCreating.value) {
-              nameController.clear();
-            }
-          },
+          label: session.isCreatingContact ? 'Cancel' : 'Create Contact',
+          isEnabled: !session.isBusy,
+          onPressed: sessionActions.toggleCreateContact,
         ),
         AppHeaderActionButton(
           icon: CupertinoIcons.link,
           label: 'Link to Existing',
-          isEnabled: !isBusy.value,
+          isEnabled: !session.isBusy,
           onPressed: () => _linkToExisting(context, ref),
         ),
         AppHeaderActionButton(
           icon: CupertinoIcons.checkmark_circle,
           label: 'Dismiss',
-          isEnabled: !isBusy.value,
+          isEnabled: !session.isBusy,
           onPressed: () => _dismiss(ref),
         ),
       ],
@@ -181,27 +163,35 @@ class _ActionBar extends HookConsumerWidget {
       return;
     }
 
-    isBusy.value = true;
+    final sessionActions = ref.read(
+      handleLensSessionProvider(handleId: handleId).notifier,
+    );
+    sessionActions.setBusy(isBusy: true);
     try {
-      await ref
-          .read(handleLensActionsProvider.notifier)
-          .linkToExistingContact(
+      final failureMessage = await ref
+          .read(handleSourceReviewActionsProvider.notifier)
+          .associateSourceWithExistingContact(
             handleId: handleId,
             participantId: participantId,
           );
+      sessionActions.setErrorMessage(failureMessage);
     } finally {
-      isBusy.value = false;
+      sessionActions.setBusy(isBusy: false);
     }
   }
 
   Future<void> _dismiss(WidgetRef ref) async {
-    isBusy.value = true;
+    final sessionActions = ref.read(
+      handleLensSessionProvider(handleId: handleId).notifier,
+    );
+    sessionActions.setBusy(isBusy: true);
     try {
-      await ref
-          .read(handleLensActionsProvider.notifier)
-          .dismissHandle(handleId: handleId);
+      final failureMessage = await ref
+          .read(handleLensInvestigationActionsProvider.notifier)
+          .dismissCurrentSource(handleId: handleId);
+      sessionActions.setErrorMessage(failureMessage);
     } finally {
-      isBusy.value = false;
+      sessionActions.setBusy(isBusy: false);
     }
   }
 }
@@ -210,26 +200,22 @@ class _ActionBar extends HookConsumerWidget {
 // Inline create contact form
 // =============================================================================
 
-class _CreateContactForm extends HookConsumerWidget {
-  const _CreateContactForm({
+class HandleLensCreateContactForm extends HookConsumerWidget {
+  const HandleLensCreateContactForm({
     required this.handleId,
-    required this.nameController,
-    required this.isBusy,
-    required this.isCreating,
     required this.typography,
     required this.errorColor,
+    super.key,
   });
 
   final int handleId;
-  final TextEditingController nameController;
-  final ValueNotifier<bool> isBusy;
-  final ValueNotifier<bool> isCreating;
   final ThemeTypography typography;
   final Color errorColor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final errorMessage = useState<String?>(null);
+    final nameController = useTextEditingController();
+    final session = ref.watch(handleLensSessionProvider(handleId: handleId));
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -242,24 +228,26 @@ class _CreateContactForm extends HookConsumerWidget {
                 controller: nameController,
                 placeholder: 'Contact name...',
                 autofocus: true,
-                onSubmitted: (_) => _submit(ref, errorMessage),
+                onSubmitted: (_) => _submit(ref, nameController),
               ),
             ),
             const SizedBox(width: 8),
             PushButton(
               controlSize: ControlSize.regular,
-              onPressed: isBusy.value ? null : () => _submit(ref, errorMessage),
-              child: isBusy.value
+              onPressed: session.isBusy
+                  ? null
+                  : () => _submit(ref, nameController),
+              child: session.isBusy
                   ? const CupertinoActivityIndicator()
                   : const Text('Create & Link'),
             ),
           ],
         ),
-        if (errorMessage.value != null)
+        if (session.errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
-              errorMessage.value!,
+              session.errorMessage!,
               style: typography.caption.copyWith(color: errorColor),
             ),
           ),
@@ -269,29 +257,35 @@ class _CreateContactForm extends HookConsumerWidget {
 
   Future<void> _submit(
     WidgetRef ref,
-    ValueNotifier<String?> errorMessage,
+    TextEditingController nameController,
   ) async {
     final name = nameController.text.trim();
     if (name.isEmpty) {
       return;
     }
 
-    errorMessage.value = null;
-    isBusy.value = true;
+    final sessionActions = ref.read(
+      handleLensSessionProvider(handleId: handleId).notifier,
+    );
+    sessionActions.setErrorMessage(null);
+    sessionActions.setBusy(isBusy: true);
     try {
       final failureMessage = await ref
-          .read(handleLensActionsProvider.notifier)
-          .createContactAndLinkHandle(handleId: handleId, displayName: name);
+          .read(handleSourceReviewActionsProvider.notifier)
+          .createContactAndAssociateSource(
+            handleId: handleId,
+            displayName: name,
+          );
 
       if (failureMessage != null) {
-        errorMessage.value = failureMessage;
+        sessionActions.setErrorMessage(failureMessage);
         return;
       }
 
-      isCreating.value = false;
+      sessionActions.finishCreatingContact();
       nameController.clear();
     } finally {
-      isBusy.value = false;
+      sessionActions.setBusy(isBusy: false);
     }
   }
 }
@@ -299,8 +293,8 @@ class _CreateContactForm extends HookConsumerWidget {
 class _HandleLensEvidencePane extends ConsumerWidget {
   const _HandleLensEvidencePane({
     required this.handleId,
-    required this.handleValue,
-    required this.messageCount,
+    required this.investigation,
+    required this.sourcePresentation,
     required this.searchController,
     required this.searchQuery,
     required this.searchMode,
@@ -310,8 +304,8 @@ class _HandleLensEvidencePane extends ConsumerWidget {
   });
 
   final int handleId;
-  final String handleValue;
-  final int messageCount;
+  final StrayHandleInvestigation investigation;
+  final HandleSourcePresentation? sourcePresentation;
   final TextEditingController searchController;
   final String searchQuery;
   final MessageEvidenceSearchMode searchMode;
@@ -321,6 +315,9 @@ class _HandleLensEvidencePane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final investigationPresentation = handleInvestigationPresentation(
+      investigation,
+    );
     final evidenceScope = HandleMessagesEvidenceScope(handleId: handleId);
     final skeletonAsync = ref.watch(
       messageEvidenceTimelineSkeletonProvider(scope: evidenceScope),
@@ -343,13 +340,14 @@ class _HandleLensEvidencePane extends ConsumerWidget {
           evidenceScope: evidenceScope,
           skeleton: skeleton,
           headerData: MessageEvidenceHeaderModel(
-            title: handleValue,
-            identityContextLine: 'Unfamiliar source',
-            dateRangeLabel: _dateSpan(skeleton.entries),
-            countLabel: _countLabel(
-              totalCount: messageCount == 0
+            title: investigationPresentation.panelTitle,
+            identityContextLine:
+                sourcePresentation?.primaryDisplayLabel ?? 'Loading source...',
+            dateRangeLabel: handleLensDateSpan(skeleton.entries),
+            countLabel: handleLensCountLabel(
+              totalCount: (sourcePresentation?.messageCount ?? 0) == 0
                   ? skeleton.totalCount
-                  : messageCount,
+                  : sourcePresentation!.messageCount,
               query: searchQuery,
               matchingIds: matchingIdsAsync?.valueOrNull,
               isMatchingLoaded: matchingIdsAsync?.hasValue ?? false,
@@ -368,55 +366,28 @@ class _HandleLensEvidencePane extends ConsumerWidget {
           ),
           emptyMessage: 'No messages found for this handle.',
           highlightQuery: searchQuery,
+          useFixedPanelFrame: true,
         );
       },
-      loading: () => const Center(child: ProgressCircle()),
-      error: (error, stackTrace) =>
-          Center(child: Text('Unable to load handle evidence: $error')),
+      loading: () => MessageEvidenceIdleView(
+        headerData: MessageEvidenceHeaderModel(
+          title: investigationPresentation.panelTitle,
+          identityContextLine:
+              sourcePresentation?.primaryDisplayLabel ?? 'Loading source...',
+        ),
+        content: const Center(child: ProgressCircle()),
+        useFixedPanelFrame: true,
+      ),
+      error: (error, stackTrace) => MessageEvidenceIdleView(
+        headerData: MessageEvidenceHeaderModel(
+          title: investigationPresentation.panelTitle,
+          identityContextLine:
+              sourcePresentation?.primaryDisplayLabel ??
+              'Unable to load source',
+        ),
+        content: Center(child: Text('Unable to load handle evidence: $error')),
+        useFixedPanelFrame: true,
+      ),
     );
   }
-}
-
-String _countLabel({
-  required int totalCount,
-  required String query,
-  required List<int>? matchingIds,
-  required bool isMatchingLoaded,
-}) {
-  if (query.isNotEmpty) {
-    if (isMatchingLoaded) {
-      return '${_formatCount(matchingIds?.length ?? 0)} of '
-          '${CountLabelFormatter.messages(totalCount)} match "$query"';
-    }
-    return 'matching messages...';
-  }
-  return CountLabelFormatter.messages(totalCount);
-}
-
-String _dateSpan(List<MessageEvidenceSkeletonEntry> entries) {
-  final dates = [
-    for (final entry in entries)
-      if (_parseDate(entry.dateUtc) case final DateTime date) date,
-  ];
-  if (dates.isEmpty) {
-    return 'No dated messages';
-  }
-  dates.sort();
-  return DateRangeFormatter.formatMessageEvidenceRange(
-    start: dates.first,
-    end: dates.last,
-    itemCount: entries.length,
-    emptyLabel: 'No dated messages',
-  );
-}
-
-DateTime? _parseDate(String? value) {
-  if (value == null || value.isEmpty) {
-    return null;
-  }
-  return DateTime.tryParse(value);
-}
-
-String _formatCount(int count) {
-  return CountLabelFormatter.formatCount(count);
 }

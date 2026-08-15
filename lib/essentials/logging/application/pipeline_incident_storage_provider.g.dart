@@ -27,7 +27,7 @@ final pipelineIncidentStoreProvider =
 typedef PipelineIncidentStoreRef =
     AutoDisposeProviderRef<PipelineIncidentStore>;
 String _$pipelineIncidentLogWriterHash() =>
-    r'edd9354f6b3bc951f45a01c0d8dec3e767dfd9c0';
+    r'96ada5fbdbd93da8b49f91d44c3c336f6d8b3db8';
 
 /// See also [pipelineIncidentLogWriter].
 @ProviderFor(pipelineIncidentLogWriter)

@@ -144,17 +144,24 @@ const Set<String> _appDatabaseFileHelperAllowedFiles = {
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
 };
 
-const Set<String> _databaseDirectoryPathAllowedFiles = {
-  'lib/essentials/db/database_directory.dart',
-  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
+const Set<String> _archiveAccessAuthorityConsumerFiles = {
+  'lib/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart',
+  'lib/essentials/conversation_graph/application/status/conversation_graph_status_log_writer_provider.dart',
   'lib/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart',
+  'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/db/feature_level_providers/persistent_database_providers.dart',
-  'lib/essentials/logging/infrastructure/pipeline_audit_logger.dart',
-  'lib/essentials/logging/infrastructure/support_bundle_export_service.dart',
-  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/logging/application/app_logger.dart',
+  'lib/essentials/logging/application/diagnostic_report_provider.dart',
+  'lib/essentials/logging/application/pipeline_incident_storage_provider.dart',
+  'lib/essentials/onboarding/application/derived_message_data_file_store_provider.dart',
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
-  'lib/essentials/onboarding/infrastructure/persistence/filesystem_derived_message_data_file_store.dart',
+  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/features/attachments/application/video_thumbnail_cache_provider.dart',
+  'lib/features/presence_iteration_simple/application/development_contacts_source_provider.dart',
+  'lib/main.dart',
 };
+
+const Set<String> _applicationSupportResolutionAllowedFiles = {'lib/main.dart'};
 
 const Set<String> _broadConversationGraphApplicationProviderImportAllowedFiles =
     {};
@@ -239,7 +246,6 @@ const Set<String> _debugPrintAllowedFiles = {
   'lib/essentials/window_state/application/window_state_service.dart',
   'lib/essentials/window_state/infrastructure/persistence/macos_window_manager.dart',
   'lib/essentials/window_state/infrastructure/persistence/overlay_window_storage.dart',
-  'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
   'lib/main.dart',
 };
 
@@ -286,10 +292,13 @@ const Set<String> _providerInvalidationAllowedFiles = {
   'lib/features/handles/application/review/handle_review_provider.dart',
   'lib/features/handles/application/settings_cassette_spec/resolver_tools/manual_linking_provider.dart',
   'lib/features/handles/application/settings_cassette_spec/resolver_tools/spam_management_provider.dart',
+  'lib/features/handles/application/source_review/handle_source_review_actions_provider.dart',
   'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/message_heatmap_refresh_actions_provider.dart',
 };
 
 const Set<String> _directSqliteImportAllowedFiles = {
+  'lib/essentials/archive_environment/infrastructure/file_system_archive_checkpoint_service.dart',
+  'lib/essentials/archive_environment/infrastructure/file_system_production_archive_adoption_inventory_service.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/conversation_graph_status_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart',
@@ -357,6 +366,7 @@ const Set<String> _macosWindowUtilsAllowedFiles = {
 };
 
 const Set<String> _platformChannelAllowedFiles = {
+  'lib/essentials/archive_environment/infrastructure/method_channel_native_archive_claim_reader.dart',
   'lib/essentials/logging/infrastructure/macos_unified_log_bridge.dart',
   'lib/essentials/services/native_link_preview_service.dart',
   'lib/essentials/services/startup_flags_service.dart',
@@ -375,15 +385,14 @@ const Set<String> _fileSelectorAllowedFiles = {
 
 const Set<String> _pathProviderImportAllowedFiles = {
   'lib/core/util/paths_helper.dart',
-  'lib/essentials/db/database_directory.dart',
-  'lib/features/attachments/infrastructure/services/video_thumbnail_cache_service.dart',
+  'lib/main.dart',
 };
 
 const Set<String> _platformEnvironmentAllowedFiles = {
+  'lib/essentials/archive_environment/infrastructure/development_archive_root_override_resolver.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/chat_summary_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
   'lib/essentials/db/infrastructure/repositories/local_database_health_runtime_environment.dart',
-  'lib/essentials/logging/infrastructure/log_file_writer.dart',
   'lib/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart',
   'lib/features/attachments/infrastructure/repositories/filesystem_attachment_archive_file_store.dart',
   'lib/features/attachments/infrastructure/repositories/local_attachment_file_access.dart',
@@ -405,6 +414,7 @@ const Set<String> _timerAllowedFiles = {
   'lib/essentials/conversation_graph/application/monitor/chat_db_change_monitor_provider.dart',
   'lib/essentials/conversation_graph/presentation/status/conversation_graph_status_sheet.dart',
   'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+  'lib/features/messages/application/message_evidence/contact_evidence_cache_policy.dart',
   'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart',
   'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
   'lib/main.dart',
@@ -418,13 +428,12 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/essentials/onboarding/application/onboarding_database_probe_reader_provider.dart',
   'lib/essentials/onboarding/application/onboarding_failure_storage_provider.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/presence/presentation/presence_runner.dart',
   'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
   'lib/main.dart',
 };
 
-const Set<String> _sharedPreferencesAllowedFiles = {
-  'lib/essentials/window_state/infrastructure/persistence/shared_preferences_window_storage.dart',
-};
+const Set<String> _sharedPreferencesAllowedFiles = {};
 
 const Set<String> _rootProvidersImportAllowedFiles = {};
 
@@ -472,6 +481,7 @@ const Set<String> _contactPageGraphIdentityBridgeAllowedFiles = {
 
 const Set<String> _messageEvidenceTextMatchProviderAllowedFiles = {
   'lib/features/conversations/presentation/view/conversation_messages_view.dart',
+  'lib/features/messages/presentation/layout/unfamiliar_sources_message_track_occupants.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
@@ -486,11 +496,12 @@ const Set<String> _messageEvidenceTimelineSkeletonProviderAllowedFiles = {
   'lib/features/conversations/presentation/view/conversation_messages_view.dart',
   'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
   'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/prewarm_contact_messages_provider.dart',
+  'lib/features/messages/presentation/layout/unfamiliar_sources_message_track_occupants.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
-  'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view_model/global_messages_evidence_presentation_provider.dart',
 };
 
 const Set<String> _messageEvidenceRowProviderAllowedFiles = {
@@ -516,6 +527,7 @@ const Set<String> _messageEvidenceHeaderModelAllowedFiles = {
   'lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart',
   'lib/features/messages/presentation/view/contact_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/global_messages_evidence_view.dart',
+  'lib/features/messages/presentation/view/handle_investigation_idle_view.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
   'lib/features/messages/presentation/view/handle_messages_evidence_view.dart',
   'lib/features/messages/presentation/view/recovered_messages_evidence_view.dart',
@@ -559,13 +571,14 @@ const Set<String> _recoveredMessageNavigationActionProviderAllowedFiles = {
   'lib/features/messages/presentation/widgets/recovered_messages_heatmap_sidebar.dart',
 };
 
-const Set<String> _handleLensActionProviderAllowedFiles = {
+const Set<String> _handleSourceReviewActionProviderAllowedFiles = {
+  'lib/features/messages/application/handle_lens/handle_lens_investigation_actions_provider.dart',
   'lib/features/messages/presentation/view/handle_lens_view.dart',
 };
 
 const Set<String> _handleReviewActionProviderAllowedFiles = {
   'lib/essentials/sidebar/application/sidebar_action_dispatcher.dart',
-  'lib/features/messages/application/handle_lens/handle_lens_actions_provider.dart',
+  'lib/features/handles/application/source_review/handle_source_review_actions_provider.dart',
 };
 
 const Set<String>
@@ -619,6 +632,7 @@ const Set<String> _settingsActionListActionProviderAllowedFiles = {
 };
 
 const Set<String> _strayHandleSidebarActionProviderAllowedFiles = {
+  'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_investigation_switcher_cassette.dart',
   'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_mode_switcher_cassette.dart',
   'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_review_cassette.dart',
   'lib/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_type_switcher_cassette.dart',
@@ -718,6 +732,640 @@ const Set<String> _archiveCompatibilityKeyConstructionAllowedFiles = {
 
 void main() {
   group('Architecture tripwires', () {
+    test('Presence remains independent of MessageLens features', () async {
+      final presenceFiles = await Directory('lib/essentials/presence')
+          .list(recursive: true)
+          .where((entry) => entry.path.endsWith('.dart'))
+          .toList();
+      final offenders = <String>[];
+      for (final file in presenceFiles.whereType<File>()) {
+        final source = await file.readAsString();
+        if (source.contains('/features/')) {
+          offenders.add(file.path);
+        }
+      }
+
+      expect(offenders, isEmpty);
+    });
+
+    test('Generic Test Agent contracts remain specialist agnostic', () async {
+      final offenders = <String>[];
+      for (final path in <String>[
+        'lib/essentials/presence/domain/entities/test_agent_id.dart',
+        'lib/essentials/presence/domain/services/test_agent.dart',
+        'lib/essentials/presence/domain/services/test_agent_resolver.dart',
+      ]) {
+        final source = await File(path).readAsString();
+        if (RegExp(
+          r'(?:package:flutter/|/onboarding/|/conversation_graph/|'
+          r'/address_book_folders/|chat\.db|\bSELECT\b|\bFDA\b|'
+          r'Full Disk Access)',
+          caseSensitive: false,
+        ).hasMatch(source)) {
+          offenders.add(path);
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Generic Test Agent identity, evaluation, and resolution must not '
+            'learn workflow or specialist meaning.',
+      );
+    });
+
+    test(
+      'ChoiceStep domain grammar remains workflow and presentation agnostic',
+      () async {
+        final choiceSources = <String>[];
+        for (final path in <String>[
+          'lib/essentials/presence/domain/entities/choice_value.dart',
+          'lib/essentials/presence/domain/entities/choice_option.dart',
+        ]) {
+          choiceSources.add(await File(path).readAsString());
+        }
+
+        final stepSource = await File(
+          'lib/essentials/presence/domain/entities/step.dart',
+        ).readAsString();
+        choiceSources.add(
+          stepSource.substring(stepSource.indexOf('final class ChoiceStep')),
+        );
+
+        final forbidden = RegExp(
+          r'(?:package:flutter/|hooks_riverpod|flutter_riverpod|/onboarding/|'
+          r'/conversation_graph/|/infrastructure/|TestAgent|Riverpod|Widget|'
+          r'archive ingestion|chat\.db)',
+          caseSensitive: false,
+        );
+        final offenders = <int>[];
+        for (var index = 0; index < choiceSources.length; index += 1) {
+          if (forbidden.hasMatch(choiceSources[index])) {
+            offenders.add(index);
+          }
+        }
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'ChoiceValue, ChoiceOption, and ChoiceStep are generic finite '
+              'choice grammar and must not learn workflow, specialist, '
+              'database, provider, or presentation concerns.',
+        );
+      },
+    );
+
+    test(
+      'ChoiceStep persistence reconstructs only generic Presence grammar',
+      () async {
+        final schemaSource = await File(
+          'lib/essentials/presence/infrastructure/data_sources/local/'
+          'presence_database.dart',
+        ).readAsString();
+        final repositorySource = await File(
+          'lib/essentials/presence/infrastructure/repositories/'
+          'drift_presence_schedule_repository.dart',
+        ).readAsString();
+        final choiceSchema = schemaSource.substring(
+          schemaSource.indexOf("@DataClassName('ChoiceStepDefinitionRow')"),
+          schemaSource.indexOf("@DataClassName('ScheduleRunRow')"),
+        );
+
+        expect(choiceSchema, contains('class ChoiceStepDefinitions'));
+        expect(choiceSchema, contains('class ChoiceStepOptions'));
+        expect(repositorySource, contains('ChoiceValue(option.value)'));
+        expect(repositorySource, contains('ChoiceOption('));
+        expect(
+          repositorySource,
+          contains('option.destinationTripDefinitionId'),
+        );
+
+        final forbiddenWorkflowValues = RegExp(
+          r'\b(?:pause|recheck|import_anyway)\b',
+          caseSensitive: false,
+        );
+        expect(
+          forbiddenWorkflowValues.hasMatch('$choiceSchema\n$repositorySource'),
+          isFalse,
+          reason:
+              'Choice persistence stores and reconstructs opaque values; it '
+              'must not parse workflow-specific choices.',
+        );
+
+        final repositoryImports = repositorySource
+            .split('\n')
+            .where((line) => line.startsWith('import '))
+            .join('\n');
+        expect(
+          RegExp(
+            r'(?:package:flutter/|hooks_riverpod|flutter_riverpod|/onboarding/|'
+            r'/presentation/)',
+          ).hasMatch(repositoryImports),
+          isFalse,
+          reason:
+              'Generic Choice persistence may depend on Presence domain but '
+              'must not depend on Flutter, presentation, or Onboarding.',
+        );
+      },
+    );
+
+    test(
+      'ChoiceStep runtime accepts only a context-bound opaque value',
+      () async {
+        final schedulerSource = await File(
+          'lib/essentials/presence/domain/services/presence_scheduler.dart',
+        ).readAsString();
+        final publicChoiceBoundary = schedulerSource.substring(
+          schedulerSource.indexOf('typedef CurrentChoiceSelection'),
+          schedulerSource.indexOf('Future<void> _selectCurrentChoice'),
+        );
+
+        expect(
+          publicChoiceBoundary,
+          contains(
+            'typedef CurrentChoiceSelection = '
+            'Future<void> Function(ChoiceValue value);',
+          ),
+        );
+        expect(
+          publicChoiceBoundary,
+          contains('CurrentChoiceSelection issueCurrentChoiceSelection()'),
+        );
+        expect(
+          RegExp(
+            r'(?:StepDefinitionId|TripDefinitionId|ScheduleTripOccurrenceId|'
+            r'\bdestination\b|Map<String, dynamic>|Object\? payload|'
+            r'completeStepWithInput|submitStepResult|requiresInput)',
+          ).hasMatch(publicChoiceBoundary),
+          isFalse,
+          reason:
+              'The public Choice boundary carries only the selected opaque '
+              'ChoiceValue; current execution identity and routing stay '
+              'private to Presence.',
+        );
+
+        final schedulerImports = schedulerSource
+            .split('\n')
+            .where((line) => line.startsWith('import '))
+            .join('\n');
+        expect(
+          RegExp(
+            r'(?:package:flutter/|hooks_riverpod|flutter_riverpod|/onboarding/|'
+            r'/presentation/)',
+          ).hasMatch(schedulerImports),
+          isFalse,
+        );
+        expect(
+          RegExp(
+            r'\b(?:pause|recheck|import_anyway)\b',
+            caseSensitive: false,
+          ).hasMatch(schedulerSource),
+          isFalse,
+          reason: 'Choice runtime must not interpret workflow-specific values.',
+        );
+      },
+    );
+
+    test(
+      'generic Presence presentation receives no routing or workflow meaning',
+      () async {
+        final projectionSource = await File(
+          'lib/essentials/presence/application/'
+          'presence_step_presentation.dart',
+        ).readAsString();
+        final presenterSource = await File(
+          'lib/essentials/presence/presentation/'
+          'presence_step_presenter.dart',
+        ).readAsString();
+        final safePresentationContract = projectionSource.substring(
+          projectionSource.indexOf('typedef PresenceStepCompletion'),
+          projectionSource.indexOf(
+            '/// Removes execution geometry before the current Step reaches',
+          ),
+        );
+
+        expect(
+          RegExp(
+            r'(?:TripDefinitionId|StepDefinitionId|ScheduleTripOccurrenceId|'
+            r'ChoiceOption|\bdestination\b|\bid\b)',
+          ).hasMatch(safePresentationContract),
+          isFalse,
+          reason:
+              'The presentation contract may expose persisted copy, opaque '
+              'values, and bound operations, but no execution identity or '
+              'routing geometry.',
+        );
+        expect(presenterSource, isNot(contains('ChoiceOption')));
+        expect(presenterSource, isNot(contains('TripDefinitionId')));
+        expect(presenterSource, isNot(contains('destination')));
+        expect(
+          RegExp(
+            r'(?:/onboarding/|/features/|import_anyway|recheck|'
+            r'messages-source-history)',
+            caseSensitive: false,
+          ).hasMatch('$projectionSource\n$presenterSource'),
+          isFalse,
+          reason:
+              'Generic Presence presentation must not depend on Onboarding, '
+              'feature implementations, or interpret workflow values.',
+        );
+        expect(
+          RegExp(
+            r'(?:RendererRegistry|registerRenderer|Map<Type)',
+          ).hasMatch(presenterSource),
+          isFalse,
+          reason: 'The first presenter remains one direct exhaustive switch.',
+        );
+      },
+    );
+
+    test('Presence does not know Onboarding Agent identities', () async {
+      final offenders = <String>[];
+      await for (final entity in Directory(
+        'lib/essentials/presence',
+      ).list(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) {
+          continue;
+        }
+        final source = await entity.readAsString();
+        if (source.contains('onboarding.messages-source-history-sufficient') ||
+            source.contains('messagesSourceHistorySufficientTestAgentId')) {
+          offenders.add(entity.path);
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding owns its opaque Agent identities; Presence receives '
+            'only resolved generic TestAgent contracts.',
+      );
+    });
+
+    test('Generic TestStep reconstruction is workflow agnostic', () async {
+      final stepSource = await File(
+        'lib/essentials/presence/domain/entities/step.dart',
+      ).readAsString();
+      final testStepSource = stepSource.substring(
+        stepSource.indexOf('final class TestStep'),
+        stepSource.indexOf('final class OpenFdaSettingsStep'),
+      );
+      expect(testStepSource, contains('TestAgentId'));
+      expect(testStepSource, contains('TestAgent'));
+      expect(testStepSource, contains('trueDestinationTripDefinitionId'));
+      expect(testStepSource, contains('falseDestinationTripDefinitionId'));
+      expect(
+        testStepSource,
+        isNot(
+          matches(
+            RegExp(
+              r'(?:Onboarding|Messages|Contacts|AddressBook|FDA|Full Disk '
+              r'Access|chat\.db)',
+              caseSensitive: false,
+            ),
+          ),
+        ),
+      );
+
+      final repositorySource = await File(
+        'lib/essentials/presence/infrastructure/repositories/drift_presence_schedule_repository.dart',
+      ).readAsString();
+      final testReconstructionSource = repositorySource.substring(
+        repositorySource.indexOf('case testStepType:'),
+        repositorySource.indexOf('case openFdaSettingsStepType:'),
+      );
+      expect(testReconstructionSource, contains('TestAgentId'));
+      expect(testReconstructionSource, contains('_testAgentResolver.resolve'));
+      expect(testReconstructionSource, contains('TestStep'));
+      expect(
+        testReconstructionSource,
+        isNot(
+          matches(
+            RegExp(
+              r'(?:Onboarding|Messages|Contacts|AddressBook|FDA|Full Disk '
+              r'Access|chat\.db)',
+              caseSensitive: false,
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('Onboarding TestAgents remain routing agnostic', () async {
+      final offenders = <String>[];
+      for (final path in <String>[
+        'lib/essentials/onboarding/application/messages_source_readiness_test_agent.dart',
+        'lib/essentials/onboarding/application/contacts_source_readiness_test_agent.dart',
+        'lib/essentials/onboarding/application/messages_source_history_sufficiency_test_agent.dart',
+      ]) {
+        final source = await File(path).readAsString();
+        if (RegExp(
+          r'(?:entities/(?:step|trip|schedule_definition)\.dart|'
+          r'presence_scheduler\.dart|TripDefinitionId|TestStep|ScheduleDefinition)',
+        ).hasMatch(source)) {
+          offenders.add(path);
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Onboarding TestAgents establish Boolean facts and must not know '
+            'Presence routing or workflow geometry.',
+      );
+    });
+
+    test('Specialist source readers do not depend on Presence routing', () async {
+      final offenders = <String>[];
+      for (final path in <String>[
+        'lib/essentials/conversation_graph/application/monitor/chat_db_source_probe_reader.dart',
+        'lib/essentials/conversation_graph/infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart',
+        'lib/features/address_book_folders/infrastructure/repositories/address_book_folder_repository.dart',
+        'lib/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart',
+        'lib/essentials/onboarding/application/messages_source_history_count_reader.dart',
+        'lib/essentials/onboarding/infrastructure/persistence/probe_messages_source_history_count_reader.dart',
+      ]) {
+        final source = await File(path).readAsString();
+        if (RegExp(
+          r'(?:/presence/|PresenceScheduler|ScheduleDefinition|TripDefinition|'
+          r'TestStep|TestAgentResolver)',
+        ).hasMatch(source)) {
+          offenders.add(path);
+        }
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Specialists establish facts or perform platform work; they do '
+            'not know Presence routing or composition.',
+      );
+    });
+
+    test(
+      'Presence and Onboarding do not depend on the development harness',
+      () async {
+        final offenders = <String>[];
+        for (final root in <String>[
+          'lib/essentials/presence',
+          'lib/essentials/onboarding',
+        ]) {
+          await for (final entity in Directory(root).list(recursive: true)) {
+            if (entity is! File || !entity.path.endsWith('.dart')) {
+              continue;
+            }
+            final source = await entity.readAsString();
+            if (source.contains('presence_iteration_simple')) {
+              offenders.add(entity.path);
+            }
+          }
+        }
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'The development harness may consume Presence and Onboarding; '
+              'neither permanent subsystem may import the harness.',
+        );
+      },
+    );
+
+    test(
+      'production app composition is the debug default and the Presence harness is opt-in',
+      () async {
+        final source = await File('lib/main.dart').readAsString();
+
+        expect(
+          source,
+          contains(
+            'const bool _presenceDevelopmentHarnessEnabled = '
+            'bool.fromEnvironment(',
+          ),
+        );
+        expect(source, contains("'PRESENCE_DEVELOPMENT_HARNESS'"));
+        expect(
+          source,
+          contains('if (kDebugMode && _presenceDevelopmentHarnessEnabled)'),
+        );
+        expect(source, contains('final router = ref.watch(goRouterProvider)'));
+      },
+    );
+
+    test(
+      'production Presence composition uses only real Onboarding Agents',
+      () async {
+        final source = await File(
+          'lib/essentials/onboarding/application/'
+          'required_sources_readiness_scheduler_provider.dart',
+        ).readAsString();
+
+        expect(source, contains('buildOnboardingTestAgentBindings'));
+        expect(source, contains('ImmutableTestAgentResolver'));
+        expect(
+          source,
+          contains('realMessagesSourceReadinessTestAgentProvider'),
+        );
+        expect(
+          source,
+          contains('realContactsSourceReadinessTestAgentProvider'),
+        );
+        expect(
+          source,
+          contains('realMessagesSourceHistorySufficiencyTestAgentProvider'),
+        );
+        expect(source, isNot(contains('presence_iteration_simple')));
+        expect(source, isNot(contains('developmentContactsSource')));
+      },
+    );
+
+    test(
+      'production Onboarding host delegates generic Steps to Presence',
+      () async {
+        final source = await File(
+          'lib/essentials/onboarding/presentation/onboarding_presence_host.dart',
+        ).readAsString();
+
+        expect(source, contains('PresenceRunner'));
+        expect(source, contains('OnboardingFdaContent'));
+        expect(source, isNot(contains('ChoiceValue')));
+        expect(source, isNot(contains('TripDefinitionId')));
+        expect(source, isNot(contains("'recheck'")));
+        expect(source, isNot(contains("'import_anyway'")));
+        expect(source, isNot(contains('presence_iteration_simple')));
+      },
+    );
+
+    test('permanent Presence runner remains workflow agnostic', () async {
+      final source = await File(
+        'lib/essentials/presence/presentation/presence_runner.dart',
+      ).readAsString();
+
+      expect(source, isNot(contains('/onboarding/')));
+      expect(source, isNot(contains('Onboarding')));
+      expect(source, isNot(contains('recheck')));
+      expect(source, isNot(contains('import_anyway')));
+      expect(source, isNot(contains('OpenFdaSettingsStep')));
+    });
+
+    test(
+      'accepted readiness handoff reads only durable Schedule completion',
+      () async {
+        final providerSource = await File(
+          'lib/essentials/onboarding/application/'
+          'required_sources_readiness_scheduler_provider.dart',
+        ).readAsString();
+        final onboardingProviderSeam = await File(
+          'lib/essentials/onboarding/feature_level_providers.dart',
+        ).readAsString();
+        final surfaceSource = await File(
+          'lib/features/environment_readiness/application/view_spec/'
+          'resolver_tools/environment_readiness_surface_provider.dart',
+        ).readAsString();
+        final repositorySource = await File(
+          'lib/essentials/presence/infrastructure/repositories/'
+          'drift_presence_schedule_repository.dart',
+        ).readAsString();
+        final completionQuery = repositorySource.substring(
+          repositorySource.indexOf('Stream<bool> watchLatestRunCompletion'),
+          repositorySource.indexOf('Future<void> insertDefinition'),
+        );
+
+        expect(providerSource, contains('watchLatestRunCompletion'));
+        expect(providerSource, isNot(contains('loadExecutionTrace')));
+        expect(providerSource, isNot(contains('ChoiceValue')));
+        expect(providerSource, isNot(contains("'import_anyway'")));
+        expect(
+          onboardingProviderSeam,
+          contains('show requiredSourcesReadinessAcceptedProvider;'),
+        );
+        expect(
+          onboardingProviderSeam,
+          isNot(contains('requiredSourcesReadinessRepositoryProvider')),
+        );
+        expect(
+          onboardingProviderSeam,
+          isNot(contains('requiredSourcesReadinessSchedulerProvider')),
+        );
+        expect(
+          surfaceSource,
+          contains('requiredSourcesReadinessAcceptedProvider'),
+        );
+        expect(surfaceSource, isNot(contains('ChoiceValue')));
+        expect(surfaceSource, isNot(contains("'import_anyway'")));
+        expect(completionQuery, contains('currentTripOccurrenceId == null'));
+        expect(completionQuery, isNot(contains('executionTrace')));
+        expect(completionQuery, isNot(contains('choice')));
+      },
+    );
+
+    test(
+      'environment facts and import operation remain outside Presence',
+      () async {
+        final reportSource = await File(
+          'lib/essentials/onboarding/application/'
+          'onboarding_environment_report_provider.dart',
+        ).readAsString();
+        final actionSource = await File(
+          'lib/features/environment_readiness/application/'
+          'environment_readiness_actions_provider.dart',
+        ).readAsString();
+        final schemaSource = await File(
+          'lib/essentials/presence/infrastructure/data_sources/local/'
+          'presence_database.dart',
+        ).readAsString();
+
+        expect(reportSource, isNot(contains('/presence/')));
+        expect(
+          actionSource,
+          contains('onboardingGateProvider.notifier'),
+          reason: 'The existing import action must still delegate to the Gate.',
+        );
+        expect(actionSource, isNot(contains('/presence/')));
+        expect(
+          schemaSource,
+          isNot(
+            matches(
+              RegExp(
+                r'(?:acceptedSparseHistory|sourceReadinessAccepted|'
+                r'importAnywayAccepted|readyToImportOverride)',
+              ),
+            ),
+          ),
+          reason: 'Schedule completion is the only durable acceptance fact.',
+        );
+      },
+    );
+
+    test('Presence does not depend on OnboardingGate', () async {
+      final offenders = <String>[];
+      await for (final entity in Directory(
+        'lib/essentials/presence',
+      ).list(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) {
+          continue;
+        }
+        final source = await entity.readAsString();
+        if (source.contains('OnboardingGate') ||
+            source.contains('onboardingGateProvider')) {
+          offenders.add(entity.path);
+        }
+      }
+
+      expect(offenders, isEmpty);
+    });
+
+    test('Active repository ignores frozen Boolean subtype tables', () async {
+      final source = await File(
+        'lib/essentials/presence/infrastructure/repositories/drift_presence_schedule_repository.dart',
+      ).readAsString();
+
+      expect(source, isNot(contains('fdaTestStepDefinitions')));
+      expect(source, isNot(contains('contactsSourceReadinessStepDefinitions')));
+    });
+
+    test('application composition constructs the TestAgent resolver', () async {
+      final source = await File(
+        'lib/features/presence_iteration_simple/application/presence_experiment_test_agent_resolver_provider.dart',
+      ).readAsString();
+
+      expect(source, contains('buildOnboardingTestAgentBindings'));
+      expect(source, contains('ImmutableTestAgentResolver'));
+      expect(source, contains('developmentContactsSourceReadinessTestAgent'));
+    });
+
+    test(
+      'Presence Scheduler and Trip depend only on Step completion',
+      () async {
+        final offenders = <String>[];
+        for (final path in <String>[
+          'lib/essentials/presence/domain/services/presence_scheduler.dart',
+          'lib/essentials/presence/domain/entities/trip.dart',
+        ]) {
+          final source = await File(path).readAsString();
+          if (RegExp(
+            r'\b(?:TestAgent|TestAgentResolver|OpenFdaSettingsStep|'
+            r'FdaSettingsOpeningAuthority)\b|/onboarding/',
+          ).hasMatch(source)) {
+            offenders.add(path);
+          }
+        }
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Source-readiness and Settings behavior belongs to concrete '
+              'Steps and supplied Agents, not Trip or PresenceScheduler.',
+        );
+      },
+    );
+
     test('Do not import flutter_riverpod', () async {
       final libDir = Directory('lib');
       final bad = <String>[];
@@ -1334,8 +1982,8 @@ void main() {
             'provider implementation boundary. Infrastructure repositories may '
             'open source/probe SQLite databases for one-off reads, but they '
             'must not construct ImportDatabase, OverlayDatabase, '
-            'ConversationGraphDatabase, or native Drift executors as provider '
-            'islands.\n'
+            'ConversationGraphDatabase, PresenceDatabase, or native Drift '
+            'executors as provider islands.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -2194,7 +2842,8 @@ void main() {
           reason:
               'Post-frame callbacks and microtasks can become hidden repair '
               'logic. Keep them inside explicit startup, onboarding, panel-stack, '
-              'or evidence-timeline lifecycle boundaries.\n'
+              'presentation-transition, or evidence-timeline lifecycle '
+              'boundaries.\n'
               'Actual users:\n${offenders.join('\n')}',
         );
       },
@@ -3082,55 +3731,66 @@ void main() {
       },
     );
 
-    test('Database directory path stays in lifecycle boundaries', () async {
+    test('Retired database directory path primitive stays absent', () async {
       final offenders = await _findDatabaseDirectoryPathOffenders();
-
-      expect(
-        offenders,
-        orderedEquals(_databaseDirectoryPathAllowedFiles.toList()..sort()),
-        reason:
-            'databaseDirectoryPath exposes the physical Application Support '
-            'database directory. It must stay inside central DB construction, '
-            'onboarding readiness/reset file checks, and logging/support '
-            'bundle infrastructure. Ordinary features should consume semantic '
-            'providers or repositories instead.\n'
-            'Actual users:\n${offenders.join('\n')}',
-      );
-    });
-
-    test(
-      'Database directory path users import the directory boundary',
-      () async {
-        final offenders =
-            await _findDatabaseDirectoryPathBarrelImportOffenders();
-
-        expect(
-          offenders,
-          isEmpty,
-          reason:
-              'Files that need databaseDirectoryPath should import '
-              'essentials/db/database_directory.dart directly. The DB '
-              'feature_level_providers.dart seam is for provider access, not '
-              'physical path primitive convenience imports.\n'
-              'Actual users:\n${offenders.join('\n')}',
-        );
-      },
-    );
-
-    test('Database provider seam does not export directory primitive', () async {
-      final offenders = await _findDatabaseDirectoryExportOffenders();
 
       expect(
         offenders,
         isEmpty,
         reason:
-            'databaseDirectoryPath is a physical bootstrap/path primitive, not '
-            'part of the public database provider seam. Import '
-            'essentials/db/database_directory.dart directly only from approved '
-            'bootstrap, lifecycle, reset, support, and diagnostics boundaries.\n'
-            'Actual offenders:\n${offenders.join('\n')}',
+            'databaseDirectoryPath is retired. App-owned persistent paths must '
+            'derive from admitted ArchiveAccessAuthority; ordinary features '
+            'should consume semantic providers or repositories.\n'
+            'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test('Archive access authority consumers remain inventoried', () async {
+      final consumers = await _findArchiveAccessAuthorityConsumers();
+
+      expect(
+        consumers,
+        orderedEquals(_archiveAccessAuthorityConsumerFiles.toList()..sort()),
+        reason:
+            'ArchiveAccessAuthority is the complete app-owned persistent-root '
+            'capability. New consumers require explicit architecture review '
+            'so persistent writes cannot bypass admission.\n'
+            'Actual consumers:\n${consumers.join('\n')}',
+      );
+    });
+
+    test('Application Support resolution stays in bootstrap', () async {
+      final offenders = await _findApplicationSupportResolutionOffenders();
+
+      expect(
+        offenders,
+        orderedEquals(
+          _applicationSupportResolutionAllowedFiles.toList()..sort(),
+        ),
+        reason:
+            'Physical Application Support resolution belongs to app bootstrap '
+            'before archive admission. Persistent providers must consume the '
+            'admitted authority rather than resolving a platform root.\n'
+            'Actual users:\n${offenders.join('\n')}',
+      );
+    });
+
+    test(
+      'Database provider seam does not export retired root primitive',
+      () async {
+        final offenders = await _findDatabaseDirectoryExportOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'The retired database_directory.dart primitive must not return '
+              'through the public provider seam. Persistent paths derive from '
+              'ArchiveAccessAuthority.\n'
+              'Actual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Database provider seam does not export file identity helpers', () async {
       final offenders = await _findAppDatabaseFileExportOffenders();
@@ -3304,6 +3964,21 @@ void main() {
             'essentials/db/feature_level_providers.dart. Direct imports of the '
             'maintenance-lock provider file recreate a database provider '
             'island.\n'
+            'Actual offenders:\n${offenders.join('\n')}',
+      );
+    });
+
+    test('Archive mutation authority remains a single provider island', () async {
+      final offenders = await _findArchiveMutationCoordinatorIslandOffenders();
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Archive mutation operations must request the shared coordinator '
+            'through essentials/archive_environment/feature_level_providers.dart. '
+            'Direct imports of its provider file would create another '
+            'operation-authority island.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
@@ -3953,7 +4628,8 @@ void main() {
         ),
         reason:
             'Text matching for in-scope message evidence should be requested '
-            'only by the source views composing a MessageEvidenceScope. '
+            'only by source views or explicit feature-owned presentation '
+            'preparers composing a MessageEvidenceScope. '
             'Matching semantics belong to the evidence spine provider, and '
             'ordinary widgets should receive skeletons/highlight text rather '
             'than performing their own matching lookups.\n'
@@ -3983,23 +4659,28 @@ void main() {
       },
     );
 
-    test('Message evidence skeleton requests stay source-view scoped', () async {
-      final offenders =
-          await _findMessageEvidenceTimelineSkeletonProviderOffenders();
+    test(
+      'Message evidence skeleton requests stay composition-boundary scoped',
+      () async {
+        final offenders =
+            await _findMessageEvidenceTimelineSkeletonProviderOffenders();
 
-      expect(
-        offenders,
-        orderedEquals(
-          _messageEvidenceTimelineSkeletonProviderAllowedFiles.toList()..sort(),
-        ),
-        reason:
-            'Message evidence skeleton requests should stay with source views '
-            'and the explicit contact prewarm boundary. Low-level renderers '
-            'must not create source-specific skeleton paths; the evidence spine '
-            'owns full-scope skeleton construction and viewport hydration.\n'
-            'Actual users:\n${offenders.join('\n')}',
-      );
-    });
+        expect(
+          offenders,
+          orderedEquals(
+            _messageEvidenceTimelineSkeletonProviderAllowedFiles.toList()
+              ..sort(),
+          ),
+          reason:
+              'Message evidence skeleton requests should stay with source views, '
+              'the explicit prepared-presentation and contact prewarm boundaries. '
+              'Low-level renderers '
+              'must not create source-specific skeleton paths; the evidence spine '
+              'owns full-scope skeleton construction and viewport hydration.\n'
+              'Actual users:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test('Message evidence row hydration stays in timeline renderer', () async {
       final offenders = await _findMessageEvidenceRowProviderOffenders();
@@ -4392,24 +5073,26 @@ void main() {
         reason:
             'HandleLensView may render unfamiliar-source evidence and collect '
             'form/dialog input, but link/create/dismiss side effects belong '
-            'behind HandleLensActions. It must not import central database '
+            'behind the Handles-owned source-review facade. It must not import central database '
             'providers, overlay infrastructure, or manual-link/review '
             'services directly.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
 
-    test('Handle lens action provider stays view-owned', () async {
-      final offenders = await _findHandleLensActionProviderOffenders();
+    test('Handle source-review facade stays handle-lens-owned', () async {
+      final offenders = await _findHandleSourceReviewActionProviderOffenders();
 
       expect(
         offenders,
-        orderedEquals(_handleLensActionProviderAllowedFiles.toList()..sort()),
+        orderedEquals(
+          _handleSourceReviewActionProviderAllowedFiles.toList()..sort(),
+        ),
         reason:
-            'handleLensActionsProvider should be consumed only by the handle '
-            'lens view boundary. Other surfaces should receive typed handle '
-            'review/link workflows instead of borrowing unfamiliar-source '
-            'screen actions directly.\n'
+            'handleSourceReviewActionsProvider is the Handles-owned workflow '
+            'facade for the Messages-owned handle lens. It should be consumed '
+            'only by that presentation and investigation boundary; Messages '
+            'must not reconstruct source review semantics elsewhere.\n'
             'Actual users:\n${offenders.join('\n')}',
       );
     });
@@ -6220,6 +6903,26 @@ void main() {
     });
 
     test(
+      'Message data reset allow-list excludes preservation data and broad deletion',
+      () async {
+        final offenders =
+            await _findMessageDataResetPreservationInvariantOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Derived message-data reset must name only the four approved '
+              'rebuildable/retired database files. It must not gain overlay, '
+              'Presence, attachment-archive, directory-enumeration, or recursive '
+              'deletion authority. Destructive reset allow-lists what is safe to '
+              'delete; it never deletes a broad root and spares preservation data '
+              'by exception.\nActual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
+
+    test(
       'Historical archive source identity uses folder resolver boundary',
       () async {
         final offenders =
@@ -7431,7 +8134,7 @@ Future<List<String>> _findDatabaseDirectoryPathOffenders() async {
   return offenders.toList()..sort();
 }
 
-Future<List<String>> _findDatabaseDirectoryPathBarrelImportOffenders() async {
+Future<List<String>> _findArchiveAccessAuthorityConsumers() async {
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
@@ -7439,29 +8142,38 @@ Future<List<String>> _findDatabaseDirectoryPathBarrelImportOffenders() async {
     return path.startsWith('lib/');
   });
   final offenders = <String>{};
-  final dbProviderImportPattern = RegExp(
-    r'''import\s+['"][^'"]*db/feature_level_providers\.dart['"][^;]*;''',
-    multiLine: true,
-  );
+
+  for (final filePath in files) {
+    if (filePath ==
+        'lib/essentials/archive_environment/application/'
+            'archive_access_authority_provider.dart') {
+      continue;
+    }
+    final source = await File(filePath).readAsString();
+    final uncommented = _stripComments(source);
+    if (uncommented.contains('archiveAccessAuthorityProvider') ||
+        uncommented.contains('admittedArchiveAccessAuthorityProvider')) {
+      offenders.add(filePath);
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
+Future<List<String>> _findApplicationSupportResolutionOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    return path.startsWith('lib/');
+  });
+  final offenders = <String>{};
 
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
-    if (!uncommented.contains('databaseDirectoryPath')) {
-      continue;
-    }
-    final importDirectives = dbProviderImportPattern
-        .allMatches(uncommented)
-        .map((match) => match.group(0) ?? '');
-
-    for (final line in importDirectives) {
-      final isExplicitNonDirectoryImport =
-          line.contains(' show ') && !line.contains('databaseDirectoryPath');
-      if (isExplicitNonDirectoryImport) {
-        continue;
-      }
+    if (uncommented.contains('getApplicationSupportDirectory(')) {
       offenders.add(filePath);
-      break;
     }
   }
 
@@ -8755,6 +9467,35 @@ Future<List<String>> _findDbMaintenanceLockProviderIslandOffenders() async {
   return offenders.toList()..sort();
 }
 
+Future<List<String>> _findArchiveMutationCoordinatorIslandOffenders() async {
+  final files = await _collectDartFiles((path) {
+    if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
+      return false;
+    }
+    if (path == 'test/architecture/forbidden_imports_test.dart') {
+      return false;
+    }
+    return path.startsWith('lib/') || path.startsWith('test/');
+  });
+  const directProviderImport =
+      'archive_environment/application/archive_mutation_coordinator_provider.dart';
+  final offenders = <String>{};
+
+  for (final filePath in files) {
+    if (filePath ==
+        'lib/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart') {
+      continue;
+    }
+    final source = await File(filePath).readAsString();
+    final imports = _extractImports(_stripComments(source));
+    if (imports.any((target) => target.endsWith(directProviderImport))) {
+      offenders.add('$filePath imports $directProviderImport');
+    }
+  }
+
+  return offenders.toList()..sort();
+}
+
 Future<List<String>> _findDatabaseHealthQueryLayerFileIoOffenders() async {
   const filePath =
       'lib/essentials/db/application/database_health_audit/database_health_query_layer.dart';
@@ -9930,13 +10671,15 @@ Future<List<String>> _findConversationSignatureCardPurityOffenders() async {
 Future<List<String>> _findMessageEvidenceHeaderDirectRenderOffenders() async {
   const allowedFile =
       'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart';
+  const idleViewFile =
+      'lib/features/messages/presentation/widgets/message_evidence/message_evidence_idle_view.dart';
   const headerFile =
       'lib/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart';
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
     }
-    if (path == allowedFile || path == headerFile) {
+    if (path == allowedFile || path == idleViewFile || path == headerFile) {
       return false;
     }
     return path.startsWith('lib/');
@@ -10505,9 +11248,9 @@ Future<List<String>> _findHandleLensOverlayDatabaseOffenders() async {
   return offenders..sort();
 }
 
-Future<List<String>> _findHandleLensActionProviderOffenders() async {
+Future<List<String>> _findHandleSourceReviewActionProviderOffenders() async {
   const actionsFile =
-      'lib/features/messages/application/handle_lens/handle_lens_actions_provider.dart';
+      'lib/features/handles/application/source_review/handle_source_review_actions_provider.dart';
   final files = await _collectDartFiles((path) {
     if (path.endsWith('.g.dart') || path.endsWith('.freezed.dart')) {
       return false;
@@ -10522,7 +11265,7 @@ Future<List<String>> _findHandleLensActionProviderOffenders() async {
   for (final filePath in files) {
     final source = await File(filePath).readAsString();
     final uncommented = _stripComments(source);
-    if (uncommented.contains('handleLensActionsProvider')) {
+    if (uncommented.contains('handleSourceReviewActionsProvider')) {
       offenders.add(filePath);
     }
   }
@@ -11844,9 +12587,6 @@ Future<List<String>> _findSettingsGraphReadBoundaryOffenders() async {
           ) ||
           importTarget.endsWith(
             'conversation_graph/application/archives/source_scoped_archive_graph_removal_service_provider.dart',
-          ) ||
-          importTarget.endsWith(
-            'conversation_graph/application/orchestration/graph_maintenance_execution_gate_provider.dart',
           )) {
         offenders.add(
           '$filePath imports concrete graph workflow provider $importTarget',
@@ -12821,6 +13561,12 @@ Future<List<String>> _findRetiredContactNameVariantOffenders() async {
     final uncommented = _stripComments(source)
         .replaceAll(
           RegExp(
+            r'''await\s+_dropColumnIfPresent\(\s*m\s*,\s*(participantOverrides|virtualParticipants)\s*,\s*['"](nickname|name_mode|short_name)['"]\s*\)\s*;''',
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
             r'''await\s+m\.dropColumn\(\s*participantOverrides\s*,\s*['"]nickname['"]\s*\)\s*;''',
           ),
           '',
@@ -12974,6 +13720,62 @@ _findMessageDataResetDatabaseCategoryBoundaryOffenders() async {
   }
   if (publicDatabaseBaseNameGetterPattern.hasMatch(uncommented)) {
     offenders.add('$filePath exposes public reset database base-name lists');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findMessageDataResetPreservationInvariantOffenders() async {
+  const resetServicePath =
+      'lib/essentials/onboarding/application/message_data_reset_service.dart';
+  const resetFileStorePath =
+      'lib/essentials/onboarding/infrastructure/persistence/filesystem_derived_message_data_file_store.dart';
+  const expectedResetDatabaseCategories = <String>{
+    'sourceScopedImport',
+    'conversationGraph',
+    'retiredMacosImport',
+    'retiredWorking',
+  };
+  final offenders = <String>[];
+
+  final resetServiceFile = File(resetServicePath);
+  if (!resetServiceFile.existsSync()) {
+    offenders.add('$resetServicePath is missing');
+  } else {
+    final uncommented = _stripComments(await resetServiceFile.readAsString());
+    final actualCategories = RegExp(
+      r'AppDatabaseFile\.(\w+)',
+    ).allMatches(uncommented).map((match) => match.group(1)!).toSet();
+    if (!actualCategories.containsAll(expectedResetDatabaseCategories) ||
+        !expectedResetDatabaseCategories.containsAll(actualCategories)) {
+      offenders.add(
+        '$resetServicePath reset categories are $actualCategories; expected '
+        '$expectedResetDatabaseCategories',
+      );
+    }
+    if (uncommented.contains('attachmentArchiveDirectoryProvider') ||
+        uncommented.contains("'attachment_archive'") ||
+        uncommented.contains('AppDatabaseFile.overlay') ||
+        uncommented.contains('AppDatabaseFile.presence')) {
+      offenders.add('$resetServicePath gained preservation-store authority');
+    }
+  }
+
+  final resetFileStoreFile = File(resetFileStorePath);
+  if (!resetFileStoreFile.existsSync()) {
+    offenders.add('$resetFileStorePath is missing');
+  } else {
+    final uncommented = _stripComments(await resetFileStoreFile.readAsString());
+    if (RegExp(r'\bDirectory\s*\(').hasMatch(uncommented) ||
+        uncommented.contains('.list(') ||
+        uncommented.contains('recursive: true')) {
+      offenders.add('$resetFileStorePath performs broad directory deletion');
+    }
+    if (uncommented.contains('attachmentArchiveDirectoryProvider') ||
+        uncommented.contains("'attachment_archive'")) {
+      offenders.add('$resetFileStorePath gained attachment archive authority');
+    }
   }
 
   return offenders..sort();

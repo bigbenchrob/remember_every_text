@@ -72,11 +72,19 @@ When one surface needs another surface to change, it dispatches a spec through t
 
 Do not call another surface's coordinator directly. Do not mutate another surface's internals.
 
-### 10. Incompatible downstream content must be invalidated
+### 10. Incompatible downstream content must cease to be effective
 
-If global flow changes and panel or sidebar content no longer matches it, downstream content must be cleared or replaced.
+If global flow or investigation identity changes and panel or sidebar content
+no longer matches it, effective downstream content must be re-derived without
+the incompatible presentation.
 
-Reconciliation is a required defensive backstop until projection paths are fully single-writer.
+Stored state may survive temporary incompatibility when restoration is useful.
+That distinction must be explicit: stored state records prior intent; effective
+state is the compatible projection currently allowed to render. Visibility and
+downstream anchors consume effective state.
+
+Do not scatter `clear`, `close`, or `dismiss` calls across unrelated actions to
+repair a missing compatibility rule. Fix derivation, ownership, or projection.
 
 ## Anti-patterns
 
@@ -87,7 +95,8 @@ These are architectural violations:
 - resolver receives a whole spec and reinterprets routing already done by the coordinator
 - feature imports another feature's resolver or widget builder
 - sidebar rack is scanned to determine selected contact when flow state owns that value
-- a panel remains open after the active sidebar flow makes it semantically invalid
+- a panel remains effective after the active sidebar flow or investigation
+  makes it semantically invalid
 - ephemeral confirmation flow is written into durable flow state
 - topology builds a list of cassette specs instead of returning one next child
 - widget builder performs IO or decides navigation
@@ -107,7 +116,9 @@ Panel state was treated as independent when it should have been projected from g
 
 Required response:
 
-Move durable meaning upstream, project the correct `ViewSpec`, and add or preserve reconciliation that clears incompatible panels.
+Move durable meaning upstream, project the correct `ViewSpec`, and derive an
+effective panel stack that excludes incompatible stored state. Preserve stored
+state only when its originating context may validly become current again.
 
 ### Widget-as-state drift
 
@@ -188,7 +199,7 @@ Widget scans current rack -> infers selected contact -> opens panel
 Required:
 
 ```text
-Global flow state stores selected contact -> projected ViewSpec updates panel -> reconciliation clears incompatible content
+Global flow state stores selected contact -> projected ViewSpec updates panel -> effective projection excludes incompatible stored content
 ```
 
 Forbidden:

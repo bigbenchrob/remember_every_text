@@ -32,7 +32,7 @@ class AddressBookDbHelperMultiInstance {
   Future<Database> _initDatabase() async {
     Database db;
     try {
-      db = await openReadOnlyDatabase(_path);
+      db = await openReadOnlyDatabase(_path, singleInstance: false);
       await db.execute('PRAGMA query_only = ON');
       await db.execute('PRAGMA busy_timeout = 3000');
     } catch (error) {

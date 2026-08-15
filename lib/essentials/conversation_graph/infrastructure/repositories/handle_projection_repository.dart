@@ -16,23 +16,36 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
   Future<HandleProjectionResult> projectHandles() async {
     final rows = await importLedgerDatabase.queryTable(
       'handles',
-      columns: <String>['ss_id', 'id', 'service'],
+      columns: <String>['ss_id', 'id', 'service', 'is_me'],
       orderBy: 'ss_id ASC',
     );
 
     var insertedHandleCount = 0;
     await graphDatabase.transaction(() async {
       for (final row in rows) {
+        final isMe = row['is_me'] == 1;
         final insertedCount = await graphDatabase.executeAndReadChanges(
           '''
           INSERT OR IGNORE INTO handles (
             ss_id,
             id,
-            service
-          ) VALUES (?, ?, ?)
+            service,
+            is_me
+          ) VALUES (?, ?, ?, ?)
           ''',
-          <Object?>[row['ss_id'], row['id'], row['service']],
+          <Object?>[
+            row['ss_id'],
+            row['id'],
+            row['service'],
+            if (isMe) 1 else 0,
+          ],
         );
+        if (insertedCount == 0) {
+          await graphDatabase.executeSql(
+            'UPDATE handles SET is_me = ? WHERE ss_id = ?',
+            <Object?>[if (isMe) 1 else 0, row['ss_id']],
+          );
+        }
         if (insertedCount != 0) {
           insertedHandleCount += 1;
         }
@@ -43,6 +56,47 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
     return HandleProjectionResult(
       examinedHandleCount: rows.length,
       insertedHandleCount: insertedHandleCount,
+    );
+  }
+
+  @override
+  Future<HandleIdentityProjectionResult> projectLocalAccountIdentity() async {
+    final importRows = await importLedgerDatabase.queryTable(
+      'handles',
+      columns: const <String>['ss_id', 'is_me'],
+      orderBy: 'ss_id ASC',
+    );
+    final graphRows = await graphDatabase.selectRows('''
+      SELECT ss_id, is_me
+      FROM handles
+      ORDER BY ss_id ASC
+      ''');
+    final graphIdentityByHandleId = <int, bool>{
+      for (final row in graphRows)
+        if (row['ss_id'] case final int ssId) ssId: row['is_me'] == 1,
+    };
+    var updatedHandleCount = 0;
+
+    await graphDatabase.transaction(() async {
+      for (final row in importRows) {
+        final ssId = row['ss_id'];
+        if (ssId is! int || !graphIdentityByHandleId.containsKey(ssId)) {
+          continue;
+        }
+        final isMe = row['is_me'] == 1;
+        if (graphIdentityByHandleId[ssId] == isMe) {
+          continue;
+        }
+        updatedHandleCount += await graphDatabase.executeAndReadChanges(
+          'UPDATE handles SET is_me = ? WHERE ss_id = ?',
+          <Object?>[if (isMe) 1 else 0, ssId],
+        );
+      }
+    });
+
+    return HandleIdentityProjectionResult(
+      examinedHandleCount: importRows.length,
+      updatedHandleCount: updatedHandleCount,
     );
   }
 

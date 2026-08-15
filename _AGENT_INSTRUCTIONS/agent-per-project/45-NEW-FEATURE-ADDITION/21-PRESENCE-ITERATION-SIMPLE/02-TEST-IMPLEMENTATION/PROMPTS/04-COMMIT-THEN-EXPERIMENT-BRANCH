@@ -1,0 +1,319 @@
+Prepare and preserve the current PRESENCE-ITERATION-SIMPLE implementation as a stable baseline, then create a new experimental branch for testing the conjectural nested-Journey rule set.
+
+This task includes documentation, repository review, verification, Git staging, commit, push, and branch creation.
+
+Do not begin implementing nested Journeys, repeated Journeys, FDA workflow logic, new Step types, or speculative signals yet.
+
+---
+
+## Purpose
+
+The current branch has reached a coherent and working checkpoint:
+
+- a Journey contains ordered Steps;
+- JourneyProgress advances through them;
+- Tell and Ask Steps are persisted and loaded through Drift;
+- Journey remains ignorant of concrete Step behaviour;
+- Tell and Ask presentation components are self-contained;
+- onboarding Tell copy, timing, and Setup Assistant-inspired presentation have been exercised in the real debug application;
+- 30-SYSTEM-BOUNDARIES.md records current proven boundaries.
+
+The next work is explicitly speculative.
+
+We want to test whether:
+
+- a Step may be implemented by a child Journey;
+- Journeys can remain linear;
+- only upward signals are required;
+- early successful completion can replace arbitrary branching;
+- the model can explain the Full Disk Access workflow without creating spaghetti.
+
+The current working implementation must therefore be preserved before that experiment begins.
+
+---
+
+## Read first
+
+Read:
+
+- the three PRESENCE-ITERATION-SIMPLE root orientation documents;
+- 30-SYSTEM-BOUNDARIES.md;
+- the current 02-TEST-IMPLEMENTATION documents;
+- the current Presence implementation and tests;
+- PRESENCE_RULES.rtf, supplied as the source thought experiment;
+- the repository’s Git and branch conventions, if documented.
+
+Treat PRESENCE_RULES.rtf as a thought experiment, not settled architecture.
+
+Its purpose is:
+
+- assume a conjectural set of absolute rules;
+- carry them forward rigorously;
+- discover where they remain coherent;
+- identify where they fail.
+
+Do not silently convert it into canonical implementation rules.
+
+---
+
+## Create the organized thought-experiment document
+
+Create this document under:
+
+45-NEW-FEATURE-ADDITION/
+21-PRESENCE-ITERATION-SIMPLE/
+
+Suggested filename:
+
+40-THOUGHT-EXPERIMENT-01-CONJECTURAL-RULES.md
+
+Use the heading:
+
+THOUGHT EXPERIMENT — A CONJECTURAL SET OF ABSOLUTE RULES
+
+The document must clearly state:
+
+- it is not canonical architecture;
+- it is not a final proposal;
+- its rules are treated as absolute only inside the experiment;
+- its purpose is to expose consequences, contradictions, and hidden assumptions;
+- terminology remains provisional;
+- mechanism is the focus.
+
+Organize the source material into clear sections such as:
+
+1. Objective
+2. Actors
+3. Journey
+4. Step
+5. Agent
+6. Parent-child relationships
+7. Upward-only signals
+8. Linear progression
+9. Early successful completion
+10. FDA example
+11. Evaluation criteria
+12. Open questions
+
+Preserve the key conjectural mechanisms from the source:
+
+- a Contracting Entity commissions a Journey;
+- a Journey owns ordered Steps;
+- Steps are simple and each has one purpose;
+- Agents perform specialized external work for Steps;
+- a Journey may be the child implementation of a Step;
+- a Journey is not directly the child of another Journey;
+- signals move upward only;
+- the ordinary path advances to the next Step;
+- a Step may establish that its parent Journey’s purpose is already achieved;
+- a Journey is successful if it reaches the end or if a Step establishes success early;
+- Journeys are evaluated as having achieved success or not yet achieved success, rather than being forced into a broad failure model;
+- one-sentence purpose naming is a decomposition test;
+- arbitrary jump-based branching is intentionally excluded from the conjectural universe.
+
+Do not present REPEAT JOURNEY as an accepted rule.
+
+Record it only as an open pressure point or possible sign that the conjecture is breaking down.
+
+Do not modify 43-PRESENCE.
+
+---
+
+## Review the working tree before staging
+
+Run:
+
+git status
+git diff --stat
+git diff
+git diff --check
+
+Inspect all modified and untracked files.
+
+Identify and report:
+
+- all Presence implementation files;
+- documentation and prompt-history files;
+- generated Drift and Freezed files;
+- the debug startup override;
+- any unrelated changes;
+- temporary files;
+- IDE files;
+- suspicious filenames, including names with trailing spaces;
+- files that should not be committed.
+
+Do not blindly use git add . until the working tree has been reviewed.
+
+If unrelated changes are present:
+
+- do not stage them;
+- report them clearly;
+- stage only the intended Presence baseline files.
+
+Do not discard or alter unrelated user work.
+
+---
+
+## Verification before commit
+
+Run the relevant current verification before committing:
+
+- all Presence tests;
+- onboarding-introduction tests;
+- architecture tripwires;
+- full test suite if practical;
+- flutter analyze;
+- macOS debug build;
+- formatting checks;
+- git diff --check.
+
+Do not manually edit generated files.
+
+If any required verification fails:
+
+- stop before commit;
+- report the failure;
+- do not create the experimental branch.
+
+Existing known non-blocking Xcode or volume_controller warnings may be reported but should not block the commit if the build succeeds.
+
+---
+
+## Baseline commit
+
+After the working tree is reviewed and verification passes:
+
+1. Stage only the intended baseline files.
+2. Show the staged summary.
+3. Confirm that no unrelated files are staged.
+4. Commit the baseline.
+
+Use a clear commit message such as:
+
+Establish iterative Presence baseline with Tell and Ask steps
+
+or a repository-convention-compliant equivalent that captures:
+
+- working Journey/Step foundation;
+- Tell and Ask presentation;
+- onboarding Tell prototype;
+- current system-boundary documentation.
+
+Do not amend an unrelated existing commit.
+
+---
+
+## Push
+
+Determine the current branch and remote tracking state.
+
+Push the baseline commit to its appropriate current remote branch.
+
+Do not force-push.
+
+If the branch has no upstream, set one only if that is consistent with the repository’s normal workflow.
+
+If authentication, remote rejection, or branch-policy issues prevent the push:
+
+- stop;
+- report the exact issue;
+- do not claim the push succeeded.
+
+---
+
+## Create the experimental branch
+
+Only after the baseline commit has been successfully pushed, create a new branch.
+
+Use the repository’s established branch naming convention.
+
+A suitable descriptive name, if no stronger convention exists, would be:
+
+presence/nested-journey-thought-experiment
+
+or:
+
+experiment/presence-nested-journeys
+
+The branch name must make clear that:
+
+- the work is experimental;
+- nested Journeys and the conjectural rule system are being tested;
+- this is not yet accepted architecture.
+
+Do not implement anything on the new branch during this task.
+
+The branch should initially point exactly at the pushed baseline commit.
+
+Confirm:
+
+- the new branch name;
+- the current HEAD commit;
+- the working tree is clean;
+- no speculative implementation has begun.
+
+---
+
+## Experimental branch purpose
+
+Create a short branch-orientation document inside the existing experimental documentation area only if the repository’s documentation conventions justify it.
+
+Do not create unnecessary new files.
+
+If created, it should state that the branch will test:
+
+- a Step implemented by a child Journey;
+- linear Journey progression;
+- upward-only signals;
+- early Journey success;
+- a fake Full Disk Access workflow;
+- whether the model stays comprehensible without arbitrary Step jumps;
+- whether concepts such as repeat/resume indicate that the conjecture has reached its limit.
+
+It must also state:
+
+- the branch may be abandoned without merging;
+- failure of the conjecture is a valid experimental result;
+- the stable baseline remains preserved on the original branch.
+
+---
+
+## Do not do
+
+Do not:
+
+- implement nested Journeys;
+- change Journey or JourneyProgress;
+- add signal classes;
+- add repeat/resume behaviour;
+- add Audit or Do Steps;
+- add AuditingAgents;
+- fake FDA yet;
+- modify production OnboardingGate;
+- rewrite 43-PRESENCE;
+- force-push;
+- stage unrelated files;
+- delete user work;
+- claim a commit or push succeeded without confirming it.
+
+---
+
+## Completion report
+
+Report:
+
+1. The thought-experiment document created.
+2. How PRESENCE_RULES.rtf was reorganized.
+3. Every file staged.
+4. Every file deliberately excluded and why.
+5. Verification results.
+6. Baseline commit hash and message.
+7. Original branch name.
+8. Push result and remote branch.
+9. New experimental branch name.
+10. Confirmation that the new branch begins at the exact pushed baseline commit.
+11. Confirmation that the working tree is clean.
+12. Confirmation that no speculative implementation began.
+13. Any Git, test, build, or repository-policy issue encountered.
+
+The task is complete only when the working baseline is safely committed and pushed and the clean experimental branch has been created.

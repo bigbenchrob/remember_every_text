@@ -7,7 +7,7 @@ part of 'video_thumbnail_cache_provider.dart';
 // **************************************************************************
 
 String _$videoThumbnailCacheHash() =>
-    r'ff864689847789137143b41c6279ee6450236841';
+    r'eb42dc4908a09c6d6924218611783f0bc0631ead';
 
 /// See also [videoThumbnailCache].
 @ProviderFor(videoThumbnailCache)

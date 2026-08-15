@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
 import '../../../domain/spec_classes/handles_cassette_spec.dart';
 import '../../state/stray_handle_mode_provider.dart';
+import '../resolvers/stray_handles_investigation_switcher_resolver.dart';
 import '../resolvers/stray_handles_mode_switcher_resolver.dart';
 import '../resolvers/stray_handles_review_resolver.dart';
 import '../resolvers/stray_handles_type_switcher_resolver.dart';
@@ -42,21 +43,32 @@ class HandlesCassetteCoordinator extends _$HandlesCassetteCoordinator {
     return spec.map(
       strayHandlesReview: (reviewSpec) {
         // Read mode from global provider (mode switcher controls this)
-        final mode = ref.watch(strayHandleModeSettingProvider);
+        final mode = ref.watch(strayHandleReviewModeSettingProvider);
         return ref
             .read(strayHandlesReviewResolverProvider.notifier)
-            .resolve(filter: reviewSpec.filter, mode: mode);
+            .resolve(
+              investigation: reviewSpec.investigation,
+              filter: reviewSpec.filter,
+              mode: mode,
+            );
       },
       strayHandlesModeSwitcher: (switcherSpec) => ref
           .read(strayHandlesModeSwitcherResolverProvider.notifier)
           .resolve(
+            investigation: switcherSpec.investigation,
             filter: switcherSpec.filter,
-            mode: ref.watch(strayHandleModeSettingProvider),
+            mode: ref.watch(strayHandleReviewModeSettingProvider),
           ),
       strayHandlesTypeSwitcher: (typeSpec) => ref
           .read(strayHandlesTypeSwitcherResolverProvider.notifier)
           .resolve(
             selectedFilter: typeSpec.selectedFilter,
+            cassetteIndex: cassetteIndex,
+          ),
+      strayHandlesInvestigationSwitcher: (investigationSpec) => ref
+          .read(strayHandlesInvestigationSwitcherResolverProvider.notifier)
+          .resolve(
+            selectedInvestigation: investigationSpec.selectedInvestigation,
             cassetteIndex: cassetteIndex,
           ),
     );

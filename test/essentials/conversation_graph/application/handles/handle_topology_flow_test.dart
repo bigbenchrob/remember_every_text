@@ -154,6 +154,59 @@ void main() {
     },
   );
 
+  test('marks local account handles without reimporting messages', () async {
+    await _insertSourceHandle(
+      chatDbPath,
+      rowId: 12,
+      id: '+16046858506',
+      service: 'iMessage',
+    );
+    await _insertSourceHandle(
+      chatDbPath,
+      rowId: 13,
+      id: '+16045550123',
+      service: 'iMessage',
+    );
+    final importer = HandleImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    );
+    final projector = HandleProjector(
+      repository: SqliteHandleProjectionRepository(
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
+      ),
+    );
+    await importer.importNewHandles();
+    await projector.projectHandles();
+    await _insertSourceAccountEvidence(
+      chatDbPath,
+      accountLogin: 'E:',
+      destinationCallerId: 'tel:+16046858506',
+    );
+
+    final reconciliationResult = await importer.reconcileLocalAccountIdentity();
+    final projectionResult = await projector.projectLocalAccountIdentity();
+
+    final importRows = await importLedgerDatabase.database.query(
+      'handles',
+      orderBy: 'source_rowid ASC',
+    );
+    final graphRows = await graphDatabase.database.query(
+      'handles',
+      orderBy: 'ss_id ASC',
+    );
+
+    expect(reconciliationResult.examinedHandleCount, 2);
+    expect(reconciliationResult.localAccountHandleCount, 1);
+    expect(reconciliationResult.updatedHandleCount, 1);
+    expect(projectionResult.examinedHandleCount, 2);
+    expect(projectionResult.updatedHandleCount, 1);
+    expect(importRows.map((row) => row['is_me']), [1, 0]);
+    expect(graphRows.map((row) => row['is_me']), [1, 0]);
+  });
+
   test('handle import is idempotent and source-scoped', () async {
     await _insertLedgerHandle(
       importLedgerDatabase,
@@ -238,6 +291,37 @@ Future<void> _createSourceTables(String chatDbPath) async {
       handle_id INTEGER NOT NULL
     )
   ''');
+  await db.execute('''
+    CREATE TABLE chat (
+      ROWID INTEGER PRIMARY KEY,
+      account_login TEXT
+    )
+  ''');
+  await db.execute('''
+    CREATE TABLE message (
+      ROWID INTEGER PRIMARY KEY,
+      is_from_me INTEGER NOT NULL,
+      destination_caller_id TEXT
+    )
+  ''');
+  await db.close();
+}
+
+Future<void> _insertSourceAccountEvidence(
+  String chatDbPath, {
+  required String accountLogin,
+  required String destinationCallerId,
+}) async {
+  final db = await openDatabase(chatDbPath);
+  await db.insert('chat', <String, Object?>{
+    'ROWID': 1,
+    'account_login': accountLogin,
+  });
+  await db.insert('message', <String, Object?>{
+    'ROWID': 1,
+    'is_from_me': 0,
+    'destination_caller_id': destinationCallerId,
+  });
   await db.close();
 }
 

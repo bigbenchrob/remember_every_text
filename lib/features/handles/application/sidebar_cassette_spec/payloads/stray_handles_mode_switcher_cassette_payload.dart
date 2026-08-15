@@ -5,6 +5,7 @@ import '../../../domain/spec_classes/handles_cassette_spec.dart';
 final class StrayHandlesModeSwitcherCassettePayload
     extends PlacementGovernedSidebarCassettePayload {
   const StrayHandlesModeSwitcherCassettePayload({
+    required this.investigation,
     required this.filter,
     required this.mode,
     super.title = '',
@@ -20,6 +21,7 @@ final class StrayHandlesModeSwitcherCassettePayload
     super.topSpacing = 0,
   });
 
-  final StrayHandleFilter filter;
-  final StrayHandleMode mode;
+  final StrayHandleInvestigation investigation;
+  final StrayHandleFilter? filter;
+  final StrayHandleReviewMode mode;
 }

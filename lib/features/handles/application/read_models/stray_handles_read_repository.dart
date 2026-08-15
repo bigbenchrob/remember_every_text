@@ -4,4 +4,7 @@ abstract interface class StrayHandlesReadRepository {
   Future<List<StrayHandleSummary>> readActiveStrayHandles();
 
   Future<List<StrayHandleSummary>> readDismissedStrayHandles();
+
+  /// Reads one canonical source directly, independent of investigation lists.
+  Future<StrayHandleSummary?> readHandleSource({required int handleId});
 }

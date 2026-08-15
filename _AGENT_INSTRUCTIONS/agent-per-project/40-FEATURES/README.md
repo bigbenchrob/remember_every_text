@@ -2,14 +2,13 @@
 tier: project
 scope: features
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-27
 source_of_truth: doc
 links:
 	- ../45-NEW-FEATURE-ADDITION/README.md
 	- ../42-SPEC-SYSTEM/README.md
 	- ./chat-handles/CHARTER.md
 	- ./conversations/README.md
-	- ../90-USE-CASE-ILLUSTRATIONS/README.md
 tests: []
 ---
 
@@ -34,7 +33,7 @@ Feature docs must not imply that features own app-level orchestration. Features 
 | `messages/` | Current unified message timeline, `MessagesSpec` entry points, ordinal strategies, hydration, recovered scopes, and message search. |
 | `onboarding/` | Legacy V1 planning notes. Current canonical docs are in [`../25-ONBOARDING-AND-ARCHIVE/`](../25-ONBOARDING-AND-ARCHIVE/) and code lives primarily under `lib/essentials/onboarding` plus `lib/features/environment_readiness`. |
 | `rationalized-message-views/` | Historical implementation packet for the now-merged unified message timeline. Keep as context; use `messages/` for current guidance. |
-| `search/` | Legacy feature scaffold. Current search services and indexing live under `lib/essentials/search`; message surfaces consume them through timeline view models. |
+| `search/` | Current conceptual Search documentation. Shared graph search execution lives under `lib/essentials/search`; Search All Messages investigation state and UI transitions live with message evidence under `lib/features/messages`. |
 | `tooltips/` | Current small cross-surface tooltip system. Only contacts tooltip routing is currently implemented. |
 
 ## Current `lib/features` Modules

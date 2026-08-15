@@ -2,11 +2,10 @@
 tier: feature
 scope: checklist
 owner: agent-per-project
-last_reviewed: 2025-11-07
+last_reviewed: 2026-07-27
 links:
   - ./PROPOSAL.md
   - ../../10-DATABASES/05-db-overlay.md
-  - ../../50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md
 feature: virtual-overlay-contacts
 status: planning
 created: 2025-11-07
@@ -259,11 +258,6 @@ legacy-era design. The current replacement direction is:
   - **File**: `./TESTS.md`
   - **Details**: Outline automated + manual validation steps
   - **Acceptance**: Test plan ready before implementation starts
-
-- [ ] **Task**: Update manual linking use-case doc
-  - **File**: `_AGENT_INSTRUCTIONS/agent-per-project/50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md`
-  - **Details**: Describe virtual contact branch in workflow
-  - **Acceptance**: Doc reflects new UX
 
 ### 6.2 QA & Verification
 - [ ] **Task**: Run `dart run build_runner build --delete-conflicting-outputs`

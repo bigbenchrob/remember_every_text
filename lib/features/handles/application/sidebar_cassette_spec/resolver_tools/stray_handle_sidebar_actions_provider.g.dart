@@ -7,7 +7,7 @@ part of 'stray_handle_sidebar_actions_provider.dart';
 // **************************************************************************
 
 String _$strayHandleSidebarActionsHash() =>
-    r'00876392c44155f254ccc83717d80a7db688c021';
+    r'd0594ad6203622f545be08e41acaa46498c38eef';
 
 /// See also [StrayHandleSidebarActions].
 @ProviderFor(StrayHandleSidebarActions)

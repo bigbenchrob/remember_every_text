@@ -23,6 +23,11 @@ The Messages Attachments folder is treated as a cache — useful when available,
 but never trusted as permanent. When archive mode is enabled, the MessageLens
 archive is the display source; live Messages files are ingestion sources.
 
+The MessageLens archive itself is **not** a cache. Its payloads are preservation
+data and must remain outside every ordinary reset/rebuild operation. See the
+canonical
+[`Attachment Preservation Invariant`](ATTACHMENT-PRESERVATION-INVARIANT.md).
+
 ## Architecture
 
 ### Storage Layout
@@ -168,6 +173,18 @@ source ranges by calling `archiveGraphMessageSourceRange(...)`. It also runs
 a bounded graph attachment sweep every 5 minutes via
 `archiveNextGraphSweepChunk()` so files that appear later can be ingested.
 
+Delayed retry treats a nonblank declared MIME type as the current eligibility
+boundary for a conventional attachment. This includes images, video, audio,
+PDF, text, and ordinary document MIME types. The downstream archive pipeline
+remains type-agnostic: it resolves the current source path and archives any
+eligible regular file.
+
+NULL or blank MIME rows are not automatically retried. Current production
+examples use `.pluginPayloadAttachment` paths and may represent opaque Apple
+or extension payloads rather than durable user-visible attachments. They
+remain visible in attachment evidence and inventory, but their file-
+preservation semantics require a separate policy decision.
+
 The resolver can also trigger on-demand archive ingestion when archive mode is
 enabled and it sees a live file that is not yet archived.
 
@@ -197,9 +214,15 @@ boundary unless current code introduces one.
 
 1. Archive metadata lives in overlay DB only — never in `working_ss.db` or retired `working.db`.
 2. Graph `attachments` rows remain source projections — not durable file-store records.
-3. Graph incremental sync uses source-range archiving plus periodic graph attachment sweeps; explicit full/manual graph archive sweeps may still call `archiveAllAvailable()`.
+3. Graph incremental sync uses source-range archiving plus periodic graph
+   attachment sweeps. Delayed sweeps retry conventional attachments with
+   declared MIME types and deliberately exclude opaque NULL/blank-MIME
+   payloads pending policy. Explicit full/manual graph archive sweeps may still
+   call `archiveAllAvailable()`.
 4. The Messages Attachments folder is never written to.
 5. Content-addressable naming provides natural deduplication.
 6. The archive is additive — entries survive re-import and graph rebuilds.
+   Archived payloads are preservation data and are never an ordinary reset,
+   recovery, migration-cleanup, or test-cleanup target.
 7. Archive-enabled resolution displays from the archive and treats live Messages paths as ingestion sources.
 8. Archive service code must use feature ports for graph candidates, archive writes, settings, directory paths, and file work; Drift/overlay SQL belongs in infrastructure repositories.

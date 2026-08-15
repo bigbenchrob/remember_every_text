@@ -6,6 +6,7 @@ import 'package:remember_this_text/essentials/navigation/domain/entities/view_sp
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/features/conversations/domain/spec_classes/conversations_view_spec.dart';
+import 'package:remember_this_text/features/messages/domain/search_investigation_id.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 
 void main() {
@@ -17,6 +18,7 @@ void main() {
       ConversationsSpec.conversationExcerpt(
         conversationId: 200,
         anchorMessageId: 100,
+        originatingInvestigationId: SearchInvestigationId(0),
       ),
     );
 

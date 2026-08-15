@@ -31,6 +31,10 @@ When a bug appears, fix derivation, invalidation, ownership, or projection.
 
 Do NOT add imperative repair.
 
+The Constitution names this preference the
+[Mechanical Impossibility Principle](10-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION.md#the-mechanical-impossibility-principle):
+when practical, make the invalid state unable to exist.
+
 The architecture evolved through repeated encounters with:
 
 - stale state

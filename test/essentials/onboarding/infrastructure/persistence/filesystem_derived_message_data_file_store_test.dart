@@ -20,29 +20,58 @@ void main() {
       }
     });
 
-    test('deletes only requested database base file companions', () async {
+    test('deletes rebuildable database files while preserving archive payloads '
+        'and durable stores', () async {
       final store = FilesystemDerivedMessageDataFileStore(
         databaseDirectory: tempDir.path,
       );
-      final dbFile = File(path.join(tempDir.path, 'working_ss.db'));
-      final walFile = File(path.join(tempDir.path, 'working_ss.db-wal'));
-      final shmFile = File(path.join(tempDir.path, 'working_ss.db-shm'));
+
+      const rebuildableBaseNames = <String>[
+        'macos_import_ss.db',
+        'working_ss.db',
+        'macos_import.db',
+        'working.db',
+      ];
+      final rebuildableFiles = <File>[
+        for (final baseName in rebuildableBaseNames)
+          for (final suffix in const <String>['', '-wal', '-shm'])
+            File(path.join(tempDir.path, '$baseName$suffix')),
+      ];
+      for (final file in rebuildableFiles) {
+        await file.writeAsString('rebuildable:${path.basename(file.path)}');
+      }
+
       final archiveDir = Directory(
         path.join(tempDir.path, 'attachment_archive'),
       );
+      final archivedPayload = File(
+        path.join(archiveDir.path, 'a1', 'a1-preserved-payload.jpg'),
+      );
+      await archivedPayload.parent.create(recursive: true);
+      const archivedPayloadContents = <int>[0, 1, 2, 127, 128, 254, 255];
+      await archivedPayload.writeAsBytes(archivedPayloadContents, flush: true);
 
-      await dbFile.writeAsString('db');
-      await walFile.writeAsString('wal');
-      await shmFile.writeAsString('shm');
-      await archiveDir.create();
+      final overlayFile = File(path.join(tempDir.path, 'user_overlays.db'));
+      final presenceFile = File(path.join(tempDir.path, 'presence.db'));
+      final preferencesFile = File(
+        path.join(tempDir.path, 'preferences-preserved.json'),
+      );
+      await overlayFile.writeAsString('overlay-preserved');
+      await presenceFile.writeAsString('presence-preserved');
+      await preferencesFile.writeAsString('preferences-preserved');
 
-      final deleted = await store.deleteDatabaseBaseFiles(['working_ss.db']);
+      final deleted = await store.deleteDatabaseBaseFiles(rebuildableBaseNames);
 
-      expect(deleted.toSet(), {dbFile.path, walFile.path, shmFile.path});
-      expect(dbFile.existsSync(), isFalse);
-      expect(walFile.existsSync(), isFalse);
-      expect(shmFile.existsSync(), isFalse);
+      expect(deleted.toSet(), {for (final file in rebuildableFiles) file.path});
+      for (final file in rebuildableFiles) {
+        expect(file.existsSync(), isFalse, reason: file.path);
+      }
       expect(archiveDir.existsSync(), isTrue);
+      expect(archivedPayload.existsSync(), isTrue);
+      expect(await archivedPayload.readAsBytes(), archivedPayloadContents);
+      expect(await overlayFile.readAsString(), 'overlay-preserved');
+      expect(await presenceFile.readAsString(), 'presence-preserved');
+      expect(await preferencesFile.readAsString(), 'preferences-preserved');
     });
 
     test('rejects path-like database base names', () async {

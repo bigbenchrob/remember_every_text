@@ -19,13 +19,22 @@ wording as legacy/transitional.
 | [`20-environment-readiness.md`](20-environment-readiness.md) | Environment evaluation: FDA checks, source database probes, sync plausibility, readiness classification |
 | [`30-import-migration-coordination.md`](30-import-migration-coordination.md) | How onboarding coordinates graph build/rebuild lifecycle without owning source-scoped import/projection internals |
 | [`40-attachment-archive.md`](40-attachment-archive.md) | Living attachments archive: overlay schema, content-addressable storage, resolution pipeline, import-time archiving |
+| [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md) | Hard safety rule: archived payloads are preservation data and remain outside every ordinary reset/rebuild boundary |
 | [`50-deterministic-recovery.md`](50-deterministic-recovery.md) | Deterministic historical recovery from Time Machine or backup snapshots via GUID-based mapping |
 | [`60-reimport-and-ongoing-sync.md`](60-reimport-and-ongoing-sync.md) | Re-import flow, `ChatDbChangeMonitor` auto-sync, and how the archive stays current |
 | [`handoff.txt`](handoff.txt) | Historical branch handoff only; not current architecture guidance |
 
 ## Key Ownership Boundaries
 
-- **`lib/essentials/onboarding/`** — bootstrap gate, environment evaluation, overlay presentation for workflow phases
+- **`lib/essentials/onboarding/`** — bootstrap gate, environment evaluation,
+  overlay presentation, onboarding-owned Presence Schedule meaning, stable
+  Test Agent identities, concrete specialist adapters, local Messages-history
+  sufficiency policy, and the explicit onboarding Test Agent binding
+  contribution
+- **`lib/essentials/presence/`** — generic Schedule, Trip, Step, routing,
+  checkpoint, run, trace, and persistence machinery; a shared `presence.db`
+  does not make Presence the semantic owner of onboarding, and Presence
+  receives an already-composed opaque Test Agent resolver
 - **`lib/features/environment_readiness/`** — current readiness panel content for `ViewSpec.environmentReadiness`
 - **`lib/essentials/navigation/`** — readiness panel synchronization, panel stack ownership, and sidebar parking
 - **`lib/essentials/source_scoped_import/`** — source-scoped import ledger
@@ -47,9 +56,15 @@ wording as legacy/transitional.
 7. Historical snapshots are opened **read-only** — never mutated.
 8. FDA and ready-to-import states are current center-panel readiness states, not overlay-only states.
 9. New work must not bypass `ViewSpec` or introduce widget-returning coordinator patterns for onboarding/readiness surfaces.
+10. Archived attachment payloads are **preservation data**. No onboarding,
+    reset, reimport, recovery, migration cleanup, rebuild, or test operation may
+    mutate them as a side effect. See
+    [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
 
 ## Related Documentation
 
+- [`45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md`](../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md) — current generic TestAgent/TestStep ownership result
+- [`45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md`](../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md) — current Onboarding-owned local-history sufficiency Agent boundary
 - [`10-DATABASES/00-all-databases-accessed.md`](../10-DATABASES/00-all-databases-accessed.md) — database locations and access patterns
 - [`10-DATABASES/INVIOLATE_RULES.md`](../10-DATABASES/INVIOLATE_RULES.md) — overlay/working separation, no suppression
 - [`20-DATA-IMPORT-MIGRATION/01-overview.md`](../20-DATA-IMPORT-MIGRATION/01-overview.md) — source import, graph build, and retired storage cleanup/diagnostic boundaries

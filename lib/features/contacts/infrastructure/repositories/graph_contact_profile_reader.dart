@@ -1,5 +1,7 @@
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../handles/application/read_models/handle_identity.dart';
+import '../../application/display_identity/display_identity.dart';
 import '../../application/read_models/contact_profile_reader.dart';
 import '../../application/read_models/contact_profile_summary.dart';
 import '../../application/read_models/contact_summary_identity.dart';
@@ -11,11 +13,14 @@ class GraphContactProfileReader implements ContactProfileReader {
   const GraphContactProfileReader({
     required ConversationGraphDatabase graphDb,
     required OverlayDatabase overlayDb,
+    required DisplayIdentityResolver displayIdentityResolver,
   }) : _graphDb = graphDb,
-       _overlayDb = overlayDb;
+       _overlayDb = overlayDb,
+       _displayIdentityResolver = displayIdentityResolver;
 
   final ConversationGraphDatabase _graphDb;
   final OverlayDatabase _overlayDb;
+  final DisplayIdentityResolver _displayIdentityResolver;
 
   @override
   Future<ContactProfileSummary?> readContactProfile({
@@ -29,9 +34,24 @@ class GraphContactProfileReader implements ContactProfileReader {
 
     for (final virtualContact in virtualContacts) {
       if (virtualContact.id == contactId) {
+        final overrides = await _overlayDb.getOverridesForVirtualParticipant(
+          contactId,
+        );
+        final isSelf = overrides.any((override) {
+          return handleIdentityKeyVariants(override.handleId).any((
+            candidateId,
+          ) {
+            return _displayIdentityResolver
+                    .identitiesByHandleId[candidateId]
+                    ?.isSelf ==
+                true;
+          });
+        });
         return ContactProfileSummary(
           contactId: contactId,
-          displayName: virtualContact.displayName,
+          displayName: isSelf
+              ? selfParticipantDisplayLabel
+              : virtualContact.displayName,
           origin: ParticipantOrigin.overlayVirtual,
         );
       }
@@ -77,9 +97,9 @@ class GraphContactProfileReader implements ContactProfileReader {
 
       return ContactProfileSummary(
         contactId: graphContactId,
-        displayName: overrideLabel != null && overrideLabel.isNotEmpty
-            ? overrideLabel
-            : displayName,
+        displayName: _displayIdentityResolver
+            .resolveContact(graphContactId)
+            .primaryLabel,
         origin: overrideLabel != null && overrideLabel.isNotEmpty
             ? ParticipantOrigin.overlayOverride
             : ParticipantOrigin.working,

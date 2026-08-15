@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
+import 'package:remember_this_text/essentials/onboarding/application/required_sources_readiness_scheduler_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/features/environment_readiness/application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import 'package:remember_this_text/features/environment_readiness/domain/entities/environment_readiness_surface_view_model.dart';
@@ -22,6 +23,7 @@ void main() {
       () async {
         container = ProviderContainer(
           overrides: [
+            _requiredSourcesAccepted(false),
             onboardingEnvironmentReportProvider.overrideWith(
               (ref) async => _report(
                 state: OnboardingEnvironmentState.permissionBlocked,
@@ -53,6 +55,7 @@ void main() {
     test('advances to contacts step when earlier checks are healthy', () async {
       container = ProviderContainer(
         overrides: [
+          _requiredSourcesAccepted(false),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.sourceUnavailable,
@@ -78,6 +81,7 @@ void main() {
     test('uses retry copy when import has failed', () async {
       container = ProviderContainer(
         overrides: [
+          _requiredSourcesAccepted(false),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.importFailed,
@@ -107,6 +111,7 @@ void main() {
     test('shows normal-use readiness when graph is already ready', () async {
       container = ProviderContainer(
         overrides: [
+          _requiredSourcesAccepted(false),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _report(
               state: OnboardingEnvironmentState.ready,
@@ -131,7 +136,90 @@ void main() {
         EnvironmentReadinessStepStatus.success,
       });
     });
+
+    test('offers import when sparse source readiness was accepted', () async {
+      container = ProviderContainer(
+        overrides: [
+          _requiredSourcesAccepted(true),
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _report(
+              state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
+              blockerKind: OnboardingBlockerKind.sourceDataSparseOrUnsynced,
+            ),
+          ),
+        ],
+      );
+
+      await container.read(onboardingEnvironmentReportProvider.future);
+      await container.read(requiredSourcesReadinessAcceptedProvider.future);
+      final surface = container.read(environmentReadinessSurfaceProvider);
+
+      expect(
+        surface.activeStepKey,
+        EnvironmentReadinessStepKey.importReadiness,
+      );
+      expect(surface.detail.title, 'Ready To Import');
+      expect(surface.detail.body, contains('limited local Messages history'));
+      expect(surface.detail.actions.map((action) => action.kind), [
+        EnvironmentReadinessActionKind.startImport,
+        EnvironmentReadinessActionKind.recheck,
+      ]);
+    });
+
+    test('keeps sparse unaccepted source at confirmation', () async {
+      container = ProviderContainer(
+        overrides: [
+          _requiredSourcesAccepted(false),
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _report(
+              state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
+              blockerKind: OnboardingBlockerKind.sourceDataSparseOrUnsynced,
+            ),
+          ),
+        ],
+      );
+
+      await container.read(onboardingEnvironmentReportProvider.future);
+      await container.read(requiredSourcesReadinessAcceptedProvider.future);
+      final surface = container.read(environmentReadinessSurfaceProvider);
+
+      expect(
+        surface.activeStepKey,
+        EnvironmentReadinessStepKey.messagesDatabase,
+      );
+      expect(surface.detail.title, 'Confirm Local Messages History');
+      expect(surface.detail.actions.map((action) => action.kind), [
+        EnvironmentReadinessActionKind.recheck,
+      ]);
+    });
+
+    test('accepted readiness does not override import failure', () async {
+      container = ProviderContainer(
+        overrides: [
+          _requiredSourcesAccepted(true),
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) async => _report(
+              state: OnboardingEnvironmentState.importFailed,
+              blockerKind: OnboardingBlockerKind.importFailed,
+            ),
+          ),
+        ],
+      );
+
+      await container.read(onboardingEnvironmentReportProvider.future);
+      await container.read(requiredSourcesReadinessAcceptedProvider.future);
+      final surface = container.read(environmentReadinessSurfaceProvider);
+
+      expect(surface.detail.title, 'Retry Setup');
+      expect(surface.detail.actions.first.label, 'Try Import Again');
+    });
   });
+}
+
+Override _requiredSourcesAccepted(bool accepted) {
+  return requiredSourcesReadinessAcceptedProvider.overrideWith(
+    (ref) => Stream<bool>.value(accepted),
+  );
 }
 
 OnboardingEnvironmentReport _report({

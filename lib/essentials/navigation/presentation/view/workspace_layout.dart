@@ -17,7 +17,6 @@ class WorkspaceLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isParked = ref.watch(isSidebarParkedProvider(mode));
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

@@ -1,5 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/domain.dart' show ArchiveMutationOperation;
+import '../../archive_environment/feature_level_providers.dart'
+    show archiveMutationCoordinatorProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
 import 'conversation_graph_build_report.dart';
@@ -37,6 +40,16 @@ class ConversationGraphBuildController
   }
 
   Future<ConversationGraphBuildReport> _runBuild(String owner) async {
+    return ref
+        .read(archiveMutationCoordinatorProvider.notifier)
+        .run(
+          operation: ArchiveMutationOperation.graphBuild,
+          ownerLabel: owner,
+          action: () => _runAdmittedBuild(owner),
+        );
+  }
+
+  Future<ConversationGraphBuildReport> _runAdmittedBuild(String owner) async {
     final startedAt = DateTime.now().toUtc();
     state = ConversationGraphBuildState(
       status: ConversationGraphBuildStatus.running,

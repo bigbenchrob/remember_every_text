@@ -134,15 +134,37 @@ void main() {
       messageId: excludedMessageId,
     );
 
-    final overviews = await _reader(graphDatabase).readOverviewsByIds(
-      conversationIds: [targetConversationId],
-    );
+    final overviews = await _reader(
+      graphDatabase,
+    ).readOverviewsByIds(conversationIds: [targetConversationId]);
 
     expect(overviews, hasLength(1));
     expect(overviews.single.conversationId, targetConversationId);
     expect(overviews.single.participantHandles, ['+15551']);
     expect(overviews.single.messageCount, 1);
     expect(overviews.single.lastMessageText, 'target');
+  });
+
+  test('derives self conversations from local-account handles', () async {
+    final conversationId = _id(7);
+    final selfHandleId = _id(101);
+
+    await _insertChat(graphDatabase, id: conversationId);
+    await _insertHandle(
+      graphDatabase,
+      id: selfHandleId,
+      handle: '+16046858506',
+      isMe: true,
+    );
+    await _insertChatHandle(
+      graphDatabase,
+      conversationId: conversationId,
+      handleId: selfHandleId,
+    );
+
+    final overviews = await _reader(graphDatabase).readOverviews();
+
+    expect(overviews.single.isSelfConversation, isTrue);
   });
 
   test('reads conversation messages newest first', () async {
@@ -527,10 +549,12 @@ Future<void> _insertHandle(
   ConversationGraphDatabase graphDatabase, {
   required int id,
   required String handle,
+  bool isMe = false,
 }) {
   return graphDatabase.database.insert('handles', <String, Object?>{
     'ss_id': id,
     'id': handle,
+    'is_me': isMe ? 1 : 0,
   });
 }
 

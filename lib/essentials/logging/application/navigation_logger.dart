@@ -88,9 +88,17 @@ class NavigationLogEntry {
             if (attachment.mimeType != null) 'mimeType': attachment.mimeType,
             if (attachment.localPath != null) 'localPath': attachment.localPath,
           },
-          handleLens: (handleId) => {
-            'variant': 'handleLens',
-            'handleId': handleId,
+          handleInvestigation: (investigationId, investigation, target) => {
+            'variant': 'handleInvestigation',
+            'investigationId': investigationId.generation,
+            'investigation': investigation.name,
+            'target': target.when(
+              idle: () => const {'variant': 'idle'},
+              selectedSource: (handleId) => {
+                'variant': 'selectedSource',
+                'handleId': handleId,
+              },
+            ),
           },
         ),
       },
@@ -125,10 +133,17 @@ class NavigationLogEntry {
         if (searchQuery != null) 'searchQuery': searchQuery,
       },
       conversationExcerpt:
-          (conversationId, anchorMessageId, beforeCount, afterCount) => {
+          (
+            conversationId,
+            anchorMessageId,
+            originatingInvestigationId,
+            beforeCount,
+            afterCount,
+          ) => {
             'variant': 'conversationExcerpt',
             'conversationId': conversationId,
             'anchorMessageId': anchorMessageId,
+            'originatingInvestigationId': '$originatingInvestigationId',
             'beforeCount': beforeCount,
             'afterCount': afterCount,
           },

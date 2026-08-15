@@ -2,9 +2,8 @@
 tier: feature
 scope: proposal
 owner: agent-per-project
-last_reviewed: 2026-06-06
+last_reviewed: 2026-07-27
 links:
-  - ../../50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md
   - ../../40-FEATURES/chat-handles/CHARTER.md
 tests: []
 feature: manual-handle-to-contact-linking

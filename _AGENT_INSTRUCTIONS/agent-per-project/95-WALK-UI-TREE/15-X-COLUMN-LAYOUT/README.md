@@ -8,6 +8,16 @@ MessageLens UI walk.
 > rationale, and ownership repairs that led to the durable cross-column layout
 > contract.
 
+## Current Outcome
+
+The Search-page implementation now uses one authoritative
+`PageTrackLayoutMatrix`. Its three columns render complete cells from one
+resolved matrix; optional Conversation-panel content has feature-derived
+minimum reservations; and the sidebar selector opens transient choices in an
+anchored overlay without changing Track geometry. The former title/context
+band and row-only wrapper model described later in this file is retained as
+design history, not current implementation guidance.
+
 The immediate trigger is the Search page, but the intent is broader: major
 MessageLens lenses should share a stable page skeleton so new surfaces snap
 into a common visual rhythm instead of inventing their own vertical hierarchy.
@@ -44,7 +54,10 @@ is a Conversation workspace, not a Search-owned context widget. See:
 - `CONVERSATION_OWNERSHIP_AUDIT.md`
 - `CONVERSATION_OWNERSHIP_REPAIR.md`
 
-## Current Page Skeleton
+## Historical Page Skeleton (Superseded)
+
+The following sections preserve the design path that preceded the matrix. They
+must not be used as current implementation instructions.
 
 The current implementation direction is deliberately simpler than the original
 four-band model.
@@ -192,7 +205,7 @@ Then implement in small steps:
 Avoid a broad app-shell redesign. This is a reusable layout grammar, not a new
 navigation system.
 
-## Current Implementation Primitives
+## Historical Implementation Primitives (Retired)
 
 The current shared primitives are:
 

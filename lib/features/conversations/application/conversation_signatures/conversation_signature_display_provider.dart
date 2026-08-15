@@ -33,6 +33,7 @@ class ConversationSignatureDisplayModel {
     required this.participantLabels,
     required this.participantCount,
     required this.isGroup,
+    this.isSelfConversation = false,
     required this.messageCount,
     required this.attachmentCount,
     required this.firstMessageAtUtc,
@@ -48,6 +49,7 @@ class ConversationSignatureDisplayModel {
   final List<String> participantLabels;
   final int participantCount;
   final bool isGroup;
+  final bool isSelfConversation;
   final int messageCount;
   final int attachmentCount;
   final String? firstMessageAtUtc;
@@ -229,10 +231,15 @@ ConversationSignatureDisplayModel _toDisplayModel(
   return ConversationSignatureDisplayModel(
     conversationId: signature.conversationId,
     title: displayIdentity.title,
-    chatHookLabel: _chatHookLabelForSignature(signature, displayIdentity),
+    chatHookLabel:
+        signature.isSelfConversation || displayIdentity.isSelfConversation
+        ? null
+        : _chatHookLabelForSignature(signature, displayIdentity),
     participantLabels: displayIdentity.participantLabels,
     participantCount: signature.participantCount,
     isGroup: signature.isGroup,
+    isSelfConversation:
+        signature.isSelfConversation || displayIdentity.isSelfConversation,
     messageCount: signature.messageCount,
     attachmentCount: signature.attachmentCount,
     firstMessageAtUtc: signature.firstMessageAtUtc,

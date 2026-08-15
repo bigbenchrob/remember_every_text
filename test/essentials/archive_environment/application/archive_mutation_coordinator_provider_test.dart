@@ -1,0 +1,342 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/archive_environment/application.dart'
+    show ArchiveCheckpointReceiptValidator;
+import 'package:remember_this_text/essentials/archive_environment/domain.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart';
+
+import '../../../test_support/test_archive_fixture.dart';
+
+void main() {
+  test('fails closed before archive admission', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await expectLater(
+      container
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<void>(
+            operation: ArchiveMutationOperation.graphBuild,
+            ownerLabel: 'test-graph-build',
+            action: () async {},
+          ),
+      throwsA(isA<StateError>()),
+    );
+  });
+
+  test('admits one owner and records denied competing work', () async {
+    final harness = await _CoordinatorHarness.create();
+    addTearDown(harness.dispose);
+    final releaseFirstOwner = Completer<void>();
+
+    final firstOperation = harness.coordinator.run<void>(
+      operation: ArchiveMutationOperation.liveGraphUpdate,
+      ownerLabel: 'live-monitor',
+      action: () => releaseFirstOwner.future,
+    );
+
+    final activeState = harness.state;
+    expect(activeState.operation, ArchiveMutationOperation.liveGraphUpdate);
+    expect(activeState.ownerLabel, 'live-monitor');
+    expect(activeState.environment, ArchiveEnvironment.test);
+    expect(
+      activeState.archiveInstanceId,
+      harness.fixture.authority.identity.archiveInstanceId,
+    );
+    expect(activeState.holdCount, 1);
+    expect(activeState.acquiredAtUtc, isNotNull);
+
+    await expectLater(
+      harness.coordinator.run<void>(
+        operation: ArchiveMutationOperation.historicalArchiveImport,
+        ownerLabel: 'historical-import',
+        action: () async {},
+      ),
+      throwsA(
+        isA<ArchiveMutationDeniedException>()
+            .having(
+              (error) => error.requestedOperation,
+              'requested operation',
+              ArchiveMutationOperation.historicalArchiveImport,
+            )
+            .having(
+              (error) => error.currentOperation,
+              'current operation',
+              ArchiveMutationOperation.liveGraphUpdate,
+            ),
+      ),
+    );
+
+    final deniedState = harness.state;
+    expect(deniedState.deniedRequests, 1);
+    expect(
+      deniedState.lastDeniedOperation,
+      ArchiveMutationOperation.historicalArchiveImport,
+    );
+    expect(deniedState.lastDeniedOwner, 'historical-import');
+    expect(deniedState.lastDeniedAtUtc, isNotNull);
+
+    releaseFirstOwner.complete();
+    await firstOperation;
+    expect(harness.state.isLocked, isFalse);
+    expect(harness.state.lastReleasedAtUtc, isNotNull);
+  });
+
+  test('same async owner may re-enter for a nested stage', () async {
+    final harness = await _CoordinatorHarness.create();
+    addTearDown(harness.dispose);
+
+    await harness.coordinator.run<void>(
+      operation: ArchiveMutationOperation.liveGraphUpdate,
+      ownerLabel: 'live-monitor',
+      action: () async {
+        expect(harness.state.holdCount, 1);
+        await harness.coordinator.run<void>(
+          operation: ArchiveMutationOperation.graphBuild,
+          ownerLabel: 'graph-build-stage',
+          action: () async {
+            expect(harness.state.ownerLabel, 'live-monitor');
+            expect(harness.state.holdCount, 2);
+          },
+        );
+        expect(harness.state.holdCount, 1);
+      },
+    );
+
+    expect(harness.state.isLocked, isFalse);
+  });
+
+  test('exceptions release operation authority', () async {
+    final harness = await _CoordinatorHarness.create();
+    addTearDown(harness.dispose);
+
+    await expectLater(
+      harness.coordinator.run<void>(
+        operation: ArchiveMutationOperation.automaticRecovery,
+        ownerLabel: 'recovery',
+        action: () async {
+          throw StateError('synthetic failure');
+        },
+      ),
+      throwsStateError,
+    );
+
+    expect(harness.state.isLocked, isFalse);
+    expect(harness.state.lastReleasedAtUtc, isNotNull);
+  });
+
+  test('message-data reset cannot overlap a live graph update', () async {
+    final harness = await _CoordinatorHarness.create();
+    addTearDown(harness.dispose);
+    final releaseLiveUpdate = Completer<void>();
+
+    final liveUpdate = harness.coordinator.run<void>(
+      operation: ArchiveMutationOperation.liveGraphUpdate,
+      ownerLabel: 'live-monitor',
+      action: () => releaseLiveUpdate.future,
+    );
+
+    await expectLater(
+      harness.coordinator.run<void>(
+        operation: ArchiveMutationOperation.messageDataReset,
+        ownerLabel: 'message-data-reset',
+        action: () async {},
+      ),
+      throwsA(isA<ArchiveMutationDeniedException>()),
+    );
+
+    releaseLiveUpdate.complete();
+    await liveUpdate;
+  });
+
+  test('historical import cannot overlap a graph build', () async {
+    final harness = await _CoordinatorHarness.create();
+    addTearDown(harness.dispose);
+    final releaseGraphBuild = Completer<void>();
+
+    final graphBuild = harness.coordinator.run<void>(
+      operation: ArchiveMutationOperation.graphBuild,
+      ownerLabel: 'graph-build',
+      action: () => releaseGraphBuild.future,
+    );
+
+    await expectLater(
+      harness.coordinator.run<void>(
+        operation: ArchiveMutationOperation.historicalArchiveImport,
+        ownerLabel: 'historical-import',
+        action: () async {},
+      ),
+      throwsA(isA<ArchiveMutationDeniedException>()),
+    );
+
+    releaseGraphBuild.complete();
+    await graphBuild;
+  });
+
+  test('provider disposal does not strand a completing operation', () async {
+    final fixture = await TestArchiveFixture.create(
+      prefix: 'mutation_coordinator_disposal_test_',
+    );
+    addTearDown(fixture.dispose);
+    final container = ProviderContainer(
+      overrides: [
+        admittedArchiveAccessAuthorityProvider.overrideWithValue(
+          fixture.authority,
+        ),
+      ],
+    );
+    final releaseOperation = Completer<void>();
+    final operation = container
+        .read(archiveMutationCoordinatorProvider.notifier)
+        .run<void>(
+          operation: ArchiveMutationOperation.graphBuild,
+          ownerLabel: 'disposing-owner',
+          action: () => releaseOperation.future,
+        );
+
+    expect(container.read(archiveMutationCoordinatorProvider).isLocked, isTrue);
+    container.dispose();
+    releaseOperation.complete();
+
+    await expectLater(operation, completes);
+  });
+
+  test('database reopen state derives from the admitted operation', () async {
+    final harness = await _CoordinatorHarness.create();
+    addTearDown(harness.dispose);
+
+    await harness.coordinator.run<void>(
+      operation: ArchiveMutationOperation.liveGraphUpdate,
+      ownerLabel: 'live-monitor',
+      action: () async {
+        expect(
+          harness.container.read(archiveDatabaseReopenBlockedProvider),
+          isFalse,
+        );
+      },
+    );
+
+    await harness.coordinator.run<void>(
+      operation: ArchiveMutationOperation.messageDataReset,
+      ownerLabel: 'reset',
+      action: () async {
+        expect(
+          harness.container.read(archiveDatabaseReopenBlockedProvider),
+          isTrue,
+        );
+      },
+    );
+
+    expect(
+      harness.container.read(archiveDatabaseReopenBlockedProvider),
+      isFalse,
+    );
+  });
+
+  test(
+    'production high-risk operations require verified recovery evidence',
+    () async {
+      final authority = ArchiveAccessAuthority(
+        identity: ResolvedArchiveIdentity(
+          environment: ArchiveEnvironment.production,
+          buildIdentity: ArchiveBuildIdentity.productionRelease,
+          archiveInstanceId: ArchiveInstanceId(
+            'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          ),
+          canonicalRootPath: '/disposable/production-clone',
+          bundleIdentifier: 'com.bigbenchsoftware.MessageLens',
+          productName: 'MessageLens',
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(authority),
+          archiveCheckpointReceiptValidatorProvider.overrideWithValue(
+            const _AlwaysValidCheckpointReceiptValidator(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await expectLater(
+        container
+            .read(archiveMutationCoordinatorProvider.notifier)
+            .run<void>(
+              operation: ArchiveMutationOperation.messageDataReset,
+              ownerLabel: 'production-reset',
+              action: () async {},
+            ),
+        throwsA(isA<ArchiveCheckpointRequiredException>()),
+      );
+
+      container
+          .read(verifiedArchiveCheckpointProvider.notifier)
+          .record(
+            ArchiveCheckpointReceipt(
+              checkpointId: 'checkpoint-1',
+              sourceEnvironment: ArchiveEnvironment.production,
+              sourceArchiveInstanceId: authority.identity.archiveInstanceId,
+              sourceRootPath: authority.rootPath,
+              checkpointRootPath: '/disposable/checkpoint',
+              manifestDigest: 'digest',
+              verifiedAtUtc: DateTime.utc(2026, 7, 27),
+            ),
+          );
+
+      await container
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<void>(
+            operation: ArchiveMutationOperation.messageDataReset,
+            ownerLabel: 'production-reset',
+            action: () async {},
+          );
+    },
+  );
+}
+
+final class _AlwaysValidCheckpointReceiptValidator
+    implements ArchiveCheckpointReceiptValidator {
+  const _AlwaysValidCheckpointReceiptValidator();
+
+  @override
+  Future<bool> validates({
+    required ArchiveCheckpointReceipt receipt,
+    required ArchiveAccessAuthority authority,
+  }) async {
+    return receipt.matches(authority);
+  }
+}
+
+final class _CoordinatorHarness {
+  const _CoordinatorHarness({required this.fixture, required this.container});
+
+  final TestArchiveFixture fixture;
+  final ProviderContainer container;
+
+  ArchiveMutationCoordinator get coordinator =>
+      container.read(archiveMutationCoordinatorProvider.notifier);
+
+  ArchiveMutationCoordinatorState get state =>
+      container.read(archiveMutationCoordinatorProvider);
+
+  static Future<_CoordinatorHarness> create() async {
+    final fixture = await TestArchiveFixture.create(
+      prefix: 'mutation_coordinator_test_',
+    );
+    final container = ProviderContainer(
+      overrides: [
+        admittedArchiveAccessAuthorityProvider.overrideWithValue(
+          fixture.authority,
+        ),
+      ],
+    );
+    return _CoordinatorHarness(fixture: fixture, container: container);
+  }
+
+  Future<void> dispose() async {
+    container.dispose();
+    await fixture.dispose();
+  }
+}

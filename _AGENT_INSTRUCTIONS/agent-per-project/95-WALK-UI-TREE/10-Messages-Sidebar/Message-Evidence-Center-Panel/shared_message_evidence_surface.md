@@ -44,7 +44,14 @@ the user should experience one coherent MessageLens reading environment.
   search controls.
 - Message rows now use a common evidence row path across major graph-backed
   surfaces.
-- All Messages search results can open a right-side message context panel.
+- Message metadata describes the counterpart relationship explicitly:
+  incoming evidence reads `received from <sender>`, while outgoing evidence
+  reads `from me to <Conversation>` using canonical Conversation identity.
+- Messages in a self-conversation read simply `self`, regardless of source
+  direction. Self-conversation identity is a graph/read-model fact derived
+  from local account handles, not a display-title comparison.
+- Eligible All Messages rows can open a right-side Conversation excerpt,
+  whether or not a text query produced the row.
 - The right context panel shows the selected message with nearby conversation
   messages.
 - The center-panel search-result row and the right-panel context row now share
@@ -52,6 +59,12 @@ the user should experience one coherent MessageLens reading environment.
   message.
 - The right context panel introduces the parent Conversation with the canonical
   Conversation Card before showing the bounded excerpt.
+- The right context panel identifies the anchor message's month and year before
+  the excerpt, so moving from broad Search results into Conversation
+  context includes explicit temporal orientation.
+- The month/year orientation uses a softened form of the established orange
+  comparison accent. It identifies the temporal value organizing the excerpt;
+  it does not mean warning, importance, or date in the abstract.
 
 ---
 
@@ -79,13 +92,16 @@ the user should experience one coherent MessageLens reading environment.
 | High | Date-range summary wording was inconsistent and duplicated across message surfaces. | Centralized date range and date label formatting. |
 | High | Count wording could produce awkward strings such as `1 messages`. | Added shared count-label formatting for singular/plural app terms. |
 | High | Contact message search updated the metadata line but did not filter the displayed message list, unlike Conversations. | Fixed Contact search so the message list reflects the selected evidence scope. |
-| High | All Messages had lost the ability to open a message in its original conversation context. | Restored the `In conversation` action for eligible search result rows. |
+| High | Unfamiliar-source badges counted direct sender evidence while the center timeline required chat membership, producing nonzero badges with empty or incomplete message lists. | Unified standalone handle timeline, hydration, and search around canonical sender identity; sender-only evidence no longer depends on `chat_to_handle`. |
+| High | All Messages had lost the ability to open a message in its original conversation context. | Restored the `In conversation` action for every eligible row carrying canonical Conversation identity, not only search results. |
 | High | Opening conversation context displayed the message in the right panel but did not highlight the original center-panel row. | Center panel now derives its anchor from the active right-panel context and highlights the corresponding row. |
 | Medium | The right context panel needed stronger parent-object identity. | Added the canonical Conversation Card as the right-sidebar excerpt header. |
-| Medium | The first excerpt message felt visually attached to the Conversation Card. | Added a subdued excerpt label and gave the card/header region ownership of the transition space before the message excerpt begins. |
+| Medium | The first excerpt message felt visually attached to the Conversation Card. | Gave the card/header region ownership of the transition space before the message excerpt begins. An interim excerpt caption was later removed once temporal orientation made it redundant. |
+| Medium | Opening an old Search result could silently move the user to another point in time. | Added a month/year orientation heading before the excerpt, derived from the exact anchor message. |
 | Medium | The source-row `In conversation` action became redundant once its context panel was already open. | Suppressed the redundant action while the corresponding context is visible. |
 | Medium | Developer status text such as `evidence skeleton • hydrate visible rows` was visible in user-facing headers. | Removed from message evidence headers. |
 | Medium | Per-message semantic badges such as `rich_text`, `text`, `attributed body`, `summary info`, and `error 0` added noise without helping the user read evidence. | Removed from normal message row presentation. |
+| Medium | Direction metadata used separators such as `received \| Claire` and reduced outgoing identity to `from me \| me`. | Shared evidence rows now state `received from <sender>` and `from me to <Conversation>`. |
 | Medium | Context correspondence needed a stronger visual explanation than a static border. | Added a one-shot orange pulse plus persistent orange correspondence chrome. |
 | Low | The phrase `Show in conversation` / `In conversation` should remain concise and action-oriented. | Current button label is `In conversation`. |
 
@@ -123,6 +139,41 @@ in the normal user-facing header.
 
 ### Message metadata
 
+The first metadata line should state both direction and counterpart in natural
+language:
+
+- incoming: `received from Claire`
+- incoming from a canonical local-account handle outside a resolved
+  Conversation: `received from me`
+- outgoing: `from me to Claire`
+- either direction in a self-conversation: `self`
+
+Incoming evidence uses the resolved sender identity. Outgoing evidence uses
+the canonical Conversation display title because sender metadata alone cannot
+identify the recipient. Rows without canonical Conversation identity must fall
+back honestly to `from me` rather than inventing a counterpart.
+
+Self-conversation labeling is intentionally Conversation-level. Source import
+identifies local account handles from Apple Messages account evidence, graph
+projection preserves that fact, and Conversation read models determine whether
+a one-to-one Conversation is with the MessageLens user. The row renderer
+consumes that prepared identity; it must not infer self identity from names.
+Historical source metadata is reconciled at startup, including canonical
+matching of phone URI and formatted-number variants, so this grammar applies to
+older Conversations without a message reimport. The canonical mechanism is
+documented in
+`../../../10-DATABASES/12-identity-model-contacts-handles-participants.md`.
+
+The same first-person identity contract applies beyond message metadata. A
+local-account participant is `Me` in participant titles and lists, while a
+self-only Conversation is `self`. Evidence widgets consume these resolved
+labels and must not reveal the user's imported personal name merely because an
+AddressBook contact is linked to the local handle.
+
+Recovered and unlinked evidence also resolves sender identity through this
+shared contract. It must not bypass canonical local-account identity merely
+because no Conversation relationship was recovered for the row.
+
 Semantic provenance fields are useful for diagnostics, import validation, and
 future investigative views, but they should not appear as a default badge row
 under every message.
@@ -140,6 +191,21 @@ message stream should reflect those matched messages. This must hold regardless
 of whether the route came from Contacts, Conversations, All Messages, or a
 future evidence source.
 
+### Unfamiliar-source scope parity
+
+An unfamiliar-source row represents messages received from one canonical
+handle. Its sidebar badge, header count, timeline skeleton, hydrated rows, and
+search results must therefore describe the same canonical sender scope.
+
+Apple Messages can preserve a message sender without preserving or projecting
+a corresponding `chat_to_handle` membership. That missing edge must not hide
+the message. Conversation membership remains useful provenance when present,
+but it is not the admission rule for standalone handle evidence.
+
+Contact-scoped and Conversation-scoped evidence retain their own relationship
+semantics. This sender rule applies specifically to standalone handle and
+unfamiliar-source scopes.
+
 ### Conversation context
 
 Opening a search result in context is not just navigation. It teaches the user:
@@ -154,10 +220,9 @@ The right sidebar is a Conversation viewed through the Search lens. Its visual
 hierarchy should use the same peer-panel bands as the Search and Messages
 panels:
 
-1. Panel title: `Conversation`.
+1. Panel title: `Conversation excerpt`.
 2. Conversation Card: the parent Conversation identity.
-3. Excerpt label: a subdued explanation such as `21-message excerpt centered
-   on the chosen message`.
+3. Temporal orientation: the anchor message's month and year.
 4. Excerpt timeline: nearby messages around the selected hit.
 5. Highlighted message: the specific message corresponding to the chosen
    message.
@@ -205,12 +270,18 @@ interaction.
 - Removed user-facing implementation status lines from message evidence
   headers.
 - Removed default semantic provenance badge rows under messages.
+- Replaced ambiguous sender separators with explicit incoming/outgoing
+  counterpart language backed by canonical Conversation identity.
+- Added a direction-independent `self` label for graph-derived
+  self-conversations.
 - Fixed Contact message search so search results and displayed rows stay in
   sync.
-- Restored the `In conversation` action for All Messages search results.
+- Restored the `In conversation` action for every eligible All Messages row,
+  including ordinary unfiltered evidence.
 - Opened message context in the right panel through existing panel actions.
 - Added the canonical Conversation Card to the right-sidebar context panel.
-- Added a subdued excerpt label for bounded conversation excerpts.
+- Added explicit month/year orientation for bounded conversation excerpts and
+  removed the redundant excerpt-count caption.
 - Suppressed redundant `In conversation` actions while the matching context
   panel is already open.
 - Derived center-panel message anchoring from active right-panel context state.
@@ -232,7 +303,8 @@ interaction.
 - [x] Default message rows do not show diagnostic semantic badge clutter.
 - [x] Contact and Conversation message search both update the displayed message
       stream, not only the header metadata.
-- [x] All Messages search results can open message context in the end sidebar.
+- [x] Eligible All Messages rows can open Conversation context in the end
+      sidebar, with or without an active text query.
 - [x] The right sidebar context panel identifies the parent Conversation using
       the canonical Conversation Card grammar.
 - [x] The right sidebar context panel distinguishes Conversation identity from

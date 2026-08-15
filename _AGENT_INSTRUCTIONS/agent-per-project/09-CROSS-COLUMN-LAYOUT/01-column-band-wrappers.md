@@ -1,140 +1,103 @@
 ---
 tier: project
-scope: column-band-wrappers
+scope: page-track-matrix-rendering
 owner: agent-per-project
-last_reviewed: 2026-07-14
+last_reviewed: 2026-07-24
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
-  - ../../../lib/config/theme/widgets/layout/vertical_column_bands.dart
-  - ../../../lib/config/theme/widgets/layout/app_panel_bands.dart
-tests: []
+  - ./05-anatomy-of-track-cell-rendering.md
+  - ./07-column-specific-shared-track-boundaries.md
+  - ../../../lib/config/theme/widgets/layout/page_track_layout_matrix.dart
+  - ../../../lib/config/theme/widgets/layout/resolved_track_layout_matrix.dart
+tests:
+  - test/config/theme/widgets/layout/page_track_layout_matrix_test.dart
+  - test/config/theme/widgets/layout/resolved_track_layout_matrix_test.dart
 ---
 
-# Column Band Wrappers
+# Page Track Matrix And Cell Renderer
 
-The current cross-column alignment mechanics are implemented with two wrapper
-widgets:
+This filename is retained to avoid breaking historical links. The old
+`TrackCellColumnBand` wrapper architecture has been retired.
 
-- `TitleColumnBand`
-- `ContextColumnBand`
-
-They live in:
+The active Search-page mechanics are:
 
 ```text
-lib/config/theme/widgets/layout/vertical_column_bands.dart
+PageTrackLayoutMatrix<TrackOccupant>
+    -> ResolvedTrackLayoutMatrix
+    -> ResolvedTrackLayoutMatrixScope
+    -> TrackCellView(CellId)
 ```
 
-## Role
+## PageTrackLayoutMatrix
 
-The wrappers own fixed outer dimensions. They also provide default internal
-padding, child placement, and optional developer diagnostics.
+The matrix is the page's composition authority. It declares every coordinate
+exactly once as either occupied or empty. A `CellId` combines an ordinal
+`TrackId` with an ordinal `TrackColumnId`.
 
-They are intentionally small. They are not a full page frame and they are not a
-business-semantic component.
+The matrix owns placement only. It does not calculate geometry and does not
+interpret feature meaning.
 
-## Why Wrappers Instead Of A Full Frame
+## ResolvedTrackLayoutMatrix
 
-Earlier design work explored a stricter multi-band page frame. That was too
-rigid for MessageLens because the left sidebar is cassette-driven and
-non-deterministic.
-
-The current model is narrower:
+The resolver asks each occupied cell's `TrackOccupant` for an
+`OccupantDimensionalClaim`. For every cell it computes:
 
 ```text
-TitleColumnBand
-ContextColumnBand
-primary content below
+effective natural height =
+    max(minimumReservedHeight, live naturalHeight or zero)
 ```
 
-Each column can use the same wrappers while still letting its own feature or
-cassette system decide what content belongs inside each band.
+It resolves each Track to the maximum effective height of its cells and records
+the resulting geometry for every coordinate.
 
-## TitleColumnBand
+Empty cells contribute no claim. They may still contribute an explicit
+page-owned minimum reservation, and every cell receives the same resolved
+Track height as its peers.
 
-Purpose:
+## TrackCellView
 
-- wraps panel identity
-- aligns the top selector/menu/title region across participating columns
+`TrackCellView` receives one complete `CellId`. It reads the corresponding
+resolved cell, gives the occupant its resolved allocation, and places the
+resulting feature presentation using the alignment recorded by the page.
 
-Current defaults:
+It is intentionally unintelligent. It does not infer placement, calculate
+geometry, inspect siblings, or apply feature semantics.
 
-- height: `72`
-- padding: `EdgeInsets.fromLTRB(32, 24, 32, 0)`
-- child placement: top-left
-- diagnostic border: red
+## Column Rendering Lifetime
 
-Sidebar usage may pass sidebar-specific padding while preserving the same outer
-height.
+The resolved matrix may contain more ordinal Tracks than a particular column
+renders before resuming native flow. Page composition declares that column's
+final shared Track explicitly.
 
-## ContextColumnBand
+The column renderer emits `TrackCellView` instances only through that declared
+boundary. It does not:
 
-Purpose:
+- render empty trailing cells through the page's final Track;
+- infer departure from the first empty cell;
+- inspect feature meaning; or
+- change the boundary when transient occupancy changes.
 
-- wraps pre-content context, scope, controls, or primary object summary
-- fixes the content-start y-position below it
+This keeps matrix resolution page-wide while allowing each column to have a
+truthful shared lifetime. The full contract is documented in
+[`07-column-specific-shared-track-boundaries.md`](07-column-specific-shared-track-boundaries.md).
 
-Current defaults:
+## Diagnostics
 
-- height: `166`
-- padding: `EdgeInsets.fromLTRB(32, 10, 32, 0)`
-- child placement: top-left
-- diagnostic border: blue
+Developer diagnostics belong to the resolved-cell renderer. Diagnostic colors
+identify ordinal Tracks only; they never imply title, metadata, controls, or
+other semantic roles.
 
-Sidebar usage may pass sidebar-specific padding while preserving the same outer
-height.
+## Retired Compatibility Path
 
-## Child Placement
+The following row-only compatibility types no longer exist:
 
-`ColumnBandChildPlacement` provides approved internal placement options:
+- `TrackRequirement`
+- `ResolvedTrackPlan`
+- `ResolvedTrackPlanScope`
+- `TrackCellColumnBand`
+- `TrackOccupantView`
+- `VerticalColumnBand`
 
-- `topLeft`
-- `centerLeft`
-- `bottomLeft`
-- `custom`
-
-Prefer wrapper defaults first. Use explicit placement only when the child’s
-natural presentation needs controlled internal placement inside the fixed
-envelope.
-
-Do not move content by adding panel-specific top padding outside the wrapper.
-
-## Debug Margins
-
-The wrappers can show diagnostic colored borders in developer mode when
-`columnBandDebugMarginsProvider` is enabled.
-
-Semantics:
-
-- red: title band
-- blue: context band
-- orange: overflow warning or exceptional diagnostic state
-
-These borders are diagnostic only. They should not be part of production visual
-language.
-
-## Relationship To app_panel_bands.dart
-
-`lib/config/theme/widgets/layout/app_panel_bands.dart` still exists and contains
-older/support primitives such as:
-
-- `AppPanelBands`
-- `AppPanelColumnFrame`
-- `AppPanelFrameHeader`
-- `AppPanelFixedBand`
-- `AppPanelBandHeader`
-
-Treat these as transitional support for existing code paths unless a specific
-path still requires them.
-
-For new cross-column layout work, prefer the explicit wrapper model:
-
-```text
-TitleColumnBand
-ContextColumnBand
-content
-```
-
-If the older primitives are retired or revived, update this document and the
-contract document so future agents do not have to infer the active model from
-code history.
+Do not recreate them. New Search-page Track-region content must appear exactly
+once in the page matrix and render by complete `CellId`.

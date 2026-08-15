@@ -6,6 +6,11 @@ When a user has a Time Machine backup or manual backup that includes both the
 historical `chat.db` and the matching `Attachments` folder, MessageLens can
 recover files that Apple has since evicted from local storage.
 
+> **Safety:** recovery adds recovered payloads to the preservation repository;
+> it never resets or recreates that repository. Archived attachment payloads
+> remain outside all rebuild semantics. See
+> [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
+
 An initial heuristic approach — matching files by path-tail coincidence and
 SHA-256 hash — was proven fundamentally broken by forensic analysis:
 

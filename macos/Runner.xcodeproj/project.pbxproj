@@ -517,7 +517,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.bigbenchsoftware.MessageLens.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MessageLens.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MessageLens";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MessageLens Development.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MessageLens Development";
 			};
 			name = Debug;
 		};
@@ -549,7 +549,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.bigbenchsoftware.MessageLens.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MessageLens.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MessageLens";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MessageLens Development.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MessageLens Development";
 			};
 			name = Profile;
 		};
@@ -619,6 +619,12 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MESSAGELENS_ARCHIVE_BUILD_IDENTITY = developmentProfile;
+				MESSAGELENS_ARCHIVE_ENVIRONMENT = development;
+				MESSAGELENS_EXPECTED_SIGNING_IDENTITY = "";
+				PRODUCT_BUNDLE_IDENTIFIER = com.bigbenchsoftware.MessageLens.development;
+				PRODUCT_MODULE_NAME = MessageLens;
+				PRODUCT_NAME = "MessageLens Development";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};
@@ -754,6 +760,12 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MESSAGELENS_ARCHIVE_BUILD_IDENTITY = developmentDebug;
+				MESSAGELENS_ARCHIVE_ENVIRONMENT = development;
+				MESSAGELENS_EXPECTED_SIGNING_IDENTITY = "";
+				PRODUCT_BUNDLE_IDENTIFIER = com.bigbenchsoftware.MessageLens.development;
+				PRODUCT_MODULE_NAME = MessageLens;
+				PRODUCT_NAME = "MessageLens Development";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -778,6 +790,12 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MESSAGELENS_ARCHIVE_BUILD_IDENTITY = productionRelease;
+				MESSAGELENS_ARCHIVE_ENVIRONMENT = production;
+				MESSAGELENS_EXPECTED_SIGNING_IDENTITY = "Developer ID Application: Robert Campbell (FQHT2QP3NE)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.bigbenchsoftware.MessageLens;
+				PRODUCT_MODULE_NAME = MessageLens;
+				PRODUCT_NAME = MessageLens;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 			};

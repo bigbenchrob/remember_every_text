@@ -6,8 +6,10 @@ import 'package:macos_ui/macos_ui.dart' as macos_ui;
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/layout/app_panel_bands.dart';
-import '../../../../../config/theme/widgets/layout/vertical_column_bands.dart';
+import '../../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
+import '../../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../domain/message_evidence/message_evidence_search_mode.dart';
+import 'message_evidence_header_track_metrics.dart';
 
 class MessageEvidenceHeaderModel {
   const MessageEvidenceHeaderModel({
@@ -59,6 +61,7 @@ class MessageEvidenceHeader extends ConsumerWidget {
     this.details,
     this.padding = AppPanelBands.centerPanelPadding,
     this.useFixedPanelFrame = false,
+    this.continueInNativeFlowAfterTracks = false,
     super.key,
   });
 
@@ -66,6 +69,14 @@ class MessageEvidenceHeader extends ConsumerWidget {
   final Widget? details;
   final EdgeInsets padding;
   final bool useFixedPanelFrame;
+
+  /// Continues the Messages-owned header flow after the page's shared Track
+  /// region ends.
+  ///
+  /// This is used when a page shares only its title row across columns. The
+  /// remaining header content has no cross-column relationship and therefore
+  /// returns to the feature's native layout rather than occupying false Tracks.
+  final bool continueInNativeFlowAfterTracks;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,6 +96,8 @@ class MessageEvidenceHeader extends ConsumerWidget {
             .toList(growable: false);
     final resolvedDetails = data.details ?? details;
 
+    final hasResolvedMatrix =
+        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
     final title = Text(data.title, style: typography.title1);
     final primary = _MessageEvidencePrimaryBand(
       identityContextLine: identityContextLine,
@@ -100,23 +113,16 @@ class MessageEvidenceHeader extends ConsumerWidget {
       actions: data.actions,
       details: resolvedDetails,
     );
-
     return ColoredBox(
       color: colors.messagePanels.coolPanelSurface,
-      child: useFixedPanelFrame
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TitleColumnBand(child: title),
-                ContextColumnBand(
-                  child: _MessageEvidenceContextBand(
-                    primary: primary,
-                    secondary: secondary,
-                  ),
-                ),
-              ],
+      child: useFixedPanelFrame && hasResolvedMatrix
+          ? _MessageEvidenceTrackedHeader(
+              primary: primary,
+              secondary: secondary,
+              padding: padding,
+              continueInNativeFlowAfterTracks: continueInNativeFlowAfterTracks,
             )
-          : AppPanelBandHeader(
+          : _MessageEvidenceFallbackHeader(
               padding: padding,
               title: title,
               primary: primary,
@@ -126,21 +132,98 @@ class MessageEvidenceHeader extends ConsumerWidget {
   }
 }
 
-class _MessageEvidenceContextBand extends StatelessWidget {
-  const _MessageEvidenceContextBand({
+class _MessageEvidenceTrackedHeader extends StatelessWidget {
+  const _MessageEvidenceTrackedHeader({
+    required this.primary,
+    required this.secondary,
+    required this.padding,
+    required this.continueInNativeFlowAfterTracks,
+  });
+
+  final Widget primary;
+  final Widget secondary;
+  final EdgeInsets padding;
+  final bool continueInNativeFlowAfterTracks;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const _MessageEvidenceTrackCells(),
+        if (continueInNativeFlowAfterTracks)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              padding.left,
+              AppPanelBands.titleToPrimaryGap,
+              padding.right,
+              padding.bottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                primary,
+                const SizedBox(height: AppPanelBands.primaryToSecondaryGap),
+                secondary,
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MessageEvidenceFallbackHeader extends StatelessWidget {
+  const _MessageEvidenceFallbackHeader({
+    required this.padding,
+    required this.title,
     required this.primary,
     required this.secondary,
   });
 
+  final EdgeInsets padding;
+  final Widget title;
   final Widget primary;
   final Widget secondary;
 
   @override
   Widget build(BuildContext context) {
+    return Padding(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          title,
+          const SizedBox(height: AppPanelBands.titleToPrimaryGap),
+          primary,
+          const SizedBox(height: AppPanelBands.primaryToSecondaryGap),
+          secondary,
+        ],
+      ),
+    );
+  }
+}
+
+class _MessageEvidenceTrackCells extends StatelessWidget {
+  const _MessageEvidenceTrackCells();
+
+  @override
+  Widget build(BuildContext context) {
+    final matrix = ResolvedTrackLayoutMatrixScope.of(context);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [primary, secondary],
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final trackId in matrix.trackIds)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: TrackCellView(
+              cellId: CellId(trackId: trackId, columnId: TrackColumnId.column2),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -259,7 +342,21 @@ class _MessageEvidenceSecondaryBand extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (searchConfig != null)
-          _MessageEvidenceHeaderSearchRow(config: searchConfig!),
+          MessageEvidenceSearchControlsPresentation(
+            query: searchConfig!.controller.text,
+            placeholder: searchConfig!.placeholder,
+            mode: searchConfig!.mode,
+            onQueryChanged: (query) {
+              if (searchConfig!.controller.text == query) {
+                return;
+              }
+              searchConfig!.controller.value = TextEditingValue(
+                text: query,
+                selection: TextSelection.collapsed(offset: query.length),
+              );
+            },
+            onModeChanged: searchConfig!.onModeChanged,
+          ),
         if (actions != null) ...[
           SizedBox(height: searchConfig == null ? 0 : 9),
           _MessageEvidenceHeaderActionRow(child: actions!),
@@ -273,13 +370,56 @@ class _MessageEvidenceSecondaryBand extends StatelessWidget {
   }
 }
 
-class _MessageEvidenceHeaderSearchRow extends ConsumerWidget {
-  const _MessageEvidenceHeaderSearchRow({required this.config});
+/// Feature-owned Search controls presentation used by both legacy headers and
+/// page-level Track occupants.
+class MessageEvidenceSearchControlsPresentation extends ConsumerStatefulWidget {
+  const MessageEvidenceSearchControlsPresentation({
+    required this.query,
+    required this.placeholder,
+    required this.onQueryChanged,
+    this.mode,
+    this.onModeChanged,
+    super.key,
+  });
 
-  final MessageEvidenceHeaderSearchConfig config;
+  final String query;
+  final String placeholder;
+  final ValueChanged<String> onQueryChanged;
+  final MessageEvidenceSearchMode? mode;
+  final ValueChanged<MessageEvidenceSearchMode>? onModeChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MessageEvidenceSearchControlsPresentation> createState() {
+    return _MessageEvidenceSearchControlsPresentationState();
+  }
+}
+
+class _MessageEvidenceSearchControlsPresentationState
+    extends ConsumerState<MessageEvidenceSearchControlsPresentation> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.query,
+  );
+
+  @override
+  void didUpdateWidget(MessageEvidenceSearchControlsPresentation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_controller.text == widget.query) {
+      return;
+    }
+    _controller.value = TextEditingValue(
+      text: widget.query,
+      selection: TextSelection.collapsed(offset: widget.query.length),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
 
@@ -289,24 +429,143 @@ class _MessageEvidenceHeaderSearchRow extends ConsumerWidget {
         children: [
           Icon(
             CupertinoIcons.search,
-            size: 15,
+            size: MessageEvidenceHeaderTrackMetrics.searchLeadingSlotWidth,
             color: colors.content.textSecondary,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(
+            width: MessageEvidenceHeaderTrackMetrics.searchLeadingGap,
+          ),
           Expanded(
             child: macos_ui.MacosTextField(
-              controller: config.controller,
-              placeholder: config.placeholder,
+              controller: _controller,
+              placeholder: widget.placeholder,
               clearButtonMode: macos_ui.OverlayVisibilityMode.editing,
+              onChanged: widget.onQueryChanged,
             ),
           ),
-          if (config.mode != null && config.onModeChanged != null) ...[
+          if (widget.mode != null && widget.onModeChanged != null) ...[
             const SizedBox(width: 8),
             _MessageEvidenceSearchModeToggle(
-              mode: config.mode!,
-              onModeChanged: config.onModeChanged!,
+              mode: widget.mode!,
+              onModeChanged: widget.onModeChanged!,
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One stable row describing the current Search investigation and its state.
+class SearchInvestigationStatusPresentation extends StatefulWidget {
+  const SearchInvestigationStatusPresentation({
+    required this.description,
+    required this.isSearching,
+    required this.style,
+    this.activityDelay = const Duration(milliseconds: 175),
+    super.key,
+  });
+
+  final String description;
+  final bool isSearching;
+  final TextStyle style;
+  final Duration activityDelay;
+
+  @override
+  State<SearchInvestigationStatusPresentation> createState() {
+    return _SearchInvestigationStatusPresentationState();
+  }
+}
+
+class _SearchInvestigationStatusPresentationState
+    extends State<SearchInvestigationStatusPresentation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _activityDelayController;
+  bool _showActivity = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _activityDelayController = AnimationController(
+      vsync: this,
+      duration: widget.activityDelay,
+    )..addStatusListener(_handleActivityDelayStatus);
+    _synchronizeActivity();
+  }
+
+  @override
+  void didUpdateWidget(SearchInvestigationStatusPresentation oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isSearching != widget.isSearching ||
+        oldWidget.description != widget.description ||
+        oldWidget.activityDelay != widget.activityDelay) {
+      _activityDelayController.duration = widget.activityDelay;
+      _synchronizeActivity();
+    }
+  }
+
+  @override
+  void dispose() {
+    _activityDelayController.dispose();
+    super.dispose();
+  }
+
+  void _synchronizeActivity() {
+    _activityDelayController.reset();
+    if (!widget.isSearching) {
+      _showActivity = false;
+      return;
+    }
+    _showActivity = false;
+    _activityDelayController.forward();
+  }
+
+  void _handleActivityDelayStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed && widget.isSearching) {
+      setState(() {
+        _showActivity = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final description = _showActivity
+        ? '${widget.description} · Searching...'
+        : widget.description;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 460),
+      child: Row(
+        children: [
+          SizedBox(
+            width: MessageEvidenceHeaderTrackMetrics.searchLeadingSlotWidth,
+            child: _showActivity
+                ? const Align(
+                    alignment: Alignment.centerLeft,
+                    child: macos_ui.ProgressCircle(
+                      radius: MessageEvidenceHeaderTrackMetrics
+                          .investigationStatusIndicatorRadius,
+                      semanticLabel: 'Searching',
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(
+            width: MessageEvidenceHeaderTrackMetrics.searchLeadingGap,
+          ),
+          const SizedBox(
+            width:
+                MessageEvidenceHeaderTrackMetrics.searchStatusFieldChromeInset,
+          ),
+          Expanded(
+            child: Text(
+              description,
+              style: widget.style,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

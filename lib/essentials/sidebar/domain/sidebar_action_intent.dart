@@ -15,7 +15,9 @@ enum SidebarContactProjection { allMessages, conversations }
 
 enum SidebarStrayHandleFilter { phones, emails, businessUrns }
 
-enum SidebarStrayHandleMode { allStrays, spamCandidates, dismissed }
+enum SidebarStrayHandleInvestigation { identifySources, numericSenderIds }
+
+enum SidebarStrayHandleReviewMode { active, dismissed }
 
 enum SidebarActionTone { neutral, primary, destructive }
 
@@ -159,10 +161,16 @@ final class StrayHandleFilterChanged extends SidebarPersistentIntent {
   final SidebarStrayHandleFilter filter;
 }
 
+final class StrayHandleInvestigationChanged extends SidebarPersistentIntent {
+  const StrayHandleInvestigationChanged({required this.investigation});
+
+  final SidebarStrayHandleInvestigation investigation;
+}
+
 final class StrayHandleModeChanged extends SidebarPersistentIntent {
   const StrayHandleModeChanged({required this.mode});
 
-  final SidebarStrayHandleMode mode;
+  final SidebarStrayHandleReviewMode mode;
 }
 
 final class StrayHandleOpened extends SidebarPersistentIntent {

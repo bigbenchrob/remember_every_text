@@ -31,4 +31,51 @@ void main() {
     expect(find.text('Two'), findsNothing);
     expect(selectedValues, isEmpty);
   });
+
+  testWidgets('anchored panel opens outside a constrained trigger cell', (
+    tester,
+  ) async {
+    final selectedValues = <String>[];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: WidgetsApp(
+          color: const Color(0xFFFFFFFF),
+          pageRouteBuilder: <T>(settings, builder) => PageRouteBuilder<T>(
+            settings: settings,
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                builder(context),
+          ),
+          home: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 300,
+              height: 44,
+              child: AppThemeWidgets.dropdownMenu<String>(
+                options: const ['One', 'Two'],
+                selectedOption: 'One',
+                onSelected: selectedValues.add,
+                optionLabelBuilder: (value) => value,
+                outerPadding: EdgeInsets.zero,
+                panelPresentation: AppDropdownPanelPresentation.anchoredOverlay,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('One'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Two'), findsOneWidget);
+
+    await tester.tap(find.text('Two'));
+    await tester.pumpAndSettle();
+
+    expect(selectedValues, const ['Two']);
+    expect(find.text('Two'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

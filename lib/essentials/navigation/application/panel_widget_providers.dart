@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../../config/theme/widgets/layout/vertical_column_bands.dart';
+import '../../../config/theme/widgets/layout/cross_column_track_plan.dart';
+import '../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
+import '../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../features/conversations/domain/spec_classes/conversations_view_spec.dart';
 import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature
-    show recoveredMessagesSidebarProvider;
+    show currentSearchInvestigationProvider, recoveredMessagesSidebarProvider;
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
@@ -20,6 +22,7 @@ import '../../sidebar/application/sidebar_flow_state_provider.dart';
 import '../../sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
 import '../../sidebar/presentation/view/sidebar_primary_context_section_surface.dart';
 import '../../sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../domain/entities/investigation_identity.dart';
 import '../domain/entities/panel_stack.dart';
 import '../domain/entities/view_spec.dart';
 import '../domain/navigation_constants.dart';
@@ -85,10 +88,14 @@ PanelStack effectiveRightPanelStack(Ref ref, SidebarMode mode) {
 
   final flowState = ref.watch(sidebarFlowProvider);
   final effectiveCenterSpec = ref.watch(effectiveCenterPanelSpecProvider(mode));
+  final currentSearchInvestigationId = ref.watch(
+    messages_feature.currentSearchInvestigationProvider,
+  );
   if (_shouldHideStoredRightPanel(
     flowState: flowState,
     centerSpec: effectiveCenterSpec,
     rightStack: rightStack,
+    currentSearchInvestigationId: currentSearchInvestigationId,
   )) {
     return const PanelStack.empty();
   }
@@ -221,10 +228,13 @@ bool _shouldShowRecoveredContextFor(SidebarFlowState flowState) {
       flowState.chosenContactId != null;
 }
 
+/// Stored panel state may survive temporary incompatibility. This resolver
+/// derives whether that state is currently effective without mutating it.
 bool _shouldHideStoredRightPanel({
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
   required PanelStack rightStack,
+  required InvestigationIdentity currentSearchInvestigationId,
 }) {
   final rightSpec = rightStack.activePage?.spec;
   if (rightSpec == null) {
@@ -235,6 +245,7 @@ bool _shouldHideStoredRightPanel({
     return !_isCenterSpecCompatibleWithSidebar(
       flowState: flowState,
       centerSpec: rightSpec,
+      currentSearchInvestigationId: currentSearchInvestigationId,
     );
   }
 
@@ -252,7 +263,7 @@ bool _isConversationExcerptRightPanel(ViewSpec spec) {
   return spec.maybeWhen(
     conversations: (conversationsSpec) {
       return conversationsSpec.maybeWhen(
-        conversationExcerpt: (_, __, ___, ____) => true,
+        conversationExcerpt: (_, __, ___, ____, _____) => true,
         orElse: () => false,
       );
     },
@@ -373,8 +384,10 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
       return messagesSpec.maybeWhen(
         forContact: (_, __, ___) => true,
         globalTimeline: (_) => true,
+        forHandle: (_) => true,
         recoveredUnlinkedMessages: (_, __) => true,
         recoveredNoHandleFromMeMessages: (_) => true,
+        handleInvestigation: (_, __, ___) => true,
         orElse: () => false,
       );
     },
@@ -392,6 +405,7 @@ bool _isFlowManagedCenterSpec(ViewSpec spec) {
 bool _isCenterSpecCompatibleWithSidebar({
   required SidebarFlowState flowState,
   required ViewSpec? centerSpec,
+  InvestigationIdentity? currentSearchInvestigationId,
 }) {
   if (centerSpec == null) {
     return true;
@@ -408,8 +422,10 @@ bool _isCenterSpecCompatibleWithSidebar({
                   flowState.contactProjection ==
                       SidebarFlowContactProjection.conversations);
         },
-        conversationExcerpt: (_, __, ___, ____) {
-          return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
+        conversationExcerpt: (_, __, originatingInvestigationId, ___, ____) {
+          return flowState.topMenuChoice ==
+                  TopChatMenuChoice.searchAllMessages &&
+              originatingInvestigationId == currentSearchInvestigationId;
         },
       );
     },
@@ -423,8 +439,10 @@ bool _isCenterSpecCompatibleWithSidebar({
         globalTimeline: (_) {
           return flowState.topMenuChoice == TopChatMenuChoice.searchAllMessages;
         },
-        forHandle: (_) {
-          return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
+        forHandle: (handleId) {
+          return flowState.effectiveSelectedHandleEvidenceId == handleId &&
+              flowState.selectedHandleEvidenceKind ==
+                  SidebarFlowHandleEvidenceKind.messages;
         },
         recoveredUnlinkedMessages: (contactId, _) {
           if (flowState.topMenuChoice ==
@@ -443,8 +461,20 @@ bool _isCenterSpecCompatibleWithSidebar({
               TopChatMenuChoice.recoveredNoHandleFromMeMessages;
         },
         recoveredAttachmentViewer: (_, __) => true,
-        handleLens: (_) {
-          return flowState.topMenuChoice == TopChatMenuChoice.strayHandles;
+        handleInvestigation: (investigationId, investigation, target) {
+          if (flowState.topMenuChoice != TopChatMenuChoice.strayHandles ||
+              flowState.strayHandleInvestigationId != investigationId ||
+              flowState.strayHandleInvestigation != investigation) {
+            return false;
+          }
+          return target.when(
+            idle: () => flowState.effectiveSelectedHandleEvidenceId == null,
+            selectedSource: (handleId) {
+              return flowState.effectiveSelectedHandleEvidenceId == handleId &&
+                  flowState.selectedHandleEvidenceKind ==
+                      SidebarFlowHandleEvidenceKind.lens;
+            },
+          );
         },
       );
     },
@@ -577,21 +607,31 @@ _SidebarContentSeamLayout? _contentSeamLayoutForRack({
   }
 
   final firstSpec = rack.cassettes.first.spec;
-  final usesSearchAllMessages = switch (firstSpec) {
+  return switch (firstSpec) {
     SidebarUtilityCassetteSpec() => firstSpec.maybeWhen(
       topChatMenu: (selectedChoice) {
-        return selectedChoice == TopChatMenuChoice.searchAllMessages;
+        return switch (selectedChoice) {
+          TopChatMenuChoice.searchAllMessages =>
+            const _SidebarContentSeamLayout(
+              lastSharedTrackId: TrackId.trackF,
+              nativeFlowSpacing: _SidebarNativeFlowSpacing.flush,
+            ),
+          TopChatMenuChoice.strayHandles => const _SidebarContentSeamLayout(
+            lastSharedTrackId: TrackId.trackA,
+          ),
+          TopChatMenuChoice.recoveredUnlinkedMessages ||
+          TopChatMenuChoice.recoveredNoHandleFromMeMessages =>
+            const _SidebarContentSeamLayout(lastSharedTrackId: TrackId.trackA),
+          TopChatMenuChoice.contacts => const _SidebarContentSeamLayout(
+            lastSharedTrackId: TrackId.trackA,
+          ),
+          _ => null,
+        };
       },
-      orElse: () => false,
+      orElse: () => null,
     ),
-    _ => false,
+    _ => null,
   };
-
-  if (!usesSearchAllMessages) {
-    return null;
-  }
-
-  return const _SidebarContentSeamLayout();
 }
 
 class LeftPanelHost extends ConsumerWidget {
@@ -628,8 +668,26 @@ class RightPanelHost extends ConsumerWidget {
 }
 
 final class _SidebarContentSeamLayout {
-  const _SidebarContentSeamLayout();
+  const _SidebarContentSeamLayout({
+    required this.lastSharedTrackId,
+    this.nativeFlowSpacing = _SidebarNativeFlowSpacing.preserveCassetteRhythm,
+  });
+
+  /// Last matrix row shared with column 1 before its cassette flow resumes.
+  ///
+  /// Navigation page composition owns this boundary. The generic sidebar
+  /// renderer only consumes the declared ordinal coordinate.
+  final TrackId lastSharedTrackId;
+
+  /// How the column resumes its native cassette flow after the shared boundary.
+  ///
+  /// Cassette sectioning owns the spacing value. Page composition only declares
+  /// whether that existing rhythm remains applicable after shared Track
+  /// geometry or whether the shared geometry already provides the separation.
+  final _SidebarNativeFlowSpacing nativeFlowSpacing;
 }
+
+enum _SidebarNativeFlowSpacing { preserveCassetteRhythm, flush }
 
 /// Sidebar surface that separates pinned controls from scrollable content.
 class _LeftSidebarSurface extends StatelessWidget {
@@ -650,6 +708,7 @@ class _LeftSidebarSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final seamLayout = contentSeamLayout;
         final controls = <Widget>[];
         final mainContentEntries =
             <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[];
@@ -680,7 +739,18 @@ class _LeftSidebarSurface extends StatelessWidget {
           mode: mode,
           cassetteEntries: mainContentEntries,
           maxWidth: constraints.maxWidth,
-          contentSeamLayout: contentSeamLayout,
+          contentSeamLayout: seamLayout,
+          leadingContentWidgets: seamLayout == null
+              ? const <Widget>[]
+              : controls.skip(1).toList(growable: false),
+          sharedTrackIds: seamLayout == null
+              ? const <TrackId>[]
+              : _sharedTrackIdsForSidebar(
+                  matrixTrackIds: ResolvedTrackLayoutMatrixScope.of(
+                    context,
+                  ).trackIds,
+                  lastSharedTrackId: seamLayout.lastSharedTrackId,
+                ),
         );
 
         if (contextualWidget case final contextualWidgetValue?) {
@@ -696,7 +766,7 @@ class _LeftSidebarSurface extends StatelessWidget {
         final hasExpandingContent = content.any((c) => c.shouldExpand);
         final renderedControls = _buildSidebarControls(
           controls: controls,
-          contentSeamLayout: contentSeamLayout,
+          contentSeamLayout: seamLayout,
         );
 
         // When we have expanding content (e.g., scrollable lists that handle
@@ -736,13 +806,13 @@ List<Widget> _buildSidebarControls({
   }
 
   return [
-    TitleColumnBand(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      childPlacement: const ColumnBandChildPlacement.topLeft(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: controls,
+    const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      child: TrackCellView(
+        cellId: CellId(
+          trackId: TrackId.trackA,
+          columnId: TrackColumnId.column1,
+        ),
       ),
     ),
   ];
@@ -754,13 +824,17 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntries({
   cassetteEntries,
   required double maxWidth,
   required _SidebarContentSeamLayout? contentSeamLayout,
+  List<Widget> leadingContentWidgets = const <Widget>[],
+  List<TrackId> sharedTrackIds = const <TrackId>[],
 }) {
-  if (contentSeamLayout case final seamLayout?) {
+  if (contentSeamLayout != null) {
     return _buildSidebarContentEntriesWithSeam(
       mode: mode,
       cassetteEntries: cassetteEntries,
       maxWidth: maxWidth,
-      contentSeamLayout: seamLayout,
+      leadingContentWidgets: leadingContentWidgets,
+      sharedTrackIds: sharedTrackIds,
+      nativeFlowSpacing: contentSeamLayout.nativeFlowSpacing,
     );
   }
 
@@ -814,26 +888,16 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
   required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
   cassetteEntries,
   required double maxWidth,
-  required _SidebarContentSeamLayout contentSeamLayout,
+  required List<Widget> leadingContentWidgets,
+  required List<TrackId> sharedTrackIds,
+  required _SidebarNativeFlowSpacing nativeFlowSpacing,
 }) {
-  final firstEntryIsContentStart =
-      cassetteEntries.isNotEmpty &&
-      cassetteEntries.first.resolvedCassette.payload.layoutAnchor ==
-          SidebarCassetteLayoutAnchor.preferredContentStart;
-  final contextZoneEntries = firstEntryIsContentStart || cassetteEntries.isEmpty
-      ? <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[]
-      : [cassetteEntries.first];
-  final contentStartEntries = _resetLeadingTopSpacing(
+  final contentStartEntries = _applyNativeFlowSpacing(
     mode: mode,
-    entries: cassetteEntries.sublist(contextZoneEntries.length),
+    entries: cassetteEntries,
+    spacing: nativeFlowSpacing,
   );
 
-  final contextZoneContent = _buildSidebarContentEntries(
-    mode: mode,
-    cassetteEntries: contextZoneEntries,
-    maxWidth: maxWidth,
-    contentSeamLayout: null,
-  );
   final contentStartContent = _buildSidebarContentEntries(
     mode: mode,
     cassetteEntries: contentStartEntries,
@@ -842,25 +906,42 @@ List<({Widget widget, bool shouldExpand})> _buildSidebarContentEntriesWithSeam({
   );
 
   return [
-    (
-      widget: ContextColumnBand(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-        childPlacement: const ColumnBandChildPlacement.topLeft(),
-        child: _ContentFillColumn(children: contextZoneContent),
+    for (final trackId in sharedTrackIds.skip(1))
+      (
+        widget: TrackCellView(
+          cellId: CellId(trackId: trackId, columnId: TrackColumnId.column1),
+        ),
+        shouldExpand: false,
       ),
-      shouldExpand: false,
-    ),
+    for (final widget in leadingContentWidgets)
+      (widget: widget, shouldExpand: false),
     ...contentStartContent,
   ];
 }
 
+List<TrackId> _sharedTrackIdsForSidebar({
+  required List<TrackId> matrixTrackIds,
+  required TrackId lastSharedTrackId,
+}) {
+  final boundaryIndex = matrixTrackIds.indexOf(lastSharedTrackId);
+  if (boundaryIndex < 0) {
+    throw StateError(
+      'Sidebar shared-track boundary $lastSharedTrackId is outside the '
+      'resolved page matrix.',
+    );
+  }
+  return matrixTrackIds.take(boundaryIndex + 1).toList(growable: false);
+}
+
 List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
-_resetLeadingTopSpacing({
+_applyNativeFlowSpacing({
   required SidebarMode mode,
   required List<({ResolvedSidebarCassette resolvedCassette, Widget widget})>
   entries,
+  required _SidebarNativeFlowSpacing spacing,
 }) {
-  if (entries.isEmpty) {
+  if (entries.isEmpty ||
+      spacing == _SidebarNativeFlowSpacing.preserveCassetteRhythm) {
     return entries;
   }
 

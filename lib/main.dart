@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' as sched;
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
@@ -10,15 +11,26 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart'
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'config/theme/colors/theme_colors.dart';
 import 'config/theme/theme_typography.dart';
 import 'essentials/app_mode/feature_level_providers.dart'
     show platformBrightnessProvider, switchableDarkModeProvider;
+import 'essentials/archive_environment/application.dart'
+    show ArchiveAdmissionService, admittedArchiveAccessAuthorityProvider;
+import 'essentials/archive_environment/domain.dart'
+    show ArchiveAccessAuthority, ArchiveBuildIdentity, ArchiveIdentityValidator;
+import 'essentials/archive_environment/infrastructure.dart'
+    show
+        DevelopmentArchiveRootOverrideResolver,
+        ExactCanonicalArchiveRootPolicy,
+        FileSystemArchiveMarkerStore,
+        MethodChannelArchiveAdmissionFailurePresenter,
+        MethodChannelNativeArchiveClaimReader;
 import 'essentials/conversation_graph/feature_level_providers.dart'
     show chatDbChangeMonitorProvider;
-import 'essentials/db/database_directory.dart';
 import 'essentials/logging/application/diagnostic_report_actions.dart';
 import 'essentials/logging/feature_level_providers.dart'
     show appLoggerProvider, diagnosticReportExporterProvider;
@@ -26,7 +38,12 @@ import 'essentials/navigation/application/router.dart';
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart'
     show windowStateServiceProvider;
+import 'features/presence_iteration_simple/presentation/linear_presence_experiment_host.dart';
 import 'frb_generated.dart';
+
+const bool _presenceDevelopmentHarnessEnabled = bool.fromEnvironment(
+  'PRESENCE_DEVELOPMENT_HARNESS',
+);
 
 /// This method initializes macos_window_utils and styles the window.
 Future<void> _configureMacosWindowUtils() async {
@@ -106,11 +123,55 @@ class _MyDelegate extends NSWindowDelegate {
 
 final List<Object> _windowDelegateLifetimeHandles = <Object>[];
 
+Future<ArchiveAccessAuthority> _admitArchive() async {
+  const claimReader = MethodChannelNativeArchiveClaimReader();
+  final claim = await claimReader.read();
+  final applicationSupportDirectory = await getApplicationSupportDirectory();
+  const rootOverrideResolver = DevelopmentArchiveRootOverrideResolver();
+  final expectedRoot = rootOverrideResolver.resolveExpectedRoot(
+    environment: claim.environment,
+    defaultRootPath: applicationSupportDirectory.path,
+    requireConfiguredOverride:
+        claim.buildIdentity == ArchiveBuildIdentity.fdaExperiment,
+  );
+  final rootPolicy = ExactCanonicalArchiveRootPolicy(
+    canonicalRoots: {claim.environment: expectedRoot},
+    platformApplicationSupportRoot: applicationSupportDirectory.parent.path,
+  );
+  final admissionService = ArchiveAdmissionService(
+    validator: ArchiveIdentityValidator(rootPolicy: rootPolicy),
+    markerStore: FileSystemArchiveMarkerStore(
+      rootPath: claim.canonicalRootPath,
+    ),
+  );
+  return admissionService.admit(claim);
+}
+
+Future<void> _reportArchiveAdmissionFailure(Object error) async {
+  debugPrint('Archive admission failed: $error');
+  if (!Platform.isMacOS) {
+    return;
+  }
+
+  try {
+    await const MethodChannelArchiveAdmissionFailurePresenter().present(error);
+  } catch (reportingError) {
+    debugPrint('Could not present archive admission failure: $reportingError');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Resolve the Application Support directory for all database files.
-  await initDatabaseDirectoryPath();
+  final ArchiveAccessAuthority archiveAuthority;
+  try {
+    archiveAuthority = await _admitArchive();
+  } catch (error, stackTrace) {
+    // Persistent diagnostics are forbidden before admission.
+    debugPrintStack(stackTrace: stackTrace);
+    await _reportArchiveAdmissionFailure(error);
+    return;
+  }
 
   // Initialize sqflite FFI for desktop platforms
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -178,6 +239,9 @@ void main() async {
   // Create provider container.
   final container = ProviderContainer(
     overrides: [
+      admittedArchiveAccessAuthorityProvider.overrideWith(
+        (ref) => archiveAuthority,
+      ),
       // Initialize platform brightness immediately.
       platformBrightnessProvider.overrideWith((ref) => brightness),
     ],
@@ -527,9 +591,21 @@ class App extends ConsumerWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(switchableDarkModeProvider);
+
+    if (kDebugMode && _presenceDevelopmentHarnessEnabled) {
+      return MacosApp(
+        title: 'Presence Iteration Simple',
+        theme: MacosThemeData.light().copyWith(),
+        darkTheme: MacosThemeData.dark().copyWith(),
+        themeMode: themeMode,
+        debugShowCheckedModeBanner: false,
+        home: const LinearPresenceExperimentHost(),
+      );
+    }
+
     final router = ref.watch(goRouterProvider);
     ref.watch(chatDbChangeMonitorProvider);
-    final themeMode = ref.watch(switchableDarkModeProvider);
 
     return MacosApp.router(
       title: 'remember_that_text',

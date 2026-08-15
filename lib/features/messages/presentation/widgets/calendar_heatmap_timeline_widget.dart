@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart' show MacosTooltip;
 
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../config/theme/widgets/heatmap/activity_heatmap_color_scale.dart';
 import '../../../../core/util/date_label_formatter.dart';
 import '../../domain/calendar_heatmap_timeline_data.dart';
 
@@ -11,14 +12,16 @@ import '../../domain/calendar_heatmap_timeline_data.dart';
 /// Each month is displayed as a fixed-size rectangle (or dots for sparse data)
 /// colored by message intensity. Years wrap to multiple rows if needed.
 ///
-/// Visual encoding:
-/// - 1-3 messages: Individual dots (•, ••, •••)
-/// - 4-50 messages: Gray intensities (light → dark)
-/// - 51-200 messages: Yellow intensities
-/// - 201-2000 messages: Green intensities
-/// - 2001-8000 messages: Blue intensities
-/// - 8001-30000 messages: Orange → Purple
-/// - 30000+ messages: Dark purple → Red
+/// Visual encoding has two deliberate regimes:
+/// - 0 messages: Empty month
+/// - 1-3 messages: Literal sparse-message dots
+/// - 4-50 messages: Neutral sparse-activity gray ramp
+/// - 51+ messages: Explicit approximately logarithmic categories forming one
+///   sequential yellow-green-teal-blue-purple active-activity scale
+///
+/// The dark-gray to bright-yellow transition is intentional: chromatic color
+/// marks the semantic boundary between sparse and sustained activity. Within
+/// the active regime, increasing counts become progressively darker.
 class CalendarHeatmapTimelineWidget extends ConsumerWidget {
   const CalendarHeatmapTimelineWidget({
     required this.data,
@@ -68,58 +71,6 @@ class CalendarHeatmapTimelineWidget extends ConsumerWidget {
           ),
       ],
     );
-  }
-}
-
-Color calendarHeatmapColorForIntensity(MonthIntensity intensity) {
-  switch (intensity) {
-    case MonthIntensity.notYetStarted:
-    case MonthIntensity.empty:
-    case MonthIntensity.fewDots:
-      return Colors.transparent;
-
-    case MonthIntensity.lightGray:
-      return const Color(0xFFE0E0E0);
-    case MonthIntensity.mediumGray:
-      return const Color(0xFFB0B0B0);
-    case MonthIntensity.darkGray:
-      return const Color(0xFF808080);
-
-    case MonthIntensity.paleYellow:
-      return const Color(0xFFFFF176);
-    case MonthIntensity.lightYellow:
-      return const Color(0xFFFFEE58);
-    case MonthIntensity.mediumYellow:
-      return const Color(0xFFFDD835);
-    case MonthIntensity.darkYellow:
-      return const Color(0xFFFBC02D);
-
-    case MonthIntensity.lightGreen:
-      return const Color(0xFFC8E6C9);
-    case MonthIntensity.mediumGreen:
-      return const Color(0xFF66BB6A);
-    case MonthIntensity.darkGreen:
-      return const Color(0xFF2E7D32);
-
-    case MonthIntensity.lightBlue:
-      return const Color(0xFFB3E5FC);
-    case MonthIntensity.mediumBlue:
-      return const Color(0xFF42A5F5);
-    case MonthIntensity.darkBlue:
-      return const Color(0xFF1565C0);
-
-    case MonthIntensity.lightOrange:
-      return const Color(0xFFFFE0B2);
-    case MonthIntensity.darkOrange:
-      return const Color(0xFFFB8C00);
-
-    case MonthIntensity.lightPurple:
-      return const Color(0xFFE1BEE7);
-    case MonthIntensity.darkPurple:
-      return const Color(0xFF8E24AA);
-
-    case MonthIntensity.red:
-      return const Color(0xFFD32F2F);
   }
 }
 
@@ -279,7 +230,7 @@ class _MonthCell extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: calendarHeatmapColorForIntensity(monthData.intensity),
+          color: activityHeatmapColorForMessageCount(monthData.messageCount),
           borderRadius: BorderRadius.circular(2),
         ),
       );

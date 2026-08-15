@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../essentials/db/feature_level_providers.dart'
     show driftConversationGraphDatabaseProvider, overlayDatabaseProvider;
 import '../../infrastructure/repositories/graph_contact_profile_reader.dart';
+import '../display_identity/display_identity_resolver_provider.dart';
 import 'contact_profile_reader.dart';
 import 'contact_profile_summary.dart';
 import 'virtual_participants_provider.dart';
@@ -16,7 +17,14 @@ Future<ContactProfileReader> contactProfileReader(Ref ref) async {
     driftConversationGraphDatabaseProvider.future,
   );
   final overlayDb = await ref.watch(overlayDatabaseProvider.future);
-  return GraphContactProfileReader(graphDb: graphDb, overlayDb: overlayDb);
+  final displayIdentityResolver = await ref.watch(
+    displayIdentityResolverProvider.future,
+  );
+  return GraphContactProfileReader(
+    graphDb: graphDb,
+    overlayDb: overlayDb,
+    displayIdentityResolver: displayIdentityResolver,
+  );
 }
 
 @riverpod

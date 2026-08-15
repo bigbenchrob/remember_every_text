@@ -4,6 +4,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../../essentials/archive_environment/domain.dart'
+    show ArchiveMutationOperation;
+import '../../../essentials/archive_environment/feature_level_providers.dart'
+    show archiveMutationCoordinatorProvider;
 import '../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
 import '../domain/entities/attachment_recovery_metadata.dart';
@@ -53,6 +57,23 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// Returns `true` if the file was newly archived, `false` if skipped
   /// (already archived or source missing).
   Future<bool> archiveAttachment({
+    required ArchiveCompatibilityKey archiveKey,
+    required String resolvedLocalPath,
+    required String? mimeType,
+    required String? sha256Hex,
+  }) {
+    return _runAttachmentMutation(
+      ownerLabel: 'attachment-single-archive',
+      action: () => _archiveAttachment(
+        archiveKey: archiveKey,
+        resolvedLocalPath: resolvedLocalPath,
+        mimeType: mimeType,
+        sha256Hex: sha256Hex,
+      ),
+    );
+  }
+
+  Future<bool> _archiveAttachment({
     required ArchiveCompatibilityKey archiveKey,
     required String resolvedLocalPath,
     required String? mimeType,
@@ -123,6 +144,21 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     required ArchiveCompatibilityKey archiveKey,
     required String? resolvedLocalPath,
     required String? mimeType,
+  }) {
+    return _runAttachmentMutation(
+      ownerLabel: 'attachment-prioritize-recovery',
+      action: () => _prioritizeRecovery(
+        archiveKey: archiveKey,
+        resolvedLocalPath: resolvedLocalPath,
+        mimeType: mimeType,
+      ),
+    );
+  }
+
+  Future<void> _prioritizeRecovery({
+    required ArchiveCompatibilityKey archiveKey,
+    required String? resolvedLocalPath,
+    required String? mimeType,
   }) async {
     final settings = await ref.read(archiveSettingsProvider.future);
     if (!settings.isEnabled) {
@@ -171,6 +207,21 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   }
 
   Future<AttachmentArchiveResult> archiveGraphMessageSourceRange({
+    required int sourceId,
+    required int startedAfterSourceRowId,
+    required int? lastImportedSourceRowId,
+  }) {
+    return _runAttachmentMutation(
+      ownerLabel: 'attachment-live-source-range',
+      action: () => _archiveGraphMessageSourceRange(
+        sourceId: sourceId,
+        startedAfterSourceRowId: startedAfterSourceRowId,
+        lastImportedSourceRowId: lastImportedSourceRowId,
+      ),
+    );
+  }
+
+  Future<AttachmentArchiveResult> _archiveGraphMessageSourceRange({
     required int sourceId,
     required int startedAfterSourceRowId,
     required int? lastImportedSourceRowId,
@@ -225,15 +276,30 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     return result;
   }
 
-  /// Sweep a small rolling chunk of graph attachments looking for image
-  /// files that are not yet archived but may now exist in Messages/Attachments.
+  /// Sweep a small rolling chunk of conventional graph attachments that are
+  /// not yet archived but may now exist in Messages/Attachments.
   ///
   /// This is intentionally low-cost: it advances by graph attachment ID,
   /// touches only a bounded chunk per invocation, and persists its cursor in
-  /// overlay settings so historical iCloud downloads are eventually archived.
+  /// overlay settings so delayed iCloud downloads are eventually archived.
+  /// Opaque NULL/blank-MIME payloads remain excluded pending a preservation
+  /// policy.
   Future<AttachmentArchiveResult> archiveNextGraphSweepChunk({
     int limit = _kDefaultGraphSweepLimit,
     bool updateSweepDebugState = true,
+  }) {
+    return _runAttachmentMutation(
+      ownerLabel: 'attachment-graph-sweep-chunk',
+      action: () => _archiveNextGraphSweepChunk(
+        limit: limit,
+        updateSweepDebugState: updateSweepDebugState,
+      ),
+    );
+  }
+
+  Future<AttachmentArchiveResult> _archiveNextGraphSweepChunk({
+    required int limit,
+    required bool updateSweepDebugState,
   }) async {
     if (limit <= 0) {
       return const AttachmentArchiveResult(
@@ -326,6 +392,17 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   Future<AttachmentArchiveResult> archiveGraphSweepBurst({
     int chunkLimit = _kDefaultGraphSweepLimit,
     int maxChunks = _kManualSweepBurstChunkCount,
+  }) {
+    return _runAttachmentMutation(
+      ownerLabel: 'attachment-graph-sweep-burst',
+      action: () =>
+          _archiveGraphSweepBurst(chunkLimit: chunkLimit, maxChunks: maxChunks),
+    );
+  }
+
+  Future<AttachmentArchiveResult> _archiveGraphSweepBurst({
+    required int chunkLimit,
+    required int maxChunks,
   }) async {
     if (chunkLimit <= 0 || maxChunks <= 0) {
       return const AttachmentArchiveResult(
@@ -438,7 +515,14 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
   /// source-row-range archiving instead. Runs in the background without
   /// blocking the UI. Emits [BulkArchiveProgress] state updates and supports
   /// pause/cancel.
-  Future<AttachmentArchiveResult> archiveAllAvailable() async {
+  Future<AttachmentArchiveResult> archiveAllAvailable() {
+    return _runAttachmentMutation(
+      ownerLabel: 'attachment-archive-all',
+      action: _archiveAllAvailable,
+    );
+  }
+
+  Future<AttachmentArchiveResult> _archiveAllAvailable() async {
     _pauseRequested = false;
     _cancelRequested = false;
 
@@ -488,6 +572,19 @@ class AttachmentArchiveService extends _$AttachmentArchiveService {
     ref.invalidate(archiveSettingsProvider);
 
     return result;
+  }
+
+  Future<T> _runAttachmentMutation<T>({
+    required String ownerLabel,
+    required Future<T> Function() action,
+  }) {
+    return ref
+        .read(archiveMutationCoordinatorProvider.notifier)
+        .run<T>(
+          operation: ArchiveMutationOperation.attachmentReconciliation,
+          ownerLabel: ownerLabel,
+          action: action,
+        );
   }
 
   Future<_ArchiveRowsOutcome> _archiveRows({

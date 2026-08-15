@@ -11,6 +11,8 @@ import '../../theme_typography.dart';
 typedef AppDropdownItemBuilder<T> =
     Widget Function(BuildContext context, T value, {required bool isSelected});
 
+enum AppDropdownPanelPresentation { inline, anchoredOverlay }
+
 /// Styling notes:
 /// - The trigger uses the control surface color as its background.
 /// - The dropdown panel uses the surfaceRaised color as its background.
@@ -49,6 +51,7 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
     required this.trailingIconSize,
     required this.closedIcon,
     required this.openIcon,
+    this.panelPresentation = AppDropdownPanelPresentation.inline,
     this.onMenuVisibilityChanged,
     this.chevronColor,
     this.chevronBackgroundColor,
@@ -82,6 +85,7 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
   final double trailingIconSize;
   final IconData closedIcon;
   final IconData openIcon;
+  final AppDropdownPanelPresentation panelPresentation;
   final ValueChanged<bool>? onMenuVisibilityChanged;
 
   /// Custom color for the chevron icon. If null, uses default text color.
@@ -99,20 +103,39 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOpen = useState(false);
+    final overlayController = useMemoized(OverlayPortalController.new);
+    final layerLink = useMemoized(LayerLink.new);
 
     final equals = useMemoized(() => this.equals ?? (T a, T b) => a == b, [
       this.equals,
     ]);
 
-    final setOpen = useCallback((bool value) {
-      if (!isEnabled && value) {
-        return;
-      }
-      if (isOpen.value != value) {
-        isOpen.value = value;
-        onMenuVisibilityChanged?.call(value);
-      }
-    }, [isEnabled, isOpen, onMenuVisibilityChanged]);
+    final setOpen = useCallback(
+      (bool value) {
+        if (!isEnabled && value) {
+          return;
+        }
+        if (isOpen.value != value) {
+          isOpen.value = value;
+          if (panelPresentation ==
+              AppDropdownPanelPresentation.anchoredOverlay) {
+            if (value) {
+              overlayController.show();
+            } else {
+              overlayController.hide();
+            }
+          }
+          onMenuVisibilityChanged?.call(value);
+        }
+      },
+      [
+        isEnabled,
+        isOpen,
+        onMenuVisibilityChanged,
+        overlayController,
+        panelPresentation,
+      ],
+    );
 
     final toggleOpen = useCallback(() {
       if (!isEnabled) {
@@ -317,22 +340,68 @@ class AppDropdownMenu<T> extends HookConsumerWidget {
       );
     }
 
-    Widget content = Padding(
-      padding: outerPadding,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          trigger,
-          AnimatedSize(
-            duration: animationDuration,
-            curve: animationCurve,
-            alignment: Alignment.topCenter,
-            child: effectiveIsOpen ? buildPanel() : const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
+    Widget buildInlineContent() {
+      return Padding(
+        padding: outerPadding,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            trigger,
+            AnimatedSize(
+              duration: animationDuration,
+              curve: animationCurve,
+              alignment: Alignment.topCenter,
+              child: effectiveIsOpen ? buildPanel() : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildOverlayContent() {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final panelWidth = constraints.maxWidth;
+          return OverlayPortal(
+            controller: overlayController,
+            overlayChildBuilder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () {
+                        setOpen(false);
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    width: panelWidth,
+                    child: CompositedTransformFollower(
+                      link: layerLink,
+                      showWhenUnlinked: false,
+                      targetAnchor: Alignment.bottomLeft,
+                      followerAnchor: Alignment.topLeft,
+                      child: buildPanel(),
+                    ),
+                  ),
+                ],
+              );
+            },
+            child: Padding(
+              padding: outerPadding,
+              child: CompositedTransformTarget(link: layerLink, child: trigger),
+            ),
+          );
+        },
+      );
+    }
+
+    var content =
+        panelPresentation == AppDropdownPanelPresentation.anchoredOverlay
+        ? buildOverlayContent()
+        : buildInlineContent();
 
     if (expandToWidth) {
       content = SizedBox(width: double.infinity, child: content);

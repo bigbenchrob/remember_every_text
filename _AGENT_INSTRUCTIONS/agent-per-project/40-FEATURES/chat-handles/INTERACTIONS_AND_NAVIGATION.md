@@ -2,7 +2,7 @@
 tier: feature
 scope: interactions
 owner: agent-per-project
-last_reviewed: 2026-06-06
+last_reviewed: 2026-07-20
 links:
 	- ./CHARTER.md
 	- ./STATE_AND_PROVIDER_INVENTORY.md
@@ -10,7 +10,7 @@ tests: []
 feature: chat-handles
 doc_type: interactions
 status: current
-last_updated: 2026-06-06
+last_updated: 2026-07-20
 ---
 
 # Interactions & Navigation — Chat Handles
@@ -36,6 +36,36 @@ last_updated: 2026-06-06
 ## Navigation Guardrails
 - Entry points should flow through current ViewSpec/sidebar spec coordinators.
 - Avoid hard-coded navigation; use sidebar/panel spec state and feature coordinators.
+
+## Unfamiliar-Source Investigation Compatibility
+
+Unfamiliar-source evidence is subordinate to the investigation episode that
+created it. Handles owns an opaque investigation identity; sidebar flow stores
+the current identity and the identity from which a handle selection originated.
+
+Changing any investigation-defining control begins a new episode:
+
+- Identify / Numeric IDs;
+- Phone / Email / Business;
+- Active / Dismissed.
+
+A successful source dismissal also begins a new episode when the dismissed
+source owns the effective center evidence. Handles first persists the
+overlay-owned disposition. The Messages-owned handle-lens interaction then
+advances investigation provenance; it does not issue an imperative center-panel
+clear. Failed dismissal leaves the current investigation and evidence intact.
+
+The selected handle may remain stored, but its center presentation is effective
+only while its originating identity equals the current identity. The cassette
+widgets do not clear panels, and Messages does not interpret Handles controls.
+The effective center projection becomes absent by compatibility, applying the
+Mechanical Impossibility Principle to sidebar/center flow state.
+
+Disposition changes update the already-loaded active or dismissed projection
+at source granularity. They must not invalidate the visible database-wide
+aggregation and replace the entire cassette list with a loading state. The
+repository remains the restart authority, while targeted projection updates
+keep a completed one-source action visually continuous.
 
 ## Outstanding Decisions
 - Determine how to surface handle diagnostics in search/global datasets.

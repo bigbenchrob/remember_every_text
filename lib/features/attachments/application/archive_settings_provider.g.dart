@@ -6,7 +6,7 @@ part of 'archive_settings_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$archiveSettingsHash() => r'c2866df33814c9f412cdd47e64a64e4b9ca162aa';
+String _$archiveSettingsHash() => r'1a43acd585ccd24cdae455594dcf05ab8385f7b4';
 
 /// Manages the attachment archive user preferences.
 ///

@@ -2,13 +2,14 @@
 tier: project
 scope: feature
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-19
 source_of_truth: doc
 links:
   - ../../01-PROJECT/05-CURRENT-STATE.md
   - ../../95-WALK-UI-TREE/00-STANDARDS/UX_PRINCIPLES.md
   - ../../95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/CONVERSATION_OWNERSHIP_AUDIT.md
   - ../../55-READERS-INTEGRATORS-ORCHESTRATORS/69-MESSAGE-EVIDENCE-SPINE-INVARIANT.md
+  - ../../10-DATABASES/12-identity-model-contacts-handles-participants.md
 tests: []
 ---
 
@@ -64,7 +65,10 @@ Conversation cards, glyphs, favourites, or Conversation excerpt panel structure.
 ## Boundary With Search
 
 Search can request a Conversation excerpt by providing a graph-native
-Conversation identity, an anchor message identity, and excerpt-window intent.
+Conversation identity, an anchor message identity, excerpt-window intent, and
+opaque provenance identifying the investigation that originated the request.
+Conversations may carry that provenance but does not generate it, inspect its
+components, or own its lifecycle.
 
 Search does not own the Conversation panel. The governing rule is:
 
@@ -93,3 +97,22 @@ not local copies.
 User intent attached to a Conversation, such as Favourite state, must be read
 and written through the shared overlay identity so the state appears
 consistently everywhere.
+
+## Self-Conversation Identity
+
+A one-to-one Conversation whose canonical endpoint is marked as belonging to
+the local Messages account is a self-conversation. Conversations consumes this
+projected graph fact and exposes it through its read models. It does not compare
+display names or inspect individual message direction to decide that a
+Conversation is with the user.
+
+Message evidence may render either direction in that Conversation as `self`.
+Conversation presentation uses `Me` when the local user is one participant in
+a multi-participant title or list, and uses `self` when the local user is the
+only participant. A self-only Conversation Card does not expose the local
+endpoint as a chat-hook disambiguator. These labels come from the shared
+display identity resolver, not widget-local formatting.
+
+The source derivation, historical reconciliation, and endpoint normalization
+rules are owned by the identity and graph lifecycle documented in
+`../../10-DATABASES/12-identity-model-contacts-handles-participants.md`.

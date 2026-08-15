@@ -2,12 +2,11 @@
 tier: feature
 scope: design-notes
 owner: agent-per-project
-last_reviewed: 2025-11-07
+last_reviewed: 2026-07-27
 links:
   - ./PROPOSAL.md
   - ./CHECKLIST.md
   - ../../10-DATABASES/05-db-overlay.md
-  - ../../50-USE-CASE-ILLUSTRATIONS/manual-handle-to-contact-linking.md
 feature: virtual-overlay-contacts
 status: planning
 created: 2025-11-07

@@ -10,6 +10,8 @@
 	<string></string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleDisplayName</key>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -28,5 +30,11 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>MessageLensArchiveEnvironment</key>
+	<string>$(MESSAGELENS_ARCHIVE_ENVIRONMENT)</string>
+	<key>MessageLensArchiveBuildIdentity</key>
+	<string>$(MESSAGELENS_ARCHIVE_BUILD_IDENTITY)</string>
+	<key>MessageLensExpectedSigningIdentity</key>
+	<string>$(MESSAGELENS_EXPECTED_SIGNING_IDENTITY)</string>
 </dict>
 </plist>

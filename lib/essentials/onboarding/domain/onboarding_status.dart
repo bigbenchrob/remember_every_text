@@ -6,6 +6,12 @@ enum OnboardingStatus {
   /// MessageLens is clearing incomplete derived app databases before setup restarts.
   recoveringFailedAttempt,
 
+  /// The current process could not complete Onboarding-owned preparation.
+  ///
+  /// This status is deliberately process-local. Durable restart truth continues
+  /// to come from environment and filesystem probes.
+  preparationFailed,
+
   /// Full Disk Access has not been granted — show FDA instruction screen.
   ///
   /// Gate 1: nothing else can proceed until this is resolved.

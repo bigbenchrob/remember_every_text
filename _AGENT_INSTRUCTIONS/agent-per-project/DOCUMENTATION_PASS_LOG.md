@@ -1,13 +1,183 @@
----
 tier: project
 scope: documentation-pass
 owner: agent-per-project
-last_reviewed: 2026-07-09
+last_reviewed: 2026-07-28
 source_of_truth: doc
 links:
   - ./README.md
   - ./01-PROJECT/05-CURRENT-STATE.md
 tests: []
+---
+
+# Generalized Delayed Attachment Retry
+
+Date: 2026-07-28
+
+Scope: Replaced the historical image-only maintenance-sweep contract with a
+declared-MIME eligibility policy for conventional attachments while retaining
+an explicit boundary around opaque plugin payloads.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md` | Documented type-agnostic delayed retry for conventional declared-MIME attachments and the separate NULL/blank-MIME payload policy question. | Makes the canonical archive contract match the corrected candidate policy. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Split the former 12-row residual into three retryable QuickTime rows and nine policy-blocked plugin payloads. | Distinguishes implementation capability, pending production validation, and unresolved preservation semantics. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-AUTHORITY.md` | Replaced the image-only limitation with the declared-MIME policy and production verification gate. | Keeps live-preservation authority accurate without claiming an undeployed production recovery. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/COMPLETION-REPORT.md` | Refined remaining follow-up into QuickTime deployment validation and plugin-payload policy. | Preserves a bounded, actionable production closeout. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-facing recovery correction and advanced the release version. | Keeps release metadata synchronized with a significant preservation fix. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/DELAYED-ATTACHMENT-RETRY.md` | Added a concise implementation record describing the image-only defect, declared-MIME correction, plugin-payload boundary, and production follow-up. | Gives the bounded correction one direct reference without rewriting historical cutover evidence. |
+
+---
+
+# External Development Archive Root
+
+Date: 2026-07-27
+
+Scope: Recorded the machine-local, development-only relocation of the complete
+MessageLens development archive to the external WD Elements volume.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `50-ENVIRONMENT-SAFETY/00-overview.md` | Added the development root-override contract, native/Dart agreement, fail-closed behavior, complete-root ownership, and preservation of the internal archive. | Makes the operational safety rule canonical without changing production or test policy. |
+| `01-PROJECT/03-data-locations.md` | Documented default and machine-local development roots and clarified that all listed archive paths derive from one admitted root. | Prevents future attachment-specific or provider-specific path authority. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Added the current external development root and its bounded status. | Keeps the workstream index synchronized with the implemented development environment. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/COMPLETION-REPORT.md` | Recorded the override as a bounded implementation adjustment and summarized runtime evidence. | Preserves why and how the complete archive was relocated. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/development-path-manifest.md` | Added external-root startup evidence and retained the remaining full-workflow validation obligation. | Distinguishes verified admission/routing from the still-pending complete interactive manifest. |
+| `CHANGELOG.md` | Added the development external-root capability to the current release entry. | Records the tester-facing development environment change. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Data Protection Non-Production Completion
+
+Date: 2026-07-27
+
+Scope: Promoted the verified Slices 0-8 implementation into canonical
+environment, database, build, and Production Readiness documentation while
+keeping production adoption explicitly blocked.
+
+## Changes
+
+| File or folder | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Replaced planning status with the implemented non-production boundary and adoption gate. | Makes the workstream entry point reflect current code. |
+| `PROPOSAL.md`, `IMPLEMENTATION-PLAN.md`, `QUESTIONS.md`, and `VALIDATION.md` | Recorded implemented status, bounded Profile/Release adjustment, completed slices, and remaining evidence. | Separates validated architecture from production claims. |
+| `COMPLETION-REPORT.md` | Added the Slices 0-8 implementation record, deviations, evidence, and remaining production prerequisites. | Provides one authoritative implementation closeout. |
+| `PRODUCTION-ADOPTION-RUNBOOK.md` | Added a blocked planning runbook with preconditions, procedure, and abort rules. | Prepares Slice 9 without authorizing or touching production. |
+| `VALIDATION-RESULTS/` | Added retained static, native, path, test, operation, checkpoint, and artifact evidence. | Records objective non-production validation and its limitations. |
+| `50-ENVIRONMENT-SAFETY/00-overview.md` | Replaced the placeholder with the canonical archive admission, mutation authority, recovery, and current production-status contract. | Promotes the implemented safety boundary to its permanent owner. |
+| `10-DATABASES/00-all-databases-accessed.md` | Replaced mutable physical-root guidance with admitted authority and environment-scoped storage. | Prevents recreation of the retired global path seam. |
+| `60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md` | Documented development identity, archive-scoped native admission, and artifact verification. | Preserves production FDA identity while making development separation explicit. |
+| `90-DATA-INGESTION-REVIEW/00-PRODUCTION-READINESS-MASTER-PLAN.md` and index files | Updated project status and links. | Keeps top-level orientation consistent with the completed boundary. |
+
+No production archive, marker, or adoption report was created.
+
+# Production Readiness Master Plan
+
+Date: 2026-07-27
+
+Scope: Established the authoritative project overview for the coordinated
+review of onboarding, production protection, historical ingestion, archive
+integrity, validation, and production health.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/00-PRODUCTION-READINESS-MASTER-PLAN.md` | Created the authoritative project purpose, authority boundary, development/production contract, shared workstream requirements, seven workstreams, progression, invariants, non-goals, and completion criteria. | Gives every subsequent ingestion and onboarding task one governing project contract while preserving existing runtime ownership. |
+| `90-DATA-INGESTION-REVIEW/README.md` | Promoted the folder into the project index, linked the master plan and seed, and documented the planned workstream package structure. | Makes the master plan the obvious entry point and keeps future focused packages collected under one shared program. |
+| `README.md` | Updated the canonical project map to describe sequence 90 as the authoritative Production Readiness project. | Makes the new program discoverable to future developers and agents. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation pass. | Maintains the documentation audit trail. |
+
+---
+
+# Data Ingestion Review Folder Reuse
+
+Date: 2026-07-27
+
+Scope: Reassigned documentation sequence 90 from the unused use-case
+illustration collection to the forthcoming onboarding and archival-ingestion
+review.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/README.md` | Created the new working-package entry point and linked current canonical ingestion, onboarding/archive, and database documentation. | Gives the coming review a clear scope without prematurely replacing current architecture. |
+| `90-DATA-INGESTION-REVIEW/archive/legacy-use-case-illustrations/` | Preserved the former sequence-90 narrative material as explicitly historical reference. | Reuses the top-level sequence without discarding prior information or letting it define the new review. |
+| `README.md` and `_ui_renders/old/documentation_tree` | Replaced the old use-case folder entry with the Data Ingestion Review package. | Keeps the canonical project map and retained documentation-tree rendering free of the retired path. |
+| `40-FEATURES/README.md`, `40-FEATURES/chat-handles/CHARTER.md`, and completed feature packages | Removed inbound references to the retired sequence-90 and older sequence-50 use-case folders. | Prevents stale documentation paths from implying that the retired collection remains an active authority. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation maintenance pass. | Maintains the documentation audit trail. |
+
+---
+
+# Column-Specific Shared Track Boundary Refinement
+
+Date: 2026-07-26
+
+Scope: Tightened the new shared-boundary documentation to distinguish matrix
+resolution from per-column renderer consumption and to prevent implementation
+examples from becoming architectural prescriptions.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Defined native flow, replaced “stops rendering matrix cells” with precise `TrackCellView` consumption language, marked Unknown Sources occupants as current examples, and added the explicit non-goal that boundaries are not performance optimizations. | Keeps complete-matrix resolution distinct from column rendering lifetime and centers truthful composition as the purpose. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Elevated common y-positioning and independent shared lifetimes into governing principles. | Gives the conceptual leap constitutional weight in the canonical layout contract. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Clarified that column-specific boundaries affect rendering lifetime only. | Prevents readers from interpreting the matrix, resolver, or composition authority as partial. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Replaced cell-level “after A1” boundary wording with Track-level “Column 1 participates through Track A” wording. | Keeps occupancy coordinates distinct from the column's declared shared Track boundary. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this refinement. | Maintains the project documentation audit trail. |
+
+---
+
+# Sidebar Native-Flow Spacing Handoff
+
+Date: 2026-07-26
+
+Scope: Corrected the Track-to-cassette handoff so column-specific shared
+boundaries do not unconditionally erase the sidebar cassette coordinator's
+resolved section rhythm.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/essentials/navigation/application/panel_widget_providers.dart` | Added a generic native-flow spacing handoff policy. Unknown Sources preserves coordinator-resolved cassette rhythm; Search remains flush because its shared Track composition already supplies separation. | Keeps Track geometry and cassette-stack spacing under their proper owners without feature padding or filler Tracks. |
+| `test/essentials/navigation/application/panel_widget_providers_test.dart` | Added focused assertions that Unknown Sources preserves its first native cassette gap while Search's explicit flush handoff ignores an otherwise supplied leading cassette gap. | Protects both sides of the generic seam contract. |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Codified Native-Flow Ownership Restoration as the governing seam principle and documented the two generic spacing handoff modes. | Makes clear that ending shared Matrix participation restores the native layout system's complete responsibilities, not merely its rendering order. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Cross-referenced Native-Flow Ownership Restoration from the concrete cassette seam. | Directs future sidebar work to the ownership rule instead of inventing Tracks or local margins for native-flow rhythm. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Recorded that the app-control-to-filter gap is cassette-owned after Column 1 leaves the Matrix at Track A. | Keeps the concrete page description aligned with the canonical ownership rule. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation and documentation pass. | Maintains the project documentation audit trail. |
+
+---
+
+# Column-Specific Shared Track Boundaries
+
+Date: 2026-07-24
+
+Scope: Promoted the Unknown Sources sidebar boundary into a general
+PageTrackLayoutMatrix rule distinguishing the final page Track from each
+column's explicitly declared final shared Track.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Added the canonical rule, relationship test, non-inference constraint, native-flow seam, Unknown Sources and Search examples, and durable invariants. | Makes column-specific shared lifetimes discoverable as a general Matrix capability rather than an Unknown Sources implementation detail. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Added the new document to folder ownership and reading order. | Gives future developers an obvious route to the boundary contract. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Added per-column shared participation to the core contract and ownership model. | Prevents the final page Track from being mistaken for every column's rendering lifetime. |
+| `09-CROSS-COLUMN-LAYOUT/01-column-band-wrappers.md` | Documented how a renderer consumes an explicit column boundary without inferring it from occupancy. | Connects the architectural rule to current cell rendering mechanics. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Reframed the sidebar seam as one application of the general column-specific boundary. | Preserves cassette ownership while avoiding a sidebar-only interpretation of the capability. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded Search's explicit F boundary and clarified that it is not inferred from occupancy or cassette type. | Provides a second current page example demonstrating that boundaries are composition-specific. |
+| `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Added the declared rendering lifetime to the mechanical rendering chain. | Explains why empty cells inside a boundary render while trailing cells after it do not. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Linked the page-specific implementation to the canonical general rule. | Keeps the example subordinate to the architecture it demonstrated. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Extended the matrix architecture and invariants with explicit per-column shared lifetimes. | Preserves the architectural evolution in the original matrix work package. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation pass. | Maintains the project documentation audit trail. |
+
 ---
 
 # Documentation Pass Log
@@ -978,3 +1148,3365 @@ context band owns pre-content scope, controls, or object context.
 ## Needs Verification / Human Review
 
 - None beyond normal UI review of the existing cross-column layout tuning. This pass is a terminology and symbol rename, not a layout behavior change.
+
+---
+
+# Cross-Column Layout Tracks Work Package
+
+Date: 2026-07-14
+
+Scope: Created a new exploratory feature work package for a potential successor
+to the current fixed title/context band cross-column layout model.
+
+## Summary
+
+The current cross-column layout contract in `09-CROSS-COLUMN-LAYOUT/` remains
+the canonical implemented model. This pass created
+`45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/` to explore a more
+general track-based model before any implementation work begins.
+
+The package records the proposed direction: columns declare preferred heights
+for shared horizontal layout tracks, the page resolves each track by maximum
+required height, and each participating column renders inside the resolved
+track plan. The first future implementation slice is explicitly limited to the
+Search page, with only the sidebar top menu participating in Track A.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Created package overview. | Establishes status, scope, relationship to the current canonical layout docs, and first-slice limits. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Created proposal. | Defines layout tracks, height resolution, ownership, non-goals, and Search-page-first success criteria. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Created design notes. | Captures product rationale, architectural rationale, variable-content handling, sidebar participation, migration strategy, risks, and open questions. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Created phased checklist. | Records decision gates and a conservative implementation path without approving implementation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Created validation strategy. | Defines future unit, widget, regression, and manual tests for a track-based implementation. |
+| `45-NEW-FEATURE-ADDITION/README.md` | Added active/planning rows for `06`, `07`, and `08`, and updated review date. | Keeps the workflow README aligned with the current numbered planning folders. |
+| `45-NEW-FEATURE-ADDITION/INDEX.md` | Added `08-CROSS-COLUMN-LAYOUT-TRACKS/` to the active/planning table and updated review date. | Makes the new package discoverable while clarifying that `09-CROSS-COLUMN-LAYOUT/` remains the implemented reference. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Review whether the track concept should use semantic names such as
+  `identity/context/content` or ordinal names such as `Track A/Track B`.
+- Review whether preferred heights should be declared by models, widgets, or
+  layout adapters before implementation begins.
+- Confirm that the first implementation slice should remain Search-page-only
+  and should not solve autonomous sidebar cassette placement.
+
+---
+
+# Cross-Column Layout Tracks Flutter Investigation
+
+Date: 2026-07-14
+
+Scope: Added a Flutter implementation investigation to the Cross-Column Layout
+Tracks work package.
+
+## Summary
+
+This pass evaluated which Flutter layout mechanisms best fit the approved
+layout-track architecture. The recommendation is to start with ordinary widget
+composition plus explicit, model-published layout requirements. The page should
+resolve a shared track plan and pass resolved heights into compatibility
+wrappers, rather than using post-frame measurement, `CustomMultiChildLayout`, or
+custom render objects in the first slice.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/FLUTTER_IMPLEMENTATION_INVESTIGATION.md` | Created Flutter implementation investigation. | Evaluates ordinary composition, `LayoutBuilder`, inherited plans, provider-driven models, `CustomMultiChildLayout`, `MultiChildRenderObjectWidget`, and custom `RenderBox`; recommends model-published requirements for the first Search-page slice. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added the investigation to package contents. | Makes the new implementation guidance discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Confirm whether first-slice requirements should be computed locally in the
+  Search page or exposed through a narrowly scoped page-level provider.
+- Confirm whether track IDs should remain ordinal (`Track A`, `Track B`) during
+  the prototype or become semantic names before implementation.
+
+---
+
+# Cross-Column Layout Tracks Terminology Refinement
+
+Date: 2026-07-14
+
+Scope: Refined terminology in the Cross-Column Layout Tracks work package so
+the package describes declarative track requirements rather than preferred
+widget heights.
+
+## Summary
+
+This pass updated the package language from the older height-centered framing to
+the settled track-centered model. The recommended terms are now `TrackId`,
+`TrackRequirement`, and `ResolvedTrackPlan`. The documentation now emphasizes
+that the page does not ask widgets how tall they are after layout. Instead,
+participating columns or layout adapters declare what each Track requires, the
+page resolves a shared TrackPlan, and columns render within that resolved plan.
+
+Height remains the first requirement supported by the proposed architecture, but
+the wording now leaves room for future requirements such as minimum height,
+compact variants, alignment preferences, and overflow policy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Reframed the package overview around declared track requirements and a shared `ResolvedTrackPlan`. | Clarifies that tracks, not preferred heights, are the architectural abstraction. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Replaced height-centered language with `TrackRequirement` / `ResolvedTrackPlan` terminology and added explicit declarative architecture wording. | Records the governing model: columns declare requirements; the page resolves and distributes the plan. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Updated ownership and variable-content language to center on `TrackRequirement` values. | Keeps design notes aligned with the broader requirement model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Updated future implementation checklist entries to use `TrackRequirement` and `ResolvedTrackPlan`. | Ensures a future implementation starts with the current naming. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/FLUTTER_IMPLEMENTATION_INVESTIGATION.md` | Replaced `LayoutTrackRequirement`, `ResolvedLayoutTrackPlan`, and preferred-height wording with `TrackRequirement`, `ResolvedTrackPlan`, and declarative requirement language. | Keeps Flutter implementation guidance consistent with the approved terminology. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Updated validation wording from preferred heights to declared height requirements. | Aligns future tests with the track requirement model. |
+| `DOCUMENTATION_PASS_LOG.md` | Appended this entry. | Maintains documentation traceability. |
+
+## Needs Verification / Human Review
+
+- Confirm final code symbol names during implementation. The package now
+  recommends `TrackId`, `TrackRequirement`, and `ResolvedTrackPlan`, but no code
+  has been changed in this documentation-only pass.
+
+---
+
+# Cross-Column Layout Tracks Track A Implementation
+
+Date: 2026-07-14
+
+Scope: Implemented the first vertical slice of the Cross-Column Layout Tracks
+architecture for Search-page Track A only.
+
+## Summary
+
+This pass proves the declarative track model without expanding into Track B,
+sidebar cassette placement, or broad page migration. The Search page now scopes
+a resolved Track A plan when `Search all messages` is active. The existing
+`TitleColumnBand` compatibility wrapper consumes that resolved height, so the
+sidebar top menu, center title, and right Conversation title share the same
+page-owned identity-track allocation.
+
+The existing wrapper system remains in place. `ContextColumnBand`, sidebar
+cassette flow, Contacts, Conversations, and other pages were not migrated.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Added `TrackId`, `TrackRequirement`, `ResolvedTrackPlan`, `ResolvedTrackPlanScope`, and the Search-page Track A plan. | Provides the minimal feature-neutral track model for the first slice. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Let `TitleColumnBand` consume a resolved Track A height while preserving existing fallback behavior. | Keeps the existing wrapper system while moving Track A height ownership to the page plan. |
+| `lib/essentials/navigation/presentation/view/workspace_layout.dart` | Scoped the left/center workspace with the Search-page Track A plan only when Search all messages is active. | Limits the first slice to the Search page and avoids affecting other sidebar modes. |
+| `lib/essentials/navigation/presentation/view/macos_app_shell.dart` | Scoped the right panel with the same Search-page Track A plan when Search all messages is active. | Lets the Conversation right panel participate in Track A without moving ownership into Search widgets. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Added focused tests for track resolution and `TitleColumnBand` resolved/default height behavior. | Verifies the Track A proof slice independently of the full Search page tree. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Marked Track A as first-slice implemented and recorded deferred work. | Keeps the work package current. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Added implementation status. | Separates proven Track A behavior from future architecture. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Updated migration strategy with completed Track A steps. | Records actual implementation progress without treating Track B as done. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Checked off Track A-only implementation items and left Track B/sidebar work deferred. | Maintains planning accuracy. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added implemented Track A test coverage. | Makes the validation path discoverable. |
+
+## Verification
+
+- `flutter test test/config/theme/widgets/layout/cross_column_track_plan_test.dart --reporter compact`
+- `flutter analyze`
+
+## Deferred
+
+- Track B negotiation.
+- Sidebar cassette participation beyond the top menu.
+- Contacts / Conversations page migration.
+- Wrapper retirement.
+- Search-page visual retuning beyond Track A ownership.
+
+---
+
+# Cross-Column Layout Tracks Track B Implementation
+
+Date: 2026-07-14
+
+Scope: Implemented the second vertical slice of the Cross-Column Layout Tracks
+architecture for Search-page Track B only.
+
+## Summary
+
+This pass proves that additional tracks can be added incrementally. Track B is
+the supporting identity track for the Search page. Only the center message
+evidence metadata subheader renders visible content in Track B. The sidebar and
+right panel declare empty Track B participation and receive the same resolved
+allocation.
+
+Track B was refined to be tight to the metadata line rather than functioning as
+a general spacing band. Search-scope explanatory text remains below Track B
+with the search controls instead of being clipped inside the metadata track.
+
+Search controls, sidebar orientation text, Conversation Cards, excerpt
+descriptions, and cassette placement were deliberately left outside Track B.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Added `TrackId.trackB` and changed the Search page plan to include Track A and a tight Track B requirement. | Proves multi-track resolution and empty peer participation without using Track B as hidden spacing. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Let `ContextColumnBand` consume a resolved Track B height while preserving fallback behavior. | Keeps the compatibility wrapper while moving Track B height ownership to the page plan. |
+| `lib/features/messages/presentation/widgets/message_evidence/message_evidence_header.dart` | Split the fixed-frame Search-page header so metadata occupies Track B, while search-scope text and search/actions remain below it when a track plan is present. | Ensures Track B contains only supporting identity metadata and can remain tight. |
+| `lib/features/conversations/presentation/view/conversation_excerpt_panel_view.dart` | Added an empty Track B allocation before the existing Conversation Card/excerpt block when a track plan is present. | Keeps right-panel Track B empty without moving Conversation Card content into Track B. |
+| `lib/essentials/navigation/application/panel_widget_providers.dart` | Changed the Search sidebar seam to render an empty Track B allocation, then continue the existing cassette chain below it. | Keeps sidebar Track B empty and avoids automatic cassette placement. |
+| `lib/essentials/navigation/presentation/view/workspace_layout.dart` | Updated the Search page to use the Track A/Track B plan. | Applies the second slice without changing non-Search surfaces. |
+| `lib/essentials/navigation/presentation/view/macos_app_shell.dart` | Updated the right panel to use the Track A/Track B plan. | Applies empty right-panel Track B participation for Search. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Added Track B resolution and `ContextColumnBand` resolved/default behavior coverage. | Verifies the Track B proof slice independently of the full Search page tree. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Marked Track B as implemented and documented empty participation. | Keeps the work package current. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated implementation status and Track B examples. | Clarifies that Track B is metadata-only in this slice. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Updated sidebar participation and migration notes. | Records the implemented empty-track behavior. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Checked off Track B-only implementation items and left later tracks deferred. | Maintains planning accuracy. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added Track B validation notes. | Makes the new test expectations discoverable. |
+
+## Verification
+
+- `flutter test test/config/theme/widgets/layout/cross_column_track_plan_test.dart --reporter compact`
+- `flutter analyze`
+
+## Deferred
+
+- Track C or later tracks.
+- Search controls migration.
+- Conversation Card / excerpt description migration.
+- Sidebar cassette participation beyond empty Track B.
+- Contacts / Conversations page migration.
+- Wrapper retirement.
+
+---
+
+# Cross-Column Layout Tracks Content-Tight Occupied Tracks
+
+Date: 2026-07-14
+
+Scope: Tightened the Search-page Track A/Track B implementation and updated the
+Cross-Column Layout Tracks package.
+
+## Summary
+
+Colored track diagnostics showed that occupied tracks were still preserving
+hidden slack from old compatibility-wrapper padding and broad fixed requirement
+values. This pass records and implements the stricter invariant: occupied
+tracks are exactly as tall as their tallest natural occupant; intentional
+spacing belongs in explicit empty tracks.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Replaced broad Search-page Track A/Track B requirements with named natural occupant contracts for the sidebar top menu trigger, panel title line, and metadata line. | Prevents old spacing constants from functioning as hidden track height. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Removed top/bottom compatibility-wrapper padding whenever a resolved track is present. | Ensures resolved occupied tracks contain content only, not discretionary vertical spacing. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Updated resolved Track A/Track B expectations to use the named natural occupant contracts. | Keeps the track proof tests aligned with the content-tight invariant. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added the content-tight occupied-track rule and explicit empty-track spacing principle. | Makes the current layout rule discoverable. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Clarified that occupied track height resolves from natural occupant requirements and excludes breathing room. | Prevents future track slices from reintroducing hidden spacing. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Added wrapper guidance for resolved tracks. | Documents the compatibility-wrapper constraint. |
+
+---
+
+# Cross-Column Layout Tracks Flush Track A Start
+
+Date: 2026-07-14
+
+Scope: Removed the Search-page page-top inset from the resolved track plan.
+
+## Summary
+
+Visual review confirmed Track A and Track B were content-tight, but Track A was
+still separated from the top of the page content surface by a page-top inset.
+This pass sets the Search-page inset to zero so Track A starts flush. Any future
+separation above Track A should be represented by an explicit shim track rather
+than an implicit inset.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Set the Search-page `pageTopInset` requirement to `0`. | Removes hidden space above Track A. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Updated the Search-page Track A test to assert no hidden top inset. | Protects the flush-start contract. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Documented that Search Track A starts flush with the content surface. | Keeps implementation notes current. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Replaced page-top inset language with explicit flush-start language. | Prevents future confusion between track height and page spacing. |
+
+---
+
+# Cross-Column Layout Tracks Track A Geometry Correction
+
+Date: 2026-07-14
+
+Scope: Refined the Search-page Track A implementation so the page-top inset is
+separate from the resolved Track A height.
+
+## Summary
+
+The second-slice visual check showed that Track B was correctly narrow, but the
+metadata still started too low because Track A was preserving the old 72-pixel
+title-wrapper allocation. This pass separates page top inset from Track A
+height. Track A is now resolved from actual occupant requirements, while the
+page-top inset is represented as its own page-owned value in the resolved track
+plan.
+
+This avoids hiding vertical spacing inside Track A and keeps the sequence:
+
+```text
+page top inset
+Track A: selector / title / title
+Track B: empty / metadata / empty
+```
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Added `pageTopInset` to `ResolvedTrackPlan` and reduced Search-page Track A requirements to occupant-sized values. | Separates page inset from Track A allocation. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | When a resolved Track A plan is present, renders the page-top inset outside the Track A band and removes embedded top padding from the band itself. | Prevents legacy wrapper padding from becoming hidden track height. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Added coverage proving page-top inset is added outside resolved Track A height. | Protects the corrected geometry. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Documented page-top inset as separate from Track A. | Keeps the work package aligned with the implementation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Added architectural note that page insets are not track requirements. | Prevents future confusion between insets and tracks. |
+
+## Verification
+
+- `flutter test test/config/theme/widgets/layout/cross_column_track_plan_test.dart --reporter compact`
+- `flutter analyze`
+
+---
+
+# TrackOccupant Architecture Analysis
+
+Date: 2026-07-15
+
+Scope: Added an exploratory architecture analysis for a future TrackOccupant
+seam in the Cross-Column Layout Tracks package.
+
+## Summary
+
+The first layout-track slices proved Track A and Track B negotiation, but the
+current implementation still uses page-level numeric requirements for title,
+metadata, and top-menu occupants. This documentation pass analyzes a
+`TrackOccupant` model that would let presentation contracts declare track
+requirements without querying rendered widgets or using post-frame measurement.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Added a full architecture analysis covering definition, API shape, requirement context, text/control/glyph/card handling, alternatives, risks, testing, and first implementation candidate. | Gives the proposed TrackOccupant seam a single discoverable planning document before any implementation work. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Linked the new TrackOccupant analysis from package contents. | Keeps the work package index current. |
+
+---
+
+# TrackOccupant Implementation-Plan Constraint Refinement
+
+Date: 2026-07-15
+
+Scope: Incorporated implementation-plan decisions into the TrackOccupant
+architecture analysis.
+
+## Summary
+
+The TrackOccupant analysis now records the settled constraints for a future
+first-slice implementation plan: all visible track content uses occupants,
+empty cells have no occupant, constant and calculated requirements share the
+same abstraction, shim tracks are ordinary fixed-height occupants, and the
+coordinator remains feature-blind.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Added implementation-plan constraints and refined sections on empty cells, shim tracks, constant requirements, calculated requirements, coordinator responsibility, and first-slice scope. | Ensures the future implementation plan follows the revised architecture without implying implementation approval. |
+
+---
+
+# TrackOccupant Presentation Construction Wording
+
+Date: 2026-07-15
+
+Scope: Refined TrackOccupant terminology in the Cross-Column Layout Tracks
+package.
+
+## Summary
+
+Replaced Flutter-specific "widget construction" phrasing with presentation
+construction language. The architecture now reads as requirement calculation
+plus construction of the presentation widget, which better captures the
+conceptual boundary while preserving the concrete Flutter implementation shape.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Reworded TrackOccupant ownership and API sections from "widget construction" to "construction of the presentation widget" / "presentation construction." | Keeps the architecture concept durable while still acknowledging the current Flutter implementation. |
+
+---
+
+# TrackOccupant First Implementation Slice
+
+Date: 2026-07-15
+
+Scope: Updated the Cross-Column Layout Tracks work package after implementing
+the first Search-page TrackOccupant slice.
+
+## Summary
+
+Search-page Track A/B requirements are now derived from declarative occupants
+instead of page-owned numeric declarations. The documentation now records that
+the first occupant slice is implemented while preserving the deferred scope for
+future tracks, sidebar cassette participation, Conversation Cards, glyphs, and
+Contacts migration.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Updated status and implemented-slice notes to describe occupant-derived Track A/B requirements and empty cells as omitted occupants. | Keeps the package narrative aligned with the implementation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added Phase 4A for the first TrackOccupant slice and marked focused occupant tests complete. | Makes remaining layout-track work discoverable without implying broader migration is done. |
+
+---
+
+# TrackOccupant Implementation Audit
+
+Date: 2026-07-15
+
+Scope: Verified the first TrackOccupant implementation slice against the
+approved implementation seed.
+
+## Summary
+
+The audit found the first TrackOccupant slice architecturally sound. Search
+Track A/B requirements are occupant-derived, empty cells contribute no
+requirements, and the implementation remains within the approved first-slice
+scope. The report records two caveats for future slices: finite-width
+requirement contexts are still deferred, and the Track B plan currently uses a
+representative metadata string because Track B is a single-line height track.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT/IMPLEMENT_TRACK_OCCUPANT_AUDIT.md` | Added implementation audit and verification report. | Provides the requested analysis report in the new TrackOccupant folder. |
+
+---
+
+# Cross-Column Track C Shim Slice
+
+Date: 2026-07-15
+
+Scope: Updated the Cross-Column Layout Tracks package after implementing the
+first explicit Search-page shim track.
+
+## Summary
+
+Track C now models the first intentional cross-column spacing shim. The package
+documents that empty spacing should be represented as an ordinary fixed-height
+track occupant rather than as hidden padding inside Track A, Track B, or their
+compatibility wrappers.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Updated package status and implemented-slice notes to include Track C as a fixed-height shim track. | Records that the Search page now separates metadata from supporting search content using an explicit empty track. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added Phase 4B for the Track C shim slice and focused shim validation. | Makes the next layout-track increment discoverable while preserving deferred scope for later tracks. |
+
+---
+
+# Track Cell And Shim Clarification
+
+Date: 2026-07-15
+
+Scope: Clarified Cross-Column Layout Tracks terminology and shim-track
+ownership after the first Track C slice.
+
+## Summary
+
+The layout-track package now explicitly states that spacing shims are ordinary
+tracks whose height is contributed by one `FixedHeightTrackOccupant` in one
+cell. Peer cells honor the resolved allocation but do not contain duplicate
+shim occupants. The package also now uses the `<Track letter><Column number>`
+cell vocabulary, such as A1, B2, and C3.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added track-cell vocabulary and clarified the C1/C2/C3 Track C mapping. | Makes the current Search-page layout inspectable and prevents treating Track C as direct page-plan metadata. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Added shim-track and track-cell sections. | Records the settled architectural rule that spacing and content use the same occupant negotiation mechanism. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated older Track C examples so Track C is no longer described as primary content in the current Search-page implementation. | Removes stale terminology that conflicted with the implemented Track C shim. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added validation expectations for one C2 shim occupant and empty C1/C3 cells. | Ensures future tests protect against direct fixed-height track overrides or duplicate shim occupants. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Refined Track C checklist items around C2 ownership and empty C1/C3 cells. | Aligns implementation tracking with the settled cell vocabulary. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Updated the shim example to C1/C2/C3 and removed shim representation from open questions. | Marks the shim architecture as settled by implementation. |
+
+---
+
+# Track Semantic Neutrality Correction
+
+Date: 2026-07-15
+
+Scope: Corrected Cross-Column Layout Tracks terminology so tracks remain
+ordinal geometric coordinates only.
+
+## Summary
+
+The previous Track C wording implied that a track could have an intrinsic role,
+such as spacing or shim behavior. The corrected model is that tracks know only
+their ordinal identity and resolved geometry. Meaning belongs to occupants and
+to the page composition that places those occupants.
+
+Current Search-page occupancy is documented as cell-specific:
+
+- A1: Search top menu occupant.
+- A2: "All messages" text occupant.
+- A3: "Conversation" text occupant.
+- B1: no occupant.
+- B2: metadata text occupant.
+- B3: no occupant.
+- C1: no occupant.
+- C2: `FixedHeightTrackOccupant(height: 8)`.
+- C3: no occupant.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Replaced semantic track descriptions with Search-page cell occupancy. | Makes clear that Track A/B/C are coordinates, not roles. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Reframed examples around occupant placement rather than track meaning. | Prevents future implementations from teaching the coordinator semantic track roles. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Replaced shim-track terminology with fixed-height spacing occupant language. | Keeps spacing under the same occupant negotiation mechanism without assigning meaning to the track. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Renamed the implemented C2 slice around fixed-height occupant placement. | Keeps implementation tracking aligned with semantic-neutral track vocabulary. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Updated validation language to check C2 fixed-height occupant behavior rather than a shim track. | Ensures tests protect the generic track model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Updated empty-cell and spacing guidance to avoid semantic track roles. | Clarifies that spacing and content both use occupants. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT/IMPLEMENT_TRACK_OCCUPANT.md` | Updated the implementation seed language around fixed-height spacing occupants. | Prevents older seed text from reintroducing shim-track terminology. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT/IMPLEMENT_TRACK_OCCUPANT_AUDIT.md` | Replaced Track A/B summaries with A1/A2/A3 and B1/B2/B3 occupancy. | Aligns audit language with the corrected model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT/IMPLEMENT_TRACK_OCCUPANT_CHECK.md` | Updated the next-slice recommendation language. | Keeps future work framed around occupants, not semantic tracks. |
+| `lib/essentials/navigation/presentation/layout/search_page_track_plan.dart` | Renamed the Search-page C2 height constant and updated occupancy comments. | Removes semantic track naming from code. |
+| `lib/config/theme/widgets/layout/cross_column_track_plan.dart` | Updated `FixedHeightTrackOccupant` comments. | Clarifies that fixed-height allocation belongs to the occupant. |
+| `lib/config/theme/widgets/layout/vertical_column_bands.dart` | Updated compatibility-wrapper comments. | Avoids implying fixed semantic meanings for Track A/B. |
+| `test/config/theme/widgets/layout/cross_column_track_plan_test.dart` | Updated fixed-height occupant test wording. | Keeps test intent aligned with semantic-neutral tracks. |
+
+---
+
+# Track Cell Alignment Principle
+
+Date: 2026-07-15
+
+Scope: Added Track Cell Alignment as a future Cross-Column Layout Tracks
+architecture principle.
+
+## Summary
+
+The layout-track package now distinguishes three independent concepts:
+
+- track geometry: the resolved height and position of a shared track;
+- occupant requirement: the natural space requested by an occupant;
+- track cell alignment: placement of an occupant inside an already-resolved
+  cell allocation.
+
+Track Cell Alignment belongs to page composition. It is not a property of the
+track, the `TrackOccupant`, or the underlying presentation widget. Initial
+alignment options should remain limited to top, center, and bottom. Alignment
+must not alter track requirements, resolved track height, or negotiation, and
+must not become hidden padding.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added Track Cell Alignment overview and clarified that designers may use semantic language while the layout engine records only geometry and occupancy. | Gives future readers the top-level mental model before implementation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Added architectural rule separating track geometry, requirements, and alignment. | Establishes page-composition ownership of cell placement. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Added detailed ownership, examples, and padding distinction for Track Cell Alignment. | Prevents alignment from becoming hidden spacing or occupant-owned behavior. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added a future Track Cell Alignment phase. | Records the implementation boundary without authorizing code changes. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added future alignment test expectations. | Ensures future implementation proves alignment does not affect negotiation. |
+
+---
+
+# Conversation Card TrackOccupant Natural Height
+
+Date: 2026-07-15
+
+Scope: Recorded the replacement of the temporary fixed Conversation Card track
+requirement with a natural, width-aware `ConversationSignatureCardTrackOccupant`
+requirement.
+
+## Summary
+
+The current Search-page composition may now place a Conversation Card occupant
+in C3 when the right Conversation excerpt is visible. That occupant no longer
+uses a fixed placeholder height. It derives its natural requirement from the
+same `ConversationSignatureCardPresentationMetrics` used by the rendered
+Conversation Card, so glyph row count, card chrome, finite width, hooks, and
+tags are represented in the requirement without teaching the page coordinator
+Conversation semantics.
+
+Track C remains semantically neutral. The documentation records C3 occupancy,
+not a Track C role.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Updated current Search-page occupancy so C3 may contain a `ConversationSignatureCardTrackOccupant`; documented variable-height negotiation. | Makes the implemented C3 slice discoverable while preserving track semantic neutrality. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Replaced stale C3-empty wording with optional Conversation Card occupancy and shared metrics guidance. | Records why the page no longer owns a Conversation Card height constant. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added Phase 4C and validation items for the C3 Conversation Card occupant. | Tracks the completed vertical slice and its boundaries. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added focused Conversation Card metric and occupant tests to the validation map. | Documents the tests proving width-aware natural height and rendered/calculated parity. |
+
+---
+
+# Canonical Conversation Card Width
+
+Date: 2026-07-15
+
+Scope: Codified canonical `ConversationSignatureCard` width as a presentation
+contract shared by rendered cards and track-occupant requirement calculation.
+
+## Summary
+
+The Conversation Card width is now documented as part of canonical Conversation
+Card presentation. Containers must accommodate the card and may place it inside
+wider space, but they do not stretch it or redefine its glyph geometry. This
+makes glyph row count and natural-height requirements deterministic across the
+Conversations sidebar and right/end Conversation excerpt panel.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added the canonical card-width contract and authoritative metrics symbol. | Makes the top-level layout package explain why C3 card requirements do not depend on panel width. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated Search-page occupancy examples and added the stable card-width principle. | Prevents stale C3-empty language and records the presentation ownership boundary. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Clarified that canonical card width, not ambient container width, drives card glyph geometry. | Keeps the TrackOccupant model deterministic while preserving semantic-neutral tracks. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added completed canonical-width implementation and validation items. | Records the implementation boundary and expected checks. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added canonical-width test expectations. | Ensures future tests protect the single width source of truth. |
+
+---
+
+# End-Panel Conversation Card Centering
+
+Date: 2026-07-15
+
+Scope: Recorded the presentation refinement that centers the fixed-width
+canonical Conversation Card in the right/end Conversation excerpt panel.
+
+## Summary
+
+The canonical Conversation Card width remains stable and owned by the
+Conversation Card presentation contract. The right/end Conversation excerpt
+panel may center that fixed-width card when the panel is wider than the card.
+This is horizontal presentation placement, not Track Cell Alignment and not a
+new Track abstraction.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Clarified that right/end panel card centering is presentation placement, not track-system behavior. | Prevents a small visual refinement from broadening Track Cell Alignment. |
+
+---
+
+# Search-Page C2 Search Controls Occupancy
+
+Date: 2026-07-15
+
+Scope: Recorded the Search-page layout-track update that places the Message
+Evidence post-metadata support/search-control group in cell C2.
+
+## Summary
+
+The old fixed 8 px C2 spacing occupant has been replaced by a
+Message-Evidence-owned post-metadata controls occupant. The track remains
+semantically neutral: the current Search-page composition places the
+support/search-control group in C2 and bottom-aligns it inside the resolved
+allocation when another cell contributes a taller requirement.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Replaced stale C2 spacing language with C2 post-metadata controls occupancy. | Keeps the canonical layout-track overview aligned with the current Search-page composition. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated Search-page occupancy tables from an 8 px spacing occupant to the Message Evidence controls occupant. | Prevents Track C from being misread as a semantic shim track. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Documented C2 bottom alignment for the support/search-control group. | Records the page-composition placement rule without broadening the track model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Updated Phase 4B to describe the post-metadata controls occupant slice. | Keeps implementation checklist history current. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added expectations for the C2 controls occupant and bottom-aligned track cell behavior. | Documents the focused regression surface. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TRACK_OCCUPANT_ARCHITECTURE_ANALYSIS.md` | Rewrote a fixed-height spacing example to avoid naming current Search-page C2 as a spacing cell. | Preserves semantic-neutral track language after C2 gained visible controls. |
+
+---
+
+# Search-Page D-Track Supporting Text Occupancy
+
+Date: 2026-07-15
+
+Scope: Recorded the Search-page layout-track update that separates the Message
+Evidence search controls from supporting context text, and places the right
+Conversation excerpt label in the same ordinal track.
+
+## Summary
+
+The current Search-page composition now uses C2 for the Message Evidence search
+controls, D2 for the Message Evidence supporting context line, and D3 for the
+right Conversation excerpt label when the excerpt panel is visible. Tracks
+remain semantically neutral; these cells record only current occupancy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Updated the current occupancy example with C2, D2, and D3 occupants. | Keeps the overview aligned with the implemented Search-page composition. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Updated Search-page occupancy tables to include Track D cells. | Prevents stale combined C2 wording from obscuring the current composition. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Generalized the occupancy example so it describes occupied cells rather than a semantic track role. | Reinforces semantic-neutral track documentation. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added D2 supporting-context occupant coverage to the test map. | Documents the focused regression surface for the new split. |
+
+---
+
+# Search-Page E-Track Fixed-Height Occupancy
+
+Date: 2026-07-15
+
+Scope: Recorded the Search-page layout-track update that adds an ordinal E
+track with one fixed-height 16 px occupant.
+
+## Summary
+
+The current Search-page composition now includes an E track whose resolved
+height is contributed by one ordinary `FixedHeightTrackOccupant(height: 16)`.
+All three columns render the resolved E allocation before primary content.
+Track E has no semantic meaning; it is only an ordinal coordinate with current
+occupancy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/README.md` | Added current E occupancy and clarified that the layout engine records geometry and occupancy, not spacer semantics. | Keeps the overview aligned with the current Search-page composition. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/PROPOSAL.md` | Added E occupancy to the Search-page examples. | Makes the current ordinal track plan discoverable. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/DESIGN_NOTES.md` | Added E occupancy to the current composition example. | Preserves the semantic-neutral track model. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/CHECKLIST.md` | Added Phase 4E for the fixed-height E occupant slice. | Records the implementation boundary and validation expectations. |
+| `45-NEW-FEATURE-ADDITION/08-CROSS-COLUMN-LAYOUT-TRACKS/TESTS.md` | Added the E fixed-height occupant expectation to the test map. | Documents the focused regression surface. |
+
+---
+
+# Cross-Column Track Cell Rendering Anatomy
+
+Date: 2026-07-16
+
+Scope: Added a durable explanation of how Search-page track occupants,
+requirements, resolved plans, scopes, and `TrackCellColumnBand` wrappers become
+the Flutter widget tree.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Created a mechanical walkthrough of the rendering chain from page composition through `ResolvedTrackPlanScope` to track-cell rendering. | Gives future readers an obvious reference for how cross-column track coordination works in Flutter widget terms. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Added the anatomy document to the canonical reading order and link metadata. | Makes the new explanation discoverable from the durable cross-column layout index. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation addition. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — First Pass
+
+Date: 2026-07-16
+
+Scope: Established the concise current-state diagnosis and migration direction
+for replacing the Search page's row-only Track requirement plan with an
+authoritative two-dimensional page composition.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Created the work-package index and four-pass reading order. | Distinguishes canonical pass documents from their seed guidance and keeps the refactor scope discoverable. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/01-CURRENT-TRACK-SYSTEM-ANATOMY.md` | Created the concise current-system diagnosis, target direction, responsibility split, and migration outline. | Records why shared row-height negotiation is valuable but insufficient without one complete cell-level composition authority. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the first matrix-refactor documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — Second Pass
+
+Date: 2026-07-16
+
+Scope: Established the canonical `PageTrackLayoutMatrix` architecture for the
+Search-page refactor without beginning implementation planning or source work.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Created the canonical matrix architecture, responsibility chain, constraint-to-claim flow, resolution model, lifecycle invariant, and temporary migration bridge. | Makes the matrix the explicit composition authority while preserving feature-owned presentation and semantic-neutral Track infrastructure. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Linked Document 02 in the package reading order. | Makes the approved target architecture discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the second matrix-refactor documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Proposal Refinement
+
+Date: 2026-07-16
+
+Scope: Tightened the canonical matrix proposal before implementation planning
+without changing its architecture or migration strategy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Simplified the title, elevated the composition-authority axiom, required complete matrix membership, strengthened presentation-derived dimensional truth, clarified page/cell placement ownership, and made renderer simplicity explicit. | Removes remaining terminology ambiguity while preserving the approved matrix architecture and one-matrix layout-tuning philosophy. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the canonical proposal refinement. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — Third Pass
+
+Date: 2026-07-16
+
+Scope: Converted the approved `PageTrackLayoutMatrix` architecture into a
+five-phase, continuously runnable Search-page migration plan.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/03-PAGE-TRACK-LAYOUT-MATRIX-MIGRATION-PLAN.md` | Created the canonical migration plan with compatibility boundaries, repository-aware seams, phase objectives, verification gates, retirement steps, and completion criteria. | Gives implementation a practical sequence while keeping the matrix authoritative and the row-plan bridge temporary. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added Document 03 to the package links and reading order. | Makes the executable migration plan discoverable after the target architecture. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the third matrix-refactor documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — Fourth Pass
+
+Date: 2026-07-16
+
+Scope: Established the living implementation, evidence, compatibility
+retirement, and completion record for the approved Search-page matrix
+migration without beginning source implementation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Created the phase dashboard, evidence sections, final matrix record, compatibility retirement ledger, verification ledger, deviation record, and final completion gate. | Gives implementation one durable authority for recording actual progress and proof without duplicating the architecture or migration plan. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added Document 04 to package links and the canonical reading order. | Completes navigation through diagnosis, architecture, migration, and implementation evidence. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/01-CURRENT-TRACK-SYSTEM-ANATOMY.md` | Replaced stale matrix-owned-placement shorthand with the approved page/cell responsibility split. | Keeps the current-state document consistent with the refined canonical architecture. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the fourth matrix-refactor documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# Track System Matrix Refactor — Package Consistency Pass
+
+Date: 2026-07-16
+
+Scope: Verified Documents 01–04 as one coherent package after completion of the
+four documentation passes.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added package status, relevant test reference, and complete Documents 01–04 navigation. | Makes it immediately clear that architecture and planning are complete while source implementation has not started. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/01-CURRENT-TRACK-SYSTEM-ANATOMY.md` | Added canonical successor links and replaced stale next-pass wording with the completed document sequence. | Prevents the current-state diagnosis from reading like unfinished work. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Linked the migration plan and standardized presentation-construction language. | Keeps architecture terminology and navigation consistent. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/03-PAGE-TRACK-LAYOUT-MATRIX-MIGRATION-PLAN.md` | Standardized feature-owned presentation-construction wording. | Avoids suggesting that generic Track infrastructure owns feature widgets. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the package consistency pass. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Phase 1
+
+Date: 2026-07-16
+
+Scope: Recorded the verified, behavior-neutral introduction of matrix identity
+and validation infrastructure for the Search-page migration.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 1 verified and recorded the final APIs, source/test locations, compatibility evidence, analyzer result, and absence of an active rendering path. | Preserves exact implementation evidence before the Search-page matrix bridge begins. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status and linked the new matrix infrastructure test. | Keeps the package index aligned with source progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the Phase 1 implementation evidence update. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Phase 2 Automated Evidence
+
+Date: 2026-07-16
+
+Scope: Recorded the Search-page matrix composition, temporary row-plan adapter,
+single-scope distribution, focused tests, analyzer result, and remaining manual
+verification gate.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 2 in progress; recorded its source seams, exact 15-cell matrix, removed occupant-bag paths, temporary adapter, one-plan distribution, automated evidence, pre-existing architecture-test failure, and pending visual/lifecycle checks. | Preserves exact evidence without marking the phase verified before manual Search-page review. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status and added the Search-page composition test. | Keeps the package index aligned with implementation progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the Phase 2 evidence update. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Phase 3 Contract Evidence
+
+Date: 2026-07-16
+
+Scope: Recorded the placement-independent occupant API, presentation
+constraints, dimensional claims, focused verification, and the remaining
+feature-presentation delegation boundary before cell rendering.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 3 in progress; recorded final claim contracts, migrated occupants, 42 passing focused tests, clean analyzer, unchanged architecture-test exception, retired placement APIs, and the three compatibility presentations still awaiting Phase 4. | Preserves exact implementation truth without claiming that dimensional adapters already own live feature presentation construction. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status for the Phase 3 contract migration. | Keeps the package index aligned with source progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the Phase 3 evidence update. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Phase 4 Resolution Foundation
+
+Date: 2026-07-16
+
+Scope: Recorded the immutable resolved matrix, complete resolved-cell model,
+`CellId` renderer, one-time claim resolution, focused verification, and the
+remaining feature-presentation preparation seam before live renderer migration.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 4 in progress and recorded resolved-matrix APIs, distribution, renderer behavior, 45 passing focused tests, clean analyzer, compatibility status, and the live presentation migration gate. | Distinguishes proven matrix resolution from the still-pending removal of local renderer authority. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status and test index for the resolved-matrix slice. | Keeps the package index aligned with source progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the Phase 4 resolution-foundation evidence. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Live Cell Renderer Migration
+
+Date: 2026-07-16
+
+Scope: Recorded feature-owned presentation preparation and direct `CellId`
+rendering across the Search sidebar, center message-evidence header, and right
+Conversation excerpt panel.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked Phase 3 verified; recorded the three live matrix render paths, cassette-boundary preservation, 68 passing focused tests, clean analyzer, compatibility status, and remaining manual Phase 4 checks. | Distinguishes completed matrix authority in the active Search path from fallback retirement and manual lifecycle proof. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status for the live renderer migration. | Keeps package orientation aligned with source progress. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation evidence update. | Maintains the project documentation change log. |
+
+---
+
+# Search Track Width-Contract Verification
+
+Date: 2026-07-16
+
+Scope: Reconciled the Search matrix's only currently width-sensitive occupant
+without inventing page geometry that the current window host does not expose.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded the D3 canonical-width contract and the remaining host constraint for future fluid-width occupants. | Distinguishes a truthful feature presentation contract from guessed end-sidebar geometry. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this width-contract verification. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Compatibility And Constraint Audit
+
+Date: 2026-07-16
+
+Scope: Audited remaining row-plan consumers and the presentation constraints
+used by resolved matrix claims after the Search row bridge was removed.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded that no production row-plan scope remains, identified live non-matrix wrapper consumers, and added truthful per-column width constraints as a Phase 4 verification blocker. | Prevents premature compatibility deletion and prevents infinite-width claims from being mistaken for completed resize/wrapping support. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this audit. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Row Bridge Retirement
+
+Date: 2026-07-16
+
+Scope: Recorded removal of the Search page's temporary matrix-to-row-plan
+adapter after all three live Track regions migrated to complete `CellId`
+rendering.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Marked the temporary adapter removed and distinguished it from generic fallback wrappers still awaiting a consumer audit. | Preserves accurate retirement evidence without claiming unrelated compatibility code is already safe to delete. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the row-bridge retirement evidence. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Prepared Evidence Boundary
+
+Date: 2026-07-16
+
+Scope: Recorded the Messages-owned presentation boundary that supplies both the
+global evidence source view and Search-page matrix occupants without allowing
+layout code to initiate evidence-skeleton reads.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Documented the prepared evidence state, ownership correction, focused and full architecture results, provider test, and Phase 4 decision. | Preserves the distinction between feature-owned evidence composition and page-owned occupant placement. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added the prepared-presentation test and updated package status. | Keeps package orientation aligned with the live implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation evidence update. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Row-Only Compatibility Retirement
+
+Date: 2026-07-16
+
+Scope: Removed the dormant row-plan model, scope, renderers, wrappers, and
+wrapper-only tests after confirming that the Search page renders entirely by
+complete `CellId` and that non-matrix surfaces can use ordinary presentation
+composition.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded compatibility deletion, zero-reference scan, 23 passing focused tests, 350 passing architecture tests, and clean analyzer; left manual verification open. | Completes automated Phase 5 evidence without overstating visual verification. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status to automated Phase 5 retirement complete. | Keeps package orientation current. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Redirected the canonical reading path from wrappers to matrix/cell rendering. | Prevents new readers from adopting retired row-only mechanics. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Replaced wrapper ownership with matrix, resolver, occupant, and complete-cell ownership. | Aligns the durable contract with the implemented architecture. |
+| `09-CROSS-COLUMN-LAYOUT/01-column-band-wrappers.md` | Replaced stale wrapper instructions with current matrix mechanics while retaining the filename for historical links. | Preserves navigation without preserving retired guidance. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Updated sidebar participation to A1-E1 complete-cell rendering. | Documents how the cassette seam now consumes the shared matrix. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Updated Search sidebar and troubleshooting guidance to matrix occupancy, claims, and alignment. | Makes the current applied layout discoverable. |
+| `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Rewrote the rendering anatomy from the retired row plan to feature preparation, page matrix, resolution, scope, and `TrackCellView`. | Gives future developers an accurate mechanical explanation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this retirement and documentation-promotion pass. | Maintains the project documentation change log. |
+
+---
+
+# PageTrackLayoutMatrix Implementation — Full-Suite Proof
+
+Date: 2026-07-16
+
+Scope: Completed broad automated verification after retiring the row-only
+compatibility system.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded all 1,313 repository tests passing, the content-sized ordinary evidence-header fallback, the corrected display-phone expectation, and the remaining manual verification gate. | Preserves complete automated retirement evidence without claiming visual verification that has not yet been performed. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this full-suite proof. | Maintains the project documentation change log. |
+# PageTrackLayoutMatrix Implementation — Minimum Cell Reservations
+
+Date: 2026-07-16
+
+Scope: Recorded the page-owned resting-geometry mechanism introduced after
+manual Search verification showed optional right-panel cells collapsing before
+their live occupants appeared.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Added `MatrixCell.minimumReservedHeight`, its resolution rule, ownership, lifecycle purpose, and prohibitions. | Makes stable reactive geometry part of the canonical architecture without weakening truthful live claims. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/03-PAGE-TRACK-LAYOUT-MATRIX-MIGRATION-PLAN.md` | Added reservation implementation and verification requirements. | Ensures lifecycle stability is included in migration completion criteria. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded the observed collapse, implemented C3/D2/D3 reservations, feature-owned metric sources, tests, and remaining verification. | Preserves implementation evidence and the exact Search-page occupancy correction. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Updated package status with the resting-geometry correction. | Keeps package orientation aligned with source. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Added the durable ownership and resolution rules for page-owned minimum cell reservations. | Prevents empty-cell guidance from incorrectly implying that optional content must collapse shared geometry. |
+| `09-CROSS-COLUMN-LAYOUT/01-column-band-wrappers.md` | Updated the active resolver description with effective-height calculation. | Keeps the retained historical filename pointed at current matrix mechanics. |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Clarified how empty sidebar cells participate in reserved shared geometry. | Keeps cassette flow compatible with the page matrix without introducing placeholder occupants. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded C3, D2, and D3 reservation sources, deliberate zero reservations, and lifecycle verification expectations. | Makes the applied Search composition and its resting geometry discoverable. |
+| `09-CROSS-COLUMN-LAYOUT/05-anatomy-of-track-cell-rendering.md` | Added reservations and effective-height resolution to the mechanical rendering chain. | Gives future developers an accurate account of how absent optional content preserves page geometry. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded 29 focused layout tests, 350 architecture tests, all 1,320 repository tests, and clean analyzer after the reservation correction. | Completes automated proof while leaving the renewed visual lifecycle check explicit. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/README.md` | Added full-suite verification to the package status. | Keeps package orientation aligned with the completed automated proof. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+# Search Page Matrix Tuning — Conversation Card B3
+
+Date: 2026-07-16
+
+Scope: Moved the optional Conversation Card and its feature-derived minimum
+reservation from C3 to B3 while leaving the Search controls in C2.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Updated the current occupancy and reservation tables from C3 to B3. | Keeps the canonical applied-layout record synchronized with the matrix. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Updated the final matrix, reservation record, and compatibility evidence for B3. | Records the page-composition tuning without changing generic Track semantics. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this matrix tuning pass. | Maintains the project documentation change log. |
+
+---
+
+# Search Top Menu — Track-Safe Overlay Presentation
+
+Date: 2026-07-16
+
+Scope: Recorded the correction that keeps the sidebar top selector's transient
+expanded options outside its resolved A1 geometry.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Documented that A1 claims only the closed trigger and that expanded options use an anchored overlay. | Prevents future interactive Track occupants from expanding inline beyond their resolved cells. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Recorded the overflow defect and overlay correction in the implementation decision ledger. | Preserves why transient menu presentation must remain separate from matrix geometry. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Search Page Matrix Feature Close-Out
+
+Date: 2026-07-16
+
+Scope: Reconciled canonical, work-package, and UI-walk documentation after the
+Search-page matrix migration and final top-menu interaction fix were verified.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Replaced the last active wrapper-era prohibition with resolved-matrix-cell language. | Keeps the canonical contract aligned with the retired wrapper path. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Replaced the obsolete tuning note with the completed matrix status and durable tuning rule. | Records the reviewed Search-page result rather than an issue that has been resolved. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/02-AUTHORITATIVE-PAGE-TRACK-LAYOUT-MATRIX-PROPOSAL.md` | Corrected the page-specific occupancy example from C3 to B3. | Keeps the architectural example synchronized with the final matrix. |
+| `45-NEW-FEATURE-ADDITION/INDEX.md` | Added the completed matrix-refactor package and its canonical handoff. | Makes the feature history and current owner discoverable. |
+| `95-WALK-UI-TREE/15-X-COLUMN-LAYOUT/README.md` | Added a current-outcome notice and marked the former band/wrapper material as design history. | Prevents UI-walk history from being mistaken for current mechanics. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded version 0.2.1+19 and the user-visible matrix behavior. | Closes the release-worthy feature with synchronized release metadata. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this close-out pass. | Maintains the documentation change log. |
+
+Other MessageLens pages remain separately reviewed future adoption work; they
+are not incomplete scope in this Search-page feature package.
+
+---
+
+# Search Investigation Compatibility
+
+Date: 2026-07-18
+
+Scope: Replaced the temporary imperative Conversation-excerpt dismissal with a
+Search-owned generation identity and stored-versus-effective compatibility.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md` | Defined stored panel state, effective panel presentation, opaque investigation provenance, and derived visibility. | Makes declarative compatibility the canonical panel rule rather than scattered clearing commands. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/All-Messages/search_investigation_compatibility.md` | Recorded Search identity semantics, transitions, excerpt compatibility, restoration, and ownership. | Gives the All Messages UI walk one durable reference for the implemented investigation seam. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/All-Messages/01-PENDING-IMPLEMENTATIONS.md` | Recorded the deferred Context action for every Search-displayed message. | Preserves the next UI slice without expanding this state-management correction. |
+| `CHANGELOG.md` | Reframed the 0.2.2 fix around investigation compatibility and restorable stored context. | Accurately describes the final user-visible behavior after removing the temporary imperative workaround. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation pass. | Maintains the project documentation change log. |
+
+---
+
+# Search Investigation Compatibility Canonicalization
+
+Date: 2026-07-18
+
+Scope: Promoted the verified Search investigation generation and
+stored-versus-effective panel behavior from an implementation/UI-walk record
+into current project, feature, essentials, and canonical spec documentation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `00-START-HERE.md` and `README.md` | Added Search investigation compatibility to the cold-start and canonical documentation maps. | Makes the owning documents discoverable without searching historical UI-walk material. |
+| `01-PROJECT/05-CURRENT-STATE.md` and `DEVELOPER_GUIDE.md` | Added the primary-investigation/subordinate-context mental model and declarative effective-panel rule. | Establishes the behavior as current project architecture, not a local Search workaround. |
+| `30-ESSENTIALS/README.md` | Distinguished stored from effective panel state and documented the ownership boundary between shared Search execution, Messages interaction state, Conversations provenance, and navigation compatibility. | Prevents app orchestration and feature semantics from drifting together. |
+| `40-FEATURES/README.md` and `40-FEATURES/search/` | Updated the Search charter, provider inventory, interaction rules, and verification requirements for `SearchInvestigationId`. | Gives Search one canonical feature-level explanation of transitions and restoration semantics. |
+| `40-FEATURES/conversations/README.md` | Recorded that Conversation excerpts carry opaque originating provenance without owning or interpreting it. | Preserves the Search/Conversations ownership boundary. |
+| `42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/20-sidebar-cassette-system.md`, `30-panel-viewspec-system.md`, and `90-invariants-and-contracts.md` | Replaced imperative clearing language with the invariant that incompatible stored state must cease to be effective; added Search cross-reference. | Codifies derivation over repair for all future panel work. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/All-Messages/search_investigation_compatibility.md` | Linked the UI-walk record to its canonical feature and panel owners. | Preserves implementation context without competing with canonical documentation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this canonicalization pass. | Maintains the project documentation change log. |
+
+No application source, tests, configuration, generated files, databases, or
+assets were changed by this documentation pass.
+
+---
+
+# Search Investigation Status Row
+
+Date: 2026-07-18
+
+Scope: Replaced the Search page's static supporting-context line with one
+state-aware Track occupant derived from the existing evidence request.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/search/STATE_AND_PROVIDER_INVENTORY.md` | Recorded the existing presentation provider as the owner of derived investigation status and distinguished semantic state from presentation-local delay. | Prevents a second loading-state authority from emerging. |
+| `40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md` | Documented the stable status-row lifecycle, 175 ms activity delay, shared leading-slot alignment, and explicit spacing ownership. | Makes the user-visible behavior and ownership durable. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Replaced D2's former supporting-context description with the Search Investigation Status occupant and current geometry contract. | Keeps the canonical Search matrix synchronized with source. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Updated the final matrix and resting-reservation record for the new D2 occupant. | Preserves the implementation history without assigning semantics to Track D itself. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/All-Messages/search_investigation_compatibility.md` | Added the implemented status presentation to the Search UI-walk record. | Connects investigation compatibility and visible investigation feedback. |
+| `CHANGELOG.md` | Recorded the delayed, stable Search status row under version 0.2.2. | Keeps release metadata synchronized with the user-visible change. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Conversation Excerpt Header Simplification
+
+Date: 2026-07-19
+
+Scope: Renamed the right Search-page panel to `Conversation excerpt` and
+removed the redundant bounded-window caption from E3.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/essentials/navigation/presentation/layout/search_page_conversation_track_occupants.dart` and `search_page_track_plan.dart` | Renamed the A3 title occupant and made E3 explicitly empty. | Makes the panel identity precise and removes obsolete caption geometry from the authoritative matrix. |
+| `lib/features/conversations/presentation/view/conversation_excerpt_panel_track_metrics.dart` and `conversation_excerpt_panel_view.dart` | Removed the excerpt-label presentation contract and updated matrix and fallback panel titles. | Keeps Conversations as the presentation owner without retaining an unused label path. |
+| `lib/essentials/navigation/presentation/view/macos_app_shell.dart` | Removed retired E3 occupant and reservation inputs. | Keeps page composition synchronized with the smaller Conversations-owned input boundary. |
+| Focused matrix and Conversation excerpt tests | Updated title, occupancy, and retired-caption expectations. | Protects the exact requested hierarchy and explicit empty E3 cell. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md`, `05-anatomy-of-track-cell-rendering.md`, the matrix implementation record, and the Message Evidence UI-walk documents | Replaced the earlier caption-based hierarchy with the current title, temporal orientation, and excerpt composition. | Gives future maintainers one accurate description while retaining historical evolution where useful. |
+| `CHANGELOG.md` | Updated version 0.2.3's user-visible description. | Keeps release metadata synchronized with the refinement. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation and documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Search Investigation Status Alignment
+
+Date: 2026-07-18
+
+Scope: Aligned the Search Investigation Status presentation with the visible
+text-field edge and represented its vertical separation as an explicit matrix
+occupant.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Updated the Search sidebar seam to render A1 through F1. | Keeps sidebar participation synchronized with the complete page matrix. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded D1's 2 px occupant, E2/E3 status and excerpt occupancy, F1's existing final separation, and the visible field-edge alignment contract. | Makes current page composition and spacing ownership discoverable without assigning semantics to tracks. |
+| `45-NEW-FEATURE-ADDITION/09-TRACK-SYSTEM-MATRIX-REFACTOR/04-PAGE-TRACK-LAYOUT-MATRIX-IMPLEMENTATION.md` | Updated the final matrix and implementation evidence from A-E to A-F. | Preserves an accurate implementation record. |
+| `CHANGELOG.md` | Added the visible alignment and explicit matrix-spacing refinement to version 0.2.2. | Keeps release notes synchronized with the user-facing Search polish. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Conversation Excerpt Temporal Orientation
+
+Date: 2026-07-19
+
+Scope: Added explicit month/year orientation to the Search page's Conversation
+excerpt without changing its established Track sequence.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded the C3 temporal-orientation occupant, its source, hierarchy, and lack of a separate resting reservation. | Keeps the canonical matrix description synchronized with current composition. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Added temporal orientation to the reviewed Conversation-context behavior and issue resolution. | Preserves the user-experience rationale alongside the evidence-surface review. |
+| `CHANGELOG.md` | Recorded the user-visible Conversation excerpt orientation refinement. | Keeps release notes synchronized with current behavior. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Mechanical Impossibility Principle
+
+Date: 2026-07-19
+
+Scope: Named and codified the architectural preference for making invalid
+states structurally impossible rather than relying on procedural detection or
+cleanup.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `00-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION/00-READ-FIRST.md` and `10-MESSAGE-LENS-ARCHITECTURAL-CONSTITUTION.md` | Added the canonical Mechanical Impossibility Principle, its practical limits, the Cricket Ball, PageTrackLayoutMatrix, Search investigation compatibility, and Valve #3 examples; named it in the mandatory entry document; and linked to the owning mechanism documents. | Gives an organically recurring project pattern a durable constitutional name without presenting it as absolute dogma. |
+| `DEVELOPER_GUIDE.md` | Named the existing derivation-over-repair guidance and linked it to the canonical constitutional section. | Gives new developers the principle's mental model near the start of the guide without duplicating the full explanation. |
+| `09-CROSS-COLUMN-LAYOUT/00-cross-column-layout-contract.md` | Linked matrix composition authority to the Mechanical Impossibility Principle. | Connects the current layout contract to its higher-order architectural rationale. |
+| `40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md` | Linked investigation-aware effective presentation to the Mechanical Impossibility Principle. | Makes clear that incompatible stored context is rendered impossible rather than imperatively cleared. |
+| `55-READERS-INTEGRATORS-ORCHESTRATORS/10-ARCHITECTURE-CONTRACT.md` | Linked exclusive execution ownership to the Mechanical Impossibility Principle. | Records why the execution gate is authority, not merely contention detection. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation pass. | Maintains the project documentation change log. |
+
+No application source, tests, configuration, generated files, databases, or
+assets were changed by this documentation pass.
+
+---
+
+# Conversation Excerpt Temporal Accent
+
+Date: 2026-07-19
+
+Scope: Refined the existing month/year orientation heading with the established
+orange organizing-value accent while preserving its matrix placement and
+typographic hierarchy.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/features/conversations/presentation/view/conversation_excerpt_panel_track_metrics.dart` | Changed the shared temporal-orientation `title3` style from primary text to system orange at 84% opacity. | Makes the excerpt's temporal anchor immediately legible while keeping it subordinate to the panel title. |
+| `09-CROSS-COLUMN-LAYOUT/03-search-page-current-implementation.md` | Recorded the temporal heading's semantic color treatment and unchanged no-divider layout. | Keeps the canonical Search matrix presentation description synchronized with the UI. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Documented orange as the temporal organizing-value accent for this surface. | Preserves the reviewed rationale in the UI-walk record. |
+| `CHANGELOG.md` | Extended the 0.2.3 temporal-orientation release note with the color refinement. | Keeps release metadata synchronized with the in-progress user-facing change. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# All Messages Conversation Navigation
+
+Date: 2026-07-19
+
+Scope: Extended the existing `In conversation` workflow from text-search
+results to every eligible All Messages row carrying canonical Conversation
+identity.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/features/messages/presentation/view/global_messages_evidence_view.dart` | Replaced query/scope eligibility checks with canonical Conversation identity while preserving active-excerpt suppression and investigation provenance. | Makes Conversation navigation consistent across ordinary, month-browsed, and searched All Messages evidence. |
+| `test/features/messages/presentation/view/global_messages_evidence_view_test.dart` | Added unfiltered open, missing-identity, and exact-active-excerpt coverage. | Protects the broadened workflow and its eligibility boundaries. |
+| `40-FEATURES/search/INTERACTIONS_AND_NAVIGATION.md` and the shared Message Evidence UI-walk review | Documented that Search text is not an eligibility gate for Conversation navigation. | Keeps feature and UX guidance aligned with the shared evidence-row behavior. |
+| `CHANGELOG.md` | Added the user-visible workflow under version 0.2.3. | Keeps release metadata synchronized with the current release slice. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation and documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Message Evidence Counterpart Labels
+
+Date: 2026-07-19
+
+Scope: Replaced ambiguous message sender metadata with explicit direction and
+counterpart language across the shared message evidence surface.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `lib/features/messages/domain/message_evidence/message_evidence_row_data.dart` and `application/message_evidence/message_evidence_spine_provider.dart` | Added optional canonical Conversation display identity to prepared evidence rows, including batched initial hydration. | Gives outgoing evidence the recipient identity that sender-only message facts cannot provide. |
+| `lib/features/messages/presentation/widgets/message_evidence/message_evidence_row.dart` | Changed metadata to `received from <sender>` and `from me to <Conversation>`, with an honest `from me` fallback when canonical identity is unavailable. | Makes direction and counterpart immediately understandable without route-specific presentation logic. |
+| Focused message evidence provider and widget tests | Added canonical-title hydration and outgoing-label coverage; updated incoming-label expectations. | Protects both the read path and rendered language. |
+| Shared Message Evidence UI-walk review and `CHANGELOG.md` | Recorded the common metadata grammar and user-visible correction. | Keeps UX and release documentation synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation and documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Self-Conversation Identity And Evidence Labels
+
+Date: 2026-07-19
+
+Scope: Added source-derived local-account handle identity so messages sent
+between the user's own devices use one stable `self` metadata label.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `10-DATABASES/12-identity-model-contacts-handles-participants.md` | Documented local account handles as imported source evidence, their derivation from Messages account fields, and their projection into Conversation identity. | Prevents future code from mistaking message direction or a matching display title for self identity. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Added the `self` metadata grammar and its Conversation-level ownership. | Keeps the shared evidence UX contract aligned with the implemented behavior. |
+| `CHANGELOG.md` | Recorded the user-visible self-conversation label correction. | Keeps release metadata synchronized with the implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Self-Conversation Graph Migration Correction
+
+Date: 2026-07-19
+
+Scope: Corrected the graph database migration lifecycle so existing
+`working_ss.db` files receive the new `handles.is_me` column before reads.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `CHANGELOG.md` | Recorded the existing-database migration correction. | Makes the release-visible failure and its resolution explicit. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded the correction and regression coverage. | Maintains the project documentation change log. |
+
+---
+
+# Historical Local-Account Handle Reconciliation
+
+Date: 2026-07-19
+
+Scope: Added startup reconciliation for historical self-owned Messages
+endpoints without reimporting message records.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `10-DATABASES/12-identity-model-contacts-handles-participants.md` | Documented metadata-only startup reconciliation and canonical matching of phone URI/number variants. | Clarifies how historical local identities become graph facts without conflating direction with endpoint identity. |
+| `CHANGELOG.md` | Recorded the existing-data correction under version 0.2.3. | Keeps release metadata synchronized with the user-visible fix. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation documentation update. | Maintains the project documentation change log. |
+
+---
+
+# Local-Account Identity Documentation Consolidation
+
+Date: 2026-07-19
+
+Scope: Propagated the historical local-account reconciliation contract from the
+canonical identity document into the source, lifecycle, orchestration,
+Conversation ownership, current-state, and message-evidence guides.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `10-DATABASES/12-identity-model-contacts-handles-participants.md` | Added lifecycle ownership, execution-gate, and read-model invalidation details to the canonical local-account identity section. | Makes the complete implemented path discoverable in the identity source of truth. |
+| `10-DATABASES/04-db-chat.md` | Documented `chat.account_login`, incoming `message.destination_caller_id`, `message.is_from_me`, canonical endpoint matching, and the metadata-only historical scan. | Records precisely which Apple source facts support local-account identity and what they do not mean. |
+| `20-DATA-IMPORT-MIGRATION/01-overview.md` | Added startup local-account reconciliation to the active graph lifecycle and clarified that the monitor calls the graph-build service rather than importer/projector internals. | Keeps current import/build orchestration aligned with the implemented ownership boundary. |
+| `55-READERS-INTEGRATORS-ORCHESTRATORS/30-INVARIANTS.md` | Added the source-fact-to-presentation invariant for local-account identity. | Prevents future display heuristics and direct orchestration across importer/projector boundaries. |
+| `40-FEATURES/conversations/README.md` | Added the Conversations feature's consumption rule for projected self-conversation identity. | Clarifies that Conversations owns semantics and read-model exposure, not source derivation. |
+| `01-PROJECT/05-CURRENT-STATE.md` | Added a concise current-state summary of historical reconciliation and self-conversation derivation. | Gives new contributors the current behavior without duplicating the canonical details. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Linked the `self` UX grammar to historical reconciliation and the canonical identity document. | Connects user-facing language to its source-derived architectural basis. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this consolidation pass. | Maintains the documentation audit trail. |
+
+---
+
+# Canonical First-Person Identity Presentation
+
+Date: 2026-07-19
+
+Scope: Extended canonical `handles.is_me` identity through ordinary
+Conversation, Contact, handle, and message-evidence presentation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `10-DATABASES/12-identity-model-contacts-handles-participants.md` | Defined local-account precedence and the `Me` / `me` / `self` presentation grammar. | Establishes one canonical source and prevents widget-local name comparisons. |
+| `40-FEATURES/conversations/README.md` | Documented group-participant, self-only title, and chat-hook behavior. | Keeps Conversation-owned presentation aligned with the shared identity resolver. |
+| `DEVELOPER_GUIDE.md` and `01-PROJECT/05-CURRENT-STATE.md` | Added the first-person identity model to contributor orientation and current-state guidance. | Makes the implemented rule discoverable without requiring schema archaeology. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Extended the evidence grammar beyond row metadata to titles and participant lists. | Keeps UX language consistent across ordinary evidence surfaces. |
+| Shared recovered-evidence presentation | Routed recovered and unlinked sender labels through the same canonical resolver and documented `received from me` when no self-only Conversation relationship is available. | Prevents an incomplete relationship from leaking the user's imported personal name. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible change as version `0.2.4+22`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unknown Sources Total Center Projection
+
+Date: 2026-07-20
+
+Scope: Recorded the explicit idle/selected-source target model for the active
+Unknown Sources investigation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/30-panel-viewspec-system.md` | Added the total-presentation projection rule and linked the first implemented example. | Establishes that an active investigation without a selection owns a truthful idle target rather than an absent center ViewSpec. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the single Messages-owned `handleInvestigation` spec with explicit idle and selected-source targets. | Keeps the feature architecture aligned with implementation and preserves Handles-owned investigation meaning. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Replaced the obsolete no-occupant idle description with the real A2/B2 idle occupancy and truthful omission of source-specific cells. | Clarifies that layout stability follows from real investigation presentation, not minimum Track heights or fillers. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible change as version `0.2.11+29`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Review Row Geometry
+
+Date: 2026-07-19
+
+Scope: Corrected the unfamiliar-source review list's narrow-sidebar geometry
+so its feature-owned dismiss rail is not also reserved by the cassette frame.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `42-SPEC-SYSTEM/CANONICAL-ARCHITECTURE/20-sidebar-cassette-system.md` | Clarified that trailing action space has one owner: either the shared cassette envelope or the feature-owned body. | Prevents double-gutter layouts from clipping row metadata and displacing actions. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible correction as version `0.2.5+23`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Evidence Scope Parity
+
+Date: 2026-07-19
+
+Scope: Unified unfamiliar-source counts, timeline enumeration, hydration, and
+search around canonical sender identity rather than optional chat membership.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/messages/DOMAIN_AND_DATA_MAP.md` | Defined standalone handle scope as canonical sender evidence and made chat membership optional provenance. | Prevents valid sender-only records from disappearing from the shared evidence spine. |
+| `95-WALK-UI-TREE/10-Messages-Sidebar/Message-Evidence-Center-Panel/shared_message_evidence_surface.md` | Recorded the reported badge/timeline mismatch and the cross-surface scope-parity rule. | Keeps unfamiliar-source counts, evidence, and search tied to one user-visible meaning. |
+| `CHANGELOG.md` | Recorded the user-visible unfamiliar-source evidence correction under version `0.2.5`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unknown-Source Investigation Separation
+
+Date: 2026-07-19
+
+Scope: Defined and recorded the first implemented separation between unknown
+source identification and neutral numeric-sender review.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/UNKNOWN_SOURCES/PROPOSAL.md` | Promoted the approved proposal to first-slice implementation status and recorded the typed endpoint, compatible read-model, cassette-navigation, and recovery boundaries. | Keeps the architectural decision and its implemented extent in one discoverable working package. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible investigation separation as version `0.2.6+24`. | Keeps release metadata synchronized with the new workflow. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this architecture and release-documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Investigation Compatibility
+
+Date: 2026-07-20
+
+Scope: Made selected handle evidence subordinate to the unfamiliar-source
+investigation episode that created it.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/chat-handles/INTERACTIONS_AND_NAVIGATION.md` | Documented opaque unfamiliar-source investigation provenance and the controls that begin a new episode. | Establishes the canonical Handles navigation rule and prevents imperative panel cleanup. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the implemented sidebar/center compatibility seam. | Keeps the approved proposal aligned with the shipped architectural correction. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible correction as version `0.2.7+25`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Cross-Column Composition
+
+Date: 2026-07-20
+
+Scope: Applied the canonical page matrix to the unfamiliar-source sidebar and
+selected-handle evidence header.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Recorded the page-specific matrix occupancy, shared handle-lens session, and post-matrix cassette continuation. | Gives future developers one direct explanation of how the sidebar and center evidence align without sharing ownership. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` and `02-sidebar-cassette-content-start-seam.md` | Added the unfamiliar-source composition to the canonical reading path and generalized the seam from Search-only wording. | Keeps the generic seam accurate now that a second cassette-driven page participates. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the implemented cross-column composition slice. | Keeps the feature work package aligned with the implemented page architecture. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible layout change as version `0.2.8+26`. | Keeps release metadata synchronized with the implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Track Contract Audit
+
+Date: 2026-07-20
+
+Scope: Clarified page/feature ownership, made finite-width source metrics
+dimensionally truthful, and named fixed-height diagnostics by composition
+purpose.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Added the Navigation/app-shell/Messages/Handles ownership chain, documented the adaptive metrics claim, and clarified the page-wide separator contributed from I1. | Preserves the intentional feature boundary and explains shared geometry without assigning semantics to ordinal Tracks. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Handle-Lens Center-Panel Responsibility Correction
+
+Date: 2026-07-20
+
+Scope: Corrected source-review workflow and identity ownership while preserving
+the Messages-owned ViewSpec and presentation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/chat-handles/CHARTER.md` | Defined Handles ownership of source identity and source-review semantics. | Prevents rendering features from reimplementing Handles business rules. |
+| `40-FEATURES/messages/CHARTER.md` | Defined Messages ownership of the complete handle-lens ViewSpec presentation and its dependency on Handles seams. | Preserves one-feature/one-ViewSpec ownership without semantic leakage. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the implemented per-source payload, workflow facade, and corrected dismissal behavior. | Keeps the feature package aligned with implementation. |
+| `95-WALK-UI-TREE/20-Responsibility-for-center-panel/completion-report.md` | Added the requested implementation and verification report. | Provides a durable close-out adjacent to the task and audit. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible correction as version `0.2.9+27`. | Keeps release metadata synchronized with the fixed Dismiss behavior. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Unfamiliar-Source Dismissal Transition
+
+Date: 2026-07-20
+
+Scope: Completed Dismiss as a source-granular projection update and a
+declarative unfamiliar-source investigation transition.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `40-FEATURES/chat-handles/INTERACTIONS_AND_NAVIGATION.md` | Defined successful dismissal as a post-persistence investigation transition and recorded source-granular projection updates. | Prevents stale center evidence and whole-list loading resets without imperative panel cleanup. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Recorded the implemented dismissal lifecycle and independent active/dismissed projection behavior. | Keeps the feature package aligned with the completed user workflow. |
+| `95-WALK-UI-TREE/20-Responsibility-for-center-panel/completion-report.md` | Added the follow-up correction, event order, and regression coverage. | Completes the prior ownership report with the observed runtime transition. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible fix as version `0.2.10+28`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Persistent Center-Panel Identity Proposal Refinement
+
+Date: 2026-07-21
+
+Scope: Refined the Unknown Sources persistent center-panel identity proposal
+before implementation.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/01-PERSISTENT-CENTER-PANEL-IDENTITY/proposal.md` | Defined persistent identity as header content, investigation orientation as the first post-header reading content, and center identity as a derived projection of the active investigation. Clarified that the idle explanation replaces evidence rather than the header and retained the Matrix boundary. | Records why the presentation hierarchy exists without turning its current body placement into a universal rule. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Persistent Center-Panel Identity Implementation
+
+Date: 2026-07-21
+
+Scope: Implemented stable investigation-derived identity, selected-source
+subject hierarchy, and explanatory Unknown Sources idle evidence.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/01-PERSISTENT-CENTER-PANEL-IDENTITY/proposal.md` | Recorded the implemented presentation contract, selected hierarchy, loading behavior, and Matrix boundary. | Closes the approved work package without promoting the pattern into a universal framework. |
+| `45-NEW-FEATURE-ADDITION/10-UNKNOWN_SOURCES/PROPOSAL.md` | Added the implemented persistent center-panel identity slice. | Keeps the parent feature proposal synchronized with current behavior. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Updated A2/B2 occupancy and the idle evidence-region presentation. | Keeps the canonical page composition accurate. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible hierarchy and orientation change as version `0.2.12+30`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this implementation documentation pass. | Maintains the project documentation audit trail. |
+
+---
+
+# Unknown Sources Sidebar Shared-Track Boundary
+
+Date: 2026-07-24
+
+Scope: Ended Unknown Sources sidebar Matrix participation after the persistent
+A1/A2 identity row so transient selected-source center details cannot move the
+independent cassette flow.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/02-sidebar-cassette-content-start-seam.md` | Documented page-declared sidebar shared-track boundaries and the Unknown Sources A-row boundary. | Makes the generic renderer consume explicit page composition instead of assuming every Matrix row precedes every cassette chain. |
+| `09-CROSS-COLUMN-LAYOUT/06-unfamiliar-sources-page-current-implementation.md` | Replaced the obsolete B1-I1 continuation with independent sidebar flow after A1 and moved the 16 px center header/evidence occupant to I2. | Records the truthful persistent peer relationship and removes accidental coupling to transient center details. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible layout correction as version `0.2.13+31`. | Keeps release metadata synchronized with the fixed sidebar behavior. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Recovered Messages Track A Composition
+
+Date: 2026-07-26
+
+Scope: Aligned the recovered-message sidebar menu and center title through one
+truthful shared Track while preserving independent layout below it.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/08-recovered-messages-page-current-implementation.md` | Added the canonical current composition for Recovered Deleted Messages and Recovered No-Handle Messages. | Establishes that only A1/A2 share geometry and that both columns resume their native flows immediately afterward. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Added the recovered-message composition to the canonical index and reading order. | Makes the page-specific application discoverable from the cross-column layout entry point. |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Added Recovered Messages as a second concrete shared-boundary example. | Shows that a page may truthfully end both sidebar and center shared lifetimes at Track A. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the user-visible alignment change as version `0.2.15+33`. | Keeps release metadata synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Contacts Track A Composition
+
+Date: 2026-07-26
+
+Scope: Aligned the Contacts sidebar menu with the title supplied by the feature
+that owns the effective center ViewSpec.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `09-CROSS-COLUMN-LAYOUT/09-contacts-page-current-implementation.md` | Added the canonical current Contacts composition and its Messages/Conversations occupant ownership chain. | Establishes that only A1/A2 share geometry and that both columns resume native flow after Track A. |
+| `09-CROSS-COLUMN-LAYOUT/README.md` | Added the Contacts composition to the canonical index and reading order. | Makes the page-specific application discoverable from the cross-column layout entry point. |
+| `09-CROSS-COLUMN-LAYOUT/07-column-specific-shared-track-boundaries.md` | Added Contacts as a concrete shared-boundary example. | Demonstrates that Navigation may place an occupant prepared by the effective center ViewSpec owner without taking presentation ownership. |
+| `CHANGELOG.md` | Recorded the user-visible Contacts title alignment in the current release entry. | Keeps release notes synchronized with implementation. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Data Protection Current-State Audit
+
+Date: 2026-07-27
+
+Scope: Completed the read-only static audit of environment resolution,
+production archive reachability, mutation authority, safeguards, and runtime
+verification requirements for Production Readiness Workstream 1.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/CURRENT-STATE-AUDIT.md` | Added the complete current-state audit, evidence classifications, escape paths, runtime verification matrix, and minimum conditions before onboarding work. | Establishes that ordinary debug launches can currently mutate the production archive while preserving the distinction between read-only Apple sources and writable app-owned stores. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Marked the static audit complete, linked the report, and summarized its central findings. | Makes the workstream status and next evidence boundary immediately discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Data Protection Architecture Proposal
+
+Date: 2026-07-27
+
+Scope: Converted the Workstream 1 audit findings into a fail-closed production
+archive identity, admission, mutation-authority, and recovery architecture.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PROPOSAL.md` | Defined production/development/test archive identities, pre-provider validation, archive-scoped process admission, operation-specific mutation authority, recovery evidence, migration phases, invariants, and acceptance criteria. | Establishes the mechanical boundary that prevents ordinary development and tests from mutating the permanent archive while preserving production FDA continuity. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Advanced the workstream status, linked the proposal, and summarized the proposed boundary. | Keeps the workstream reading order and implementation authorization state explicit. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Data Protection Decisions And Plans
+
+Date: 2026-07-27
+
+Scope: Resolved the proposal's bounded implementation decisions and defined the
+phased implementation and validation programs without authorizing code or
+production operations.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/QUESTIONS.md` | Settled development identity, native/Dart handoff, archive marker, environment-scoped state, initial mutation authority, checkpoint evidence, production adoption, development FDA, and production build decisions. | Removes architectural ambiguity before implementation planning while preserving runtime verification obligations. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/IMPLEMENTATION-PLAN.md` | Defined ten reviewable slices from baseline tripwires through production adoption and canonical documentation promotion. | Prevents partial isolation from being mistaken for safety and keeps production adoption separately authorized. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION.md` | Defined static, native, disposable runtime, operation-concurrency, recovery, artifact, and production-adoption validation gates. | Specifies the objective evidence required before claiming production protection. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Advanced workstream status and linked the decisions and plans. | Makes the complete Workstream 1 planning sequence discoverable and preserves the no-implementation authorization boundary. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Preservation Authority Refinement
+
+Date: 2026-07-27
+
+Scope: Clarified the architectural distinction between archive admission and
+the authority responsible for preserving newly arriving production data.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-AUTHORITY.md` | Defined authority assignment to one production archive identity, single-process exercise, redundant development preservation, heartbeat freshness, cursor evidence, preservation-pass outcomes, and the provisional operating procedure. | Makes preservation responsibility and liveness objectively demonstrable without conflating them with archive admission. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Added the preservation-authority document to metadata, reading order, and the next production planning gate. | Makes the follow-on requirement discoverable without implying that production adoption or authority designation has been authorized. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Preservation Continuity Gate
+
+Date: 2026-07-27
+
+Scope: Promoted continuity of live production preservation from follow-on work
+to a blocking prerequisite for every Production Readiness implementation slice.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-AUTHORITY.md` | Marked the architecture blocking and added the per-slice authority, evidence, continuity, and handoff admission contract. | Prevents implementation from proceeding while newly arriving production data lacks an actively verified preservation owner. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Changed workstream status and next gate to block subsequent slices on preservation continuity. | Makes the prerequisite visible at the workstream entry point. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/IMPLEMENTATION-PLAN.md` | Added preservation continuity as the third sequencing constraint and a mandatory slice-admission checklist. | Applies the authority contract mechanically to every implementation slice rather than treating it as deferred health work. |
+| `90-DATA-INGESTION-REVIEW/00-PRODUCTION-READINESS-MASTER-PLAN.md` | Added a project-wide blocking preservation principle and constrained Production Health to observing, not owning, the guarantee. | Propagates the prerequisite across all workstreams while preserving responsibility boundaries. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+
+# Production Preservation Slice Admission And Implementation Plan
+
+Date: 2026-07-27
+
+Scope: Applied the blocking preservation-continuity gate before further code
+implementation and defined the implementation sequence required to make
+production preservation authority mechanically enforceable.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/preservation-continuity-admission-2026-07-27.md` | Recorded the legacy Debug process, production-root activity, preservation evidence, and the initially incomplete transition diagnosis; the later correction is recorded below. | Demonstrates that process presence is not authority or liveness and preserves the audit trail leading to the corrected handoff plan. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRESERVATION-AUTHORITY-IMPLEMENTATION-PLAN.md` | Defined ownership, durable evidence, freshness, exclusivity, phased implementation, validation, and production handoff. | Converts the blocking architecture into a bounded implementation sequence without authorizing production adoption. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md` | Linked the new plan and admission report and summarized the current blocked state. | Makes the gate and required next action visible from the workstream entry point. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/IMPLEMENTATION-PLAN.md` | Linked the dedicated preservation-authority sequence and current admission result. | Keeps the master implementation plan synchronized with the blocking prerequisite. |
+| `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/README.md` | Indexed the read-only admission report and distinguished it from disposable runtime validation. | Preserves the production-contact boundary while making operational evidence discoverable. |
+| `DOCUMENTATION_PASS_LOG.md` | Recorded this documentation update. | Maintains the project documentation audit trail. |
+
+---
+# 2026-07-27 - Correct production preservation transition authority
+
+- Updated
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-AUTHORITY.md`
+  to recognize the already-running legacy Debug process as the bounded
+  provisional preservation process and to reject the months-old installed app
+  as an automatic successor.
+- Added
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/PRODUCTION-PRESERVATION-HANDOFF-PLAN.md`
+  defining preparation, rehearsal, staging, authorized cutover, rollback, and
+  normal production/development coexistence.
+- Corrected
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/preservation-continuity-admission-2026-07-27.md`
+  so it no longer instructs the developer to stop the preservation process and
+  launch an obsolete installed build.
+- Updated the workstream README, implementation plans, adoption runbook, and
+  validation index to use the corrected transition sequence.
+- No process was stopped or launched, no application was installed, and no
+  production archive content was changed.
+
+---
+
+# 2026-07-27 - Prepare production candidate and adoption rehearsal
+
+- Updated the Production Data Protection README, implementation plan,
+  preservation-authority contract, handoff plan, adoption runbook, validation
+  plan, completion report, and validation index to reflect the revised
+  operational fact: Debug is isolated and production preservation is currently
+  interrupted.
+- Added
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/production-candidate-and-adoption-rehearsal-2026-07-27.md`
+  with signed-candidate identity evidence, disposable checkpoint/adoption
+  evidence, catch-up and attachment-preservation rehearsal results, rollback
+  limits, and remaining authorization boundaries.
+- Marked the earlier preservation-continuity admission conclusion as
+  historical and superseded without deleting its audit evidence.
+- Documented the exact checkpoint, restore, adoption, admission, and
+  pre-mutation rollback commands for the separately authorized real cutover.
+- Recorded 68 focused regression tests, 352 architecture tripwires, 1,442 full
+  Flutter regression tests, and a clean analyzer result.
+- No production application was installed or launched, and no production
+  archive content was marked, restored, adopted, or mutated.
+
+---
+
+# 2026-07-28 - Verify backup and separate adoption inventory
+
+- Added
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/final-cutover-preparation-2026-07-28.md`
+  with signed-artifact identity, notarization failure, external recovery-backup
+  verification, production archive inventory, cutover sequence, and remaining
+  authorization boundary.
+- Updated the Production Data Protection README, implementation plan,
+  validation plan, completion report, preservation-authority contract, handoff
+  plan, adoption runbook, and validation index.
+- Replaced the real-cutover requirement for a second full archive copy with the
+  verified existing external backup plus a small read-only in-place adoption
+  inventory. Full checkpoint/restore remains the disposable recovery rehearsal
+  mechanism.
+- Recorded that Apple notarization is blocked by a missing or expired developer
+  agreement. The signed DMG was not installed, launched, or represented as a
+  final cutover artifact.
+- No production marker was created, no application was installed or launched,
+  and neither the production archive nor external backup was modified.
+
+---
+
+# 2026-07-28 - Execute production archive cutover
+
+- Added
+  `90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/VALIDATION-RESULTS/production-cutover-2026-07-28.md`
+  as the authoritative execution record for the authorized in-place adoption,
+  installed artifact, migration incident and correction, catch-up, live
+  preservation, overlay retention, development isolation, and bounded
+  attachment residual.
+- Updated the Production Data Protection README, implementation plan,
+  validation plan, completion report, adoption runbook, preservation-authority
+  contract, preservation handoff plan, and Production Readiness master plan to
+  reflect that production adoption is complete.
+- Updated the validation-results index and marked the final preparation report
+  as historical preparation evidence superseded by the executed cutover
+  record.
+- Recorded that all 12 image attachments from the interrupted initial catch-up
+  were recovered, while nine plugin payload attachments and three QuickTime
+  videos remain a bounded reconciliation gap because delayed retry is currently
+  image-only.
+- Recorded that Debug used only the configured external development archive and
+  that the installed production application remained the production
+  preservation process.
+
+---
+
+# 2026-08-09 - Explain database access authority in plain English
+
+- Added
+  `10-DATABASES/access_authority_documentation/010-DATABASE-ACCESS-IN-PLAIN-ENGLISH.md`
+  as a human-oriented translation guide for the post-production-readiness data
+  access architecture.
+- Explained the development/production motivation, archive root as the complete
+  MessageLens data folder, archive admission as folder/build validation,
+  `ArchiveAccessAuthority` as the validated ticket, and persistent providers as
+  individual store openers beneath that ticket.
+- Distinguished archive access authority, protected mutation coordination,
+  the narrower derived maintenance/read-suppression signal, and source-scoped
+  imported-record identity.
+- Preserved the three-question summary and translation dictionary while
+  correcting historical filenames and avoiding the inaccurate implication
+  that maintenance locking universally revokes all database access.
+- Linked the guide from the canonical database inventory. No application code,
+  tests, configuration, databases, or assets were changed.
+
+---
+
+# 2026-08-09 - Implement the real FDA Presence slice
+
+- Added
+  `21-PRESENCE-ITERATION-SIMPLE/03-SCHEDULE-TRIP-EXPERIMENT/90-REAL-FDA-ONBOARDING-IMPLEMENTATION.md`
+  as the implementation record for the development-only five-Trip FDA
+  Schedule.
+- Updated `30-SYSTEM-BOUNDARIES.md` for the concrete Settings-opening authority,
+  real FDA client adapter, new Step subtype, and real fixture boundaries.
+- Updated the two plain-English Presence database guides for the schema-v5
+  payload-free `open_fda_settings` subtype.
+- Generated the real FDA topology artifact from persisted definitions. No
+  production onboarding architecture was changed.
+- Recorded successful verification: 52 focused Presence tests, 354
+  architecture tripwires, clean analyzer output, successful debug macOS build,
+  code generation, formatting, and whitespace validation.
+
+---
+
+# 2026-08-09 - Investigate the inaccurate FDA test
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/03-INACCURATE-FDA-TEST-INVESTIGATION.md`
+  with the concrete Presence-to-onboarding provider trace, exact protected
+  source path, and exact file operation used by the current FDA probe.
+- Recorded that the runtime uses `MacosFullDiskAccess` without a fake,
+  provider override, or cached result, but only opens and closes a plain
+  read-only file descriptor rather than performing an SQLite source read.
+- Distinguished the proven effective-access result from the unobservable macOS
+  authority behind it, recording the evidenced responsible-process,
+  development-signing, and file-specific `com.apple.macl` considerations.
+- Recorded that production onboarding shares the same narrow probe and that a
+  future truthful check should execute a minimal read-only query against the
+  protected `message` table. No FDA behavior, Presence route, Schedule, source
+  access policy, application code, or tests were changed.
+
+---
+
+# 2026-08-09 - Implement truthful Messages source readiness
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/04-TRUTHFUL-MESSAGES-SOURCE-READINESS-IMPLEMENTATION.md`
+  as the implementation record for the corrected protected-source probe,
+  operational authority naming, copy revision, five-Trip assessment, restart
+  seam, and specialist/Step/user knowledge boundaries.
+- Linked the preceding inaccurate-probe investigation to its corrective
+  implementation record.
+- Updated `21-PRESENCE-ITERATION-SIMPLE/30-SYSTEM-BOUNDARIES.md` so the narrow
+  Presence authority means Messages source readability rather than claiming
+  knowledge of the macOS Full Disk Access switch.
+- Recorded that the existing Conversation Graph source-probe reader is reused,
+  the exact SQLite operation is read-only and schema-specific, diagnostic
+  failures remain specialist-owned, and production onboarding remains outside
+  this development-only Presence slice.
+
+---
+
+# 2026-08-10 - Record the manual FDA-off readiness result
+
+- Updated the truthful Messages source-readiness implementation record with the
+  observed FDA-off development run.
+- Recorded from the append-only Presence trace that a fresh Trip 202 readiness
+  Step ran at 06:32:18 and selected readable Trip 205; this was not stale run
+  restoration.
+- Recorded that the app was launched beneath the VS Code Flutter debug chain,
+  the Debug artifact was ad hoc signed, and `chat.db` carried `com.apple.macl`.
+- Clarified that the operational probe truthfully established effective SQLite
+  readability for that process, while a controlled unreadable-path test needs
+  a directly launched, stably signed development artifact without a privileged
+  launcher in its responsible-process chain. No application code changed.
+
+---
+
+# 2026-08-10 - Prepare the isolated FDA experiment artifact
+
+- Updated the truthful Messages source-readiness implementation record with the
+  exact standalone experiment identity, development-root contract, mutual
+  native/Dart admission rule, process-lock consequence, and isolated build
+  procedure.
+- Recorded that the experiment uses
+  `com.bigbenchsoftware.MessageLens.fdaexperiment`, embeds only the established
+  external development archive root, and is signed with the installed Apple
+  Development identity.
+- Recorded that the build path neither changes nor launches production or the
+  normal development application and performs no TCC/Full Disk Access changes.
+
+---
+
+# 2026-08-10 - Validate the isolated FDA restart route
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/05-MANUAL-FDA-RESTART-VALIDATION.md`
+  as the focused manual evidence record for the directly launched, separately
+  signed FDA experiment.
+- Updated the truthful source-readiness implementation record with the exact
+  unreadable -> remediation -> Settings -> restart -> verification -> readable
+  route and the first presentation observed after restart.
+- Traced the initial apparently stale confirmation to Schedule 5 run 10, which
+  was still active at occurrence `5105` in the shared development
+  `presence.db`; the experiment host rendered that checkpoint truthfully.
+- Recorded that `Run Again` completed the transition to new run 11 at
+  occurrence `5101`, and that restart later reconstructed run 11 at verification
+  occurrence `5104` before a fresh SQLite source read selected confirmation.
+- Confirmed that no code correction, run-history deletion, database reset,
+  bundle-specific run rule, second runtime authority, or change to Schedule,
+  Trip, Step routing, Scheduler, or checkpoint semantics was warranted.
+
+---
+
+# 2026-08-10 - Plan the next real onboarding concern
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/06-NEXT-REAL-ONBOARDING-CONCERN-PLAN.md`
+  from the current production onboarding evaluator, gate, Environment
+  Readiness presentation, and Address Book source-resolution implementation.
+- Recorded the complete blocker precedence after Messages readability and
+  identified viable local Address Book discovery/readability as the immediate
+  next independent source blocker.
+- Proposed a bounded Schedule extension with one narrow
+  `ContactsSourceReadinessStep`, one Contacts remediation loop, and a combined
+  source-readiness confirmation, while preserving existing FDA Steps.
+- Recorded that the Messages-only confirmation has no independent semantic or
+  restart value once the Contacts test follows and should be replaced by the
+  combined final confirmation in a newly identified Schedule definition.
+- Confirmed that Trip, Scheduler, routing, checkpoint, restart, and trace
+  semantics need no change, and isolated the separate product decision created
+  by production treating Contacts as mandatory while current copy describes it
+  as primarily contextual enrichment.
+- No application code, tests, configuration, databases, generated files, or
+  production onboarding behavior changed.
+
+---
+
+# 2026-08-10 - Implement Contacts source readiness
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/07-CONTACTS-SOURCE-READINESS-IMPLEMENTATION.md`
+  as the implementation and manual-validation record for the next source
+  readiness slice.
+- Recorded reuse of the existing Address Book repository through a disposable
+  development-client adapter and a narrow Presence-owned Boolean authority.
+- Recorded schema version 6, the class-table Contacts readiness subtype, the
+  new Schedule 6 identities and topology, and preservation of Schedule 5
+  history.
+- Recorded removal of the Messages-only confirmation from the active fixture,
+  the ordinary Contacts remediation loop, restart behavior, user-facing copy,
+  and focused test evidence.
+- Updated the current Presence system-boundary document for the fifth concrete
+  Step subtype and its specialist ownership chain.
+- Preserved the unresolved production contradiction between Contacts as a hard
+  blocker and Contacts as contextual enrichment; no production integration or
+  product-policy change was made.
+
+---
+
+# 2026-08-10 - Add disposable Contacts-source test seam
+
+- Added
+  `45-NEW-FEATURE-ADDITION/22-SCHEDULE-TRiP-STEP-REAL-ONBOARDING/08-DISPOSABLE-CONTACTS-SOURCE-TEST-SEAM.md`
+  as the implementation and manual-test record for controlled Contacts
+  unavailability.
+- Recorded the explicit Address Book `Sources` root as the chosen injection
+  point, preserving ordinary repository discovery, candidate validation, and
+  read-only SQLite querying.
+- Documented the development-archive paths for the deliberately missing source
+  root and the machine-local source-mode file needed to preserve the laboratory
+  condition across restart.
+- Added the exact unavailable, restart, retry, source-switch, and recovery
+  procedure, including the requirement that Contacts-only failure never enter
+  FDA remediation.
+- Updated the Contacts readiness implementation record to link to the controlled
+  procedure instead of suggesting manipulation of a live source.
+- Confirmed that production Contacts composition and all Presence semantics
+  remain unchanged.
+
+---
+
+# 2026-08-10 - Correct Schedule 6 definition-name collisions
+
+- Recorded that Trip and Step definition names are globally unique persisted
+  identities in the current Presence schema, not Schedule-local labels.
+- Updated the required-sources implementation record with Schedule 6's own
+  `required_sources_*` diagnostic names while preserving IDs, routing, copy,
+  and execution behavior.
+- Added regression coverage that preloads Schedule 5's retained Trip and Step
+  names before inserting Schedule 6, protecting coexistence in an established
+  development `presence.db`.
+
+---
+
+# 2026-08-12 - Consolidate Presence and onboarding ownership
+
+- Created
+  `45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/`
+  with a start page, repository-wide ownership inventory, target ownership
+  proposal, first-moves record, and prompt/response folders.
+- Established the distinction between generic Presence execution machinery,
+  onboarding-owned workflow meaning, specialist expertise, and disposable
+  development/inspection tooling.
+- Moved the required-sources Schedule, FDA and Contacts integration adapters,
+  and their real provider composition from the experiment feature into the
+  permanent `lib/essentials/onboarding/application/` home.
+- Moved the corresponding focused tests under
+  `test/essentials/onboarding/application/` and updated consumers/imports.
+- Recorded the onboarding-specific Step classes, subtype tables, authority
+  contracts, and repository reconstruction branches as unresolved boundary
+  pressure requiring the later TestStep/Agent design; no such generalization
+  was attempted.
+- Updated feature-planning, onboarding/archive, Essentials, Presence boundary,
+  and real-onboarding documentation for the clarified ownership model.
+- Preserved production `OnboardingGate`, `presence.db`, routing, checkpoint,
+  restart, trace, diagram, visualization, and source-readiness behavior.
+- Verified the move with 65 focused Onboarding tests, 47 Presence/harness
+  tests, 354 architecture tripwires, a clean analyzer, a successful macOS
+  Debug build, formatting, checked Mermaid regeneration, and
+  `git diff --check`.
+
+---
+
+# 2026-08-12 - Propose generic TestStep and opaque Agent resolution
+
+- Added the design-only
+  `04-GENERIC-TESTSTEP-AND-OPAQUE-AGENT-RESOLUTION-PROPOSAL.md` to the Presence
+  consolidation package.
+- Evaluated numeric, stable-string, scoped/versioned, and hybrid persisted
+  Agent identities; recommended a typed owner-qualified opaque string.
+- Recommended one Boolean-only `TestAgent`, an immutable explicitly injected
+  `TestAgentResolver`, and Schedule-scoped fail-fast resolution during
+  executable definition reconstruction.
+- Defined generic Test Agent/Test Step persistence, SQLite/runtime integrity
+  boundaries, onboarding and future-consumer walkthroughs, migration of the
+  two proven tests, and bounded failure semantics.
+- Kept `OpenFdaSettingsStep` outside TestStep and recorded it as transitional
+  debt rather than prematurely designing an Action Step.
+- Updated the consolidation package navigation and corrected its Onboarding
+  package cross-reference. No application source, tests, generated files,
+  database, schema, or build configuration changed.
+
+---
+
+# 2026-08-12 - Implement generic Test Agent contracts
+
+- Added the opaque `TestAgentId`, minimal Boolean `TestAgent` contract, and
+  immutable explicit `TestAgentResolver` under `essentials/presence`.
+- Added explicit duplicate-binding and missing-binding configuration failures;
+  ordinary `false` results and Agent exceptions retain their original meaning.
+- Recorded why explicit bindings and immutable construction make duplicate and
+  order-dependent composition failures mechanically rejectable.
+- Added focused identity, Agent, resolver, immutability, and architecture
+  coverage while leaving the current FDA and Contacts execution paths intact.
+- Added
+  `05-GENERIC-TEST-AGENT-CONTRACTS-IMPLEMENTATION.md` and linked it from the
+  consolidation start page and feature-addition index.
+- Made no database, schema, generic TestStep, repository reconstruction,
+  provider composition, or onboarding behavior change.
+
+---
+
+# 2026-08-12 - Add generic persisted Test grammar
+
+- Advanced `presence.db` from schema version 6 to 7 and added the identity-only
+  `test_agent_definitions` table plus the generic Boolean-routing
+  `test_step_definitions` table.
+- Added `test` to the permitted base Step discriminator without introducing
+  executable generic `TestStep` reconstruction.
+- Declared the stable Messages- and Contacts-readiness Agent identities and
+  prepared identity-preserving generic rows from existing specialized
+  definitions while retaining their active specialized base types.
+- Applied the approved stop condition because current runtime reconstruction
+  cannot consume `type = test`; documented the required atomic Slice 3 type
+  cutover rather than introducing a half-runnable live database.
+- Added file-backed migration evidence preserving Schedule, Trip, Step,
+  occurrence, run, checkpoint, trace, and route identities, plus fresh-schema
+  foreign-key and uniqueness coverage.
+- Updated both plain-language Presence database guides and added
+  `06-GENERIC-TESTSTEP-ADDITIVE-SCHEMA-IMPLEMENTATION.md` to the consolidation
+  package navigation.
+- Left runtime Agent resolution, current specialized Steps and authorities,
+  providers, Schedule behavior, and production onboarding unchanged.
+
+---
+
+# 2026-08-12 - Activate the generic TestStep runtime
+
+- Advanced `presence.db` from schema version 7 to 8 and atomically activated
+  the generic `test` discriminator for the already-prepared FDA and Contacts
+  test definitions without changing their IDs, routes, runs, checkpoints, or
+  trace history.
+- Added the generic `TestStep`, whose opaque `TestAgentId` is resolved through
+  the repository's injected `TestAgentResolver`; Presence contains no active
+  Messages- or Contacts-specific test reconstruction.
+- Made Schedule definition reconstruction the fail-fast executable-definition
+  boundary before run creation, replacement, or advancement so a missing Agent
+  binding cannot create a run, append trace, or move a checkpoint.
+- Retained the old FDA and Contacts subtype tables as frozen migration evidence;
+  active reconstruction and subtype integrity ignore them.
+- Added a deliberately temporary onboarding composition bridge that binds the
+  two existing source-readiness specialists to their stable Agent identities;
+  broader onboarding ownership cleanup remains Slice 4 work.
+- Added focused runtime, migration-continuation, resolver, routing, no-mutation,
+  exception, topology, and architecture coverage.
+- Updated the Presence database teaching guides and created
+  `07-GENERIC-TESTSTEP-RUNTIME-CUTOVER-IMPLEMENTATION.md` as the Slice 3
+  implementation record.
+- Regenerated Drift/Riverpod outputs and the checked Schedule Mermaid artifact;
+  verified 139 Presence, Onboarding, and harness tests, all 356 architecture
+  tripwires, a clean analyzer, a successful macOS Debug build, formatting, and
+  `git diff --check`.
+
+---
+
+# 2026-08-12 - Finalize Onboarding Test Agent composition
+
+- Made Onboarding the single owner of the two persisted source-readiness Agent
+  identities, their concrete Boolean Test Agents, and the explicit two-binding
+  contribution consumed by application composition.
+- Retired the redundant Messages and Contacts readiness-authority interfaces
+  and their transitional providers/adapters; each Test Agent now delegates
+  directly to the existing Messages or Address Book specialist boundary.
+- Moved immutable resolver construction out of the onboarding Schedule builder
+  and into the current Presence experiment application-composition provider.
+- Preserved fresh development Contacts source substitution by selecting the
+  concrete real/unavailable Agent on every evaluation.
+- Kept generic Presence ignorant of Onboarding IDs, providers, and specialist
+  meaning; `OpenFdaSettingsStep` remains the one explicitly deferred
+  Onboarding-specific dependency.
+- Created
+  `08-ONBOARDING-TEST-AGENT-COMPOSITION-IMPLEMENTATION.md` and updated the
+  consolidation package, feature index, and Onboarding ownership summary.
+- Verified 145 Presence, Onboarding, and development-harness tests, all 359
+  architecture tripwires, a clean analyzer, current generated outputs, checked
+  Mermaid regeneration, a successful macOS Debug build, formatting, and
+  `git diff --check`.
+
+---
+
+# 2026-08-12 - Consolidate Presence TestStep architecture
+
+- Created
+  `09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md` as the canonical post-Slice-4
+  ownership, runtime, persistence, migration-evidence, and remaining-debt
+  audit.
+- Confirmed the active persisted path is generic from
+  `step_definitions.type = test` through opaque `TestAgentId` resolution,
+  `TestStep`, `Trip`, and `PresenceScheduler`; no workflow-specific Boolean
+  branch remains in repository reconstruction.
+- Confirmed Onboarding owns its Agent IDs, concrete Agents, binding
+  contribution, workflow copy, and routes, while specialist source readers
+  retain SQL, Address Book, and platform expertise.
+- Classified the retained FDA and Contacts Boolean subtype tables as frozen
+  migration evidence. Active repository code neither reads nor writes them;
+  generated Drift APIs remain because mechanically removing their write
+  surface would require an unjustified schema-level change.
+- Replaced obsolete architecture checks centered on retired classes with
+  positive dependency-boundary checks for generic Test reconstruction,
+  specialist independence, application composition, frozen-table inactivity,
+  and Scheduler/Trip ignorance.
+- Updated the consolidation navigation, feature indexes, Essentials and
+  Onboarding ownership guides, the canonical database index, and both
+  plain-language `presence.db` guides. Marked the pre-generic inventory and
+  first mechanical move as historical records without rewriting Slices 1-4.
+- Confirmed `OpenFdaSettingsStep`, `FdaSettingsOpeningAuthority`, and their
+  active subtype table are the sole remaining domain-specific Presence debt;
+  no `ActionStep` or replacement abstraction was introduced.
+- Made no schema, migration, runtime, Schedule topology, copy, production
+  onboarding, provider, or generated-source change in this consolidation pass.
+- Verified 145 Presence, Onboarding, migration, and development-harness tests;
+  all 361 architecture tripwires; a clean analyzer; checked Mermaid
+  regeneration; a successful macOS Debug build; formatting; and
+  `git diff --check`. Code generation was not required.
+
+---
+
+# 2026-08-12 - Plan the next real Presence workflow concern
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/10-NEXT-REAL-WORKFLOW-CONCERN-PLAN.md`
+  from a code-first trace of the production Onboarding environment classifier,
+  gate, source probes, user actions, import state, and graph readiness.
+- Identified local Messages history sufficiency as the immediate concern after
+  required-source readability and retained Onboarding as the owner of its
+  meaning and threshold policy.
+- Confirmed the factual assessment fits the completed generic Boolean
+  `TestStep` and opaque Agent architecture, while the production `Import
+  Anyway` path exposes one concrete two-destination user-choice requirement.
+- Confirmed no second operation-shaped Step appeared and that `ActionStep` has
+  not earned a design pass.
+- Preserved `confirm_required_sources_readable` as an independently meaningful
+  restart checkpoint separating source access from source-history sufficiency.
+- Recorded the current `COUNT(*)` versus importable-message-count distinction
+  as an explicit pre-implementation measurement-contract decision rather than
+  silently changing production semantics.
+- Updated the package start page and feature-addition indexes for
+  discoverability. No application code, schema, generated source, production
+  onboarding, Schedule topology, or runtime behavior changed.
+
+---
+
+# 2026-08-12 - Implement the Messages history sufficiency TestAgent
+
+- Created
+  `11-MESSAGES-SOURCE-HISTORY-SUFFICIENCY-TESTAGENT-IMPLEMENTATION.md` as the
+  bounded implementation record for the next Onboarding factual specialist.
+- Preserved production's `COUNT(*) FROM message` semantics and shared its
+  existing 10/11 Onboarding policy with the new Agent without changing state,
+  blocker, gate, or presentation behavior.
+- Added the stable opaque identity
+  `onboarding.messages-source-history-sufficient`, a routing-agnostic concrete
+  Test Agent, and a narrow count reader over the existing read-only Onboarding
+  database probe.
+- Made unavailable counts fail truthfully instead of fabricating a Boolean and
+  verified every evaluation performs a fresh factual read.
+- Extended the Onboarding binding contribution and development resolver
+  composition to three distinct Agents while leaving generic Presence
+  contracts unchanged.
+- Added focused threshold, real SQLite all-row count, missing-GUID, failure,
+  fresh-read, provider, binding, resolver, parity, and architecture coverage.
+- Updated the package navigation, feature indexes, and Onboarding ownership
+  guide. The active required-sources Schedule, Mermaid topology, `presence.db`,
+  production gate, copy, presentation, routing, checkpointing, and trace were
+  unchanged.
+- Verified 17 focused tests, 82 complete Onboarding tests, 61 complete Presence
+  tests, 14 development-harness tests, all 362 architecture tripwires, clean
+  analysis, provider regeneration, unchanged Schedule diagram regeneration, a
+  successful macOS Debug build, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Propose ChoiceStep and generic Presence presentation
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/12-CHOICESTEP-AND-WORKFLOW-PRESENTATION-PROPOSAL.md`
+  as the bounded design for finite persisted user choices and generic Presence
+  rendering.
+- Established the mechanical routing distinction: configuration chooses for
+  `FixedDestinationStep`, an Agent result chooses for `TestStep`, and human
+  selection of an opaque configured option chooses for `ChoiceStep`.
+- Recommended a durable Step-scoped `ChoiceValue`, ordered persisted options,
+  required configured destinations, and a context-bound choice selection
+  operation which receives only that value.
+- Elevated the governing definition: `ChoiceStep` is distinguished by a human
+  selecting one durable opaque value from two or more persisted options, not
+  by whether those options appear as buttons, radio controls, menus, or lists.
+- Made labels explicitly mutable presentation copy while values, destinations,
+  and routing identity remain stable; Presence displays labels and resolves
+  values without understanding either semantically.
+- Preserved Trip-granular restart and checkpoint authority: no pending choice
+  or current Step is persisted before the selected Trip destination commits.
+- Kept Presence domain and execution free of Flutter and workflow meaning.
+  Onboarding's workflow definition owns labels, opaque values, destinations,
+  and Agent bindings; a permanent Presence presentation layer owns ordinary
+  rendering for self-describing generic Step shapes.
+- Distinguished generic Step mechanics already evidenced by the development
+  host from its disposable trace, Mermaid, live-map, source-substitution,
+  Run Again, and diagnostic controls.
+- Retained a narrow workflow/specialist presentation escape hatch only for a
+  Step whose UI requires domain expertise not expressed by generic grammar;
+  `OpenFdaSettingsStep` remains the current unresolved example.
+- Preserved stale-interaction rejection without exposing Step or Trip identity
+  to presentation by binding the selection callback privately to the current
+  ChoiceStep execution context.
+- Rejected presentation-side routing, fake Test Agents, specialized sparse
+  history Steps, generic interaction payloads, widget-owning Steps, and any
+  inference that this requirement justifies `ActionStep`.
+- Updated package navigation. No application code, schema, generated source,
+  Schedule topology, production onboarding, or onboarding copy changed.
+
+---
+
+# 2026-08-13 - Implement the pure ChoiceStep domain contract
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/13-CHOICESTEP-PURE-DOMAIN-IMPLEMENTATION.md`
+  as the bounded implementation record for ChoiceStep Slice 1.
+- Added generic immutable `ChoiceValue` and `ChoiceOption` domain values plus
+  a finite `ChoiceStep` which maps only configured opaque values to persisted
+  Trip identities.
+- Enforced two-or-more cardinality, Step-scoped value uniqueness, explicit
+  unknown-value failure, preserved ordering, and defensive immutability while
+  allowing duplicate labels and shared destinations.
+- Kept Choice grammar free of UI, workflow meaning, Agents, providers,
+  database infrastructure, and Onboarding dependencies.
+- Left `presence.db`, repository reconstruction, Scheduler, Trip routing,
+  presentation, active Schedule topology, and production onboarding unchanged.
+- Added explicit fail-closed compatibility cases where the new sealed subtype
+  made existing persistence and development-topology switches exhaustive;
+  neither boundary gained Choice support.
+- Added focused domain and architecture coverage and updated package indexes.
+- Verified 19 focused Choice tests, 94 complete Presence/development-harness
+  tests, 82 complete Onboarding tests, all 363 architecture tripwires, clean
+  analysis, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Persist the generic ChoiceStep grammar
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/14-CHOICESTEP-ADDITIVE-PERSISTENCE-IMPLEMENTATION.md`
+  as the bounded implementation record for ChoiceStep Slice 2.
+- Advanced `presence.db` additively to schema version 9 with a Choice subtype
+  marker and ordered option rows carrying only opaque value, label, position,
+  and required Trip destination.
+- Extended the definition writer and repository reconstruction path while
+  preserving the existing exactly-one-active-subtype invariant, domain-owned
+  minimum cardinality, terminal placement, and Schedule-local destination
+  closure.
+- Added file-backed v8-to-v9 migration evidence proving existing Schedule,
+  Trip, Tell Step, run checkpoint, and append-only trace preservation plus
+  active foreign-key enforcement for the new tables.
+- Kept Scheduler, Trip runtime, development topology, presentation, active
+  Onboarding topology, selected-choice state, and execution trace behavior
+  unchanged.
+- Updated the package indexes, Slice 1 cross-reference, and plain-English
+  Presence database guide to distinguish persisted Choice grammar from later
+  runtime support.
+- Verified 34 focused Choice domain/persistence/migration tests, all 63
+  Presence infrastructure tests, all 109 Presence/development-harness tests,
+  all 82 Onboarding tests, all 364 architecture tripwires, clean analysis,
+  regenerated Drift output, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Complete the current terminal ChoiceStep at runtime
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/15-CHOICESTEP-RUNTIME-COMPLETION-IMPLEMENTATION.md`
+  as the bounded implementation record for ChoiceStep Slice 3.
+- Added one Choice-specific, context-bound runtime callable through which a
+  caller reports only the selected opaque `ChoiceValue`.
+- Kept current Step, Trip, occurrence, destination, and Schedule geometry
+  private to Presence; no general Step-input or interaction-token framework
+  was introduced.
+- Reused the existing Trip result, repository checkpoint, restart authority,
+  and universal execution-trace path rather than creating Choice-specific
+  routing or persistence.
+- Added private activation and exact-current-Step checks so an interaction can
+  complete only the ChoiceStep for which it was issued, including when a later
+  ChoiceStep uses the same opaque value.
+- Added fail-closed handling for unknown values, autonomous Choice completion,
+  nonterminal ChoiceSteps, stale interactions, and rapid repeated selection.
+- Left Flutter presentation, active Onboarding topology, selected-value
+  persistence, current-Step persistence, Choice trace fields, and development
+  topology visualization outside this slice.
+- Updated package indexes and the plain-English Presence database guide with
+  the runtime boundary and unchanged Trip-granular restart semantics.
+- Verified 12 focused Choice runtime tests, 46 combined Choice domain,
+  persistence, migration, and runtime tests, all 121 Presence/development-
+  harness tests, all 82 Onboarding tests, all 365 architecture tripwires,
+  clean analysis, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Render generic Presence Step shapes
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/16-GENERIC-PRESENCE-PRESENTATION-IMPLEMENTATION.md`
+  as the bounded implementation record for ChoiceStep Slice 4.
+- Added a permanent Presence application projection that consumes full domain
+  Steps and emits only presentation-safe generic shapes and bound operations.
+- Added one permanent exhaustive presenter for Tell, Test, Fixed Destination,
+  and finite Choice mechanics, with an explicit specialist marker for the
+  transitional FDA Settings Step.
+- Projected each Choice option to ordered persisted label plus opaque
+  `ChoiceValue`; no destination, Step identity, Trip identity, occurrence, or
+  Schedule geometry reaches Flutter.
+- Rendered finite choices as ordinary ordered macOS buttons without persisted
+  styling metadata or semantic interpretation of opaque values.
+- Added in-flight disabling as UX feedback while preserving Slice 3's runtime
+  activation and repeated-selection checks as correctness authority.
+- Kept source substitution, Mermaid, live topology, execution trace,
+  diagnostics, Run Again, and FDA-specific copy/behavior in the development
+  harness.
+- Relocated the already-proven minimal Presence presentation tokens from the
+  disposable host to the permanent Presence presentation home.
+- Left the active Onboarding Schedule, `presence.db`, checkpointing, trace,
+  restart semantics, and all workflow copy unchanged.
+- Updated package indexes and added a positive architecture tripwire protecting
+  the destination-free, workflow-agnostic presentation boundary.
+- Verified 12 focused projection/widget tests, 58 combined Choice tests, all
+  133 Presence/development-harness tests, all 82 Onboarding tests, all 366
+  architecture tripwires, clean analysis, formatting, and `git diff --check`.
+
+---
+
+# 2026-08-13 - Use generic ChoiceStep in active Onboarding
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/17-ONBOARDING-MESSAGES-HISTORY-CHOICE-WORKFLOW-IMPLEMENTATION.md`
+  as the implementation record for ChoiceStep Slice 5.
+- Extended the active required-sources Schedule with a Messages-history
+  sufficiency Test Trip and a sparse-history guidance Trip containing two Tell
+  Steps and one generic terminal ChoiceStep.
+- Persisted the exact opaque Choice values `recheck` and `import_anyway` with
+  their labels and destination geometry in the Schedule definition; no
+  workflow-specific presentation or runtime translation was introduced.
+- Routed Re-check back through the factual TestAgent so each attempt performs
+  a fresh `COUNT(*) FROM message` evaluation, while Import Anyway converges on
+  the existing required-sources confirmation Trip.
+- Added a transactional, fail-closed definition-extension path that preserves
+  existing run checkpoints and trace history while retaining stable
+  occurrence-to-Trip identity.
+- Extended the generic topology projector to render persisted Choice options
+  as ordinary explicit edges and regenerated the checked Onboarding Schedule
+  artifact.
+- Updated the package indexes, release metadata, and plain-English Presence
+  database guide to record active Choice usage and distinguish additive
+  definition evolution from schema migration.
+- Documented that a real sparse-source manual run remains blocked on a safe,
+  development-only Messages-source substitution; no real `chat.db` data was
+  changed for this slice.
+- Verified all 230 Presence, development-harness, and Onboarding tests, all 366
+  architecture tripwires, clean analysis, formatting, `git diff --check`, and
+  a successful debug macOS build.
+
+---
+
+# 2026-08-13 - Integrate generic Presence runner into production Onboarding
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/18-PRODUCTION-GENERIC-PRESENCE-RUNNER-INTEGRATION.md`
+  as the production-integration implementation record.
+- Added the permanent, workflow-agnostic `PresenceRunner` for generic Tell,
+  Test, Fixed Destination, and Choice execution/presentation.
+- Added the production Onboarding composition provider and blocking host for
+  the real required-source Schedule and real specialist TestAgent bindings.
+- Preserved `OpenFdaSettingsStep` as an explicit Onboarding specialist and
+  reused the established FDA presentation without introducing an Action Step.
+- Kept import, graph construction, recovery, completion, and reimport under the
+  existing `OnboardingGate` and operational overlay.
+- Added production-host tests for sufficient history, sparse-history Re-check,
+  Import Anyway, and the FDA specialist path, plus permanent-runner tests for
+  generic and autonomous Step behavior.
+- Added architecture tripwires preventing workflow-value translation,
+  development-harness leakage, and Onboarding semantics in permanent Presence.
+- Updated the package indexes, Onboarding gate guide, release notes, and app
+  version to `0.2.20+38`.
+- Verified all 237 Presence, development-harness, and Onboarding tests, all 369
+  architecture tripwires, clean analysis, formatting, `git diff --check`, and
+  a successful debug macOS build.
+
+---
+
+# 2026-08-13 - Audit the post-readiness Onboarding handoff
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/19-POST-READINESS-ONBOARDING-HANDOFF-AUDIT.md`
+  as the code-grounded audit of the production boundary after required-source
+  Presence completion.
+- Established that Presence completion checkpoints the final Trip and removes
+  only its presentation; `OnboardingGate` observes no completion event and
+  continues to derive its independent state from `OnboardingEnvironmentReport`.
+- Documented that import does not start automatically. The existing
+  Environment Readiness panel invokes `OnboardingGate.startImportAndGraphBuild`
+  only after a human presses the import action.
+- Identified the concrete sparse-history handoff defect: the route reached
+  through the persisted `import_anyway` option completes Presence, but the
+  unchanged sparse report reveals a legacy source-warning panel with no import
+  action.
+- Inventoried source import, graph projection, reset, progress, failure,
+  recovery, completion, restart, and attachment-archive ownership using current
+  code as authority where older documentation was stale.
+- Recommended one bounded next slice: derive the existing import-readiness
+  handoff from the completed required-sources Schedule without adding schema,
+  another acceptance flag, a new import screen, or a generic operation Step.
+- Concluded that `ActionStep` remains unearned because FDA Settings opening and
+  initial graph construction have materially different mutation, progress,
+  restart, recovery, and result semantics.
+- Updated the package start page and Feature Addition index. No application
+  code, schema, workflow definition, run state, FDA behavior, import behavior,
+  recovery behavior, or presentation was changed.
+
+---
+
+# 2026-08-13 - Repair durable accepted-readiness import handoff
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/20-DURABLE-ACCEPTED-READINESS-IMPORT-HANDOFF-IMPLEMENTATION.md`
+  as the implementation record for the post-Presence Onboarding handoff.
+- Documented the separate authorities of current environment facts and durable
+  required-sources Schedule completion, and the Environment Readiness surface
+  that composes them.
+- Recorded that sparse accepted sources now expose the existing **Import My
+  Messages** action while sparse unaccepted sources remain at **Re-check**.
+- Recorded restart reconciliation from the existing Schedule run checkpoint,
+  with no trace lookup, Choice-value recovery, or duplicate acceptance flag.
+- Updated the package start page, Feature Addition indexes, Onboarding gate
+  guide, release notes, and app version to `0.2.21+39`.
+- Preserved historical implementation records and left environment facts,
+  Schedule geometry, Presence completion, FDA, import, graph build, recovery,
+  and failure semantics unchanged.
+
+---
+
+# 2026-08-13 - Audit initial import and Conversation Graph build lifecycle
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/21-INITIAL-IMPORT-GRAPH-BUILD-LIFECYCLE-AUDIT.md`
+  as the code-grounded audit of the production operation beginning with
+  **Import My Messages**.
+- Traced the action through Environment Readiness, `OnboardingGate`, archive
+  mutation admission, destructive derived-data reset, the controller, and all
+  17 source-import and graph-projection stages.
+- Distinguished one outer admitted Gate action from the nested, single
+  `ConversationGraphBuildController.runOnce()` data-construction lifecycle.
+- Inventoried live, completion-only, durable, and ephemeral progress evidence;
+  documented that current APIs support calm coarse progress but not truthful
+  stage names, percentage, remaining time, resume, or cancellation.
+- Established that **Abort Import** neither signals nor stops the active build
+  and that its attempted reset is denied by the active mutation owner, making
+  the control materially misleading.
+- Documented caught failure, abrupt termination, partial-store, recovery, and
+  restart semantics, including the limits of import batches and readiness
+  probes as durable evidence.
+- Recorded the nested mutation-policy caveat: the outer `onboardingImport`
+  policy is not currently a superset of nested `messageDataReset` reopen and
+  checkpoint policy.
+- Recommended exactly one next implementation slice: remove the false Abort
+  affordance while preserving all current operation and restart behavior.
+- Confirmed that a generic operation Step remains unearned and that Presence
+  may eventually own the surrounding human sequence but not the destructive
+  operation.
+- Updated the package start page and Feature Addition index. No application
+  code, UI, import logic, recovery, persistence, schema, or Presence behavior
+  was changed.
+
+---
+
+# 2026-08-14 - Remove misleading Abort Import affordance
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/22-REMOVE-MISLEADING-ABORT-IMPORT-IMPLEMENTATION.md`
+  as the implementation record for Audit 21's single recommended correction.
+- Removed **Abort Import** from active first-run progress without introducing a
+  replacement Cancel, Stop, cleanup, return, or retry command.
+- Removed the now-unused `OnboardingOverlayActions.abortImport()` and
+  `OnboardingGate.abortImport()` forwarding path after repository-wide caller
+  search confirmed it was presentation-only.
+- Preserved `MessageDataResetService` and all legitimate first-run preparation,
+  reimport, explicit reset, failure, and automatic-recovery uses.
+- Added focused production-overlay tests proving first-run and reimport progress
+  remain visible and explicitly non-cancellable.
+- Preserved mutation admission, reset, controller, orchestrator, source import,
+  graph projection, failure persistence, recovery, restart, completion,
+  Presence, and schema behavior.
+- Updated the package start page and Feature Addition index.
+- Verified 28 focused tests, all 113 Onboarding and Environment Readiness
+  tests, all 372 architecture tripwires, clean analysis and formatting,
+  `git diff --check`, and a successful debug macOS build without launching the
+  app or accessing the production archive.
+
+---
+
+# 2026-08-14 - Audit production import progress surface
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/23-PRODUCTION-IMPORT-PROGRESS-SURFACE-AUDIT.md`
+  as a code-grounded inventory of the first-run, direct-reimport, completion,
+  failure, and recovery presentations.
+- Mapped every active-progress, completion, and failure statement to its
+  supporting operational fact and identified coarse truth, diagnostic detail,
+  and unsupported implications.
+- Documented that `importing` and `buildingGraph` are visually shared staging
+  states rather than two real operations, and that production Reset Message
+  Data currently returns through the ordinary import gate instead of calling
+  the otherwise implemented direct-reimport API.
+- Inventoried all currently available live facts and concluded that process-
+  local elapsed time is technically supportable but not yet useful enough to
+  add.
+- Established the narrow truthful guidance that MessageLens must remain open
+  while work runs, while the human may use other applications.
+- Rejected live stage telemetry, percentage, ETA, resume, and cancellation as
+  unsupported or unearned by current human need.
+- Selected **minimal calm** as the best presentation philosophy and recommended
+  exactly one next slice: replace the repetitive active-progress paragraph
+  with concise keep-open and use-other-apps guidance.
+- Updated the package start page and Feature Addition index. No application
+  code, copy in code, Gate state, telemetry, persistence, operation lifecycle,
+  or Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Add truthful keep-open progress guidance
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/24-TRUTHFUL-KEEP-OPEN-PROGRESS-GUIDANCE-IMPLEMENTATION.md`
+  as the implementation record for Audit 23's single recommended slice.
+- Replaced the repetitive first-run/direct-reimport progress paragraph with
+  shared guidance to keep MessageLens open while confirming that other
+  applications may be used in the meantime.
+- Preserved controller-derived coarse headlines, the indeterminate activity
+  indicator, layout, completion, failure/recovery, and explicit
+  non-cancellability.
+- Expanded production-overlay tests to prove the shared guidance, truthful
+  first-run/reimport headings, indeterminate progress, absence of old copy,
+  absence of unsupported stage/percentage/ETA/resume claims, and absence of
+  cancellation controls.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.22+40`.
+- No Gate, archive mutation, reset, controller, orchestrator, restart,
+  persistence, Presence, or schema behavior changed.
+- Verified both focused progress cases, all 113 Onboarding and Environment
+  Readiness tests, all 372 architecture tripwires, clean analysis and targeted
+  formatting, `git diff --check`, and a successful debug macOS build without
+  launching the app.
+
+---
+
+# 2026-08-14 - Audit pre-overlay import-start acknowledgement
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/25-PRE-OVERLAY-IMPORT-START-ACKNOWLEDGEMENT-AUDIT.md`
+  as a code-grounded trace from **Import My Messages** through admission, the
+  current FDA-readiness guard, destructive reset, Gate staging, and the first
+  progress frame.
+- Established that the meaningful invisible period is reset: the Environment
+  Readiness surface and enabled import action remain unchanged until reset has
+  completed.
+- Confirmed that button/action state does not acknowledge or serialize the
+  request; mutation exclusion currently comes from the coordinator, followed
+  later by the Gate guard and controller in-flight reuse.
+- Documented admission denial, FDA-false, and reset-throw boundaries and the
+  unwind requirements any earlier loading presentation must preserve.
+- Corrected the architectural description of the current FDA safety check: it
+  reads a cached keep-alive readiness provider and does not force a fresh source
+  probe in this path.
+- Compared button-local activity, the existing full overlay, and a separate
+  acknowledgement state. Recommended only the existing Gate-owned overlay.
+- Recommended exactly one next slice: publish the existing `importing` /
+  **Preparing setup…** state after admission and the FDA guard but before reset,
+  keep preparation copy independent of stale controller terminal state, and
+  clear the ephemeral override if reset throws.
+- Kept direct reimport, production Reset Message Data, FDA freshness, reset
+  failure redesign, nested mutation policy, telemetry, cancellation,
+  persistence, and Presence outside the recommended slice.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, Gate ordering, reset, mutation policy, FDA behavior, controller,
+  persistence, or Presence was changed.
+
+---
+
+# 2026-08-14 - Codify attachment preservation as a hard invariant
+
+- Created
+  `25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md` as the
+  canonical statement that archived attachment payloads are MessageLens
+  preservation data and never ordinary reset, reimport, recovery, migration,
+  or cleanup targets.
+- Established the three explicit data categories: authoritative external
+  sources that are never our deletion target, rebuildable MessageLens derived
+  stores, and MessageLens preservation data that must be treated like gold.
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/27-ATTACHMENT-PRESERVATION-SAFETY-INVARIANT.md`
+  as the code-grounded implementation and audit record.
+- Audited first-run reset, direct reimport, automatic recovery, explicit
+  message-data reset, development reset, adoption/restore cleanup, migration,
+  test cleanup, and the dormant specialist archive-clearing API.
+- Confirmed that ordinary reset paths use a private basename allow-list for
+  four rebuildable database files and their SQLite sidecars; they do not walk
+  directories or target the attachment archive, overlay, Presence, or
+  preferences data.
+- Recorded `ArchiveSettings.clearArchive()` as a dormant specialist destructive
+  capability with no active caller, not as permission for ordinary reset or
+  recovery code to delete preservation data.
+- Added a production-shaped filesystem regression proving derived databases
+  are removed while a nested binary archived payload and durable sibling stores
+  remain byte-for-byte unchanged.
+- Added an architecture tripwire that fixes the reset allow-list to the four
+  approved derived-store categories and rejects archive references, broad
+  directory traversal, and recursive deletion in the reset boundary.
+- Cross-referenced the invariant from project database/data-location guidance,
+  the Onboarding and Archive package, pipeline invariants, feature-package
+  navigation, and `AGENTS.md`.
+- Verified the focused filesystem preservation tests, 35 focused archive and
+  onboarding tests, all 373 architecture tripwires, clean Flutter analysis,
+  targeted formatting, and `git diff --check`.
+- No runtime behavior, database schema, archive payload, source database,
+  production data, reset ordering, recovery behavior, migration behavior, or
+  Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Show first-run preparation during derived-data reset
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/26-PRE-RESET-PREPARATION-PROGRESS-IMPLEMENTATION.md`
+  as the implementation record for Audit 25's single recommended correction.
+- Moved the existing first-run `OnboardingStatus.importing` transition and
+  painted-frame wait after mutation admission and the current FDA guard but
+  before derived-data reset.
+- Reused the existing **Preparing setup…** blocking progress surface while
+  reset is pending; no new status, component, provider, copy, or persistence
+  was introduced.
+- Made first-run preparation presentation authoritative over stale terminal
+  graph-controller state, preserving an indeterminate indicator and preventing
+  old success or failure output from mislabelling a new attempt.
+- Added reset-failure unwind that clears preparation, restores the existing
+  readiness presentation, invalidates the environment report, and preserves
+  the original thrown error and stack trace.
+- Added focused coverage for pending reset, visible preparation, controller
+  non-start, duplicate starts, FDA false, reset failure, stale controller
+  success/failure, transition to active graph build, and ordinary completion.
+- Preserved mutation admission, FDA provider behavior, reset semantics,
+  attachment preservation, controller lifecycle, import/projection,
+  persistence, automatic recovery, direct reimport, Reset Message Data,
+  cancellation, and Presence behavior.
+- Updated package navigation, the Feature Addition index, changelog, and app
+  version to `0.2.23+41`.
+- Verified 20 focused tests, all 121 Onboarding, Environment Readiness, and
+  graph-controller tests, all 373 architecture tripwires, clean analysis and
+  formatting, `git diff --check`, and a successful debug macOS build without
+  launching the app or accessing the production archive.
+
+---
+
+# 2026-08-14 - Audit the initial setup completion surface
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/28-INITIAL-SETUP-COMPLETION-SURFACE-AUDIT.md`
+  as a code-grounded audit of the successful initial import and Conversation
+  Graph completion experience.
+- Traced controller success through the Gate's process-local `complete`
+  override, report-driven completion overlay, **Get Started** dismissal, and
+  database-derived ordinary startup after restart.
+- Recorded that **Get Started** commits no data and is a deliberate human
+  handoff rather than an operational completion requirement.
+- Inventoried and classified the current success icon, **Import Complete!**
+  heading, absent explanatory copy, three conditional report metrics, and the
+  **Get Started** / **Done** action distinction.
+- Defined the exact meanings of **Imported**, **Projected**, and **Text
+  enriched**, and concluded that their expected differences expose pipeline
+  architecture without giving an ordinary human useful reassurance.
+- Recommended calm human completion as the product philosophy and concluded
+  that primary completion metrics should be removed rather than replaced by an
+  unearned aggregate.
+- Established a completion truth budget that permits readiness and local
+  browsing-data claims while prohibiting implications of complete or permanent
+  attachment archival.
+- Recommended exactly one future implementation slice: replace the diagnostic
+  primary completion body with one shared calm readiness handoff while
+  retaining the existing success icon and context-appropriate action.
+- Updated the package start page and Feature Addition index. No application
+  code, operation lifecycle, completion persistence, Presence behavior,
+  failure/recovery behavior, attachment archival behavior, or metrics were
+  changed.
+
+---
+
+# 2026-08-14 - Implement the calm initial setup completion handoff
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/29-CALM-INITIAL-SETUP-COMPLETION-HANDOFF-IMPLEMENTATION.md`
+  as the implementation record for Audit 28's single recommended completion
+  correction.
+- Replaced the production **Import Complete!** heading with **MessageLens is
+  ready** and added the bounded supporting sentence **Your local browsing data
+  is prepared.**
+- Removed **Imported**, **Projected**, and **Text enriched** chips only from the
+  ordinary production completion surface. `ConversationGraphBuildReport`, its
+  counters and timings, logging, and the development Onboarding diagnostics
+  remain unchanged.
+- Retained the themed success icon, shared first-run/reimport completion
+  component, and existing **Get Started** / **Done** action distinction.
+- Added focused successful-report widget coverage proving the calm copy, icon,
+  action labels, absent primary metrics, absent archival-completeness claims,
+  and unchanged dismissal dispatch.
+- Extended the real Gate lifecycle coverage to prove both completion actions
+  still return the Gate to `notNeeded` and select the Messages sidebar.
+- Preserved process-local completion, database-derived restart readiness,
+  build/report semantics, failure/recovery, Presence, reimport operations, and
+  attachment archival behavior.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.24+42`.
+- Verified 22 focused completion and Gate tests, all 110 Onboarding tests, all
+  3 Conversation Graph build-controller tests, all 373 architecture tripwires,
+  clean Flutter analysis and formatting, `git diff --check`, and a successful
+  debug macOS build without launching the app or accessing the production
+  archive.
+
+---
+
+# 2026-08-14 - Audit initial setup failure and recovery presentation
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/30-INITIAL-SETUP-FAILURE-RECOVERY-SURFACE-AUDIT.md`
+  as a code-grounded audit of every materially different setup failure,
+  abrupt-termination, retry, and automatic-recovery path.
+- Established that mutation-admission and reset failures sit outside the
+  controller catch, while service resolution, all import/enrichment/join and
+  graph-projection stages, and post-build version publication currently share
+  one caught controller lifecycle.
+- Verified that every actively caught controller failure is persisted through
+  the coarse graph-projection key, so that record does not prove source import
+  completed or identify the failed stage.
+- Recorded that raw `ConversationGraphBuildState.lastError` can become the
+  active-progress headline during failure handoff and can remain there
+  indefinitely if durable failure recording fails.
+- Inventoried the exact import-failure, graph-failure, automatic-recovery, and
+  report-export content, including timestamps, raw errors, technical reset
+  reasons, retry labels, and support-bundle behavior.
+- Identified unsupported copy that infers completed import, graph-specific
+  failure, or a previous-launch origin from evidence that proves none of those
+  things.
+- Confirmed that retry always starts with allow-listed derived-store reset and
+  reruns the complete build rather than resuming, while preserving overlay data,
+  preferences, and archived attachment payloads.
+- Recommended calm human truth with secondary diagnostics as the long-term
+  hierarchy and concluded that no richer failure taxonomy is needed for a
+  truthful primary surface.
+- Recommended exactly one next implementation slice: replace the transient raw
+  controller-error headline with a fixed phase-neutral human statement while
+  preserving all diagnostic evidence and operational behavior.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, schema, failure mechanics, retry, recovery, reset, attachment
+  archival, mutation coordination, or Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Bound the active-progress failure headline
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/31-BOUNDED-ACTIVE-PROGRESS-FAILURE-HEADLINE-IMPLEMENTATION.md`
+  as the implementation record for Audit 30's single recommended correction.
+- Replaced raw `ConversationGraphBuildState.lastError` presentation during the
+  controller-to-Gate handoff with **MessageLens couldn't finish preparing
+  browsing data.**
+- Applied the same phase-neutral headline to first-run setup and direct
+  reimport while preserving **Preparing setup…** precedence during fresh
+  pre-reset work.
+- Preserved raw controller error state, logging, persisted failure records,
+  support reporting, stable failure surfaces, retry, recovery, and reset.
+- Added focused presentation and controller coverage for hidden technical
+  errors, retained diagnostic evidence, both active Gate modes, preparation
+  precedence, and unchanged running/success presentation.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.25+43`.
+
+---
+
+# 2026-08-14 - Make stable setup failure copy phase-neutral
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/32-PHASE-NEUTRAL-STABLE-SETUP-FAILURE-COPY-IMPLEMENTATION.md`
+  as the implementation record for Audit 30's next bounded correction.
+- Replaced **Import Attempt Failed** and **Messages Could Not Be Prepared**
+  with one shared primary heading: **MessageLens couldn't finish setup**.
+- Replaced both phase-specific explanatory paragraphs with **MessageLens
+  couldn't finish preparing your browsing data. You can try again.**
+- Preserved separate persistence buckets, branch-specific retry labels and
+  dispatch, support-report export, raw diagnostic notes, timestamps,
+  environment summaries, retry mechanics, recovery, reset, and Presence.
+- Added focused widget coverage proving shared primary copy, absent unsupported
+  phase claims, retained raw diagnostics, unchanged retry dispatch, and
+  functional support-report export.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.26+44`.
+
+---
+
+# 2026-08-14 - Audit stable failure diagnostic information hierarchy
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/33-FAILURE-DIAGNOSTIC-INFORMATION-HIERARCHY-AUDIT.md`
+  as a code-grounded inventory and classification of every secondary item on
+  the stable initial-setup failure surface.
+- Established **calm primary + secondary support** as the preferred hierarchy:
+  ordinary reading order should retain retry and visible support access while
+  raw errors, timestamps, environment probes, and internal store facts remain
+  in support/developer diagnostics.
+- Confirmed that a local **Technical Details** disclosure is not yet earned
+  because no supported user decision depends on the details and the support
+  bundle already preserves their diagnostic value.
+- Recorded that current previous-launch and inferred failed-phase statements
+  are unsupported by persisted timestamp and probe evidence.
+- Classified the existing overlay overflow as primarily an information-density
+  and unbounded-diagnostic problem, not yet evidence for scrolling, smaller
+  typography, reduced spacing, or expanded card geometry.
+- Recommended exactly one next implementation slice: remove the **What to
+  check** card from ordinary `importFailed` and `graphProjectionFailed`
+  presentation while preserving persistence, report export, Environment
+  Summary, actions, and operation behavior.
+- Recorded the automatic-recovery reason panel and broad “clearing that data”
+  wording as a later separate hierarchy concern governed by the attachment-
+  preservation boundary.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, schema, persistence, retry, recovery, reset, support bundle,
+  attachment archive, or Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Remove What to check from stable setup failures
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/34-REMOVE-WHAT-TO-CHECK-STABLE-FAILURE-IMPLEMENTATION.md`
+  as the bounded implementation record for Audit 33's single recommendation.
+- Removed branch-specific notes from ordinary `importFailed` and
+  `graphProjectionFailed` presentation, eliminating the complete **What to
+  check** card from those two stable failure surfaces.
+- Removed raw exception text, timestamps, unsupported previous-launch and
+  failed-phase claims, internal store notes, clean-pass wording, and duplicate
+  report guidance from ordinary reading order without adding a Technical
+  Details disclosure.
+- Preserved failure persistence, environment probes, logs, database health,
+  support-report headers and bundles, Environment Summary, retry labels and
+  dispatch, report export, transport caption, automatic recovery, reset, and
+  attachment preservation.
+- Removed dead stable-failure note and timestamp formatting helpers from the
+  presentation file; other Onboarding states retain the shared advice card.
+- Restored the focused stable-failure widget tests to default typography by
+  removing the prior test-only reduced text scale. Both branches now fit the
+  unchanged 920-pixel card envelope without overflow or geometry changes.
+- Strengthened support-report coverage for retained raw import/graph errors and
+  recorded timestamp evidence.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.27+45`.
+
+---
+
+# 2026-08-14 - Remove Environment Summary from stable setup failures
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/35-REMOVE-ENVIRONMENT-SUMMARY-STABLE-FAILURE-IMPLEMENTATION.md`
+  as the bounded implementation record for the next Audit 33 correction.
+- Removed **Environment summary** only from ordinary `importFailed` and
+  `graphProjectionFailed` presentation, including all five summary rows.
+- Preserved the settled primary copy, branch-specific retry actions, visible
+  support action, email/Finder transport caption, automatic recovery, reset,
+  and attachment preservation.
+- Preserved all environment probes, raw failures, timestamps, logs, and
+  support-report evidence; the presentation change does not alter report data
+  or diagnostic authority.
+- Added focused coverage proving stable-failure suppression and retention on a
+  non-failure readiness surface at default typography without geometry changes.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.28+46`.
+
+---
+
+# 2026-08-14 - Remove support transport caption from stable setup failures
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/36-REMOVE-SUPPORT-TRANSPORT-CAPTION-STABLE-FAILURE-IMPLEMENTATION.md`
+  as the bounded implementation record for Audit 33's final stable-failure
+  reading-order correction.
+- Removed the pre-action explanation of email attachment and Finder fallback
+  from ordinary `importFailed` and `graphProjectionFailed` presentation.
+- Preserved **Send Report To Developer**, support-bundle generation and
+  contents, recipient and transport behavior, and existing snackbar feedback.
+- Added direct widget coverage for email-draft success, Finder fallback, and
+  report-generation failure feedback using the production presentation
+  callback.
+- Preserved the settled primary copy, branch-specific retry actions, earlier
+  **What to check** and **Environment summary** removals, diagnostics,
+  recovery, reset, attachment preservation, and Presence.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.29+47`.
+
+---
+
+# 2026-08-14 - Audit automatic recovery presentation
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/37-AUTOMATIC-RECOVERY-PRESENTATION-AUDIT.md`
+  as a code-grounded trace of the automatic derived-store recovery lifecycle,
+  visible surface, success, reset failure, mutation denial, and abrupt-
+  termination behavior.
+- Established that recovery removes only allow-listed rebuildable MessageLens
+  browsing stores, does not alter authoritative Apple sources or preservation
+  data, and returns to environment re-evaluation rather than automatically
+  rerunning or resuming setup.
+- Recorded that **previous/earlier setup attempt** is not a proven process-
+  history claim and that **local data** / **clearing that data** is overbroad
+  against the attachment-preservation boundary.
+- Recommended calm, non-interactive recovery with an indeterminate activity
+  indicator; no percentage, stage, cancellation, resume, or user action is
+  supported by current mechanics.
+- Determined that `resetAppDatabasesReason` is diagnostic implementation detail
+  that changes no human action and should leave ordinary recovery reading order
+  while remaining in the environment report, Gate/reset logs, development
+  diagnostics, probes, and support evidence.
+- Recommended exactly one next implementation slice: remove the bordered reset-
+  reason card from the production recovery widget without changing heading,
+  body, operation behavior, persistence, reset policy, diagnostics, attachment
+  preservation, or Presence.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, schema, persistence, recovery mechanics, reset behavior,
+  attachment archive, or Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Remove automatic-recovery diagnostic reason
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/38-REMOVE-AUTOMATIC-RECOVERY-DIAGNOSTIC-REASON-IMPLEMENTATION.md`
+  as the bounded implementation record for Audit 37's single recommendation.
+- Removed the bordered `resetAppDatabasesReason` card from the ordinary
+  production `recoveringFailedAttempt` surface.
+- Preserved the existing recovery heading, body, icon, indeterminate activity
+  indicator, and non-interactive lifecycle without adding replacement details
+  or controls.
+- Preserved reason generation, environment classification, Gate and reset
+  logs, development-panel diagnostics, support evidence, reset semantics,
+  mutation admission, and the attachment-preservation allow-list.
+- Added focused default-typography coverage proving a non-null reason remains
+  absent from production recovery while the recovery message and activity
+  indicator remain visible, no controls appear, and the layout reports no
+  exception.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.31+49`.
+
+---
+
+# 2026-08-15 - Use calm, truthful automatic-recovery copy
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/39-CALM-TRUTHFUL-AUTOMATIC-RECOVERY-COPY-IMPLEMENTATION.md`
+  as the bounded implementation record for Audit 37's recovery-copy
+  correction.
+- Replaced **Cleaning Up A Previous Setup Attempt** with **Preparing
+  MessageLens to try again**.
+- Replaced unsupported prior-attempt, broad local-data, deletion, and automatic-
+  restart language with a precise statement that MessageLens found incomplete
+  browsing data, is preparing another setup attempt, and the human should wait.
+- Preserved the recovery icon, indeterminate activity indicator, non-
+  interactive surface, diagnostic-reason removal, classification, logs,
+  development diagnostics, recovery mechanics, reset semantics, and attachment-
+  preservation boundary.
+- Strengthened focused coverage against historical, destructive, restart, and
+  internal-architecture language while retaining default-typography layout and
+  no-control assertions.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.32+50`.
+
+---
+
+# 2026-08-15 - Audit recovery and pre-build failure state
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/41-RECOVERY-AND-PRE-BUILD-FAILURE-STATE-AUDIT.md`
+  because document number 40 is occupied by the automatic-recovery
+  presentation audit.
+- Traced first-run admission, FDA, reset, automatic recovery, direct reimport,
+  and explicit Settings reset through the current Gate, mutation coordinator,
+  reset service, persistence, environment classification, and presentation
+  paths.
+- Distinguished four operational truths: prerequisite blocking, busy denial,
+  other pre-action admission failure, and admitted reset failure. Kept settled
+  controller failure as a separate later boundary.
+- Verified that admitted reset failure can leave partially changed derived
+  stores, while filesystem probes remain the correct durable restart authority
+  and existing failure records do not truthfully prove reset failure.
+- Verified that the reset allow-list remains confined to rebuildable
+  MessageLens derived stores and cannot target authoritative Apple sources,
+  source attachment payloads, archived attachment payloads, overlay intent,
+  Presence state, or preferences.
+- Recommended exactly one next implementation slice: a process-local
+  Onboarding preparation-failure state for first-run reset failure, automatic-
+  recovery reset failure, and non-contention automatic-recovery admission
+  failure, without new persistence, reset mechanics, or attachment policy.
+- Updated the package start page and Feature Addition index. Corrected current-
+  facing references to the renumbered
+  `40-AUTOMATIC-RECOVERY-PRESENTATION-AUDIT.md` while preserving historical log
+  entries.
+- No application code, tests, schemas, Gate behavior, persistence, mutation
+  coordination, reset behavior, Presence behavior, or attachment behavior was
+  changed.
+
+---
+
+# 2026-08-15 - Implement stable process-local onboarding retry
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/50-PROCESS-LOCAL-ONBOARDING-PREPARATION-FAILURE-IMPLEMENTATION.md`
+  as the implementation record for Audit 41's bounded recommendation.
+- Added the process-local `OnboardingStatus.preparationFailed` state for
+  admitted first-run reset failure, admitted automatic-recovery reset failure,
+  and non-contention automatic-recovery admission failure.
+- Reused the existing setup entry point for **Try Again**, retained the existing
+  support-report path, and kept the previous failure visible until a new attempt
+  is admitted.
+- Kept FDA blocking, ordinary mutation contention, controller-owned persisted
+  failure, Settings reset, Presence, and attachment-preservation behavior
+  unchanged.
+- Recorded that automatic recovery remains suppressed while the process-local
+  failure is visible; deliberate refresh or retry reopens current environment
+  evaluation.
+- Updated the canonical Onboarding Gate documentation, package start page, and
+  Feature Addition index. Bumped the application version to `0.2.33+51` and
+  added the matching changelog entry.
+
+---
+
+# 2026-08-15 - Audit automatic-recovery mutation-busy deferral
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/51-AUTOMATIC-RECOVERY-MUTATION-BUSY-DEFERRAL-AUDIT.md`.
+- Traced the exact Gate, post-frame callback, suppression, coordinator-denial,
+  self-invalidation, and unchanged-environment-report path and established that
+  it forms a real retry cycle while the Gate remains watched.
+- Distinguished ordinary mutation contention from non-contention admission
+  error and admitted reset failure. Busy denial remains outside
+  `preparationFailed` because recovery never starts and changes no files.
+- Inventoried current mutation owners and verified that their feature-specific
+  completion effects differ, while the coordinator's final locked-to-idle
+  publication is the universal fact-change seam.
+- Recommended one bounded Gate-owned correction: defer process-locally while
+  busy, observe coordinator release, obtain fresh environment truth, and retry
+  only if recovery remains warranted. Recovery presentation should begin only
+  after admission.
+- Rejected timers, polling, backoff, queued work, durable deferral state, a new
+  human-visible status, busy UI, coordinator scheduling, first-run expansion,
+  policy changes, reset changes, and attachment-policy changes.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, schemas, mutation behavior, reset behavior, Presence behavior,
+  or attachment behavior was changed.
+
+---
+
+# 2026-08-15 - Implement automatic-recovery mutation-busy deferral
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/52-AUTOMATIC-RECOVERY-MUTATION-BUSY-DEFERRAL-IMPLEMENTATION.md`.
+- Replaced the automatic-recovery denial/self-invalidation cycle with one
+  Gate-owned process-local deferral enum that distinguishes waiting for
+  mutation release from waiting for completed fresh environment truth.
+- Added a lifecycle-bound listener selecting only the coordinator's `isLocked`
+  fact. Locked-to-idle release now invalidates Environment Readiness, and the
+  Gate rejects Riverpod's retained value while that provider is refreshing.
+- Moved `recoveringFailedAttempt` publication inside the admitted recovery
+  action, so denied work remains silent and never exposes recovery progress.
+- Preserved `preparationFailed` for non-contention admission errors and admitted
+  reset failures; ordinary contention remains non-failure.
+- Added deterministic Gate coverage for no repeated denial, release-driven
+  fresh evaluation, recovery/no-recovery outcomes, a second-owner race,
+  release-before-catch, disposal, and process reconstruction.
+- Updated the canonical Gate guide, package start page, Feature Addition index,
+  changelog, and application version to `0.2.34+52`.
+- Added no timer, polling, backoff, queue, persistence, status, busy UI,
+  coordinator API, reset change, mutation-policy change, Presence dependency,
+  or attachment behavior.
+
+---
+
+# 2026-08-15 - Audit user-initiated setup mutation-busy feedback
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/53-USER-INITIATED-SETUP-MUTATION-BUSY-FEEDBACK-AUDIT.md`.
+- Traced the current Environment Readiness and blocking failure-overlay setup
+  actions through their action providers, `OnboardingGate`, and
+  `ArchiveMutationCoordinator`.
+- Confirmed ordinary busy denial runs no setup action, reset, controller, or
+  file mutation, leaves Gate/environment truth unchanged, and currently escapes
+  through an unhandled or unobserved UI Future without human feedback.
+- Distinguished an explicit denied command from automatic recovery intent and
+  rejected replay, queues, timers, polling, durable busy state, owner-label
+  exposure, proactive button disabling, and `preparationFailed` reuse.
+- Recommended one bounded next slice: return a narrow Onboarding-owned
+  `admitted` / `busy` / `notApplicable` start outcome and render only `busy` as
+  a standard transient snackbar from the active presentation.
+- Verified the recommendation preserves FDA, controller-failure, reset,
+  mutation-policy, Environment Readiness, Presence, and attachment-preservation
+  boundaries. No application code or tests were changed.
+
+---
+
+# 2026-08-15 - Validate end-to-end production onboarding
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/54-END-TO-END-PRODUCTION-ONBOARDING-VALIDATION.md`.
+- Verified release composition routes through `MacosAppShell`,
+  `OnboardingGate`, `OnboardingPresenceHost`, the real authored Schedule, real
+  Onboarding Agents, `PresenceScheduler`, and `PresenceRunner` rather than the
+  development harness.
+- Found that every debug launch bypassed the production-shaped shell and
+  mounted `LinearPresenceExperimentHost`. Corrected that bounded validation
+  blocker by making the harness opt-in through
+  `PRESENCE_DEVELOPMENT_HARNESS=true` and added an architecture tripwire.
+- Executed realistic source-readiness, FDA, Contacts, sparse-history Choice,
+  durable acceptance, import/build, completion, preparation failure,
+  controller failure, automatic recovery, busy-deferral, restart, and
+  attachment-preservation seams with disposable/test storage.
+- Recorded one remaining P1 production defect: the Boolean Messages readiness
+  result routes missing or invalid source data into FDA remediation and can
+  strand the person in incorrect guidance. Also recorded the production-
+  inaccurate `MessageLens Development` FDA copy as P2.
+- Distinguished all code/test evidence from manual visual validation still
+  required. No production archive or archived attachment payload was used as
+  experimental material.
+- Updated the package start page and Feature Addition index. No Presence
+  grammar, Schedule topology, Gate state, persistence, reset semantics,
+  attachment archival, or production release composition was changed.
+
+---
+
+# 2026-08-15 - Correct Messages-source vs FDA readiness
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/55-TRUTHFUL-MESSAGES-SOURCE-VS-FDA-READINESS-IMPLEMENTATION.md`.
+- Recorded the concrete evidence boundary: explicit POSIX permission denial
+  warrants FDA guidance; missing, invalid-schema, query, and ambiguous I/O
+  failures remain bounded source-unavailable outcomes.
+- Documented the process-local specialist observation, its two generic Boolean
+  Onboarding projections, additive Schedule branches, and fresh retry behavior.
+- Updated the package start page, Feature Addition index, canonical Onboarding
+  Gate guide, changelog, and version. Historical implementation records remain
+  unchanged.
+
+---
+
+# 2026-08-15 - Correct observed Onboarding Step redefinition
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/56-OBSERVED-ONBOARDING-STEP-REDEFINITION-BLOCKER-IMPLEMENTATION.md`.
+- Traced the production-observed conflict to Slice 55 changing only the Tell
+  payload of canonical Step 6302 from **MessageLens Development** to
+  **MessageLens** under its existing identity in Trip 303.
+- Recorded why the definition-immutability guard was correct and why restoring
+  the historical payload was safer than introducing replacement FDA topology
+  around a terminal Settings-opening Step.
+- Documented preservation of active Trip checkpoints, execution history,
+  additive source-classification Trips, Test-route reconciliation, and
+  occurrence-position reconciliation.
+- Strengthened the Presence database walkthrough with the rule that persisted
+  definition IDs are semantic identities rather than mutable authored slots.
+- Updated the package start page, Feature Addition index, Slice 55 record,
+  changelog, and app version to `0.2.36+54`.
+
+---
+
+# 2026-08-15 - Hand off Presence guidebook lifecycle
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/57-PRESENCE-GUIDEBOOK-LIFECYCLE-HANDOFF.md`.
+- Recorded the production-shaped Step 6302 failure as evidence that runtime
+  definition reconciliation is the wrong assumed cross-version lifecycle,
+  without weakening the current immutability guard or adding migration logic.
+- Established the next-feature direction: `presence.db` contains one installed
+  guidebook edition plus convenient same-generation execution state; that
+  state may be discarded wholesale when the guidebook generation changes.
+- Restored the blank-stare ownership boundary: Presence reads opaque guidebook
+  geometry while Onboarding answers domain questions without knowing Schedule,
+  Trip, Step, occurrence, or routing identities.
+- Distinguished disposable guidebook position from durable human intent that
+  remains meaningful independently of Presence geometry.
+- Closed Feature Addition 23 as the active home for guidebook installation,
+  replacement, runtime authority, reconciliation removal, and cross-version
+  state policy. Updated its start page and the Feature Addition index.
+- No application code, schema, runtime behavior, Overlay data, or
+  `presence.db` contents changed in this documentation handoff.

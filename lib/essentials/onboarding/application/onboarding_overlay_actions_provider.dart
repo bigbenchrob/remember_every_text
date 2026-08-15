@@ -26,10 +26,6 @@ class OnboardingOverlayActions extends _$OnboardingOverlayActions {
     await ref.read(onboardingGateProvider.notifier).startImportAndGraphBuild();
   }
 
-  Future<void> abortImport() async {
-    await ref.read(onboardingGateProvider.notifier).abortImport();
-  }
-
   void dismiss() {
     ref.read(onboardingGateProvider.notifier).dismiss();
   }

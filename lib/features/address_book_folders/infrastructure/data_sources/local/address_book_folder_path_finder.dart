@@ -6,14 +6,26 @@ import 'package:path/path.dart';
 import '../../../../../core/util/paths_helper.dart';
 
 class AddressBookFolderPathsFinder {
-  final PathsHelper pathsHelper;
+  final PathsHelper? _pathsHelper;
+  final String? _explicitSourcesRootPath;
   final void Function(String dirPath, Object error, StackTrace stackTrace)?
   onDirectoryReadFailure;
 
   AddressBookFolderPathsFinder({
-    required this.pathsHelper,
+    required PathsHelper pathsHelper,
     this.onDirectoryReadFailure,
-  });
+  }) : _pathsHelper = pathsHelper,
+       _explicitSourcesRootPath = null;
+
+  /// Uses an explicitly supplied Address Book `Sources` root.
+  ///
+  /// This keeps source substitution at the discovery boundary while preserving
+  /// the repository's normal candidate validation and read-only query path.
+  AddressBookFolderPathsFinder.atSourcesRoot({
+    required String sourcesRootPath,
+    this.onDirectoryReadFailure,
+  }) : _pathsHelper = null,
+       _explicitSourcesRootPath = sourcesRootPath;
 
   Future<List<String>> getAddressBookPaths() async {
     final dirList = await getAddressBookDirectories();
@@ -25,7 +37,8 @@ class AddressBookFolderPathsFinder {
 
   Future<List<Directory>> getAddressBookDirectories() async {
     const dirStub = 'Library/Application Support/AddressBook/Sources/';
-    final parentDirPath = pathsHelper.userGraft(dirStub);
+    final parentDirPath =
+        _explicitSourcesRootPath ?? _pathsHelper!.userGraft(dirStub);
     final dirObj = Directory(parentDirPath);
     final directories = await dirChatFolders(dirObj);
 

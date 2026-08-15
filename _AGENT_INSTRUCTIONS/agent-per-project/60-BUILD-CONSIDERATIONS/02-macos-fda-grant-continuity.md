@@ -2,7 +2,7 @@
 tier: project
 scope: build
 owner: agent-per-project
-last_reviewed: 2026-03-29
+last_reviewed: 2026-07-27
 source_of_truth: doc
 links:
   - ./README.md
@@ -38,14 +38,56 @@ For family distribution, manual testing, and ad hoc release sharing, preserving 
 
 ## Current Project Invariants
 
-The repository is currently configured so production builds can preserve FDA continuity:
+The repository is configured so production builds can preserve FDA continuity
+while ordinary development has a distinct identity:
 
 1. Bundle identifier in [macos/Runner/Configs/AppInfo.xcconfig](../../../macos/Runner/Configs/AppInfo.xcconfig): `com.bigbenchsoftware.MessageLens`
 2. Release target signing in [macos/Runner.xcodeproj/project.pbxproj](../../../macos/Runner.xcodeproj/project.pbxproj):
    - Team: `FQHT2QP3NE`
    - Release signing identity: `Developer ID Application`
+3. Debug/Profile identity:
+   - bundle: `com.bigbenchsoftware.MessageLens.development`
+   - product: `MessageLens Development`
+   - archive environment: development
+4. Production archive authority is not inferred from Release mode. Native
+   bootstrap must validate expected production signing.
 
 Do not change these casually.
+
+## Single-Instance Execution Authority
+
+MessageLens establishes archive-scoped application-instance authority in native
+macOS bootstrap before creating the Flutter engine. The authority combines:
+
+1. same-bundle running-application detection, so a duplicate can activate the
+   already running app; and
+2. an application-lifetime advisory lock beneath the canonical root declared
+   by the native environment/archive claim.
+
+Only the process holding that authority may proceed into Flutter and open
+application databases. A second ordinary launch exits before providers start.
+The operating system releases the advisory lock when the process exits or
+crashes, so a stale lock file does not block a later launch.
+
+The native claim is then validated by Dart before any persistent provider is
+constructed. Development and production have different roots and locks. Two
+processes may coexist only when they own different admitted archives; two
+processes may not own the same writable archive. Signing identity and Full Disk
+Access remain separate concerns: possession of FDA never grants archive or
+operation authority.
+
+## Development And Production Commands
+
+- `flutter run -d macos` and Profile builds are development identity.
+- A raw local Release build is production-shaped but must fail closed if it is
+  not signed with the expected production identity.
+- `tool/build_and_notarize.sh` is the production distribution entry point.
+- `tool/verify_macos_archive_identity.sh` verifies environment, bundle,
+  product, signing, and entitlements before an artifact is described as
+  production.
+
+Do not launch an unreviewed Release artifact against the production archive.
+The existing production archive has not yet completed marker adoption.
 
 ## Required Production-Build Contract
 
@@ -66,6 +108,8 @@ Before handing off a production build, verify:
 2. The app is signed as a production build, not ad hoc.
 3. The release signing identity matches the expected production setup.
 4. The app name remains `MessageLens.app`.
+5. `tool/verify_macos_archive_identity.sh --environment production` accepts the
+   final signed artifact.
 
 If these checks are not confirmed, do not describe the artifact as a production build.
 
@@ -91,3 +135,7 @@ This fallback should be the exception, not the planned path.
 2. NEVER hand off a debug or ad hoc signed macOS app as a production build.
 3. ALWAYS verify release signing identity before claiming that a build should preserve FDA continuity.
 4. ALWAYS treat “production build” as including app-identity continuity, not just successful compilation.
+5. NEVER move single-instance admission after Flutter/database startup; the
+   exclusion must exist before writable providers can be constructed.
+6. NEVER treat a matching bundle identifier as sufficient production archive
+   authority; build metadata, signing, canonical root, and marker must agree.

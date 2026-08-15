@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -12,6 +13,7 @@ import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_s
 import 'package:remember_this_text/features/handles/application/read_models/stray_handle_summary.dart';
 import 'package:remember_this_text/features/handles/application/read_models/stray_handles_provider.dart';
 import 'package:remember_this_text/features/handles/application/sidebar_cassette_spec/widget_builders/stray_handles_review_cassette.dart';
+import 'package:remember_this_text/features/handles/domain/entities/stray_handle_endpoint_kind.dart';
 import 'package:remember_this_text/features/handles/domain/spec_classes/handles_cassette_spec.dart';
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 
@@ -25,15 +27,17 @@ void main() {
             sidebarFlowPreferenceStoreProvider.overrideWith((ref) async {
               return _InMemorySidebarFlowPreferenceStore();
             }),
-            strayHandlesProvider.overrideWith((ref) async {
-              return <StrayHandleSummary>[
-                const StrayHandleSummary(
+            unknownSourceIdentificationHandlesProvider.overrideWith((ref) {
+              return AsyncData(<StrayHandleSummary>[
+                StrayHandleSummary(
                   handleId: 7,
                   handleValue: '+15551234567',
                   serviceType: 'iMessage',
                   totalMessages: 3,
+                  endpointKind: StrayHandleEndpointKind.phoneNumber,
+                  lastMessageDate: DateTime(2024, 7, 6),
                 ),
-              ];
+              ]);
             }),
           ],
         );
@@ -71,11 +75,12 @@ void main() {
             child: const MacosApp(
               home: MacosWindow(
                 child: SizedBox(
-                  width: 420,
+                  width: 340,
                   height: 240,
                   child: StrayHandlesReviewCassette(
+                    investigation: StrayHandleInvestigation.identifySources,
                     filter: StrayHandleFilter.phones,
-                    mode: StrayHandleMode.allStrays,
+                    mode: StrayHandleReviewMode.active,
                   ),
                 ),
               ),
@@ -86,13 +91,9 @@ void main() {
         await tester.pump();
 
         expect(find.text('+15551234567'), findsOneWidget);
-        expect(
-          find.descendant(
-            of: find.byType(StrayHandlesReviewCassette),
-            matching: find.byType(Positioned),
-          ),
-          findsOneWidget,
-        );
+        expect(find.text('SPAM'), findsNothing);
+        expect(find.byIcon(CupertinoIcons.xmark), findsNothing);
+        expect(tester.takeException(), isNull);
 
         await tester.pumpWidget(const SizedBox.shrink());
         panelsSubscription.close();

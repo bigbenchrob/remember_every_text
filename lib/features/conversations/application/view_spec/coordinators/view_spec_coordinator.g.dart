@@ -7,7 +7,7 @@ part of 'view_spec_coordinator.dart';
 // **************************************************************************
 
 String _$viewSpecCoordinatorHash() =>
-    r'13c3b2334b5706ed9735cceae6f84484539b6982';
+    r'3a41873ce526ef1db049797b90bfd234246e07ce';
 
 /// Coordinator that maps [ConversationsSpec] to rendered Conversation surfaces.
 ///

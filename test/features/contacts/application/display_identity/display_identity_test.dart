@@ -166,7 +166,98 @@ void main() {
     );
 
     expect(sender.primaryLabel, 'me');
+    expect(sender.isSelf, isTrue);
     expect(sender.rawHandleLabel, isNull);
+    expect(sender.isKnownContact, isTrue);
+  });
+
+  test(
+    'canonical self handle resolves as first-person participant identity',
+    () {
+      const resolver = DisplayIdentityResolver(
+        identitiesByHandleKey: {
+          '16046858506': ParticipantDisplayIdentity(
+            primaryLabel: selfParticipantDisplayLabel,
+            source: DisplayIdentitySource.localAccount,
+            isKnownContact: true,
+          ),
+        },
+      );
+
+      final participant = resolver.resolveParticipantForHandle(
+        '+1 (604) 685-8506',
+      );
+
+      expect(participant.primaryLabel, 'Me');
+      expect(participant.isSelf, isTrue);
+    },
+  );
+
+  test('self-only conversation is presented as a relationship with self', () {
+    const resolver = DisplayIdentityResolver(
+      identitiesByHandleKey: {
+        '16046858506': ParticipantDisplayIdentity(
+          primaryLabel: selfParticipantDisplayLabel,
+          source: DisplayIdentitySource.localAccount,
+          isKnownContact: true,
+        ),
+      },
+    );
+
+    final identity = resolver.resolveConversationFromHandles(
+      conversationId: 42,
+      handles: const ['+16046858506'],
+    );
+
+    expect(identity.title, 'self');
+    expect(identity.participantLabels, ['Me']);
+    expect(identity.isSelfConversation, isTrue);
+  });
+
+  test('group conversation presents the current user as Me', () {
+    const resolver = DisplayIdentityResolver(
+      identitiesByHandleKey: {
+        '16046858506': ParticipantDisplayIdentity(
+          primaryLabel: selfParticipantDisplayLabel,
+          source: DisplayIdentitySource.localAccount,
+          isKnownContact: true,
+        ),
+        '17789908506': ParticipantDisplayIdentity(
+          primaryLabel: 'Claire',
+          source: DisplayIdentitySource.graphContact,
+          isKnownContact: true,
+        ),
+      },
+    );
+
+    final identity = resolver.resolveConversationFromHandles(
+      conversationId: 42,
+      handles: const ['+16046858506', '+17789908506'],
+    );
+
+    expect(identity.title, 'Me and Claire');
+    expect(identity.participantLabels, ['Me', 'Claire']);
+    expect(identity.isSelfConversation, isFalse);
+  });
+
+  test('canonical self sender uses lowercase prose identity', () {
+    const resolver = DisplayIdentityResolver(
+      identitiesByHandleKey: {},
+      identitiesByHandleId: {
+        7: ParticipantDisplayIdentity(
+          primaryLabel: selfParticipantDisplayLabel,
+          source: DisplayIdentitySource.localAccount,
+          isKnownContact: true,
+        ),
+      },
+    );
+
+    final sender = resolver.resolveSender(
+      isFromMe: false,
+      senderCanonicalHandleId: 7,
+    );
+
+    expect(sender.primaryLabel, 'me');
     expect(sender.isKnownContact, isTrue);
   });
 }
