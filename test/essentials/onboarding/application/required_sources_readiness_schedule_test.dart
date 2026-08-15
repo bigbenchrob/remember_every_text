@@ -21,6 +21,7 @@ import 'package:remember_this_text/features/presence_iteration_simple/infrastruc
 void main() {
   late PresenceDatabase database;
   late _MutableTestAgent messagesAgent;
+  late _MutableTestAgent messagesAccessDeniedAgent;
   late _MutableTestAgent contactsAgent;
   late _MutableTestAgent historyAgent;
   late _RecordingSettingsAuthority settingsAuthority;
@@ -29,12 +30,14 @@ void main() {
   setUp(() async {
     database = PresenceDatabase(NativeDatabase.memory());
     messagesAgent = _MutableTestAgent(result: true);
+    messagesAccessDeniedAgent = _MutableTestAgent(result: false);
     contactsAgent = _MutableTestAgent(result: true);
     historyAgent = _MutableTestAgent(result: true);
     settingsAuthority = _RecordingSettingsAuthority();
     final testAgentResolver = ImmutableTestAgentResolver(
       buildOnboardingTestAgentBindings(
         messagesSourceReadinessTestAgent: messagesAgent,
+        messagesSourceAccessDeniedTestAgent: messagesAccessDeniedAgent,
         contactsSourceReadinessTestAgent: contactsAgent,
         messagesSourceHistorySufficiencyTestAgent: historyAgent,
       ),
@@ -174,6 +177,7 @@ void main() {
     final testAgentResolver = ImmutableTestAgentResolver(
       buildOnboardingTestAgentBindings(
         messagesSourceReadinessTestAgent: messagesAgent,
+        messagesSourceAccessDeniedTestAgent: messagesAccessDeniedAgent,
         contactsSourceReadinessTestAgent: contactsAgent,
         messagesSourceHistorySufficiencyTestAgent: historyAgent,
       ),
@@ -425,9 +429,12 @@ void main() {
 
   test('FDA remediation still checkpoints verification on restart', () async {
     messagesAgent.result = false;
+    messagesAccessDeniedAgent.result = true;
     var scheduler = await _startScheduler(repository);
 
     await _completeIntroduction(scheduler);
+    await scheduler.completeCurrentStep();
+    expect(_tripId(scheduler), classifyMessagesSourceFailureTripId);
     await scheduler.completeCurrentStep();
     expect(_tripId(scheduler), guideUnreadableMessagesSourceTripId);
     await scheduler.completeCurrentStep();
@@ -447,10 +454,12 @@ void main() {
 
   test('Settings failure leaves the Step and checkpoint unchanged', () async {
     messagesAgent.result = false;
+    messagesAccessDeniedAgent.result = true;
     settingsAuthority.fail = true;
     final scheduler = await _startScheduler(repository);
 
     await _completeIntroduction(scheduler);
+    await scheduler.completeCurrentStep();
     await scheduler.completeCurrentStep();
     await scheduler.completeCurrentStep();
     await scheduler.completeCurrentStep();
@@ -464,6 +473,55 @@ void main() {
     expect(_tripId(scheduler), guideUnreadableMessagesSourceTripId);
     expect(scheduler.currentTrip?.currentStepIndex, 2);
     expect(scheduler.run?.currentTripOccurrenceId, occurrenceBefore);
+  });
+
+  test('non-FDA source failure reaches source-unavailable guidance', () async {
+    messagesAgent.result = false;
+    messagesAccessDeniedAgent.result = false;
+    final scheduler = await _startScheduler(repository);
+
+    await _completeIntroduction(scheduler);
+    await scheduler.completeCurrentStep();
+    expect(_tripId(scheduler), classifyMessagesSourceFailureTripId);
+    await scheduler.completeCurrentStep();
+
+    expect(_tripId(scheduler), guideUnavailableMessagesSourceTripId);
+    expect(
+      scheduler.currentStep,
+      isA<TellStep>()
+          .having(
+            (step) => step.text,
+            'source-specific guidance',
+            contains('can’t currently use your Messages data'),
+          )
+          .having(
+            (step) => step.text,
+            'no FDA remediation',
+            isNot(contains('Full Disk Access')),
+          ),
+    );
+    expect(settingsAuthority.invocationCount, 0);
+  });
+
+  test('source-unavailable retry evaluates a fresh readable fact', () async {
+    messagesAgent.result = false;
+    messagesAccessDeniedAgent.result = false;
+    final scheduler = await _startScheduler(repository);
+
+    await _completeIntroduction(scheduler);
+    await scheduler.completeCurrentStep();
+    await scheduler.completeCurrentStep();
+    expect(_tripId(scheduler), guideUnavailableMessagesSourceTripId);
+    await scheduler.completeCurrentStep();
+    await scheduler.completeCurrentStep();
+    expect(_tripId(scheduler), determineInitialMessagesSourceReadinessTripId);
+
+    messagesAgent.result = true;
+    await scheduler.completeCurrentStep();
+
+    expect(_tripId(scheduler), determineContactsSourceReadinessTripId);
+    expect(messagesAgent.invocationCount, 2);
+    expect(messagesAccessDeniedAgent.invocationCount, 1);
   });
 
   test('topology contains the history branch and re-check loop', () async {
@@ -483,6 +541,8 @@ void main() {
         guideUnavailableContactsSourceTripId,
         determineMessagesSourceHistorySufficiencyTripId,
         guideSparseMessagesSourceHistoryTripId,
+        classifyMessagesSourceFailureTripId,
+        guideUnavailableMessagesSourceTripId,
         confirmRequiredSourcesReadableTripId,
       ],
     );
@@ -490,8 +550,8 @@ void main() {
       definition.trips.map((trip) => trip.trip.name),
       isNot(contains('confirm_messages_source_readable')),
     );
-    expect(topology.edges, hasLength(14));
-    expect(topology.edges.where((edge) => edge.isBackward), hasLength(3));
+    expect(topology.edges, hasLength(17));
+    expect(topology.edges.where((edge) => edge.isBackward), hasLength(4));
     expect(messagesAgent.invocationCount, 0);
     expect(contactsAgent.invocationCount, 0);
     expect(historyAgent.invocationCount, 0);

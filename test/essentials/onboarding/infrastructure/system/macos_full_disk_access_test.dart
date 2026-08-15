@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/monitor/chat_db_source_probe_reader.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart';
+import 'package:remember_this_text/essentials/onboarding/application/full_disk_access.dart';
 import 'package:remember_this_text/essentials/onboarding/infrastructure/system/macos_full_disk_access.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -32,6 +33,10 @@ void main() {
         );
 
         expect(access.canReadMessagesDatabase(), isFalse);
+        expect(
+          access.inspectMessagesSourceAccess(),
+          MessagesSourceAccessResult.unavailable,
+        );
         expect(
           reportedError,
           isA<ChatDbSourceProbeException>().having(
@@ -73,6 +78,10 @@ void main() {
         );
 
         expect(access.canReadMessagesDatabase(), isTrue);
+        expect(
+          access.inspectMessagesSourceAccess(),
+          MessagesSourceAccessResult.readable,
+        );
         expect(reportedError, isNull);
       },
     );
@@ -95,6 +104,10 @@ void main() {
 
       expect(access.canReadMessagesDatabase(), isFalse);
       expect(
+        access.inspectMessagesSourceAccess(),
+        MessagesSourceAccessResult.unavailable,
+      );
+      expect(
         reportedError,
         isA<ChatDbSourceProbeException>().having(
           (error) => error.kind,
@@ -102,6 +115,51 @@ void main() {
           ChatDbSourceProbeFailureKind.sqliteOpenFailed,
         ),
       );
+    });
+
+    test('classifies only explicit source access denial as access denied', () {
+      final access = MacosFullDiskAccess(
+        messagesDatabaseReadProbe: (databasePath) {
+          throw ChatDbSourceProbeException(
+            kind: ChatDbSourceProbeFailureKind.accessDenied,
+            databasePath: databasePath,
+            operation: 'source file read verification',
+            cause: const OSError('Operation not permitted', 1),
+          );
+        },
+        messagesDatabasePath: '/protected/Library/Messages/chat.db',
+      );
+
+      expect(
+        access.inspectMessagesSourceAccess(),
+        MessagesSourceAccessResult.accessDenied,
+      );
+    });
+
+    test('missing and schema failures remain non-FDA unavailable', () {
+      for (final kind in <ChatDbSourceProbeFailureKind>[
+        ChatDbSourceProbeFailureKind.databaseMissing,
+        ChatDbSourceProbeFailureKind.expectedSchemaUnavailable,
+        ChatDbSourceProbeFailureKind.queryFailed,
+        ChatDbSourceProbeFailureKind.filesystemReadFailed,
+      ]) {
+        final access = MacosFullDiskAccess(
+          messagesDatabaseReadProbe: (databasePath) {
+            throw ChatDbSourceProbeException(
+              kind: kind,
+              databasePath: databasePath,
+              operation: 'test failure',
+            );
+          },
+          messagesDatabasePath: '/test/Library/Messages/chat.db',
+        );
+
+        expect(
+          access.inspectMessagesSourceAccess(),
+          MessagesSourceAccessResult.unavailable,
+          reason: '${kind.name} must not imply FDA denial',
+        );
+      }
     });
   });
 }

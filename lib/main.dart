@@ -41,6 +41,10 @@ import 'essentials/window_state/feature_level_providers.dart'
 import 'features/presence_iteration_simple/presentation/linear_presence_experiment_host.dart';
 import 'frb_generated.dart';
 
+const bool _presenceDevelopmentHarnessEnabled = bool.fromEnvironment(
+  'PRESENCE_DEVELOPMENT_HARNESS',
+);
+
 /// This method initializes macos_window_utils and styles the window.
 Future<void> _configureMacosWindowUtils() async {
   const config = MacosWindowUtilsConfig(
@@ -589,7 +593,7 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(switchableDarkModeProvider);
 
-    if (kDebugMode) {
+    if (kDebugMode && _presenceDevelopmentHarnessEnabled) {
       return MacosApp(
         title: 'Presence Iteration Simple',
         theme: MacosThemeData.light().copyWith(),

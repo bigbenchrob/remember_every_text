@@ -5,7 +5,6 @@ import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
 import '../../conversation_graph/feature_level_providers.dart'
     show
-        ConversationGraphBuildReport,
         ConversationGraphBuildStatus,
         ConversationGraphBuildState,
         conversationGraphBuildControllerProvider;
@@ -71,9 +70,15 @@ class OnboardingOverlay extends ConsumerWidget {
               ),
               child: switch (status) {
                 OnboardingStatus.recoveringFailedAttempt => _RecoveryContent(
+                  colors: colors,
+                  typography: typography,
+                ),
+                OnboardingStatus.preparationFailed => _WelcomeContent(
                   report: report,
                   colors: colors,
                   typography: typography,
+                  presentationOverride: _preparationFailurePresentation,
+                  showEnvironmentSummary: false,
                 ),
                 OnboardingStatus.awaitingFda => OnboardingFdaContent(
                   report: report,
@@ -101,6 +106,7 @@ class OnboardingOverlay extends ConsumerWidget {
                 OnboardingStatus.reimportBuildingGraph => _ProgressContent(
                   colors: colors,
                   typography: typography,
+                  isPreparingFirstRun: status == OnboardingStatus.importing,
                   isReimport:
                       status == OnboardingStatus.reimporting ||
                       status == OnboardingStatus.reimportBuildingGraph,
@@ -322,15 +328,20 @@ class _WelcomeContent extends ConsumerWidget {
     required this.report,
     required this.colors,
     required this.typography,
+    this.presentationOverride,
+    this.showEnvironmentSummary = true,
   });
 
   final OnboardingEnvironmentReport? report;
   final ThemeColors colors;
   final ThemeTypography typography;
+  final _AwaitingUserActionPresentation? presentationOverride;
+  final bool showEnvironmentSummary;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final presentation = _awaitingUserActionPresentation(report);
+    final presentation =
+        presentationOverride ?? _awaitingUserActionPresentation(report);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -354,7 +365,9 @@ class _WelcomeContent extends ConsumerWidget {
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
-        if (report != null) ...[
+        if (showEnvironmentSummary &&
+            report != null &&
+            _showsEnvironmentSummary(report!)) ...[
           const SizedBox(height: 16),
           _EnvironmentSummaryCard(
             report: report!,
@@ -467,19 +480,14 @@ class _WelcomeContent extends ConsumerWidget {
             ),
           ],
         ],
-        if (presentation.canSendDiagnosticReport && report != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            'MessageLens will try to open an email draft to messagelens@gmail.com with the report already attached. If that is not possible, it will reveal the file in Finder so it can be attached manually.',
-            style: typography.caption.copyWith(
-              color: colors.content.textTertiary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
       ],
     );
   }
+}
+
+bool _showsEnvironmentSummary(OnboardingEnvironmentReport report) {
+  return report.state != OnboardingEnvironmentState.importFailed &&
+      report.state != OnboardingEnvironmentState.graphProjectionFailed;
 }
 
 class _EnvironmentSummaryCard extends StatelessWidget {
@@ -695,6 +703,23 @@ String _permissionBodyText(OnboardingEnvironmentReport? report) {
       'Disk Access, then relaunch the app so setup can continue.';
 }
 
+const _stableSetupFailureTitle = "MessageLens couldn't finish setup";
+const _stableSetupFailureBody =
+    "MessageLens couldn't finish preparing your browsing data. "
+    'You can try again.';
+
+const _preparationFailurePresentation = _AwaitingUserActionPresentation(
+  title: _stableSetupFailureTitle,
+  body: _stableSetupFailureBody,
+  notes: [],
+  canImportImmediately: true,
+  canSendDiagnosticReport: true,
+  allowsManualImport: false,
+  primaryActionLabel: 'Try Again',
+  icon: Icons.error_outline_rounded,
+  iconKind: _PresentationIconKind.warning,
+);
+
 _AwaitingUserActionPresentation _awaitingUserActionPresentation(
   OnboardingEnvironmentReport? report,
 ) {
@@ -759,13 +784,10 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
         iconKind: _PresentationIconKind.warning,
       );
     case OnboardingEnvironmentState.importFailed:
-      return _AwaitingUserActionPresentation(
-        title: 'Import Attempt Failed',
-        body:
-            'MessageLens could reach your local sources, but the last import '
-            'attempt did not finish successfully. You can retry now or send '
-            'a report to the developer.',
-        notes: _importFailureNotes(report),
+      return const _AwaitingUserActionPresentation(
+        title: _stableSetupFailureTitle,
+        body: _stableSetupFailureBody,
+        notes: [],
         canImportImmediately: true,
         canSendDiagnosticReport: true,
         allowsManualImport: false,
@@ -774,13 +796,10 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
         iconKind: _PresentationIconKind.warning,
       );
     case OnboardingEnvironmentState.graphProjectionFailed:
-      return _AwaitingUserActionPresentation(
-        title: 'Messages Could Not Be Prepared',
-        body:
-            'MessageLens imported source data, but the app could not finish '
-            'preparing it for use. You can retry now or send a report to the '
-            'developer.',
-        notes: _graphProjectionFailureNotes(report),
+      return const _AwaitingUserActionPresentation(
+        title: _stableSetupFailureTitle,
+        body: _stableSetupFailureBody,
+        notes: [],
         canImportImmediately: true,
         canSendDiagnosticReport: true,
         allowsManualImport: false,
@@ -817,80 +836,6 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
   }
 }
 
-List<String> _importFailureNotes(OnboardingEnvironmentReport report) {
-  final notes = <String>[];
-
-  final recordedAt = report.lastImportFailureRecordedAt;
-  if (report.usingPersistedImportFailure && recordedAt != null) {
-    notes.add(
-      _persistedFailureNote(
-        kind: 'import',
-        freshness: report.importFailureFreshness(),
-        recordedAt: recordedAt,
-      ),
-    );
-  }
-
-  final message = report.importFailureMessage;
-  if (message != null && message.isNotEmpty) {
-    notes.add(message);
-  }
-
-  notes.add(
-    'Confirm Messages and Contacts are still available on this Mac, then retry the import.',
-  );
-  notes.add(
-    'If the import fails again, use "Send Report To Developer" to have MessageLens prepare an email with the diagnostic report attached when possible.',
-  );
-
-  if (!report.sourceScopedImportDatabase.exists ||
-      !report.sourceScopedImportDatabase.hasData) {
-    notes.add(
-      'No usable imported message data was left behind, so the next retry will start from a clean import pass.',
-    );
-  }
-
-  return notes;
-}
-
-List<String> _graphProjectionFailureNotes(OnboardingEnvironmentReport report) {
-  final notes = <String>[];
-
-  final recordedAt = report.lastGraphProjectionFailureRecordedAt;
-  if (report.usingPersistedGraphProjectionFailure && recordedAt != null) {
-    notes.add(
-      _persistedFailureNote(
-        kind: 'graph projection',
-        freshness: report.graphProjectionFailureFreshness(),
-        recordedAt: recordedAt,
-      ),
-    );
-  }
-
-  final message = report.graphProjectionFailureMessage;
-  if (message != null && message.isNotEmpty) {
-    notes.add(message);
-  }
-
-  if (report.sourceScopedImportDatabase.hasData) {
-    notes.add(
-      'The imported message data exists, so the failure happened while preparing it for browsing.',
-    );
-  }
-
-  if (!report.conversationGraph.hasData) {
-    notes.add(
-      'The conversation browsing data is still empty or incomplete. Retrying will rerun setup.',
-    );
-  }
-
-  notes.add(
-    'If this keeps happening, use "Send Report To Developer" to have MessageLens prepare an email with the support bundle attached when possible.',
-  );
-
-  return notes;
-}
-
 void _showDiagnosticReportSnackBar(
   BuildContext context, {
   required DiagnosticReportPresentationResult result,
@@ -907,32 +852,6 @@ void _showDiagnosticReportSnackBar(
       : 'Support bundle prepared. It was opened in Finder so it can be attached manually.';
 
   messenger.showSnackBar(SnackBar(content: Text(message)));
-}
-
-String _formatRecordedAt(DateTime timestamp) {
-  final local = timestamp.toLocal();
-  final month = local.month.toString().padLeft(2, '0');
-  final day = local.day.toString().padLeft(2, '0');
-  final hour = local.hour.toString().padLeft(2, '0');
-  final minute = local.minute.toString().padLeft(2, '0');
-  return '${local.year}-$month-$day $hour:$minute';
-}
-
-String _persistedFailureNote({
-  required String kind,
-  required OnboardingFailureFreshness freshness,
-  required DateTime recordedAt,
-}) {
-  final formatted = _formatRecordedAt(recordedAt);
-
-  return switch (freshness) {
-    OnboardingFailureFreshness.today =>
-      'This $kind failure was recorded earlier today at $formatted during a previous launch.',
-    OnboardingFailureFreshness.older =>
-      'This $kind failure was recorded during a previous launch on $formatted.',
-    OnboardingFailureFreshness.unknown =>
-      'This $kind failure was recorded during a previous launch.',
-  };
 }
 
 List<String> _sourceUnavailableNotes(OnboardingEnvironmentReport report) {
@@ -1078,11 +997,13 @@ class _ProgressContent extends ConsumerWidget {
   const _ProgressContent({
     required this.colors,
     required this.typography,
+    required this.isPreparingFirstRun,
     this.isReimport = false,
   });
 
   final ThemeColors colors;
   final ThemeTypography typography;
+  final bool isPreparingFirstRun;
   final bool isReimport;
 
   @override
@@ -1090,10 +1011,12 @@ class _ProgressContent extends ConsumerWidget {
     final graphBuildState = ref.watch(conversationGraphBuildControllerProvider);
     final statusMessage = _progressStatusMessage(
       graphBuildState: graphBuildState,
+      isPreparingFirstRun: isPreparingFirstRun,
       isReimport: isReimport,
     );
     final progressValue =
-        graphBuildState.status == ConversationGraphBuildStatus.succeeded
+        !isPreparingFirstRun &&
+            graphBuildState.status == ConversationGraphBuildStatus.succeeded
         ? 1.0
         : null;
 
@@ -1131,16 +1054,20 @@ class _ProgressContent extends ConsumerWidget {
 
 String _progressStatusMessage({
   required ConversationGraphBuildState graphBuildState,
+  required bool isPreparingFirstRun,
   required bool isReimport,
 }) {
+  if (isPreparingFirstRun) {
+    return 'Preparing setup…';
+  }
+
   return switch (graphBuildState.status) {
     ConversationGraphBuildStatus.running =>
       isReimport ? 'Rebuilding browsing data…' : 'Building browsing data…',
     ConversationGraphBuildStatus.succeeded =>
       isReimport ? 'Browsing data rebuilt' : 'Browsing data ready',
     ConversationGraphBuildStatus.failed =>
-      graphBuildState.lastError ??
-          'MessageLens could not prepare browsing data',
+      "MessageLens couldn't finish preparing browsing data.",
     ConversationGraphBuildStatus.idle =>
       isReimport ? 'Preparing rebuild…' : 'Preparing setup…',
   };
@@ -1160,10 +1087,6 @@ class _CompleteContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final graphBuildReport = ref
-        .watch(conversationGraphBuildControllerProvider)
-        .lastReport;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1174,21 +1097,19 @@ class _CompleteContent extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'Import Complete!',
+          'MessageLens is ready',
           style: typography.headline.copyWith(
             color: colors.content.textPrimary,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-        if (graphBuildReport != null) ...[
-          _GraphBuildSummaryMetrics(
-            report: graphBuildReport,
-            colors: colors,
-            typography: typography,
-          ),
-          const SizedBox(height: 24),
-        ],
+        Text(
+          'Your local browsing data is prepared.',
+          style: typography.body.copyWith(color: colors.content.textSecondary),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
         FilledButton(
           onPressed: () {
             ref.read(onboardingOverlayActionsProvider.notifier).dismiss();
@@ -1209,13 +1130,8 @@ class _CompleteContent extends ConsumerWidget {
 }
 
 class _RecoveryContent extends ConsumerWidget {
-  const _RecoveryContent({
-    required this.report,
-    required this.colors,
-    required this.typography,
-  });
+  const _RecoveryContent({required this.colors, required this.typography});
 
-  final OnboardingEnvironmentReport? report;
   final ThemeColors colors;
   final ThemeTypography typography;
 
@@ -1231,7 +1147,7 @@ class _RecoveryContent extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'Cleaning Up A Previous Setup Attempt',
+          'Preparing MessageLens to try again',
           style: typography.headline.copyWith(
             color: colors.content.textPrimary,
           ),
@@ -1239,28 +1155,11 @@ class _RecoveryContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'MessageLens detected signs that an earlier setup attempt left incomplete local data. It is clearing that data now so setup can restart cleanly.',
+          'MessageLens found incomplete browsing data and is preparing for '
+          'another setup attempt. Please wait.',
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),
-        if (report?.resetAppDatabasesReason != null) ...[
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colors.surfaces.control,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
-            ),
-            child: Text(
-              report!.resetAppDatabasesReason!,
-              style: typography.caption.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ),
-        ],
         const SizedBox(height: 20),
         SizedBox(
           width: 24,
@@ -1271,86 +1170,6 @@ class _RecoveryContent extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Displays key counts from setup.
-class _GraphBuildSummaryMetrics extends StatelessWidget {
-  const _GraphBuildSummaryMetrics({
-    required this.report,
-    required this.colors,
-    required this.typography,
-  });
-
-  final ConversationGraphBuildReport report;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    final metrics = <(String, int)>[
-      ('Imported', report.messageImportResult.insertedMessageCount),
-      ('Projected', report.messageProjectionResult.insertedMessageCount),
-      ('Text enriched', report.richTextEnrichmentResult.enrichedMessageCount),
-    ];
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      alignment: WrapAlignment.center,
-      children: [
-        for (final (label, count) in metrics)
-          _MetricChip(
-            label: label,
-            count: count,
-            colors: colors,
-            typography: typography,
-          ),
-      ],
-    );
-  }
-}
-
-class _MetricChip extends StatelessWidget {
-  const _MetricChip({
-    required this.label,
-    required this.count,
-    required this.colors,
-    required this.typography,
-  });
-
-  final String label;
-  final int count;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: colors.surfaces.control,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            count.toString(),
-            style: typography.headline.copyWith(
-              color: colors.content.textPrimary,
-            ),
-          ),
-          Text(
-            label,
-            style: typography.caption.copyWith(
-              color: colors.content.textSecondary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

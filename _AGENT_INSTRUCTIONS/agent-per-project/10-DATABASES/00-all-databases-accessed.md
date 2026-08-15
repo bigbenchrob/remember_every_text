@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-08-12
+last_reviewed: 2026-08-14
 source_of_truth: doc
 links:
        - ./access_authority_documentation/010-DATABASE-ACCESS-IN-PLAIN-ENGLISH.md
@@ -16,6 +16,7 @@ links:
        - ../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md
        - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
        - ../50-ENVIRONMENT-SAFETY/00-overview.md
+       - ../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md
 tests: []
 ---
 
@@ -65,6 +66,11 @@ start with
   lifecycle authority even when the dependency is otherwise legitimate.
 - **Production reads are graph-backed.** Ordinary app data flows through `db-import-ss` and `db-graph-working`; archive-source metadata now lives in `db-overlay`. Retired `db-import` and `db-working` files are transitional cleanup inventory for reset and diagnostics.
 - **Overlay remains separate.** User intent lives in `db-overlay` and is merged at read time; no import/projection path may copy overlay intent into source-scoped graph tables or retired files.
+- **The attachment archive is preservation data.** It shares the admitted
+  archive root but is not a database, cache, or rebuildable reset target.
+  Reset/reimport/recovery may delete only enumerated derived database files.
+  See
+  [`ATTACHMENT-PRESERVATION-INVARIANT.md`](../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md).
 - **Shut everything down before manual access.** Quit the Flutter app and tooling prior to backups or ad-hoc SQL to avoid WAL/locking surprises.
 
 ## Canonical Database Aliases

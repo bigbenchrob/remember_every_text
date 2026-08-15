@@ -21,6 +21,7 @@ void main() {
     final resolver = ImmutableTestAgentResolver(
       buildOnboardingTestAgentBindings(
         messagesSourceReadinessTestAgent: capabilities,
+        messagesSourceAccessDeniedTestAgent: capabilities,
         contactsSourceReadinessTestAgent: capabilities,
         messagesSourceHistorySufficiencyTestAgent: capabilities,
       ),
@@ -52,20 +53,42 @@ void main() {
       _tripStarted(id: 1, sequence: 1, occurrenceId: 6101),
       _route(id: 2, sequence: 2, source: 6101, destination: 6102),
       _tripStarted(id: 3, sequence: 3, occurrenceId: 6102),
-      _route(id: 4, sequence: 4, source: 6102, destination: 6103),
-      _tripStarted(id: 5, sequence: 5, occurrenceId: 6103),
-      _route(id: 6, sequence: 6, source: 6103, destination: 6104),
-      _tripStarted(id: 7, sequence: 7, occurrenceId: 6104),
       _route(
-        id: 8,
-        sequence: 8,
-        source: 6104,
+        id: 4,
+        sequence: 4,
+        source: 6102,
+        routingResult: 310,
+        destination: 6110,
+      ),
+      _tripStarted(id: 5, sequence: 5, occurrenceId: 6110),
+      _route(
+        id: 6,
+        sequence: 6,
+        source: 6110,
         routingResult: 303,
         destination: 6103,
       ),
-      _tripStarted(id: 9, sequence: 9, occurrenceId: 6103),
-      _route(id: 10, sequence: 10, source: 6103, destination: 6104),
-      _tripStarted(id: 11, sequence: 11, occurrenceId: 6104),
+      _tripStarted(id: 7, sequence: 7, occurrenceId: 6103),
+      _route(id: 8, sequence: 8, source: 6103, destination: 6104),
+      _tripStarted(id: 9, sequence: 9, occurrenceId: 6104),
+      _route(
+        id: 10,
+        sequence: 10,
+        source: 6104,
+        routingResult: 310,
+        destination: 6110,
+      ),
+      _tripStarted(id: 11, sequence: 11, occurrenceId: 6110),
+      _route(
+        id: 12,
+        sequence: 12,
+        source: 6110,
+        routingResult: 303,
+        destination: 6103,
+      ),
+      _tripStarted(id: 13, sequence: 13, occurrenceId: 6103),
+      _route(id: 14, sequence: 14, source: 6103, destination: 6104),
+      _tripStarted(id: 15, sequence: 15, occurrenceId: 6104),
     ];
 
     final visualization = _build(
@@ -78,6 +101,7 @@ void main() {
     expect(visualization.visitCountFor(6102), 1);
     expect(visualization.visitCountFor(6103), 2);
     expect(visualization.visitCountFor(6104), 2);
+    expect(visualization.visitCountFor(6110), 2);
     expect(
       visualization.routeTraversalCounts[const ScheduleRouteTransition(
         sourceTripOccurrenceId: 6103,
@@ -89,10 +113,18 @@ void main() {
     expect(
       visualization.routeTraversalCounts[const ScheduleRouteTransition(
         sourceTripOccurrenceId: 6104,
+        routingResultTripDefinitionId: TripDefinitionId(310),
+        selectedDestinationTripOccurrenceId: 6110,
+      )],
+      1,
+    );
+    expect(
+      visualization.routeTraversalCounts[const ScheduleRouteTransition(
+        sourceTripOccurrenceId: 6110,
         routingResultTripDefinitionId: TripDefinitionId(303),
         selectedDestinationTripOccurrenceId: 6103,
       )],
-      1,
+      2,
     );
     final untakenPresentEdge = topology.edges.singleWhere(
       (edge) =>
@@ -152,8 +184,8 @@ void main() {
 
     expect(capabilities.callCount, 0);
     expect(capabilities.settingsCallCount, 0);
-    expect(topology.trips, hasLength(9));
-    expect(topology.edges, hasLength(14));
+    expect(topology.trips, hasLength(11));
+    expect(topology.edges, hasLength(17));
   });
 }
 

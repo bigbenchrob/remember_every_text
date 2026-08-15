@@ -21,6 +21,11 @@ graph build/rebuild to `ConversationGraphBuildController`. It must not call
 `DbImportControlViewModel`, `runImportAndMigration()`, or retired
 legacy migration paths as the app-facing setup path.
 
+> **Safety:** `MessageDataResetService` removes only enumerated rebuildable
+> derived database files and SQLite companions. Archived attachment payloads
+> are preservation data, not rebuild inputs or cleanup targets. See
+> [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
+
 ## Pipeline Sequence
 
 ```
@@ -97,7 +102,8 @@ When a user triggers re-import from Settings:
 
 1. `OnboardingGate.startReimport()` is called
 2. Status transitions: `reimporting` → `reimportBuildingGraph` → `reimportComplete`
-3. `MessageDataResetService` clears derived data while preserving overlay intent
+3. `MessageDataResetService` resets enumerated rebuildable derived stores while
+   preserving overlay intent and archived attachment payloads
 4. `ConversationGraphBuildController` rebuilds the source-scoped graph
 5. Archive rows in overlay are additive — existing entries survive
 

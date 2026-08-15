@@ -23,6 +23,11 @@ The Messages Attachments folder is treated as a cache — useful when available,
 but never trusted as permanent. When archive mode is enabled, the MessageLens
 archive is the display source; live Messages files are ingestion sources.
 
+The MessageLens archive itself is **not** a cache. Its payloads are preservation
+data and must remain outside every ordinary reset/rebuild operation. See the
+canonical
+[`Attachment Preservation Invariant`](ATTACHMENT-PRESERVATION-INVARIANT.md).
+
 ## Architecture
 
 ### Storage Layout
@@ -217,5 +222,7 @@ boundary unless current code introduces one.
 4. The Messages Attachments folder is never written to.
 5. Content-addressable naming provides natural deduplication.
 6. The archive is additive — entries survive re-import and graph rebuilds.
+   Archived payloads are preservation data and are never an ordinary reset,
+   recovery, migration-cleanup, or test-cleanup target.
 7. Archive-enabled resolution displays from the archive and treats live Messages paths as ingestion sources.
 8. Archive service code must use feature ports for graph candidates, archive writes, settings, directory paths, and file work; Drift/overlay SQL belongs in infrastructure repositories.

@@ -82,6 +82,60 @@ void main() {
       );
     });
 
+    test(
+      'classifies explicit filesystem permission denial as access denied',
+      () {
+        const chatDbPath = '/test/Library/Messages/chat.db';
+        final reader = SqliteChatDbSourceProbeReader(
+          sourceFileReadVerifier: (_) {
+            throw const FileSystemException(
+              'Operation not permitted',
+              chatDbPath,
+              OSError('Operation not permitted', 1),
+            );
+          },
+        );
+
+        expect(
+          () => reader.readMaxRowId(chatDbPath),
+          throwsA(
+            isA<ChatDbSourceProbeException>().having(
+              (error) => error.kind,
+              'kind',
+              ChatDbSourceProbeFailureKind.accessDenied,
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'does not classify an ambiguous filesystem error as access denied',
+      () {
+        const chatDbPath = '/test/Library/Messages/chat.db';
+        final reader = SqliteChatDbSourceProbeReader(
+          sourceFileReadVerifier: (_) {
+            throw const FileSystemException(
+              'Input/output error',
+              chatDbPath,
+              OSError('Input/output error', 5),
+            );
+          },
+        );
+
+        expect(
+          () => reader.readMaxRowId(chatDbPath),
+          throwsA(
+            isA<ChatDbSourceProbeException>().having(
+              (error) => error.kind,
+              'kind',
+              ChatDbSourceProbeFailureKind.filesystemReadFailed,
+            ),
+          ),
+        );
+      },
+    );
+
     test('classifies a plain readable file as a failed SQLite query', () {
       final tempDirectory = Directory.systemTemp.createTempSync(
         'sqlite-chat-db-source-probe-invalid-',

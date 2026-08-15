@@ -90,6 +90,11 @@ was previously indicated or not, the service:
 8. probes that the target files no longer exist;
 9. preserves overlay data, preferences, and the attachment archive.
 
+> **Safety:** “reset” here means reset only the enumerated rebuildable derived
+> stores. Archived payloads are preservation data and are never part of this
+> deletion boundary. See the canonical
+> [`Attachment Preservation Invariant`](../../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md).
+
 Reset failure is logged and rethrown. It occurs before the Gate's graph-build
 `try/catch`, so the Gate does not persist it as a pipeline failure or return
 itself to a deliberate failure presentation.

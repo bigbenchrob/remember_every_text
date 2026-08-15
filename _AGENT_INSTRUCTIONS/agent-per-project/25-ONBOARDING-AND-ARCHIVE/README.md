@@ -19,6 +19,7 @@ wording as legacy/transitional.
 | [`20-environment-readiness.md`](20-environment-readiness.md) | Environment evaluation: FDA checks, source database probes, sync plausibility, readiness classification |
 | [`30-import-migration-coordination.md`](30-import-migration-coordination.md) | How onboarding coordinates graph build/rebuild lifecycle without owning source-scoped import/projection internals |
 | [`40-attachment-archive.md`](40-attachment-archive.md) | Living attachments archive: overlay schema, content-addressable storage, resolution pipeline, import-time archiving |
+| [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md) | Hard safety rule: archived payloads are preservation data and remain outside every ordinary reset/rebuild boundary |
 | [`50-deterministic-recovery.md`](50-deterministic-recovery.md) | Deterministic historical recovery from Time Machine or backup snapshots via GUID-based mapping |
 | [`60-reimport-and-ongoing-sync.md`](60-reimport-and-ongoing-sync.md) | Re-import flow, `ChatDbChangeMonitor` auto-sync, and how the archive stays current |
 | [`handoff.txt`](handoff.txt) | Historical branch handoff only; not current architecture guidance |
@@ -55,6 +56,10 @@ wording as legacy/transitional.
 7. Historical snapshots are opened **read-only** — never mutated.
 8. FDA and ready-to-import states are current center-panel readiness states, not overlay-only states.
 9. New work must not bypass `ViewSpec` or introduce widget-returning coordinator patterns for onboarding/readiness surfaces.
+10. Archived attachment payloads are **preservation data**. No onboarding,
+    reset, reimport, recovery, migration cleanup, rebuild, or test operation may
+    mutate them as a side effect. See
+    [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
 
 ## Related Documentation
 

@@ -5,6 +5,7 @@ import 'onboarding_test_agent_ids.dart';
 /// Contributes Onboarding-owned Agents without constructing the app resolver.
 List<TestAgentBinding> buildOnboardingTestAgentBindings({
   required TestAgent messagesSourceReadinessTestAgent,
+  required TestAgent messagesSourceAccessDeniedTestAgent,
   required TestAgent contactsSourceReadinessTestAgent,
   required TestAgent messagesSourceHistorySufficiencyTestAgent,
 }) {
@@ -12,6 +13,10 @@ List<TestAgentBinding> buildOnboardingTestAgentBindings({
     TestAgentBinding(
       id: messagesSourceReadableTestAgentId,
       agent: messagesSourceReadinessTestAgent,
+    ),
+    TestAgentBinding(
+      id: messagesSourceAccessDeniedTestAgentId,
+      agent: messagesSourceAccessDeniedTestAgent,
     ),
     TestAgentBinding(
       id: contactsSourceReadableTestAgentId,

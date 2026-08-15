@@ -2,7 +2,7 @@
 tier: project
 scope: data
 owner: agent-per-project
-last_reviewed: 2026-07-27
+last_reviewed: 2026-08-14
 source_of_truth: code
 links:
   - ../10-DATABASES/00-all-databases-accessed.md
@@ -12,6 +12,7 @@ links:
   - ../10-DATABASES/06-addressbook-path-resolution.md
   - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
   - ../25-ONBOARDING-AND-ARCHIVE/40-attachment-archive.md
+  - ../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md
 tests: []
 ---
 
@@ -65,6 +66,12 @@ the repo path with runtime storage paths.
 
 All relative paths in the table are children of the admitted archive root.
 Attachments do not have separate root-selection authority.
+
+The common root does not imply a common deletion lifecycle. Source-scoped
+import and graph stores are rebuildable; `attachment_archive/` is preservation
+data. No ordinary reset, reimport, recovery, migration cleanup, or test cleanup
+may delete the archive root or its payloads. See
+[`ATTACHMENT-PRESERVATION-INVARIANT.md`](../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md).
 
 ## macOS Source Files
 

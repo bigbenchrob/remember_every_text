@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/spacing/app_spacing.dart';
+import 'package:remember_this_text/config/theme/widgets/heatmap/activity_heatmap_color_scale.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
@@ -62,6 +63,71 @@ void main() {
         );
       },
     );
+
+    testWidgets('legend reflects every discrete activity bin', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: MessageHeatmapContent(
+              data: _sampleTimelineData(),
+              selectedMonthKey: null,
+              onMonthTap: (_, __, ___) {},
+            ),
+          ),
+        ),
+      );
+
+      for (final label in const [
+        '1-3',
+        '4-10',
+        '11-30',
+        '31-50',
+        '51-100',
+        '101-300',
+        '301-1K',
+        '1K-3K',
+        '3K-10K',
+        '10K+',
+      ]) {
+        expect(find.text(label), findsOneWidget);
+      }
+    });
+
+    testWidgets('selection preserves the month activity fill', (tester) async {
+      const activeColor = Color(0xFFAADC32);
+      final data = _sampleTimelineData(messageCount: 101);
+
+      Future<void> pumpWithSelection(String? selectedMonthKey) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: MessageHeatmapContent(
+                data: data,
+                selectedMonthKey: selectedMonthKey,
+                onMonthTap: (_, __, ___) {},
+              ),
+            ),
+          ),
+        );
+      }
+
+      Finder activityFill() {
+        return find.byWidgetPredicate((widget) {
+          return widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration! as BoxDecoration).color == activeColor;
+        });
+      }
+
+      expect(activityHeatmapColorForMessageCount(101), activeColor);
+      await pumpWithSelection(null);
+      expect(activityFill(), findsOneWidget);
+
+      await pumpWithSelection('2024-01');
+      expect(activityFill(), findsOneWidget);
+    });
   });
 
   testWidgets('global month tap replaces active Conversation context', (
@@ -171,7 +237,7 @@ class _AlwaysPopulatedGraph extends ConversationGraphPopulated {
   bool build() => true;
 }
 
-CalendarHeatmapTimelineData _sampleTimelineData() {
+CalendarHeatmapTimelineData _sampleTimelineData({int messageCount = 15}) {
   return CalendarHeatmapTimelineData(
     yearRows: [
       YearRow(
@@ -182,8 +248,8 @@ CalendarHeatmapTimelineData _sampleTimelineData() {
             return MonthData(
               year: 2024,
               month: month,
-              messageCount: 15,
-              intensity: MonthIntensity.mediumGray,
+              messageCount: messageCount,
+              intensity: MonthIntensity.fromMessageCount(messageCount),
               chatId: 7,
             );
           }
@@ -201,7 +267,7 @@ CalendarHeatmapTimelineData _sampleTimelineData() {
     ],
     firstMessageDate: DateTime(2024, 1, 1),
     lastMessageDate: DateTime(2024, 12, 1),
-    totalMessages: 15,
-    maxMonthCount: 15,
+    totalMessages: messageCount,
+    maxMonthCount: messageCount,
   );
 }

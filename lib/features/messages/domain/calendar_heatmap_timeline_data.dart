@@ -2,7 +2,7 @@
 ///
 /// Represents message activity as a compact calendar grid where each month is a
 /// fixed-size rectangle colored by message intensity. This approach:
-/// - Handles 1 to 50,000+ messages with equal visual clarity
+/// - Handles 1 to 10,000+ messages with equal visual clarity
 /// - Uses minimal vertical space (no tall bars)
 /// - Wraps long timespans across multiple rows
 /// - Shows sparse data with dots, dense data with color intensity
@@ -18,59 +18,32 @@ enum MonthIntensity {
   /// 1-3 messages (show as 1-3 dots)
   fewDots,
 
-  /// 4-10 messages (light gray)
-  lightGray,
+  /// 4-10 messages (light neutral gray)
+  sparse4To10,
 
   /// 11-30 messages (medium gray)
-  mediumGray,
+  sparse11To30,
 
   /// 31-50 messages (dark gray)
-  darkGray,
+  sparse31To50,
 
-  /// 51-75 messages (pale yellow)
-  paleYellow,
+  /// 51-100 messages (yellow; sustained activity begins)
+  active51To100,
 
-  /// 76-100 messages (light yellow)
-  lightYellow,
+  /// 101-300 messages (yellow-green)
+  active101To300,
 
-  /// 101-150 messages (medium yellow)
-  mediumYellow,
+  /// 301-1000 messages (green)
+  active301To1000,
 
-  /// 151-200 messages (dark yellow)
-  darkYellow,
+  /// 1001-3000 messages (teal)
+  active1001To3000,
 
-  /// 201-500 messages (light green)
-  lightGreen,
+  /// 3001-10000 messages (blue)
+  active3001To10000,
 
-  /// 501-1000 messages (medium green)
-  mediumGreen,
-
-  /// 1001-2000 messages (dark green)
-  darkGreen,
-
-  /// 2001-3000 messages (light blue)
-  lightBlue,
-
-  /// 3001-5000 messages (medium blue)
-  mediumBlue,
-
-  /// 5001-8000 messages (dark blue)
-  darkBlue,
-
-  /// 8001-12000 messages (light orange)
-  lightOrange,
-
-  /// 12001-20000 messages (dark orange)
-  darkOrange,
-
-  /// 20001-30000 messages (light purple)
-  lightPurple,
-
-  /// 30001-50000 messages (dark purple)
-  darkPurple,
-
-  /// 50000+ messages (red - maximum intensity)
-  red;
+  /// 10001+ messages (deep purple; open-ended maximum intensity)
+  active10001Plus;
 
   /// Convert message count to intensity level
   static MonthIntensity fromMessageCount(int count) {
@@ -79,41 +52,23 @@ enum MonthIntensity {
     } else if (count <= 3) {
       return MonthIntensity.fewDots;
     } else if (count <= 10) {
-      return MonthIntensity.lightGray;
+      return MonthIntensity.sparse4To10;
     } else if (count <= 30) {
-      return MonthIntensity.mediumGray;
+      return MonthIntensity.sparse11To30;
     } else if (count <= 50) {
-      return MonthIntensity.darkGray;
-    } else if (count <= 75) {
-      return MonthIntensity.paleYellow;
+      return MonthIntensity.sparse31To50;
     } else if (count <= 100) {
-      return MonthIntensity.lightYellow;
-    } else if (count <= 150) {
-      return MonthIntensity.mediumYellow;
-    } else if (count <= 200) {
-      return MonthIntensity.darkYellow;
-    } else if (count <= 500) {
-      return MonthIntensity.lightGreen;
+      return MonthIntensity.active51To100;
+    } else if (count <= 300) {
+      return MonthIntensity.active101To300;
     } else if (count <= 1000) {
-      return MonthIntensity.mediumGreen;
-    } else if (count <= 2000) {
-      return MonthIntensity.darkGreen;
+      return MonthIntensity.active301To1000;
     } else if (count <= 3000) {
-      return MonthIntensity.lightBlue;
-    } else if (count <= 5000) {
-      return MonthIntensity.mediumBlue;
-    } else if (count <= 8000) {
-      return MonthIntensity.darkBlue;
-    } else if (count <= 12000) {
-      return MonthIntensity.lightOrange;
-    } else if (count <= 20000) {
-      return MonthIntensity.darkOrange;
-    } else if (count <= 30000) {
-      return MonthIntensity.lightPurple;
-    } else if (count <= 50000) {
-      return MonthIntensity.darkPurple;
+      return MonthIntensity.active1001To3000;
+    } else if (count <= 10000) {
+      return MonthIntensity.active3001To10000;
     } else {
-      return MonthIntensity.red;
+      return MonthIntensity.active10001Plus;
     }
   }
 

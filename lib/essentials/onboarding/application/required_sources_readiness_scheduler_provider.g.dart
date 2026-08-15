@@ -7,7 +7,7 @@ part of 'required_sources_readiness_scheduler_provider.dart';
 // **************************************************************************
 
 String _$requiredSourcesReadinessRepositoryHash() =>
-    r'c9d36e192ff788950661a7dff80c59ebedce8556';
+    r'394f754e63b61696e506aa70295e582c0c7810af';
 
 /// Onboarding-owned repository composition for required-source readiness.
 ///
@@ -49,7 +49,7 @@ final requiredSourcesReadinessAcceptedProvider = StreamProvider<bool>.internal(
 // ignore: unused_element
 typedef RequiredSourcesReadinessAcceptedRef = StreamProviderRef<bool>;
 String _$requiredSourcesReadinessSchedulerHash() =>
-    r'd7b77663c88f05cef3a4807c17f00ee3f59d1ab3';
+    r'94f29d8ab6487f70d2657b6fc2735d3e608a22ad';
 
 /// Production composition root for the required-sources Presence Schedule.
 ///

@@ -10,6 +10,134 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.36] — 2026-08-15
+
+### Fixed
+
+- Existing installations can now adopt the truthful Messages-source onboarding
+  branches without redefining persisted FDA instruction Step 6302. Presence
+  history and active Trip checkpoints remain intact, and canonical definition
+  mutation is still rejected.
+
+## [0.2.35] — 2026-08-15
+
+### Fixed
+
+- Messages-source onboarding now enters Full Disk Access remediation only for
+  explicit permission-denial evidence. Missing, invalid, and otherwise
+  unusable sources receive calm source-specific guidance and a fresh retry.
+
+## [0.2.34] — 2026-08-15
+
+### Fixed
+
+- Automatic setup recovery now defers silently while another archive mutation
+  is active, rechecks current environment truth when mutation authority becomes
+  idle, and resumes only if recovery is still required. Denied work no longer
+  loops or briefly displays recovery progress before admission.
+
+## [0.2.33] — 2026-08-15
+
+### Fixed
+
+- Setup preparation and automatic-recovery failures now remain visible in the
+  current process with calm **Try Again** and support actions instead of
+  disappearing behind environment re-evaluation. Retry starts a fresh ordinary
+  setup attempt; refresh and restart still derive truth from current files and
+  probes.
+
+## [0.2.32] — 2026-08-15
+
+### Changed
+
+- Automatic setup recovery now uses calm, phase-neutral wording that explains
+  MessageLens found incomplete browsing data, is preparing another setup
+  attempt, and requires the human to wait. It no longer implies a previous
+  launch, broad local-data deletion, or an automatic setup restart.
+
+## [0.2.31] — 2026-08-14
+
+### Changed
+
+- Automatic setup recovery no longer exposes import-ledger, Conversation-
+  Graph, or projection heuristics in the ordinary recovery surface. The
+  diagnostic reason remains available to classification, logs, development
+  tooling, and support evidence; recovery behavior is unchanged.
+
+## [0.2.30] — 2026-08-14
+
+### Changed
+
+- Calendar heatmaps and Conversation activity glyphs now share a discrete,
+  two-regime activity scale: neutral greys distinguish sparse months, while
+  sustained activity progresses from yellow through green, teal, blue, and
+  deep purple. The complete legend now reflects the actual logarithmic-style
+  bins, and month selection preserves the encoded activity fill.
+
+## [0.2.29] — 2026-08-14
+
+### Changed
+
+- Stable setup failure screens now present only the failure orientation, retry
+  action, and **Send Report To Developer** action. The redundant pre-action
+  email/Finder explanation is gone, while report transport and all
+  result-specific feedback remain unchanged.
+
+## [0.2.28] — 2026-08-14
+
+### Changed
+
+- Stable setup failure screens no longer display the implementation-facing
+  **Environment summary**. Retry and support actions remain visible, all probe
+  and failure evidence remains in support reports, and readiness/FDA uses of
+  the summary are unchanged.
+
+## [0.2.27] — 2026-08-14
+
+### Changed
+
+- Stable setup failure screens no longer expose raw exceptions, timestamps,
+  unsupported phase/launch claims, or duplicate support instructions in a
+  **What to check** card. Diagnostic evidence remains available in support
+  reports, while retry and support actions are unchanged.
+
+## [0.2.26] — 2026-08-14
+
+### Changed
+
+- Stable setup failure screens now use one calm, phase-neutral heading and
+  explanation instead of asking the human to distinguish import from graph
+  preparation. Existing retry actions, support reporting, and diagnostic
+  details remain available and unchanged.
+
+## [0.2.25] — 2026-08-14
+
+### Fixed
+
+- Setup and direct-reimport progress now show one bounded, phase-neutral
+  failure headline during controller-to-Gate handoff instead of exposing raw
+  exception text. Full diagnostic errors remain available to logging,
+  persistence, and support reporting.
+
+## [0.2.24] — 2026-08-14
+
+### Changed
+
+- Successful initial setup and direct reimport now end with a calm
+  **MessageLens is ready** handoff instead of exposing import, projection, and
+  text-enrichment counters. The existing **Get Started** and **Done** actions
+  retain their behavior, and diagnostic build reports remain available outside
+  the primary completion surface.
+
+## [0.2.23] — 2026-08-14
+
+### Fixed
+
+- First-run setup now displays the existing **Preparing setup…** progress
+  surface while derived browsing data is reset, instead of leaving the import
+  action apparently idle. Reset failure restores the existing readiness
+  surface, and stale prior build results no longer mislabel preparation.
+
 ## [0.2.22] — 2026-08-14
 
 ### Changed

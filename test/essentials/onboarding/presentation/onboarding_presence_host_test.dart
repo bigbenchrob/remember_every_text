@@ -18,6 +18,7 @@ import 'package:remember_this_text/essentials/presence/presentation/presence_ste
 void main() {
   late PresenceDatabase database;
   late _MutableTestAgent messagesAgent;
+  late _MutableTestAgent messagesAccessDeniedAgent;
   late _MutableTestAgent contactsAgent;
   late _MutableTestAgent historyAgent;
   late _RecordingFdaSettingsAuthority fdaSettingsAuthority;
@@ -25,6 +26,7 @@ void main() {
   setUp(() {
     database = PresenceDatabase(NativeDatabase.memory());
     messagesAgent = _MutableTestAgent(result: true);
+    messagesAccessDeniedAgent = _MutableTestAgent(result: false);
     contactsAgent = _MutableTestAgent(result: true);
     historyAgent = _MutableTestAgent(result: true);
     fdaSettingsAuthority = _RecordingFdaSettingsAuthority();
@@ -40,6 +42,7 @@ void main() {
     final scheduler = await _startScheduler(
       database: database,
       messagesAgent: messagesAgent,
+      messagesAccessDeniedAgent: messagesAccessDeniedAgent,
       contactsAgent: contactsAgent,
       historyAgent: historyAgent,
       fdaSettingsAuthority: fdaSettingsAuthority,
@@ -66,6 +69,7 @@ void main() {
     final scheduler = await _startScheduler(
       database: database,
       messagesAgent: messagesAgent,
+      messagesAccessDeniedAgent: messagesAccessDeniedAgent,
       contactsAgent: contactsAgent,
       historyAgent: historyAgent,
       fdaSettingsAuthority: fdaSettingsAuthority,
@@ -97,6 +101,7 @@ void main() {
     final scheduler = await _startScheduler(
       database: database,
       messagesAgent: messagesAgent,
+      messagesAccessDeniedAgent: messagesAccessDeniedAgent,
       contactsAgent: contactsAgent,
       historyAgent: historyAgent,
       fdaSettingsAuthority: fdaSettingsAuthority,
@@ -121,9 +126,11 @@ void main() {
     tester,
   ) async {
     messagesAgent.result = false;
+    messagesAccessDeniedAgent.result = true;
     final scheduler = await _startScheduler(
       database: database,
       messagesAgent: messagesAgent,
+      messagesAccessDeniedAgent: messagesAccessDeniedAgent,
       contactsAgent: contactsAgent,
       historyAgent: historyAgent,
       fdaSettingsAuthority: fdaSettingsAuthority,
@@ -138,6 +145,15 @@ void main() {
       'On macOS, Apple calls this Full Disk Access.',
     );
     await _completeTell(tester);
+    await _pumpUntilText(
+      tester,
+      'In Full Disk Access, add or enable MessageLens Development. macOS may '
+      'ask you to quit and reopen the app after you make the change.',
+    );
+    expect(
+      find.textContaining('add or enable MessageLens Development.'),
+      findsOneWidget,
+    );
     await _completeTell(tester);
     await _pumpUntilText(tester, 'Open System Settings');
 
@@ -154,11 +170,41 @@ void main() {
       verifyMessagesSourceReadinessTripId,
     );
   });
+
+  testWidgets('non-FDA source failure presents no permission remediation', (
+    tester,
+  ) async {
+    messagesAgent.result = false;
+    messagesAccessDeniedAgent.result = false;
+    final scheduler = await _startScheduler(
+      database: database,
+      messagesAgent: messagesAgent,
+      messagesAccessDeniedAgent: messagesAccessDeniedAgent,
+      contactsAgent: contactsAgent,
+      historyAgent: historyAgent,
+      fdaSettingsAuthority: fdaSettingsAuthority,
+    );
+    await _pumpSurface(tester, scheduler);
+
+    await _completeTell(tester);
+    await _completeTell(tester);
+    await _pumpUntilText(
+      tester,
+      'MessageLens can’t currently use your Messages data. If Messages or its '
+      'local data changed recently, allow it to settle, then continue and I’ll '
+      'check again.',
+    );
+
+    expect(find.textContaining('Full Disk Access'), findsNothing);
+    expect(find.text('Open System Settings'), findsNothing);
+    expect(fdaSettingsAuthority.invocationCount, 0);
+  });
 }
 
 Future<PresenceScheduler> _startScheduler({
   required PresenceDatabase database,
   required TestAgent messagesAgent,
+  required TestAgent messagesAccessDeniedAgent,
   required TestAgent contactsAgent,
   required TestAgent historyAgent,
   required FdaSettingsOpeningAuthority fdaSettingsAuthority,
@@ -166,6 +212,7 @@ Future<PresenceScheduler> _startScheduler({
   final resolver = ImmutableTestAgentResolver(
     buildOnboardingTestAgentBindings(
       messagesSourceReadinessTestAgent: messagesAgent,
+      messagesSourceAccessDeniedTestAgent: messagesAccessDeniedAgent,
       contactsSourceReadinessTestAgent: contactsAgent,
       messagesSourceHistorySufficiencyTestAgent: historyAgent,
     ),

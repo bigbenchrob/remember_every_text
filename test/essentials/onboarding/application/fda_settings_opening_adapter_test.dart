@@ -27,6 +27,10 @@ final class _FakeFullDiskAccess implements FullDiskAccess {
   bool canReadMessagesDatabase() => false;
 
   @override
+  MessagesSourceAccessResult inspectMessagesSourceAccess() =>
+      MessagesSourceAccessResult.accessDenied;
+
+  @override
   Future<void> openSettings() async {
     settingsInvocationCount += 1;
     if (failSettingsOpen) {

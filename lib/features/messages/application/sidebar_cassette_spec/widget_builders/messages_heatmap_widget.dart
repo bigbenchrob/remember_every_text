@@ -5,6 +5,7 @@ import 'package:macos_ui/macos_ui.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../config/theme/widgets/heatmap/activity_heatmap_color_scale.dart';
 import '../../../../../core/util/count_label_formatter.dart';
 import '../../../../../core/util/date_label_formatter.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
@@ -418,41 +419,29 @@ class MessageHeatmapLegend extends ConsumerWidget {
           label: '1-3',
           swatch: _DotLegendSwatch(color: colors.content.textTertiary),
         ),
-        const _LegendItem(label: '4-10', intensity: MonthIntensity.lightGray),
-        const _LegendItem(label: '11-30', intensity: MonthIntensity.mediumGray),
-        const _LegendItem(label: '31-50', intensity: MonthIntensity.darkGray),
-        const _LegendItem(label: '51-75', intensity: MonthIntensity.paleYellow),
-        const _LegendItem(
-          label: '76-100',
-          intensity: MonthIntensity.lightYellow,
-        ),
-        const _LegendItem(
-          label: '101-150',
-          intensity: MonthIntensity.mediumYellow,
-        ),
-        const _LegendItem(
-          label: '151-200',
-          intensity: MonthIntensity.darkYellow,
-        ),
-        const _LegendItem(
-          label: '201-500',
-          intensity: MonthIntensity.lightGreen,
-        ),
-        const _LegendItem(
-          label: '501-1K',
-          intensity: MonthIntensity.mediumGreen,
-        ),
-        const _LegendItem(label: '1K-2K', intensity: MonthIntensity.darkGreen),
+        const _LegendItem(label: '4-10', representativeCount: 4),
+        const _LegendItem(label: '11-30', representativeCount: 11),
+        const _LegendItem(label: '31-50', representativeCount: 31),
+        const _LegendItem(label: '51-100', representativeCount: 51),
+        const _LegendItem(label: '101-300', representativeCount: 101),
+        const _LegendItem(label: '301-1K', representativeCount: 301),
+        const _LegendItem(label: '1K-3K', representativeCount: 1001),
+        const _LegendItem(label: '3K-10K', representativeCount: 3001),
+        const _LegendItem(label: '10K+', representativeCount: 10001),
       ],
     );
   }
 }
 
 class _LegendItem extends ConsumerWidget {
-  const _LegendItem({required this.label, this.intensity, this.swatch});
+  const _LegendItem({
+    required this.label,
+    this.representativeCount,
+    this.swatch,
+  });
 
   final String label;
-  final MonthIntensity? intensity;
+  final int? representativeCount;
   final Widget? swatch;
 
   @override
@@ -462,7 +451,7 @@ class _LegendItem extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        swatch ?? _ColorLegendSwatch(intensity: intensity!),
+        swatch ?? _ColorLegendSwatch(messageCount: representativeCount!),
         const SizedBox(width: AppSpacing.xs),
         Text(label, style: typography.caption),
       ],
@@ -471,15 +460,15 @@ class _LegendItem extends ConsumerWidget {
 }
 
 class _ColorLegendSwatch extends StatelessWidget {
-  const _ColorLegendSwatch({required this.intensity});
+  const _ColorLegendSwatch({required this.messageCount});
 
-  final MonthIntensity intensity;
+  final int messageCount;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: calendarHeatmapColorForIntensity(intensity),
+        color: activityHeatmapColorForMessageCount(messageCount),
         borderRadius: BorderRadius.circular(2),
       ),
       child: const SizedBox(width: 10, height: 10),

@@ -2,7 +2,7 @@
 tier: project
 scope: presence-onboarding-consolidation
 owner: agent-per-project
-last_reviewed: 2026-08-14
+last_reviewed: 2026-08-15
 source_of_truth: doc
 links:
   - ../21-PRESENCE-ITERATION-SIMPLE/30-SYSTEM-BOUNDARIES.md
@@ -25,6 +25,30 @@ links:
   - 22-REMOVE-MISLEADING-ABORT-IMPORT-IMPLEMENTATION.md
   - 23-PRODUCTION-IMPORT-PROGRESS-SURFACE-AUDIT.md
   - 24-TRUTHFUL-KEEP-OPEN-PROGRESS-GUIDANCE-IMPLEMENTATION.md
+  - 25-PRE-OVERLAY-IMPORT-START-ACKNOWLEDGEMENT-AUDIT.md
+  - 26-PRE-RESET-PREPARATION-PROGRESS-IMPLEMENTATION.md
+  - 27-ATTACHMENT-PRESERVATION-SAFETY-INVARIANT.md
+  - 28-INITIAL-SETUP-COMPLETION-SURFACE-AUDIT.md
+  - 29-CALM-INITIAL-SETUP-COMPLETION-HANDOFF-IMPLEMENTATION.md
+  - 30-INITIAL-SETUP-FAILURE-RECOVERY-SURFACE-AUDIT.md
+  - 31-BOUNDED-ACTIVE-PROGRESS-FAILURE-HEADLINE-IMPLEMENTATION.md
+  - 32-PHASE-NEUTRAL-STABLE-SETUP-FAILURE-COPY-IMPLEMENTATION.md
+  - 33-FAILURE-DIAGNOSTIC-INFORMATION-HIERARCHY-AUDIT.md
+  - 34-REMOVE-WHAT-TO-CHECK-STABLE-FAILURE-IMPLEMENTATION.md
+  - 35-REMOVE-ENVIRONMENT-SUMMARY-STABLE-FAILURE-IMPLEMENTATION.md
+  - 36-REMOVE-SUPPORT-TRANSPORT-CAPTION-STABLE-FAILURE-IMPLEMENTATION.md
+  - 40-AUTOMATIC-RECOVERY-PRESENTATION-AUDIT.md
+  - 38-REMOVE-AUTOMATIC-RECOVERY-DIAGNOSTIC-REASON-IMPLEMENTATION.md
+  - 39-CALM-TRUTHFUL-AUTOMATIC-RECOVERY-COPY-IMPLEMENTATION.md
+  - 41-RECOVERY-AND-PRE-BUILD-FAILURE-STATE-AUDIT.md
+  - 50-PROCESS-LOCAL-ONBOARDING-PREPARATION-FAILURE-IMPLEMENTATION.md
+  - 51-AUTOMATIC-RECOVERY-MUTATION-BUSY-DEFERRAL-AUDIT.md
+  - 52-AUTOMATIC-RECOVERY-MUTATION-BUSY-DEFERRAL-IMPLEMENTATION.md
+  - 53-USER-INITIATED-SETUP-MUTATION-BUSY-FEEDBACK-AUDIT.md
+  - 54-END-TO-END-PRODUCTION-ONBOARDING-VALIDATION.md
+  - 55-TRUTHFUL-MESSAGES-SOURCE-VS-FDA-READINESS-IMPLEMENTATION.md
+  - 56-OBSERVED-ONBOARDING-STEP-REDEFINITION-BLOCKER-IMPLEMENTATION.md
+  - 57-PRESENCE-GUIDEBOOK-LIFECYCLE-HANDOFF.md
 tests: []
 ---
 
@@ -135,6 +159,123 @@ The consolidation has now:
   guidance to keep MessageLens open while confirming that other applications
   may be used. First-run and direct-reimport progress retain their existing
   coarse headlines, indeterminate activity, and non-cancellable behavior.
+- audited the remaining gap before that progress surface and established that
+  the Gate stays `awaitingUserAction` through admission, its current cached FDA
+  guard, and the complete destructive reset. The existing **Preparing setup…**
+  overlay can truthfully begin after admission/FDA readiness and before reset;
+  no new loading authority or persisted state is needed.
+- moved the existing first-run `importing` presentation ahead of derived-data
+  reset, so **Preparing setup…** now acknowledges admitted work while reset is
+  active. Reset failure restores readiness and rethrows, while Gate preparation
+  takes temporary presentation precedence over stale controller terminal state.
+- established archived attachment payloads as preservation data outside every
+  ordinary reset/reimport/recovery boundary, documented the current reset
+  allow-list, and added tripwires against broad directory deletion or preserved
+  store authority.
+- audited the initial-setup completion surface and established that the human
+  primarily needs readiness rather than import/projection diagnostics. The
+  preferred next slice is one calm readiness handoff with the existing explicit
+  action and without primary metric chips; completion remains transient and
+  attachment archival completeness remains outside its truth budget.
+- replaced the production diagnostic completion body with **MessageLens is
+  ready**, one bounded local-browsing-data statement, and the unchanged **Get
+  Started** / **Done** handoff. Technical counts remain available to diagnostics
+  and the development panel; completion durability and operation behavior are
+  unchanged.
+- audited every current setup failure and recovery boundary, including
+  uncaught admission/reset errors, caught controller errors, abrupt termination,
+  automatic cleanup, retry, and support-report export. The audit establishes
+  that existing coarse operation truth is enough for a calm primary failure
+  surface and recommends one next slice: prevent raw controller exceptions from
+  becoming the active-progress headline.
+- replaced that transient raw exception headline with the fixed, phase-neutral
+  statement **MessageLens couldn't finish preparing browsing data.** First-run
+  setup and direct reimport now share the bounded presentation while raw error
+  evidence remains unchanged in controller state and diagnostics.
+- unified the stable import- and graph-failure primary narratives as
+  **MessageLens couldn't finish setup** with one bounded retry explanation.
+  Persistence buckets, branch-specific retry labels, support reporting, raw
+  diagnostic notes, and all operation mechanics remain unchanged.
+- audited every secondary item still shown on the stable failure surface and
+  established **calm primary + secondary support** as the preferred hierarchy.
+  Raw errors, timestamps, environment probes, and internal store facts already
+  survive in support diagnostics and do not select a different human action;
+  the next bounded slice is removal of the misleading **What to check** card
+  from the two stable failure branches without adding Technical Details.
+- removed that **What to check** card from the stable import- and graph-failure
+  branches without changing persistence, support reporting, Environment
+  Summary, retry, recovery, reset, or attachment preservation. The reduced
+  surface now fits the existing overlay at default test typography without a
+  scrolling or geometry workaround.
+- removed **Environment summary** from only the stable import- and graph-
+  failure branches. All report/probe evidence, retry and support behavior, and
+  every other Environment Summary use remain unchanged; the stable surface
+  still fits at default typography without a geometry workaround.
+- removed the pre-action email/Finder transport caption from those stable
+  failures while preserving **Send Report To Developer**, report generation,
+  and all result-specific post-action feedback. The ordinary reading order is
+  now limited to human orientation and the two supported actions.
+- audited automatic-recovery presentation, removed its diagnostic reason card,
+  and replaced unsupported prior-attempt and broad deletion language with calm,
+  bounded browsing-data preparation copy while preserving recovery mechanics.
+- audited failures around admission, pre-build reset, automatic recovery,
+  direct reimport, and explicit Settings reset. The audit distinguishes
+  prerequisite blocking, busy denial, other pre-action admission failure, and
+  admitted reset failure; recommends one process-local Onboarding preparation-
+  failure state as the next slice; and leaves filesystem probes as the sole
+  durable restart authority.
+- implemented that process-local preparation-failure state for admitted first-
+  run reset failure, admitted automatic-recovery reset failure, and non-
+  contention automatic-recovery admission error. Retry reuses the ordinary
+  setup entry point, refresh/restart restore environment authority, and FDA,
+  busy denial, controller persistence, Settings reset, Presence, and attachment
+  preservation remain unchanged.
+- audited automatic-recovery mutation contention and proved that the current
+  denial/self-invalidation path can immediately retry from the same unchanged
+  report. The coordinator already publishes the required locked-to-idle seam;
+  the next bounded slice should defer inside the Gate, re-probe environment
+  truth on release, and publish recovery only after admission, without timers,
+  queueing, persistence, new status, or human-facing busy UI.
+- implemented event-driven automatic-recovery deferral. Busy denial now waits
+  silently for a real locked-to-idle transition, invalidates Environment
+  Readiness, rejects Riverpod's retained refreshing value as stale, and acts
+  only on the completed fresh report. Recovery presentation begins only after
+  admission; timers, queues, persistence, status/UI additions, reset changes,
+  and mutation-policy changes remain absent.
+- validated the real production onboarding composition and realistic automated
+  journeys end to end. Ordinary debug and release composition now reach the
+  real Gate and authored Onboarding Schedule; the Presence harness is explicit
+  opt-in tooling. Validation found one remaining P1: a missing or invalid
+  Messages source is represented as FDA denial and can loop on incorrect
+  permission guidance. No production archive was used.
+- corrected that P1 by preserving explicit filesystem access-denial evidence,
+  projecting one bounded specialist result through adjacent generic Boolean
+  TestAgents, and routing every non-FDA failure to calm source-unavailable
+  guidance. Retry performs a fresh protected read, and Gate, history Choice,
+  reset, recovery, and attachment behavior remain unchanged.
+- corrected the production-observed Step 6302 installation blocker without
+  resetting Presence state or weakening definition immutability. The authored
+  Schedule again matches Step 6302's persisted Tell payload; the exact
+  historical fixture, active FDA checkpoint, additive Slice 55 Trips, and
+  genuine-redefinition rejection are now protected by focused tests.
+
+## Package Closure
+
+Feature Addition 23 has reached a natural architectural boundary. The
+production-observed Step 6302 conflict challenged the premise that normal
+runtime should reconcile a second Dart-authored guidebook against persisted
+definitions record by record.
+
+The [guidebook lifecycle handoff](57-PRESENCE-GUIDEBOOK-LIFECYCLE-HANDOFF.md)
+records the agreed next direction: `presence.db` is the installed runtime
+guidebook authority; Presence state may be durable within one guidebook
+generation and disposable when that generation changes; Onboarding remains
+ignorant of Schedule, Trip, Step, occurrence, and routing geometry.
+
+Guidebook installation, generation/replacement, runtime definition authority,
+removal of runtime reconciliation, and cross-version Presence-state policy now
+belong to a new sibling feature addition. This package may receive factual
+corrections, but it is no longer the working home for that architecture.
 
 > The generic Boolean Test architecture is complete. Read the
 > [consolidation audit](09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md) for the
@@ -177,6 +318,30 @@ The completed slices do not:
 - [Remove misleading Abort Import implementation](22-REMOVE-MISLEADING-ABORT-IMPORT-IMPLEMENTATION.md)
 - [Production import progress surface audit](23-PRODUCTION-IMPORT-PROGRESS-SURFACE-AUDIT.md)
 - [Truthful keep-open progress guidance implementation](24-TRUTHFUL-KEEP-OPEN-PROGRESS-GUIDANCE-IMPLEMENTATION.md)
+- [Pre-overlay import-start acknowledgement audit](25-PRE-OVERLAY-IMPORT-START-ACKNOWLEDGEMENT-AUDIT.md)
+- [Pre-reset preparation progress implementation](26-PRE-RESET-PREPARATION-PROGRESS-IMPLEMENTATION.md)
+- [Attachment preservation safety invariant](27-ATTACHMENT-PRESERVATION-SAFETY-INVARIANT.md)
+- [Initial setup completion surface audit](28-INITIAL-SETUP-COMPLETION-SURFACE-AUDIT.md)
+- [Calm initial setup completion handoff implementation](29-CALM-INITIAL-SETUP-COMPLETION-HANDOFF-IMPLEMENTATION.md)
+- [Initial setup failure and recovery surface audit](30-INITIAL-SETUP-FAILURE-RECOVERY-SURFACE-AUDIT.md)
+- [Bounded active-progress failure headline implementation](31-BOUNDED-ACTIVE-PROGRESS-FAILURE-HEADLINE-IMPLEMENTATION.md)
+- [Phase-neutral stable setup failure copy implementation](32-PHASE-NEUTRAL-STABLE-SETUP-FAILURE-COPY-IMPLEMENTATION.md)
+- [Failure diagnostic information hierarchy audit](33-FAILURE-DIAGNOSTIC-INFORMATION-HIERARCHY-AUDIT.md)
+- [Remove What to check from stable failure implementation](34-REMOVE-WHAT-TO-CHECK-STABLE-FAILURE-IMPLEMENTATION.md)
+- [Remove Environment Summary from stable failure implementation](35-REMOVE-ENVIRONMENT-SUMMARY-STABLE-FAILURE-IMPLEMENTATION.md)
+- [Remove support transport caption from stable failure implementation](36-REMOVE-SUPPORT-TRANSPORT-CAPTION-STABLE-FAILURE-IMPLEMENTATION.md)
+- [Automatic recovery presentation audit](40-AUTOMATIC-RECOVERY-PRESENTATION-AUDIT.md)
+- [Remove automatic-recovery diagnostic reason implementation](38-REMOVE-AUTOMATIC-RECOVERY-DIAGNOSTIC-REASON-IMPLEMENTATION.md)
+- [Calm, truthful automatic-recovery copy implementation](39-CALM-TRUTHFUL-AUTOMATIC-RECOVERY-COPY-IMPLEMENTATION.md)
+- [Recovery and pre-build failure state audit](41-RECOVERY-AND-PRE-BUILD-FAILURE-STATE-AUDIT.md)
+- [Process-local Onboarding preparation failure implementation](50-PROCESS-LOCAL-ONBOARDING-PREPARATION-FAILURE-IMPLEMENTATION.md)
+- [Automatic recovery mutation-busy deferral audit](51-AUTOMATIC-RECOVERY-MUTATION-BUSY-DEFERRAL-AUDIT.md)
+- [Automatic recovery mutation-busy deferral implementation](52-AUTOMATIC-RECOVERY-MUTATION-BUSY-DEFERRAL-IMPLEMENTATION.md)
+- [User-initiated setup mutation-busy feedback audit](53-USER-INITIATED-SETUP-MUTATION-BUSY-FEEDBACK-AUDIT.md)
+- [End-to-end production onboarding validation](54-END-TO-END-PRODUCTION-ONBOARDING-VALIDATION.md)
+- [Truthful Messages source vs FDA readiness implementation](55-TRUTHFUL-MESSAGES-SOURCE-VS-FDA-READINESS-IMPLEMENTATION.md)
+- [Observed Onboarding Step-redefinition blocker implementation](56-OBSERVED-ONBOARDING-STEP-REDEFINITION-BLOCKER-IMPLEMENTATION.md)
+- [Presence guidebook lifecycle handoff](57-PRESENCE-GUIDEBOOK-LIFECYCLE-HANDOFF.md)
 
 Prompts are retained under [`prompts/`](prompts/). Future response artifacts
 may be collected under [`responses/`](responses/README.md).

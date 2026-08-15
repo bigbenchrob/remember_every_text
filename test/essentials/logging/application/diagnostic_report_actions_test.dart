@@ -82,9 +82,14 @@ void main() {
     expect(headerLines, contains('Context: onboarding_failure'));
     expect(headerLines, contains('State: graphProjectionFailed'));
     expect(headerLines, contains('Blocker: graphProjectionFailed'));
+    expect(headerLines, contains('Import failure: import failed'));
     expect(
       headerLines,
       contains('Graph projection failure: foreign key failed'),
+    );
+    expect(
+      headerLines,
+      contains('Failure recorded at: 2026-04-14T12:00:00.000Z'),
     );
     expect(
       headerLines,

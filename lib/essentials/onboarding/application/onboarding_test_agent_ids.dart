@@ -4,6 +4,10 @@ final TestAgentId messagesSourceReadableTestAgentId = TestAgentId(
   'onboarding.messages-source-readable',
 );
 
+final TestAgentId messagesSourceAccessDeniedTestAgentId = TestAgentId(
+  'onboarding.messages-source-access-denied',
+);
+
 final TestAgentId contactsSourceReadableTestAgentId = TestAgentId(
   'onboarding.contacts-source-readable',
 );

@@ -1137,6 +1137,27 @@ void main() {
     );
 
     test(
+      'production app composition is the debug default and the Presence harness is opt-in',
+      () async {
+        final source = await File('lib/main.dart').readAsString();
+
+        expect(
+          source,
+          contains(
+            'const bool _presenceDevelopmentHarnessEnabled = '
+            'bool.fromEnvironment(',
+          ),
+        );
+        expect(source, contains("'PRESENCE_DEVELOPMENT_HARNESS'"));
+        expect(
+          source,
+          contains('if (kDebugMode && _presenceDevelopmentHarnessEnabled)'),
+        );
+        expect(source, contains('final router = ref.watch(goRouterProvider)'));
+      },
+    );
+
+    test(
       'production Presence composition uses only real Onboarding Agents',
       () async {
         final source = await File(
@@ -6880,6 +6901,26 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Message data reset allow-list excludes preservation data and broad deletion',
+      () async {
+        final offenders =
+            await _findMessageDataResetPreservationInvariantOffenders();
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Derived message-data reset must name only the four approved '
+              'rebuildable/retired database files. It must not gain overlay, '
+              'Presence, attachment-archive, directory-enumeration, or recursive '
+              'deletion authority. Destructive reset allow-lists what is safe to '
+              'delete; it never deletes a broad root and spares preservation data '
+              'by exception.\nActual offenders:\n${offenders.join('\n')}',
+        );
+      },
+    );
 
     test(
       'Historical archive source identity uses folder resolver boundary',
@@ -13679,6 +13720,62 @@ _findMessageDataResetDatabaseCategoryBoundaryOffenders() async {
   }
   if (publicDatabaseBaseNameGetterPattern.hasMatch(uncommented)) {
     offenders.add('$filePath exposes public reset database base-name lists');
+  }
+
+  return offenders..sort();
+}
+
+Future<List<String>>
+_findMessageDataResetPreservationInvariantOffenders() async {
+  const resetServicePath =
+      'lib/essentials/onboarding/application/message_data_reset_service.dart';
+  const resetFileStorePath =
+      'lib/essentials/onboarding/infrastructure/persistence/filesystem_derived_message_data_file_store.dart';
+  const expectedResetDatabaseCategories = <String>{
+    'sourceScopedImport',
+    'conversationGraph',
+    'retiredMacosImport',
+    'retiredWorking',
+  };
+  final offenders = <String>[];
+
+  final resetServiceFile = File(resetServicePath);
+  if (!resetServiceFile.existsSync()) {
+    offenders.add('$resetServicePath is missing');
+  } else {
+    final uncommented = _stripComments(await resetServiceFile.readAsString());
+    final actualCategories = RegExp(
+      r'AppDatabaseFile\.(\w+)',
+    ).allMatches(uncommented).map((match) => match.group(1)!).toSet();
+    if (!actualCategories.containsAll(expectedResetDatabaseCategories) ||
+        !expectedResetDatabaseCategories.containsAll(actualCategories)) {
+      offenders.add(
+        '$resetServicePath reset categories are $actualCategories; expected '
+        '$expectedResetDatabaseCategories',
+      );
+    }
+    if (uncommented.contains('attachmentArchiveDirectoryProvider') ||
+        uncommented.contains("'attachment_archive'") ||
+        uncommented.contains('AppDatabaseFile.overlay') ||
+        uncommented.contains('AppDatabaseFile.presence')) {
+      offenders.add('$resetServicePath gained preservation-store authority');
+    }
+  }
+
+  final resetFileStoreFile = File(resetFileStorePath);
+  if (!resetFileStoreFile.existsSync()) {
+    offenders.add('$resetFileStorePath is missing');
+  } else {
+    final uncommented = _stripComments(await resetFileStoreFile.readAsString());
+    if (RegExp(r'\bDirectory\s*\(').hasMatch(uncommented) ||
+        uncommented.contains('.list(') ||
+        uncommented.contains('recursive: true')) {
+      offenders.add('$resetFileStorePath performs broad directory deletion');
+    }
+    if (uncommented.contains('attachmentArchiveDirectoryProvider') ||
+        uncommented.contains("'attachment_archive'")) {
+      offenders.add('$resetFileStorePath gained attachment archive authority');
+    }
   }
 
   return offenders..sort();

@@ -21,6 +21,9 @@ Future<PresenceScheduleRepository> requiredSourcesReadinessRepository(
   Ref ref,
 ) async {
   final messagesAgent = ref.watch(realMessagesSourceReadinessTestAgentProvider);
+  final messagesAccessDeniedAgent = ref.watch(
+    realMessagesSourceAccessDeniedTestAgentProvider,
+  );
   final contactsAgent = await ref.watch(
     realContactsSourceReadinessTestAgentProvider.future,
   );
@@ -33,6 +36,7 @@ Future<PresenceScheduleRepository> requiredSourcesReadinessRepository(
   final resolver = ImmutableTestAgentResolver(
     buildOnboardingTestAgentBindings(
       messagesSourceReadinessTestAgent: messagesAgent,
+      messagesSourceAccessDeniedTestAgent: messagesAccessDeniedAgent,
       contactsSourceReadinessTestAgent: contactsAgent,
       messagesSourceHistorySufficiencyTestAgent: messagesHistoryAgent,
     ),
@@ -62,6 +66,9 @@ Future<PresenceScheduler> requiredSourcesReadinessScheduler(Ref ref) async {
     requiredSourcesReadinessRepositoryProvider.future,
   );
   final messagesAgent = ref.watch(realMessagesSourceReadinessTestAgentProvider);
+  final messagesAccessDeniedAgent = ref.watch(
+    realMessagesSourceAccessDeniedTestAgentProvider,
+  );
   final contactsAgent = await ref.watch(
     realContactsSourceReadinessTestAgentProvider.future,
   );
@@ -74,6 +81,7 @@ Future<PresenceScheduler> requiredSourcesReadinessScheduler(Ref ref) async {
   final resolver = ImmutableTestAgentResolver(
     buildOnboardingTestAgentBindings(
       messagesSourceReadinessTestAgent: messagesAgent,
+      messagesSourceAccessDeniedTestAgent: messagesAccessDeniedAgent,
       contactsSourceReadinessTestAgent: contactsAgent,
       messagesSourceHistorySufficiencyTestAgent: messagesHistoryAgent,
     ),

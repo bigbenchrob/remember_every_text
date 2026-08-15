@@ -397,6 +397,18 @@ concrete Steps
 The result is an immutable domain description assembled from normalized
 relational rows.
 
+### Canonical definitions are immutable
+
+A persisted definition ID is semantic identity, not a slot for the latest
+authored content. Reinstalling the same ID with the same meaning is safe;
+changing its type, name, or subtype payload is a redefinition and must fail.
+
+Additive evolution instead uses new definition identities and new occurrences,
+or the repository's explicitly bounded reconciliation rules for placement and
+Schedule-local Test routes. This keeps old runs, checkpoints, and trace
+interpretable. A copy edit to a Tell is a semantic definition change even when
+its Trip placement is unchanged.
+
 ---
 
 ## Why Definitions And Placements Are Separate

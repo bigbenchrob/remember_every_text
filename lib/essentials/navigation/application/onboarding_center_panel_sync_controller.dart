@@ -160,6 +160,7 @@ String _describeCenterSpec(ViewSpec? spec) {
 bool _usesBlockingOverlay(OnboardingStatus status) {
   return switch (status) {
     OnboardingStatus.recoveringFailedAttempt ||
+    OnboardingStatus.preparationFailed ||
     OnboardingStatus.importing ||
     OnboardingStatus.buildingGraph ||
     OnboardingStatus.complete ||

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../../conversation_graph/application/monitor/chat_db_source_probe_reader.dart';
 import '../../application/full_disk_access.dart';
 
 class MacosFullDiskAccess implements FullDiskAccess {
@@ -27,14 +28,23 @@ class MacosFullDiskAccess implements FullDiskAccess {
   }
 
   @override
-  bool canReadMessagesDatabase() {
+  MessagesSourceAccessResult inspectMessagesSourceAccess() {
     try {
       _messagesDatabaseReadProbe(messagesDatabasePath);
-      return true;
+      return MessagesSourceAccessResult.readable;
     } catch (error, stackTrace) {
       _onReadFailure?.call(error, stackTrace);
-      return false;
+      if (error is ChatDbSourceProbeException &&
+          error.kind == ChatDbSourceProbeFailureKind.accessDenied) {
+        return MessagesSourceAccessResult.accessDenied;
+      }
+      return MessagesSourceAccessResult.unavailable;
     }
+  }
+
+  @override
+  bool canReadMessagesDatabase() {
+    return inspectMessagesSourceAccess() == MessagesSourceAccessResult.readable;
   }
 
   @override

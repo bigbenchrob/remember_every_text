@@ -30,6 +30,12 @@ const TripDefinitionId determineMessagesSourceHistorySufficiencyTripId =
     TripDefinitionId(308);
 const TripDefinitionId guideSparseMessagesSourceHistoryTripId =
     TripDefinitionId(309);
+const TripDefinitionId classifyMessagesSourceFailureTripId = TripDefinitionId(
+  310,
+);
+const TripDefinitionId guideUnavailableMessagesSourceTripId = TripDefinitionId(
+  311,
+);
 
 ScheduleDefinition buildRequiredSourcesReadinessDefinition({
   required TestAgentResolver testAgentResolver,
@@ -37,6 +43,9 @@ ScheduleDefinition buildRequiredSourcesReadinessDefinition({
 }) {
   final messagesSourceReadinessTestAgent = testAgentResolver.resolve(
     messagesSourceReadableTestAgentId,
+  );
+  final messagesSourceAccessDeniedTestAgent = testAgentResolver.resolve(
+    messagesSourceAccessDeniedTestAgentId,
   );
   final contactsSourceReadinessTestAgent = testAgentResolver.resolve(
     contactsSourceReadableTestAgentId,
@@ -84,7 +93,8 @@ ScheduleDefinition buildRequiredSourcesReadinessDefinition({
               testAgent: messagesSourceReadinessTestAgent,
               trueDestinationTripDefinitionId:
                   determineContactsSourceReadinessTripId,
-              falseDestinationTripDefinitionId: null,
+              falseDestinationTripDefinitionId:
+                  classifyMessagesSourceFailureTripId,
             ),
           ],
         ),
@@ -140,7 +150,7 @@ ScheduleDefinition buildRequiredSourcesReadinessDefinition({
               testAgent: messagesSourceReadinessTestAgent,
               trueDestinationTripDefinitionId: null,
               falseDestinationTripDefinitionId:
-                  guideUnreadableMessagesSourceTripId,
+                  classifyMessagesSourceFailureTripId,
             ),
           ],
         ),
@@ -260,7 +270,7 @@ ScheduleDefinition buildRequiredSourcesReadinessDefinition({
       ),
       ScheduleTripDefinition(
         occurrenceId: 6107,
-        position: 8,
+        position: 10,
         trip: TripDefinition(
           id: confirmRequiredSourcesReadableTripId,
           name: 'required_sources_confirmation',
@@ -271,6 +281,50 @@ ScheduleDefinition buildRequiredSourcesReadinessDefinition({
               text:
                   'MessageLens can read the local Messages and Contacts '
                   'information it needs.',
+            ),
+          ],
+        ),
+      ),
+      ScheduleTripDefinition(
+        occurrenceId: 6110,
+        position: 8,
+        trip: TripDefinition(
+          id: classifyMessagesSourceFailureTripId,
+          name: 'classify_messages_source_failure',
+          steps: <Step>[
+            TestStep(
+              id: 7001,
+              name: 'test_messages_source_access_denied',
+              testAgentId: messagesSourceAccessDeniedTestAgentId,
+              testAgent: messagesSourceAccessDeniedTestAgent,
+              trueDestinationTripDefinitionId:
+                  guideUnreadableMessagesSourceTripId,
+              falseDestinationTripDefinitionId:
+                  guideUnavailableMessagesSourceTripId,
+            ),
+          ],
+        ),
+      ),
+      ScheduleTripDefinition(
+        occurrenceId: 6111,
+        position: 9,
+        trip: TripDefinition(
+          id: guideUnavailableMessagesSourceTripId,
+          name: 'guide_unavailable_messages_source',
+          steps: const <Step>[
+            TellStep(
+              id: 7101,
+              name: 'explain_unavailable_messages_source',
+              text:
+                  'MessageLens can’t currently use your Messages data. If '
+                  'Messages or its local data changed recently, allow it to '
+                  'settle, then continue and I’ll check again.',
+            ),
+            FixedDestinationStep(
+              id: 7102,
+              name: 'retry_messages_source_readiness',
+              destinationTripDefinitionId:
+                  determineInitialMessagesSourceReadinessTripId,
             ),
           ],
         ),

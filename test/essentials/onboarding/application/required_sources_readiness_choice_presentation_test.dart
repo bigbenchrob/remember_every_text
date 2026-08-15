@@ -19,6 +19,7 @@ void main() {
     final resolver = ImmutableTestAgentResolver(
       buildOnboardingTestAgentBindings(
         messagesSourceReadinessTestAgent: agent,
+        messagesSourceAccessDeniedTestAgent: agent,
         contactsSourceReadinessTestAgent: agent,
         messagesSourceHistorySufficiencyTestAgent: agent,
       ),

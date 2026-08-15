@@ -32,6 +32,7 @@ void main() {
     resolver = ImmutableTestAgentResolver(
       buildOnboardingTestAgentBindings(
         messagesSourceReadinessTestAgent: messagesAgent,
+        messagesSourceAccessDeniedTestAgent: messagesAgent,
         contactsSourceReadinessTestAgent: contactsAgent,
         messagesSourceHistorySufficiencyTestAgent: historyAgent,
       ),
@@ -47,6 +48,7 @@ void main() {
     );
     previousDefinition = _buildPreviousDefinition(
       target: targetDefinition,
+      messagesAgent: messagesAgent,
       contactsAgent: contactsAgent,
     );
     await repository.insertDefinition(previousDefinition);
@@ -90,6 +92,111 @@ void main() {
     );
   });
 
+  test('preserves an active checkpoint in the historical FDA Trip', () async {
+    messagesAgent.result = false;
+    var scheduler = await _startScheduler(repository);
+    await _completeIntroduction(scheduler);
+    await scheduler.completeCurrentStep();
+    expect(scheduler.run?.currentTripOccurrenceId, 6103);
+    expect(
+      scheduler.currentTrip?.definition.id,
+      guideUnreadableMessagesSourceTripId,
+    );
+    final runId = scheduler.run!.id;
+
+    await repository.installOrExtendDefinition(targetDefinition);
+    scheduler = await _startScheduler(repository);
+
+    expect(scheduler.run?.id, runId);
+    expect(scheduler.run?.currentTripOccurrenceId, 6103);
+    expect(
+      (_stepById(targetDefinition, 6302) as TellStep).text,
+      contains('Development'),
+    );
+    await scheduler.completeCurrentStep();
+    await scheduler.completeCurrentStep();
+    await scheduler.completeCurrentStep();
+    expect(scheduler.run?.currentTripOccurrenceId, 6104);
+    expect(
+      scheduler.currentTrip?.definition.id,
+      verifyMessagesSourceReadinessTripId,
+    );
+  });
+
+  test(
+    'extends the exact pre-Slice-55 definition without redefining Step 6302',
+    () async {
+      final before = await repository.loadDefinition(
+        requiredSourcesReadinessScheduleId,
+      );
+      final historicalStep = _stepById(before, 6302) as TellStep;
+      expect(
+        historicalStep.text,
+        'In Full Disk Access, add or enable MessageLens Development. '
+        'macOS may ask you to quit and reopen the app after you make the '
+        'change.',
+      );
+
+      await repository.installOrExtendDefinition(targetDefinition);
+
+      final extended = await repository.loadDefinition(
+        requiredSourcesReadinessScheduleId,
+      );
+      final preservedStep = _stepById(extended, 6302) as TellStep;
+      expect(preservedStep.text, historicalStep.text);
+      expect(
+        extended.trips.map((scheduledTrip) => scheduledTrip.trip.id),
+        containsAll(<TripDefinitionId>[
+          classifyMessagesSourceFailureTripId,
+          guideUnavailableMessagesSourceTripId,
+        ]),
+      );
+      expect(_stepById(extended, 7001), isA<TestStep>());
+      expect(_stepById(extended, 7101), isA<TellStep>());
+    },
+  );
+
+  test('still rejects a genuine semantic redefinition of Step 6302', () async {
+    await repository.installOrExtendDefinition(targetDefinition);
+    final redefined = _replaceStep(
+      definition: targetDefinition,
+      tripId: guideUnreadableMessagesSourceTripId,
+      replacement: const TellStep(
+        id: 6302,
+        name: 'explain_required_sources_full_disk_access_action',
+        text: 'A different instruction under the same canonical identity.',
+      ),
+    );
+
+    await expectLater(
+      repository.installOrExtendDefinition(redefined),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('Existing Step 6302'),
+        ),
+      ),
+    );
+
+    final preserved = await repository.loadDefinition(
+      requiredSourcesReadinessScheduleId,
+    );
+    expect(
+      (_stepById(preserved, 6302) as TellStep).text,
+      contains('Development'),
+    );
+  });
+
+  test('accepts an identical current definition after extension', () async {
+    await repository.installOrExtendDefinition(targetDefinition);
+
+    await expectLater(
+      repository.installOrExtendDefinition(targetDefinition),
+      completes,
+    );
+  });
+
   test('preserves the old confirmation occurrence and its meaning', () async {
     var scheduler = await _startScheduler(repository);
     await _completeIntroduction(scheduler);
@@ -114,7 +221,7 @@ void main() {
       scheduler.currentTrip?.definition.id,
       confirmRequiredSourcesReadableTripId,
     );
-    expect(confirmationOccurrence.position, 8);
+    expect(confirmationOccurrence.position, 10);
   });
 
   test('does not reopen a completed old run', () async {
@@ -146,18 +253,18 @@ void main() {
         ),
         ScheduleTripDefinition(
           occurrenceId: 6107,
-          position: 8,
+          position: 10,
           trip: TripDefinition(
-            id: const TripDefinitionId(310),
+            id: const TripDefinitionId(999),
             name: 'invalid_replacement_trip',
             steps: const <Step>[
-              TellStep(id: 7001, name: 'invalid_replacement', text: 'Invalid.'),
+              TellStep(id: 9991, name: 'invalid_replacement', text: 'Invalid.'),
             ],
           ),
         ),
         ScheduleTripDefinition(
-          occurrenceId: 6110,
-          position: 9,
+          occurrenceId: 6199,
+          position: 11,
           trip: confirmation.trip,
         ),
       ];
@@ -184,13 +291,16 @@ void main() {
 
 ScheduleDefinition _buildPreviousDefinition({
   required ScheduleDefinition target,
+  required TestAgent messagesAgent,
   required TestAgent contactsAgent,
 }) {
   final trips = <ScheduleTripDefinition>[];
   for (final scheduledTrip in target.trips) {
     if (scheduledTrip.trip.id ==
             determineMessagesSourceHistorySufficiencyTripId ||
-        scheduledTrip.trip.id == guideSparseMessagesSourceHistoryTripId) {
+        scheduledTrip.trip.id == guideSparseMessagesSourceHistoryTripId ||
+        scheduledTrip.trip.id == classifyMessagesSourceFailureTripId ||
+        scheduledTrip.trip.id == guideUnavailableMessagesSourceTripId) {
       continue;
     }
     if (scheduledTrip.trip.id == determineContactsSourceReadinessTripId) {
@@ -217,6 +327,82 @@ ScheduleDefinition _buildPreviousDefinition({
       );
       continue;
     }
+    if (scheduledTrip.trip.id ==
+        determineInitialMessagesSourceReadinessTripId) {
+      trips.add(
+        ScheduleTripDefinition(
+          occurrenceId: scheduledTrip.occurrenceId,
+          position: scheduledTrip.position,
+          trip: TripDefinition(
+            id: scheduledTrip.trip.id,
+            name: scheduledTrip.trip.name,
+            steps: <Step>[
+              TestStep(
+                id: 6201,
+                name: 'test_required_sources_initial_messages_readiness',
+                testAgentId: messagesSourceReadableTestAgentId,
+                testAgent: messagesAgent,
+                trueDestinationTripDefinitionId:
+                    determineContactsSourceReadinessTripId,
+                falseDestinationTripDefinitionId:
+                    guideUnreadableMessagesSourceTripId,
+              ),
+            ],
+          ),
+        ),
+      );
+      continue;
+    }
+    if (scheduledTrip.trip.id == verifyMessagesSourceReadinessTripId) {
+      trips.add(
+        ScheduleTripDefinition(
+          occurrenceId: scheduledTrip.occurrenceId,
+          position: scheduledTrip.position,
+          trip: TripDefinition(
+            id: scheduledTrip.trip.id,
+            name: scheduledTrip.trip.name,
+            steps: <Step>[
+              scheduledTrip.trip.steps.first,
+              TestStep(
+                id: 6402,
+                name: 'test_required_sources_messages_verification',
+                testAgentId: messagesSourceReadableTestAgentId,
+                testAgent: messagesAgent,
+                trueDestinationTripDefinitionId: null,
+                falseDestinationTripDefinitionId:
+                    guideUnreadableMessagesSourceTripId,
+              ),
+            ],
+          ),
+        ),
+      );
+      continue;
+    }
+    if (scheduledTrip.trip.id == guideUnreadableMessagesSourceTripId) {
+      trips.add(
+        ScheduleTripDefinition(
+          occurrenceId: scheduledTrip.occurrenceId,
+          position: scheduledTrip.position,
+          trip: TripDefinition(
+            id: scheduledTrip.trip.id,
+            name: scheduledTrip.trip.name,
+            steps: <Step>[
+              scheduledTrip.trip.steps.first,
+              const TellStep(
+                id: 6302,
+                name: 'explain_required_sources_full_disk_access_action',
+                text:
+                    'In Full Disk Access, add or enable '
+                    'MessageLens Development. macOS may ask you to quit and '
+                    'reopen the app after you make the change.',
+              ),
+              scheduledTrip.trip.steps.last,
+            ],
+          ),
+        ),
+      );
+      continue;
+    }
     trips.add(
       scheduledTrip.trip.id == confirmRequiredSourcesReadableTripId
           ? ScheduleTripDefinition(
@@ -228,6 +414,41 @@ ScheduleDefinition _buildPreviousDefinition({
     );
   }
   return ScheduleDefinition(id: target.id, name: target.name, trips: trips);
+}
+
+Step _stepById(ScheduleDefinition definition, int stepId) {
+  return definition.trips
+      .expand((scheduledTrip) => scheduledTrip.trip.steps)
+      .singleWhere((step) => step.id == stepId);
+}
+
+ScheduleDefinition _replaceStep({
+  required ScheduleDefinition definition,
+  required TripDefinitionId tripId,
+  required Step replacement,
+}) {
+  return ScheduleDefinition(
+    id: definition.id,
+    name: definition.name,
+    trips: definition.trips
+        .map((scheduledTrip) {
+          if (scheduledTrip.trip.id != tripId) {
+            return scheduledTrip;
+          }
+          return ScheduleTripDefinition(
+            occurrenceId: scheduledTrip.occurrenceId,
+            position: scheduledTrip.position,
+            trip: TripDefinition(
+              id: scheduledTrip.trip.id,
+              name: scheduledTrip.trip.name,
+              steps: scheduledTrip.trip.steps
+                  .map((step) => step.id == replacement.id ? replacement : step)
+                  .toList(growable: false),
+            ),
+          );
+        })
+        .toList(growable: false),
+  );
 }
 
 Future<PresenceScheduler> _startScheduler(

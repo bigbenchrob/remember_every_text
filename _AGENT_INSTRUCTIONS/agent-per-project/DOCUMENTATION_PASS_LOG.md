@@ -3866,3 +3866,647 @@ production preservation authority mechanically enforceable.
   Readiness tests, all 372 architecture tripwires, clean analysis and targeted
   formatting, `git diff --check`, and a successful debug macOS build without
   launching the app.
+
+---
+
+# 2026-08-14 - Audit pre-overlay import-start acknowledgement
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/25-PRE-OVERLAY-IMPORT-START-ACKNOWLEDGEMENT-AUDIT.md`
+  as a code-grounded trace from **Import My Messages** through admission, the
+  current FDA-readiness guard, destructive reset, Gate staging, and the first
+  progress frame.
+- Established that the meaningful invisible period is reset: the Environment
+  Readiness surface and enabled import action remain unchanged until reset has
+  completed.
+- Confirmed that button/action state does not acknowledge or serialize the
+  request; mutation exclusion currently comes from the coordinator, followed
+  later by the Gate guard and controller in-flight reuse.
+- Documented admission denial, FDA-false, and reset-throw boundaries and the
+  unwind requirements any earlier loading presentation must preserve.
+- Corrected the architectural description of the current FDA safety check: it
+  reads a cached keep-alive readiness provider and does not force a fresh source
+  probe in this path.
+- Compared button-local activity, the existing full overlay, and a separate
+  acknowledgement state. Recommended only the existing Gate-owned overlay.
+- Recommended exactly one next slice: publish the existing `importing` /
+  **Preparing setup…** state after admission and the FDA guard but before reset,
+  keep preparation copy independent of stale controller terminal state, and
+  clear the ephemeral override if reset throws.
+- Kept direct reimport, production Reset Message Data, FDA freshness, reset
+  failure redesign, nested mutation policy, telemetry, cancellation,
+  persistence, and Presence outside the recommended slice.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, Gate ordering, reset, mutation policy, FDA behavior, controller,
+  persistence, or Presence was changed.
+
+---
+
+# 2026-08-14 - Codify attachment preservation as a hard invariant
+
+- Created
+  `25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md` as the
+  canonical statement that archived attachment payloads are MessageLens
+  preservation data and never ordinary reset, reimport, recovery, migration,
+  or cleanup targets.
+- Established the three explicit data categories: authoritative external
+  sources that are never our deletion target, rebuildable MessageLens derived
+  stores, and MessageLens preservation data that must be treated like gold.
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/27-ATTACHMENT-PRESERVATION-SAFETY-INVARIANT.md`
+  as the code-grounded implementation and audit record.
+- Audited first-run reset, direct reimport, automatic recovery, explicit
+  message-data reset, development reset, adoption/restore cleanup, migration,
+  test cleanup, and the dormant specialist archive-clearing API.
+- Confirmed that ordinary reset paths use a private basename allow-list for
+  four rebuildable database files and their SQLite sidecars; they do not walk
+  directories or target the attachment archive, overlay, Presence, or
+  preferences data.
+- Recorded `ArchiveSettings.clearArchive()` as a dormant specialist destructive
+  capability with no active caller, not as permission for ordinary reset or
+  recovery code to delete preservation data.
+- Added a production-shaped filesystem regression proving derived databases
+  are removed while a nested binary archived payload and durable sibling stores
+  remain byte-for-byte unchanged.
+- Added an architecture tripwire that fixes the reset allow-list to the four
+  approved derived-store categories and rejects archive references, broad
+  directory traversal, and recursive deletion in the reset boundary.
+- Cross-referenced the invariant from project database/data-location guidance,
+  the Onboarding and Archive package, pipeline invariants, feature-package
+  navigation, and `AGENTS.md`.
+- Verified the focused filesystem preservation tests, 35 focused archive and
+  onboarding tests, all 373 architecture tripwires, clean Flutter analysis,
+  targeted formatting, and `git diff --check`.
+- No runtime behavior, database schema, archive payload, source database,
+  production data, reset ordering, recovery behavior, migration behavior, or
+  Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Show first-run preparation during derived-data reset
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/26-PRE-RESET-PREPARATION-PROGRESS-IMPLEMENTATION.md`
+  as the implementation record for Audit 25's single recommended correction.
+- Moved the existing first-run `OnboardingStatus.importing` transition and
+  painted-frame wait after mutation admission and the current FDA guard but
+  before derived-data reset.
+- Reused the existing **Preparing setup…** blocking progress surface while
+  reset is pending; no new status, component, provider, copy, or persistence
+  was introduced.
+- Made first-run preparation presentation authoritative over stale terminal
+  graph-controller state, preserving an indeterminate indicator and preventing
+  old success or failure output from mislabelling a new attempt.
+- Added reset-failure unwind that clears preparation, restores the existing
+  readiness presentation, invalidates the environment report, and preserves
+  the original thrown error and stack trace.
+- Added focused coverage for pending reset, visible preparation, controller
+  non-start, duplicate starts, FDA false, reset failure, stale controller
+  success/failure, transition to active graph build, and ordinary completion.
+- Preserved mutation admission, FDA provider behavior, reset semantics,
+  attachment preservation, controller lifecycle, import/projection,
+  persistence, automatic recovery, direct reimport, Reset Message Data,
+  cancellation, and Presence behavior.
+- Updated package navigation, the Feature Addition index, changelog, and app
+  version to `0.2.23+41`.
+- Verified 20 focused tests, all 121 Onboarding, Environment Readiness, and
+  graph-controller tests, all 373 architecture tripwires, clean analysis and
+  formatting, `git diff --check`, and a successful debug macOS build without
+  launching the app or accessing the production archive.
+
+---
+
+# 2026-08-14 - Audit the initial setup completion surface
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/28-INITIAL-SETUP-COMPLETION-SURFACE-AUDIT.md`
+  as a code-grounded audit of the successful initial import and Conversation
+  Graph completion experience.
+- Traced controller success through the Gate's process-local `complete`
+  override, report-driven completion overlay, **Get Started** dismissal, and
+  database-derived ordinary startup after restart.
+- Recorded that **Get Started** commits no data and is a deliberate human
+  handoff rather than an operational completion requirement.
+- Inventoried and classified the current success icon, **Import Complete!**
+  heading, absent explanatory copy, three conditional report metrics, and the
+  **Get Started** / **Done** action distinction.
+- Defined the exact meanings of **Imported**, **Projected**, and **Text
+  enriched**, and concluded that their expected differences expose pipeline
+  architecture without giving an ordinary human useful reassurance.
+- Recommended calm human completion as the product philosophy and concluded
+  that primary completion metrics should be removed rather than replaced by an
+  unearned aggregate.
+- Established a completion truth budget that permits readiness and local
+  browsing-data claims while prohibiting implications of complete or permanent
+  attachment archival.
+- Recommended exactly one future implementation slice: replace the diagnostic
+  primary completion body with one shared calm readiness handoff while
+  retaining the existing success icon and context-appropriate action.
+- Updated the package start page and Feature Addition index. No application
+  code, operation lifecycle, completion persistence, Presence behavior,
+  failure/recovery behavior, attachment archival behavior, or metrics were
+  changed.
+
+---
+
+# 2026-08-14 - Implement the calm initial setup completion handoff
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/29-CALM-INITIAL-SETUP-COMPLETION-HANDOFF-IMPLEMENTATION.md`
+  as the implementation record for Audit 28's single recommended completion
+  correction.
+- Replaced the production **Import Complete!** heading with **MessageLens is
+  ready** and added the bounded supporting sentence **Your local browsing data
+  is prepared.**
+- Removed **Imported**, **Projected**, and **Text enriched** chips only from the
+  ordinary production completion surface. `ConversationGraphBuildReport`, its
+  counters and timings, logging, and the development Onboarding diagnostics
+  remain unchanged.
+- Retained the themed success icon, shared first-run/reimport completion
+  component, and existing **Get Started** / **Done** action distinction.
+- Added focused successful-report widget coverage proving the calm copy, icon,
+  action labels, absent primary metrics, absent archival-completeness claims,
+  and unchanged dismissal dispatch.
+- Extended the real Gate lifecycle coverage to prove both completion actions
+  still return the Gate to `notNeeded` and select the Messages sidebar.
+- Preserved process-local completion, database-derived restart readiness,
+  build/report semantics, failure/recovery, Presence, reimport operations, and
+  attachment archival behavior.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.24+42`.
+- Verified 22 focused completion and Gate tests, all 110 Onboarding tests, all
+  3 Conversation Graph build-controller tests, all 373 architecture tripwires,
+  clean Flutter analysis and formatting, `git diff --check`, and a successful
+  debug macOS build without launching the app or accessing the production
+  archive.
+
+---
+
+# 2026-08-14 - Audit initial setup failure and recovery presentation
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/30-INITIAL-SETUP-FAILURE-RECOVERY-SURFACE-AUDIT.md`
+  as a code-grounded audit of every materially different setup failure,
+  abrupt-termination, retry, and automatic-recovery path.
+- Established that mutation-admission and reset failures sit outside the
+  controller catch, while service resolution, all import/enrichment/join and
+  graph-projection stages, and post-build version publication currently share
+  one caught controller lifecycle.
+- Verified that every actively caught controller failure is persisted through
+  the coarse graph-projection key, so that record does not prove source import
+  completed or identify the failed stage.
+- Recorded that raw `ConversationGraphBuildState.lastError` can become the
+  active-progress headline during failure handoff and can remain there
+  indefinitely if durable failure recording fails.
+- Inventoried the exact import-failure, graph-failure, automatic-recovery, and
+  report-export content, including timestamps, raw errors, technical reset
+  reasons, retry labels, and support-bundle behavior.
+- Identified unsupported copy that infers completed import, graph-specific
+  failure, or a previous-launch origin from evidence that proves none of those
+  things.
+- Confirmed that retry always starts with allow-listed derived-store reset and
+  reruns the complete build rather than resuming, while preserving overlay data,
+  preferences, and archived attachment payloads.
+- Recommended calm human truth with secondary diagnostics as the long-term
+  hierarchy and concluded that no richer failure taxonomy is needed for a
+  truthful primary surface.
+- Recommended exactly one next implementation slice: replace the transient raw
+  controller-error headline with a fixed phase-neutral human statement while
+  preserving all diagnostic evidence and operational behavior.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, schema, failure mechanics, retry, recovery, reset, attachment
+  archival, mutation coordination, or Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Bound the active-progress failure headline
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/31-BOUNDED-ACTIVE-PROGRESS-FAILURE-HEADLINE-IMPLEMENTATION.md`
+  as the implementation record for Audit 30's single recommended correction.
+- Replaced raw `ConversationGraphBuildState.lastError` presentation during the
+  controller-to-Gate handoff with **MessageLens couldn't finish preparing
+  browsing data.**
+- Applied the same phase-neutral headline to first-run setup and direct
+  reimport while preserving **Preparing setup…** precedence during fresh
+  pre-reset work.
+- Preserved raw controller error state, logging, persisted failure records,
+  support reporting, stable failure surfaces, retry, recovery, and reset.
+- Added focused presentation and controller coverage for hidden technical
+  errors, retained diagnostic evidence, both active Gate modes, preparation
+  precedence, and unchanged running/success presentation.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.25+43`.
+
+---
+
+# 2026-08-14 - Make stable setup failure copy phase-neutral
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/32-PHASE-NEUTRAL-STABLE-SETUP-FAILURE-COPY-IMPLEMENTATION.md`
+  as the implementation record for Audit 30's next bounded correction.
+- Replaced **Import Attempt Failed** and **Messages Could Not Be Prepared**
+  with one shared primary heading: **MessageLens couldn't finish setup**.
+- Replaced both phase-specific explanatory paragraphs with **MessageLens
+  couldn't finish preparing your browsing data. You can try again.**
+- Preserved separate persistence buckets, branch-specific retry labels and
+  dispatch, support-report export, raw diagnostic notes, timestamps,
+  environment summaries, retry mechanics, recovery, reset, and Presence.
+- Added focused widget coverage proving shared primary copy, absent unsupported
+  phase claims, retained raw diagnostics, unchanged retry dispatch, and
+  functional support-report export.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.26+44`.
+
+---
+
+# 2026-08-14 - Audit stable failure diagnostic information hierarchy
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/33-FAILURE-DIAGNOSTIC-INFORMATION-HIERARCHY-AUDIT.md`
+  as a code-grounded inventory and classification of every secondary item on
+  the stable initial-setup failure surface.
+- Established **calm primary + secondary support** as the preferred hierarchy:
+  ordinary reading order should retain retry and visible support access while
+  raw errors, timestamps, environment probes, and internal store facts remain
+  in support/developer diagnostics.
+- Confirmed that a local **Technical Details** disclosure is not yet earned
+  because no supported user decision depends on the details and the support
+  bundle already preserves their diagnostic value.
+- Recorded that current previous-launch and inferred failed-phase statements
+  are unsupported by persisted timestamp and probe evidence.
+- Classified the existing overlay overflow as primarily an information-density
+  and unbounded-diagnostic problem, not yet evidence for scrolling, smaller
+  typography, reduced spacing, or expanded card geometry.
+- Recommended exactly one next implementation slice: remove the **What to
+  check** card from ordinary `importFailed` and `graphProjectionFailed`
+  presentation while preserving persistence, report export, Environment
+  Summary, actions, and operation behavior.
+- Recorded the automatic-recovery reason panel and broad “clearing that data”
+  wording as a later separate hierarchy concern governed by the attachment-
+  preservation boundary.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, schema, persistence, retry, recovery, reset, support bundle,
+  attachment archive, or Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Remove What to check from stable setup failures
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/34-REMOVE-WHAT-TO-CHECK-STABLE-FAILURE-IMPLEMENTATION.md`
+  as the bounded implementation record for Audit 33's single recommendation.
+- Removed branch-specific notes from ordinary `importFailed` and
+  `graphProjectionFailed` presentation, eliminating the complete **What to
+  check** card from those two stable failure surfaces.
+- Removed raw exception text, timestamps, unsupported previous-launch and
+  failed-phase claims, internal store notes, clean-pass wording, and duplicate
+  report guidance from ordinary reading order without adding a Technical
+  Details disclosure.
+- Preserved failure persistence, environment probes, logs, database health,
+  support-report headers and bundles, Environment Summary, retry labels and
+  dispatch, report export, transport caption, automatic recovery, reset, and
+  attachment preservation.
+- Removed dead stable-failure note and timestamp formatting helpers from the
+  presentation file; other Onboarding states retain the shared advice card.
+- Restored the focused stable-failure widget tests to default typography by
+  removing the prior test-only reduced text scale. Both branches now fit the
+  unchanged 920-pixel card envelope without overflow or geometry changes.
+- Strengthened support-report coverage for retained raw import/graph errors and
+  recorded timestamp evidence.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.27+45`.
+
+---
+
+# 2026-08-14 - Remove Environment Summary from stable setup failures
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/35-REMOVE-ENVIRONMENT-SUMMARY-STABLE-FAILURE-IMPLEMENTATION.md`
+  as the bounded implementation record for the next Audit 33 correction.
+- Removed **Environment summary** only from ordinary `importFailed` and
+  `graphProjectionFailed` presentation, including all five summary rows.
+- Preserved the settled primary copy, branch-specific retry actions, visible
+  support action, email/Finder transport caption, automatic recovery, reset,
+  and attachment preservation.
+- Preserved all environment probes, raw failures, timestamps, logs, and
+  support-report evidence; the presentation change does not alter report data
+  or diagnostic authority.
+- Added focused coverage proving stable-failure suppression and retention on a
+  non-failure readiness surface at default typography without geometry changes.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.28+46`.
+
+---
+
+# 2026-08-14 - Remove support transport caption from stable setup failures
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/36-REMOVE-SUPPORT-TRANSPORT-CAPTION-STABLE-FAILURE-IMPLEMENTATION.md`
+  as the bounded implementation record for Audit 33's final stable-failure
+  reading-order correction.
+- Removed the pre-action explanation of email attachment and Finder fallback
+  from ordinary `importFailed` and `graphProjectionFailed` presentation.
+- Preserved **Send Report To Developer**, support-bundle generation and
+  contents, recipient and transport behavior, and existing snackbar feedback.
+- Added direct widget coverage for email-draft success, Finder fallback, and
+  report-generation failure feedback using the production presentation
+  callback.
+- Preserved the settled primary copy, branch-specific retry actions, earlier
+  **What to check** and **Environment summary** removals, diagnostics,
+  recovery, reset, attachment preservation, and Presence.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.29+47`.
+
+---
+
+# 2026-08-14 - Audit automatic recovery presentation
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/37-AUTOMATIC-RECOVERY-PRESENTATION-AUDIT.md`
+  as a code-grounded trace of the automatic derived-store recovery lifecycle,
+  visible surface, success, reset failure, mutation denial, and abrupt-
+  termination behavior.
+- Established that recovery removes only allow-listed rebuildable MessageLens
+  browsing stores, does not alter authoritative Apple sources or preservation
+  data, and returns to environment re-evaluation rather than automatically
+  rerunning or resuming setup.
+- Recorded that **previous/earlier setup attempt** is not a proven process-
+  history claim and that **local data** / **clearing that data** is overbroad
+  against the attachment-preservation boundary.
+- Recommended calm, non-interactive recovery with an indeterminate activity
+  indicator; no percentage, stage, cancellation, resume, or user action is
+  supported by current mechanics.
+- Determined that `resetAppDatabasesReason` is diagnostic implementation detail
+  that changes no human action and should leave ordinary recovery reading order
+  while remaining in the environment report, Gate/reset logs, development
+  diagnostics, probes, and support evidence.
+- Recommended exactly one next implementation slice: remove the bordered reset-
+  reason card from the production recovery widget without changing heading,
+  body, operation behavior, persistence, reset policy, diagnostics, attachment
+  preservation, or Presence.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, schema, persistence, recovery mechanics, reset behavior,
+  attachment archive, or Presence behavior was changed.
+
+---
+
+# 2026-08-14 - Remove automatic-recovery diagnostic reason
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/38-REMOVE-AUTOMATIC-RECOVERY-DIAGNOSTIC-REASON-IMPLEMENTATION.md`
+  as the bounded implementation record for Audit 37's single recommendation.
+- Removed the bordered `resetAppDatabasesReason` card from the ordinary
+  production `recoveringFailedAttempt` surface.
+- Preserved the existing recovery heading, body, icon, indeterminate activity
+  indicator, and non-interactive lifecycle without adding replacement details
+  or controls.
+- Preserved reason generation, environment classification, Gate and reset
+  logs, development-panel diagnostics, support evidence, reset semantics,
+  mutation admission, and the attachment-preservation allow-list.
+- Added focused default-typography coverage proving a non-null reason remains
+  absent from production recovery while the recovery message and activity
+  indicator remain visible, no controls appear, and the layout reports no
+  exception.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.31+49`.
+
+---
+
+# 2026-08-15 - Use calm, truthful automatic-recovery copy
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/39-CALM-TRUTHFUL-AUTOMATIC-RECOVERY-COPY-IMPLEMENTATION.md`
+  as the bounded implementation record for Audit 37's recovery-copy
+  correction.
+- Replaced **Cleaning Up A Previous Setup Attempt** with **Preparing
+  MessageLens to try again**.
+- Replaced unsupported prior-attempt, broad local-data, deletion, and automatic-
+  restart language with a precise statement that MessageLens found incomplete
+  browsing data, is preparing another setup attempt, and the human should wait.
+- Preserved the recovery icon, indeterminate activity indicator, non-
+  interactive surface, diagnostic-reason removal, classification, logs,
+  development diagnostics, recovery mechanics, reset semantics, and attachment-
+  preservation boundary.
+- Strengthened focused coverage against historical, destructive, restart, and
+  internal-architecture language while retaining default-typography layout and
+  no-control assertions.
+- Updated the package start page, Feature Addition index, changelog, and app
+  version to `0.2.32+50`.
+
+---
+
+# 2026-08-15 - Audit recovery and pre-build failure state
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/41-RECOVERY-AND-PRE-BUILD-FAILURE-STATE-AUDIT.md`
+  because document number 40 is occupied by the automatic-recovery
+  presentation audit.
+- Traced first-run admission, FDA, reset, automatic recovery, direct reimport,
+  and explicit Settings reset through the current Gate, mutation coordinator,
+  reset service, persistence, environment classification, and presentation
+  paths.
+- Distinguished four operational truths: prerequisite blocking, busy denial,
+  other pre-action admission failure, and admitted reset failure. Kept settled
+  controller failure as a separate later boundary.
+- Verified that admitted reset failure can leave partially changed derived
+  stores, while filesystem probes remain the correct durable restart authority
+  and existing failure records do not truthfully prove reset failure.
+- Verified that the reset allow-list remains confined to rebuildable
+  MessageLens derived stores and cannot target authoritative Apple sources,
+  source attachment payloads, archived attachment payloads, overlay intent,
+  Presence state, or preferences.
+- Recommended exactly one next implementation slice: a process-local
+  Onboarding preparation-failure state for first-run reset failure, automatic-
+  recovery reset failure, and non-contention automatic-recovery admission
+  failure, without new persistence, reset mechanics, or attachment policy.
+- Updated the package start page and Feature Addition index. Corrected current-
+  facing references to the renumbered
+  `40-AUTOMATIC-RECOVERY-PRESENTATION-AUDIT.md` while preserving historical log
+  entries.
+- No application code, tests, schemas, Gate behavior, persistence, mutation
+  coordination, reset behavior, Presence behavior, or attachment behavior was
+  changed.
+
+---
+
+# 2026-08-15 - Implement stable process-local onboarding retry
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/50-PROCESS-LOCAL-ONBOARDING-PREPARATION-FAILURE-IMPLEMENTATION.md`
+  as the implementation record for Audit 41's bounded recommendation.
+- Added the process-local `OnboardingStatus.preparationFailed` state for
+  admitted first-run reset failure, admitted automatic-recovery reset failure,
+  and non-contention automatic-recovery admission failure.
+- Reused the existing setup entry point for **Try Again**, retained the existing
+  support-report path, and kept the previous failure visible until a new attempt
+  is admitted.
+- Kept FDA blocking, ordinary mutation contention, controller-owned persisted
+  failure, Settings reset, Presence, and attachment-preservation behavior
+  unchanged.
+- Recorded that automatic recovery remains suppressed while the process-local
+  failure is visible; deliberate refresh or retry reopens current environment
+  evaluation.
+- Updated the canonical Onboarding Gate documentation, package start page, and
+  Feature Addition index. Bumped the application version to `0.2.33+51` and
+  added the matching changelog entry.
+
+---
+
+# 2026-08-15 - Audit automatic-recovery mutation-busy deferral
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/51-AUTOMATIC-RECOVERY-MUTATION-BUSY-DEFERRAL-AUDIT.md`.
+- Traced the exact Gate, post-frame callback, suppression, coordinator-denial,
+  self-invalidation, and unchanged-environment-report path and established that
+  it forms a real retry cycle while the Gate remains watched.
+- Distinguished ordinary mutation contention from non-contention admission
+  error and admitted reset failure. Busy denial remains outside
+  `preparationFailed` because recovery never starts and changes no files.
+- Inventoried current mutation owners and verified that their feature-specific
+  completion effects differ, while the coordinator's final locked-to-idle
+  publication is the universal fact-change seam.
+- Recommended one bounded Gate-owned correction: defer process-locally while
+  busy, observe coordinator release, obtain fresh environment truth, and retry
+  only if recovery remains warranted. Recovery presentation should begin only
+  after admission.
+- Rejected timers, polling, backoff, queued work, durable deferral state, a new
+  human-visible status, busy UI, coordinator scheduling, first-run expansion,
+  policy changes, reset changes, and attachment-policy changes.
+- Updated the package start page and Feature Addition index. No application
+  code, tests, schemas, mutation behavior, reset behavior, Presence behavior,
+  or attachment behavior was changed.
+
+---
+
+# 2026-08-15 - Implement automatic-recovery mutation-busy deferral
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/52-AUTOMATIC-RECOVERY-MUTATION-BUSY-DEFERRAL-IMPLEMENTATION.md`.
+- Replaced the automatic-recovery denial/self-invalidation cycle with one
+  Gate-owned process-local deferral enum that distinguishes waiting for
+  mutation release from waiting for completed fresh environment truth.
+- Added a lifecycle-bound listener selecting only the coordinator's `isLocked`
+  fact. Locked-to-idle release now invalidates Environment Readiness, and the
+  Gate rejects Riverpod's retained value while that provider is refreshing.
+- Moved `recoveringFailedAttempt` publication inside the admitted recovery
+  action, so denied work remains silent and never exposes recovery progress.
+- Preserved `preparationFailed` for non-contention admission errors and admitted
+  reset failures; ordinary contention remains non-failure.
+- Added deterministic Gate coverage for no repeated denial, release-driven
+  fresh evaluation, recovery/no-recovery outcomes, a second-owner race,
+  release-before-catch, disposal, and process reconstruction.
+- Updated the canonical Gate guide, package start page, Feature Addition index,
+  changelog, and application version to `0.2.34+52`.
+- Added no timer, polling, backoff, queue, persistence, status, busy UI,
+  coordinator API, reset change, mutation-policy change, Presence dependency,
+  or attachment behavior.
+
+---
+
+# 2026-08-15 - Audit user-initiated setup mutation-busy feedback
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/53-USER-INITIATED-SETUP-MUTATION-BUSY-FEEDBACK-AUDIT.md`.
+- Traced the current Environment Readiness and blocking failure-overlay setup
+  actions through their action providers, `OnboardingGate`, and
+  `ArchiveMutationCoordinator`.
+- Confirmed ordinary busy denial runs no setup action, reset, controller, or
+  file mutation, leaves Gate/environment truth unchanged, and currently escapes
+  through an unhandled or unobserved UI Future without human feedback.
+- Distinguished an explicit denied command from automatic recovery intent and
+  rejected replay, queues, timers, polling, durable busy state, owner-label
+  exposure, proactive button disabling, and `preparationFailed` reuse.
+- Recommended one bounded next slice: return a narrow Onboarding-owned
+  `admitted` / `busy` / `notApplicable` start outcome and render only `busy` as
+  a standard transient snackbar from the active presentation.
+- Verified the recommendation preserves FDA, controller-failure, reset,
+  mutation-policy, Environment Readiness, Presence, and attachment-preservation
+  boundaries. No application code or tests were changed.
+
+---
+
+# 2026-08-15 - Validate end-to-end production onboarding
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/54-END-TO-END-PRODUCTION-ONBOARDING-VALIDATION.md`.
+- Verified release composition routes through `MacosAppShell`,
+  `OnboardingGate`, `OnboardingPresenceHost`, the real authored Schedule, real
+  Onboarding Agents, `PresenceScheduler`, and `PresenceRunner` rather than the
+  development harness.
+- Found that every debug launch bypassed the production-shaped shell and
+  mounted `LinearPresenceExperimentHost`. Corrected that bounded validation
+  blocker by making the harness opt-in through
+  `PRESENCE_DEVELOPMENT_HARNESS=true` and added an architecture tripwire.
+- Executed realistic source-readiness, FDA, Contacts, sparse-history Choice,
+  durable acceptance, import/build, completion, preparation failure,
+  controller failure, automatic recovery, busy-deferral, restart, and
+  attachment-preservation seams with disposable/test storage.
+- Recorded one remaining P1 production defect: the Boolean Messages readiness
+  result routes missing or invalid source data into FDA remediation and can
+  strand the person in incorrect guidance. Also recorded the production-
+  inaccurate `MessageLens Development` FDA copy as P2.
+- Distinguished all code/test evidence from manual visual validation still
+  required. No production archive or archived attachment payload was used as
+  experimental material.
+- Updated the package start page and Feature Addition index. No Presence
+  grammar, Schedule topology, Gate state, persistence, reset semantics,
+  attachment archival, or production release composition was changed.
+
+---
+
+# 2026-08-15 - Correct Messages-source vs FDA readiness
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/55-TRUTHFUL-MESSAGES-SOURCE-VS-FDA-READINESS-IMPLEMENTATION.md`.
+- Recorded the concrete evidence boundary: explicit POSIX permission denial
+  warrants FDA guidance; missing, invalid-schema, query, and ambiguous I/O
+  failures remain bounded source-unavailable outcomes.
+- Documented the process-local specialist observation, its two generic Boolean
+  Onboarding projections, additive Schedule branches, and fresh retry behavior.
+- Updated the package start page, Feature Addition index, canonical Onboarding
+  Gate guide, changelog, and version. Historical implementation records remain
+  unchanged.
+
+---
+
+# 2026-08-15 - Correct observed Onboarding Step redefinition
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/56-OBSERVED-ONBOARDING-STEP-REDEFINITION-BLOCKER-IMPLEMENTATION.md`.
+- Traced the production-observed conflict to Slice 55 changing only the Tell
+  payload of canonical Step 6302 from **MessageLens Development** to
+  **MessageLens** under its existing identity in Trip 303.
+- Recorded why the definition-immutability guard was correct and why restoring
+  the historical payload was safer than introducing replacement FDA topology
+  around a terminal Settings-opening Step.
+- Documented preservation of active Trip checkpoints, execution history,
+  additive source-classification Trips, Test-route reconciliation, and
+  occurrence-position reconciliation.
+- Strengthened the Presence database walkthrough with the rule that persisted
+  definition IDs are semantic identities rather than mutable authored slots.
+- Updated the package start page, Feature Addition index, Slice 55 record,
+  changelog, and app version to `0.2.36+54`.
+
+---
+
+# 2026-08-15 - Hand off Presence guidebook lifecycle
+
+- Created
+  `23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/57-PRESENCE-GUIDEBOOK-LIFECYCLE-HANDOFF.md`.
+- Recorded the production-shaped Step 6302 failure as evidence that runtime
+  definition reconciliation is the wrong assumed cross-version lifecycle,
+  without weakening the current immutability guard or adding migration logic.
+- Established the next-feature direction: `presence.db` contains one installed
+  guidebook edition plus convenient same-generation execution state; that
+  state may be discarded wholesale when the guidebook generation changes.
+- Restored the blank-stare ownership boundary: Presence reads opaque guidebook
+  geometry while Onboarding answers domain questions without knowing Schedule,
+  Trip, Step, occurrence, or routing identities.
+- Distinguished disposable guidebook position from durable human intent that
+  remains meaningful independently of Presence geometry.
+- Closed Feature Addition 23 as the active home for guidebook installation,
+  replacement, runtime authority, reconciliation removal, and cross-version
+  state policy. Updated its start page and the Feature Addition index.
+- No application code, schema, runtime behavior, Overlay data, or
+  `presence.db` contents changed in this documentation handoff.

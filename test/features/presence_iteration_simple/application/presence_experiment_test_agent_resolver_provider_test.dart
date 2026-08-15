@@ -32,6 +32,10 @@ void main() {
       isTrue,
     );
     expect(
+      await resolver.resolve(messagesSourceAccessDeniedTestAgentId).evaluate(),
+      isFalse,
+    );
+    expect(
       resolver.resolve(contactsSourceReadableTestAgentId),
       same(contactsAgent),
     );
@@ -59,6 +63,10 @@ final class _ReadableFullDiskAccess implements FullDiskAccess {
 
   @override
   bool canReadMessagesDatabase() => true;
+
+  @override
+  MessagesSourceAccessResult inspectMessagesSourceAccess() =>
+      MessagesSourceAccessResult.readable;
 
   @override
   Future<void> openSettings() async {}

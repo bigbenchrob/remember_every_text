@@ -5,8 +5,14 @@ import 'package:sqlite3/sqlite3.dart';
 import '../../../db/application/read_only_sql_guard.dart';
 import '../../application/monitor/chat_db_source_probe_reader.dart';
 
+typedef ChatDbSourceFileReadVerifier = void Function(String chatDbPath);
+
 final class SqliteChatDbSourceProbeReader implements ChatDbSourceProbeReader {
-  const SqliteChatDbSourceProbeReader();
+  const SqliteChatDbSourceProbeReader({
+    ChatDbSourceFileReadVerifier? sourceFileReadVerifier,
+  }) : _sourceFileReadVerifier = sourceFileReadVerifier;
+
+  final ChatDbSourceFileReadVerifier? _sourceFileReadVerifier;
 
   @override
   int readMaxRowId(String chatDbPath) {
@@ -65,11 +71,20 @@ WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0;
     required String sql,
     required String boundary,
   }) {
-    if (!File(chatDbPath).existsSync()) {
+    try {
+      (_sourceFileReadVerifier ?? _verifySourceFileReadable)(chatDbPath);
+    } on FileSystemException catch (error) {
+      final errorCode = error.osError?.errorCode;
+      final kind = switch (errorCode) {
+        1 || 13 => ChatDbSourceProbeFailureKind.accessDenied,
+        2 => ChatDbSourceProbeFailureKind.databaseMissing,
+        _ => ChatDbSourceProbeFailureKind.filesystemReadFailed,
+      };
       throw ChatDbSourceProbeException(
-        kind: ChatDbSourceProbeFailureKind.databaseMissing,
+        kind: kind,
         databasePath: chatDbPath,
-        operation: 'source discovery',
+        operation: 'source file read verification',
+        cause: error,
       );
     }
 
@@ -107,6 +122,12 @@ WHERE guid IS NOT NULL AND LENGTH(TRIM(guid)) > 0;
     } finally {
       database.dispose();
     }
+  }
+
+  static void _verifySourceFileReadable(String chatDbPath) {
+    final sourceFile = File(chatDbPath);
+    final handle = sourceFile.openSync(mode: FileMode.read);
+    handle.closeSync();
   }
 
   static int _readInt(Object value) {

@@ -19,12 +19,16 @@ Future<void> main() async {
   final database = PresenceDatabase(NativeDatabase.memory());
   try {
     const messagesAgent = _DiagramOnlyTestAgent('Messages source');
+    const messagesAccessDeniedAgent = _DiagramOnlyTestAgent(
+      'Messages source access classification',
+    );
     const contactsAgent = _DiagramOnlyTestAgent('Contacts source');
     const historyAgent = _DiagramOnlyTestAgent('Messages history');
     const settingsAuthority = _DiagramOnlyFdaSettingsOpeningAuthority();
     final testAgentResolver = ImmutableTestAgentResolver(
       buildOnboardingTestAgentBindings(
         messagesSourceReadinessTestAgent: messagesAgent,
+        messagesSourceAccessDeniedTestAgent: messagesAccessDeniedAgent,
         contactsSourceReadinessTestAgent: contactsAgent,
         messagesSourceHistorySufficiencyTestAgent: historyAgent,
       ),

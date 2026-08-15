@@ -48,6 +48,10 @@ final class _MessagesPathFullDiskAccess implements FullDiskAccess {
   bool canReadMessagesDatabase() => true;
 
   @override
+  MessagesSourceAccessResult inspectMessagesSourceAccess() =>
+      MessagesSourceAccessResult.readable;
+
+  @override
   Future<void> openSettings() async {}
 }
 

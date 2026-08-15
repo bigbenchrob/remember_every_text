@@ -135,6 +135,13 @@ For graph attachments:
 - Apple attachment paths are source path hints and ingestion inputs, not
   durable availability or identity.
 
+Archived payload files are MessageLens preservation data. They are not derived
+graph state and must never be deleted by onboarding, reset, reimport, recovery,
+migration cleanup, rebuild, or tests. Destructive reset must allow-list
+rebuildable stores; it must not delete a broad root and spare the archive by
+exception. See
+[`ATTACHMENT-PRESERVATION-INVARIANT.md`](../../../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md).
+
 Graph projection MUST:
 
 - preserve attachment records even when files are unavailable.

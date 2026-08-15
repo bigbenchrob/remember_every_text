@@ -7,7 +7,7 @@ part of 'presence_experiment_test_agent_resolver_provider.dart';
 // **************************************************************************
 
 String _$presenceExperimentTestAgentResolverHash() =>
-    r'989cb4999ae9ca5c5cef0913cb70d02d2442b429';
+    r'bcfd0db924e94bd514d144073218c3082ed62952';
 
 /// Combines workflow-owner contributions at the current application boundary.
 ///

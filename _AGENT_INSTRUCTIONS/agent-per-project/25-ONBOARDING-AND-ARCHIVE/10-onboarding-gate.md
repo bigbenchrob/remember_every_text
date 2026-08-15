@@ -6,6 +6,11 @@ The `OnboardingGate` is the top-level bootstrap coordinator. It evaluates
 whether the app is ready for normal use and coordinates the readiness,
 recovery, import, graph-build, and reimport lifecycle.
 
+> **Safety:** Gate reset/recovery means resetting only enumerated rebuildable
+> derived stores. Archived attachment payloads are preservation data and are
+> outside every Gate reset. See
+> [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
+
 Current surface split:
 
 - `awaitingFda` and `awaitingUserAction` mount the production Onboarding
@@ -19,6 +24,21 @@ This is a staged ownership boundary. Presence owns the required-source
 readiness interaction. The gate remains the operational authority for recovery,
 import, graph construction, completion, and reimport.
 
+### Messages Source Truthfulness
+
+The required-source Schedule no longer treats every failed Messages read as
+evidence of missing Full Disk Access. The Messages/Onboarding specialist
+classifies the protected read as `readable`, `accessDenied`, or `unavailable`.
+Only explicit filesystem permission denial warrants FDA guidance. Missing,
+invalid-schema, query, and ambiguous I/O failures receive bounded
+source-unavailable guidance instead.
+
+Onboarding projects that specialist result through generic Boolean TestAgents;
+Presence remains unaware of Messages, SQLite, or FDA meaning. Adjacent readable
+and access-denied Tests share one process-local observation, while every retry
+begins a fresh protected read. The Gate still owns only operational admission
+and mounts the same real Onboarding Presence host for prerequisite interaction.
+
 ## Ownership
 
 - **Location:** `lib/essentials/onboarding/`
@@ -28,7 +48,7 @@ import, graph construction, completion, and reimport.
 
 ## State Machine
 
-The gate tracks a single `OnboardingStatus` enum with 10 states:
+The gate tracks a single `OnboardingStatus` enum with 11 states:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -36,6 +56,7 @@ The gate tracks a single `OnboardingStatus` enum with 10 states:
 ├─────────────────────────────────────────────────────────────┤
 │ notNeeded               — App databases populated, skip     │
 │ recoveringFailedAttempt — Reset incomplete DBs before retry │
+│ preparationFailed       — Current preparation attempt failed│
 │ awaitingFda             — FDA not granted, show instructions│
 │ awaitingUserAction      — FDA OK, databases empty, show UI  │
 │ importing               — Import pipeline running           │
@@ -76,9 +97,16 @@ App Start
   │           └─ complete (show summary, "Get Started" button)
   │
   ├─ environment report → incomplete partial app DBs?
-  │   └─ recoveringFailedAttempt
-  │       └─ reset app-owned source-scoped import/graph DBs
-  │           └─ awaitingUserAction
+  │   └─ request automatic-recovery mutation authority
+  │       ├─ busy → defer silently until locked → idle
+  │       │   └─ fresh environment report still requires recovery?
+  │       │       ├─ NO → ordinary environment-derived state
+  │       │       └─ YES → request authority once again
+  │       └─ admitted → recoveringFailedAttempt
+  │           └─ reset rebuildable source-scoped import/graph DBs
+  │               ├─ success → awaitingUserAction
+  │               └─ failure → preparationFailed
+  │                   └─ Try Again → ordinary first-run entry point
   │
   └─ environment report → import/graph projection previously failed?
       └─ awaitingUserAction (show failure details + retry)
@@ -123,9 +151,14 @@ class OnboardingGate extends _$OnboardingGate {
    `sourceSparseOrUnsynced`, and `readyToImport` → `awaitingUserAction`
 
 Workflow override states are preserved while recovery, import, graph build,
-completion, or reimport is in progress. The environment report can also set
+completion, reimport, or process-local preparation failure is in progress. The
+environment report can also set
 `shouldResetAppDatabasesBeforeImport`, which triggers automatic recovery into
-`recoveringFailedAttempt`.
+`recoveringFailedAttempt` only after mutation authority is admitted. Ordinary
+mutation contention remains process-local and silent. The Gate observes the
+coordinator's locked-to-idle transition, invalidates the environment report,
+and consumes only the completed fresh result; it never replays the denied
+report or persists a pending recovery command.
 
 ### Accepted-Readiness Handoff
 
@@ -153,6 +186,7 @@ for blocking workflow phases. It switches content based on the current status:
 | Status | Overlay Content |
 |--------|-----------------|
 | `recoveringFailedAttempt` | Recovery/reset progress |
+| `preparationFailed` | Calm setup failure with **Try Again** and support actions |
 | `importing` | Progress view with row counts and duration per table |
 | `buildingGraph` | Progress view continuing from import |
 | `complete` | Summary (total counts, warnings, archive size), "Get Started" button |
@@ -181,6 +215,11 @@ Import and graph-projection failures are persisted as JSON in the overlay databa
 - Showing the last failure on next launch without re-running the pipeline
 - Distinguishing "never tried" from "tried and failed"
 - Clearing on successful completion
+
+Pre-controller `preparationFailed` is deliberately not persisted. It records
+only the current process's operation outcome. Refresh or restart returns
+authority to current filesystem and environment probes; it is never written
+into the import or graph-projection failure buckets.
 
 ## File Inventory
 

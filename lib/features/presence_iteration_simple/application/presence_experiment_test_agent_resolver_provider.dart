@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../essentials/onboarding/application/onboarding_test_agent_bindings.dart';
 import '../../../essentials/onboarding/feature_level_providers.dart'
     show
+        realMessagesSourceAccessDeniedTestAgentProvider,
         realMessagesSourceHistorySufficiencyTestAgentProvider,
         realMessagesSourceReadinessTestAgentProvider;
 import '../../../essentials/presence/domain/services/test_agent_resolver.dart';
@@ -17,6 +18,9 @@ part 'presence_experiment_test_agent_resolver_provider.g.dart';
 @Riverpod(keepAlive: true)
 Future<TestAgentResolver> presenceExperimentTestAgentResolver(Ref ref) async {
   final messagesAgent = ref.watch(realMessagesSourceReadinessTestAgentProvider);
+  final messagesAccessDeniedAgent = ref.watch(
+    realMessagesSourceAccessDeniedTestAgentProvider,
+  );
   final contactsAgent = await ref.watch(
     developmentContactsSourceReadinessTestAgentProvider.future,
   );
@@ -25,6 +29,7 @@ Future<TestAgentResolver> presenceExperimentTestAgentResolver(Ref ref) async {
   );
   final onboardingBindings = buildOnboardingTestAgentBindings(
     messagesSourceReadinessTestAgent: messagesAgent,
+    messagesSourceAccessDeniedTestAgent: messagesAccessDeniedAgent,
     contactsSourceReadinessTestAgent: contactsAgent,
     messagesSourceHistorySufficiencyTestAgent: messagesHistoryAgent,
   );

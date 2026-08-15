@@ -82,6 +82,19 @@ This README contains the canonical index to all project documentation including:
 - ❌ **NEVER** swallow exceptions during record processing — log them and include the record with error metadata
 - 📖 See [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/INVIOLATE_RULES.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/INVIOLATE_RULES.md) Rule 2
 
+### 🔥 INVIOLABLE: Attachment Archive Preservation
+
+- ✅ **Archived attachment payloads are preservation data, not a cache**
+- ✅ Reset/reimport/recovery may delete only explicitly enumerated rebuildable
+  derived stores
+- ❌ **NEVER** delete, recreate, relocate, or mutate `attachment_archive/` as
+  part of onboarding, reset, reimport, recovery, migration cleanup, rebuild, or
+  tests
+- ❌ **NEVER** delete a broad MessageLens data root and rely on an exception to
+  spare the archive
+- 📖 See
+  [`_AGENT_INSTRUCTIONS/agent-per-project/25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md`](_AGENT_INSTRUCTIONS/agent-per-project/25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md)
+
 ### Code Standards
 
 - ✅ Color opacity: `withValues(alpha: 0.5)` (never `withOpacity`)

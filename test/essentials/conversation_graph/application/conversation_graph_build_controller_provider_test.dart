@@ -59,6 +59,9 @@ void main() {
   });
 
   test('records failed graph build lifecycle state', () async {
+    const technicalFailure =
+        'SQLiteException(1): no such table: messages at '
+        '/Users/example/Library/Application Support/MessageLens/graph.db';
     final container = ProviderContainer(
       overrides: [
         admittedArchiveAccessAuthorityProvider.overrideWithValue(
@@ -66,7 +69,7 @@ void main() {
         ),
         conversationGraphBuildServiceProvider.overrideWith(
           (ref) async => ConversationGraphBuildService(
-            orchestrator: _orchestrator(error: StateError('boom')),
+            orchestrator: _orchestrator(error: StateError(technicalFailure)),
           ),
         ),
       ],
@@ -84,7 +87,7 @@ void main() {
     expect(state.status, ConversationGraphBuildStatus.failed);
     expect(state.owner, 'test-owner');
     expect(state.lastReport, isNull);
-    expect(state.lastError, contains('boom'));
+    expect(state.lastError, contains(technicalFailure));
   });
 
   test('coalesces concurrent graph build requests', () async {

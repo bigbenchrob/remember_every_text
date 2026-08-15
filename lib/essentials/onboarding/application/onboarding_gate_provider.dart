@@ -24,6 +24,12 @@ import 'onboarding_failure_storage_provider.dart';
 
 part 'onboarding_gate_provider.g.dart';
 
+enum _AutomaticRecoveryDeferral {
+  none,
+  waitingForMutationRelease,
+  awaitingFreshEnvironment,
+}
+
 /// Controls the onboarding overlay lifecycle.
 ///
 /// Gate 1 — Full Disk Access:
@@ -44,6 +50,9 @@ class OnboardingGate extends _$OnboardingGate {
   OnboardingStatus? _workflowOverrideStatus;
   bool _automaticRecoveryInFlight = false;
   bool _automaticRecoverySuppressed = false;
+  _AutomaticRecoveryDeferral _automaticRecoveryDeferral =
+      _AutomaticRecoveryDeferral.none;
+  bool _mutationCoordinatorIsLocked = false;
   OnboardingStatus? _lastLoggedResolvedStatus;
   OnboardingEnvironmentState? _lastLoggedEnvironmentState;
   OnboardingBlockerKind? _lastLoggedBlockerKind;
@@ -51,8 +60,19 @@ class OnboardingGate extends _$OnboardingGate {
 
   @override
   OnboardingStatus build() {
+    ref.listen<bool>(
+      archiveMutationCoordinatorProvider.select((state) => state.isLocked),
+      _handleMutationLockChanged,
+      fireImmediately: true,
+    );
+
     final reportAsync = ref.watch(onboardingEnvironmentReportProvider);
-    reportAsync.whenData(_maybeTriggerAutomaticRecovery);
+    if (!reportAsync.isLoading && !reportAsync.hasError) {
+      final report = reportAsync.valueOrNull;
+      if (report != null) {
+        _handleEnvironmentReport(report);
+      }
+    }
 
     final resolvedStatus = resolveBuildStatus(
       reportAsync: reportAsync,
@@ -151,6 +171,7 @@ class OnboardingGate extends _$OnboardingGate {
   static bool _shouldPreserveWorkflowOverride(OnboardingStatus? status) {
     return switch (status) {
       OnboardingStatus.recoveringFailedAttempt ||
+      OnboardingStatus.preparationFailed ||
       OnboardingStatus.importing ||
       OnboardingStatus.buildingGraph ||
       OnboardingStatus.complete ||
@@ -186,7 +207,8 @@ class OnboardingGate extends _$OnboardingGate {
   ///
   /// Wrapped in try/catch so the user is never stranded.
   Future<void> startImportAndGraphBuild() async {
-    if (state != OnboardingStatus.awaitingUserAction) {
+    if (state != OnboardingStatus.awaitingUserAction &&
+        state != OnboardingStatus.preparationFailed) {
       return;
     }
 
@@ -217,15 +239,25 @@ class OnboardingGate extends _$OnboardingGate {
             'Aborting fresh onboarding import because Messages database is no longer readable',
             source: 'OnboardingGate',
           );
+      _clearWorkflowOverride();
       state = OnboardingStatus.awaitingFda;
       return;
     }
 
-    await _prepareForFreshStartIfNeeded();
-
-    // ── Graph build phase ──
     _setWorkflowOverride(OnboardingStatus.importing);
     await _waitForEndOfFrame();
+    try {
+      await _prepareForFreshStartIfNeeded();
+    } catch (error, stackTrace) {
+      _enterPreparationFailure(
+        error: error,
+        stackTrace: stackTrace,
+        logMessage: 'Fresh onboarding preparation failed',
+      );
+      return;
+    }
+
+    // ── Graph build phase ──
     _setWorkflowOverride(OnboardingStatus.buildingGraph);
     await _waitForEndOfFrame();
     try {
@@ -267,6 +299,7 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   void refreshEnvironment() {
+    _automaticRecoveryDeferral = _AutomaticRecoveryDeferral.none;
     _automaticRecoverySuppressed = false;
     _clearWorkflowOverride();
     ref.invalidate(onboardingFullDiskAccessProvider);
@@ -341,7 +374,12 @@ class OnboardingGate extends _$OnboardingGate {
   }
 
   void _maybeTriggerAutomaticRecovery(OnboardingEnvironmentReport report) {
+    if (_workflowOverrideStatus == OnboardingStatus.preparationFailed) {
+      return;
+    }
+
     if (!report.shouldResetAppDatabasesBeforeImport) {
+      _automaticRecoveryDeferral = _AutomaticRecoveryDeferral.none;
       _automaticRecoverySuppressed = false;
       return;
     }
@@ -353,31 +391,49 @@ class OnboardingGate extends _$OnboardingGate {
     _automaticRecoveryInFlight = true;
     _automaticRecoverySuppressed = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _setWorkflowOverride(OnboardingStatus.recoveringFailedAttempt);
       unawaited(_runAutomaticRecovery(report));
     });
   }
 
+  void _handleEnvironmentReport(OnboardingEnvironmentReport report) {
+    if (_automaticRecoveryDeferral ==
+        _AutomaticRecoveryDeferral.awaitingFreshEnvironment) {
+      _automaticRecoveryDeferral = _AutomaticRecoveryDeferral.none;
+      _automaticRecoverySuppressed = false;
+    }
+    _maybeTriggerAutomaticRecovery(report);
+  }
+
   Future<void> _runAutomaticRecovery(OnboardingEnvironmentReport report) async {
+    final coordinator = ref.read(archiveMutationCoordinatorProvider.notifier);
+    final logger = ref.read(appLoggerProvider.notifier);
     try {
-      await ref
-          .read(archiveMutationCoordinatorProvider.notifier)
-          .run<void>(
-            operation: ArchiveMutationOperation.automaticRecovery,
-            ownerLabel: 'onboarding-automatic-recovery',
-            action: () => _runAdmittedAutomaticRecovery(report),
-          );
+      await coordinator.run<void>(
+        operation: ArchiveMutationOperation.automaticRecovery,
+        ownerLabel: 'onboarding-automatic-recovery',
+        action: () => _runAdmittedAutomaticRecovery(report),
+      );
     } on ArchiveMutationDeniedException catch (error) {
       _automaticRecoveryInFlight = false;
-      _automaticRecoverySuppressed = false;
+      _automaticRecoverySuppressed = true;
+      _automaticRecoveryDeferral =
+          _AutomaticRecoveryDeferral.waitingForMutationRelease;
       _clearWorkflowOverride();
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'Deferred automatic onboarding recovery because archive mutation authority is busy: $error',
-            source: 'OnboardingGate',
-          );
-      ref.invalidateSelf();
+      logger.warn(
+        'Deferred automatic onboarding recovery because archive mutation authority is busy: $error',
+        source: 'OnboardingGate',
+      );
+      if (!_mutationCoordinatorIsLocked) {
+        _requestFreshEnvironmentAfterMutation();
+      }
+    } catch (error, stackTrace) {
+      _automaticRecoveryInFlight = false;
+      _automaticRecoverySuppressed = true;
+      _enterPreparationFailure(
+        error: error,
+        stackTrace: stackTrace,
+        logMessage: 'Automatic onboarding recovery admission failed',
+      );
     }
   }
 
@@ -385,6 +441,8 @@ class OnboardingGate extends _$OnboardingGate {
     OnboardingEnvironmentReport report,
   ) async {
     try {
+      _setWorkflowOverride(OnboardingStatus.recoveringFailedAttempt);
+      await _waitForEndOfFrame();
       ref
           .read(appLoggerProvider.notifier)
           .warn(
@@ -392,21 +450,64 @@ class OnboardingGate extends _$OnboardingGate {
             source: 'OnboardingGate',
           );
       await ref.read(messageDataResetServiceProvider).resetDerivedData();
-    } catch (error) {
-      _automaticRecoverySuppressed = true;
-      ref
-          .read(appLoggerProvider.notifier)
-          .error(
-            'Automatic onboarding DB reset failed: $error',
-            source: 'OnboardingGate',
-          );
-    } finally {
+    } catch (error, stackTrace) {
       _automaticRecoveryInFlight = false;
-      _clearWorkflowOverride();
-      ref.invalidate(onboardingEnvironmentReportProvider);
-      ref.invalidateSelf();
-      state = OnboardingStatus.awaitingUserAction;
+      _automaticRecoverySuppressed = true;
+      _enterPreparationFailure(
+        error: error,
+        stackTrace: stackTrace,
+        logMessage: 'Automatic onboarding DB reset failed',
+      );
+      return;
     }
+
+    _automaticRecoveryInFlight = false;
+    _clearWorkflowOverride();
+    ref.invalidate(onboardingEnvironmentReportProvider);
+    ref.invalidateSelf();
+    state = OnboardingStatus.awaitingUserAction;
+  }
+
+  void _handleMutationLockChanged(bool? previous, bool next) {
+    _mutationCoordinatorIsLocked = next;
+    final mutationAuthorityJustBecameIdle = previous == true && !next;
+    if (!mutationAuthorityJustBecameIdle ||
+        _automaticRecoveryDeferral !=
+            _AutomaticRecoveryDeferral.waitingForMutationRelease) {
+      return;
+    }
+
+    _requestFreshEnvironmentAfterMutation();
+  }
+
+  void _requestFreshEnvironmentAfterMutation() {
+    if (_automaticRecoveryDeferral !=
+        _AutomaticRecoveryDeferral.waitingForMutationRelease) {
+      return;
+    }
+
+    // Claim this release event before invalidating so the lifecycle listener
+    // and denial catch cannot request duplicate evaluations. The denied report
+    // is discarded; the next provider result is the only recovery authority.
+    _automaticRecoveryDeferral =
+        _AutomaticRecoveryDeferral.awaitingFreshEnvironment;
+    ref.invalidate(onboardingEnvironmentReportProvider);
+  }
+
+  void _enterPreparationFailure({
+    required Object error,
+    required StackTrace stackTrace,
+    required String logMessage,
+  }) {
+    _automaticRecoverySuppressed = true;
+    ref
+        .read(appLoggerProvider.notifier)
+        .error(
+          '$logMessage: $error',
+          source: 'OnboardingGate',
+          context: {'stackTrace': stackTrace.toString()},
+        );
+    _setWorkflowOverride(OnboardingStatus.preparationFailed);
   }
 
   Future<void> _prepareForFreshStartIfNeeded() async {

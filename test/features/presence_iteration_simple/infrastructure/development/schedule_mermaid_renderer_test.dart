@@ -68,6 +68,7 @@ void main() {
       final testAgentResolver = ImmutableTestAgentResolver(
         buildOnboardingTestAgentBindings(
           messagesSourceReadinessTestAgent: messagesAgent,
+          messagesSourceAccessDeniedTestAgent: messagesAgent,
           contactsSourceReadinessTestAgent: contactsAgent,
           messagesSourceHistorySufficiencyTestAgent: messagesAgent,
         ),
@@ -101,13 +102,15 @@ void main() {
           306,
           308,
           309,
+          310,
+          311,
           307,
         ]);
         expect(document.mermaid, contains('T302 -->|"True: Trip 305"| T305'));
-        expect(document.mermaid, contains('T302 -->|"False: default"| T303'));
+        expect(document.mermaid, contains('T302 -->|"False: Trip 310"| T310'));
         expect(document.mermaid, contains('T303 -->|"default"| T304'));
         expect(document.mermaid, contains('T304 -->|"True: default"| T305'));
-        expect(document.mermaid, contains('T304 -->|"False: Trip 303"| T303'));
+        expect(document.mermaid, contains('T304 -->|"False: Trip 310"| T310'));
         expect(document.mermaid, contains('T305 -->|"True: Trip 308"| T308'));
         expect(document.mermaid, contains('T305 -->|"False: default"| T306'));
         expect(
@@ -124,11 +127,17 @@ void main() {
           document.mermaid,
           contains('T309 -->|"Import Anyway: Trip 307"| T307'),
         );
+        expect(document.mermaid, contains('T310 -->|"True: Trip 303"| T303'));
+        expect(document.mermaid, contains('T310 -->|"False: Trip 311"| T311'));
+        expect(
+          document.mermaid,
+          contains('T311 -->|"explicit: Trip 302"| T302'),
+        );
         expect(document.mermaid, contains('T307 -->|"default"| Complete'));
         expect(document.mermaid, isNot(contains('null')));
-        expect(document.facts.tripCount, 9);
-        expect(document.facts.conditionalAlternativeCount, 10);
-        expect(document.facts.backwardEdgeCount, 3);
+        expect(document.facts.tripCount, 11);
+        expect(document.facts.conditionalAlternativeCount, 12);
+        expect(document.facts.backwardEdgeCount, 4);
         expect(messagesAgent.invocationCount, 0);
         expect(contactsAgent.invocationCount, 0);
         expect(settingsAuthority.invocationCount, 0);

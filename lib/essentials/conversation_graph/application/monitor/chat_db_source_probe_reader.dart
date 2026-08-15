@@ -1,5 +1,7 @@
 enum ChatDbSourceProbeFailureKind {
   databaseMissing,
+  accessDenied,
+  filesystemReadFailed,
   sqliteOpenFailed,
   expectedSchemaUnavailable,
   queryFailed,
