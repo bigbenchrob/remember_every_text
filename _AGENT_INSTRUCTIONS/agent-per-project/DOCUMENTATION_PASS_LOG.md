@@ -4510,3 +4510,25 @@ production preservation authority mechanically enforceable.
   state policy. Updated its start page and the Feature Addition index.
 - No application code, schema, runtime behavior, Overlay data, or
   `presence.db` contents changed in this documentation handoff.
+
+---
+
+# 2026-08-16 - Start production archive recovery feature
+
+- Created
+  `45-NEW-FEATURE-ADDITION/26-PRODUCTION-ARCHIVE-RECOVERY/00-START-HERE.md`.
+- Established the emergency objective of recovering valuable historical
+  Messages records and preserved archived image payloads from the known March
+  2026 MessageLens Application Support archive into the known current
+  production archive.
+- Declared the March archive a read-only donor, the current archive production,
+  and the initial investigation strictly read-only with mutation of neither
+  authorized.
+- Restated that archived attachment payloads are preservation data to be
+  treated like gold and that byte-different logical collisions must never be
+  overwritten silently.
+- Registered the first operative task as a read-only donor/current archive
+  inventory and explicitly deferred generalized archive-ingestion product
+  design.
+- Updated the Feature Addition index. No archive was inspected, no database or
+  attachment payload was accessed, and no recovery implementation was begun.
