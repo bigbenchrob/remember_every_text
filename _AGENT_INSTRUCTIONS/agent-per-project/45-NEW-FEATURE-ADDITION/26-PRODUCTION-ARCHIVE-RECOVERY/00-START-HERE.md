@@ -19,7 +19,23 @@ tests: []
 > **Archived attachment payloads are preservation data and must be treated like
 > gold.**
 
-## Emergency Objective
+## Status
+
+**Suspended and complete for now by explicit user decision.**
+
+The direct relational bridge accounts for 33,011 of 33,018 checkpointed donor
+relationships (99.9788%). A final private, local-only manifest reproduces the
+354 apparently recoverable payloads and 445,063,249 total bytes from the first
+audit. No recovery was performed.
+
+See:
+
+- [March 2026 Attachment Relational Bridge Audit](01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md)
+- [March 2026 Recovery Manifest And Closure](02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md)
+
+Further recovery requires new explicit authorization.
+
+## Original Emergency Objective
 
 Safely make the current production MessageLens archive contain everything
 valuable preserved in the March 2026 MessageLens Application Support archive,
@@ -33,12 +49,13 @@ The March 2026 saved folder contains both:
 - archived image attachment payloads preserved before Apple later evicted some
   local originals to iCloud.
 
-Recovering this known donor archive into this known current production archive
-is the immediate priority. This is not yet a generalized product feature.
+The package began by considering recovery of this known donor archive into this
+known current production archive. It was never a generalized product feature.
+The read-only evidence later justified stopping without performing recovery.
 
 ## Safety Boundary
 
-The first phase is forensic inventory only. It authorizes no write, copy,
+The investigation was forensic inventory only. It authorized no write, copy,
 rename, normalization, repair, migration, database opening in writable mode,
 or other mutation of either archive.
 
@@ -47,15 +64,15 @@ relocate, or otherwise mutate archived payloads. If two files eventually claim
 the same logical destination but differ in bytes, that collision must be
 surfaced explicitly. Silent overwrite is prohibited.
 
-## First Investigative Question
+## Investigative Question
 
-The next task must answer, read-only:
+The audit answered, read-only:
 
 > What exactly exists in the March 2026 donor archive, what exists in the
 > current production archive, how do they overlap, and what is the safest
 > one-way union seam?
 
-That investigation will need to identify:
+That investigation identified:
 
 - database files present in each archive;
 - which stores contain the historical message facts needed for recovery;
@@ -66,18 +83,31 @@ That investigation will need to identify:
 - safely rebuildable derived stores; and
 - existing ingestion code that may support a later bounded recovery.
 
-This scaffold does not perform that inventory.
+The two audit records linked below preserve the result.
 
-## Sequence
+## Final Evidence
+
+The read-only investigation is complete:
+
+- [March 2026 Attachment Relational Bridge Audit](01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md)
+- [March 2026 Recovery Manifest And Closure](02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md)
+
+The direct relational bridge maps 33,011 of 33,018 checkpointed donor
+message/attachment pairs (99.9788%). Matching is therefore considered proven.
+The final manifest exactly reproduces the 354 mapped donor payloads that appear
+absent from the current production attachment archive. The remaining payloads
+are not important enough to justify recovery work at this time.
+
+## Original Sequence
 
 ```text
 FIRST
-    recover the known March 2026 archive safely into the current production
-    archive
+    determine whether the known March 2026 archive can be related safely to
+    the current production archive
 
 LATER
-    use that experience as evidence for a generalized archive-ingestion
-    feature
+    only with new explicit authorization, consider recovery or use the
+    evidence for a generalized archive-ingestion feature
 ```
 
 ## Explicit Non-Goals
@@ -93,5 +123,5 @@ Do not yet design or implement:
 - database merging; or
 - attachment copying.
 
-The next operative task is strictly the read-only donor/current archive
-inventory.
+There is no operative recovery task. This package remains the historical record
+of the read-only investigation and explicit stop decision.

@@ -4532,3 +4532,57 @@ production preservation authority mechanically enforceable.
   design.
 - Updated the Feature Addition index. No archive was inspected, no database or
   attachment payload was accessed, and no recovery implementation was begun.
+
+---
+
+# 2026-08-16 - Audit March 2026 attachment relational bridge
+
+- Created
+  `45-NEW-FEATURE-ADDITION/26-PRODUCTION-ARCHIVE-RECOVERY/01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md`.
+- Resolved the supplied donor path to its actual content beneath a literal `:`
+  directory and confirmed the configured production archive root from current
+  application policy and cutover documentation.
+- Demonstrated the donor-message-GUID and donor-attachment-GUID bridge through
+  live-source source-scoped identities and current graph topology for 33,011 of
+  33,018 checkpointed donor pairs (99.9788%).
+- Measured 30,743 deterministic donor payloads present, 30,736 direct mappings,
+  30,382 intact current archive entries, and 354 mapped payloads apparently
+  recoverable without changing message history.
+- Recorded the seven-row relational residue, path/filesystem residue, current
+  archive residue, and the donor WAL limitation without introducing heuristic
+  fallback matching.
+- Identified the existing snapshot reader, source-scoped mapper,
+  content-addressed writer, and mutation coordinator as the eventual recovery
+  seam. The next bounded step is a read-only recovery plan; no payload was
+  copied and no recovery operation was run.
+- Recorded that an initial SQLite `mode=ro` schema probe updated only the donor
+  `chat.db-shm` coordination sidecar metadata; all quantitative work then used
+  immutable database access, and database/WAL/payload content remained
+  unchanged.
+- Disclosed that the already-running production app independently advanced the
+  import and graph stores by three messages during the first pass. Repeated all
+  decisive counts after an eight-second stability window; bridge, residue,
+  archive-coverage, and recovery-opportunity results were unchanged.
+- Updated the package start page and Feature Addition index. No application
+  code, database schema, message history, archive metadata, or attachment
+  payload changed.
+
+---
+
+# 2026-08-16 - Close March 2026 production archive recovery investigation
+
+- Generated the exact 354-row detailed recovery manifest outside Git at
+  `/tmp/messagelens-production-archive-recovery/march-2026-recoverable-attachments.csv`.
+- Reproduced Audit 01 exactly: 354 apparently recoverable payloads totaling
+  445,063,249 bytes, with the same blank, image, and QuickTime MIME
+  distribution and no discrepancies.
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md`
+  containing only non-sensitive aggregates, the local manifest path and
+  digest, the read-only safety boundary, explicit exclusions, and the final
+  stop decision.
+- Updated the Feature 26 start page and Feature Addition index to mark the work
+  suspended and complete for now by explicit user decision.
+- Used immutable/read-only database access and queried no message text. No
+  archive writer ran; no attachment was copied; no database, archive metadata,
+  message history, application code, or attachment payload changed.
