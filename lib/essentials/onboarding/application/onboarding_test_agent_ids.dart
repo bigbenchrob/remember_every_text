@@ -1,17 +1,9 @@
-import '../../presence/domain/entities/test_agent_id.dart';
-
-final TestAgentId messagesSourceReadableTestAgentId = TestAgentId(
-  'onboarding.messages-source-readable',
-);
-
-final TestAgentId messagesSourceAccessDeniedTestAgentId = TestAgentId(
-  'onboarding.messages-source-access-denied',
-);
-
-final TestAgentId contactsSourceReadableTestAgentId = TestAgentId(
-  'onboarding.contacts-source-readable',
-);
-
-final TestAgentId messagesSourceHistorySufficientTestAgentId = TestAgentId(
-  'onboarding.messages-source-history-sufficient',
-);
+// Transitional export for existing Onboarding composition and tests.
+// Opaque declarations belong to the shipped Presence guidebook catalog;
+// Onboarding owns only the executable Agent bindings for those declarations.
+export '../../presence/application/current_presence_guidebook_catalog.dart'
+    show
+        contactsSourceReadableTestAgentId,
+        messagesSourceAccessDeniedTestAgentId,
+        messagesSourceHistorySufficientTestAgentId,
+        messagesSourceReadableTestAgentId;

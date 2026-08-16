@@ -981,29 +981,47 @@ void main() {
       },
     );
 
-    test('Presence does not know Onboarding Agent identities', () async {
-      final offenders = <String>[];
-      await for (final entity in Directory(
-        'lib/essentials/presence',
-      ).list(recursive: true)) {
-        if (entity is! File || !entity.path.endsWith('.dart')) {
-          continue;
-        }
-        final source = await entity.readAsString();
-        if (source.contains('onboarding.messages-source-history-sufficient') ||
-            source.contains('messagesSourceHistorySufficientTestAgentId')) {
-          offenders.add(entity.path);
-        }
-      }
+    test(
+      'guidebook declares opaque Agent IDs without teaching runtime meaning',
+      () async {
+        const catalogPath =
+            'lib/essentials/presence/application/'
+            'current_presence_guidebook_catalog.dart';
+        final catalogSource = await File(catalogPath).readAsString();
+        expect(
+          catalogSource,
+          contains('onboarding.messages-source-history-sufficient'),
+          reason: 'The shipped guidebook owns its opaque capability IDs.',
+        );
 
-      expect(
-        offenders,
-        isEmpty,
-        reason:
-            'Onboarding owns its opaque Agent identities; Presence receives '
-            'only resolved generic TestAgent contracts.',
-      );
-    });
+        final offenders = <String>[];
+        await for (final entity in Directory(
+          'lib/essentials/presence',
+        ).list(recursive: true)) {
+          if (entity is! File || !entity.path.endsWith('.dart')) {
+            continue;
+          }
+          if (entity.path == catalogPath) {
+            continue;
+          }
+          final source = await entity.readAsString();
+          if (source.contains(
+                'onboarding.messages-source-history-sufficient',
+              ) ||
+              source.contains('messagesSourceHistorySufficientTestAgentId')) {
+            offenders.add(entity.path);
+          }
+        }
+
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              'Only guidebook input may declare the opaque capability. Generic '
+              'Presence contracts and execution must not interpret it.',
+        );
+      },
+    );
 
     test('Generic TestStep reconstruction is workflow agnostic', () async {
       final stepSource = await File(

@@ -4510,3 +4510,70 @@ production preservation authority mechanically enforceable.
   state policy. Updated its start page and the Feature Addition index.
 - No application code, schema, runtime behavior, Overlay data, or
   `presence.db` contents changed in this documentation handoff.
+
+---
+
+# 2026-08-15 - Establish Presence guidebook lifecycle architecture
+
+- Created
+  `45-NEW-FEATURE-ADDITION/25-PRESENCE-GUIDEBOOK-LIFECYCLE/00-START-HERE.md`
+  as the ordinary-language entry point for same-generation continuity and
+  cross-generation guidebook replacement.
+- Created
+  `45-NEW-FEATURE-ADDITION/25-PRESENCE-GUIDEBOOK-LIFECYCLE/01-PRESENCE-GUIDEBOOK-LIFECYCLE-ARCHITECTURE-AUDIT.md`.
+- Audited the current Drift schema, central Presence provider, production
+  Onboarding composition, repository installation/reconciliation path,
+  run/trace persistence, archive checkpoints, Message Data reset, database
+  health coverage, mutation authority, provider lifecycle, and SQLite
+  sidecars.
+- Classified every current Presence table as reproducible guidebook content or
+  edition-local execution state. Found no current Presence row that must
+  survive a guidebook-generation replacement.
+- Recorded the minimum pre-runtime, family-aware, build-then-promote lifecycle;
+  the distinction between schema version and guidebook generation; the
+  blank-stare consumer boundary; and the explicit prohibition against applying
+  Presence replaceability to archived attachments.
+- Identified one first implementation slice: a deterministic, side-effect-free
+  guidebook catalog contract and validator expressing the current production
+  catalog without choosing serialization or changing runtime behavior.
+- Registered Feature Addition 25 in the Feature Planning index and linked it
+  back to Feature 23's lifecycle handoff.
+- No application code, schema, catalog generation, runtime behavior, database
+  file, Overlay data, or archived attachment payload changed.
+
+---
+
+# 2026-08-15 - Implement Presence guidebook catalog contract
+
+- Created
+  `45-NEW-FEATURE-ADDITION/25-PRESENCE-GUIDEBOOK-LIFECYCLE/02-PRESENCE-GUIDEBOOK-CATALOG-CONTRACT-IMPLEMENTATION.md`.
+- Recorded the immutable catalog shape, pure structural validator, deterministic
+  construction evidence, and the separation between opaque capability
+  declarations and executable Onboarding capability bindings.
+- Documented the movement of Schedule 6 geometry, text, occurrences, routing,
+  Choice configuration, and capability declarations from Onboarding runtime
+  authoring into generic Presence guidebook ownership.
+- Recorded the unchanged transitional materialization through
+  `installOrExtendDefinition()`, unchanged schema and runtime behavior, and the
+  still-deferred Step 6302 generation-replacement and accepted-readiness
+  Schedule-ID issues.
+- Updated the Feature 25 start page and Feature Addition index. No
+  serialization format, generation marker, database replacement, schema
+  change, Overlay field, or attachment behavior was introduced.
+
+---
+
+# 2026-08-16 - Suspend Feature 25 for production archive recovery
+
+- Created
+  `45-NEW-FEATURE-ADDITION/25-PRESENCE-GUIDEBOOK-LIFECYCLE/03-FEATURE-SUSPENSION-HANDOFF.md`.
+- Marked Feature 25 as suspended rather than abandoned or superseded, retaining
+  its accepted guidebook-generation architecture and completed deterministic
+  catalog/validator slice as the future resumption point.
+- Recorded that the next lifecycle problem remains fresh installation,
+  generation identity, atomic Presence-family replacement, and eventual
+  reconciliation removal; the tactical Step 6302 migration idea remains
+  explicitly rejected.
+- Updated the Feature 25 start page and Feature Addition index. No archive was
+  inspected, no database or attachment payload was accessed, and no runtime
+  behavior changed as part of the suspension handoff.
