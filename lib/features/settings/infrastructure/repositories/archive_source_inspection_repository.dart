@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
+import '../../../../core/util/date_converter.dart';
 import '../../../../essentials/db/application/read_only_sql_guard.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../application/archive_source_inspection.dart';
@@ -205,32 +206,7 @@ ArchiveSourceDateRange _readArchiveDateRange(Database database) {
 }
 
 String? _archiveTimestampToUtcIsoString(Object? value) {
-  if (value == null) {
-    return null;
-  }
-
-  final rawValue = value is int
-      ? value
-      : value is num
-      ? value.toInt()
-      : int.tryParse('$value');
-  if (rawValue == null) {
-    return null;
-  }
-
-  const appleEpochDifferenceSeconds = 978307200;
-  final isNanoseconds = rawValue.abs() >= 1000000000000;
-  final utcDateTime = isNanoseconds
-      ? DateTime.fromMicrosecondsSinceEpoch(
-          (rawValue / 1000).round() +
-              appleEpochDifferenceSeconds * Duration.microsecondsPerSecond,
-          isUtc: true,
-        )
-      : DateTime.fromMillisecondsSinceEpoch(
-          (rawValue + appleEpochDifferenceSeconds) * 1000,
-          isUtc: true,
-        );
-  return utcDateTime.toUtc().toIso8601String();
+  return DateConverter.appleToIsoString(value);
 }
 
 Future<ArchiveSourceDryRunEstimate> _estimateDryRunAgainstConversationGraph({

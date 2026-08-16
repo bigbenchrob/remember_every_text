@@ -120,6 +120,26 @@ The correct response is **always investigation, never concealment**:
 
 ---
 
+## Rule 4: Apple Timestamp Conversion Via `DateConverter` Only
+
+> **Canonical doc:**
+> [`13-apple-timestamp-conversion.md`](13-apple-timestamp-conversion.md)
+
+- Every Apple timestamp must be normalized and converted by
+  `lib/core/util/date_converter.dart`.
+- Historical Messages databases may store Apple-epoch **seconds** while modern
+  databases store Apple-epoch **nanoseconds**. `DateConverter` owns that
+  distinction.
+- Import, preflight, projection, diagnostics, providers, and presentation must
+  not reproduce epoch offsets, unit thresholds, multiplication/division, or
+  SQLite `unixepoch` formulas.
+- If a new Apple encoding is discovered, extend `DateConverter` and its focused
+  tests. Do not add a second conversion path.
+- This rule is mechanically protected by
+  `test/architecture/apple_timestamp_conversion_authority_test.dart`.
+
+---
+
 ## Enforcement
 
 These rules are enforced by:

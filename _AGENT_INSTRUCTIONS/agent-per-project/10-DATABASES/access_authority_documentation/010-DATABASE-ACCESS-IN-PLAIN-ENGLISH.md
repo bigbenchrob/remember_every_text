@@ -312,6 +312,12 @@ The signal does not automatically revoke every open SQLite handle. It does not
 currently gate every persistent store. Overlay and Presence, for example, are
 separate stores with different continuity requirements.
 
+If an admitted operation itself needs the graph, it prepares that
+feature-owned capability before entering the protected interval. The prepared
+connection may finish the owning operation's work. A different consumer still
+cannot create a fresh graph connection while the signal is active. This is
+sequencing within the existing authority model, not a bypass around it.
+
 Therefore this mental translation is more accurate than "all database access
 is locked":
 

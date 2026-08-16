@@ -153,6 +153,7 @@ class MyFeature extends _$MyFeature {
 - ❌ 🔥 **INVIOLABLE: Projection snapshot/restore of overlay data** (projection/import must NEVER read overlay, snapshot it, then restore into projection. Providers merge at read time instead.)
 - ❌ 🔥 **INVIOLABLE: User-intent columns on projection tables** (flags like `is_blacklisted`/`is_visible` must NOT live on tables rebuilt by graph projection or retained migration. Store in overlay; merge in providers.)
 - ❌ 🔥 **INVIOLABLE: Suppressing anomalous records** (NEVER skip, hide, filter, or `SizedBox.shrink()` any record at ANY layer — import, projection, provider, or UI. Anomalous data MUST be rendered visibly and investigated, never concealed. See `10-DATABASES/INVIOLATE_RULES.md` Rule 2)
+- ❌ 🔥 **INVIOLABLE: Reimplementing Apple timestamp conversion** (ALWAYS use `lib/core/util/date_converter.dart`; historical Apple-second and modern Apple-nanosecond values must share that authority. Never duplicate epoch offsets, unit detection, or SQLite `unixepoch` formulas. See `10-DATABASES/13-apple-timestamp-conversion.md`.)
 
 ## 🔥 MANDATORY DATABASE ACCESS RULE
 

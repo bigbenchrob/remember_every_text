@@ -12,6 +12,7 @@ links:
   - ../15-MACOS-SOURCE-DATABASES/00-overview.md
   - ../15-MACOS-SOURCE-DATABASES/10-chat-db-orphan-messages.md
   - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
+  - ./13-apple-timestamp-conversion.md
 tests: []
 ---
 
@@ -94,6 +95,11 @@ identity meaning and the resulting self-conversation read-model rule.
 2. **Respect ROWIDs/GUIDs**: Preserve source facts and derive `ss_id` from source IDs; GUIDs remain metadata/bridge fields, not canonical identity.
 3. **WAL discipline**: Close all application handles before running manual SQLite tooling to avoid write-ahead-log conflicts.
 4. **Testing**: Provide fixture copies of `chat.db` when exercising import logic; avoid touching the live file in automated tests.
+5. **Timestamp authority**: Always convert `chat.db` timestamps through
+   `lib/core/util/date_converter.dart`. Historical databases may use
+   Apple-epoch seconds while modern databases use nanoseconds. Never duplicate
+   epoch or unit arithmetic in a query, importer, preflight, or repository. See
+   `13-apple-timestamp-conversion.md`.
 
 ## Cross-References
 

@@ -32,6 +32,7 @@ import 'essentials/archive_environment/infrastructure.dart'
 import 'essentials/conversation_graph/feature_level_providers.dart'
     show chatDbChangeMonitorProvider;
 import 'essentials/logging/application/diagnostic_report_actions.dart';
+import 'essentials/logging/application/flutter_framework_error_reporter.dart';
 import 'essentials/logging/feature_level_providers.dart'
     show appLoggerProvider, diagnosticReportExporterProvider;
 import 'essentials/navigation/application/router.dart';
@@ -264,15 +265,8 @@ void main() async {
 
   // Capture Flutter framework errors (layout, rendering, gestures).
   FlutterError.onError = (details) {
-    logger.error(
-      details.exceptionAsString(),
-      source: 'FlutterError',
-      context: {
-        'library': details.library ?? 'unknown',
-        'stack':
-            details.stack?.toString().split('\n').take(10).join('\n') ?? '',
-      },
-    );
+    FlutterError.presentError(details);
+    unawaited(deferFlutterFrameworkErrorLog(details, logError: logger.error));
   };
 
   // Capture platform-level errors (plugin crashes, isolate errors).

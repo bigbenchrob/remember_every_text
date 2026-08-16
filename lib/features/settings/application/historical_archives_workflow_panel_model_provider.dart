@@ -584,6 +584,14 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     }
 
     try {
+      // Historical import projects into the graph while mutation authority is
+      // held. Prepare that feature-owned capability before the maintenance
+      // interval begins; unrelated graph connections remain unable to open
+      // after admission.
+      final archiveGraphImportService = await ref.read(
+        sourceScopedArchiveGraphImportServiceProvider.future,
+      );
+
       await ref
           .read(archiveMutationCoordinatorProvider.notifier)
           .run<void>(
@@ -614,9 +622,6 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
               final archiveSources = await ref.read(
                 historicalArchiveSourcesProvider.future,
-              );
-              final archiveGraphImportService = await ref.read(
-                sourceScopedArchiveGraphImportServiceProvider.future,
               );
               final archiveResult = await archiveGraphImportService
                   .importAndProject(

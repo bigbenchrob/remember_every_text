@@ -11,6 +11,11 @@ import 'package:intl/intl.dart';
 class DateConverter {
   DateConverter._();
 
+  // Apple Messages databases in the field use both seconds and nanoseconds
+  // since 2001-01-01. Values below this unambiguous magnitude are seconds;
+  // modern nanosecond values are many orders of magnitude larger.
+  static const int _appleNanosecondsMagnitudeFloor = 1000000000000;
+
   /// Turn a date string, e.g. '2019-01-31' to an int based on the Apple date specification
   static int dateString2Apple(String dateString) {
     // e.g. '2019-01-31'
@@ -93,30 +98,47 @@ class DateConverter {
     return null;
   }
 
-  /// Convert Apple timestamp (nanoseconds since 2001-01-01) to ISO 8601 UTC string
-  /// Handles both int and double values from SQLite databases
-  /// Returns null for null or zero values
-  static String? appleToIsoString(dynamic raw) {
+  /// Normalizes an Apple-epoch timestamp to nanoseconds since 2001-01-01.
+  ///
+  /// Older Messages databases store seconds while modern databases store
+  /// nanoseconds. All Apple timestamp consumers must use this utility rather
+  /// than implementing epoch arithmetic or unit detection independently.
+  static int? normalizeAppleTimestamp(dynamic raw) {
     final intValue = toIntSafe(raw);
     if (intValue == null || intValue == 0) {
+      return null;
+    }
+
+    if (intValue.abs() < _appleNanosecondsMagnitudeFloor) {
+      return coreTS2Apple(intValue.toDouble());
+    }
+    return intValue;
+  }
+
+  /// Convert an Apple timestamp to an ISO 8601 UTC string.
+  /// Handles Apple-epoch seconds and nanoseconds from SQLite databases.
+  /// Returns null for null or zero values
+  static String? appleToIsoString(dynamic raw) {
+    final appleNanoseconds = normalizeAppleTimestamp(raw);
+    if (appleNanoseconds == null) {
       return null;
     }
 
     // Convert Apple nanoseconds to Dart milliseconds and create DateTime
-    final dartTimestamp = apple2Dart(intValue);
+    final dartTimestamp = apple2Dart(appleNanoseconds);
     final dateTime = dartTimeStamp2DateTime(dartTimestamp);
     return dateTime.toUtc().toIso8601String();
   }
 
-  /// Convert Apple timestamp to DateTime object
-  /// Handles both int and double values from SQLite databases
+  /// Convert an Apple timestamp to a DateTime object.
+  /// Handles Apple-epoch seconds and nanoseconds from SQLite databases.
   static DateTime? appleToDateTime(dynamic raw) {
-    final intValue = toIntSafe(raw);
-    if (intValue == null || intValue == 0) {
+    final appleNanoseconds = normalizeAppleTimestamp(raw);
+    if (appleNanoseconds == null) {
       return null;
     }
 
-    final dartTimestamp = apple2Dart(intValue);
+    final dartTimestamp = apple2Dart(appleNanoseconds);
     return dartTimeStamp2DateTime(dartTimestamp);
   }
 }

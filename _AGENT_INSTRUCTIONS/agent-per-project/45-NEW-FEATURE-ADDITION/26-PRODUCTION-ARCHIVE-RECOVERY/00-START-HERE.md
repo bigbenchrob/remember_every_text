@@ -21,7 +21,7 @@ tests: []
 
 ## Status
 
-**Suspended and complete for now by explicit user decision.**
+**Temporarily reopened for a separate historical-message recovery task.**
 
 The direct relational bridge accounts for 33,011 of 33,018 checkpointed donor
 relationships (99.9788%). A final private, local-only manifest reproduces the
@@ -33,7 +33,26 @@ See:
 - [March 2026 Attachment Relational Bridge Audit](01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md)
 - [March 2026 Recovery Manifest And Closure](02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md)
 
-Further recovery requires new explicit authorization.
+Further March attachment recovery requires new explicit authorization.
+
+The March attachment-recovery investigation remains closed. Feature 26 is
+reopened only to assess the separate `Messages_2012` historical donor. The
+read-only feasibility result and staging recommendation are recorded in:
+
+- [Historical Messages 2012-2016 Ingestion Audit](03-HISTORICAL-MESSAGES-2012-2016-INGESTION-AUDIT.md)
+- [Historical Import Maintenance-Lock Correction](04-HISTORICAL-IMPORT-MAINTENANCE-LOCK-CORRECTION.md)
+- [Historical Apple Timestamp Normalization Correction](05-HISTORICAL-APPLE-TIMESTAMP-NORMALIZATION-CORRECTION.md)
+- [Historical Import Post-Correction Verification](06-HISTORICAL-IMPORT-POST-CORRECTION-VERIFICATION.md)
+
+A disposable staging-clone rehearsal ultimately imported and projected all
+8,882 donor messages. It exposed and corrected two independent defects: the
+historical-import maintenance operation initially blocked its own graph access,
+and old Apple-second timestamps were later interpreted as nanoseconds. The
+timestamp correction is implemented and verified in code; the GUI import has
+been rerun manually after that correction. Immutable post-import verification
+confirms all 8,882 source-3 messages now span the correct 2012-2017 range and
+project exactly into the graph. The next concern is the Historical Archives
+UX/lifecycle behavior observed during maintenance; no redesign has begun.
 
 ## Original Emergency Objective
 
@@ -123,5 +142,6 @@ Do not yet design or implement:
 - database merging; or
 - attachment copying.
 
-There is no operative recovery task. This package remains the historical record
-of the read-only investigation and explicit stop decision.
+The March attachment investigation remains the historical record of an
+explicit stop decision. The separately reopened historical-message task is
+limited to the staging-clone rehearsal described in Audit 03.

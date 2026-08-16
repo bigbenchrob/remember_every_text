@@ -59,7 +59,8 @@ start with
   historical archive, and attachment operations use
   `ArchiveMutationCoordinator`. `dbMaintenanceLockProvider` remains a derived
   readiness/UI signal exposed through the DB seam; it is not an independent
-  write authority.
+  write authority. It gates creation of a new graph connection; it does not
+  reactively revoke a connection already prepared for the admitted operation.
 - **Public provider seam imports stay narrow.** When a file imports
   `feature_level_providers.dart` from another feature or essential module, it
   must use an explicit `show` list. Broad seam imports hide database and

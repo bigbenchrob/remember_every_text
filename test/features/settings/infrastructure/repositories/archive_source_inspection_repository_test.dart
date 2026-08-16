@@ -38,6 +38,24 @@ void main() {
       expect(inspection.totalHandles, 1);
     });
 
+    test(
+      'uses canonical Apple-seconds normalization for donor range',
+      () async {
+        _createMinimalChatDatabaseAt(
+          path.join(tempDir.path, 'chat.db'),
+          messageDates: const <int>[364929382, 518890287],
+        );
+        const repository = ArchiveSourceInspectionRepository(graphDb: null);
+
+        final inspection = await repository.inspectFolder(
+          folderPath: tempDir.path,
+        );
+
+        expect(inspection.earliestMessageUtc, '2012-07-25T17:16:22.000Z');
+        expect(inspection.latestMessageUtc, '2017-06-11T16:11:27.000Z');
+      },
+    );
+
     test('does not inspect a symlinked source folder', () async {
       final realSource = await Directory.systemTemp.createTemp(
         'archive_source_inspection_real_source_',
@@ -107,7 +125,10 @@ void _createMinimalChatDatabase(Directory sourceDirectory) {
   _createMinimalChatDatabaseAt(path.join(sourceDirectory.path, 'chat.db'));
 }
 
-void _createMinimalChatDatabaseAt(String databasePath) {
+void _createMinimalChatDatabaseAt(
+  String databasePath, {
+  List<int> messageDates = const <int>[0],
+}) {
   final db = sqlite3.sqlite3.open(databasePath);
   try {
     db
@@ -116,11 +137,14 @@ void _createMinimalChatDatabaseAt(String databasePath) {
       )
       ..execute('CREATE TABLE chat (ROWID INTEGER PRIMARY KEY)')
       ..execute('CREATE TABLE handle (ROWID INTEGER PRIMARY KEY)')
-      ..execute(
-        "INSERT INTO message (ROWID, guid, date) VALUES (1, 'message-1', 0)",
-      )
       ..execute('INSERT INTO chat (ROWID) VALUES (1)')
       ..execute('INSERT INTO handle (ROWID) VALUES (1)');
+    for (var index = 0; index < messageDates.length; index += 1) {
+      db.execute(
+        'INSERT INTO message (ROWID, guid, date) VALUES (?, ?, ?)',
+        <Object?>[index + 1, 'message-${index + 1}', messageDates[index]],
+      );
+    }
   } finally {
     db.dispose();
   }

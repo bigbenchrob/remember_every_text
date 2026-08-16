@@ -82,6 +82,18 @@ This README contains the canonical index to all project documentation including:
 - ❌ **NEVER** swallow exceptions during record processing — log them and include the record with error metadata
 - 📖 See [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/INVIOLATE_RULES.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/INVIOLATE_RULES.md) Rule 2
 
+### 🔥 INVIOLABLE: Apple Timestamp Conversion Authority
+
+- ✅ **Always use** `lib/core/util/date_converter.dart` for Apple timestamp
+  normalization and conversion
+- ✅ Historical Apple-epoch seconds and modern Apple-epoch nanoseconds must
+  converge through `DateConverter`
+- ❌ **NEVER** reproduce Apple epoch offsets, unit detection, division, or
+  SQLite `unixepoch` conversion in an importer, preflight, repository, query,
+  provider, or UI
+- 📖 See
+  [`_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/13-apple-timestamp-conversion.md`](_AGENT_INSTRUCTIONS/agent-per-project/10-DATABASES/13-apple-timestamp-conversion.md)
+
 ### 🔥 INVIOLABLE: Attachment Archive Preservation
 
 - ✅ **Archived attachment payloads are preservation data, not a cache**

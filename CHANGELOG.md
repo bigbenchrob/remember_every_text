@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.37] — 2026-08-16
+
+### Fixed
+
+- Historical Messages archives using Apple-epoch seconds now retain their
+  actual dates during source-scoped import and graph projection. Archive
+  preflight and import share the same canonical `DateConverter` normalization,
+  while modern Apple-nanosecond timestamps remain unchanged.
+
 ## [0.2.36] — 2026-08-15
 
 ### Fixed

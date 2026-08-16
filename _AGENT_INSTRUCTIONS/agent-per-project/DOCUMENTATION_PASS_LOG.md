@@ -4586,3 +4586,102 @@ production preservation authority mechanically enforceable.
 - Used immutable/read-only database access and queried no message text. No
   archive writer ran; no attachment was copied; no database, archive metadata,
   message history, application code, or attachment payload changed.
+
+---
+
+# 2026-08-16 - Audit historical Messages donor ingestion feasibility
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/03-HISTORICAL-MESSAGES-2012-2016-INGESTION-AUDIT.md`.
+- Resolved the task's `Messages_2016` wording against the actual supplied
+  `Messages_2012` donor and established its real 2012-07-25 through 2017-06-11
+  range from immutable SQLite evidence.
+- Counted 8,882 donor messages, 86 chats, 77 handles, 773 attachment records,
+  and their source topology; confirmed database integrity, delete-journal
+  mode, and an empty WAL.
+- Measured 6,513 exact GUID overlaps with the current live source and 2,369
+  absent GUIDs, including all 1,352 donor messages from 2012-2013.
+- Confirmed the current source-scoped Historical Archives workflow registers a
+  separate source, imports source facts, and projects them without resetting
+  live-source facts, Overlay intent, or the attachment archive. Recorded that
+  overlapping GUIDs intentionally remain separate source-scoped occurrences.
+- Established that attachment metadata is imported but attachment payload
+  recovery is neither required nor performed by this message-history slice.
+- Identified the current non-immutable historical source opener as a donor
+  preservation caveat and specified a verified read-only disposable
+  `chat.db` input copy for the rehearsal.
+- Defined the exact development-root staging-clone procedure, baseline and
+  post-import checks, restart/catch-up checks, and the boundary against direct
+  promotion of a stale development clone.
+- Updated the Feature 26 start page and Feature Addition index to mark the
+  package temporarily reopened only for this separate historical-message task.
+- No staging clone was created, no app was launched, no ingestion ran, and no
+  donor, production database, Overlay row, archive metadata, or attachment
+  payload was mutated.
+
+---
+
+# 2026-08-16 - Correct Historical Archives maintenance-lock sequencing
+
+- Recorded the first disposable staging import failure in
+  `26-PRODUCTION-ARCHIVE-RECOVERY/04-HISTORICAL-IMPORT-MAINTENANCE-LOCK-CORRECTION.md`.
+- Established by immutable inspection that no source `3` registration, import
+  rows, graph rows, or attachment-preservation changes occurred; only the
+  retryable Historical Archives failure status was written to Overlay.
+- Documented the exact self-blocking provider chain and the correction: prepare
+  the feature-owned graph import service before mutation admission, retain that
+  prepared connection for the owner, and continue refusing fresh unrelated
+  graph opens while maintenance blocking is active.
+- Clarified the canonical database-access documents that the maintenance signal
+  gates connection creation and does not reactively revoke an existing handle.
+- Updated the Feature 26 start page and Audit 03 status wording. No database
+  schema, source identity, donor, staging data, production archive, or
+  attachment payload was changed by this documentation pass.
+
+---
+
+# 2026-08-16 - Centralize historical Apple timestamp normalization
+
+- Recorded the successful 8,882-message staging import and its timestamp
+  collapse in
+  `26-PRODUCTION-ARCHIVE-RECOVERY/05-HISTORICAL-APPLE-TIMESTAMP-NORMALIZATION-CORRECTION.md`.
+- Established `lib/core/util/date_converter.dart` as the sole Apple timestamp
+  authority for old Apple-second and modern Apple-nanosecond values.
+- Added the mandatory canonical rule in
+  `10-DATABASES/13-apple-timestamp-conversion.md`, linked it from the project
+  index, `db-chat`, `INVIOLATE_RULES.md`, and `AGENTS.md`, and recorded the
+  architecture tripwire that rejects parallel epoch arithmetic.
+- Documented the owned source-scoped removal/reprojection path as the preferred
+  disposable staging reset, with clone recreation as the fail-closed fallback.
+- Separately recorded the observed temporary Onboarding diversion during
+  Historical Archives import without changing that UX in this task.
+- No production archive, frozen snapshot, donor, staging database, source
+  record, schema, or attachment payload was modified.
+
+---
+
+# 2026-08-16 - Verify corrected historical import end to end
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/06-HISTORICAL-IMPORT-POST-CORRECTION-VERIFICATION.md`.
+- Confirmed by immutable inspection that source `3` is registered once and
+  contains exactly 8,882 messages in both import ledger and graph, spanning
+  2012-07-25 through 2017-06-11 with zero 2000/2001 collapse rows.
+- Matched representative donor raw Apple-second values through the canonical
+  `DateConverter` expectations to identical ledger and graph ISO-UTC values.
+- Confirmed source `1` remains intact at 136,943 matched ledger/graph rows; the
+  one-row increase is ordinary live-source catch-up after the earlier baseline.
+- Confirmed the source-3 topology counts reproduce the donor audit and all
+  active staging databases pass immutable quick and integrity checks.
+- Found no user-intent mutation during the historical import window. Recorded
+  the legitimate Historical Archives workflow metadata update.
+- Established that the historical source supplied no payload folder and that
+  no historical-source payload write was identified.
+  One later archive write came from the ordinary live Messages attachment
+  source and is reported separately rather than misattributed to the import.
+- Recorded the observed Onboarding diversion, transient readiness alarms,
+  unclear lifecycle transitions, oversized control panel, and action ambiguity
+  as the next Feature 26 concern without investigating or changing them.
+- No import, removal, reset, application launch, production access, donor
+  mutation, schema change, or attachment-payload mutation was performed by this
+  verification pass.

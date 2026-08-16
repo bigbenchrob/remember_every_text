@@ -3,9 +3,13 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
+import 'package:remember_this_text/essentials/archive_environment/domain.dart'
+    show ArchiveMutationOperation;
 import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/status/conversation_graph_status_log_writer_provider.dart';
 import 'package:remember_this_text/essentials/conversation_graph/domain/status/conversation_graph_status.dart';
+import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart'
+    show sourceScopedArchiveGraphImportServiceProvider;
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/logging/application/diagnostic_report_provider.dart';
@@ -126,6 +130,109 @@ void main() {
               !path.isAbsolute(relativePath) && !relativePath.startsWith('../'),
         ),
         isTrue,
+      );
+    },
+  );
+
+  test(
+    'historical import retains its prepared graph connection while fresh reopens stay blocked',
+    () async {
+      final fixture = await TestArchiveFixture.create(
+        prefix: 'historical_import_graph_access_test_',
+      );
+      final ownerContainer = ProviderContainer(
+        overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(
+            fixture.authority,
+          ),
+        ],
+      );
+      addTearDown(() async {
+        ownerContainer.dispose();
+        await Future<void>.delayed(Duration.zero);
+        await fixture.dispose();
+      });
+
+      final preparedImportService = await ownerContainer.read(
+        sourceScopedArchiveGraphImportServiceProvider.future,
+      );
+
+      await ownerContainer
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<void>(
+            operation: ArchiveMutationOperation.historicalArchiveImport,
+            ownerLabel: 'historical-import',
+            action: () async {
+              expect(ownerContainer.read(dbMaintenanceLockProvider), isTrue);
+              await Future<void>.delayed(Duration.zero);
+              final projection = await preparedImportService.handleProjector
+                  .projectHandles();
+              expect(projection.insertedHandleCount, 0);
+
+              final unrelatedContainer = ProviderContainer(
+                overrides: [
+                  admittedArchiveAccessAuthorityProvider.overrideWithValue(
+                    fixture.authority,
+                  ),
+                  dbMaintenanceLockProvider.overrideWith((ref) => true),
+                ],
+              );
+              try {
+                await expectLater(
+                  unrelatedContainer.read(
+                    driftConversationGraphDatabaseProvider.future,
+                  ),
+                  throwsA(
+                    isA<StateError>().having(
+                      (error) => error.message,
+                      'message',
+                      contains('unavailable during database maintenance'),
+                    ),
+                  ),
+                );
+              } finally {
+                unrelatedContainer.dispose();
+              }
+            },
+          );
+    },
+  );
+
+  test(
+    'a blocked fresh graph open recovers after maintenance releases',
+    () async {
+      final fixture = await TestArchiveFixture.create(
+        prefix: 'blocked_graph_reopen_recovery_test_',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(
+            fixture.authority,
+          ),
+        ],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await Future<void>.delayed(Duration.zero);
+        await fixture.dispose();
+      });
+
+      await container
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<void>(
+            operation: ArchiveMutationOperation.historicalArchiveImport,
+            ownerLabel: 'historical-import-without-preparation',
+            action: () async {
+              await expectLater(
+                container.read(driftConversationGraphDatabaseProvider.future),
+                throwsA(isA<StateError>()),
+              );
+            },
+          );
+
+      await expectLater(
+        container.read(driftConversationGraphDatabaseProvider.future),
+        completion(isNotNull),
       );
     },
   );

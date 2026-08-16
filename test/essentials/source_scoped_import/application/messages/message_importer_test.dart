@@ -99,6 +99,54 @@ void main() {
     expect(rows.single['has_payload_data_source'], 1);
   });
 
+  test(
+    'imports old Apple-second and modern nanosecond dates compatibly',
+    () async {
+      final archiveSourceId = await importDatabase.getOrCreateSource(
+        sourceKey: 'historical-test-source',
+        sourceKind: 'historical_messages_archive',
+      );
+      expect(archiveSourceId, 3);
+
+      await _insertSourceMessage(
+        chatDbPath,
+        rowId: 1,
+        guid: 'archive-2012',
+        handleId: 0,
+        isFromMe: 0,
+        date: 364929382,
+        text: 'old',
+      );
+      const modernAppleTimestamp = 808531200000000000;
+      await _insertSourceMessage(
+        chatDbPath,
+        rowId: 2,
+        guid: 'modern-2026',
+        handleId: 0,
+        isFromMe: 0,
+        date: modernAppleTimestamp,
+        text: 'modern',
+      );
+
+      final importer = MessageImporter(
+        chatDbPath: chatDbPath,
+        importLedger: importDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+        sourceId: archiveSourceId,
+      );
+
+      await importer.importNewMessages();
+      final rows = await importDatabase.database.query(
+        'messages',
+        orderBy: 'source_rowid ASC',
+      );
+
+      expect(rows, hasLength(2));
+      expect(rows[0]['date_utc'], '2012-07-25T17:16:22.000Z');
+      expect(rows[1]['date_utc'], '2026-08-16T00:00:00.000Z');
+    },
+  );
+
   test('is idempotent on repeated imports', () async {
     await _insertSourceMessage(
       chatDbPath,

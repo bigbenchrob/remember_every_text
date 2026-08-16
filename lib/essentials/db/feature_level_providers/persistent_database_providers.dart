@@ -47,7 +47,13 @@ Future<ImportDatabase> sourceScopedImportDatabase(
 Future<ConversationGraphDatabase> driftConversationGraphDatabase(
   DriftConversationGraphDatabaseRef ref,
 ) async {
-  if (ref.watch(dbMaintenanceLockProvider)) {
+  // The maintenance signal gates creation of a graph connection. It must not
+  // revoke a connection already prepared by the operation that owns the
+  // protected mutation interval.
+  if (ref.read(dbMaintenanceLockProvider)) {
+    // A provider first requested while blocked observes the signal so it can
+    // recover automatically after maintenance releases.
+    ref.watch(dbMaintenanceLockProvider);
     throw StateError(
       '${appDatabaseFileName(AppDatabaseFile.conversationGraph)} is unavailable during database maintenance',
     );
