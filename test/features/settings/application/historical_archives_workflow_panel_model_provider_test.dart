@@ -27,7 +27,7 @@ void main() {
   const currentMessagesDatabasePath = '/Users/test/Library/Messages/chat.db';
 
   group('buildHistoricalArchivesWorkflowPanelModel', () {
-    test('projects the empty workflow as the no-source narrator state', () {
+    test('projects the empty workflow as a silent hub', () {
       final model = buildHistoricalArchivesWorkflowPanelModel(
         executionGateState: const ArchiveMutationCoordinatorState(),
         isMaintenanceLocked: false,
@@ -35,11 +35,8 @@ void main() {
         currentMessagesDatabasePath: currentMessagesDatabasePath,
       );
 
-      expect(
-        model.narratorPresentation?.kind,
-        HistoricalArchivesNarratorPresentationKind.noSource,
-      );
-      expect(model.narratorPresentation?.instrumentationRows, isEmpty);
+      expect(model.isHub, isTrue);
+      expect(model.narratorPresentation, isNull);
     });
 
     test(
@@ -593,6 +590,70 @@ void main() {
     );
 
     test(
+      'remembered source with no imported messages remains eligible for add flow',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        const source = HistoricalArchiveSourceMetadata(
+          sourceKey: sourceKey,
+          sourceChatDb: '/tmp/archive/chat.db',
+          folderPath: '/tmp/archive',
+          sourceLabel: 'Archive',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Not found',
+          totalMessages: 42,
+          earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+          latestMessageUtc: '2017-06-11T08:00:00.000Z',
+          preflightStatusLabel: 'Previously inspected',
+          dryRunNewMessages: 42,
+          dryRunDuplicateMessages: 0,
+          lastImportFinishedAtUtc: null,
+          lastImportSuccess: null,
+          lastImportError: null,
+          lastImportedMessageCount: null,
+        );
+        final container = ProviderContainer(
+          overrides: [
+            historicalArchiveFolderChooserProvider.overrideWith(
+              (ref) => const _FakeFolderChooser('/tmp/archive'),
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => const _FakeHistoricalArchiveSources(),
+            ),
+            historicalArchiveSourceMetadataProvider.overrideWith(
+              (ref) async => const [source],
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container
+            .read(historicalArchivesWorkflowProvider.notifier)
+            .chooseMessagesFolder();
+
+        final state = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          state.presentationContext,
+          HistoricalArchivesPresentationContext.addArchive,
+        );
+        expect(
+          state.presentationStage,
+          HistoricalArchivesPresentationStage.readyForImport,
+        );
+        expect(state.knownSourceReference, isNull);
+        expect(
+          await container.read(historicalArchiveSourceMetadataProvider.future),
+          const [source],
+        );
+      },
+    );
+
+    test(
       'known-source navigation uses canonical identity without recognition pulse',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
@@ -649,6 +710,14 @@ void main() {
         expect(state.selectedFolderPath, '/tmp/archive');
         expect(state.selectedKnownSourceKey, sourceKey);
         expect(state.knownSourceReference, isNull);
+        final rows = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: state,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        ).narratorPresentation?.instrumentationRows;
+        expect(rows?.map((row) => row.label), ['Messages', 'Dates']);
+        expect(rows?.first.value, '42');
         expect(
           buildHistoricalArchivesWorkflowPanelModel(
             executionGateState: const ArchiveMutationCoordinatorState(),
@@ -661,61 +730,66 @@ void main() {
       },
     );
 
-    test('preflight-only known source cannot authorize import', () async {
-      const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
-      final container = ProviderContainer(
-        overrides: [
-          historicalArchiveSourceMetadataProvider.overrideWith(
-            (ref) async => const [
-              HistoricalArchiveSourceMetadata(
-                sourceKey: sourceKey,
-                sourceChatDb: '/tmp/archive/chat.db',
-                folderPath: '/tmp/archive',
-                sourceLabel: 'Archive',
-                chatDbStatusLabel: 'Found and readable',
-                attachmentsStatusLabel: 'Found',
-                totalMessages: 42,
-                earliestMessageUtc: '2012-07-25T08:00:00.000Z',
-                latestMessageUtc: '2017-06-11T08:00:00.000Z',
-                preflightStatusLabel: 'Preflight complete',
-                dryRunNewMessages: 32,
-                dryRunDuplicateMessages: 10,
-                lastImportFinishedAtUtc: null,
-                lastImportSuccess: null,
-                lastImportError: null,
-                lastImportedMessageCount: null,
-              ),
-            ],
-          ),
-          historicalArchiveImportedSourceLookupProvider.overrideWith(
-            (ref) async => const _FakeImportedSourceLookup(),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'remembered unimported source cannot establish selected context',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        final container = ProviderContainer(
+          overrides: [
+            historicalArchiveSourceMetadataProvider.overrideWith(
+              (ref) async => const [
+                HistoricalArchiveSourceMetadata(
+                  sourceKey: sourceKey,
+                  sourceChatDb: '/tmp/archive/chat.db',
+                  folderPath: '/tmp/archive',
+                  sourceLabel: 'Archive',
+                  chatDbStatusLabel: 'Found and readable',
+                  attachmentsStatusLabel: 'Found',
+                  totalMessages: 42,
+                  earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+                  latestMessageUtc: '2017-06-11T08:00:00.000Z',
+                  preflightStatusLabel: 'Preflight complete',
+                  dryRunNewMessages: 32,
+                  dryRunDuplicateMessages: 10,
+                  lastImportFinishedAtUtc: null,
+                  lastImportSuccess: null,
+                  lastImportError: null,
+                  lastImportedMessageCount: null,
+                ),
+              ],
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await container
-          .read(historicalArchivesWorkflowProvider.notifier)
-          .showKnownSource(sourceKey: sourceKey);
+        await container
+            .read(historicalArchivesWorkflowProvider.notifier)
+            .showKnownSource(sourceKey: sourceKey);
 
-      final state = container.read(historicalArchivesWorkflowProvider);
-      final model = buildHistoricalArchivesWorkflowPanelModel(
-        executionGateState: const ArchiveMutationCoordinatorState(),
-        isMaintenanceLocked: false,
-        workflowState: state,
-        currentMessagesDatabasePath: currentMessagesDatabasePath,
-      );
-      expect(
-        state.presentationStage,
-        HistoricalArchivesPresentationStage.knownSource,
-      );
-      expect(model.narratorPresentation?.narratorText, 'Archive');
-      expect(
-        model.narratorPresentation?.kind,
-        HistoricalArchivesNarratorPresentationKind.existingSource,
-      );
-      expect(model.importButtonEnabled, isFalse);
-    });
+        final state = container.read(historicalArchivesWorkflowProvider);
+        final model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: state,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          state.presentationStage,
+          HistoricalArchivesPresentationStage.noSource,
+        );
+        expect(
+          state.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(state.selectedKnownSourceKey, isNull);
+        expect(model.isHub, isTrue);
+        expect(model.narratorPresentation, isNull);
+        expect(model.importButtonEnabled, isFalse);
+      },
+    );
 
     test(
       'leaving Historical Archives clears transient selection but not source facts',

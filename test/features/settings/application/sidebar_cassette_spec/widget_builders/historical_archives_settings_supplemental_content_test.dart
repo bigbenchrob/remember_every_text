@@ -17,7 +17,6 @@ void main() {
             label: 'Jan 2017 MacBook Archive',
             dateRangeLabel: 'Range: Jan 2014 -> Nov 2017',
             messageCountLabel: 'Source messages: 8,882',
-            statusLabel: 'Last result: Succeeded',
             lastRunSummaryLabel: 'Last run counts: 8,120 new, 762 duplicates',
             lastImportedLabel: 'Last imported: Apr 29, 2026 at 11:42 AM',
           ),
@@ -35,11 +34,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Known Archive Sources'), findsOneWidget);
+      expect(find.text('Folders Already Added'), findsOneWidget);
       expect(find.text('Jan 2017 MacBook Archive'), findsOneWidget);
       expect(find.text('Range: Jan 2014 -> Nov 2017'), findsOneWidget);
       expect(find.text('Source messages: 8,882'), findsOneWidget);
-      expect(find.text('Last result: Succeeded'), findsOneWidget);
       expect(
         find.text('Last run counts: 8,120 new, 762 duplicates'),
         findsOneWidget,
@@ -150,7 +148,6 @@ void main() {
                     label: 'Archive-2017',
                     dateRangeLabel: 'Date range: 2012 to 2017',
                     messageCountLabel: 'Total messages: 8,882',
-                    statusLabel: 'Current status: Imported successfully',
                     lastRunSummaryLabel: 'Last run: imported 8,882 messages',
                     lastImportedLabel: 'Last imported: today',
                   ),
@@ -183,7 +180,6 @@ void main() {
                       label: 'Archive-2017',
                       dateRangeLabel: 'Date range: 2012 to 2017',
                       messageCountLabel: 'Total messages: 8,882',
-                      statusLabel: 'Current status: Imported successfully',
                       lastRunSummaryLabel: 'Last run: imported 8,882 messages',
                       lastImportedLabel: 'Last imported: today',
                       isSelected: true,
@@ -240,7 +236,6 @@ void main() {
                         label: 'Archive-2017',
                         dateRangeLabel: 'Date range: 2012 to 2017',
                         messageCountLabel: 'Total messages: 8,882',
-                        statusLabel: 'Current status: Imported successfully',
                         lastRunSummaryLabel:
                             'Last run: imported 8,882 messages',
                         lastImportedLabel: 'Last imported: today',
@@ -325,7 +320,6 @@ void main() {
                   label: 'Archive-2017',
                   dateRangeLabel: 'Date range: 2012 to 2017',
                   messageCountLabel: 'Total messages: 8,882',
-                  statusLabel: 'Current status: Imported successfully',
                   lastRunSummaryLabel: 'Last run: imported 8,882 messages',
                   lastImportedLabel: 'Last imported: today',
                   isReferenced: isReferenced,

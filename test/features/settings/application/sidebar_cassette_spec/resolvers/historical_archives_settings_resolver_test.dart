@@ -37,7 +37,6 @@ void main() {
           label: 'Archive-2017',
           dateRangeLabel: 'Date range: not yet available',
           messageCountLabel: 'Total messages: 42',
-          statusLabel: 'Current status: Preflight complete',
           lastRunSummaryLabel:
               'Estimated new messages: 10 | Estimated duplicates: 32',
           lastImportedLabel: 'Last imported: not recorded yet',

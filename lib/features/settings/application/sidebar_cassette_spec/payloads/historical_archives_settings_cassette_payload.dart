@@ -6,7 +6,6 @@ final class HistoricalArchiveSidebarSourceSummary {
     required this.label,
     required this.dateRangeLabel,
     required this.messageCountLabel,
-    required this.statusLabel,
     required this.lastRunSummaryLabel,
     required this.lastImportedLabel,
     this.isReferenced = false,
@@ -18,7 +17,6 @@ final class HistoricalArchiveSidebarSourceSummary {
   final String label;
   final String dateRangeLabel;
   final String messageCountLabel;
-  final String statusLabel;
   final String lastRunSummaryLabel;
   final String lastImportedLabel;
   final bool isReferenced;

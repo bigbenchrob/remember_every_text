@@ -391,6 +391,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
     required this.activityLog,
     required this.resultSummaryLines,
     required this.phases,
+    this.isHub = false,
     this.narratorPresentation,
   });
 
@@ -414,6 +415,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
   final List<HistoricalArchivesLogEntryViewModel> activityLog;
   final List<String> resultSummaryLines;
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
+  final bool isHub;
   final HistoricalArchivesNarratorPresentationViewModel? narratorPresentation;
 }
 
@@ -698,9 +700,14 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
+    if (importedSourceMatch == null) {
+      resetPresentationContext();
+      return;
+    }
+
     state = _workflowStateFromKnownSourceMetadata(
       source,
-      isImported: importedSourceMatch != null,
+      importedMessageCount: importedSourceMatch.importedMessageCount,
       selectedKnownSourceKey: sourceKey,
     );
   }
@@ -1249,6 +1256,9 @@ buildHistoricalArchivesWorkflowPanelModel({
     ),
     resultSummaryLines: workflowState.resultSummaryLines,
     phases: workflowState.phases,
+    isHub:
+        workflowState.presentationContext ==
+        HistoricalArchivesPresentationContext.hub,
     narratorPresentation: _buildNarratorPresentation(
       workflowState: workflowState,
       executionGate: executionGate,
@@ -1264,14 +1274,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
 }) {
   if (workflowState.presentationContext ==
       HistoricalArchivesPresentationContext.hub) {
-    return const HistoricalArchivesNarratorPresentationViewModel(
-      kind: HistoricalArchivesNarratorPresentationKind.noSource,
-      narratorText:
-          'Choose an existing archive to review it, or add another archive.',
-      instrumentationRows: [],
-      detailsLines: [],
-      retryInspectionEnabled: false,
-    );
+    return null;
   }
 
   if (workflowState.presentationContext ==
@@ -1279,9 +1282,8 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
     return HistoricalArchivesNarratorPresentationViewModel(
       kind: HistoricalArchivesNarratorPresentationKind.existingSource,
       narratorText: workflowState.sourceLabel,
-      instrumentationRows: _knownSourceInstrumentationRows(
+      instrumentationRows: _sourceFactsInstrumentationRows(
         workflowState.inspectionEvidence,
-        workflowState.preflight.statusLabel,
       ),
       detailsLines: _inspectionDetailsLines(
         workflowState: workflowState,
@@ -1499,19 +1501,7 @@ _alreadyImportedInstrumentationRows(
   }
 
   return [
-    HistoricalArchivesInstrumentationRowViewModel(
-      label: 'Messages',
-      value: _formattedCount(evidence.totalMessages),
-      status: HistoricalArchivesInstrumentationStatus.resolved,
-    ),
-    HistoricalArchivesInstrumentationRowViewModel(
-      label: 'Dates',
-      value: _dateRangeLabel(
-        evidence.earliestMessageUtc,
-        evidence.latestMessageUtc,
-      ),
-      status: HistoricalArchivesInstrumentationStatus.resolved,
-    ),
+    ..._sourceFactsInstrumentationRows(evidence),
     const HistoricalArchivesInstrumentationRowViewModel(
       label: 'Status',
       value: 'Already imported',
@@ -1521,9 +1511,8 @@ _alreadyImportedInstrumentationRows(
 }
 
 List<HistoricalArchivesInstrumentationRowViewModel>
-_knownSourceInstrumentationRows(
+_sourceFactsInstrumentationRows(
   HistoricalArchivesInspectionEvidence? evidence,
-  String statusLabel,
 ) {
   if (evidence == null) {
     return const [];
@@ -1543,6 +1532,20 @@ _knownSourceInstrumentationRows(
       ),
       status: HistoricalArchivesInstrumentationStatus.resolved,
     ),
+  ];
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel>
+_knownSourceInstrumentationRows(
+  HistoricalArchivesInspectionEvidence? evidence,
+  String statusLabel,
+) {
+  if (evidence == null) {
+    return const [];
+  }
+
+  return [
+    ..._sourceFactsInstrumentationRows(evidence),
     HistoricalArchivesInstrumentationRowViewModel(
       label: 'Status',
       value: statusLabel,
@@ -2156,19 +2159,16 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
 
 HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
   HistoricalArchiveSourceMetadata source, {
-  required bool isImported,
+  required int importedMessageCount,
   required String selectedKnownSourceKey,
 }) {
   final initial = buildInitialHistoricalArchivesWorkflowState();
   return HistoricalArchivesWorkflowState(
-    preflight: HistoricalArchivesPreflightViewModel(
+    preflight: const HistoricalArchivesPreflightViewModel(
       status: HistoricalArchivesPreflightStatus.waitingForFolder,
-      statusLabel: isImported
-          ? 'Already imported'
-          : source.preflightStatusLabel,
-      detail: isImported
-          ? 'The source-scoped import ledger contains messages for this archive.'
-          : 'This is persisted source information. Choose the folder again before importing.',
+      statusLabel: 'Already imported',
+      detail:
+          'The source-scoped import ledger contains messages for this archive.',
     ),
     selectedFolderPath: source.folderPath,
     archiveRemovalTargetChatDbPath: source.sourceChatDb,
@@ -2181,9 +2181,7 @@ HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
     resultSummaryLines: initial.resultSummaryLines,
     activityLog: const [],
     phases: initial.phases,
-    presentationStage: isImported
-        ? HistoricalArchivesPresentationStage.alreadyImported
-        : HistoricalArchivesPresentationStage.knownSource,
+    presentationStage: HistoricalArchivesPresentationStage.alreadyImported,
     presentationContext: HistoricalArchivesPresentationContext.existingSource,
     inspectionEvidence: HistoricalArchivesInspectionEvidence(
       folderPath: source.folderPath,
@@ -2191,7 +2189,7 @@ HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
       sourceLabel: source.sourceLabel,
       chatDbStatusLabel: source.chatDbStatusLabel,
       attachmentsStatusLabel: source.attachmentsStatusLabel,
-      totalMessages: source.totalMessages,
+      totalMessages: importedMessageCount,
       totalChats: null,
       totalHandles: null,
       missingGuids: null,

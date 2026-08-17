@@ -8,6 +8,20 @@ import 'package:remember_this_text/features/settings/presentation/view/historica
 
 void main() {
   group('HistoricalArchivesPanel', () {
+    testWidgets('hub renders an empty center panel', (tester) async {
+      await _pumpPanel(
+        tester,
+        model: _narratorPanelModel(isHub: true, presentation: null),
+      );
+
+      expect(
+        find.byKey(const Key('historical-archives-empty-hub')),
+        findsOneWidget,
+      );
+      expect(find.text('Historical Archives'), findsNothing);
+      expect(find.textContaining('Choose an existing archive'), findsNothing);
+    });
+
     testWidgets('no-source narrator shows only the truthful invitation', (
       tester,
     ) async {
@@ -58,11 +72,6 @@ void main() {
                   value: 'Jul 2012 – Jun 2017',
                   status: HistoricalArchivesInstrumentationStatus.resolved,
                 ),
-                HistoricalArchivesInstrumentationRowViewModel(
-                  label: 'Status',
-                  value: 'Already imported',
-                  status: HistoricalArchivesInstrumentationStatus.resolved,
-                ),
               ],
               detailsLines: ['Folder: /Archives/2012'],
               retryInspectionEnabled: false,
@@ -73,7 +82,7 @@ void main() {
         expect(find.text('Messages_2012-IMPORT_SOURCE'), findsOneWidget);
         expect(find.text('8,882'), findsOneWidget);
         expect(find.text('Jul 2012 – Jun 2017'), findsOneWidget);
-        expect(find.text('Already imported'), findsOneWidget);
+        expect(find.text('Already imported'), findsNothing);
         expect(
           find.text('This archive is already part of MessageLens.'),
           findsNothing,
@@ -600,8 +609,9 @@ Future<void> _pumpPanel(
 }
 
 HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
-  required HistoricalArchivesNarratorPresentationViewModel presentation,
+  required HistoricalArchivesNarratorPresentationViewModel? presentation,
   bool importButtonEnabled = false,
+  bool isHub = false,
 }) {
   return HistoricalArchivesWorkflowPanelViewModel(
     statusLabel: 'Unused legacy status',
@@ -632,6 +642,7 @@ HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
     activityLog: const [],
     resultSummaryLines: const [],
     phases: const [],
+    isHub: isHub,
     narratorPresentation: presentation,
   );
 }

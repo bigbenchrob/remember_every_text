@@ -35,7 +35,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
       children: [
         const SizedBox(height: 16),
         Text(
-          'Known Archive Sources',
+          'Folders Already Added',
           style: typography.controlValue.copyWith(
             color: colors.content.textPrimary,
           ),
@@ -51,7 +51,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Text(
-                'No archive folders have been added yet. Known sources will appear here with date range, message count, last import result, last-run counts, and last imported time.',
+                'No archive folders have been added yet.',
                 style: typography.body.copyWith(
                   color: colors.content.textSecondary,
                 ),
@@ -248,12 +248,6 @@ class _HistoricalArchiveSourceTileState
             ),
             Text(
               widget.source.messageCountLabel,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-            Text(
-              widget.source.statusLabel,
               style: typography.caption1.copyWith(
                 color: colors.content.textSecondary,
               ),

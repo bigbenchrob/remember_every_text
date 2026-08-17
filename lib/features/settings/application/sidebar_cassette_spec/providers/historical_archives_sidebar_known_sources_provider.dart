@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../historical_archive_sources.dart';
 import '../../historical_archive_sources_provider.dart';
 import '../../historical_archives_workflow_panel_model_provider.dart';
@@ -12,9 +13,22 @@ Future<List<HistoricalArchiveSidebarSourceSummary>>
 historicalArchivesSidebarKnownSources(
   HistoricalArchivesSidebarKnownSourcesRef ref,
 ) async {
+  ref.watch(messageDataVersionProvider);
   final sources = await ref.watch(
     historicalArchiveSourceMetadataProvider.future,
   );
+  final importedSourceLookup = await ref.watch(
+    historicalArchiveImportedSourceLookupProvider.future,
+  );
+  final importedSourcesByKey = <String, HistoricalArchiveImportedSourceMatch>{};
+  for (final source in sources) {
+    final match = await importedSourceLookup.findImportedSourceByKey(
+      sourceKey: source.sourceKey,
+    );
+    if (match != null) {
+      importedSourcesByKey[source.sourceKey] = match;
+    }
+  }
   final presentation = ref.watch(
     historicalArchivesWorkflowProvider.select(
       (state) => (
@@ -26,6 +40,7 @@ historicalArchivesSidebarKnownSources(
   );
   return buildHistoricalArchiveSidebarKnownSources(
     sources: sources,
+    importedSourcesByKey: importedSourcesByKey,
     presentationContext: presentation.context,
     selectedSourceKey: presentation.selectedSourceKey,
     reference: presentation.reference,
@@ -35,6 +50,8 @@ historicalArchivesSidebarKnownSources(
 List<HistoricalArchiveSidebarSourceSummary>
 buildHistoricalArchiveSidebarKnownSources({
   required List<HistoricalArchiveSourceMetadata> sources,
+  required Map<String, HistoricalArchiveImportedSourceMatch>
+  importedSourcesByKey,
   HistoricalArchivesPresentationContext presentationContext =
       HistoricalArchivesPresentationContext.hub,
   String? selectedSourceKey,
@@ -42,25 +59,23 @@ buildHistoricalArchiveSidebarKnownSources({
 }) {
   return <HistoricalArchiveSidebarSourceSummary>[
     for (final source in sources)
-      HistoricalArchiveSidebarSourceSummary(
-        sourceKey: source.sourceKey,
-        label: source.sourceLabel,
-        dateRangeLabel: _buildDateRangeLabel(source),
-        messageCountLabel: source.totalMessages == null
-            ? 'Total messages: unavailable'
-            : 'Total messages: ${source.totalMessages}',
-        statusLabel: _buildStatusLabel(source),
-        lastRunSummaryLabel: _buildLastRunSummaryLabel(source),
-        lastImportedLabel: _buildLastImportedLabel(source),
-        isSelected:
-            presentationContext ==
-                HistoricalArchivesPresentationContext.existingSource &&
-            source.sourceKey == selectedSourceKey,
-        isReferenced: source.sourceKey == reference?.sourceKey,
-        referencePulseOccurrence: source.sourceKey == reference?.sourceKey
-            ? reference?.pulseOccurrence ?? 0
-            : 0,
-      ),
+      if (importedSourcesByKey[source.sourceKey] case final importedSource?)
+        HistoricalArchiveSidebarSourceSummary(
+          sourceKey: source.sourceKey,
+          label: source.sourceLabel,
+          dateRangeLabel: _buildDateRangeLabel(source),
+          messageCountLabel: 'Messages: ${importedSource.importedMessageCount}',
+          lastRunSummaryLabel: _buildLastRunSummaryLabel(source),
+          lastImportedLabel: _buildLastImportedLabel(source),
+          isSelected:
+              presentationContext ==
+                  HistoricalArchivesPresentationContext.existingSource &&
+              source.sourceKey == selectedSourceKey,
+          isReferenced: source.sourceKey == reference?.sourceKey,
+          referencePulseOccurrence: source.sourceKey == reference?.sourceKey
+              ? reference?.pulseOccurrence ?? 0
+              : 0,
+        ),
   ];
 }
 
@@ -76,16 +91,6 @@ String _buildDateRangeLabel(HistoricalArchiveSourceMetadata source) {
   }
 
   return 'Date range: $earliest to $latest';
-}
-
-String _buildStatusLabel(HistoricalArchiveSourceMetadata source) {
-  if (source.lastImportSuccess == true) {
-    return 'Current status: Imported successfully';
-  }
-  if (source.lastImportSuccess == false) {
-    return 'Current status: ${source.lastImportError ?? 'Import failed'}';
-  }
-  return 'Current status: ${source.preflightStatusLabel}';
 }
 
 String _buildLastRunSummaryLabel(HistoricalArchiveSourceMetadata source) {

@@ -4868,3 +4868,18 @@ production preservation authority mechanically enforceable.
   results.
 - Updated release notes for the user-facing Historical Archives context
   correction.
+
+## 2026-08-17 — Historical Archives hub semantic cleanup
+
+- Added Feature 26 response
+  `16-HISTORICAL-ARCHIVES-HUB-SEMANTIC-CLEANUP-IMPLEMENTATION.md`.
+- Recorded that remembered source identity and current sidebar membership are
+  distinct truths.
+- Established **Folders Already Added** membership as canonical historical
+  source identity plus a positive source-scoped imported message count.
+- Documented the silent hub, removal of redundant imported-status
+  presentation, normal message-data refresh behavior, and preservation of
+  canonical identity for later add-flow recognition.
+- Confirmed that no schema, source registration, archive mutation, import,
+  removal, production data, staging data, donor, or attachment payload was
+  changed.

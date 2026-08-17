@@ -10,6 +10,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.43] — 2026-08-17
+
+### Changed
+
+- Historical Archives now leaves its center panel empty until the user chooses
+  an action. The sidebar's **Folders Already Added** list includes only archives
+  with positive source-scoped imported message truth, so remembered preflight
+  or removed sources no longer appear as if they were currently part of
+  MessageLens. Existing-source details retain message and date facts without a
+  redundant imported-status row.
+
 ## [0.2.42] — 2026-08-17
 
 ### Changed

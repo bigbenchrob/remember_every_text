@@ -22,6 +22,13 @@ class HistoricalArchivesPanel extends ConsumerWidget {
         developerMode.valueOrNull == DeveloperModeValue.developer;
     final narratorPresentation = panelModel.narratorPresentation;
 
+    if (panelModel.isHub) {
+      return ColoredBox(
+        key: const Key('historical-archives-empty-hub'),
+        color: colors.surfaces.canvas,
+      );
+    }
+
     if (narratorPresentation != null) {
       return _NarratorHistoricalArchivesPanel(
         panelModel: panelModel,
