@@ -4710,3 +4710,103 @@ production preservation authority mechanically enforceable.
   the Feature Addition index.
 - No database schema, archive data, donor, staging data, production data, or
   attachment payload was changed by this pass.
+
+---
+
+# 2026-08-17 - Audit Historical Archives removal readiness redirect
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/09-HISTORICAL-REMOVAL-ONBOARDING-REDIRECT-AUDIT.md`.
+- Recorded immutable current-state evidence separately from the intermediate
+  removal state reconstructed from application logs.
+- Confirmed source-1 ledger and graph data remain intact at 136,943 messages,
+  source 3 is singular and fully reimported at 8,882 messages, and all checked
+  staging databases pass integrity checks.
+- Traced removal through source-qualified ledger deletion, full graph clearing,
+  and successful reprojection of all remaining source-1 facts without invoking
+  the broad onboarding message-data reset.
+- Established that the old running build misclassified deliberately incomplete
+  graph state during maintenance, causing Onboarding center-panel navigation;
+  a later historical reimport, not source-1 loss, explains the apparently
+  persistent readiness state.
+- Added a forensic initiator addendum: the only production entry point is the
+  explicit Historical Archives **Begin Import** interaction; removal,
+  automatic recovery, and background observers do not call historical import.
+- Recorded that the first source-3 batch began about 9.1 seconds after removal
+  had returned the ledger and graph to a ready source-1-only state. This timing
+  is consistent with the user's recalled click, but cannot prove it because no
+  durable button-press or mutation-admission-start event exists.
+- Recommended validating the already implemented owner-aware maintenance
+  classification against the exact removal/reimport lifecycle before making a
+  further correction.
+- No database, import, removal, recovery, application launch, production data,
+  snapshot, donor, or attachment payload was modified by this audit.
+
+---
+
+# 2026-08-17 - Audit fresh-start readiness gating anomaly
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/10-FRESH-START-GATING-ANOMALY-AUDIT.md`.
+- Confirmed by immutable inspection that the intended staging archive remains
+  healthy at 145,825 import and graph messages, with source 1 at 136,943 and
+  source 3 at 8,882.
+- Established that the screenshot came from the ordinary external development
+  archive, not the staging clone: its import and graph databases both contain
+  zero messages, its live source cursor was 153111, and it has no attachment
+  archive.
+- Traced startup from archive-root admission through the environment report,
+  gate fallback and final classification, and center-panel synchronization.
+- Recorded the exact count probes and UI mapping that produced both displayed
+  `Not prepared yet` facts; each matched its admitted on-disk database.
+- Disproved stale failure state, maintenance state, provider race, and latched
+  panel selection as causes. Classified the observation as a process-scoped
+  staging-root override not surviving a later normal development launch.
+- Recommended explicitly supplying and verifying the staging root for every
+  fresh rehearsal process; no gate implementation change was made.
+- No database, application code, import, removal, recovery, reset, GUI launch,
+  production data, snapshot, donor, or attachment payload was modified.
+
+---
+
+# 2026-08-17 - Design Historical Archives Narrator and Directed Instrumentation
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/10-HISTORICAL-ARCHIVES-NARRATOR-DIRECTED-INSTRUMENTATION-DESIGN.md`.
+- Inventoried every current Historical Archives information group and
+  classified it as primary journey, directed instrumentation, decision
+  evidence, completion evidence, details/diagnostics, or developer-only.
+- Defined the full journey from source selection through preflight, import,
+  completion, imported-source management, removal, and retryable or diagnostic
+  failure.
+- Established a modest Historical Archives-specific grammar: transition
+  statement, instrumentation tableau, resolved/active/failure rows, decision
+  surface, completion surface, and collapsed Details.
+- Preserved the rule that only genuine human decisions produce controls and
+  that all known safe intermediate work proceeds automatically.
+- Identified existing source inspection, dry-run, mutation-gate, import,
+  removal, and source-metadata facts that can drive truthful presentation.
+- Recorded the current real-time instrumentation limit: import and removal
+  expose only operation boundaries and final results, not live internal stage
+  observations. The design forbids timer-derived or inferred progress.
+- Proposed five bounded implementation slices that replace presentation before
+  considering any service-level observability seam.
+- No application code, workflow behavior, schema, archive, import, removal,
+  recovery, GUI state, production data, snapshot, donor, or attachment payload
+  was changed.
+
+---
+
+# 2026-08-17 - Implement Historical Archives Narrator slice 01
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/12-NARRATOR-SLICE-01-IMPLEMENTATION.md`.
+- Recorded the bounded no-source, inspecting, failed-inspection, and
+  ready-for-import Narrator + Directed Instrumentation implementation.
+- Documented the typed inspection-evidence snapshot and explicit presentation
+  stage used to project existing workflow truth without moving execution or
+  mutation ownership.
+- Recorded which permanent control-panel elements are bypassed in this slice
+  and which later workflow states intentionally retain the legacy surface.
+- Preserved technical evidence under collapsed Details rather than deleting
+  diagnostics from the Historical Archives experience.

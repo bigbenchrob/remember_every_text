@@ -20,6 +20,14 @@ class HistoricalArchivesPanel extends ConsumerWidget {
     final developerMode = ref.watch(developerModeProvider);
     final showDeveloperControls =
         developerMode.valueOrNull == DeveloperModeValue.developer;
+    final narratorPresentation = panelModel.narratorPresentation;
+
+    if (narratorPresentation != null) {
+      return _NarratorHistoricalArchivesPanel(
+        panelModel: panelModel,
+        presentation: narratorPresentation,
+      );
+    }
 
     return ColoredBox(
       color: colors.surfaces.canvas,
@@ -314,6 +322,308 @@ class HistoricalArchivesPanel extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
+  const _NarratorHistoricalArchivesPanel({
+    required this.panelModel,
+    required this.presentation,
+  });
+
+  final HistoricalArchivesWorkflowPanelViewModel panelModel;
+  final HistoricalArchivesNarratorPresentationViewModel presentation;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return ColoredBox(
+      color: colors.surfaces.canvas,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Historical Archives',
+                  key: const Key('historical-archives-page-title'),
+                  style: typography.title1.copyWith(
+                    color: colors.content.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 44),
+                Text(
+                  presentation.narratorText,
+                  key: const Key('historical-archives-narrator'),
+                  style: typography.title1.copyWith(
+                    color: colors.content.textPrimary,
+                  ),
+                ),
+                if (presentation.instrumentationRows.isNotEmpty) ...[
+                  const SizedBox(height: 40),
+                  Text(
+                    'MESSAGES ARCHIVE',
+                    style: typography.caption.copyWith(
+                      color: colors.content.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _DirectedInstrumentation(
+                    rows: presentation.instrumentationRows,
+                  ),
+                ],
+                const SizedBox(height: 36),
+                _NarratorDecision(
+                  panelModel: panelModel,
+                  presentation: presentation,
+                ),
+                const SizedBox(height: 28),
+                _HistoricalArchivesDetailsDisclosure(
+                  key: ValueKey<HistoricalArchivesNarratorPresentationKind>(
+                    presentation.kind,
+                  ),
+                  lines: presentation.detailsLines,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DirectedInstrumentation extends ConsumerWidget {
+  const _DirectedInstrumentation({required this.rows});
+
+  final List<HistoricalArchivesInstrumentationRowViewModel> rows;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return Column(
+      key: const Key('historical-archives-directed-instrumentation'),
+      children: [
+        for (var index = 0; index < rows.length; index++) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: _InstrumentationStatusMark(status: rows[index].status),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    rows[index].label,
+                    style: typography.body.copyWith(
+                      color: colors.content.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 18),
+                Text(
+                  rows[index].value,
+                  style: typography.controlValue.copyWith(
+                    color: _instrumentationValueColor(
+                      rows[index].status,
+                      colors: colors,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (index < rows.length - 1)
+            ColoredBox(
+              color: colors.lines.borderSubtle,
+              child: const SizedBox(height: 1),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _InstrumentationStatusMark extends ConsumerWidget {
+  const _InstrumentationStatusMark({required this.status});
+
+  final HistoricalArchivesInstrumentationStatus status;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    return switch (status) {
+      HistoricalArchivesInstrumentationStatus.working =>
+        const CupertinoActivityIndicator(radius: 8),
+      HistoricalArchivesInstrumentationStatus.resolved => Icon(
+        CupertinoIcons.check_mark_circled_solid,
+        size: 18,
+        color: colors.status.success,
+      ),
+      HistoricalArchivesInstrumentationStatus.failed => Icon(
+        CupertinoIcons.exclamationmark_circle_fill,
+        size: 18,
+        color: colors.status.error,
+      ),
+    };
+  }
+}
+
+class _NarratorDecision extends ConsumerWidget {
+  const _NarratorDecision({
+    required this.panelModel,
+    required this.presentation,
+  });
+
+  final HistoricalArchivesWorkflowPanelViewModel panelModel;
+  final HistoricalArchivesNarratorPresentationViewModel presentation;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actions = ref.read(
+      historicalArchivesWorkflowActionsProvider.notifier,
+    );
+
+    return switch (presentation.kind) {
+      HistoricalArchivesNarratorPresentationKind.noSource =>
+        _HistoricalArchiveActionButton(
+          label: 'Choose Messages Folder...',
+          enabled: true,
+          onPressed: actions.chooseMessagesFolder,
+        ),
+      HistoricalArchivesNarratorPresentationKind.inspectingSource =>
+        const SizedBox.shrink(),
+      HistoricalArchivesNarratorPresentationKind.inspectionFailed => Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          if (presentation.retryInspectionEnabled)
+            _HistoricalArchiveActionButton(
+              label: 'Retry',
+              enabled: true,
+              onPressed: actions.retrySelectedFolderInspection,
+            ),
+          _HistoricalArchiveActionButton(
+            label: 'Choose Another Folder',
+            enabled: true,
+            onPressed: actions.chooseMessagesFolder,
+          ),
+        ],
+      ),
+      HistoricalArchivesNarratorPresentationKind.readyForImport => Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          if (panelModel.importButtonEnabled)
+            _HistoricalArchiveActionButton(
+              label: 'Import Archive',
+              enabled: true,
+              onPressed: actions.beginImportForSelectedSource,
+            ),
+          _HistoricalArchiveActionButton(
+            label: 'Choose Another Folder',
+            enabled: true,
+            onPressed: actions.chooseMessagesFolder,
+          ),
+        ],
+      ),
+    };
+  }
+}
+
+class _HistoricalArchivesDetailsDisclosure extends ConsumerStatefulWidget {
+  const _HistoricalArchivesDetailsDisclosure({required this.lines, super.key});
+
+  final List<String> lines;
+
+  @override
+  ConsumerState<_HistoricalArchivesDetailsDisclosure> createState() =>
+      _HistoricalArchivesDetailsDisclosureState();
+}
+
+class _HistoricalArchivesDetailsDisclosureState
+    extends ConsumerState<_HistoricalArchivesDetailsDisclosure> {
+  var _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            key: const Key('historical-archives-details-toggle'),
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isExpanded
+                      ? CupertinoIcons.chevron_down
+                      : CupertinoIcons.chevron_right,
+                  size: 14,
+                  color: colors.content.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Details',
+                  style: typography.controlValue.copyWith(
+                    color: colors.content.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_isExpanded) ...[
+          const SizedBox(height: 14),
+          for (final line in widget.lines) ...[
+            Text(
+              line,
+              key: ValueKey<String>('historical-archives-detail-$line'),
+              style: typography.caption1.copyWith(
+                color: colors.content.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 7),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+Color _instrumentationValueColor(
+  HistoricalArchivesInstrumentationStatus status, {
+  required ThemeColors colors,
+}) {
+  return switch (status) {
+    HistoricalArchivesInstrumentationStatus.working => colors.status.warning,
+    HistoricalArchivesInstrumentationStatus.resolved => colors.status.success,
+    HistoricalArchivesInstrumentationStatus.failed => colors.status.error,
+  };
 }
 
 Future<void> _showRemoveImportedArchiveDataConfirmationDialog({

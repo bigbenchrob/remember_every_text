@@ -67,6 +67,87 @@ enum HistoricalArchivesPreflightStatus {
   failed,
 }
 
+enum HistoricalArchivesPresentationStage {
+  noSource,
+  inspectingSource,
+  inspectionFailed,
+  readyForImport,
+  laterWorkflow,
+}
+
+final class HistoricalArchivesInspectionEvidence {
+  const HistoricalArchivesInspectionEvidence({
+    required this.folderPath,
+    required this.chatDbPath,
+    required this.sourceLabel,
+    required this.chatDbStatusLabel,
+    required this.attachmentsStatusLabel,
+    required this.totalMessages,
+    required this.totalChats,
+    required this.totalHandles,
+    required this.missingGuids,
+    required this.earliestMessageUtc,
+    required this.latestMessageUtc,
+    required this.dateRangeUnavailableReason,
+    required this.dryRunNewMessages,
+    required this.dryRunDuplicateMessages,
+    required this.dryRunUnavailableReason,
+  });
+
+  final String folderPath;
+  final String chatDbPath;
+  final String sourceLabel;
+  final String chatDbStatusLabel;
+  final String attachmentsStatusLabel;
+  final int? totalMessages;
+  final int? totalChats;
+  final int? totalHandles;
+  final int? missingGuids;
+  final String? earliestMessageUtc;
+  final String? latestMessageUtc;
+  final String? dateRangeUnavailableReason;
+  final int? dryRunNewMessages;
+  final int? dryRunDuplicateMessages;
+  final String? dryRunUnavailableReason;
+}
+
+enum HistoricalArchivesNarratorPresentationKind {
+  noSource,
+  inspectingSource,
+  inspectionFailed,
+  readyForImport,
+}
+
+enum HistoricalArchivesInstrumentationStatus { working, resolved, failed }
+
+final class HistoricalArchivesInstrumentationRowViewModel {
+  const HistoricalArchivesInstrumentationRowViewModel({
+    required this.label,
+    required this.value,
+    required this.status,
+  });
+
+  final String label;
+  final String value;
+  final HistoricalArchivesInstrumentationStatus status;
+}
+
+final class HistoricalArchivesNarratorPresentationViewModel {
+  const HistoricalArchivesNarratorPresentationViewModel({
+    required this.kind,
+    required this.narratorText,
+    required this.instrumentationRows,
+    required this.detailsLines,
+    required this.retryInspectionEnabled,
+  });
+
+  final HistoricalArchivesNarratorPresentationKind kind;
+  final String narratorText;
+  final List<HistoricalArchivesInstrumentationRowViewModel> instrumentationRows;
+  final List<String> detailsLines;
+  final bool retryInspectionEnabled;
+}
+
 final class HistoricalArchivesPreflightViewModel {
   const HistoricalArchivesPreflightViewModel({
     required this.status,
@@ -123,6 +204,8 @@ final class HistoricalArchivesWorkflowState {
     required this.resultSummaryLines,
     required this.activityLog,
     required this.phases,
+    this.presentationStage = HistoricalArchivesPresentationStage.noSource,
+    this.inspectionEvidence,
   });
 
   final HistoricalArchivesPreflightViewModel preflight;
@@ -137,6 +220,8 @@ final class HistoricalArchivesWorkflowState {
   final List<String> resultSummaryLines;
   final List<HistoricalArchivesLogEntryViewModel> activityLog;
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
+  final HistoricalArchivesPresentationStage presentationStage;
+  final HistoricalArchivesInspectionEvidence? inspectionEvidence;
 
   HistoricalArchivesWorkflowState copyWith({
     HistoricalArchivesPreflightViewModel? preflight,
@@ -153,6 +238,9 @@ final class HistoricalArchivesWorkflowState {
     List<String>? resultSummaryLines,
     List<HistoricalArchivesLogEntryViewModel>? activityLog,
     List<HistoricalArchivesWorkflowPhaseViewModel>? phases,
+    HistoricalArchivesPresentationStage? presentationStage,
+    HistoricalArchivesInspectionEvidence? inspectionEvidence,
+    bool clearInspectionEvidence = false,
   }) {
     return HistoricalArchivesWorkflowState(
       preflight: preflight ?? this.preflight,
@@ -175,6 +263,10 @@ final class HistoricalArchivesWorkflowState {
       resultSummaryLines: resultSummaryLines ?? this.resultSummaryLines,
       activityLog: activityLog ?? this.activityLog,
       phases: phases ?? this.phases,
+      presentationStage: presentationStage ?? this.presentationStage,
+      inspectionEvidence: clearInspectionEvidence
+          ? null
+          : inspectionEvidence ?? this.inspectionEvidence,
     );
   }
 }
@@ -199,6 +291,8 @@ final class HistoricalArchivesFolderPreflightResult {
     required this.dryRunSummaryLines,
     required this.activityLog,
     required this.phases,
+    this.dateRangeUnavailableReason,
+    this.dryRunUnavailableReason,
   });
 
   final HistoricalArchivesPreflightViewModel preflight;
@@ -215,6 +309,8 @@ final class HistoricalArchivesFolderPreflightResult {
   final String? latestMessageUtc;
   final int? dryRunNewMessages;
   final int? dryRunDuplicateMessages;
+  final String? dateRangeUnavailableReason;
+  final String? dryRunUnavailableReason;
   final List<String> preflightSummaryLines;
   final List<String> dryRunSummaryLines;
   final List<HistoricalArchivesLogEntryViewModel> activityLog;
@@ -243,6 +339,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
     required this.activityLog,
     required this.resultSummaryLines,
     required this.phases,
+    this.narratorPresentation,
   });
 
   final String statusLabel;
@@ -265,6 +362,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
   final List<HistoricalArchivesLogEntryViewModel> activityLog;
   final List<String> resultSummaryLines;
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
+  final HistoricalArchivesNarratorPresentationViewModel? narratorPresentation;
 }
 
 HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
@@ -373,6 +471,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
   Future<void> loadFolder({required String folderPath}) async {
     state = state.copyWith(
+      presentationStage: HistoricalArchivesPresentationStage.inspectingSource,
+      clearInspectionEvidence: true,
       preflight: const HistoricalArchivesPreflightViewModel(
         status: HistoricalArchivesPreflightStatus.running,
         statusLabel: 'Preflight running',
@@ -438,6 +538,15 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     state = buildInitialHistoricalArchivesWorkflowState();
   }
 
+  Future<void> retrySelectedFolderInspection() async {
+    final selectedFolderPath = state.selectedFolderPath;
+    if (selectedFolderPath == null) {
+      return;
+    }
+
+    await loadFolder(folderPath: selectedFolderPath);
+  }
+
   Future<void> removeImportedArchiveDataForSelectedSource() async {
     final selectedFolderPath = state.selectedFolderPath;
     if (selectedFolderPath == null) {
@@ -476,6 +585,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             ownerLabel: _historicalArchivesTestingOwner,
             action: () async {
               state = state.copyWith(
+                presentationStage:
+                    HistoricalArchivesPresentationStage.laterWorkflow,
                 preflight: const HistoricalArchivesPreflightViewModel(
                   status: HistoricalArchivesPreflightStatus.running,
                   statusLabel: 'Removing imported archive data',
@@ -505,6 +616,10 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                   removalResult.deletionResult == null ||
                   removalResult.deletedSourceFactCount == 0) {
                 await loadFolder(folderPath: selectedFolderPath);
+                state = state.copyWith(
+                  presentationStage:
+                      HistoricalArchivesPresentationStage.laterWorkflow,
+                );
                 _prependActivityLog(
                   const HistoricalArchivesLogEntryViewModel(
                     label: 'No imported archive data found',
@@ -516,6 +631,10 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               }
 
               await loadFolder(folderPath: selectedFolderPath);
+              state = state.copyWith(
+                presentationStage:
+                    HistoricalArchivesPresentationStage.laterWorkflow,
+              );
               _prependActivityLog(
                 HistoricalArchivesLogEntryViewModel(
                   label: 'Imported archive data removed',
@@ -536,6 +655,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     } catch (error) {
       final detail = 'Archive data removal failed: $error';
       state = state.copyWith(
+        presentationStage: HistoricalArchivesPresentationStage.laterWorkflow,
         preflight: HistoricalArchivesPreflightViewModel(
           status: HistoricalArchivesPreflightStatus.failed,
           statusLabel: 'Archive data removal failed',
@@ -594,6 +714,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                 sourceScopedArchiveGraphImportServiceProvider.future,
               );
               state = state.copyWith(
+                presentationStage:
+                    HistoricalArchivesPresentationStage.laterWorkflow,
                 preflight: const HistoricalArchivesPreflightViewModel(
                   status: HistoricalArchivesPreflightStatus.running,
                   statusLabel: 'Import running',
@@ -678,6 +800,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                 refreshedResult,
               );
               state = refreshedState.copyWith(
+                presentationStage:
+                    HistoricalArchivesPresentationStage.laterWorkflow,
                 activityLog: [
                   HistoricalArchivesLogEntryViewModel(
                     label: 'Import complete',
@@ -750,6 +874,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         ),
       );
       state = state.copyWith(
+        presentationStage: HistoricalArchivesPresentationStage.laterWorkflow,
         preflight: HistoricalArchivesPreflightViewModel(
           status: HistoricalArchivesPreflightStatus.failed,
           statusLabel: 'Import failed',
@@ -870,6 +995,12 @@ buildHistoricalArchivesWorkflowPanelModel({
       'Import is unavailable while reset or another maintenance operation is holding the message-data lock.',
   };
 
+  final importButtonEnabled = _importButtonEnabled(
+    executionGate: executionGate,
+    workflowState: workflowState,
+    currentMessagesDatabasePath: currentMessagesDatabasePath,
+  );
+
   return HistoricalArchivesWorkflowPanelViewModel(
     statusLabel: statusLabel,
     summaryText: summaryText,
@@ -885,11 +1016,7 @@ buildHistoricalArchivesWorkflowPanelModel({
       workflowState,
       currentMessagesDatabasePath: currentMessagesDatabasePath,
     ),
-    importButtonEnabled: _importButtonEnabled(
-      executionGate: executionGate,
-      workflowState: workflowState,
-      currentMessagesDatabasePath: currentMessagesDatabasePath,
-    ),
+    importButtonEnabled: importButtonEnabled,
     importButtonDetail: importButtonDetail,
     archiveRemovalTargetChatDbPath:
         workflowState.archiveRemovalTargetChatDbPath,
@@ -914,8 +1041,274 @@ buildHistoricalArchivesWorkflowPanelModel({
     ),
     resultSummaryLines: workflowState.resultSummaryLines,
     phases: workflowState.phases,
+    narratorPresentation: _buildNarratorPresentation(
+      workflowState: workflowState,
+      executionGate: executionGate,
+      importButtonEnabled: importButtonEnabled,
+    ),
   );
 }
+
+HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
+  required HistoricalArchivesWorkflowState workflowState,
+  required HistoricalArchivesExecutionGateViewModel executionGate,
+  required bool importButtonEnabled,
+}) {
+  return switch (workflowState.presentationStage) {
+    HistoricalArchivesPresentationStage.noSource =>
+      const HistoricalArchivesNarratorPresentationViewModel(
+        kind: HistoricalArchivesNarratorPresentationKind.noSource,
+        narratorText: 'Add an older Messages archive to extend your history.',
+        instrumentationRows: [],
+        detailsLines: [
+          'No Messages archive folder is selected.',
+          'Choose a folder and MessageLens will inspect it before offering any import decision.',
+        ],
+        retryInspectionEnabled: false,
+      ),
+    HistoricalArchivesPresentationStage.inspectingSource =>
+      HistoricalArchivesNarratorPresentationViewModel(
+        kind: HistoricalArchivesNarratorPresentationKind.inspectingSource,
+        narratorText: 'Let\u2019s see what\u2019s in this Messages folder.',
+        instrumentationRows: const [
+          HistoricalArchivesInstrumentationRowViewModel(
+            label: 'Inspecting archive source',
+            value: 'Working',
+            status: HistoricalArchivesInstrumentationStatus.working,
+          ),
+        ],
+        detailsLines: _inspectionDetailsLines(
+          workflowState: workflowState,
+          executionGate: executionGate,
+        ),
+        retryInspectionEnabled: false,
+      ),
+    HistoricalArchivesPresentationStage.inspectionFailed =>
+      HistoricalArchivesNarratorPresentationViewModel(
+        kind: HistoricalArchivesNarratorPresentationKind.inspectionFailed,
+        narratorText: _failedInspectionNarrator(workflowState),
+        instrumentationRows: [
+          HistoricalArchivesInstrumentationRowViewModel(
+            label: 'Messages database',
+            value: workflowState.chatDbStatusLabel,
+            status: HistoricalArchivesInstrumentationStatus.failed,
+          ),
+        ],
+        detailsLines: _inspectionDetailsLines(
+          workflowState: workflowState,
+          executionGate: executionGate,
+        ),
+        retryInspectionEnabled: _inspectionCanBeRetried(workflowState),
+      ),
+    HistoricalArchivesPresentationStage.readyForImport =>
+      HistoricalArchivesNarratorPresentationViewModel(
+        kind: HistoricalArchivesNarratorPresentationKind.readyForImport,
+        narratorText: _readyNarrator(workflowState.inspectionEvidence),
+        instrumentationRows: _readyInstrumentationRows(
+          workflowState.inspectionEvidence,
+        ),
+        detailsLines: _inspectionDetailsLines(
+          workflowState: workflowState,
+          executionGate: executionGate,
+          importButtonEnabled: importButtonEnabled,
+        ),
+        retryInspectionEnabled: false,
+      ),
+    HistoricalArchivesPresentationStage.laterWorkflow => null,
+  };
+}
+
+String _failedInspectionNarrator(HistoricalArchivesWorkflowState state) {
+  if (state.chatDbStatusLabel == 'Missing') {
+    return 'This folder does not contain a Messages database.';
+  }
+  if (state.chatDbStatusLabel == 'Read failed') {
+    return 'MessageLens couldn\u2019t read the Messages database in this folder.';
+  }
+  return 'MessageLens couldn\u2019t establish that this is a readable Messages archive.';
+}
+
+bool _inspectionCanBeRetried(HistoricalArchivesWorkflowState state) {
+  return state.chatDbStatusLabel != 'Missing';
+}
+
+String _readyNarrator(HistoricalArchivesInspectionEvidence? evidence) {
+  final earliest = _monthYearLong(evidence?.earliestMessageUtc);
+  if (earliest == null) {
+    return 'Good. This archive can extend your MessageLens history.';
+  }
+  return 'Good. This archive can extend your history back to $earliest.';
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel> _readyInstrumentationRows(
+  HistoricalArchivesInspectionEvidence? evidence,
+) {
+  if (evidence == null) {
+    return const [];
+  }
+
+  final rows = <HistoricalArchivesInstrumentationRowViewModel>[
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Messages database',
+      value: evidence.chatDbStatusLabel == 'Found and readable'
+          ? 'Found'
+          : evidence.chatDbStatusLabel,
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Messages',
+      value: _formattedCount(evidence.totalMessages),
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Dates',
+      value: _dateRangeLabel(
+        evidence.earliestMessageUtc,
+        evidence.latestMessageUtc,
+      ),
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+  ];
+
+  if (evidence.dryRunNewMessages != null &&
+      evidence.dryRunDuplicateMessages != null) {
+    rows.addAll([
+      HistoricalArchivesInstrumentationRowViewModel(
+        label: 'New to MessageLens',
+        value: _formattedCount(evidence.dryRunNewMessages),
+        status: HistoricalArchivesInstrumentationStatus.resolved,
+      ),
+      HistoricalArchivesInstrumentationRowViewModel(
+        label: 'Already represented',
+        value: _formattedCount(evidence.dryRunDuplicateMessages),
+        status: HistoricalArchivesInstrumentationStatus.resolved,
+      ),
+    ]);
+  } else {
+    rows.add(
+      const HistoricalArchivesInstrumentationRowViewModel(
+        label: 'Message comparison',
+        value: 'Unavailable',
+        status: HistoricalArchivesInstrumentationStatus.resolved,
+      ),
+    );
+  }
+
+  return rows;
+}
+
+List<String> _inspectionDetailsLines({
+  required HistoricalArchivesWorkflowState workflowState,
+  required HistoricalArchivesExecutionGateViewModel executionGate,
+  bool? importButtonEnabled,
+}) {
+  final evidence = workflowState.inspectionEvidence;
+  final selectedFolderPath = workflowState.selectedFolderPath;
+  final chatDbPath =
+      evidence?.chatDbPath ??
+      (selectedFolderPath == null
+          ? null
+          : path.join(selectedFolderPath, 'chat.db'));
+
+  return [
+    if (selectedFolderPath != null) 'Folder: $selectedFolderPath',
+    if (chatDbPath != null) 'Messages database: $chatDbPath',
+    'Source label: ${workflowState.sourceLabel}',
+    'Messages database status: ${workflowState.chatDbStatusLabel}',
+    'Attachments folder: ${workflowState.attachmentsStatusLabel}',
+    if (evidence?.totalChats case final totalChats?)
+      'Chats: ${_formattedCount(totalChats)}',
+    if (evidence?.totalHandles case final totalHandles?)
+      'Handles: ${_formattedCount(totalHandles)}',
+    if (evidence?.missingGuids case final missingGuids?)
+      'Rows with missing GUIDs: ${_formattedCount(missingGuids)}',
+    if (evidence?.earliestMessageUtc case final earliest?)
+      'Earliest message UTC: $earliest',
+    if (evidence?.latestMessageUtc case final latest?)
+      'Latest message UTC: $latest',
+    if (evidence?.dateRangeUnavailableReason case final reason?)
+      'Date range diagnostic: $reason',
+    if (evidence?.dryRunUnavailableReason case final reason?)
+      'GUID comparison unavailable: $reason',
+    'GUID comparison: source GUIDs are compared with messages already represented in MessageLens.',
+    'Archive mutation authority: ${executionGate.statusLabel} (${executionGate.detail})',
+    if (importButtonEnabled != null)
+      'Import authorization: ${importButtonEnabled ? 'available' : 'not currently available'}',
+    'Inspection detail: ${workflowState.preflight.detail}',
+    for (final entry in workflowState.activityLog)
+      '${entry.label}: ${entry.message}',
+  ];
+}
+
+String _formattedCount(int? value) {
+  if (value == null) {
+    return 'Unavailable';
+  }
+  final digits = value.toString();
+  final buffer = StringBuffer();
+  for (var index = 0; index < digits.length; index++) {
+    if (index > 0 && (digits.length - index) % 3 == 0) {
+      buffer.write(',');
+    }
+    buffer.write(digits[index]);
+  }
+  return buffer.toString();
+}
+
+String _dateRangeLabel(String? earliestUtc, String? latestUtc) {
+  final earliest = _monthYearShort(earliestUtc);
+  final latest = _monthYearShort(latestUtc);
+  if (earliest == null || latest == null) {
+    return 'Unavailable';
+  }
+  return '$earliest \u2013 $latest';
+}
+
+String? _monthYearLong(String? isoUtc) {
+  final date = isoUtc == null ? null : DateTime.tryParse(isoUtc)?.toUtc();
+  if (date == null) {
+    return null;
+  }
+  return '${_longMonthNames[date.month - 1]} ${date.year}';
+}
+
+String? _monthYearShort(String? isoUtc) {
+  final date = isoUtc == null ? null : DateTime.tryParse(isoUtc)?.toUtc();
+  if (date == null) {
+    return null;
+  }
+  return '${_shortMonthNames[date.month - 1]} ${date.year}';
+}
+
+const _longMonthNames = <String>[
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+const _shortMonthNames = <String>[
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 HistoricalArchivesExecutionGateViewModel _buildExecutionGateViewModel({
   required ArchiveMutationCoordinatorState executionGateState,
@@ -1211,6 +1604,8 @@ preflightHistoricalArchivesFolder({
     dryRunDuplicateMessages: dryRunEstimate.isAvailable
         ? dryRunEstimate.duplicateGuidCount
         : null,
+    dateRangeUnavailableReason: inspection.dateRangeUnavailableReason,
+    dryRunUnavailableReason: dryRunEstimate.unavailableReason,
     preflightSummaryLines: [
       'Total messages: ${inspection.totalMessages}',
       'Total chats: ${inspection.totalChats}',
@@ -1341,6 +1736,28 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
         buildInitialHistoricalArchivesWorkflowState().resultSummaryLines,
     activityLog: result.activityLog,
     phases: result.phases,
+    presentationStage:
+        result.preflight.status ==
+            HistoricalArchivesPreflightStatus.completeReadyToImport
+        ? HistoricalArchivesPresentationStage.readyForImport
+        : HistoricalArchivesPresentationStage.inspectionFailed,
+    inspectionEvidence: HistoricalArchivesInspectionEvidence(
+      folderPath: result.selectedFolderPath,
+      chatDbPath: result.archiveRemovalTargetChatDbPath,
+      sourceLabel: result.sourceLabel,
+      chatDbStatusLabel: result.chatDbStatusLabel,
+      attachmentsStatusLabel: result.attachmentsStatusLabel,
+      totalMessages: result.totalMessages,
+      totalChats: result.totalChats,
+      totalHandles: result.totalHandles,
+      missingGuids: result.missingGuids,
+      earliestMessageUtc: result.earliestMessageUtc,
+      latestMessageUtc: result.latestMessageUtc,
+      dateRangeUnavailableReason: result.dateRangeUnavailableReason,
+      dryRunNewMessages: result.dryRunNewMessages,
+      dryRunDuplicateMessages: result.dryRunDuplicateMessages,
+      dryRunUnavailableReason: result.dryRunUnavailableReason,
+    ),
   );
 }
 

@@ -22,6 +22,12 @@ class HistoricalArchivesWorkflowActions
     ref.read(historicalArchivesWorkflowProvider.notifier).clearSelection();
   }
 
+  Future<void> retrySelectedFolderInspection() async {
+    await ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .retrySelectedFolderInspection();
+  }
+
   Future<void> beginImportForSelectedSource() async {
     await ref
         .read(historicalArchivesWorkflowProvider.notifier)

@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.39] — 2026-08-17
+
+### Changed
+
+- Historical Archives now opens with a calm Narrator-led journey for choosing,
+  inspecting, rejecting, or approving an older Messages archive. Current
+  inspection evidence replaces the permanent control-panel stack, while paths
+  and technical diagnostics remain available under collapsed Details.
+
 ## [0.2.38] — 2026-08-17
 
 ### Fixed

@@ -8,6 +8,185 @@ import 'package:remember_this_text/features/settings/presentation/view/historica
 
 void main() {
   group('HistoricalArchivesPanel', () {
+    testWidgets('no-source narrator shows only the truthful invitation', (
+      tester,
+    ) async {
+      await _pumpPanel(
+        tester,
+        model: _narratorPanelModel(
+          presentation: const HistoricalArchivesNarratorPresentationViewModel(
+            kind: HistoricalArchivesNarratorPresentationKind.noSource,
+            narratorText:
+                'Add an older Messages archive to extend your history.',
+            instrumentationRows: [],
+            detailsLines: ['No archive selected.'],
+            retryInspectionEnabled: false,
+          ),
+        ),
+      );
+
+      expect(find.text('Historical Archives'), findsOneWidget);
+      expect(
+        find.text('Add an older Messages archive to extend your history.'),
+        findsOneWidget,
+      );
+      expect(find.text('Choose Messages Folder...'), findsOneWidget);
+      expect(find.text('Execution Gate'), findsNothing);
+      expect(find.text('Preflight Summary'), findsNothing);
+      expect(find.text('Activity Log'), findsNothing);
+      expect(find.text('Progress'), findsNothing);
+      expect(find.textContaining('Next'), findsNothing);
+    });
+
+    testWidgets('inspection shows one current truthful instrumentation row', (
+      tester,
+    ) async {
+      await _pumpPanel(
+        tester,
+        model: _narratorPanelModel(
+          presentation: const HistoricalArchivesNarratorPresentationViewModel(
+            kind: HistoricalArchivesNarratorPresentationKind.inspectingSource,
+            narratorText: 'Let’s see what’s in this Messages folder.',
+            instrumentationRows: [
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Inspecting archive source',
+                value: 'Working',
+                status: HistoricalArchivesInstrumentationStatus.working,
+              ),
+            ],
+            detailsLines: ['Folder: /tmp/archive'],
+            retryInspectionEnabled: false,
+          ),
+        ),
+      );
+
+      expect(find.text('Inspecting archive source'), findsOneWidget);
+      expect(find.text('Working'), findsOneWidget);
+      expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
+      expect(find.text('Importing archive messages'), findsNothing);
+      expect(find.text('Preparing archive records'), findsNothing);
+      expect(find.textContaining('Next'), findsNothing);
+    });
+
+    testWidgets('ready state presents typed evidence and hides diagnostics', (
+      tester,
+    ) async {
+      const path = '/tmp/archive/chat.db';
+      await _pumpPanel(
+        tester,
+        model: _narratorPanelModel(
+          importButtonEnabled: true,
+          presentation: const HistoricalArchivesNarratorPresentationViewModel(
+            kind: HistoricalArchivesNarratorPresentationKind.readyForImport,
+            narratorText:
+                'Good. This archive can extend your history back to July 2012.',
+            instrumentationRows: [
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Messages database',
+                value: 'Found',
+                status: HistoricalArchivesInstrumentationStatus.resolved,
+              ),
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Messages',
+                value: '8,882',
+                status: HistoricalArchivesInstrumentationStatus.resolved,
+              ),
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Dates',
+                value: 'Jul 2012 – Jun 2017',
+                status: HistoricalArchivesInstrumentationStatus.resolved,
+              ),
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'New to MessageLens',
+                value: '2,369',
+                status: HistoricalArchivesInstrumentationStatus.resolved,
+              ),
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Already represented',
+                value: '6,513',
+                status: HistoricalArchivesInstrumentationStatus.resolved,
+              ),
+            ],
+            detailsLines: ['Messages database: $path'],
+            retryInspectionEnabled: false,
+          ),
+        ),
+      );
+
+      expect(find.text('8,882'), findsOneWidget);
+      expect(find.text('Jul 2012 – Jun 2017'), findsOneWidget);
+      expect(find.text('2,369'), findsOneWidget);
+      expect(find.text('6,513'), findsOneWidget);
+      expect(find.text('Import Archive'), findsOneWidget);
+      expect(find.text('Choose Another Folder'), findsOneWidget);
+      expect(find.text('Messages database: $path'), findsNothing);
+
+      await tester.tap(
+        find.byKey(const Key('historical-archives-details-toggle')),
+      );
+      await tester.pump();
+
+      expect(find.text('Messages database: $path'), findsOneWidget);
+    });
+
+    testWidgets('ready evidence does not expose unavailable import authority', (
+      tester,
+    ) async {
+      await _pumpPanel(
+        tester,
+        model: _narratorPanelModel(
+          presentation: const HistoricalArchivesNarratorPresentationViewModel(
+            kind: HistoricalArchivesNarratorPresentationKind.readyForImport,
+            narratorText: 'Good. This archive is understood.',
+            instrumentationRows: [
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Messages database',
+                value: 'Found',
+                status: HistoricalArchivesInstrumentationStatus.resolved,
+              ),
+            ],
+            detailsLines: ['Import authorization: not currently available'],
+            retryInspectionEnabled: false,
+          ),
+        ),
+      );
+
+      expect(find.text('Import Archive'), findsNothing);
+      expect(find.text('Choose Another Folder'), findsOneWidget);
+    });
+
+    testWidgets('failed inspection offers only the truthful recovery action', (
+      tester,
+    ) async {
+      await _pumpPanel(
+        tester,
+        model: _narratorPanelModel(
+          presentation: const HistoricalArchivesNarratorPresentationViewModel(
+            kind: HistoricalArchivesNarratorPresentationKind.inspectionFailed,
+            narratorText: 'This folder does not contain a Messages database.',
+            instrumentationRows: [
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Messages database',
+                value: 'Missing',
+                status: HistoricalArchivesInstrumentationStatus.failed,
+              ),
+            ],
+            detailsLines: ['Folder: /tmp/not-an-archive'],
+            retryInspectionEnabled: false,
+          ),
+        ),
+      );
+
+      expect(
+        find.text('This folder does not contain a Messages database.'),
+        findsOneWidget,
+      );
+      expect(find.text('Missing'), findsOneWidget);
+      expect(find.text('Retry'), findsNothing);
+      expect(find.text('Choose Another Folder'), findsOneWidget);
+      expect(find.text('Import Archive'), findsNothing);
+    });
+
     testWidgets('renders execution gate, preflight-ready, dry run, and log state', (
       tester,
     ) async {
@@ -264,6 +443,66 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
     });
   });
+}
+
+Future<void> _pumpPanel(
+  WidgetTester tester, {
+  required HistoricalArchivesWorkflowPanelViewModel model,
+}) async {
+  final container = ProviderContainer(
+    overrides: [
+      historicalArchivesWorkflowPanelModelProvider.overrideWith((ref) => model),
+      developerModeProvider.overrideWith(
+        () => _FakeDeveloperMode(DeveloperModeValue.user),
+      ),
+    ],
+  );
+  addTearDown(container.dispose);
+
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: const CupertinoApp(home: HistoricalArchivesPanel()),
+    ),
+  );
+  await tester.pump();
+}
+
+HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
+  required HistoricalArchivesNarratorPresentationViewModel presentation,
+  bool importButtonEnabled = false,
+}) {
+  return HistoricalArchivesWorkflowPanelViewModel(
+    statusLabel: 'Unused legacy status',
+    summaryText: 'Unused legacy summary',
+    executionGate: const HistoricalArchivesExecutionGateViewModel(
+      status: HistoricalArchivesExecutionGateStatus.available,
+      statusLabel: 'Available',
+      detail: 'No other operation owns mutation authority.',
+    ),
+    preflight: const HistoricalArchivesPreflightViewModel(
+      status: HistoricalArchivesPreflightStatus.waitingForFolder,
+      statusLabel: 'Waiting',
+      detail: 'Waiting.',
+    ),
+    selectedFolderPath: null,
+    chatDbStatusLabel: 'Not checked yet',
+    attachmentsStatusLabel: 'Not checked yet',
+    sourceLabel: 'Not proposed yet',
+    preflightSummaryLines: const [],
+    dryRunSummaryLines: const [],
+    importSafetySummaryLines: const [],
+    importButtonEnabled: importButtonEnabled,
+    importButtonDetail: 'Unused legacy detail',
+    archiveRemovalTargetChatDbPath: null,
+    archiveManagementSummaryLines: const [],
+    removeImportedArchiveDataEnabled: false,
+    removeImportedArchiveDataDetail: 'Unused legacy detail',
+    activityLog: const [],
+    resultSummaryLines: const [],
+    phases: const [],
+    narratorPresentation: presentation,
+  );
 }
 
 final class _FakeDeveloperMode extends DeveloperMode {
