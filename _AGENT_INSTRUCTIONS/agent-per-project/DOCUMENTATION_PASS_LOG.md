@@ -4833,3 +4833,27 @@ production preservation authority mechanically enforceable.
   coherence invariant that prevents impossible human-facing comparison
   arithmetic without clamping.
 - Confirmed that no schema or persistence-format change was introduced.
+
+---
+
+# 2026-08-17 - Refine Historical Archives sidebar reference interaction
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/14-NARRATOR-SIDEBAR-REFERENCE-REFINEMENT-IMPLEMENTATION.md`.
+- Recorded the responsibility split in which the center panel owns the active
+  archive journey while the sidebar owns context, source navigation, and
+  referential correspondence.
+- Documented exact canonical-source-key navigation from Known Archive Source
+  cartouches and the absence of import, removal, inspection, or chooser side
+  effects from that action.
+- Established that preflight-only persisted source knowledge is read-only and
+  cannot authorize import without a fresh folder selection and inspection.
+- Recorded extraction of the established All Messages orange correspondence
+  appearance while preserving independent feature ownership of reference
+  semantics, pulse occurrence, animation, and reduced-motion behavior.
+- Documented fresh repeated-recognition acknowledgment and the invariant that
+  its occurrence remains process/presentation state, not durable metadata or
+  source identity.
+- Confirmed that no schema, persistence format, source identity, import,
+  removal, archive mutation, production data, staging data, donor, or
+  attachment payload was changed.

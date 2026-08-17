@@ -1,7 +1,11 @@
 final class HistoricalArchiveSourceMetadata {
   const HistoricalArchiveSourceMetadata({
     required this.sourceKey,
+    required this.sourceChatDb,
+    required this.folderPath,
     required this.sourceLabel,
+    required this.chatDbStatusLabel,
+    required this.attachmentsStatusLabel,
     required this.totalMessages,
     required this.earliestMessageUtc,
     required this.latestMessageUtc,
@@ -15,7 +19,11 @@ final class HistoricalArchiveSourceMetadata {
   });
 
   final String sourceKey;
+  final String sourceChatDb;
+  final String folderPath;
   final String sourceLabel;
+  final String chatDbStatusLabel;
+  final String attachmentsStatusLabel;
   final int? totalMessages;
   final String? earliestMessageUtc;
   final String? latestMessageUtc;
@@ -43,6 +51,10 @@ final class HistoricalArchiveImportedSourceMatch {
 abstract interface class HistoricalArchiveImportedSourceLookup {
   Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
     required String folderPath,
+  });
+
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
+    required String sourceKey,
   });
 }
 

@@ -546,6 +546,12 @@ class _NarratorDecision extends ConsumerWidget {
           enabled: true,
           onPressed: actions.chooseMessagesFolder,
         ),
+      HistoricalArchivesNarratorPresentationKind.knownSource =>
+        _HistoricalArchiveActionButton(
+          label: 'Choose Archive Folder',
+          enabled: true,
+          onPressed: actions.chooseMessagesFolder,
+        ),
     };
   }
 }

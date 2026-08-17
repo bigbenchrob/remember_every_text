@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/widgets/buttons/app_header_action_button.dart';
+import '../../../../../config/theme/widgets/referential_correspondence_decoration.dart';
 import '../../../../../essentials/debug/feature_level_providers.dart'
     show DeveloperModeValue, developerModeProvider;
 import '../../../application/message_evidence/message_evidence_spine_provider.dart';
@@ -149,35 +150,14 @@ class _MessageEvidenceRowState extends ConsumerState<MessageEvidenceRow>
         animation: _pulse,
         builder: (context, child) {
           final pulse = widget.isAnchorMessage ? _pulse.value : 0.0;
-          final persistentAlpha = widget.isAnchorMessage ? 1.0 : 0.0;
           return DecoratedBox(
-            decoration: BoxDecoration(
-              color: widget.isAnchorMessage
-                  ? colors.messagePanels.contextAnchorBackground.withValues(
-                      alpha: 0.10 + (0.12 * pulse),
-                    )
-                  : null,
-              border: widget.isAnchorMessage
-                  ? Border.all(
-                      color: colors.messagePanels.contextAnchorBorder
-                          .withValues(alpha: 0.55 + (0.35 * pulse)),
-                      width: 1.25 + (1.15 * pulse),
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: widget.isAnchorMessage
-                  ? [
-                      BoxShadow(
-                        color: colors.messagePanels.contextAnchorGlow
-                            .withValues(
-                              alpha: (0.18 * persistentAlpha) + (0.44 * pulse),
-                            ),
-                        blurRadius: 5 + (12 * pulse),
-                        spreadRadius: 0.5 + (1.8 * pulse),
-                      ),
-                    ]
-                  : null,
-            ),
+            decoration: widget.isAnchorMessage
+                ? referentialCorrespondenceDecoration(
+                    colors: colors.messagePanels,
+                    pulse: pulse,
+                    borderRadius: BorderRadius.circular(10),
+                  )
+                : const BoxDecoration(),
             child: Padding(
               padding: EdgeInsets.all(widget.isAnchorMessage ? 4 : 0),
               child: child,

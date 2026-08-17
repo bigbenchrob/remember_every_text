@@ -3,7 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../config/theme/widgets/referential_correspondence_decoration.dart';
 import '../../historical_archives_workflow_actions_provider.dart';
+import '../../historical_archives_workflow_panel_model_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
 
 class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
@@ -19,6 +21,13 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final showAddArchiveFolder = ref.watch(
+      historicalArchivesWorkflowProvider.select(
+        (state) =>
+            state.presentationStage ==
+            HistoricalArchivesPresentationStage.noSource,
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,37 +66,39 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
           ],
-        const SizedBox(height: 14),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.surfaces.control,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-          ),
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () async {
-                await ref
-                    .read(historicalArchivesWorkflowActionsProvider.notifier)
-                    .chooseMessagesFolder();
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                child: Text(
-                  'Add an Archive Folder',
-                  style: typography.controlValue.copyWith(
-                    color: colors.accents.primary,
+        if (showAddArchiveFolder) ...[
+          const SizedBox(height: 14),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaces.control,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
+            ),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () async {
+                  await ref
+                      .read(historicalArchivesWorkflowActionsProvider.notifier)
+                      .chooseMessagesFolder();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Text(
+                    'Add an Archive Folder',
+                    style: typography.controlValue.copyWith(
+                      color: colors.accents.primary,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -166,40 +177,45 @@ class _HistoricalArchiveSourceTileState
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final referenceColor = colors.infoCard(InfoCard.termInk);
 
     return AnimatedBuilder(
       animation: _pulse,
       builder: (context, child) {
         final pulse = widget.source.isReferenced ? _pulse.value : 0.0;
-        return DecoratedBox(
-          key: ValueKey<String>(
-            'historical-archive-source-chrome:${widget.source.sourceKey}',
-          ),
-          decoration: BoxDecoration(
-            color: widget.source.isReferenced
-                ? referenceColor.withValues(alpha: 0.08 + (0.10 * pulse))
-                : colors.surfaces.control,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: widget.source.isReferenced
-                  ? referenceColor.withValues(alpha: 0.62 + (0.30 * pulse))
-                  : colors.lines.borderSubtle,
-              width: widget.source.isReferenced ? 1.25 + (1.15 * pulse) : 0.8,
-            ),
-            boxShadow: widget.source.isReferenced
-                ? [
-                    BoxShadow(
-                      color: referenceColor.withValues(
-                        alpha: 0.18 + (0.36 * pulse),
+        return Semantics(
+          button: true,
+          label: 'Show archive ${widget.source.label}',
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () async {
+                await ref
+                    .read(historicalArchivesWorkflowActionsProvider.notifier)
+                    .showKnownSource(sourceKey: widget.source.sourceKey);
+              },
+              child: DecoratedBox(
+                key: ValueKey<String>(
+                  'historical-archive-source-chrome:${widget.source.sourceKey}',
+                ),
+                decoration: widget.source.isReferenced
+                    ? referentialCorrespondenceDecoration(
+                        colors: colors.messagePanels,
+                        pulse: pulse,
+                        borderRadius: BorderRadius.circular(12),
+                      )
+                    : BoxDecoration(
+                        color: colors.surfaces.control,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors.lines.borderSubtle,
+                          width: 0.8,
+                        ),
                       ),
-                      blurRadius: 5 + (12 * pulse),
-                      spreadRadius: 0.5 + (1.8 * pulse),
-                    ),
-                  ]
-                : null,
+                child: child,
+              ),
+            ),
           ),
-          child: child,
         );
       },
       child: Padding(

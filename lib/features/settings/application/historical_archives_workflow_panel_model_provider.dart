@@ -72,6 +72,7 @@ enum HistoricalArchivesPresentationStage {
   inspectingSource,
   inspectionFailed,
   readyForImport,
+  knownSource,
   alreadyImported,
   laterWorkflow,
 }
@@ -82,10 +83,12 @@ final class HistoricalArchivesKnownSourceReference {
   const HistoricalArchivesKnownSourceReference({
     required this.sourceKey,
     required this.pulseOccurrence,
+    this.isRepeatedRecognition = false,
   });
 
   final String sourceKey;
   final int pulseOccurrence;
+  final bool isRepeatedRecognition;
 }
 
 final class HistoricalArchivesInspectionEvidence {
@@ -131,6 +134,7 @@ enum HistoricalArchivesNarratorPresentationKind {
   inspectingSource,
   inspectionFailed,
   readyForImport,
+  knownSource,
   alreadyImported,
 }
 
@@ -480,6 +484,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
 @Riverpod(keepAlive: true)
 class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   var _nextReferencePulseOccurrence = 0;
+  String? _lastRecognizedImportedSourceKey;
 
   @override
   HistoricalArchivesWorkflowState build() {
@@ -579,16 +584,67 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     );
 
     if (importedSourceMatch == null) {
+      _lastRecognizedImportedSourceKey = null;
       state = _workflowStateFromPreflightResult(result);
       return;
     }
 
+    final isRepeatedRecognition =
+        _lastRecognizedImportedSourceKey == importedSourceMatch.sourceKey;
+    _lastRecognizedImportedSourceKey = importedSourceMatch.sourceKey;
     _nextReferencePulseOccurrence += 1;
     state = _workflowStateFromPreflightResult(result).copyWith(
       presentationStage: HistoricalArchivesPresentationStage.alreadyImported,
       knownSourceReference: HistoricalArchivesKnownSourceReference(
         sourceKey: importedSourceMatch.sourceKey,
         pulseOccurrence: _nextReferencePulseOccurrence,
+        isRepeatedRecognition: isRepeatedRecognition,
+      ),
+    );
+  }
+
+  Future<void> showKnownSource({required String sourceKey}) async {
+    final sources = await ref.read(
+      historicalArchiveSourceMetadataProvider.future,
+    );
+    HistoricalArchiveSourceMetadata? source;
+    for (final candidate in sources) {
+      if (candidate.sourceKey == sourceKey) {
+        source = candidate;
+        break;
+      }
+    }
+    if (source == null) {
+      return;
+    }
+
+    HistoricalArchiveImportedSourceMatch? importedSourceMatch;
+    try {
+      final lookup = await ref.read(
+        historicalArchiveImportedSourceLookupProvider.future,
+      );
+      importedSourceMatch = await lookup.findImportedSourceByKey(
+        sourceKey: sourceKey,
+      );
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message:
+            'Historical archive imported-source classification failed during known-source navigation',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final currentReference = state.knownSourceReference;
+    state = _workflowStateFromKnownSourceMetadata(
+      source,
+      isImported: importedSourceMatch != null,
+      knownSourceReference: HistoricalArchivesKnownSourceReference(
+        sourceKey: sourceKey,
+        pulseOccurrence: currentReference?.sourceKey == sourceKey
+            ? currentReference!.pulseOccurrence
+            : 0,
       ),
     );
   }
@@ -1197,10 +1253,31 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
         ),
         retryInspectionEnabled: false,
       ),
+    HistoricalArchivesPresentationStage.knownSource =>
+      HistoricalArchivesNarratorPresentationViewModel(
+        kind: HistoricalArchivesNarratorPresentationKind.knownSource,
+        narratorText: 'This archive is known to MessageLens.',
+        instrumentationRows: _knownSourceInstrumentationRows(
+          workflowState.inspectionEvidence,
+          workflowState.preflight.statusLabel,
+        ),
+        detailsLines: [
+          ..._inspectionDetailsLines(
+            workflowState: workflowState,
+            executionGate: executionGate,
+            importButtonEnabled: false,
+          ),
+          'Choose the archive folder again to establish current source truth before importing.',
+        ],
+        retryInspectionEnabled: false,
+      ),
     HistoricalArchivesPresentationStage.alreadyImported =>
       HistoricalArchivesNarratorPresentationViewModel(
         kind: HistoricalArchivesNarratorPresentationKind.alreadyImported,
-        narratorText: 'This archive is already part of MessageLens.',
+        narratorText:
+            workflowState.knownSourceReference?.isRepeatedRecognition == true
+            ? 'That’s the same archive — it’s already part of MessageLens.'
+            : 'This archive is already part of MessageLens.',
         instrumentationRows: _alreadyImportedInstrumentationRows(
           workflowState.inspectionEvidence,
         ),
@@ -1339,6 +1416,37 @@ _alreadyImportedInstrumentationRows(
     const HistoricalArchivesInstrumentationRowViewModel(
       label: 'Status',
       value: 'Already imported',
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+  ];
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel>
+_knownSourceInstrumentationRows(
+  HistoricalArchivesInspectionEvidence? evidence,
+  String statusLabel,
+) {
+  if (evidence == null) {
+    return const [];
+  }
+
+  return [
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Messages',
+      value: _formattedCount(evidence.totalMessages),
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Dates',
+      value: _dateRangeLabel(
+        evidence.earliestMessageUtc,
+        evidence.latestMessageUtc,
+      ),
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Status',
+      value: statusLabel,
       status: HistoricalArchivesInstrumentationStatus.resolved,
     ),
   ];
@@ -1562,6 +1670,10 @@ List<String> _importSafetySummaryLines(
 
 String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
   if (workflowState.presentationStage ==
+      HistoricalArchivesPresentationStage.knownSource) {
+    return 'Known Archive Source';
+  }
+  if (workflowState.presentationStage ==
       HistoricalArchivesPresentationStage.alreadyImported) {
     return 'Archive Already Imported';
   }
@@ -1575,6 +1687,10 @@ String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
 }
 
 String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
+  if (workflowState.presentationStage ==
+      HistoricalArchivesPresentationStage.knownSource) {
+    return 'The selected sidebar source is known to MessageLens. Choose its folder again before any import decision is offered.';
+  }
   if (workflowState.presentationStage ==
       HistoricalArchivesPresentationStage.alreadyImported) {
     return 'The selected folder matches an archive source that already has imported messages in MessageLens.';
@@ -1595,6 +1711,10 @@ String _availableImportButtonDetail(
   HistoricalArchivesWorkflowState workflowState, {
   required String currentMessagesDatabasePath,
 }) {
+  if (workflowState.presentationStage ==
+      HistoricalArchivesPresentationStage.knownSource) {
+    return 'Import is not offered from persisted known-source information. Choose the folder again to establish current source truth.';
+  }
   if (workflowState.presentationStage ==
       HistoricalArchivesPresentationStage.alreadyImported) {
     return 'Import is not offered because this archive is already part of MessageLens.';
@@ -1629,6 +1749,10 @@ bool _importButtonEnabled({
   required HistoricalArchivesWorkflowState workflowState,
   required String currentMessagesDatabasePath,
 }) {
+  if (workflowState.presentationStage ==
+      HistoricalArchivesPresentationStage.knownSource) {
+    return false;
+  }
   if (workflowState.presentationStage ==
       HistoricalArchivesPresentationStage.alreadyImported) {
     return false;
@@ -1927,6 +2051,59 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
       dryRunComparableMessages: result.dryRunComparableMessages,
       dryRunUnavailableReason: result.dryRunUnavailableReason,
     ),
+  );
+}
+
+HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
+  HistoricalArchiveSourceMetadata source, {
+  required bool isImported,
+  required HistoricalArchivesKnownSourceReference knownSourceReference,
+}) {
+  final initial = buildInitialHistoricalArchivesWorkflowState();
+  return HistoricalArchivesWorkflowState(
+    preflight: HistoricalArchivesPreflightViewModel(
+      status: HistoricalArchivesPreflightStatus.waitingForFolder,
+      statusLabel: isImported
+          ? 'Already imported'
+          : source.preflightStatusLabel,
+      detail: isImported
+          ? 'The source-scoped import ledger contains messages for this archive.'
+          : 'This is persisted source information. Choose the folder again before importing.',
+    ),
+    selectedFolderPath: source.folderPath,
+    archiveRemovalTargetChatDbPath: source.sourceChatDb,
+    chatDbStatusLabel: source.chatDbStatusLabel,
+    attachmentsStatusLabel: source.attachmentsStatusLabel,
+    sourceLabel: source.sourceLabel,
+    preflightSummaryLines: const [],
+    dryRunSummaryLines: const [],
+    importSafetySummaryLines: initial.importSafetySummaryLines,
+    resultSummaryLines: initial.resultSummaryLines,
+    activityLog: const [],
+    phases: initial.phases,
+    presentationStage: isImported
+        ? HistoricalArchivesPresentationStage.alreadyImported
+        : HistoricalArchivesPresentationStage.knownSource,
+    inspectionEvidence: HistoricalArchivesInspectionEvidence(
+      folderPath: source.folderPath,
+      chatDbPath: source.sourceChatDb,
+      sourceLabel: source.sourceLabel,
+      chatDbStatusLabel: source.chatDbStatusLabel,
+      attachmentsStatusLabel: source.attachmentsStatusLabel,
+      totalMessages: source.totalMessages,
+      totalChats: null,
+      totalHandles: null,
+      missingGuids: null,
+      earliestMessageUtc: source.earliestMessageUtc,
+      latestMessageUtc: source.latestMessageUtc,
+      dateRangeUnavailableReason: null,
+      dryRunNewMessages: null,
+      dryRunDuplicateMessages: null,
+      dryRunComparableMessages: null,
+      dryRunUnavailableReason:
+          'A fresh folder inspection is required before comparison.',
+    ),
+    knownSourceReference: knownSourceReference,
   );
 }
 

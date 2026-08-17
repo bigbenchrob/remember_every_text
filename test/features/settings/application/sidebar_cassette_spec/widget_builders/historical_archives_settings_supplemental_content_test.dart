@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart';
@@ -47,6 +48,7 @@ void main() {
         find.text('Last imported: Apr 29, 2026 at 11:42 AM'),
         findsOneWidget,
       );
+      expect(find.text('Add an Archive Folder'), findsOneWidget);
     });
 
     testWidgets('tapping add archive folder triggers workflow chooser', (
@@ -72,6 +74,69 @@ void main() {
       await tester.pump();
 
       expect(workflow.chooseMessagesFolderCallCount, 1);
+    });
+
+    testWidgets('active center journey hides the competing add action', (
+      tester,
+    ) async {
+      final workflow = _TestHistoricalArchivesWorkflow(
+        initialState: buildInitialHistoricalArchivesWorkflowState().copyWith(
+          presentationStage: HistoricalArchivesPresentationStage.knownSource,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+          ],
+          child: const CupertinoApp(
+            home: HistoricalArchivesSettingsSupplementalContent(
+              payload: HistoricalArchivesSettingsCassettePayload(),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Add an Archive Folder'), findsNothing);
+    });
+
+    testWidgets('known-source cartouche requests exact-key navigation', (
+      tester,
+    ) async {
+      const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+      final workflow = _TestHistoricalArchivesWorkflow();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+          ],
+          child: const CupertinoApp(
+            home: HistoricalArchivesSettingsSupplementalContent(
+              payload: HistoricalArchivesSettingsCassettePayload(
+                knownSources: [
+                  HistoricalArchiveSidebarSourceSummary(
+                    sourceKey: sourceKey,
+                    label: 'Archive-2017',
+                    dateRangeLabel: 'Date range: 2012 to 2017',
+                    messageCountLabel: 'Total messages: 8,882',
+                    statusLabel: 'Current status: Imported successfully',
+                    lastRunSummaryLabel: 'Last run: imported 8,882 messages',
+                    lastImportedLabel: 'Last imported: today',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Archive-2017'));
+      await tester.pump();
+
+      expect(workflow.shownSourceKeys, [sourceKey]);
+      expect(workflow.chooseMessagesFolderCallCount, 0);
     });
 
     testWidgets(
@@ -109,7 +174,7 @@ void main() {
           );
         }
 
-        double borderWidth() {
+        BoxDecoration decoration() {
           final decoratedBox = tester.widget<DecoratedBox>(
             find.byKey(
               const ValueKey<String>(
@@ -117,9 +182,10 @@ void main() {
               ),
             ),
           );
-          final decoration = decoratedBox.decoration as BoxDecoration;
-          return decoration.border!.top.width;
+          return decoratedBox.decoration as BoxDecoration;
         }
+
+        double borderWidth() => decoration().border!.top.width;
 
         await pumpSource(isReferenced: false, pulseOccurrence: 0);
         expect(borderWidth(), 0.8);
@@ -127,8 +193,26 @@ void main() {
         await pumpSource(isReferenced: true, pulseOccurrence: 1);
         await tester.pump(const Duration(milliseconds: 200));
         expect(borderWidth(), greaterThan(1.25));
+        final container = ProviderScope.containerOf(
+          tester.element(find.text('Archive-2017')),
+        );
+        final colors = container.read(themeColorsProvider.notifier);
+        final archiveLabel = tester.widget<Text>(find.text('Archive-2017'));
+        expect(archiveLabel.style?.color, colors.content.textPrimary);
         await tester.pumpAndSettle();
         expect(borderWidth(), 1.25);
+        expect(
+          decoration().color,
+          colors.messagePanels.contextAnchorBackground.withValues(alpha: 0.10),
+        );
+        expect(
+          decoration().border!.top.color,
+          colors.messagePanels.contextAnchorBorder.withValues(alpha: 0.55),
+        );
+        expect(
+          decoration().boxShadow!.single.color,
+          colors.messagePanels.contextAnchorGlow.withValues(alpha: 0.18),
+        );
 
         await pumpSource(isReferenced: true, pulseOccurrence: 1);
         await tester.pump(const Duration(milliseconds: 200));
@@ -215,15 +299,27 @@ void main() {
 }
 
 class _TestHistoricalArchivesWorkflow extends HistoricalArchivesWorkflow {
+  _TestHistoricalArchivesWorkflow({
+    HistoricalArchivesWorkflowState? initialState,
+  }) : _initialState =
+           initialState ?? buildInitialHistoricalArchivesWorkflowState();
+
+  final HistoricalArchivesWorkflowState _initialState;
   int chooseMessagesFolderCallCount = 0;
+  final List<String> shownSourceKeys = [];
 
   @override
   HistoricalArchivesWorkflowState build() {
-    return buildInitialHistoricalArchivesWorkflowState();
+    return _initialState;
   }
 
   @override
   Future<void> chooseMessagesFolder() async {
     chooseMessagesFolderCallCount += 1;
+  }
+
+  @override
+  Future<void> showKnownSource({required String sourceKey}) async {
+    shownSourceKeys.add(sourceKey);
   }
 }

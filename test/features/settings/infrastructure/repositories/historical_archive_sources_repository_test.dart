@@ -49,6 +49,10 @@ void main() {
         'historical-messages-archive:/Archives/2018/chat.db',
       );
       expect(metadata.single.sourceLabel, 'Archive-2018');
+      expect(metadata.single.sourceChatDb, '/Archives/2018/chat.db');
+      expect(metadata.single.folderPath, '/Archives/2018');
+      expect(metadata.single.chatDbStatusLabel, 'Found and readable');
+      expect(metadata.single.attachmentsStatusLabel, 'Found');
       expect(metadata.single.totalMessages, 12);
       expect(metadata.single.dryRunNewMessages, 3);
       expect(metadata.single.dryRunDuplicateMessages, 9);

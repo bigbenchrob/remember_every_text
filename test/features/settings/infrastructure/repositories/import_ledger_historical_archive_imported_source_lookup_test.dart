@@ -41,6 +41,7 @@ void main() {
     );
 
     expect(await lookup.findImportedSource(folderPath: '/archive'), isNull);
+    expect(await lookup.findImportedSourceByKey(sourceKey: sourceKey), isNull);
 
     final sourceId = await importDatabase.getOrCreateSource(
       sourceKey: sourceKey,
@@ -63,10 +64,15 @@ void main() {
     });
 
     final match = await lookup.findImportedSource(folderPath: '/archive');
+    final matchByKey = await lookup.findImportedSourceByKey(
+      sourceKey: sourceKey,
+    );
 
     expect(match?.sourceKey, sourceKey);
     expect(match?.sourceId, sourceId);
     expect(match?.importedMessageCount, 1);
+    expect(matchByKey?.sourceId, sourceId);
+    expect(matchByKey?.importedMessageCount, 1);
   });
 }
 

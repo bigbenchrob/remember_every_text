@@ -427,7 +427,7 @@ void main() {
                   _CompletingArchiveSourceInspector(inspectionCompleter.future),
             ),
             historicalArchiveSourcesProvider.overrideWith(
-              (ref) async => _FakeHistoricalArchiveSources(),
+              (ref) async => const _FakeHistoricalArchiveSources(),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
               (ref) async => const _FakeImportedSourceLookup(),
@@ -487,11 +487,14 @@ void main() {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
         final container = ProviderContainer(
           overrides: [
+            historicalArchiveFolderChooserProvider.overrideWith(
+              (ref) => const _FakeFolderChooser('/tmp/archive'),
+            ),
             archiveSourceInspectorProvider.overrideWith(
               (ref) async => const _ImmediateArchiveSourceInspector(),
             ),
             historicalArchiveSourcesProvider.overrideWith(
-              (ref) async => _FakeHistoricalArchiveSources(),
+              (ref) async => const _FakeHistoricalArchiveSources(),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
               (ref) async => const _FakeImportedSourceLookup(
@@ -510,7 +513,7 @@ void main() {
         final workflow = container.read(
           historicalArchivesWorkflowProvider.notifier,
         );
-        await workflow.loadFolder(folderPath: '/tmp/archive');
+        await workflow.chooseMessagesFolder();
 
         final recognized = container.read(historicalArchivesWorkflowProvider);
         expect(
@@ -546,13 +549,18 @@ void main() {
         );
         expect(model.importButtonEnabled, isFalse);
 
-        await workflow.loadFolder(folderPath: '/tmp/archive');
+        await workflow.chooseMessagesFolder();
+        final repeated = container.read(historicalArchivesWorkflowProvider);
+        expect(repeated.knownSourceReference?.pulseOccurrence, 2);
+        expect(repeated.knownSourceReference?.isRepeatedRecognition, isTrue);
         expect(
-          container
-              .read(historicalArchivesWorkflowProvider)
-              .knownSourceReference
-              ?.pulseOccurrence,
-          2,
+          buildHistoricalArchivesWorkflowPanelModel(
+            executionGateState: const ArchiveMutationCoordinatorState(),
+            isMaintenanceLocked: false,
+            workflowState: repeated,
+            currentMessagesDatabasePath: currentMessagesDatabasePath,
+          ).narratorPresentation?.narratorText,
+          'That’s the same archive — it’s already part of MessageLens.',
         );
 
         await workflow.loadFolder(folderPath: '/tmp/another-archive');
@@ -566,6 +574,127 @@ void main() {
         expect(differentSource.knownSourceReference, isNull);
       },
     );
+
+    test(
+      'known-source navigation uses canonical identity without recognition pulse',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        final container = ProviderContainer(
+          overrides: [
+            historicalArchiveSourceMetadataProvider.overrideWith(
+              (ref) async => const [
+                HistoricalArchiveSourceMetadata(
+                  sourceKey: sourceKey,
+                  sourceChatDb: '/tmp/archive/chat.db',
+                  folderPath: '/tmp/archive',
+                  sourceLabel: 'Archive',
+                  chatDbStatusLabel: 'Found and readable',
+                  attachmentsStatusLabel: 'Found',
+                  totalMessages: 42,
+                  earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+                  latestMessageUtc: '2017-06-11T08:00:00.000Z',
+                  preflightStatusLabel: 'Preflight complete',
+                  dryRunNewMessages: 0,
+                  dryRunDuplicateMessages: 42,
+                  lastImportFinishedAtUtc: null,
+                  lastImportSuccess: true,
+                  lastImportError: null,
+                  lastImportedMessageCount: 42,
+                ),
+              ],
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(
+                match: HistoricalArchiveImportedSourceMatch(
+                  sourceKey: sourceKey,
+                  sourceId: 3,
+                  importedMessageCount: 42,
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container
+            .read(historicalArchivesWorkflowProvider.notifier)
+            .showKnownSource(sourceKey: sourceKey);
+
+        final state = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          state.presentationStage,
+          HistoricalArchivesPresentationStage.alreadyImported,
+        );
+        expect(state.selectedFolderPath, '/tmp/archive');
+        expect(state.knownSourceReference?.sourceKey, sourceKey);
+        expect(state.knownSourceReference?.pulseOccurrence, 0);
+        expect(state.knownSourceReference?.isRepeatedRecognition, isFalse);
+        expect(
+          buildHistoricalArchivesWorkflowPanelModel(
+            executionGateState: const ArchiveMutationCoordinatorState(),
+            isMaintenanceLocked: false,
+            workflowState: state,
+            currentMessagesDatabasePath: currentMessagesDatabasePath,
+          ).importButtonEnabled,
+          isFalse,
+        );
+      },
+    );
+
+    test('preflight-only known source cannot authorize import', () async {
+      const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+      final container = ProviderContainer(
+        overrides: [
+          historicalArchiveSourceMetadataProvider.overrideWith(
+            (ref) async => const [
+              HistoricalArchiveSourceMetadata(
+                sourceKey: sourceKey,
+                sourceChatDb: '/tmp/archive/chat.db',
+                folderPath: '/tmp/archive',
+                sourceLabel: 'Archive',
+                chatDbStatusLabel: 'Found and readable',
+                attachmentsStatusLabel: 'Found',
+                totalMessages: 42,
+                earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+                latestMessageUtc: '2017-06-11T08:00:00.000Z',
+                preflightStatusLabel: 'Preflight complete',
+                dryRunNewMessages: 32,
+                dryRunDuplicateMessages: 10,
+                lastImportFinishedAtUtc: null,
+                lastImportSuccess: null,
+                lastImportError: null,
+                lastImportedMessageCount: null,
+              ),
+            ],
+          ),
+          historicalArchiveImportedSourceLookupProvider.overrideWith(
+            (ref) async => const _FakeImportedSourceLookup(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container
+          .read(historicalArchivesWorkflowProvider.notifier)
+          .showKnownSource(sourceKey: sourceKey);
+
+      final state = container.read(historicalArchivesWorkflowProvider);
+      final model = buildHistoricalArchivesWorkflowPanelModel(
+        executionGateState: const ArchiveMutationCoordinatorState(),
+        isMaintenanceLocked: false,
+        workflowState: state,
+        currentMessagesDatabasePath: currentMessagesDatabasePath,
+      );
+      expect(
+        state.presentationStage,
+        HistoricalArchivesPresentationStage.knownSource,
+      );
+      expect(
+        model.narratorPresentation?.narratorText,
+        'This archive is known to MessageLens.',
+      );
+      expect(model.importButtonEnabled, isFalse);
+    });
   });
 
   group('preflightHistoricalArchivesFolder', () {
@@ -796,11 +925,21 @@ final class _FakeImportedSourceLookup
     }
     return match;
   }
+
+  @override
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
+    required String sourceKey,
+  }) async {
+    return match?.sourceKey == sourceKey ? match : null;
+  }
 }
 
 final class _FakeHistoricalArchiveSources implements HistoricalArchiveSources {
+  const _FakeHistoricalArchiveSources();
+
   @override
-  Future<List<HistoricalArchiveSourceMetadata>> readKnownSources() async => [];
+  Future<List<HistoricalArchiveSourceMetadata>> readKnownSources() async =>
+      const [];
 
   @override
   Future<void> upsertSourceMetadata(

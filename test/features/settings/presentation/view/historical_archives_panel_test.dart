@@ -201,6 +201,46 @@ void main() {
       },
     );
 
+    testWidgets(
+      'known-source state requires a fresh folder choice before import',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          model: _narratorPanelModel(
+            presentation: const HistoricalArchivesNarratorPresentationViewModel(
+              kind: HistoricalArchivesNarratorPresentationKind.knownSource,
+              narratorText: 'This archive is known to MessageLens.',
+              instrumentationRows: [
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Messages',
+                  value: '8,882',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Status',
+                  value: 'Preflight complete',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+              ],
+              detailsLines: [
+                'Choose the archive folder again to establish current source truth before importing.',
+              ],
+              retryInspectionEnabled: false,
+            ),
+          ),
+        );
+
+        expect(
+          find.text('This archive is known to MessageLens.'),
+          findsOneWidget,
+        );
+        expect(find.text('8,882'), findsOneWidget);
+        expect(find.text('Preflight complete'), findsOneWidget);
+        expect(find.text('Import Archive'), findsNothing);
+        expect(find.text('Choose Archive Folder'), findsOneWidget);
+      },
+    );
+
     testWidgets('failed inspection offers only the truthful recovery action', (
       tester,
     ) async {

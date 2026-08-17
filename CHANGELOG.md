@@ -10,6 +10,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.41] — 2026-08-17
+
+### Changed
+
+- Historical Archives now keeps archive navigation in the sidebar and the
+  active archive journey in the center panel. Known sources open by canonical
+  identity, active journeys hide the competing sidebar add action, and fresh
+  recognition of the same imported archive receives a new calm acknowledgment
+  and referential pulse. Historical Archives and All Messages now share the
+  same legible orange correspondence appearance while retaining independent
+  event ownership.
+
 ## [0.2.40] — 2026-08-17
 
 ### Fixed

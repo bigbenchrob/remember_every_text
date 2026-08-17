@@ -22,6 +22,12 @@ class HistoricalArchivesWorkflowActions
     ref.read(historicalArchivesWorkflowProvider.notifier).clearSelection();
   }
 
+  Future<void> showKnownSource({required String sourceKey}) async {
+    await ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .showKnownSource(sourceKey: sourceKey);
+  }
+
   Future<void> retrySelectedFolderInspection() async {
     await ref
         .read(historicalArchivesWorkflowProvider.notifier)

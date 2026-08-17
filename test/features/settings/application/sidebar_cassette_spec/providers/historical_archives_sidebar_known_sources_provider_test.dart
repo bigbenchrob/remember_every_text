@@ -17,7 +17,11 @@ void main() {
       const sources = [
         HistoricalArchiveSourceMetadata(
           sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
+          sourceChatDb: '/Archives/2017/chat.db',
+          folderPath: '/Archives/2017',
           sourceLabel: 'Archive-2017',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
           preflightStatusLabel: 'Preflight complete',
           totalMessages: 42,
           earliestMessageUtc: '2017-01-03T00:00:00.000Z',
@@ -62,7 +66,11 @@ void main() {
       const sources = [
         HistoricalArchiveSourceMetadata(
           sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
+          sourceChatDb: '/Archives/2017/chat.db',
+          folderPath: '/Archives/2017',
           sourceLabel: 'Archive-2017',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
           preflightStatusLabel: 'Imported successfully',
           totalMessages: 42,
           earliestMessageUtc: null,
@@ -76,7 +84,11 @@ void main() {
         ),
         HistoricalArchiveSourceMetadata(
           sourceKey: 'historical-messages-archive:/Archives/other/chat.db',
+          sourceChatDb: '/Archives/other/chat.db',
+          folderPath: '/Archives/other',
           sourceLabel: 'Other',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
           preflightStatusLabel: 'Imported successfully',
           totalMessages: 9,
           earliestMessageUtc: null,

@@ -18,6 +18,13 @@ final class ImportLedgerHistoricalArchiveImportedSourceLookup
     required String folderPath,
   }) async {
     final sourceKey = _folderResolver.resolveFolder(folderPath).sourceKey;
+    return findImportedSourceByKey(sourceKey: sourceKey);
+  }
+
+  @override
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
+    required String sourceKey,
+  }) async {
     final sourceId = await _importLedger.sourceIdForKey(sourceKey);
     if (sourceId == null) {
       return null;

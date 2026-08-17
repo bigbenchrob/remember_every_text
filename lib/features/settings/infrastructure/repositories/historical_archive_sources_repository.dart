@@ -24,7 +24,11 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
           sourceKey: HistoricalMessagesArchiveSourceRegistrar.buildSourceKey(
             chatDbPath: path.normalize(path.absolute(record.sourceChatDb)),
           ),
+          sourceChatDb: record.sourceChatDb,
+          folderPath: record.folderPath,
           sourceLabel: record.sourceLabel,
+          chatDbStatusLabel: record.chatDbStatusLabel,
+          attachmentsStatusLabel: record.attachmentsStatusLabel,
           totalMessages: record.totalMessages,
           earliestMessageUtc: record.earliestMessageUtc,
           latestMessageUtc: record.latestMessageUtc,
