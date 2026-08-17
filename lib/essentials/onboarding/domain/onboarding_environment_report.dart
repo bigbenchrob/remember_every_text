@@ -4,6 +4,7 @@ enum OnboardingEnvironmentState {
   sourceSparseOrUnsynced,
   importFailed,
   graphProjectionFailed,
+  maintenanceInProgress,
   readyToImport,
   ready,
 }

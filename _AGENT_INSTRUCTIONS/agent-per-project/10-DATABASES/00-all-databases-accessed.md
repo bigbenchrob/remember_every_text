@@ -59,8 +59,14 @@ start with
   historical archive, and attachment operations use
   `ArchiveMutationCoordinator`. `dbMaintenanceLockProvider` remains a derived
   readiness/UI signal exposed through the DB seam; it is not an independent
-  write authority. It gates creation of a new graph connection; it does not
-  reactively revoke a connection already prepared for the admitted operation.
+  resource authority. Fresh graph construction asks the coordinator whether
+  the requesting async branch owns the active mutation and whether that
+  branch's current operation scope permits the requested graph action.
+  Historical import/removal owners may therefore construct the graph resource
+  they legitimately require after admission, while unrelated callers remain
+  mechanically excluded. Nested scopes preserve the strongest active safety
+  restriction. The Boolean maintenance signal remains useful for coarse
+  readiness and presentation only.
 - **Public provider seam imports stay narrow.** When a file imports
   `feature_level_providers.dart` from another feature or essential module, it
   must use an explicit `show` list. Broad seam imports hide database and
@@ -155,10 +161,13 @@ instead of reaching for the concrete physical provider.
   under `lib/essentials/db/feature_level_providers/` and exported by
   `lib/essentials/db/feature_level_providers.dart`.
 - Cross-feature DB lifecycle signals: the maintenance lock is consumed through
-  the DB public seam because it coordinates reset/rebuild/archive operations
-  across features. Narrow refresh/readiness signals such as graph readiness or
-  message-data version may use their explicit provider files when a tripwire
-  requires narrow imports to avoid broad DB authority.
+  the DB public seam because it reports reset/rebuild/archive maintenance to
+  readers and presentation across features. It does not decide owner-specific
+  resource admission. The graph provider asks `ArchiveMutationCoordinator`
+  directly through the archive-environment seam. Narrow refresh/readiness
+  signals such as graph readiness or message-data version may use their
+  explicit provider files when a tripwire requires narrow imports to avoid
+  broad DB authority.
 - One-off source/probe reads: infrastructure repositories may open `chat.db`,
   AddressBook candidates, historical archive `chat.db` files, or retired
   cleanup files for a named read-only query. They must set read-only/query-only

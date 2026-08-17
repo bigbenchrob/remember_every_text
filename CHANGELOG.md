@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.38] — 2026-08-17
+
+### Fixed
+
+- Historical archive import and removal can now construct the Conversation
+  Graph resources they legitimately require after acquiring mutation
+  authority, while unrelated readers remain mechanically excluded. Active
+  archive maintenance no longer masquerades as graph failure or redirects the
+  app into onboarding.
+
 ## [0.2.37] — 2026-08-16
 
 ### Fixed

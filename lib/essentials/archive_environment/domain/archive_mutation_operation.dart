@@ -14,6 +14,20 @@ enum ArchiveMutationOperation {
   localAccountIdentityReconciliation,
 }
 
+/// Protected resource actions whose admission depends on the active mutation
+/// owner and the requesting async branch's current operation scope.
+enum ArchiveMutationResourceAction { openConversationGraphConnection }
+
+enum ArchiveMutationResourceAdmission {
+  unrestricted,
+  admittedOwner,
+  deniedByActiveMutation;
+
+  bool get isAllowed {
+    return this != ArchiveMutationResourceAdmission.deniedByActiveMutation;
+  }
+}
+
 extension ArchiveMutationOperationPolicy on ArchiveMutationOperation {
   /// Whether reads must avoid reopening archive databases during the operation.
   bool get blocksDatabaseReopen {
@@ -34,6 +48,14 @@ extension ArchiveMutationOperationPolicy on ArchiveMutationOperation {
       ArchiveMutationOperation.attachmentClearing ||
       ArchiveMutationOperation.destructiveMaintenance => true,
       _ => false,
+    };
+  }
+
+  bool permitsOwnerResourceAction(ArchiveMutationResourceAction action) {
+    return switch (action) {
+      ArchiveMutationResourceAction.openConversationGraphConnection =>
+        this == ArchiveMutationOperation.historicalArchiveImport ||
+            this == ArchiveMutationOperation.historicalArchiveRemoval,
     };
   }
 }

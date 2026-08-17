@@ -3,6 +3,7 @@
 ///***************************************************************** */
 
 export 'feature_level_providers/app_database_labels.dart';
+export 'feature_level_providers/conversation_graph_connection_lifecycle_provider.dart';
 export 'feature_level_providers/conversation_graph_readiness_provider.dart';
 export 'feature_level_providers/database_health_audit_service_provider.dart';
 export 'feature_level_providers/db_maintenance_lock_provider.dart';

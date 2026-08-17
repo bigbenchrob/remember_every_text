@@ -4538,7 +4538,7 @@ production preservation authority mechanically enforceable.
 # 2026-08-16 - Audit March 2026 attachment relational bridge
 
 - Created
-  `45-NEW-FEATURE-ADDITION/26-PRODUCTION-ARCHIVE-RECOVERY/01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md`.
+  `45-NEW-FEATURE-ADDITION/26-PRODUCTION-ARCHIVE-RECOVERY/responses/01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md`.
 - Resolved the supplied donor path to its actual content beneath a literal `:`
   directory and confirmed the configured production archive root from current
   application policy and cutover documentation.
@@ -4577,7 +4577,7 @@ production preservation authority mechanically enforceable.
   445,063,249 bytes, with the same blank, image, and QuickTime MIME
   distribution and no discrepancies.
 - Created
-  `26-PRODUCTION-ARCHIVE-RECOVERY/02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md`
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md`
   containing only non-sensitive aggregates, the local manifest path and
   digest, the read-only safety boundary, explicit exclusions, and the final
   stop decision.
@@ -4592,7 +4592,7 @@ production preservation authority mechanically enforceable.
 # 2026-08-16 - Audit historical Messages donor ingestion feasibility
 
 - Created
-  `26-PRODUCTION-ARCHIVE-RECOVERY/03-HISTORICAL-MESSAGES-2012-2016-INGESTION-AUDIT.md`.
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/03-HISTORICAL-MESSAGES-2012-2016-INGESTION-AUDIT.md`.
 - Resolved the task's `Messages_2016` wording against the actual supplied
   `Messages_2012` donor and established its real 2012-07-25 through 2017-06-11
   range from immutable SQLite evidence.
@@ -4624,7 +4624,7 @@ production preservation authority mechanically enforceable.
 # 2026-08-16 - Correct Historical Archives maintenance-lock sequencing
 
 - Recorded the first disposable staging import failure in
-  `26-PRODUCTION-ARCHIVE-RECOVERY/04-HISTORICAL-IMPORT-MAINTENANCE-LOCK-CORRECTION.md`.
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/04-HISTORICAL-IMPORT-MAINTENANCE-LOCK-CORRECTION.md`.
 - Established by immutable inspection that no source `3` registration, import
   rows, graph rows, or attachment-preservation changes occurred; only the
   retryable Historical Archives failure status was written to Overlay.
@@ -4644,7 +4644,7 @@ production preservation authority mechanically enforceable.
 
 - Recorded the successful 8,882-message staging import and its timestamp
   collapse in
-  `26-PRODUCTION-ARCHIVE-RECOVERY/05-HISTORICAL-APPLE-TIMESTAMP-NORMALIZATION-CORRECTION.md`.
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/05-HISTORICAL-APPLE-TIMESTAMP-NORMALIZATION-CORRECTION.md`.
 - Established `lib/core/util/date_converter.dart` as the sole Apple timestamp
   authority for old Apple-second and modern Apple-nanosecond values.
 - Added the mandatory canonical rule in
@@ -4663,7 +4663,7 @@ production preservation authority mechanically enforceable.
 # 2026-08-16 - Verify corrected historical import end to end
 
 - Created
-  `26-PRODUCTION-ARCHIVE-RECOVERY/06-HISTORICAL-IMPORT-POST-CORRECTION-VERIFICATION.md`.
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/06-HISTORICAL-IMPORT-POST-CORRECTION-VERIFICATION.md`.
 - Confirmed by immutable inspection that source `3` is registered once and
   contains exactly 8,882 messages in both import ledger and graph, spanning
   2012-07-25 through 2017-06-11 with zero 2000/2001 collapse rows.
@@ -4685,3 +4685,28 @@ production preservation authority mechanically enforceable.
 - No import, removal, reset, application launch, production access, donor
   mutation, schema change, or attachment-payload mutation was performed by this
   verification pass.
+
+---
+
+# 2026-08-17 - Restore owner-aware archive mutation resource admission
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/08-ARCHIVE-MUTATION-OWNER-AWARE-DATABASE-ADMISSION-IMPLEMENTATION.md`.
+- Recorded that protected provider construction retains the requesting Dart
+  Zone, allowing the existing private mutation-owner context to identify the
+  caller without public owner IDs or capability tokens.
+- Codified the hard caller-specific-scope invariant: resource permission comes
+  from the requesting branch's current operation, while aggregate active
+  scopes preserve the strongest safety restriction.
+- Replaced the provisional Historical Archives pre-open sequencing workaround
+  with coordinator-owned, operation-specific graph admission for admitted
+  historical import/removal owners.
+- Documented that message-data reset may close an existing graph handle but may
+  not construct a fresh graph before deleting derived data.
+- Clarified that `dbMaintenanceLockProvider` is a coarse readiness/presentation
+  signal, not the owner-specific resource authority, and that legitimate
+  maintenance is not graph projection failure or onboarding action.
+- Updated Feature 26 links for the new `responses/` organization and refreshed
+  the Feature Addition index.
+- No database schema, archive data, donor, staging data, production data, or
+  attachment payload was changed by this pass.

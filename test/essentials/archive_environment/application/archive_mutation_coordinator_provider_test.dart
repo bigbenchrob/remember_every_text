@@ -99,6 +99,10 @@ void main() {
           action: () async {
             expect(harness.state.ownerLabel, 'live-monitor');
             expect(harness.state.holdCount, 2);
+            expect(harness.state.activeOperations, <ArchiveMutationOperation>[
+              ArchiveMutationOperation.liveGraphUpdate,
+              ArchiveMutationOperation.graphBuild,
+            ]);
           },
         );
         expect(harness.state.holdCount, 1);
@@ -107,6 +111,80 @@ void main() {
 
     expect(harness.state.isLocked, isFalse);
   });
+
+  test(
+    'nested scopes preserve stronger reopen policy and restore it',
+    () async {
+      final harness = await _CoordinatorHarness.create();
+      addTearDown(harness.dispose);
+
+      await harness.coordinator.run<void>(
+        operation: ArchiveMutationOperation.graphBuild,
+        ownerLabel: 'graph-build',
+        action: () async {
+          expect(harness.state.blocksDatabaseReopen, isFalse);
+
+          await harness.coordinator.run<void>(
+            operation: ArchiveMutationOperation.messageDataReset,
+            ownerLabel: 'nested-reset',
+            action: () async {
+              expect(harness.state.blocksDatabaseReopen, isTrue);
+              expect(
+                harness.state.activeOperations,
+                contains(ArchiveMutationOperation.messageDataReset),
+              );
+            },
+          );
+
+          expect(harness.state.blocksDatabaseReopen, isFalse);
+          expect(harness.state.activeOperations, <ArchiveMutationOperation>[
+            ArchiveMutationOperation.graphBuild,
+          ]);
+        },
+      );
+    },
+  );
+
+  test(
+    'resource admission uses the requesting caller operation scope',
+    () async {
+      final harness = await _CoordinatorHarness.create();
+      addTearDown(harness.dispose);
+
+      await harness.coordinator.run<void>(
+        operation: ArchiveMutationOperation.historicalArchiveImport,
+        ownerLabel: 'historical-import',
+        action: () async {
+          expect(
+            harness.coordinator.resourceAdmissionForCurrentCaller(
+              ArchiveMutationResourceAction.openConversationGraphConnection,
+            ),
+            ArchiveMutationResourceAdmission.admittedOwner,
+          );
+
+          await harness.coordinator.run<void>(
+            operation: ArchiveMutationOperation.graphBuild,
+            ownerLabel: 'nested-graph-build',
+            action: () async {
+              expect(
+                harness.coordinator.resourceAdmissionForCurrentCaller(
+                  ArchiveMutationResourceAction.openConversationGraphConnection,
+                ),
+                ArchiveMutationResourceAdmission.deniedByActiveMutation,
+              );
+            },
+          );
+
+          expect(
+            harness.coordinator.resourceAdmissionForCurrentCaller(
+              ArchiveMutationResourceAction.openConversationGraphConnection,
+            ),
+            ArchiveMutationResourceAdmission.admittedOwner,
+          );
+        },
+      );
+    },
+  );
 
   test('exceptions release operation authority', () async {
     final harness = await _CoordinatorHarness.create();
@@ -292,6 +370,52 @@ void main() {
             ownerLabel: 'production-reset',
             action: () async {},
           );
+    },
+  );
+
+  test(
+    'nested production operations enforce stronger checkpoint policy',
+    () async {
+      final authority = ArchiveAccessAuthority(
+        identity: ResolvedArchiveIdentity(
+          environment: ArchiveEnvironment.production,
+          buildIdentity: ArchiveBuildIdentity.productionRelease,
+          archiveInstanceId: ArchiveInstanceId(
+            'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          ),
+          canonicalRootPath: '/disposable/nested-production-clone',
+          bundleIdentifier: 'com.bigbenchsoftware.MessageLens',
+          productName: 'MessageLens',
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(authority),
+        ],
+      );
+      addTearDown(container.dispose);
+      final coordinator = container.read(
+        archiveMutationCoordinatorProvider.notifier,
+      );
+
+      await coordinator.run<void>(
+        operation: ArchiveMutationOperation.graphBuild,
+        ownerLabel: 'outer-graph-build',
+        action: () async {
+          await expectLater(
+            coordinator.run<void>(
+              operation: ArchiveMutationOperation.messageDataReset,
+              ownerLabel: 'nested-production-reset',
+              action: () async {},
+            ),
+            throwsA(isA<ArchiveCheckpointRequiredException>()),
+          );
+          expect(
+            container.read(archiveMutationCoordinatorProvider).activeOperations,
+            <ArchiveMutationOperation>[ArchiveMutationOperation.graphBuild],
+          );
+        },
+      );
     },
   );
 }

@@ -722,6 +722,8 @@ String _messageLensStatusValue(OnboardingEnvironmentReport report) {
   return switch (report.state) {
     OnboardingEnvironmentState.ready =>
       'Ready to use; ordinary browsing can run from local app data',
+    OnboardingEnvironmentState.maintenanceInProgress =>
+      'Message data maintenance is in progress',
     OnboardingEnvironmentState.readyToImport =>
       'Ready to import; setup has the required local access',
     OnboardingEnvironmentState.permissionBlocked =>

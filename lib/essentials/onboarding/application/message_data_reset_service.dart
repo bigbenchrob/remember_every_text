@@ -9,6 +9,7 @@ import '../../archive_environment/feature_level_providers.dart'
 import '../../db/app_database_files.dart';
 import '../../db/feature_level_providers.dart'
     show
+        conversationGraphConnectionLifecycleProvider,
         driftConversationGraphDatabaseProvider,
         sourceScopedImportDatabaseProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart'
@@ -76,12 +77,13 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         'Closing source-scoped import database before reset',
         source: 'MessageDataResetService',
       );
-      await _closeSourceScopedImportDatabase();
+      final sourceScopedImportWasOpen =
+          await _closeSourceScopedImportDatabase();
       logger.info(
         'Closing source-scoped graph database before reset',
         source: 'MessageDataResetService',
       );
-      await _closeConversationGraphDatabase();
+      final conversationGraphWasOpen = await _closeConversationGraphDatabase();
 
       final fileStore = _dependencies.fileStore;
       final deletedActiveGraphFilePaths = await fileStore
@@ -105,7 +107,10 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
         },
       );
 
-      _dependencies.invalidateDerivedMessageDataProviders();
+      _dependencies.invalidateDerivedMessageDataProviders(
+        invalidateSourceScopedImport: sourceScopedImportWasOpen,
+        invalidateConversationGraph: conversationGraphWasOpen,
+      );
       _dependencies.bumpMessageDataVersion();
 
       final databaseExistsAfterReset = fileStore.databaseExistenceByBaseName(
@@ -250,39 +255,42 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     _dependencies.refreshOnboardingEnvironment();
   }
 
-  Future<void> _closeSourceScopedImportDatabase() async {
+  Future<bool> _closeSourceScopedImportDatabase() async {
     final fileStore = _dependencies.fileStore;
     if (!fileStore.databaseBaseFileExists(
       appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
     )) {
-      return;
+      return false;
     }
     try {
       await _dependencies.closeSourceScopedImportDatabase();
+      return true;
     } catch (error, stackTrace) {
       _logResetCloseWarning(
         message: 'Failed to close source-scoped import database before reset',
         error: error,
         stackTrace: stackTrace,
       );
+      return true;
     }
   }
 
-  Future<void> _closeConversationGraphDatabase() async {
+  Future<bool> _closeConversationGraphDatabase() async {
     final fileStore = _dependencies.fileStore;
     if (!fileStore.databaseBaseFileExists(
       appDatabaseFileName(AppDatabaseFile.conversationGraph),
     )) {
-      return;
+      return false;
     }
     try {
-      await _dependencies.closeConversationGraphDatabase();
+      return await _dependencies.closeConversationGraphDatabase();
     } catch (error, stackTrace) {
       _logResetCloseWarning(
         message: 'Failed to close conversation graph database before reset',
         error: error,
         stackTrace: stackTrace,
       );
+      return true;
     }
   }
 
@@ -376,9 +384,13 @@ final class _MessageDataResetDependencies {
   final Future<void> Function(Future<void> Function() action)
   runWithMutationAuthority;
   final VoidCallback bumpMessageDataVersion;
-  final VoidCallback invalidateDerivedMessageDataProviders;
+  final void Function({
+    required bool invalidateSourceScopedImport,
+    required bool invalidateConversationGraph,
+  })
+  invalidateDerivedMessageDataProviders;
   final Future<void> Function() closeSourceScopedImportDatabase;
-  final Future<void> Function() closeConversationGraphDatabase;
+  final Future<bool> Function() closeConversationGraphDatabase;
   final OnboardingStatus Function() readOnboardingStatus;
   final AsyncValue<OnboardingEnvironmentReport> Function()
   readEnvironmentReport;
@@ -437,21 +449,28 @@ MessageDataResetService messageDataResetService(Ref ref) {
       bumpMessageDataVersion: ref
           .read(messageDataVersionProvider.notifier)
           .bump,
-      invalidateDerivedMessageDataProviders: () {
-        ref.invalidate(sourceScopedImportDatabaseProvider);
-        ref.invalidate(driftConversationGraphDatabaseProvider);
-      },
+      invalidateDerivedMessageDataProviders:
+          ({
+            required bool invalidateSourceScopedImport,
+            required bool invalidateConversationGraph,
+          }) {
+            if (invalidateSourceScopedImport) {
+              ref.invalidate(sourceScopedImportDatabaseProvider);
+            }
+            if (invalidateConversationGraph) {
+              ref.invalidate(driftConversationGraphDatabaseProvider);
+            }
+          },
       closeSourceScopedImportDatabase: () async {
         final ledgerDb = await ref.read(
           sourceScopedImportDatabaseProvider.future,
         );
         await ledgerDb.close();
       },
-      closeConversationGraphDatabase: () async {
-        final graphDb = await ref.read(
-          driftConversationGraphDatabaseProvider.future,
-        );
-        await graphDb.close();
+      closeConversationGraphDatabase: () {
+        return ref
+            .read(conversationGraphConnectionLifecycleProvider)
+            .closeIfActive();
       },
       readOnboardingStatus: () {
         return ref.read(onboardingGateProvider);

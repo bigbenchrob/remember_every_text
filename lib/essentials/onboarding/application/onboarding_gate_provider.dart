@@ -158,7 +158,9 @@ class OnboardingGate extends _$OnboardingGate {
     return switch (report.state) {
       OnboardingEnvironmentState.permissionBlocked =>
         OnboardingStatus.awaitingFda,
-      OnboardingEnvironmentState.ready => OnboardingStatus.notNeeded,
+      OnboardingEnvironmentState.ready ||
+      OnboardingEnvironmentState.maintenanceInProgress =>
+        OnboardingStatus.notNeeded,
       OnboardingEnvironmentState.importFailed ||
       OnboardingEnvironmentState.graphProjectionFailed ||
       OnboardingEnvironmentState.sourceUnavailable ||

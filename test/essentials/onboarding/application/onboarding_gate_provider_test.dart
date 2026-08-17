@@ -252,6 +252,21 @@ void main() {
       expect(status, OnboardingStatus.awaitingUserAction);
     });
 
+    test('active maintenance does not request onboarding action', () {
+      final status = OnboardingGate.resolveBuildStatus(
+        reportAsync: AsyncData(
+          _report(
+            state: OnboardingEnvironmentState.maintenanceInProgress,
+            blockerKind: OnboardingBlockerKind.none,
+          ),
+        ),
+        workflowOverrideStatus: null,
+        fallbackBuildStatus: () => OnboardingStatus.awaitingUserAction,
+      );
+
+      expect(status, OnboardingStatus.notNeeded);
+    });
+
     test('refreshEnvironment re-checks full disk access', () async {
       final tempDir = await Directory.systemTemp.createTemp(
         'onboarding_gate_provider_test',

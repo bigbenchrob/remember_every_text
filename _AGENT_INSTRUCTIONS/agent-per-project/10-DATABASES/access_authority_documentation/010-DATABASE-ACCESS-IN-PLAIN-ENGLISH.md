@@ -270,7 +270,10 @@ Examples of named operations include:
 The coordinator is the single process-local token for these protected
 mutations. One owner acquires it for a named operation. Another unrelated
 operation cannot acquire it at the same time. Nested work belonging to the same
-owner may re-enter without inventing a second source of authority.
+owner may re-enter without inventing a second source of authority. Each nested
+scope still keeps its own operation identity. It cannot inherit a sibling or
+outer scope's resource permission, and a stronger nested safety rule cannot be
+weakened by the outer operation.
 
 For especially destructive production operations, the coordinator also
 requires evidence of a verified checkpoint before allowing work to proceed.
@@ -302,7 +305,9 @@ database reader.
 
 When this signal is active:
 
-- the graph database provider refuses to create a new graph connection;
+- the graph database provider asks the mutation coordinator for a
+  caller-specific resource decision;
+- unrelated callers cannot create a new graph connection;
 - selected read models can return an unavailable/empty presentation instead of
   reopening the graph;
 - the owning destructive workflow is responsible for closing and invalidating
@@ -312,11 +317,18 @@ The signal does not automatically revoke every open SQLite handle. It does not
 currently gate every persistent store. Overlay and Presence, for example, are
 separate stores with different continuity requirements.
 
-If an admitted operation itself needs the graph, it prepares that
-feature-owned capability before entering the protected interval. The prepared
-connection may finish the owning operation's work. A different consumer still
-cannot create a fresh graph connection while the signal is active. This is
-sequencing within the existing authority model, not a bypass around it.
+If an admitted historical import or removal operation itself needs the graph,
+its own async operation scope may request that resource after admission. The
+coordinator verifies both owner identity and operation-specific permission. A
+different consumer still cannot create a fresh graph connection while the
+signal is active. Correctness therefore does not depend on opening services
+before acquiring mutation authority.
+
+Resource ownership and resource permission are separate. Holding the mutation
+token does not grant every resource action. For example, message-data reset may
+close an already active graph handle through the DB lifecycle boundary, but it
+may not construct a fresh graph immediately before deleting that derived
+store.
 
 Therefore this mental translation is more accurate than "all database access
 is locked":
@@ -467,7 +479,7 @@ data set.
 | `feature_level_providers/` | named implementations behind that doorway |
 | archive mutation coordinator | exclusive entrance for a protected archive-changing workflow |
 | operation authority | permission for one named protected mutation to run now |
-| maintenance lock | derived signal that affected graph readers must not reopen during this operation |
+| maintenance lock | derived coarse signal that protected graph maintenance is active; owner-specific reopen decisions still belong to the mutation coordinator |
 | source identity / source-scoped | which original source produced these imported facts |
 | fail closed | stop instead of guessing or falling back to a more dangerous location |
 

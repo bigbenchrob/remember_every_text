@@ -28,7 +28,7 @@ final sourceScopedImportDatabaseProvider =
 // ignore: unused_element
 typedef SourceScopedImportDatabaseRef = FutureProviderRef<ImportDatabase>;
 String _$driftConversationGraphDatabaseHash() =>
-    r'd693b38be461a326f7967494cdd0521d83c07450';
+    r'a9f4140892bb0e85f52277d90e5a9fa45ac75682';
 
 /// Provides access to the source-scoped conversation graph projection database.
 ///

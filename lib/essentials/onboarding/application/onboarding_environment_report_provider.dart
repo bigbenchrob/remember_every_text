@@ -326,6 +326,7 @@ class _OnboardingEnvironmentEvaluator {
       messagesProbe: messagesProbe,
       addressBookProbe: addressBookProbe,
       sourceMessageCount: sourceMessageCount,
+      isMaintenanceLocked: isMaintenanceLocked,
       forceImportFailure: devOverrides.simulateImportFailure,
       forceGraphProjectionFailure: devOverrides.simulateGraphProjectionFailure,
       usingPersistedImportFailure: usingPersistedImportFailure,
@@ -343,6 +344,7 @@ class _OnboardingEnvironmentEvaluator {
       messagesProbe: messagesProbe,
       addressBookProbe: addressBookProbe,
       sourceMessageCount: sourceMessageCount,
+      isMaintenanceLocked: isMaintenanceLocked,
       forceImportFailure: devOverrides.simulateImportFailure,
       forceGraphProjectionFailure: devOverrides.simulateGraphProjectionFailure,
       usingPersistedImportFailure: usingPersistedImportFailure,
@@ -397,6 +399,7 @@ class _OnboardingEnvironmentEvaluator {
     required OnboardingDatabaseProbe messagesProbe,
     required _AddressBookProbeResult addressBookProbe,
     required int? sourceMessageCount,
+    required bool isMaintenanceLocked,
     required bool forceImportFailure,
     required bool forceGraphProjectionFailure,
     required bool usingPersistedImportFailure,
@@ -417,6 +420,10 @@ class _OnboardingEnvironmentEvaluator {
     if (sourceMessageCount != null &&
         !isMessagesSourceHistorySufficient(sourceMessageCount)) {
       return OnboardingEnvironmentState.sourceSparseOrUnsynced;
+    }
+
+    if (isMaintenanceLocked) {
+      return OnboardingEnvironmentState.maintenanceInProgress;
     }
 
     if (forceGraphProjectionFailure) {
@@ -467,6 +474,7 @@ class _OnboardingEnvironmentEvaluator {
     required OnboardingDatabaseProbe messagesProbe,
     required _AddressBookProbeResult addressBookProbe,
     required int? sourceMessageCount,
+    required bool isMaintenanceLocked,
     required bool forceImportFailure,
     required bool forceGraphProjectionFailure,
     required bool usingPersistedImportFailure,
@@ -492,6 +500,10 @@ class _OnboardingEnvironmentEvaluator {
         (sourceMessageCount != null &&
             !isMessagesSourceHistorySufficient(sourceMessageCount))) {
       return OnboardingBlockerKind.sourceDataSparseOrUnsynced;
+    }
+
+    if (isMaintenanceLocked) {
+      return OnboardingBlockerKind.none;
     }
 
     if (forceGraphProjectionFailure) {

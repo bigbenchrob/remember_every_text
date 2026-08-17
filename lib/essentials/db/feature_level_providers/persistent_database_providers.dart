@@ -3,14 +3,17 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../archive_environment/domain.dart'
+    show ArchiveMutationResourceAction;
 import '../../archive_environment/feature_level_providers.dart'
-    show archiveAccessAuthorityProvider;
+    show archiveAccessAuthorityProvider, archiveMutationCoordinatorProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../presence/infrastructure/data_sources/local/presence_database.dart';
 import '../../source_scoped_import/infrastructure/import_database_provider.dart';
 import '../app_database_files.dart';
 import '../infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'conversation_graph_connection_lifecycle_provider.dart';
 import 'db_maintenance_lock_provider.dart';
 
 part 'persistent_database_providers.g.dart';
@@ -47,10 +50,12 @@ Future<ImportDatabase> sourceScopedImportDatabase(
 Future<ConversationGraphDatabase> driftConversationGraphDatabase(
   DriftConversationGraphDatabaseRef ref,
 ) async {
-  // The maintenance signal gates creation of a graph connection. It must not
-  // revoke a connection already prepared by the operation that owns the
-  // protected mutation interval.
-  if (ref.read(dbMaintenanceLockProvider)) {
+  final resourceAdmission = ref
+      .read(archiveMutationCoordinatorProvider.notifier)
+      .resourceAdmissionForCurrentCaller(
+        ArchiveMutationResourceAction.openConversationGraphConnection,
+      );
+  if (!resourceAdmission.isAllowed) {
     // A provider first requested while blocked observes the signal so it can
     // recover automatically after maintenance releases.
     ref.watch(dbMaintenanceLockProvider);
@@ -75,12 +80,17 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
     await database.customStatement('PRAGMA foreign_keys = ON');
   });
 
+  final connectionLifecycle = ref.read(
+    conversationGraphConnectionLifecycleProvider,
+  );
+  connectionLifecycle.register(database);
+
   ref.onDispose(() async {
     logger.debug(
       'Disposing ConversationGraphDatabase for $dbPath',
       source: 'ConversationGraphDbProvider',
     );
-    await database.close();
+    await connectionLifecycle.release(database);
   });
 
   return database;

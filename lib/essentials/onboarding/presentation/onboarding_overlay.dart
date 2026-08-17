@@ -833,6 +833,20 @@ _AwaitingUserActionPresentation _awaitingUserActionPresentation(
         icon: Icons.check_circle_outline,
         iconKind: _PresentationIconKind.success,
       );
+    case OnboardingEnvironmentState.maintenanceInProgress:
+      return const _AwaitingUserActionPresentation(
+        title: 'Message Data Maintenance In Progress',
+        body:
+            'MessageLens is completing an admitted message-data operation. '
+            'Ordinary browsing will resume when that work finishes.',
+        notes: [],
+        canImportImmediately: false,
+        canSendDiagnosticReport: false,
+        allowsManualImport: false,
+        primaryActionLabel: 'Import My Messages',
+        icon: Icons.sync_rounded,
+        iconKind: _PresentationIconKind.primary,
+      );
   }
 }
 

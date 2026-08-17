@@ -2,7 +2,7 @@
 tier: project
 scope: production-archive-recovery
 owner: agent-per-project
-last_reviewed: 2026-08-16
+last_reviewed: 2026-08-17
 source_of_truth: doc
 links:
   - ../../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md
@@ -30,8 +30,8 @@ audit. No recovery was performed.
 
 See:
 
-- [March 2026 Attachment Relational Bridge Audit](01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md)
-- [March 2026 Recovery Manifest And Closure](02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md)
+- [March 2026 Attachment Relational Bridge Audit](responses/01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md)
+- [March 2026 Recovery Manifest And Closure](responses/02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md)
 
 Further March attachment recovery requires new explicit authorization.
 
@@ -39,20 +39,24 @@ The March attachment-recovery investigation remains closed. Feature 26 is
 reopened only to assess the separate `Messages_2012` historical donor. The
 read-only feasibility result and staging recommendation are recorded in:
 
-- [Historical Messages 2012-2016 Ingestion Audit](03-HISTORICAL-MESSAGES-2012-2016-INGESTION-AUDIT.md)
-- [Historical Import Maintenance-Lock Correction](04-HISTORICAL-IMPORT-MAINTENANCE-LOCK-CORRECTION.md)
-- [Historical Apple Timestamp Normalization Correction](05-HISTORICAL-APPLE-TIMESTAMP-NORMALIZATION-CORRECTION.md)
-- [Historical Import Post-Correction Verification](06-HISTORICAL-IMPORT-POST-CORRECTION-VERIFICATION.md)
+- [Historical Messages 2012-2016 Ingestion Audit](responses/03-HISTORICAL-MESSAGES-2012-2016-INGESTION-AUDIT.md)
+- [Historical Import Maintenance-Lock Correction](responses/04-HISTORICAL-IMPORT-MAINTENANCE-LOCK-CORRECTION.md)
+- [Historical Apple Timestamp Normalization Correction](responses/05-HISTORICAL-APPLE-TIMESTAMP-NORMALIZATION-CORRECTION.md)
+- [Historical Import Post-Correction Verification](responses/06-HISTORICAL-IMPORT-POST-CORRECTION-VERIFICATION.md)
+- [Owner-Aware Database Admission Audit](responses/07-ARCHIVE-MUTATION-OWNER-AWARE-DATABASE-ADMISSION-AUDIT.md)
+- [Owner-Aware Database Admission Implementation](responses/08-ARCHIVE-MUTATION-OWNER-AWARE-DATABASE-ADMISSION-IMPLEMENTATION.md)
 
 A disposable staging-clone rehearsal ultimately imported and projected all
 8,882 donor messages. It exposed and corrected two independent defects: the
 historical-import maintenance operation initially blocked its own graph access,
 and old Apple-second timestamps were later interpreted as nanoseconds. The
-timestamp correction is implemented and verified in code; the GUI import has
-been rerun manually after that correction. Immutable post-import verification
-confirms all 8,882 source-3 messages now span the correct 2012-2017 range and
-project exactly into the graph. The next concern is the Historical Archives
-UX/lifecycle behavior observed during maintenance; no redesign has begun.
+provisional pre-open sequencing correction has now been replaced by
+owner-aware, operation-aware graph admission. The timestamp correction is
+implemented and verified in code; the GUI import has been rerun manually after
+that correction. Immutable post-import verification confirms all 8,882
+source-3 messages now span the correct 2012-2017 range and project exactly into
+the graph. The next concern is the Historical Archives UX/lifecycle behavior
+observed during maintenance; no redesign has begun.
 
 ## Original Emergency Objective
 
@@ -108,8 +112,8 @@ The two audit records linked below preserve the result.
 
 The read-only investigation is complete:
 
-- [March 2026 Attachment Relational Bridge Audit](01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md)
-- [March 2026 Recovery Manifest And Closure](02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md)
+- [March 2026 Attachment Relational Bridge Audit](responses/01-MARCH-2026-ATTACHMENT-RELATIONAL-BRIDGE-AUDIT.md)
+- [March 2026 Recovery Manifest And Closure](responses/02-MARCH-2026-RECOVERY-MANIFEST-AND-CLOSURE.md)
 
 The direct relational bridge maps 33,011 of 33,018 checkpointed donor
 message/attachment pairs (99.9788%). Matching is therefore considered proven.

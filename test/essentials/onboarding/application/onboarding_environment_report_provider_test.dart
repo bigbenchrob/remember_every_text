@@ -297,6 +297,54 @@ void main() {
     });
 
     test(
+      'active database maintenance is not a graph projection failure',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        _createNonEmptyDatabaseFile(
+          tempDir.path,
+          appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
+        );
+        _createGraphDatabase(tempDir.path, graphComplete: false);
+
+        container = ProviderContainer(
+          overrides: [
+            ..._lifecycleOverrides(),
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            dbMaintenanceLockProvider.overrideWith((ref) => true),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            attachmentArchiveDirectoryProvider.overrideWith(
+              (ref) => '${tempDir.path}/attachment_archive',
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        final report = await container.read(
+          onboardingEnvironmentReportProvider.future,
+        );
+
+        expect(report.state, OnboardingEnvironmentState.maintenanceInProgress);
+        expect(report.blockerKind, OnboardingBlockerKind.none);
+        expect(report.shouldResetAppDatabasesBeforeImport, isFalse);
+      },
+    );
+
+    test(
       'complete graph databases allow normal startup classification',
       () async {
         final messagesDbPath = _createMessagesDatabase(
