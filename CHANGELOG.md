@@ -10,6 +10,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.40] — 2026-08-17
+
+### Fixed
+
+- Historical Archives now recognizes a selected archive that already has
+  source-scoped imported messages, states that truth directly, and points to
+  the matching known source with the existing orange referential signal. The
+  import action is withheld, and source comparison counts now use distinct
+  GUIDs on both sides so duplicate graph observations cannot produce
+  impossible human-facing arithmetic.
+
 ## [0.2.39] — 2026-08-17
 
 ### Changed

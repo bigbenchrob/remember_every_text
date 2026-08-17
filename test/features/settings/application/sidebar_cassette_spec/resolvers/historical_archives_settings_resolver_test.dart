@@ -33,6 +33,7 @@ void main() {
 
       const knownSources = [
         HistoricalArchiveSidebarSourceSummary(
+          sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
           label: 'Archive-2017',
           dateRangeLabel: 'Date range: not yet available',
           messageCountLabel: 'Total messages: 42',

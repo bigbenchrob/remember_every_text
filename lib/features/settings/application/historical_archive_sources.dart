@@ -1,5 +1,6 @@
 final class HistoricalArchiveSourceMetadata {
   const HistoricalArchiveSourceMetadata({
+    required this.sourceKey,
     required this.sourceLabel,
     required this.totalMessages,
     required this.earliestMessageUtc,
@@ -13,6 +14,7 @@ final class HistoricalArchiveSourceMetadata {
     required this.lastImportedMessageCount,
   });
 
+  final String sourceKey;
   final String sourceLabel;
   final int? totalMessages;
   final String? earliestMessageUtc;
@@ -24,6 +26,24 @@ final class HistoricalArchiveSourceMetadata {
   final bool? lastImportSuccess;
   final String? lastImportError;
   final int? lastImportedMessageCount;
+}
+
+final class HistoricalArchiveImportedSourceMatch {
+  const HistoricalArchiveImportedSourceMatch({
+    required this.sourceKey,
+    required this.sourceId,
+    required this.importedMessageCount,
+  });
+
+  final String sourceKey;
+  final int sourceId;
+  final int importedMessageCount;
+}
+
+abstract interface class HistoricalArchiveImportedSourceLookup {
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
+    required String folderPath,
+  });
 }
 
 final class HistoricalArchiveSourceMetadataUpdate {

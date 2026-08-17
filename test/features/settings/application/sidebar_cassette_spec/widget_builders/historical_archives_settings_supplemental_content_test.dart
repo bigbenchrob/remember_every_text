@@ -12,6 +12,7 @@ void main() {
       const payload = HistoricalArchivesSettingsCassettePayload(
         knownSources: [
           HistoricalArchiveSidebarSourceSummary(
+            sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
             label: 'Jan 2017 MacBook Archive',
             dateRangeLabel: 'Range: Jan 2014 -> Nov 2017',
             messageCountLabel: 'Source messages: 8,882',
@@ -72,6 +73,144 @@ void main() {
 
       expect(workflow.chooseMessagesFolderCallCount, 1);
     });
+
+    testWidgets(
+      'canonical reference pulses once per occurrence and not per rebuild',
+      (tester) async {
+        const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+
+        Future<void> pumpSource({
+          required bool isReferenced,
+          required int pulseOccurrence,
+        }) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              child: CupertinoApp(
+                home: HistoricalArchivesSettingsSupplementalContent(
+                  payload: HistoricalArchivesSettingsCassettePayload(
+                    knownSources: [
+                      HistoricalArchiveSidebarSourceSummary(
+                        sourceKey: sourceKey,
+                        label: 'Archive-2017',
+                        dateRangeLabel: 'Date range: 2012 to 2017',
+                        messageCountLabel: 'Total messages: 8,882',
+                        statusLabel: 'Current status: Imported successfully',
+                        lastRunSummaryLabel:
+                            'Last run: imported 8,882 messages',
+                        lastImportedLabel: 'Last imported: today',
+                        isReferenced: isReferenced,
+                        referencePulseOccurrence: pulseOccurrence,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        double borderWidth() {
+          final decoratedBox = tester.widget<DecoratedBox>(
+            find.byKey(
+              const ValueKey<String>(
+                'historical-archive-source-chrome:$sourceKey',
+              ),
+            ),
+          );
+          final decoration = decoratedBox.decoration as BoxDecoration;
+          return decoration.border!.top.width;
+        }
+
+        await pumpSource(isReferenced: false, pulseOccurrence: 0);
+        expect(borderWidth(), 0.8);
+
+        await pumpSource(isReferenced: true, pulseOccurrence: 1);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(borderWidth(), greaterThan(1.25));
+        await tester.pumpAndSettle();
+        expect(borderWidth(), 1.25);
+
+        await pumpSource(isReferenced: true, pulseOccurrence: 1);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(borderWidth(), 1.25);
+
+        await pumpSource(isReferenced: true, pulseOccurrence: 2);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(borderWidth(), greaterThan(1.25));
+
+        await pumpSource(isReferenced: false, pulseOccurrence: 0);
+        expect(borderWidth(), 0.8);
+      },
+    );
+
+    testWidgets(
+      'reduced motion keeps the reference without animating the pulse',
+      (tester) async {
+        const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+
+        HistoricalArchivesSettingsSupplementalContent content({
+          required bool isReferenced,
+          required int pulseOccurrence,
+        }) {
+          return HistoricalArchivesSettingsSupplementalContent(
+            payload: HistoricalArchivesSettingsCassettePayload(
+              knownSources: [
+                HistoricalArchiveSidebarSourceSummary(
+                  sourceKey: sourceKey,
+                  label: 'Archive-2017',
+                  dateRangeLabel: 'Date range: 2012 to 2017',
+                  messageCountLabel: 'Total messages: 8,882',
+                  statusLabel: 'Current status: Imported successfully',
+                  lastRunSummaryLabel: 'Last run: imported 8,882 messages',
+                  lastImportedLabel: 'Last imported: today',
+                  isReferenced: isReferenced,
+                  referencePulseOccurrence: pulseOccurrence,
+                ),
+              ],
+            ),
+          );
+        }
+
+        Future<void> pumpSource({
+          required bool isReferenced,
+          required int pulseOccurrence,
+        }) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              child: CupertinoApp(
+                builder: (context, child) => MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(disableAnimations: true),
+                  child: child!,
+                ),
+                home: content(
+                  isReferenced: isReferenced,
+                  pulseOccurrence: pulseOccurrence,
+                ),
+              ),
+            ),
+          );
+        }
+
+        double borderWidth() {
+          final decoratedBox = tester.widget<DecoratedBox>(
+            find.byKey(
+              const ValueKey<String>(
+                'historical-archive-source-chrome:$sourceKey',
+              ),
+            ),
+          );
+          return (decoratedBox.decoration as BoxDecoration).border!.top.width;
+        }
+
+        await pumpSource(isReferenced: false, pulseOccurrence: 0);
+        await pumpSource(isReferenced: true, pulseOccurrence: 1);
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(borderWidth(), 1.25);
+      },
+    );
   });
 }
 

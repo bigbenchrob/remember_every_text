@@ -4810,3 +4810,26 @@ production preservation authority mechanically enforceable.
   and which later workflow states intentionally retain the legacy surface.
 - Preserved technical evidence under collapsed Details rather than deleting
   diagnostics from the Historical Archives experience.
+
+---
+
+# 2026-08-17 - Implement already-imported Narrator reference signal
+
+- Created
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/13-NARRATOR-ALREADY-IMPORTED-REFERENCE-SIGNAL-IMPLEMENTATION.md`.
+- Recorded the canonical classification rule: an archive is already imported
+  only when its canonical source key is registered in the source-scoped import
+  ledger and that source has a positive imported-message count.
+- Documented that preflight-only registration, sidebar labels, and overlay
+  workflow metadata do not establish imported truth.
+- Recorded the already-imported Narrator composition and the deliberate absence
+  of Import Archive and ordinary comparison evidence.
+- Documented the sidebar's canonical source-key targeting and reuse of orange
+  as referential correspondence rather than warning or selection.
+- Established explicitly that the monotonically increasing pulse occurrence is
+  process/presentation state only. It is neither durable source metadata nor a
+  component of source identity.
+- Recorded the distinct-GUID denominator correction and the projection-level
+  coherence invariant that prevents impossible human-facing comparison
+  arithmetic without clamping.
+- Confirmed that no schema or persistence-format change was introduced.

@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:path/path.dart' as path;
+
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import '../../../../essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
 import '../../application/historical_archive_sources.dart';
 
 class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
@@ -18,6 +21,9 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
     return [
       for (final record in records)
         HistoricalArchiveSourceMetadata(
+          sourceKey: HistoricalMessagesArchiveSourceRegistrar.buildSourceKey(
+            chatDbPath: path.normalize(path.absolute(record.sourceChatDb)),
+          ),
           sourceLabel: record.sourceLabel,
           totalMessages: record.totalMessages,
           earliestMessageUtc: record.earliestMessageUtc,

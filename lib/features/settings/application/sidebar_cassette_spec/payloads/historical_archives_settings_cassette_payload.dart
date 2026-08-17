@@ -2,20 +2,26 @@ import '../../../../../essentials/sidebar/presentation/view_model/sidebar_casset
 
 final class HistoricalArchiveSidebarSourceSummary {
   const HistoricalArchiveSidebarSourceSummary({
+    required this.sourceKey,
     required this.label,
     required this.dateRangeLabel,
     required this.messageCountLabel,
     required this.statusLabel,
     required this.lastRunSummaryLabel,
     required this.lastImportedLabel,
+    this.isReferenced = false,
+    this.referencePulseOccurrence = 0,
   });
 
+  final String sourceKey;
   final String label;
   final String dateRangeLabel;
   final String messageCountLabel;
   final String statusLabel;
   final String lastRunSummaryLabel;
   final String lastImportedLabel;
+  final bool isReferenced;
+  final int referencePulseOccurrence;
 }
 
 final class HistoricalArchivesSettingsCassettePayload

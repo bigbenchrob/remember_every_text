@@ -72,7 +72,20 @@ enum HistoricalArchivesPresentationStage {
   inspectingSource,
   inspectionFailed,
   readyForImport,
+  alreadyImported,
   laterWorkflow,
+}
+
+/// Ephemeral presentation state only. [sourceKey] identifies the archive;
+/// [pulseOccurrence] identifies a fresh "look here" event in this process.
+final class HistoricalArchivesKnownSourceReference {
+  const HistoricalArchivesKnownSourceReference({
+    required this.sourceKey,
+    required this.pulseOccurrence,
+  });
+
+  final String sourceKey;
+  final int pulseOccurrence;
 }
 
 final class HistoricalArchivesInspectionEvidence {
@@ -91,6 +104,7 @@ final class HistoricalArchivesInspectionEvidence {
     required this.dateRangeUnavailableReason,
     required this.dryRunNewMessages,
     required this.dryRunDuplicateMessages,
+    required this.dryRunComparableMessages,
     required this.dryRunUnavailableReason,
   });
 
@@ -108,6 +122,7 @@ final class HistoricalArchivesInspectionEvidence {
   final String? dateRangeUnavailableReason;
   final int? dryRunNewMessages;
   final int? dryRunDuplicateMessages;
+  final int? dryRunComparableMessages;
   final String? dryRunUnavailableReason;
 }
 
@@ -116,6 +131,7 @@ enum HistoricalArchivesNarratorPresentationKind {
   inspectingSource,
   inspectionFailed,
   readyForImport,
+  alreadyImported,
 }
 
 enum HistoricalArchivesInstrumentationStatus { working, resolved, failed }
@@ -206,6 +222,7 @@ final class HistoricalArchivesWorkflowState {
     required this.phases,
     this.presentationStage = HistoricalArchivesPresentationStage.noSource,
     this.inspectionEvidence,
+    this.knownSourceReference,
   });
 
   final HistoricalArchivesPreflightViewModel preflight;
@@ -222,6 +239,7 @@ final class HistoricalArchivesWorkflowState {
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
   final HistoricalArchivesPresentationStage presentationStage;
   final HistoricalArchivesInspectionEvidence? inspectionEvidence;
+  final HistoricalArchivesKnownSourceReference? knownSourceReference;
 
   HistoricalArchivesWorkflowState copyWith({
     HistoricalArchivesPreflightViewModel? preflight,
@@ -241,6 +259,8 @@ final class HistoricalArchivesWorkflowState {
     HistoricalArchivesPresentationStage? presentationStage,
     HistoricalArchivesInspectionEvidence? inspectionEvidence,
     bool clearInspectionEvidence = false,
+    HistoricalArchivesKnownSourceReference? knownSourceReference,
+    bool clearKnownSourceReference = false,
   }) {
     return HistoricalArchivesWorkflowState(
       preflight: preflight ?? this.preflight,
@@ -267,6 +287,9 @@ final class HistoricalArchivesWorkflowState {
       inspectionEvidence: clearInspectionEvidence
           ? null
           : inspectionEvidence ?? this.inspectionEvidence,
+      knownSourceReference: clearKnownSourceReference
+          ? null
+          : knownSourceReference ?? this.knownSourceReference,
     );
   }
 }
@@ -287,6 +310,7 @@ final class HistoricalArchivesFolderPreflightResult {
     required this.latestMessageUtc,
     required this.dryRunNewMessages,
     required this.dryRunDuplicateMessages,
+    required this.dryRunComparableMessages,
     required this.preflightSummaryLines,
     required this.dryRunSummaryLines,
     required this.activityLog,
@@ -309,6 +333,7 @@ final class HistoricalArchivesFolderPreflightResult {
   final String? latestMessageUtc;
   final int? dryRunNewMessages;
   final int? dryRunDuplicateMessages;
+  final int? dryRunComparableMessages;
   final String? dateRangeUnavailableReason;
   final String? dryRunUnavailableReason;
   final List<String> preflightSummaryLines;
@@ -454,6 +479,8 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
 
 @Riverpod(keepAlive: true)
 class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
+  var _nextReferencePulseOccurrence = 0;
+
   @override
   HistoricalArchivesWorkflowState build() {
     return buildInitialHistoricalArchivesWorkflowState();
@@ -473,6 +500,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     state = state.copyWith(
       presentationStage: HistoricalArchivesPresentationStage.inspectingSource,
       clearInspectionEvidence: true,
+      clearKnownSourceReference: true,
       preflight: const HistoricalArchivesPreflightViewModel(
         status: HistoricalArchivesPreflightStatus.running,
         statusLabel: 'Preflight running',
@@ -497,6 +525,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
     ArchiveSourceInspector? archiveSourceInspector;
     HistoricalArchiveSources? archiveSources;
+    HistoricalArchiveImportedSourceLookup? importedSourceLookup;
     try {
       archiveSourceInspector = await ref.read(
         archiveSourceInspectorProvider.future,
@@ -520,10 +549,28 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         stackTrace: stackTrace,
       );
     }
+    try {
+      importedSourceLookup = await ref.read(
+        historicalArchiveImportedSourceLookupProvider.future,
+      );
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message:
+            'Historical archive imported-source lookup unavailable during preflight',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
 
     final result = await preflightHistoricalArchivesFolder(
       folderPath: folderPath,
       archiveSourceInspector: archiveSourceInspector,
+    );
+
+    final importedSourceMatch = await _findImportedSourceMatch(
+      lookup: importedSourceLookup,
+      result: result,
     );
 
     await _persistHistoricalArchiveSourceIfEligible(
@@ -531,7 +578,19 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       result: result,
     );
 
-    state = _workflowStateFromPreflightResult(result);
+    if (importedSourceMatch == null) {
+      state = _workflowStateFromPreflightResult(result);
+      return;
+    }
+
+    _nextReferencePulseOccurrence += 1;
+    state = _workflowStateFromPreflightResult(result).copyWith(
+      presentationStage: HistoricalArchivesPresentationStage.alreadyImported,
+      knownSourceReference: HistoricalArchivesKnownSourceReference(
+        sourceKey: importedSourceMatch.sourceKey,
+        pulseOccurrence: _nextReferencePulseOccurrence,
+      ),
+    );
   }
 
   void clearSelection() {
@@ -900,6 +959,30 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     state = state.copyWith(activityLog: [entry, ...state.activityLog]);
   }
 
+  Future<HistoricalArchiveImportedSourceMatch?> _findImportedSourceMatch({
+    required HistoricalArchiveImportedSourceLookup? lookup,
+    required HistoricalArchivesFolderPreflightResult result,
+  }) async {
+    if (lookup == null || result.chatDbStatusLabel != 'Found and readable') {
+      return null;
+    }
+
+    try {
+      return await lookup.findImportedSource(
+        folderPath: result.selectedFolderPath,
+      );
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message:
+            'Historical archive imported-source classification failed during preflight',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
   Future<void> _persistHistoricalArchiveSourceIfEligible({
     required HistoricalArchiveSources? archiveSources,
     required HistoricalArchivesFolderPreflightResult result,
@@ -1114,6 +1197,20 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
         ),
         retryInspectionEnabled: false,
       ),
+    HistoricalArchivesPresentationStage.alreadyImported =>
+      HistoricalArchivesNarratorPresentationViewModel(
+        kind: HistoricalArchivesNarratorPresentationKind.alreadyImported,
+        narratorText: 'This archive is already part of MessageLens.',
+        instrumentationRows: _alreadyImportedInstrumentationRows(
+          workflowState.inspectionEvidence,
+        ),
+        detailsLines: _inspectionDetailsLines(
+          workflowState: workflowState,
+          executionGate: executionGate,
+          importButtonEnabled: false,
+        ),
+        retryInspectionEnabled: false,
+      ),
     HistoricalArchivesPresentationStage.laterWorkflow => null,
   };
 }
@@ -1171,7 +1268,8 @@ List<HistoricalArchivesInstrumentationRowViewModel> _readyInstrumentationRows(
   ];
 
   if (evidence.dryRunNewMessages != null &&
-      evidence.dryRunDuplicateMessages != null) {
+      evidence.dryRunDuplicateMessages != null &&
+      _hasCoherentComparisonEvidence(evidence)) {
     rows.addAll([
       HistoricalArchivesInstrumentationRowViewModel(
         label: 'New to MessageLens',
@@ -1195,6 +1293,55 @@ List<HistoricalArchivesInstrumentationRowViewModel> _readyInstrumentationRows(
   }
 
   return rows;
+}
+
+bool _hasCoherentComparisonEvidence(
+  HistoricalArchivesInspectionEvidence evidence,
+) {
+  final comparable = evidence.dryRunComparableMessages;
+  final newMessages = evidence.dryRunNewMessages;
+  final represented = evidence.dryRunDuplicateMessages;
+  if (comparable == null || newMessages == null || represented == null) {
+    return false;
+  }
+  if (comparable < 0 || newMessages < 0 || represented < 0) {
+    return false;
+  }
+  if (newMessages + represented != comparable) {
+    return false;
+  }
+  final totalMessages = evidence.totalMessages;
+  return totalMessages == null || comparable <= totalMessages;
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel>
+_alreadyImportedInstrumentationRows(
+  HistoricalArchivesInspectionEvidence? evidence,
+) {
+  if (evidence == null) {
+    return const [];
+  }
+
+  return [
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Messages',
+      value: _formattedCount(evidence.totalMessages),
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Dates',
+      value: _dateRangeLabel(
+        evidence.earliestMessageUtc,
+        evidence.latestMessageUtc,
+      ),
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+    const HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Status',
+      value: 'Already imported',
+      status: HistoricalArchivesInstrumentationStatus.resolved,
+    ),
+  ];
 }
 
 List<String> _inspectionDetailsLines({
@@ -1230,7 +1377,9 @@ List<String> _inspectionDetailsLines({
       'Date range diagnostic: $reason',
     if (evidence?.dryRunUnavailableReason case final reason?)
       'GUID comparison unavailable: $reason',
-    'GUID comparison: source GUIDs are compared with messages already represented in MessageLens.',
+    if (evidence?.dryRunComparableMessages case final comparableMessages?)
+      'Comparable source GUIDs: ${_formattedCount(comparableMessages)}',
+    'GUID comparison: distinct source GUIDs are compared with distinct GUIDs already represented in MessageLens.',
     'Archive mutation authority: ${executionGate.statusLabel} (${executionGate.detail})',
     if (importButtonEnabled != null)
       'Import authorization: ${importButtonEnabled ? 'available' : 'not currently available'}',
@@ -1412,6 +1561,10 @@ List<String> _importSafetySummaryLines(
 }
 
 String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
+  if (workflowState.presentationStage ==
+      HistoricalArchivesPresentationStage.alreadyImported) {
+    return 'Archive Already Imported';
+  }
   return switch (workflowState.preflight.status) {
     HistoricalArchivesPreflightStatus.waitingForFolder => 'No archive selected',
     HistoricalArchivesPreflightStatus.running => 'Reading Archive Source',
@@ -1422,6 +1575,10 @@ String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
 }
 
 String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
+  if (workflowState.presentationStage ==
+      HistoricalArchivesPresentationStage.alreadyImported) {
+    return 'The selected folder matches an archive source that already has imported messages in MessageLens.';
+  }
   return switch (workflowState.preflight.status) {
     HistoricalArchivesPreflightStatus.waitingForFolder =>
       'Historical archive import is a durable, step-by-step workflow. Choose an older Messages folder, review preflight evidence, then import it before messages become visible in MessageLens.',
@@ -1438,6 +1595,10 @@ String _availableImportButtonDetail(
   HistoricalArchivesWorkflowState workflowState, {
   required String currentMessagesDatabasePath,
 }) {
+  if (workflowState.presentationStage ==
+      HistoricalArchivesPresentationStage.alreadyImported) {
+    return 'Import is not offered because this archive is already part of MessageLens.';
+  }
   final selectedFolderPath = workflowState.selectedFolderPath;
   final selectedChatDbPath = selectedFolderPath == null
       ? null
@@ -1468,6 +1629,10 @@ bool _importButtonEnabled({
   required HistoricalArchivesWorkflowState workflowState,
   required String currentMessagesDatabasePath,
 }) {
+  if (workflowState.presentationStage ==
+      HistoricalArchivesPresentationStage.alreadyImported) {
+    return false;
+  }
   if (executionGate.status != HistoricalArchivesExecutionGateStatus.available) {
     return false;
   }
@@ -1603,6 +1768,9 @@ preflightHistoricalArchivesFolder({
         : null,
     dryRunDuplicateMessages: dryRunEstimate.isAvailable
         ? dryRunEstimate.duplicateGuidCount
+        : null,
+    dryRunComparableMessages: dryRunEstimate.isAvailable
+        ? dryRunEstimate.comparableGuidCount
         : null,
     dateRangeUnavailableReason: inspection.dateRangeUnavailableReason,
     dryRunUnavailableReason: dryRunEstimate.unavailableReason,
@@ -1756,6 +1924,7 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
       dateRangeUnavailableReason: result.dateRangeUnavailableReason,
       dryRunNewMessages: result.dryRunNewMessages,
       dryRunDuplicateMessages: result.dryRunDuplicateMessages,
+      dryRunComparableMessages: result.dryRunComparableMessages,
       dryRunUnavailableReason: result.dryRunUnavailableReason,
     ),
   );
@@ -1788,6 +1957,7 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
     latestMessageUtc: null,
     dryRunNewMessages: null,
     dryRunDuplicateMessages: null,
+    dryRunComparableMessages: null,
     preflightSummaryLines: const [
       'Total messages: unavailable',
       'Total chats: unavailable',

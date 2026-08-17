@@ -209,6 +209,7 @@ void main() {
         dateRangeUnavailableReason: null,
         dryRunNewMessages: 2369,
         dryRunDuplicateMessages: 6513,
+        dryRunComparableMessages: 8882,
         dryRunUnavailableReason: null,
       );
       final workflowState = buildInitialHistoricalArchivesWorkflowState()
@@ -264,6 +265,7 @@ void main() {
         dateRangeUnavailableReason: 'No usable dates were found.',
         dryRunNewMessages: null,
         dryRunDuplicateMessages: null,
+        dryRunComparableMessages: null,
         dryRunUnavailableReason: 'Graph comparison is unavailable.',
       );
       final workflowState = buildInitialHistoricalArchivesWorkflowState()
@@ -300,6 +302,73 @@ void main() {
       );
       expect(model.importButtonEnabled, isTrue);
     });
+
+    test(
+      'ready projection refuses internally incoherent comparison evidence',
+      () {
+        const evidence = HistoricalArchivesInspectionEvidence(
+          folderPath: '/tmp/archive',
+          chatDbPath: '/tmp/archive/chat.db',
+          sourceLabel: 'archive',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Not found',
+          totalMessages: 8882,
+          totalChats: 4,
+          totalHandles: 7,
+          missingGuids: 0,
+          earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+          latestMessageUtc: '2017-06-11T08:00:00.000Z',
+          dateRangeUnavailableReason: null,
+          dryRunNewMessages: -6513,
+          dryRunDuplicateMessages: 15395,
+          dryRunComparableMessages: 8882,
+          dryRunUnavailableReason: null,
+        );
+        final workflowState = buildInitialHistoricalArchivesWorkflowState()
+            .copyWith(
+              presentationStage:
+                  HistoricalArchivesPresentationStage.readyForImport,
+              inspectionEvidence: evidence,
+              preflight: const HistoricalArchivesPreflightViewModel(
+                status: HistoricalArchivesPreflightStatus.completeReadyToImport,
+                statusLabel: 'Preflight complete',
+                detail: 'Source checks succeeded.',
+              ),
+              selectedFolderPath: evidence.folderPath,
+              archiveRemovalTargetChatDbPath: evidence.chatDbPath,
+              chatDbStatusLabel: evidence.chatDbStatusLabel,
+              sourceLabel: evidence.sourceLabel,
+            );
+
+        final model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: workflowState,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+
+        expect(
+          model.narratorPresentation?.instrumentationRows,
+          contains(
+            isA<HistoricalArchivesInstrumentationRowViewModel>()
+                .having((row) => row.label, 'label', 'Message comparison')
+                .having((row) => row.value, 'value', 'Unavailable'),
+          ),
+        );
+        expect(
+          model.narratorPresentation?.instrumentationRows.map(
+            (row) => row.value,
+          ),
+          isNot(contains('-6,513')),
+        );
+        expect(
+          model.narratorPresentation?.instrumentationRows.map(
+            (row) => row.value,
+          ),
+          isNot(contains('15,395')),
+        );
+      },
+    );
 
     test(
       'failed inspection distinguishes deterministic and retryable failure',
@@ -360,6 +429,9 @@ void main() {
             historicalArchiveSourcesProvider.overrideWith(
               (ref) async => _FakeHistoricalArchiveSources(),
             ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -408,6 +480,92 @@ void main() {
         expect(resolvedState.inspectionEvidence?.totalMessages, 42);
       },
     );
+
+    test(
+      'recognized imported source enters already-imported and emits one reference occurrence',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        final container = ProviderContainer(
+          overrides: [
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => _FakeHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(
+                matchingFolderPath: '/tmp/archive',
+                match: HistoricalArchiveImportedSourceMatch(
+                  sourceKey: sourceKey,
+                  sourceId: 3,
+                  importedMessageCount: 42,
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.loadFolder(folderPath: '/tmp/archive');
+
+        final recognized = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          recognized.presentationStage,
+          HistoricalArchivesPresentationStage.alreadyImported,
+        );
+        expect(recognized.knownSourceReference?.sourceKey, sourceKey);
+        expect(recognized.knownSourceReference?.pulseOccurrence, 1);
+
+        final model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: recognized,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          model.narratorPresentation?.kind,
+          HistoricalArchivesNarratorPresentationKind.alreadyImported,
+        );
+        expect(
+          model.narratorPresentation?.narratorText,
+          'This archive is already part of MessageLens.',
+        );
+        expect(
+          model.narratorPresentation?.instrumentationRows.map(
+            (row) => (row.label, row.value),
+          ),
+          containsAll(<(String, String)>[
+            ('Messages', '42'),
+            ('Dates', 'Jul 2012 – Jun 2017'),
+            ('Status', 'Already imported'),
+          ]),
+        );
+        expect(model.importButtonEnabled, isFalse);
+
+        await workflow.loadFolder(folderPath: '/tmp/archive');
+        expect(
+          container
+              .read(historicalArchivesWorkflowProvider)
+              .knownSourceReference
+              ?.pulseOccurrence,
+          2,
+        );
+
+        await workflow.loadFolder(folderPath: '/tmp/another-archive');
+        final differentSource = container.read(
+          historicalArchivesWorkflowProvider,
+        );
+        expect(
+          differentSource.presentationStage,
+          HistoricalArchivesPresentationStage.readyForImport,
+        );
+        expect(differentSource.knownSourceReference, isNull);
+      },
+    );
   });
 
   group('preflightHistoricalArchivesFolder', () {
@@ -448,9 +606,9 @@ void main() {
 
       Directory('${tempDirectory.path}/Attachments').createSync();
 
-      await graphDb.executeSql(
-        "INSERT INTO messages (ss_id, guid, is_from_me) VALUES (1, 'm1', 0), (2, 'projected-only', 0)",
-      );
+      await graphDb.executeSql('''
+INSERT INTO messages (ss_id, guid, is_from_me) VALUES
+           (1, 'm1', 0), (2, 'm1', 0), (3, 'projected-only', 0)''');
 
       final result = await preflightHistoricalArchivesFolder(
         folderPath: tempDirectory.path,
@@ -589,6 +747,54 @@ final class _CompletingArchiveSourceInspector
   @override
   Future<ArchiveSourceInspection> inspectFolder({required String folderPath}) {
     return inspection;
+  }
+}
+
+final class _ImmediateArchiveSourceInspector implements ArchiveSourceInspector {
+  const _ImmediateArchiveSourceInspector();
+
+  @override
+  Future<ArchiveSourceInspection> inspectFolder({required String folderPath}) {
+    return Future.value(
+      ArchiveSourceInspection(
+        folderPath: folderPath,
+        sourceLabel: 'archive',
+        chatDbPath: '$folderPath/chat.db',
+        chatDbStatusLabel: 'Found and readable',
+        attachmentsStatusLabel: 'Not found',
+        isReadable: true,
+        detail: 'Archive source is readable.',
+        dryRunEstimate: const ArchiveSourceDryRunEstimate.available(
+          comparableGuidCount: 42,
+          duplicateGuidCount: 42,
+          newGuidCount: 0,
+        ),
+        totalMessages: 42,
+        totalChats: 4,
+        totalHandles: 7,
+        missingGuids: 0,
+        earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+        latestMessageUtc: '2017-06-11T08:00:00.000Z',
+      ),
+    );
+  }
+}
+
+final class _FakeImportedSourceLookup
+    implements HistoricalArchiveImportedSourceLookup {
+  const _FakeImportedSourceLookup({this.matchingFolderPath, this.match});
+
+  final String? matchingFolderPath;
+  final HistoricalArchiveImportedSourceMatch? match;
+
+  @override
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
+    required String folderPath,
+  }) async {
+    if (matchingFolderPath != null && folderPath != matchingFolderPath) {
+      return null;
+    }
+    return match;
   }
 }
 

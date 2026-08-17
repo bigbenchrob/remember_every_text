@@ -51,7 +51,10 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
           )
         else
           for (final source in payload.knownSources) ...[
-            _HistoricalArchiveSourceTile(source: source),
+            _HistoricalArchiveSourceTile(
+              key: ValueKey<String>(source.sourceKey),
+              source: source,
+            ),
             const SizedBox(height: 10),
           ],
         const SizedBox(height: 14),
@@ -90,61 +93,153 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
   }
 }
 
-class _HistoricalArchiveSourceTile extends ConsumerWidget {
-  const _HistoricalArchiveSourceTile({required this.source});
+class _HistoricalArchiveSourceTile extends ConsumerStatefulWidget {
+  const _HistoricalArchiveSourceTile({required this.source, super.key});
 
   final HistoricalArchiveSidebarSourceSummary source;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_HistoricalArchiveSourceTile> createState() =>
+      _HistoricalArchiveSourceTileState();
+}
+
+class _HistoricalArchiveSourceTileState
+    extends ConsumerState<_HistoricalArchiveSourceTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 760),
+  );
+  late final Animation<double> _pulse = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 0,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)),
+      weight: 150,
+    ),
+    TweenSequenceItem(tween: ConstantTween<double>(1), weight: 360),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: 0,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)),
+      weight: 250,
+    ),
+  ]).animate(_pulseController);
+  var _lastPulseOccurrence = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastPulseOccurrence = widget.source.referencePulseOccurrence;
+  }
+
+  @override
+  void didUpdateWidget(covariant _HistoricalArchiveSourceTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!widget.source.isReferenced) {
+      _pulseController.stop();
+      _pulseController.value = 0;
+      _lastPulseOccurrence = widget.source.referencePulseOccurrence;
+      return;
+    }
+
+    if (widget.source.referencePulseOccurrence != _lastPulseOccurrence) {
+      _lastPulseOccurrence = widget.source.referencePulseOccurrence;
+      if (_motionDisabled(context)) {
+        _pulseController.value = 0;
+        return;
+      }
+      _pulseController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final referenceColor = colors.infoCard(InfoCard.termInk);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.control,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-      ),
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        final pulse = widget.source.isReferenced ? _pulse.value : 0.0;
+        return DecoratedBox(
+          key: ValueKey<String>(
+            'historical-archive-source-chrome:${widget.source.sourceKey}',
+          ),
+          decoration: BoxDecoration(
+            color: widget.source.isReferenced
+                ? referenceColor.withValues(alpha: 0.08 + (0.10 * pulse))
+                : colors.surfaces.control,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: widget.source.isReferenced
+                  ? referenceColor.withValues(alpha: 0.62 + (0.30 * pulse))
+                  : colors.lines.borderSubtle,
+              width: widget.source.isReferenced ? 1.25 + (1.15 * pulse) : 0.8,
+            ),
+            boxShadow: widget.source.isReferenced
+                ? [
+                    BoxShadow(
+                      color: referenceColor.withValues(
+                        alpha: 0.18 + (0.36 * pulse),
+                      ),
+                      blurRadius: 5 + (12 * pulse),
+                      spreadRadius: 0.5 + (1.8 * pulse),
+                    ),
+                  ]
+                : null,
+          ),
+          child: child,
+        );
+      },
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              source.label,
+              widget.source.label,
               style: typography.controlValue.copyWith(
                 color: colors.content.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              source.dateRangeLabel,
+              widget.source.dateRangeLabel,
               style: typography.caption1.copyWith(
                 color: colors.content.textSecondary,
               ),
             ),
             Text(
-              source.messageCountLabel,
+              widget.source.messageCountLabel,
               style: typography.caption1.copyWith(
                 color: colors.content.textSecondary,
               ),
             ),
             Text(
-              source.statusLabel,
+              widget.source.statusLabel,
               style: typography.caption1.copyWith(
                 color: colors.content.textSecondary,
               ),
             ),
             Text(
-              source.lastRunSummaryLabel,
+              widget.source.lastRunSummaryLabel,
               style: typography.caption1.copyWith(
                 color: colors.content.textSecondary,
               ),
             ),
             Text(
-              source.lastImportedLabel,
+              widget.source.lastImportedLabel,
               style: typography.caption1.copyWith(
                 color: colors.content.textSecondary,
               ),
@@ -154,4 +249,8 @@ class _HistoricalArchiveSourceTile extends ConsumerWidget {
       ),
     );
   }
+}
+
+bool _motionDisabled(BuildContext context) {
+  return MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 }

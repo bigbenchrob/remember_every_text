@@ -540,6 +540,12 @@ class _NarratorDecision extends ConsumerWidget {
           ),
         ],
       ),
+      HistoricalArchivesNarratorPresentationKind.alreadyImported =>
+        _HistoricalArchiveActionButton(
+          label: 'Choose Another Folder',
+          enabled: true,
+          onPressed: actions.chooseMessagesFolder,
+        ),
     };
   }
 }

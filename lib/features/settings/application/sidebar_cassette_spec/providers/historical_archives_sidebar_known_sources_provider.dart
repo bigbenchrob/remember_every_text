@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../historical_archive_sources.dart';
 import '../../historical_archive_sources_provider.dart';
+import '../../historical_archives_workflow_panel_model_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
 
 part 'historical_archives_sidebar_known_sources_provider.g.dart';
@@ -14,16 +15,26 @@ historicalArchivesSidebarKnownSources(
   final sources = await ref.watch(
     historicalArchiveSourceMetadataProvider.future,
   );
-  return buildHistoricalArchiveSidebarKnownSources(sources: sources);
+  final reference = ref.watch(
+    historicalArchivesWorkflowProvider.select(
+      (state) => state.knownSourceReference,
+    ),
+  );
+  return buildHistoricalArchiveSidebarKnownSources(
+    sources: sources,
+    reference: reference,
+  );
 }
 
 List<HistoricalArchiveSidebarSourceSummary>
 buildHistoricalArchiveSidebarKnownSources({
   required List<HistoricalArchiveSourceMetadata> sources,
+  HistoricalArchivesKnownSourceReference? reference,
 }) {
   return <HistoricalArchiveSidebarSourceSummary>[
     for (final source in sources)
       HistoricalArchiveSidebarSourceSummary(
+        sourceKey: source.sourceKey,
         label: source.sourceLabel,
         dateRangeLabel: _buildDateRangeLabel(source),
         messageCountLabel: source.totalMessages == null
@@ -32,6 +43,10 @@ buildHistoricalArchiveSidebarKnownSources({
         statusLabel: _buildStatusLabel(source),
         lastRunSummaryLabel: _buildLastRunSummaryLabel(source),
         lastImportedLabel: _buildLastImportedLabel(source),
+        isReferenced: source.sourceKey == reference?.sourceKey,
+        referencePulseOccurrence: source.sourceKey == reference?.sourceKey
+            ? reference?.pulseOccurrence ?? 0
+            : 0,
       ),
   ];
 }

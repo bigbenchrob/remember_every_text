@@ -155,6 +155,52 @@ void main() {
       expect(find.text('Choose Another Folder'), findsOneWidget);
     });
 
+    testWidgets(
+      'already-imported state states the truth and offers no import action',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          model: _narratorPanelModel(
+            presentation: const HistoricalArchivesNarratorPresentationViewModel(
+              kind: HistoricalArchivesNarratorPresentationKind.alreadyImported,
+              narratorText: 'This archive is already part of MessageLens.',
+              instrumentationRows: [
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Messages',
+                  value: '8,882',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Dates',
+                  value: 'Jul 2012 – Jun 2017',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Status',
+                  value: 'Already imported',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+              ],
+              detailsLines: ['Source identity: archive-3'],
+              retryInspectionEnabled: false,
+            ),
+          ),
+        );
+
+        expect(
+          find.text('This archive is already part of MessageLens.'),
+          findsOneWidget,
+        );
+        expect(find.text('8,882'), findsOneWidget);
+        expect(find.text('Jul 2012 – Jun 2017'), findsOneWidget);
+        expect(find.text('Already imported'), findsOneWidget);
+        expect(find.text('New to MessageLens'), findsNothing);
+        expect(find.text('Already represented'), findsNothing);
+        expect(find.text('Import Archive'), findsNothing);
+        expect(find.text('Choose Another Folder'), findsOneWidget);
+      },
+    );
+
     testWidgets('failed inspection offers only the truthful recovery action', (
       tester,
     ) async {

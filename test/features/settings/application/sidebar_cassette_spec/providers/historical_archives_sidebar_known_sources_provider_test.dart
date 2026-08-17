@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_sources.dart';
+import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/providers/historical_archives_sidebar_known_sources_provider.dart';
 
 void main() {
@@ -15,6 +16,7 @@ void main() {
     test('builds a sidebar summary from persisted archive source metadata', () {
       const sources = [
         HistoricalArchiveSourceMetadata(
+          sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
           sourceLabel: 'Archive-2017',
           preflightStatusLabel: 'Preflight complete',
           totalMessages: 42,
@@ -52,6 +54,54 @@ void main() {
         summaries.single.lastImportedLabel,
         'Last imported: 2026-04-29 18:30 UTC',
       );
+      expect(summaries.single.isReferenced, isFalse);
+      expect(summaries.single.referencePulseOccurrence, 0);
+    });
+
+    test('targets only the canonically matching source reference', () {
+      const sources = [
+        HistoricalArchiveSourceMetadata(
+          sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
+          sourceLabel: 'Archive-2017',
+          preflightStatusLabel: 'Imported successfully',
+          totalMessages: 42,
+          earliestMessageUtc: null,
+          latestMessageUtc: null,
+          dryRunNewMessages: 0,
+          dryRunDuplicateMessages: 42,
+          lastImportFinishedAtUtc: null,
+          lastImportSuccess: true,
+          lastImportError: null,
+          lastImportedMessageCount: 42,
+        ),
+        HistoricalArchiveSourceMetadata(
+          sourceKey: 'historical-messages-archive:/Archives/other/chat.db',
+          sourceLabel: 'Other',
+          preflightStatusLabel: 'Imported successfully',
+          totalMessages: 9,
+          earliestMessageUtc: null,
+          latestMessageUtc: null,
+          dryRunNewMessages: 0,
+          dryRunDuplicateMessages: 9,
+          lastImportFinishedAtUtc: null,
+          lastImportSuccess: true,
+          lastImportError: null,
+          lastImportedMessageCount: 9,
+        ),
+      ];
+
+      final summaries = buildHistoricalArchiveSidebarKnownSources(
+        sources: sources,
+        reference: const HistoricalArchivesKnownSourceReference(
+          sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
+          pulseOccurrence: 3,
+        ),
+      );
+
+      expect(summaries.first.isReferenced, isTrue);
+      expect(summaries.first.referencePulseOccurrence, 3);
+      expect(summaries.last.isReferenced, isFalse);
+      expect(summaries.last.referencePulseOccurrence, 0);
     });
   });
 }

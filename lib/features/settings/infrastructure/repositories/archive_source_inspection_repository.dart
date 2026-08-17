@@ -284,7 +284,8 @@ Future<int> _countMatchingGraphGuids({
 
   final placeholders = List.filled(sourceGuids.length, '?').join(', ');
   final rows = await graphDb.selectRows(
-    'SELECT COUNT(*) AS total_count FROM messages WHERE guid IN ($placeholders)',
+    'SELECT COUNT(DISTINCT guid) AS total_count '
+    'FROM messages WHERE guid IN ($placeholders)',
     sourceGuids,
   );
 
