@@ -76,12 +76,41 @@ void main() {
       expect(workflow.chooseMessagesFolderCallCount, 1);
     });
 
-    testWidgets('active center journey hides the competing add action', (
+    testWidgets('existing-source context keeps add action available', (
       tester,
     ) async {
       final workflow = _TestHistoricalArchivesWorkflow(
         initialState: buildInitialHistoricalArchivesWorkflowState().copyWith(
+          presentationContext:
+              HistoricalArchivesPresentationContext.existingSource,
           presentationStage: HistoricalArchivesPresentationStage.knownSource,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+          ],
+          child: const CupertinoApp(
+            home: HistoricalArchivesSettingsSupplementalContent(
+              payload: HistoricalArchivesSettingsCassettePayload(),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Add an Archive Folder'), findsOneWidget);
+    });
+
+    testWidgets('add-archive context hides the competing add action', (
+      tester,
+    ) async {
+      final workflow = _TestHistoricalArchivesWorkflow(
+        initialState: buildInitialHistoricalArchivesWorkflowState().copyWith(
+          presentationContext: HistoricalArchivesPresentationContext.addArchive,
+          presentationStage:
+              HistoricalArchivesPresentationStage.inspectingSource,
         ),
       );
 
@@ -138,6 +167,58 @@ void main() {
       expect(workflow.shownSourceKeys, [sourceKey]);
       expect(workflow.chooseMessagesFolderCallCount, 0);
     });
+
+    testWidgets(
+      'selected source uses blue selection without orange reference',
+      (tester) async {
+        const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: CupertinoApp(
+              home: HistoricalArchivesSettingsSupplementalContent(
+                payload: HistoricalArchivesSettingsCassettePayload(
+                  knownSources: [
+                    HistoricalArchiveSidebarSourceSummary(
+                      sourceKey: sourceKey,
+                      label: 'Archive-2017',
+                      dateRangeLabel: 'Date range: 2012 to 2017',
+                      messageCountLabel: 'Total messages: 8,882',
+                      statusLabel: 'Current status: Imported successfully',
+                      lastRunSummaryLabel: 'Last run: imported 8,882 messages',
+                      lastImportedLabel: 'Last imported: today',
+                      isSelected: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final decoration =
+            tester
+                    .widget<DecoratedBox>(
+                      find.byKey(
+                        const ValueKey<String>(
+                          'historical-archive-source-chrome:$sourceKey',
+                        ),
+                      ),
+                    )
+                    .decoration
+                as BoxDecoration;
+        final container = ProviderScope.containerOf(
+          tester.element(find.text('Archive-2017')),
+        );
+        final colors = container.read(themeColorsProvider.notifier);
+
+        expect(decoration.color, colors.surfaces.selected);
+        expect(
+          decoration.border?.top.color,
+          colors.accents.selection.withValues(alpha: 0.58),
+        );
+        expect(decoration.boxShadow, isNull);
+      },
+    );
 
     testWidgets(
       'canonical reference pulses once per occurrence and not per rebuild',

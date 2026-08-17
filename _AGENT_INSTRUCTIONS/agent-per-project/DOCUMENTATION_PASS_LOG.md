@@ -4857,3 +4857,14 @@ production preservation authority mechanically enforceable.
 - Confirmed that no schema, persistence format, source identity, import,
   removal, archive mutation, production data, staging data, donor, or
   attachment payload was changed.
+
+## 2026-08-17 — Historical Archives hub and selection context
+
+- Added Feature 26 response
+  `15-HISTORICAL-ARCHIVES-HUB-AND-SELECTION-CONTEXT-IMPLEMENTATION.md`.
+- Recorded the explicit `hub`, `existingSource`, and `addArchive` presentation
+  contexts; the blue-selection/orange-reference distinction; transient
+  navigation reset; and presentation-session protection against late async
+  results.
+- Updated release notes for the user-facing Historical Archives context
+  correction.

@@ -15,20 +15,29 @@ historicalArchivesSidebarKnownSources(
   final sources = await ref.watch(
     historicalArchiveSourceMetadataProvider.future,
   );
-  final reference = ref.watch(
+  final presentation = ref.watch(
     historicalArchivesWorkflowProvider.select(
-      (state) => state.knownSourceReference,
+      (state) => (
+        context: state.presentationContext,
+        selectedSourceKey: state.selectedKnownSourceKey,
+        reference: state.knownSourceReference,
+      ),
     ),
   );
   return buildHistoricalArchiveSidebarKnownSources(
     sources: sources,
-    reference: reference,
+    presentationContext: presentation.context,
+    selectedSourceKey: presentation.selectedSourceKey,
+    reference: presentation.reference,
   );
 }
 
 List<HistoricalArchiveSidebarSourceSummary>
 buildHistoricalArchiveSidebarKnownSources({
   required List<HistoricalArchiveSourceMetadata> sources,
+  HistoricalArchivesPresentationContext presentationContext =
+      HistoricalArchivesPresentationContext.hub,
+  String? selectedSourceKey,
   HistoricalArchivesKnownSourceReference? reference,
 }) {
   return <HistoricalArchiveSidebarSourceSummary>[
@@ -43,6 +52,10 @@ buildHistoricalArchiveSidebarKnownSources({
         statusLabel: _buildStatusLabel(source),
         lastRunSummaryLabel: _buildLastRunSummaryLabel(source),
         lastImportedLabel: _buildLastImportedLabel(source),
+        isSelected:
+            presentationContext ==
+                HistoricalArchivesPresentationContext.existingSource &&
+            source.sourceKey == selectedSourceKey,
         isReferenced: source.sourceKey == reference?.sourceKey,
         referencePulseOccurrence: source.sourceKey == reference?.sourceKey
             ? reference?.pulseOccurrence ?? 0

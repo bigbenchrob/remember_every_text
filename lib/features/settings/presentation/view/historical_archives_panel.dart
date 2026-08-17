@@ -367,7 +367,11 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
                 if (presentation.instrumentationRows.isNotEmpty) ...[
                   const SizedBox(height: 40),
                   Text(
-                    'MESSAGES ARCHIVE',
+                    presentation.kind ==
+                            HistoricalArchivesNarratorPresentationKind
+                                .existingSource
+                        ? 'HISTORICAL MESSAGES ARCHIVE'
+                        : 'MESSAGES ARCHIVE',
                     style: typography.caption.copyWith(
                       color: colors.content.textTertiary,
                     ),
@@ -377,18 +381,22 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
                     rows: presentation.instrumentationRows,
                   ),
                 ],
-                const SizedBox(height: 36),
-                _NarratorDecision(
-                  panelModel: panelModel,
-                  presentation: presentation,
-                ),
-                const SizedBox(height: 28),
-                _HistoricalArchivesDetailsDisclosure(
-                  key: ValueKey<HistoricalArchivesNarratorPresentationKind>(
-                    presentation.kind,
+                if (_hasNarratorDecision(presentation.kind)) ...[
+                  const SizedBox(height: 36),
+                  _NarratorDecision(
+                    panelModel: panelModel,
+                    presentation: presentation,
                   ),
-                  lines: presentation.detailsLines,
-                ),
+                ],
+                if (presentation.detailsLines.isNotEmpty) ...[
+                  const SizedBox(height: 28),
+                  _HistoricalArchivesDetailsDisclosure(
+                    key: ValueKey<HistoricalArchivesNarratorPresentationKind>(
+                      presentation.kind,
+                    ),
+                    lines: presentation.detailsLines,
+                  ),
+                ],
               ],
             ),
           ),
@@ -396,6 +404,18 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
       ),
     );
   }
+}
+
+bool _hasNarratorDecision(HistoricalArchivesNarratorPresentationKind kind) {
+  return switch (kind) {
+    HistoricalArchivesNarratorPresentationKind.noSource ||
+    HistoricalArchivesNarratorPresentationKind.existingSource ||
+    HistoricalArchivesNarratorPresentationKind.inspectingSource => false,
+    HistoricalArchivesNarratorPresentationKind.inspectionFailed ||
+    HistoricalArchivesNarratorPresentationKind.readyForImport ||
+    HistoricalArchivesNarratorPresentationKind.knownSource ||
+    HistoricalArchivesNarratorPresentationKind.alreadyImported => true,
+  };
 }
 
 class _DirectedInstrumentation extends ConsumerWidget {
@@ -499,11 +519,9 @@ class _NarratorDecision extends ConsumerWidget {
 
     return switch (presentation.kind) {
       HistoricalArchivesNarratorPresentationKind.noSource =>
-        _HistoricalArchiveActionButton(
-          label: 'Choose Messages Folder...',
-          enabled: true,
-          onPressed: actions.chooseMessagesFolder,
-        ),
+        const SizedBox.shrink(),
+      HistoricalArchivesNarratorPresentationKind.existingSource =>
+        const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.inspectingSource =>
         const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.inspectionFailed => Wrap(

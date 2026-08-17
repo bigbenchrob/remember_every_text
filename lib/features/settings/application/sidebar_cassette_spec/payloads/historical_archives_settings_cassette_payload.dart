@@ -10,6 +10,7 @@ final class HistoricalArchiveSidebarSourceSummary {
     required this.lastRunSummaryLabel,
     required this.lastImportedLabel,
     this.isReferenced = false,
+    this.isSelected = false,
     this.referencePulseOccurrence = 0,
   });
 
@@ -21,6 +22,7 @@ final class HistoricalArchiveSidebarSourceSummary {
   final String lastRunSummaryLabel;
   final String lastImportedLabel;
   final bool isReferenced;
+  final bool isSelected;
   final int referencePulseOccurrence;
 }
 

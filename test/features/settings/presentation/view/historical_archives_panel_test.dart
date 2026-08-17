@@ -30,13 +30,58 @@ void main() {
         find.text('Add an older Messages archive to extend your history.'),
         findsOneWidget,
       );
-      expect(find.text('Choose Messages Folder...'), findsOneWidget);
+      expect(find.text('Choose Messages Folder...'), findsNothing);
       expect(find.text('Execution Gate'), findsNothing);
       expect(find.text('Preflight Summary'), findsNothing);
       expect(find.text('Activity Log'), findsNothing);
       expect(find.text('Progress'), findsNothing);
       expect(find.textContaining('Next'), findsNothing);
     });
+
+    testWidgets(
+      'selected existing source is a management context, not recognition',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          model: _narratorPanelModel(
+            presentation: const HistoricalArchivesNarratorPresentationViewModel(
+              kind: HistoricalArchivesNarratorPresentationKind.existingSource,
+              narratorText: 'Messages_2012-IMPORT_SOURCE',
+              instrumentationRows: [
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Messages',
+                  value: '8,882',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Dates',
+                  value: 'Jul 2012 – Jun 2017',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Status',
+                  value: 'Already imported',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+              ],
+              detailsLines: ['Folder: /Archives/2012'],
+              retryInspectionEnabled: false,
+            ),
+          ),
+        );
+
+        expect(find.text('Messages_2012-IMPORT_SOURCE'), findsOneWidget);
+        expect(find.text('8,882'), findsOneWidget);
+        expect(find.text('Jul 2012 – Jun 2017'), findsOneWidget);
+        expect(find.text('Already imported'), findsOneWidget);
+        expect(
+          find.text('This archive is already part of MessageLens.'),
+          findsNothing,
+        );
+        expect(find.text('Choose Another Folder'), findsNothing);
+        expect(find.text('Import Archive'), findsNothing);
+      },
+    );
 
     testWidgets('inspection shows one current truthful instrumentation row', (
       tester,

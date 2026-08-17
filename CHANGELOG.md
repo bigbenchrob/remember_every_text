@@ -10,6 +10,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.42] — 2026-08-17
+
+### Changed
+
+- Historical Archives now opens as a neutral hub. Explicitly selecting a known
+  archive gives it the canonical blue sidebar selection and opens a
+  source-management context, while add-flow recognition remains a distinct
+  orange cross-UI reference. Leaving Historical Archives clears transient
+  selection and recognition state, and delayed inspection results cannot
+  restore an abandoned presentation session.
+
 ## [0.2.41] — 2026-08-17
 
 ### Changed

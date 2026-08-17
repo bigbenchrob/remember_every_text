@@ -9,6 +9,9 @@ import 'package:remember_this_text/essentials/archive_environment/domain.dart'
 import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
     show ArchiveMutationCoordinatorState;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import 'package:remember_this_text/essentials/navigation/application/sidebar_mode_provider.dart';
+import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
+import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspector_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_folder_chooser.dart';
@@ -17,6 +20,7 @@ import 'package:remember_this_text/features/settings/application/historical_arch
 import 'package:remember_this_text/features/settings/application/historical_archive_sources_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart';
+import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
@@ -214,6 +218,8 @@ void main() {
       );
       final workflowState = buildInitialHistoricalArchivesWorkflowState()
           .copyWith(
+            presentationContext:
+                HistoricalArchivesPresentationContext.addArchive,
             presentationStage:
                 HistoricalArchivesPresentationStage.readyForImport,
             inspectionEvidence: evidence,
@@ -270,6 +276,8 @@ void main() {
       );
       final workflowState = buildInitialHistoricalArchivesWorkflowState()
           .copyWith(
+            presentationContext:
+                HistoricalArchivesPresentationContext.addArchive,
             presentationStage:
                 HistoricalArchivesPresentationStage.readyForImport,
             inspectionEvidence: evidence,
@@ -326,6 +334,8 @@ void main() {
         );
         final workflowState = buildInitialHistoricalArchivesWorkflowState()
             .copyWith(
+              presentationContext:
+                  HistoricalArchivesPresentationContext.addArchive,
               presentationStage:
                   HistoricalArchivesPresentationStage.readyForImport,
               inspectionEvidence: evidence,
@@ -378,6 +388,8 @@ void main() {
         ) {
           final workflowState = buildInitialHistoricalArchivesWorkflowState()
               .copyWith(
+                presentationContext:
+                    HistoricalArchivesPresentationContext.addArchive,
                 presentationStage:
                     HistoricalArchivesPresentationStage.inspectionFailed,
                 selectedFolderPath: '/tmp/archive',
@@ -522,6 +534,11 @@ void main() {
         );
         expect(recognized.knownSourceReference?.sourceKey, sourceKey);
         expect(recognized.knownSourceReference?.pulseOccurrence, 1);
+        expect(
+          recognized.presentationContext,
+          HistoricalArchivesPresentationContext.addArchive,
+        );
+        expect(recognized.selectedKnownSourceKey, isNull);
 
         final model = buildHistoricalArchivesWorkflowPanelModel(
           executionGateState: const ArchiveMutationCoordinatorState(),
@@ -625,10 +642,13 @@ void main() {
           state.presentationStage,
           HistoricalArchivesPresentationStage.alreadyImported,
         );
+        expect(
+          state.presentationContext,
+          HistoricalArchivesPresentationContext.existingSource,
+        );
         expect(state.selectedFolderPath, '/tmp/archive');
-        expect(state.knownSourceReference?.sourceKey, sourceKey);
-        expect(state.knownSourceReference?.pulseOccurrence, 0);
-        expect(state.knownSourceReference?.isRepeatedRecognition, isFalse);
+        expect(state.selectedKnownSourceKey, sourceKey);
+        expect(state.knownSourceReference, isNull);
         expect(
           buildHistoricalArchivesWorkflowPanelModel(
             executionGateState: const ArchiveMutationCoordinatorState(),
@@ -689,12 +709,173 @@ void main() {
         state.presentationStage,
         HistoricalArchivesPresentationStage.knownSource,
       );
+      expect(model.narratorPresentation?.narratorText, 'Archive');
       expect(
-        model.narratorPresentation?.narratorText,
-        'This archive is known to MessageLens.',
+        model.narratorPresentation?.kind,
+        HistoricalArchivesNarratorPresentationKind.existingSource,
       );
       expect(model.importButtonEnabled, isFalse);
     });
+
+    test(
+      'leaving Historical Archives clears transient selection but not source facts',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        const source = HistoricalArchiveSourceMetadata(
+          sourceKey: sourceKey,
+          sourceChatDb: '/tmp/archive/chat.db',
+          folderPath: '/tmp/archive',
+          sourceLabel: 'Archive',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
+          totalMessages: 42,
+          earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+          latestMessageUtc: '2017-06-11T08:00:00.000Z',
+          preflightStatusLabel: 'Imported successfully',
+          dryRunNewMessages: 0,
+          dryRunDuplicateMessages: 42,
+          lastImportFinishedAtUtc: null,
+          lastImportSuccess: true,
+          lastImportError: null,
+          lastImportedMessageCount: 42,
+        );
+        final container = ProviderContainer(
+          overrides: [
+            historicalArchiveSourceMetadataProvider.overrideWith(
+              (ref) async => const [source],
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(
+                match: HistoricalArchiveImportedSourceMatch(
+                  sourceKey: sourceKey,
+                  sourceId: 3,
+                  importedMessageCount: 42,
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        container
+            .read(activeSidebarModeProvider.notifier)
+            .setMode(SidebarMode.settings);
+        container
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(
+              SettingsMenuActionId.historicalArchives,
+            );
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.showKnownSource(sourceKey: sourceKey);
+        expect(
+          container
+              .read(historicalArchivesWorkflowProvider)
+              .selectedKnownSourceKey,
+          sourceKey,
+        );
+
+        container
+            .read(activeSidebarModeProvider.notifier)
+            .setMode(SidebarMode.messages);
+
+        final reset = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          reset.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(reset.selectedKnownSourceKey, isNull);
+        expect(reset.knownSourceReference, isNull);
+        expect(
+          await container.read(historicalArchiveSourceMetadataProvider.future),
+          const [source],
+        );
+
+        container
+            .read(activeSidebarModeProvider.notifier)
+            .setMode(SidebarMode.settings);
+        expect(
+          container
+              .read(historicalArchivesWorkflowProvider)
+              .presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+      },
+    );
+
+    test(
+      'late folder inspection cannot revive an abandoned add context',
+      () async {
+        final inspectionCompleter = Completer<ArchiveSourceInspection>();
+        final container = ProviderContainer(
+          overrides: [
+            historicalArchiveFolderChooserProvider.overrideWith(
+              (ref) => const _FakeFolderChooser('/tmp/archive'),
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async =>
+                  _CompletingArchiveSourceInspector(inspectionCompleter.future),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => const _FakeHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        container
+            .read(activeSidebarModeProvider.notifier)
+            .setMode(SidebarMode.settings);
+        container
+            .read(sidebarFlowProvider.notifier)
+            .setPersistentSettingsContext(
+              SettingsMenuActionId.historicalArchives,
+            );
+
+        final operation = container
+            .read(historicalArchivesWorkflowProvider.notifier)
+            .chooseMessagesFolder();
+        await Future<void>.delayed(Duration.zero);
+        container
+            .read(activeSidebarModeProvider.notifier)
+            .setMode(SidebarMode.messages);
+
+        inspectionCompleter.complete(
+          const ArchiveSourceInspection(
+            folderPath: '/tmp/archive',
+            sourceLabel: 'archive',
+            chatDbPath: '/tmp/archive/chat.db',
+            chatDbStatusLabel: 'Found and readable',
+            attachmentsStatusLabel: 'Not found',
+            isReadable: true,
+            detail: 'Archive source is readable.',
+            dryRunEstimate: ArchiveSourceDryRunEstimate.available(
+              comparableGuidCount: 42,
+              duplicateGuidCount: 10,
+              newGuidCount: 32,
+            ),
+            totalMessages: 42,
+            totalChats: 4,
+            totalHandles: 7,
+            missingGuids: 0,
+            earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+            latestMessageUtc: '2017-06-11T08:00:00.000Z',
+          ),
+        );
+        await operation;
+
+        final state = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          state.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(state.selectedKnownSourceKey, isNull);
+        expect(state.knownSourceReference, isNull);
+      },
+    );
   });
 
   group('preflightHistoricalArchivesFolder', () {

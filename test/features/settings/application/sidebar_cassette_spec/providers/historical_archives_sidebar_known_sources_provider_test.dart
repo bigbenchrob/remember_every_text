@@ -59,6 +59,7 @@ void main() {
         'Last imported: 2026-04-29 18:30 UTC',
       );
       expect(summaries.single.isReferenced, isFalse);
+      expect(summaries.single.isSelected, isFalse);
       expect(summaries.single.referencePulseOccurrence, 0);
     });
 
@@ -114,6 +115,53 @@ void main() {
       expect(summaries.first.referencePulseOccurrence, 3);
       expect(summaries.last.isReferenced, isFalse);
       expect(summaries.last.referencePulseOccurrence, 0);
+    });
+
+    test('selects only an explicitly selected exact-key source', () {
+      const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+      const sources = [
+        HistoricalArchiveSourceMetadata(
+          sourceKey: sourceKey,
+          sourceChatDb: '/Archives/2017/chat.db',
+          folderPath: '/Archives/2017',
+          sourceLabel: 'Archive-2017',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
+          preflightStatusLabel: 'Imported successfully',
+          totalMessages: 42,
+          earliestMessageUtc: null,
+          latestMessageUtc: null,
+          dryRunNewMessages: 0,
+          dryRunDuplicateMessages: 42,
+          lastImportFinishedAtUtc: null,
+          lastImportSuccess: true,
+          lastImportError: null,
+          lastImportedMessageCount: 42,
+        ),
+      ];
+
+      final hub = buildHistoricalArchiveSidebarKnownSources(sources: sources);
+      final selected = buildHistoricalArchiveSidebarKnownSources(
+        sources: sources,
+        presentationContext:
+            HistoricalArchivesPresentationContext.existingSource,
+        selectedSourceKey: sourceKey,
+      );
+      final addRecognition = buildHistoricalArchiveSidebarKnownSources(
+        sources: sources,
+        presentationContext: HistoricalArchivesPresentationContext.addArchive,
+        selectedSourceKey: sourceKey,
+        reference: const HistoricalArchivesKnownSourceReference(
+          sourceKey: sourceKey,
+          pulseOccurrence: 1,
+        ),
+      );
+
+      expect(hub.single.isSelected, isFalse);
+      expect(selected.single.isSelected, isTrue);
+      expect(selected.single.isReferenced, isFalse);
+      expect(addRecognition.single.isSelected, isFalse);
+      expect(addRecognition.single.isReferenced, isTrue);
     });
   });
 }

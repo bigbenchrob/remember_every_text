@@ -24,8 +24,8 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
     final showAddArchiveFolder = ref.watch(
       historicalArchivesWorkflowProvider.select(
         (state) =>
-            state.presentationStage ==
-            HistoricalArchivesPresentationStage.noSource,
+            state.presentationContext !=
+            HistoricalArchivesPresentationContext.addArchive,
       ),
     );
 
@@ -198,7 +198,17 @@ class _HistoricalArchiveSourceTileState
                 key: ValueKey<String>(
                   'historical-archive-source-chrome:${widget.source.sourceKey}',
                 ),
-                decoration: widget.source.isReferenced
+                decoration: widget.source.isSelected
+                    ? BoxDecoration(
+                        color: colors.surfaces.selected,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colors.accents.selection.withValues(
+                            alpha: 0.58,
+                          ),
+                        ),
+                      )
+                    : widget.source.isReferenced
                     ? referentialCorrespondenceDecoration(
                         colors: colors.messagePanels,
                         pulse: pulse,

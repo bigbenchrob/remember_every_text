@@ -16,8 +16,14 @@ import '../../../essentials/db/feature_level_providers/message_data_version_prov
     show messageDataVersionProvider;
 import '../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
+import '../../../essentials/navigation/feature_level_providers.dart'
+    show SidebarMode, activeSidebarModeProvider;
 import '../../../essentials/onboarding/feature_level_providers.dart'
     show onboardingMessagesDatabasePathProvider;
+import '../../../essentials/sidebar/feature_level_providers.dart'
+    show sidebarFlowProvider;
+import '../../sidebar_utilities/domain/sidebar_utilities_constants.dart'
+    show SettingsMenuActionId;
 import 'archive_source_inspection.dart';
 import 'archive_source_inspector_provider.dart';
 import 'historical_archive_folder_chooser_provider.dart';
@@ -77,6 +83,9 @@ enum HistoricalArchivesPresentationStage {
   laterWorkflow,
 }
 
+/// Transient feature context. Durable source metadata never selects a context.
+enum HistoricalArchivesPresentationContext { hub, existingSource, addArchive }
+
 /// Ephemeral presentation state only. [sourceKey] identifies the archive;
 /// [pulseOccurrence] identifies a fresh "look here" event in this process.
 final class HistoricalArchivesKnownSourceReference {
@@ -131,6 +140,7 @@ final class HistoricalArchivesInspectionEvidence {
 
 enum HistoricalArchivesNarratorPresentationKind {
   noSource,
+  existingSource,
   inspectingSource,
   inspectionFailed,
   readyForImport,
@@ -224,9 +234,11 @@ final class HistoricalArchivesWorkflowState {
     required this.resultSummaryLines,
     required this.activityLog,
     required this.phases,
+    required this.presentationContext,
     this.presentationStage = HistoricalArchivesPresentationStage.noSource,
     this.inspectionEvidence,
     this.knownSourceReference,
+    this.selectedKnownSourceKey,
   });
 
   final HistoricalArchivesPreflightViewModel preflight;
@@ -242,8 +254,12 @@ final class HistoricalArchivesWorkflowState {
   final List<HistoricalArchivesLogEntryViewModel> activityLog;
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
   final HistoricalArchivesPresentationStage presentationStage;
+  final HistoricalArchivesPresentationContext presentationContext;
   final HistoricalArchivesInspectionEvidence? inspectionEvidence;
   final HistoricalArchivesKnownSourceReference? knownSourceReference;
+
+  /// Exact-key selection established only by a cartouche action this session.
+  final String? selectedKnownSourceKey;
 
   HistoricalArchivesWorkflowState copyWith({
     HistoricalArchivesPreflightViewModel? preflight,
@@ -261,10 +277,13 @@ final class HistoricalArchivesWorkflowState {
     List<HistoricalArchivesLogEntryViewModel>? activityLog,
     List<HistoricalArchivesWorkflowPhaseViewModel>? phases,
     HistoricalArchivesPresentationStage? presentationStage,
+    HistoricalArchivesPresentationContext? presentationContext,
     HistoricalArchivesInspectionEvidence? inspectionEvidence,
     bool clearInspectionEvidence = false,
     HistoricalArchivesKnownSourceReference? knownSourceReference,
     bool clearKnownSourceReference = false,
+    String? selectedKnownSourceKey,
+    bool clearSelectedKnownSourceKey = false,
   }) {
     return HistoricalArchivesWorkflowState(
       preflight: preflight ?? this.preflight,
@@ -288,12 +307,16 @@ final class HistoricalArchivesWorkflowState {
       activityLog: activityLog ?? this.activityLog,
       phases: phases ?? this.phases,
       presentationStage: presentationStage ?? this.presentationStage,
+      presentationContext: presentationContext ?? this.presentationContext,
       inspectionEvidence: clearInspectionEvidence
           ? null
           : inspectionEvidence ?? this.inspectionEvidence,
       knownSourceReference: clearKnownSourceReference
           ? null
           : knownSourceReference ?? this.knownSourceReference,
+      selectedKnownSourceKey: clearSelectedKnownSourceKey
+          ? null
+          : selectedKnownSourceKey ?? this.selectedKnownSourceKey,
     );
   }
 }
@@ -396,6 +419,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
 
 HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
   return const HistoricalArchivesWorkflowState(
+    presentationContext: HistoricalArchivesPresentationContext.hub,
     preflight: HistoricalArchivesPreflightViewModel(
       status: HistoricalArchivesPreflightStatus.waitingForFolder,
       statusLabel: 'Waiting for folder selection',
@@ -484,28 +508,55 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
 @Riverpod(keepAlive: true)
 class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   var _nextReferencePulseOccurrence = 0;
+  var _presentationSessionOccurrence = 0;
   String? _lastRecognizedImportedSourceKey;
 
   @override
   HistoricalArchivesWorkflowState build() {
+    ref.listen(activeSidebarModeProvider, (previous, next) {
+      if (previous == SidebarMode.settings && next != SidebarMode.settings) {
+        resetPresentationContext();
+      }
+    });
+    ref.listen(
+      sidebarFlowProvider.select((value) => value.persistentSettingsContext),
+      (previous, next) {
+        if (previous == SettingsMenuActionId.historicalArchives &&
+            next != SettingsMenuActionId.historicalArchives) {
+          resetPresentationContext();
+        }
+      },
+    );
     return buildInitialHistoricalArchivesWorkflowState();
   }
 
   Future<void> chooseMessagesFolder() async {
+    final presentationSessionOccurrence = _presentationSessionOccurrence;
     final folderChooser = ref.read(historicalArchiveFolderChooserProvider);
     final folderPath = await folderChooser.chooseMessagesFolder();
-    if (folderPath == null) {
+    if (folderPath == null ||
+        presentationSessionOccurrence != _presentationSessionOccurrence) {
       return;
     }
 
-    await loadFolder(folderPath: folderPath);
+    await loadFolder(
+      folderPath: folderPath,
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    );
   }
 
-  Future<void> loadFolder({required String folderPath}) async {
+  Future<void> loadFolder({
+    required String folderPath,
+    int? presentationSessionOccurrence,
+  }) async {
+    final expectedPresentationSessionOccurrence =
+        presentationSessionOccurrence ?? _presentationSessionOccurrence;
     state = state.copyWith(
+      presentationContext: HistoricalArchivesPresentationContext.addArchive,
       presentationStage: HistoricalArchivesPresentationStage.inspectingSource,
       clearInspectionEvidence: true,
       clearKnownSourceReference: true,
+      clearSelectedKnownSourceKey: true,
       preflight: const HistoricalArchivesPreflightViewModel(
         status: HistoricalArchivesPreflightStatus.running,
         statusLabel: 'Preflight running',
@@ -583,6 +634,11 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       result: result,
     );
 
+    if (expectedPresentationSessionOccurrence !=
+        _presentationSessionOccurrence) {
+      return;
+    }
+
     if (importedSourceMatch == null) {
       _lastRecognizedImportedSourceKey = null;
       state = _workflowStateFromPreflightResult(result);
@@ -604,6 +660,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   Future<void> showKnownSource({required String sourceKey}) async {
+    final presentationSessionOccurrence = _presentationSessionOccurrence;
     final sources = await ref.read(
       historicalArchiveSourceMetadataProvider.future,
     );
@@ -614,7 +671,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         break;
       }
     }
-    if (source == null) {
+    if (source == null ||
+        presentationSessionOccurrence != _presentationSessionOccurrence) {
       return;
     }
 
@@ -636,20 +694,31 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       );
     }
 
-    final currentReference = state.knownSourceReference;
+    if (presentationSessionOccurrence != _presentationSessionOccurrence) {
+      return;
+    }
+
     state = _workflowStateFromKnownSourceMetadata(
       source,
       isImported: importedSourceMatch != null,
-      knownSourceReference: HistoricalArchivesKnownSourceReference(
-        sourceKey: sourceKey,
-        pulseOccurrence: currentReference?.sourceKey == sourceKey
-            ? currentReference!.pulseOccurrence
-            : 0,
-      ),
+      selectedKnownSourceKey: sourceKey,
     );
   }
 
   void clearSelection() {
+    resetPresentationContext();
+  }
+
+  void resetPresentationContext() {
+    _presentationSessionOccurrence += 1;
+    _nextReferencePulseOccurrence = 0;
+    _lastRecognizedImportedSourceKey = null;
+    if (state.presentationContext ==
+            HistoricalArchivesPresentationContext.hub &&
+        state.selectedKnownSourceKey == null &&
+        state.knownSourceReference == null) {
+      return;
+    }
     state = buildInitialHistoricalArchivesWorkflowState();
   }
 
@@ -1193,6 +1262,36 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
   required HistoricalArchivesExecutionGateViewModel executionGate,
   required bool importButtonEnabled,
 }) {
+  if (workflowState.presentationContext ==
+      HistoricalArchivesPresentationContext.hub) {
+    return const HistoricalArchivesNarratorPresentationViewModel(
+      kind: HistoricalArchivesNarratorPresentationKind.noSource,
+      narratorText:
+          'Choose an existing archive to review it, or add another archive.',
+      instrumentationRows: [],
+      detailsLines: [],
+      retryInspectionEnabled: false,
+    );
+  }
+
+  if (workflowState.presentationContext ==
+      HistoricalArchivesPresentationContext.existingSource) {
+    return HistoricalArchivesNarratorPresentationViewModel(
+      kind: HistoricalArchivesNarratorPresentationKind.existingSource,
+      narratorText: workflowState.sourceLabel,
+      instrumentationRows: _knownSourceInstrumentationRows(
+        workflowState.inspectionEvidence,
+        workflowState.preflight.statusLabel,
+      ),
+      detailsLines: _inspectionDetailsLines(
+        workflowState: workflowState,
+        executionGate: executionGate,
+        importButtonEnabled: false,
+      ),
+      retryInspectionEnabled: false,
+    );
+  }
+
   return switch (workflowState.presentationStage) {
     HistoricalArchivesPresentationStage.noSource =>
       const HistoricalArchivesNarratorPresentationViewModel(
@@ -2014,6 +2113,7 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
   HistoricalArchivesFolderPreflightResult result,
 ) {
   return HistoricalArchivesWorkflowState(
+    presentationContext: HistoricalArchivesPresentationContext.addArchive,
     preflight: result.preflight,
     selectedFolderPath: result.selectedFolderPath,
     archiveRemovalTargetChatDbPath: result.archiveRemovalTargetChatDbPath,
@@ -2057,7 +2157,7 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
 HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
   HistoricalArchiveSourceMetadata source, {
   required bool isImported,
-  required HistoricalArchivesKnownSourceReference knownSourceReference,
+  required String selectedKnownSourceKey,
 }) {
   final initial = buildInitialHistoricalArchivesWorkflowState();
   return HistoricalArchivesWorkflowState(
@@ -2084,6 +2184,7 @@ HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
     presentationStage: isImported
         ? HistoricalArchivesPresentationStage.alreadyImported
         : HistoricalArchivesPresentationStage.knownSource,
+    presentationContext: HistoricalArchivesPresentationContext.existingSource,
     inspectionEvidence: HistoricalArchivesInspectionEvidence(
       folderPath: source.folderPath,
       chatDbPath: source.sourceChatDb,
@@ -2103,7 +2204,7 @@ HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
       dryRunUnavailableReason:
           'A fresh folder inspection is required before comparison.',
     ),
-    knownSourceReference: knownSourceReference,
+    selectedKnownSourceKey: selectedKnownSourceKey,
   );
 }
 
