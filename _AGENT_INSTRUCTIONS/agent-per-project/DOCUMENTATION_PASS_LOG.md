@@ -4897,3 +4897,18 @@ production preservation authority mechanically enforceable.
   clearing a newer occurrence.
 - Confirmed that duplicate handling performs no source persistence, import,
   removal, graph projection, database mutation, or attachment operation.
+
+## 2026-08-18 — Historical Archives invalid-folder boundary
+
+- Added Feature 26 response
+  `18-HISTORICAL-ARCHIVES-INVALID-FOLDER-BOUNDARY-IMPLEMENTATION.md`.
+- Established that a selected folder earns add/import center-panel context only
+  after it contains a regular Messages `chat.db` and passes basic source
+  inspection.
+- Classified `Missing` as a pre-context qualification rejection while retaining
+  `Read failed` as a distinct, not-yet-generalized inspection failure.
+- Documented the modal-only invalid-folder flow, virgin hub restoration, and
+  the absence of blue selection or orange referential correspondence.
+- Confirmed that the ephemeral notice carries only occurrence/session guards
+  and that invalid selection performs no source persistence or archive
+  mutation.

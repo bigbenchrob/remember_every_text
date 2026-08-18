@@ -101,6 +101,35 @@ void main() {
       expect(find.text('Add an Archive Folder'), findsOneWidget);
     });
 
+    testWidgets('invalid-folder notice leaves the stable hub action visible', (
+      tester,
+    ) async {
+      final workflow = _TestHistoricalArchivesWorkflow(
+        initialState: buildInitialHistoricalArchivesWorkflowState().copyWith(
+          invalidFolderNotice: const HistoricalArchivesInvalidFolderNotice(
+            noticeOccurrence: 1,
+            presentationSessionOccurrence: 0,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+          ],
+          child: const CupertinoApp(
+            home: HistoricalArchivesSettingsSupplementalContent(
+              payload: HistoricalArchivesSettingsCassettePayload(),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Add an Archive Folder'), findsOneWidget);
+      expect(find.text('Choose Another Folder'), findsNothing);
+    });
+
     testWidgets('add-archive context hides the competing add action', (
       tester,
     ) async {

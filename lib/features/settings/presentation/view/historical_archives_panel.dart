@@ -21,6 +21,7 @@ class HistoricalArchivesPanel extends ConsumerStatefulWidget {
 class _HistoricalArchivesPanelState
     extends ConsumerState<HistoricalArchivesPanel> {
   int? _presentedDuplicateNoticeOccurrence;
+  int? _presentedInvalidFolderNoticeOccurrence;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +48,32 @@ class _HistoricalArchivesPanelState
             return;
           }
           unawaited(_showDuplicateFolderDialog(next));
+        });
+      },
+    );
+    ref.listen<HistoricalArchivesInvalidFolderNotice?>(
+      historicalArchivesWorkflowProvider.select(
+        (state) => state.invalidFolderNotice,
+      ),
+      (previous, next) {
+        if (next == null ||
+            next.noticeOccurrence == _presentedInvalidFolderNoticeOccurrence) {
+          return;
+        }
+        _presentedInvalidFolderNoticeOccurrence = next.noticeOccurrence;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          final currentNotice = ref
+              .read(historicalArchivesWorkflowProvider)
+              .invalidFolderNotice;
+          if (currentNotice?.noticeOccurrence != next.noticeOccurrence ||
+              currentNotice?.presentationSessionOccurrence !=
+                  next.presentationSessionOccurrence) {
+            return;
+          }
+          unawaited(_showInvalidFolderDialog(next));
         });
       },
     );
@@ -397,6 +424,43 @@ class _HistoricalArchivesPanelState
     ref
         .read(historicalArchivesWorkflowActionsProvider.notifier)
         .dismissDuplicateFolderNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+  }
+
+  Future<void> _showInvalidFolderDialog(
+    HistoricalArchivesInvalidFolderNotice notice,
+  ) async {
+    await showCupertinoDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CupertinoAlertDialog(
+          title: const Text(
+            'This folder doesn’t appear to contain a Messages archive.',
+          ),
+          content: const Text(
+            'Choose a folder containing Messages data if you want to add an archive.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+    ref
+        .read(historicalArchivesWorkflowActionsProvider.notifier)
+        .dismissInvalidFolderNotice(
           noticeOccurrence: notice.noticeOccurrence,
           presentationSessionOccurrence: notice.presentationSessionOccurrence,
         );

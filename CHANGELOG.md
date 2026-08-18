@@ -10,6 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.45] — 2026-08-18
+
+### Fixed
+
+- Choosing a folder without a Messages archive now ends the add attempt and
+  explains the problem in a modal. Historical Archives remains at its empty
+  hub without selecting, highlighting, or remembering the rejected folder.
+
 ## [0.2.44] — 2026-08-18
 
 ### Fixed

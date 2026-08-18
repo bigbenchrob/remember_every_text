@@ -89,6 +89,70 @@ void main() {
       },
     );
 
+    testWidgets('invalid folder is modal-only and leaves the hub unselected', (
+      tester,
+    ) async {
+      final workflow = _InvalidFolderNoticeHistoricalArchivesWorkflow();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+            historicalArchivesWorkflowPanelModelProvider.overrideWith(
+              (ref) => _narratorPanelModel(isHub: true, presentation: null),
+            ),
+            developerModeProvider.overrideWith(
+              () => _FakeDeveloperMode(DeveloperModeValue.user),
+            ),
+          ],
+          child: const CupertinoApp(home: HistoricalArchivesPanel()),
+        ),
+      );
+      await tester.pump();
+
+      workflow.emitInvalidFolderNotice();
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+      expect(
+        find.text('This folder doesn’t appear to contain a Messages archive.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Choose a folder containing Messages data if you want to add an archive.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const Key('historical-archives-empty-hub')),
+        findsOneWidget,
+      );
+      expect(find.text('Choose Another Folder'), findsNothing);
+      expect(find.text('Import Archive'), findsNothing);
+      expect(find.text('Details'), findsNothing);
+      expect(find.textContaining('chat.db'), findsNothing);
+      expect(workflow.state.knownSourceReference, isNull);
+      expect(workflow.state.selectedKnownSourceKey, isNull);
+
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CupertinoAlertDialog), findsNothing);
+      expect(workflow.dismissCallCount, 1);
+      expect(
+        workflow.state.presentationContext,
+        HistoricalArchivesPresentationContext.hub,
+      );
+      expect(workflow.state.invalidFolderNotice, isNull);
+      expect(workflow.state.knownSourceReference, isNull);
+      expect(workflow.state.selectedKnownSourceKey, isNull);
+      expect(
+        find.byKey(const Key('historical-archives-empty-hub')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('no-source narrator shows only the truthful invitation', (
       tester,
     ) async {
@@ -701,6 +765,35 @@ final class _DuplicateNoticeHistoricalArchivesWorkflow
         pulseOccurrence: noticeOccurrence,
       ),
     );
+  }
+}
+
+final class _InvalidFolderNoticeHistoricalArchivesWorkflow
+    extends HistoricalArchivesWorkflow {
+  var dismissCallCount = 0;
+  var _noticeOccurrence = 0;
+
+  @override
+  HistoricalArchivesWorkflowState build() =>
+      buildInitialHistoricalArchivesWorkflowState();
+
+  void emitInvalidFolderNotice() {
+    _noticeOccurrence += 1;
+    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+      invalidFolderNotice: HistoricalArchivesInvalidFolderNotice(
+        noticeOccurrence: _noticeOccurrence,
+        presentationSessionOccurrence: 0,
+      ),
+    );
+  }
+
+  @override
+  void dismissInvalidFolderNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    dismissCallCount += 1;
+    state = buildInitialHistoricalArchivesWorkflowState();
   }
 }
 

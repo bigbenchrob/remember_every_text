@@ -34,6 +34,18 @@ class HistoricalArchivesWorkflowActions
         );
   }
 
+  void dismissInvalidFolderNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .dismissInvalidFolderNotice(
+          noticeOccurrence: noticeOccurrence,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        );
+  }
+
   Future<void> showKnownSource({required String sourceKey}) async {
     await ref
         .read(historicalArchivesWorkflowProvider.notifier)

@@ -607,6 +607,157 @@ void main() {
     );
 
     test(
+      'missing chat db rejects the add before persistence and restores the hub',
+      () async {
+        final archiveSources = _RecordingHistoricalArchiveSources();
+        final container = ProviderContainer(
+          overrides: [
+            historicalArchiveFolderChooserProvider.overrideWith(
+              (ref) => const _FakeFolderChooser('/tmp/not-an-archive'),
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _MissingArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => archiveSources,
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.chooseMessagesFolder();
+
+        final rejected = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          rejected.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(
+          rejected.presentationStage,
+          HistoricalArchivesPresentationStage.noSource,
+        );
+        expect(rejected.invalidFolderNotice?.noticeOccurrence, 1);
+        expect(rejected.selectedFolderPath, isNull);
+        expect(rejected.inspectionEvidence, isNull);
+        expect(rejected.duplicateFolderNotice, isNull);
+        expect(rejected.knownSourceReference, isNull);
+        expect(rejected.selectedKnownSourceKey, isNull);
+        expect(archiveSources.upsertCallCount, 0);
+
+        final model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: rejected,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(model.isHub, isTrue);
+        expect(model.narratorPresentation, isNull);
+        expect(model.importButtonEnabled, isFalse);
+
+        final notice = rejected.invalidFolderNotice!;
+        workflow.dismissInvalidFolderNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+
+        final dismissed = container.read(historicalArchivesWorkflowProvider);
+        expect(dismissed.invalidFolderNotice, isNull);
+        expect(
+          dismissed.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(dismissed.knownSourceReference, isNull);
+        expect(dismissed.selectedKnownSourceKey, isNull);
+        expect(archiveSources.upsertCallCount, 0);
+      },
+    );
+
+    test(
+      'late invalid-folder dismissal cannot revive an abandoned session',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _MissingArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => const _FakeHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.loadFolder(folderPath: '/tmp/not-an-archive');
+        final notice = container
+            .read(historicalArchivesWorkflowProvider)
+            .invalidFolderNotice!;
+
+        workflow.resetPresentationContext();
+        workflow.dismissInvalidFolderNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+
+        final state = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          state.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(state.invalidFolderNotice, isNull);
+        expect(state.knownSourceReference, isNull);
+        expect(state.selectedKnownSourceKey, isNull);
+      },
+    );
+
+    test(
+      'read failure remains an inspection failure, not invalid folder',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ReadFailedArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => const _FakeHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container
+            .read(historicalArchivesWorkflowProvider.notifier)
+            .loadFolder(folderPath: '/tmp/unreadable-archive');
+
+        final state = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          state.presentationContext,
+          HistoricalArchivesPresentationContext.addArchive,
+        );
+        expect(
+          state.presentationStage,
+          HistoricalArchivesPresentationStage.inspectionFailed,
+        );
+        expect(state.invalidFolderNotice, isNull);
+        expect(state.chatDbStatusLabel, 'Read failed');
+      },
+    );
+
+    test(
       'late duplicate dismissal cannot create a reference after navigation reset',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
@@ -1226,6 +1377,51 @@ final class _ImmediateArchiveSourceInspector implements ArchiveSourceInspector {
         missingGuids: 0,
         earliestMessageUtc: '2012-07-25T08:00:00.000Z',
         latestMessageUtc: '2017-06-11T08:00:00.000Z',
+      ),
+    );
+  }
+}
+
+final class _MissingArchiveSourceInspector implements ArchiveSourceInspector {
+  const _MissingArchiveSourceInspector();
+
+  @override
+  Future<ArchiveSourceInspection> inspectFolder({required String folderPath}) {
+    return Future.value(
+      ArchiveSourceInspection(
+        folderPath: folderPath,
+        sourceLabel: 'not-an-archive',
+        chatDbPath: '$folderPath/chat.db',
+        chatDbStatusLabel: 'Missing',
+        attachmentsStatusLabel: 'Not found',
+        isReadable: false,
+        detail: 'The selected folder does not contain chat.db.',
+        dryRunEstimate: const ArchiveSourceDryRunEstimate.unavailable(
+          unavailableReason: 'source chat.db is missing.',
+        ),
+      ),
+    );
+  }
+}
+
+final class _ReadFailedArchiveSourceInspector
+    implements ArchiveSourceInspector {
+  const _ReadFailedArchiveSourceInspector();
+
+  @override
+  Future<ArchiveSourceInspection> inspectFolder({required String folderPath}) {
+    return Future.value(
+      ArchiveSourceInspection(
+        folderPath: folderPath,
+        sourceLabel: 'unreadable-archive',
+        chatDbPath: '$folderPath/chat.db',
+        chatDbStatusLabel: 'Read failed',
+        attachmentsStatusLabel: 'Not found',
+        isReadable: false,
+        detail: 'MessageLens could not safely read chat.db.',
+        dryRunEstimate: const ArchiveSourceDryRunEstimate.unavailable(
+          unavailableReason: 'source chat.db could not be read safely.',
+        ),
       ),
     );
   }

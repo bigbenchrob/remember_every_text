@@ -116,6 +116,21 @@ final class HistoricalArchivesDuplicateFolderNotice {
   final int presentationSessionOccurrence;
 }
 
+/// One-use presentation notice for a folder that did not qualify as an archive.
+///
+/// It deliberately carries no folder identity or inspection evidence. The two
+/// occurrences exist only to prevent stale modal completion from changing a
+/// later presentation session.
+final class HistoricalArchivesInvalidFolderNotice {
+  const HistoricalArchivesInvalidFolderNotice({
+    required this.noticeOccurrence,
+    required this.presentationSessionOccurrence,
+  });
+
+  final int noticeOccurrence;
+  final int presentationSessionOccurrence;
+}
+
 const historicalArchivesReferencePulseDuration = Duration(milliseconds: 760);
 const historicalArchivesReferenceLingerDuration = Duration(milliseconds: 1200);
 const historicalArchivesReferenceFadeDuration = Duration(milliseconds: 1000);
@@ -259,6 +274,7 @@ final class HistoricalArchivesWorkflowState {
     this.inspectionEvidence,
     this.knownSourceReference,
     this.duplicateFolderNotice,
+    this.invalidFolderNotice,
     this.selectedKnownSourceKey,
   });
 
@@ -279,6 +295,7 @@ final class HistoricalArchivesWorkflowState {
   final HistoricalArchivesInspectionEvidence? inspectionEvidence;
   final HistoricalArchivesKnownSourceReference? knownSourceReference;
   final HistoricalArchivesDuplicateFolderNotice? duplicateFolderNotice;
+  final HistoricalArchivesInvalidFolderNotice? invalidFolderNotice;
 
   /// Exact-key selection established only by a cartouche action this session.
   final String? selectedKnownSourceKey;
@@ -306,6 +323,8 @@ final class HistoricalArchivesWorkflowState {
     bool clearKnownSourceReference = false,
     HistoricalArchivesDuplicateFolderNotice? duplicateFolderNotice,
     bool clearDuplicateFolderNotice = false,
+    HistoricalArchivesInvalidFolderNotice? invalidFolderNotice,
+    bool clearInvalidFolderNotice = false,
     String? selectedKnownSourceKey,
     bool clearSelectedKnownSourceKey = false,
   }) {
@@ -341,6 +360,9 @@ final class HistoricalArchivesWorkflowState {
       duplicateFolderNotice: clearDuplicateFolderNotice
           ? null
           : duplicateFolderNotice ?? this.duplicateFolderNotice,
+      invalidFolderNotice: clearInvalidFolderNotice
+          ? null
+          : invalidFolderNotice ?? this.invalidFolderNotice,
       selectedKnownSourceKey: clearSelectedKnownSourceKey
           ? null
           : selectedKnownSourceKey ?? this.selectedKnownSourceKey,
@@ -538,6 +560,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
 class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   var _nextReferencePulseOccurrence = 0;
   var _nextDuplicateNoticeOccurrence = 0;
+  var _nextInvalidFolderNoticeOccurrence = 0;
   var _presentationSessionOccurrence = 0;
   Timer? _referenceClearTimer;
 
@@ -589,6 +612,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       presentationStage: HistoricalArchivesPresentationStage.inspectingSource,
       clearInspectionEvidence: true,
       clearKnownSourceReference: true,
+      clearDuplicateFolderNotice: true,
+      clearInvalidFolderNotice: true,
       clearSelectedKnownSourceKey: true,
       preflight: const HistoricalArchivesPreflightViewModel(
         status: HistoricalArchivesPreflightStatus.running,
@@ -664,6 +689,17 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
     if (expectedPresentationSessionOccurrence !=
         _presentationSessionOccurrence) {
+      return;
+    }
+
+    if (_isInvalidFolderQualificationFailure(result)) {
+      _nextInvalidFolderNoticeOccurrence += 1;
+      state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+        invalidFolderNotice: HistoricalArchivesInvalidFolderNotice(
+          noticeOccurrence: _nextInvalidFolderNoticeOccurrence,
+          presentationSessionOccurrence: _presentationSessionOccurrence,
+        ),
+      );
       return;
     }
 
@@ -779,6 +815,23 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     });
   }
 
+  void dismissInvalidFolderNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    final notice = state.invalidFolderNotice;
+    if (notice == null ||
+        notice.noticeOccurrence != noticeOccurrence ||
+        notice.presentationSessionOccurrence != presentationSessionOccurrence ||
+        _presentationSessionOccurrence != presentationSessionOccurrence ||
+        state.presentationContext !=
+            HistoricalArchivesPresentationContext.hub) {
+      return;
+    }
+
+    state = state.copyWith(clearInvalidFolderNotice: true);
+  }
+
   void resetPresentationContext() {
     _presentationSessionOccurrence += 1;
     _referenceClearTimer?.cancel();
@@ -787,7 +840,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             HistoricalArchivesPresentationContext.hub &&
         state.selectedKnownSourceKey == null &&
         state.knownSourceReference == null &&
-        state.duplicateFolderNotice == null) {
+        state.duplicateFolderNotice == null &&
+        state.invalidFolderNotice == null) {
       return;
     }
     state = buildInitialHistoricalArchivesWorkflowState();
@@ -2128,6 +2182,12 @@ preflightHistoricalArchivesFolder({
       ),
     ],
   );
+}
+
+bool _isInvalidFolderQualificationFailure(
+  HistoricalArchivesFolderPreflightResult result,
+) {
+  return result.chatDbStatusLabel == 'Missing';
 }
 
 final class _UnavailableArchiveSourceInspector
