@@ -119,7 +119,7 @@ class _HistoricalArchiveSourceTileState
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 760),
+    duration: historicalArchivesReferenceLifetime,
   );
   late final Animation<double> _pulse = TweenSequence<double>([
     TweenSequenceItem(
@@ -136,6 +136,29 @@ class _HistoricalArchiveSourceTileState
         end: 0,
       ).chain(CurveTween(curve: Curves.easeOutCubic)),
       weight: 250,
+    ),
+    TweenSequenceItem(
+      tween: ConstantTween<double>(0),
+      weight:
+          (historicalArchivesReferenceLingerDuration.inMilliseconds +
+                  historicalArchivesReferenceFadeDuration.inMilliseconds)
+              .toDouble(),
+    ),
+  ]).animate(_pulseController);
+  late final Animation<double> _referenceStrength = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: ConstantTween<double>(1),
+      weight:
+          (historicalArchivesReferencePulseDuration.inMilliseconds +
+                  historicalArchivesReferenceLingerDuration.inMilliseconds)
+              .toDouble(),
+    ),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: 0,
+      ).chain(CurveTween(curve: Curves.easeInOutCubic)),
+      weight: historicalArchivesReferenceFadeDuration.inMilliseconds.toDouble(),
     ),
   ]).animate(_pulseController);
   var _lastPulseOccurrence = 0;
@@ -179,9 +202,17 @@ class _HistoricalArchiveSourceTileState
     final typography = ref.watch(themeTypographyProvider);
 
     return AnimatedBuilder(
-      animation: _pulse,
+      animation: _pulseController,
       builder: (context, child) {
         final pulse = widget.source.isReferenced ? _pulse.value : 0.0;
+        final referenceStrength = widget.source.isReferenced
+            ? _referenceStrength.value
+            : 0.0;
+        final ordinaryDecoration = BoxDecoration(
+          color: colors.surfaces.control,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
+        );
         return Semantics(
           button: true,
           label: 'Show archive ${widget.source.label}',
@@ -209,19 +240,16 @@ class _HistoricalArchiveSourceTileState
                         ),
                       )
                     : widget.source.isReferenced
-                    ? referentialCorrespondenceDecoration(
-                        colors: colors.messagePanels,
-                        pulse: pulse,
-                        borderRadius: BorderRadius.circular(12),
-                      )
-                    : BoxDecoration(
-                        color: colors.surfaces.control,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: colors.lines.borderSubtle,
-                          width: 0.8,
+                    ? BoxDecoration.lerp(
+                        ordinaryDecoration,
+                        referentialCorrespondenceDecoration(
+                          colors: colors.messagePanels,
+                          pulse: pulse,
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
+                        referenceStrength,
+                      )!
+                    : ordinaryDecoration,
                 child: child,
               ),
             ),

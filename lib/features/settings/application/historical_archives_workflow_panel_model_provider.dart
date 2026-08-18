@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -79,7 +81,7 @@ enum HistoricalArchivesPresentationStage {
   inspectionFailed,
   readyForImport,
   knownSource,
-  alreadyImported,
+  existingSource,
   laterWorkflow,
 }
 
@@ -92,13 +94,32 @@ final class HistoricalArchivesKnownSourceReference {
   const HistoricalArchivesKnownSourceReference({
     required this.sourceKey,
     required this.pulseOccurrence,
-    this.isRepeatedRecognition = false,
   });
 
   final String sourceKey;
   final int pulseOccurrence;
-  final bool isRepeatedRecognition;
 }
+
+/// One-use presentation notice for a failed add attempt.
+///
+/// The source key identifies the existing sidebar object. Both occurrences are
+/// process-only guards; none of this state is archive metadata.
+final class HistoricalArchivesDuplicateFolderNotice {
+  const HistoricalArchivesDuplicateFolderNotice({
+    required this.sourceKey,
+    required this.noticeOccurrence,
+    required this.presentationSessionOccurrence,
+  });
+
+  final String sourceKey;
+  final int noticeOccurrence;
+  final int presentationSessionOccurrence;
+}
+
+const historicalArchivesReferencePulseDuration = Duration(milliseconds: 760);
+const historicalArchivesReferenceLingerDuration = Duration(milliseconds: 1200);
+const historicalArchivesReferenceFadeDuration = Duration(milliseconds: 1000);
+const historicalArchivesReferenceLifetime = Duration(milliseconds: 2960);
 
 final class HistoricalArchivesInspectionEvidence {
   const HistoricalArchivesInspectionEvidence({
@@ -145,7 +166,6 @@ enum HistoricalArchivesNarratorPresentationKind {
   inspectionFailed,
   readyForImport,
   knownSource,
-  alreadyImported,
 }
 
 enum HistoricalArchivesInstrumentationStatus { working, resolved, failed }
@@ -238,6 +258,7 @@ final class HistoricalArchivesWorkflowState {
     this.presentationStage = HistoricalArchivesPresentationStage.noSource,
     this.inspectionEvidence,
     this.knownSourceReference,
+    this.duplicateFolderNotice,
     this.selectedKnownSourceKey,
   });
 
@@ -257,6 +278,7 @@ final class HistoricalArchivesWorkflowState {
   final HistoricalArchivesPresentationContext presentationContext;
   final HistoricalArchivesInspectionEvidence? inspectionEvidence;
   final HistoricalArchivesKnownSourceReference? knownSourceReference;
+  final HistoricalArchivesDuplicateFolderNotice? duplicateFolderNotice;
 
   /// Exact-key selection established only by a cartouche action this session.
   final String? selectedKnownSourceKey;
@@ -282,6 +304,8 @@ final class HistoricalArchivesWorkflowState {
     bool clearInspectionEvidence = false,
     HistoricalArchivesKnownSourceReference? knownSourceReference,
     bool clearKnownSourceReference = false,
+    HistoricalArchivesDuplicateFolderNotice? duplicateFolderNotice,
+    bool clearDuplicateFolderNotice = false,
     String? selectedKnownSourceKey,
     bool clearSelectedKnownSourceKey = false,
   }) {
@@ -314,6 +338,9 @@ final class HistoricalArchivesWorkflowState {
       knownSourceReference: clearKnownSourceReference
           ? null
           : knownSourceReference ?? this.knownSourceReference,
+      duplicateFolderNotice: clearDuplicateFolderNotice
+          ? null
+          : duplicateFolderNotice ?? this.duplicateFolderNotice,
       selectedKnownSourceKey: clearSelectedKnownSourceKey
           ? null
           : selectedKnownSourceKey ?? this.selectedKnownSourceKey,
@@ -510,11 +537,15 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
 @Riverpod(keepAlive: true)
 class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   var _nextReferencePulseOccurrence = 0;
+  var _nextDuplicateNoticeOccurrence = 0;
   var _presentationSessionOccurrence = 0;
-  String? _lastRecognizedImportedSourceKey;
+  Timer? _referenceClearTimer;
 
   @override
   HistoricalArchivesWorkflowState build() {
+    ref.onDispose(() {
+      _referenceClearTimer?.cancel();
+    });
     ref.listen(activeSidebarModeProvider, (previous, next) {
       if (previous == SidebarMode.settings && next != SidebarMode.settings) {
         resetPresentationContext();
@@ -631,6 +662,23 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       result: result,
     );
 
+    if (expectedPresentationSessionOccurrence !=
+        _presentationSessionOccurrence) {
+      return;
+    }
+
+    if (importedSourceMatch != null) {
+      _nextDuplicateNoticeOccurrence += 1;
+      state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+        duplicateFolderNotice: HistoricalArchivesDuplicateFolderNotice(
+          sourceKey: importedSourceMatch.sourceKey,
+          noticeOccurrence: _nextDuplicateNoticeOccurrence,
+          presentationSessionOccurrence: _presentationSessionOccurrence,
+        ),
+      );
+      return;
+    }
+
     await _persistHistoricalArchiveSourceIfEligible(
       archiveSources: archiveSources,
       result: result,
@@ -641,24 +689,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    if (importedSourceMatch == null) {
-      _lastRecognizedImportedSourceKey = null;
-      state = _workflowStateFromPreflightResult(result);
-      return;
-    }
-
-    final isRepeatedRecognition =
-        _lastRecognizedImportedSourceKey == importedSourceMatch.sourceKey;
-    _lastRecognizedImportedSourceKey = importedSourceMatch.sourceKey;
-    _nextReferencePulseOccurrence += 1;
-    state = _workflowStateFromPreflightResult(result).copyWith(
-      presentationStage: HistoricalArchivesPresentationStage.alreadyImported,
-      knownSourceReference: HistoricalArchivesKnownSourceReference(
-        sourceKey: importedSourceMatch.sourceKey,
-        pulseOccurrence: _nextReferencePulseOccurrence,
-        isRepeatedRecognition: isRepeatedRecognition,
-      ),
-    );
+    state = _workflowStateFromPreflightResult(result);
   }
 
   Future<void> showKnownSource({required String sourceKey}) async {
@@ -716,17 +747,62 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     resetPresentationContext();
   }
 
+  void dismissDuplicateFolderNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    final notice = state.duplicateFolderNotice;
+    if (notice == null ||
+        notice.noticeOccurrence != noticeOccurrence ||
+        notice.presentationSessionOccurrence != presentationSessionOccurrence ||
+        _presentationSessionOccurrence != presentationSessionOccurrence ||
+        state.presentationContext !=
+            HistoricalArchivesPresentationContext.hub) {
+      return;
+    }
+
+    _referenceClearTimer?.cancel();
+    _nextReferencePulseOccurrence += 1;
+    final pulseOccurrence = _nextReferencePulseOccurrence;
+    state = state.copyWith(
+      clearDuplicateFolderNotice: true,
+      knownSourceReference: HistoricalArchivesKnownSourceReference(
+        sourceKey: notice.sourceKey,
+        pulseOccurrence: pulseOccurrence,
+      ),
+    );
+    _referenceClearTimer = Timer(historicalArchivesReferenceLifetime, () {
+      _clearKnownSourceReference(
+        pulseOccurrence: pulseOccurrence,
+        presentationSessionOccurrence: presentationSessionOccurrence,
+      );
+    });
+  }
+
   void resetPresentationContext() {
     _presentationSessionOccurrence += 1;
-    _nextReferencePulseOccurrence = 0;
-    _lastRecognizedImportedSourceKey = null;
+    _referenceClearTimer?.cancel();
+    _referenceClearTimer = null;
     if (state.presentationContext ==
             HistoricalArchivesPresentationContext.hub &&
         state.selectedKnownSourceKey == null &&
-        state.knownSourceReference == null) {
+        state.knownSourceReference == null &&
+        state.duplicateFolderNotice == null) {
       return;
     }
     state = buildInitialHistoricalArchivesWorkflowState();
+  }
+
+  void _clearKnownSourceReference({
+    required int pulseOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    if (_presentationSessionOccurrence != presentationSessionOccurrence ||
+        state.knownSourceReference?.pulseOccurrence != pulseOccurrence) {
+      return;
+    }
+    state = state.copyWith(clearKnownSourceReference: true);
+    _referenceClearTimer = null;
   }
 
   Future<void> retrySelectedFolderInspection() async {
@@ -1372,23 +1448,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
         ],
         retryInspectionEnabled: false,
       ),
-    HistoricalArchivesPresentationStage.alreadyImported =>
-      HistoricalArchivesNarratorPresentationViewModel(
-        kind: HistoricalArchivesNarratorPresentationKind.alreadyImported,
-        narratorText:
-            workflowState.knownSourceReference?.isRepeatedRecognition == true
-            ? 'That’s the same archive — it’s already part of MessageLens.'
-            : 'This archive is already part of MessageLens.',
-        instrumentationRows: _alreadyImportedInstrumentationRows(
-          workflowState.inspectionEvidence,
-        ),
-        detailsLines: _inspectionDetailsLines(
-          workflowState: workflowState,
-          executionGate: executionGate,
-          importButtonEnabled: false,
-        ),
-        retryInspectionEnabled: false,
-      ),
+    HistoricalArchivesPresentationStage.existingSource => null,
     HistoricalArchivesPresentationStage.laterWorkflow => null,
   };
 }
@@ -1490,24 +1550,6 @@ bool _hasCoherentComparisonEvidence(
   }
   final totalMessages = evidence.totalMessages;
   return totalMessages == null || comparable <= totalMessages;
-}
-
-List<HistoricalArchivesInstrumentationRowViewModel>
-_alreadyImportedInstrumentationRows(
-  HistoricalArchivesInspectionEvidence? evidence,
-) {
-  if (evidence == null) {
-    return const [];
-  }
-
-  return [
-    ..._sourceFactsInstrumentationRows(evidence),
-    const HistoricalArchivesInstrumentationRowViewModel(
-      label: 'Status',
-      value: 'Already imported',
-      status: HistoricalArchivesInstrumentationStatus.resolved,
-    ),
-  ];
 }
 
 List<HistoricalArchivesInstrumentationRowViewModel>
@@ -1776,7 +1818,7 @@ String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
     return 'Known Archive Source';
   }
   if (workflowState.presentationStage ==
-      HistoricalArchivesPresentationStage.alreadyImported) {
+      HistoricalArchivesPresentationStage.existingSource) {
     return 'Archive Already Imported';
   }
   return switch (workflowState.preflight.status) {
@@ -1794,7 +1836,7 @@ String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
     return 'The selected sidebar source is known to MessageLens. Choose its folder again before any import decision is offered.';
   }
   if (workflowState.presentationStage ==
-      HistoricalArchivesPresentationStage.alreadyImported) {
+      HistoricalArchivesPresentationStage.existingSource) {
     return 'The selected folder matches an archive source that already has imported messages in MessageLens.';
   }
   return switch (workflowState.preflight.status) {
@@ -1818,7 +1860,7 @@ String _availableImportButtonDetail(
     return 'Import is not offered from persisted known-source information. Choose the folder again to establish current source truth.';
   }
   if (workflowState.presentationStage ==
-      HistoricalArchivesPresentationStage.alreadyImported) {
+      HistoricalArchivesPresentationStage.existingSource) {
     return 'Import is not offered because this archive is already part of MessageLens.';
   }
   final selectedFolderPath = workflowState.selectedFolderPath;
@@ -1856,7 +1898,7 @@ bool _importButtonEnabled({
     return false;
   }
   if (workflowState.presentationStage ==
-      HistoricalArchivesPresentationStage.alreadyImported) {
+      HistoricalArchivesPresentationStage.existingSource) {
     return false;
   }
   if (executionGate.status != HistoricalArchivesExecutionGateStatus.available) {
@@ -2181,7 +2223,7 @@ HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
     resultSummaryLines: initial.resultSummaryLines,
     activityLog: const [],
     phases: initial.phases,
-    presentationStage: HistoricalArchivesPresentationStage.alreadyImported,
+    presentationStage: HistoricalArchivesPresentationStage.existingSource,
     presentationContext: HistoricalArchivesPresentationContext.existingSource,
     inspectionEvidence: HistoricalArchivesInspectionEvidence(
       folderPath: source.folderPath,

@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.44] — 2026-08-18
+
+### Fixed
+
+- Choosing an archive folder that has already been added now ends the add
+  attempt and explains the duplicate in a modal. After dismissal, Historical
+  Archives returns to its empty hub and briefly points to the matching sidebar
+  folder in orange without selecting it or exposing import and management
+  actions.
+
 ## [0.2.43] — 2026-08-17
 
 ### Changed

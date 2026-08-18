@@ -4883,3 +4883,17 @@ production preservation authority mechanically enforceable.
 - Confirmed that no schema, source registration, archive mutation, import,
   removal, production data, staging data, donor, or attachment payload was
   changed.
+
+## 2026-08-18 — Historical Archives duplicate-folder boundary
+
+- Added Feature 26 response
+  `17-HISTORICAL-ARCHIVES-DUPLICATE-FOLDER-BOUNDARY-IMPLEMENTATION.md`.
+- Recorded duplicate folder selection as a failed Add action owned by a modal,
+  not an existing-source selection or center-panel Narrator state.
+- Documented hub restoration before post-dismissal orange correspondence and
+  the bounded pulse, linger, fade, and complete reference-clear lifecycle.
+- Established occurrence-plus-presentation-session guards for stale modal
+  dismissal and reference expiry, including protection against an older timer
+  clearing a newer occurrence.
+- Confirmed that duplicate handling performs no source persistence, import,
+  removal, graph projection, database mutation, or attachment operation.

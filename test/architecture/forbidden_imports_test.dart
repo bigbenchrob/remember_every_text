@@ -274,6 +274,7 @@ const Set<String> _unawaitedAllowedFiles = {
   'lib/features/conversations/application/sidebar_cassette_spec/resolver_tools/conversation_signature_preferences_provider.dart',
   'lib/features/conversations/application/sidebar_cassette_spec/widget_builders/conversation_signatures_widget.dart',
   'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
+  'lib/features/settings/presentation/view/historical_archives_panel.dart',
   'lib/main.dart',
 };
 
@@ -417,6 +418,7 @@ const Set<String> _timerAllowedFiles = {
   'lib/features/messages/application/message_evidence/contact_evidence_cache_policy.dart',
   'lib/features/messages/application/message_evidence/message_evidence_spine_provider.dart',
   'lib/features/messages/presentation/view_model/shared/display_widgets/new_display_widgets.dart',
+  'lib/features/settings/application/historical_archives_workflow_panel_model_provider.dart',
   'lib/main.dart',
 };
 
@@ -430,6 +432,7 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
   'lib/essentials/presence/presentation/presence_runner.dart',
   'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
+  'lib/features/settings/presentation/view/historical_archives_panel.dart',
   'lib/main.dart',
 };
 

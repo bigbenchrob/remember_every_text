@@ -86,7 +86,7 @@ void main() {
       final referenced = buildHistoricalArchiveSidebarKnownSources(
         sources: const [source],
         importedSourcesByKey: const {sourceKey: importedMatch},
-        presentationContext: HistoricalArchivesPresentationContext.addArchive,
+        presentationContext: HistoricalArchivesPresentationContext.hub,
         reference: const HistoricalArchivesKnownSourceReference(
           sourceKey: sourceKey,
           pulseOccurrence: 3,
@@ -98,6 +98,58 @@ void main() {
       expect(referenced.single.isSelected, isFalse);
       expect(referenced.single.isReferenced, isTrue);
       expect(referenced.single.referencePulseOccurrence, 3);
+    });
+
+    test('reference targets only the matching canonical source key', () {
+      const otherSourceKey =
+          'historical-messages-archive:/Archives/2016/chat.db';
+      const otherSource = HistoricalArchiveSourceMetadata(
+        sourceKey: otherSourceKey,
+        sourceChatDb: '/Archives/2016/chat.db',
+        folderPath: '/Archives/2016',
+        sourceLabel: 'Archive-2016',
+        chatDbStatusLabel: 'Found and readable',
+        attachmentsStatusLabel: 'Not found',
+        preflightStatusLabel: 'Imported successfully',
+        totalMessages: 10,
+        earliestMessageUtc: '2016-01-01T00:00:00.000Z',
+        latestMessageUtc: '2016-12-31T00:00:00.000Z',
+        dryRunNewMessages: 10,
+        dryRunDuplicateMessages: 0,
+        lastImportFinishedAtUtc: '2026-04-30T18:30:00.000Z',
+        lastImportSuccess: true,
+        lastImportError: null,
+        lastImportedMessageCount: 10,
+      );
+      const otherMatch = HistoricalArchiveImportedSourceMatch(
+        sourceKey: otherSourceKey,
+        sourceId: 4,
+        importedMessageCount: 10,
+      );
+
+      final summaries = buildHistoricalArchiveSidebarKnownSources(
+        sources: const [source, otherSource],
+        importedSourcesByKey: const {
+          sourceKey: importedMatch,
+          otherSourceKey: otherMatch,
+        },
+        reference: const HistoricalArchivesKnownSourceReference(
+          sourceKey: sourceKey,
+          pulseOccurrence: 7,
+        ),
+      );
+
+      expect(summaries.where((summary) => summary.isReferenced), hasLength(1));
+      expect(
+        summaries.singleWhere((summary) => summary.isReferenced).sourceKey,
+        sourceKey,
+      );
+      expect(
+        summaries
+            .singleWhere((summary) => summary.sourceKey == otherSourceKey)
+            .referencePulseOccurrence,
+        0,
+      );
     });
   });
 

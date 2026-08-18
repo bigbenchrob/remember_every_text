@@ -22,6 +22,18 @@ class HistoricalArchivesWorkflowActions
     ref.read(historicalArchivesWorkflowProvider.notifier).clearSelection();
   }
 
+  void dismissDuplicateFolderNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .dismissDuplicateFolderNotice(
+          noticeOccurrence: noticeOccurrence,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        );
+  }
+
   Future<void> showKnownSource({required String sourceKey}) async {
     await ref
         .read(historicalArchivesWorkflowProvider.notifier)

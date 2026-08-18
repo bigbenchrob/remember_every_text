@@ -22,6 +22,73 @@ void main() {
       expect(find.textContaining('Choose an existing archive'), findsNothing);
     });
 
+    testWidgets(
+      'duplicate folder is modal-only and points after dismissal from the hub',
+      (tester) async {
+        const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+        final workflow = _DuplicateNoticeHistoricalArchivesWorkflow();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+              historicalArchivesWorkflowPanelModelProvider.overrideWith(
+                (ref) => _narratorPanelModel(isHub: true, presentation: null),
+              ),
+              developerModeProvider.overrideWith(
+                () => _FakeDeveloperMode(DeveloperModeValue.user),
+              ),
+            ],
+            child: const CupertinoApp(home: HistoricalArchivesPanel()),
+          ),
+        );
+        await tester.pump();
+
+        workflow.emitDuplicateNotice(sourceKey: sourceKey);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+        expect(
+          find.text('This folder has already been added to MessageLens.'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('You can find it under Folders Already Added.'),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('historical-archives-empty-hub')),
+          findsOneWidget,
+        );
+        expect(workflow.state.knownSourceReference, isNull);
+        expect(workflow.state.selectedKnownSourceKey, isNull);
+        expect(find.text('Choose Another Folder'), findsNothing);
+        expect(find.text('Import Archive'), findsNothing);
+
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CupertinoAlertDialog), findsNothing);
+        expect(workflow.dismissCallCount, 1);
+        expect(
+          workflow.state.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(workflow.state.duplicateFolderNotice, isNull);
+        expect(workflow.state.knownSourceReference?.sourceKey, sourceKey);
+        expect(workflow.state.selectedKnownSourceKey, isNull);
+
+        workflow.emitDuplicateNotice(sourceKey: sourceKey);
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+        expect(workflow.dismissCallCount, 2);
+        expect(workflow.state.knownSourceReference?.pulseOccurrence, 2);
+      },
+    );
+
     testWidgets('no-source narrator shows only the truthful invitation', (
       tester,
     ) async {
@@ -208,52 +275,6 @@ void main() {
       expect(find.text('Import Archive'), findsNothing);
       expect(find.text('Choose Another Folder'), findsOneWidget);
     });
-
-    testWidgets(
-      'already-imported state states the truth and offers no import action',
-      (tester) async {
-        await _pumpPanel(
-          tester,
-          model: _narratorPanelModel(
-            presentation: const HistoricalArchivesNarratorPresentationViewModel(
-              kind: HistoricalArchivesNarratorPresentationKind.alreadyImported,
-              narratorText: 'This archive is already part of MessageLens.',
-              instrumentationRows: [
-                HistoricalArchivesInstrumentationRowViewModel(
-                  label: 'Messages',
-                  value: '8,882',
-                  status: HistoricalArchivesInstrumentationStatus.resolved,
-                ),
-                HistoricalArchivesInstrumentationRowViewModel(
-                  label: 'Dates',
-                  value: 'Jul 2012 – Jun 2017',
-                  status: HistoricalArchivesInstrumentationStatus.resolved,
-                ),
-                HistoricalArchivesInstrumentationRowViewModel(
-                  label: 'Status',
-                  value: 'Already imported',
-                  status: HistoricalArchivesInstrumentationStatus.resolved,
-                ),
-              ],
-              detailsLines: ['Source identity: archive-3'],
-              retryInspectionEnabled: false,
-            ),
-          ),
-        );
-
-        expect(
-          find.text('This archive is already part of MessageLens.'),
-          findsOneWidget,
-        );
-        expect(find.text('8,882'), findsOneWidget);
-        expect(find.text('Jul 2012 – Jun 2017'), findsOneWidget);
-        expect(find.text('Already imported'), findsOneWidget);
-        expect(find.text('New to MessageLens'), findsNothing);
-        expect(find.text('Already represented'), findsNothing);
-        expect(find.text('Import Archive'), findsNothing);
-        expect(find.text('Choose Another Folder'), findsOneWidget);
-      },
-    );
 
     testWidgets(
       'known-source state requires a fresh folder choice before import',
@@ -645,6 +666,42 @@ HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
     isHub: isHub,
     narratorPresentation: presentation,
   );
+}
+
+final class _DuplicateNoticeHistoricalArchivesWorkflow
+    extends HistoricalArchivesWorkflow {
+  var dismissCallCount = 0;
+  var _noticeOccurrence = 0;
+
+  @override
+  HistoricalArchivesWorkflowState build() =>
+      buildInitialHistoricalArchivesWorkflowState();
+
+  void emitDuplicateNotice({required String sourceKey}) {
+    _noticeOccurrence += 1;
+    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+      duplicateFolderNotice: HistoricalArchivesDuplicateFolderNotice(
+        sourceKey: sourceKey,
+        noticeOccurrence: _noticeOccurrence,
+        presentationSessionOccurrence: 0,
+      ),
+    );
+  }
+
+  @override
+  void dismissDuplicateFolderNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    dismissCallCount += 1;
+    final sourceKey = state.duplicateFolderNotice!.sourceKey;
+    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+      knownSourceReference: HistoricalArchivesKnownSourceReference(
+        sourceKey: sourceKey,
+        pulseOccurrence: noticeOccurrence,
+      ),
+    );
+  }
 }
 
 final class _FakeDeveloperMode extends DeveloperMode {

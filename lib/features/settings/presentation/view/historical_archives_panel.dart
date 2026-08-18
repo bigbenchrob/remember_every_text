@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -8,11 +10,46 @@ import '../../../../essentials/debug/feature_level_providers.dart'
 import '../../application/historical_archives_workflow_actions_provider.dart';
 import '../../application/historical_archives_workflow_panel_model_provider.dart';
 
-class HistoricalArchivesPanel extends ConsumerWidget {
+class HistoricalArchivesPanel extends ConsumerStatefulWidget {
   const HistoricalArchivesPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HistoricalArchivesPanel> createState() =>
+      _HistoricalArchivesPanelState();
+}
+
+class _HistoricalArchivesPanelState
+    extends ConsumerState<HistoricalArchivesPanel> {
+  int? _presentedDuplicateNoticeOccurrence;
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<HistoricalArchivesDuplicateFolderNotice?>(
+      historicalArchivesWorkflowProvider.select(
+        (state) => state.duplicateFolderNotice,
+      ),
+      (previous, next) {
+        if (next == null ||
+            next.noticeOccurrence == _presentedDuplicateNoticeOccurrence) {
+          return;
+        }
+        _presentedDuplicateNoticeOccurrence = next.noticeOccurrence;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          final currentNotice = ref
+              .read(historicalArchivesWorkflowProvider)
+              .duplicateFolderNotice;
+          if (currentNotice?.noticeOccurrence != next.noticeOccurrence ||
+              currentNotice?.presentationSessionOccurrence !=
+                  next.presentationSessionOccurrence) {
+            return;
+          }
+          unawaited(_showDuplicateFolderDialog(next));
+        });
+      },
+    );
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
@@ -329,6 +366,41 @@ class HistoricalArchivesPanel extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _showDuplicateFolderDialog(
+    HistoricalArchivesDuplicateFolderNotice notice,
+  ) async {
+    await showCupertinoDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CupertinoAlertDialog(
+          title: const Text(
+            'This folder has already been added to MessageLens.',
+          ),
+          content: const Text('You can find it under Folders Already Added.'),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+    ref
+        .read(historicalArchivesWorkflowActionsProvider.notifier)
+        .dismissDuplicateFolderNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+  }
 }
 
 class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
@@ -420,8 +492,7 @@ bool _hasNarratorDecision(HistoricalArchivesNarratorPresentationKind kind) {
     HistoricalArchivesNarratorPresentationKind.inspectingSource => false,
     HistoricalArchivesNarratorPresentationKind.inspectionFailed ||
     HistoricalArchivesNarratorPresentationKind.readyForImport ||
-    HistoricalArchivesNarratorPresentationKind.knownSource ||
-    HistoricalArchivesNarratorPresentationKind.alreadyImported => true,
+    HistoricalArchivesNarratorPresentationKind.knownSource => true,
   };
 }
 
@@ -565,12 +636,6 @@ class _NarratorDecision extends ConsumerWidget {
           ),
         ],
       ),
-      HistoricalArchivesNarratorPresentationKind.alreadyImported =>
-        _HistoricalArchiveActionButton(
-          label: 'Choose Another Folder',
-          enabled: true,
-          onPressed: actions.chooseMessagesFolder,
-        ),
       HistoricalArchivesNarratorPresentationKind.knownSource =>
         _HistoricalArchiveActionButton(
           label: 'Choose Archive Folder',

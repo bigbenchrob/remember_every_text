@@ -490,10 +490,11 @@ void main() {
       },
     );
 
-    test(
-      'recognized imported source enters already-imported and emits one reference occurrence',
-      () async {
+    testWidgets(
+      'duplicate add restores hub and emits a bounded reference only after dismissal',
+      (tester) async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        final archiveSources = _RecordingHistoricalArchiveSources();
         final container = ProviderContainer(
           overrides: [
             historicalArchiveFolderChooserProvider.overrideWith(
@@ -503,7 +504,7 @@ void main() {
               (ref) async => const _ImmediateArchiveSourceInspector(),
             ),
             historicalArchiveSourcesProvider.overrideWith(
-              (ref) async => const _FakeHistoricalArchiveSources(),
+              (ref) async => archiveSources,
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
               (ref) async => const _FakeImportedSourceLookup(
@@ -527,15 +528,18 @@ void main() {
         final recognized = container.read(historicalArchivesWorkflowProvider);
         expect(
           recognized.presentationStage,
-          HistoricalArchivesPresentationStage.alreadyImported,
+          HistoricalArchivesPresentationStage.noSource,
         );
-        expect(recognized.knownSourceReference?.sourceKey, sourceKey);
-        expect(recognized.knownSourceReference?.pulseOccurrence, 1);
         expect(
           recognized.presentationContext,
-          HistoricalArchivesPresentationContext.addArchive,
+          HistoricalArchivesPresentationContext.hub,
         );
+        expect(recognized.duplicateFolderNotice?.sourceKey, sourceKey);
+        expect(recognized.duplicateFolderNotice?.noticeOccurrence, 1);
+        expect(recognized.knownSourceReference, isNull);
         expect(recognized.selectedKnownSourceKey, isNull);
+        expect(recognized.selectedFolderPath, isNull);
+        expect(archiveSources.upsertCallCount, 0);
 
         final model = buildHistoricalArchivesWorkflowPanelModel(
           executionGateState: const ArchiveMutationCoordinatorState(),
@@ -543,49 +547,112 @@ void main() {
           workflowState: recognized,
           currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
-        expect(
-          model.narratorPresentation?.kind,
-          HistoricalArchivesNarratorPresentationKind.alreadyImported,
-        );
-        expect(
-          model.narratorPresentation?.narratorText,
-          'This archive is already part of MessageLens.',
-        );
-        expect(
-          model.narratorPresentation?.instrumentationRows.map(
-            (row) => (row.label, row.value),
-          ),
-          containsAll(<(String, String)>[
-            ('Messages', '42'),
-            ('Dates', 'Jul 2012 – Jun 2017'),
-            ('Status', 'Already imported'),
-          ]),
-        );
+        expect(model.isHub, isTrue);
+        expect(model.narratorPresentation, isNull);
         expect(model.importButtonEnabled, isFalse);
+
+        final firstNotice = recognized.duplicateFolderNotice!;
+        workflow.dismissDuplicateFolderNotice(
+          noticeOccurrence: firstNotice.noticeOccurrence,
+          presentationSessionOccurrence:
+              firstNotice.presentationSessionOccurrence,
+        );
+        final firstReference = container.read(
+          historicalArchivesWorkflowProvider,
+        );
+        expect(firstReference.duplicateFolderNotice, isNull);
+        expect(firstReference.knownSourceReference?.sourceKey, sourceKey);
+        expect(firstReference.knownSourceReference?.pulseOccurrence, 1);
+        expect(
+          firstReference.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        await tester.pump(const Duration(milliseconds: 2000));
 
         await workflow.chooseMessagesFolder();
         final repeated = container.read(historicalArchivesWorkflowProvider);
-        expect(repeated.knownSourceReference?.pulseOccurrence, 2);
-        expect(repeated.knownSourceReference?.isRepeatedRecognition, isTrue);
+        expect(repeated.duplicateFolderNotice?.noticeOccurrence, 2);
+        expect(repeated.knownSourceReference, isNull);
+
+        final repeatedNotice = repeated.duplicateFolderNotice!;
+        workflow.dismissDuplicateFolderNotice(
+          noticeOccurrence: repeatedNotice.noticeOccurrence,
+          presentationSessionOccurrence:
+              repeatedNotice.presentationSessionOccurrence,
+        );
         expect(
-          buildHistoricalArchivesWorkflowPanelModel(
-            executionGateState: const ArchiveMutationCoordinatorState(),
-            isMaintenanceLocked: false,
-            workflowState: repeated,
-            currentMessagesDatabasePath: currentMessagesDatabasePath,
-          ).narratorPresentation?.narratorText,
-          'That’s the same archive — it’s already part of MessageLens.',
+          container
+              .read(historicalArchivesWorkflowProvider)
+              .knownSourceReference
+              ?.pulseOccurrence,
+          2,
         );
 
-        await workflow.loadFolder(folderPath: '/tmp/another-archive');
-        final differentSource = container.read(
-          historicalArchivesWorkflowProvider,
-        );
+        await tester.pump(const Duration(milliseconds: 1000));
         expect(
-          differentSource.presentationStage,
-          HistoricalArchivesPresentationStage.readyForImport,
+          container
+              .read(historicalArchivesWorkflowProvider)
+              .knownSourceReference
+              ?.pulseOccurrence,
+          2,
         );
-        expect(differentSource.knownSourceReference, isNull);
+        await tester.pump(const Duration(milliseconds: 1960));
+        expect(
+          container
+              .read(historicalArchivesWorkflowProvider)
+              .knownSourceReference,
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'late duplicate dismissal cannot create a reference after navigation reset',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        final container = ProviderContainer(
+          overrides: [
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => const _FakeHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(
+                matchingFolderPath: '/tmp/archive',
+                match: HistoricalArchiveImportedSourceMatch(
+                  sourceKey: sourceKey,
+                  sourceId: 3,
+                  importedMessageCount: 42,
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.loadFolder(folderPath: '/tmp/archive');
+        final notice = container
+            .read(historicalArchivesWorkflowProvider)
+            .duplicateFolderNotice!;
+
+        workflow.resetPresentationContext();
+        workflow.dismissDuplicateFolderNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+
+        final state = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          state.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(state.duplicateFolderNotice, isNull);
+        expect(state.knownSourceReference, isNull);
       },
     );
 
@@ -701,7 +768,7 @@ void main() {
         final state = container.read(historicalArchivesWorkflowProvider);
         expect(
           state.presentationStage,
-          HistoricalArchivesPresentationStage.alreadyImported,
+          HistoricalArchivesPresentationStage.existingSource,
         );
         expect(
           state.presentationContext,
@@ -1200,4 +1267,20 @@ final class _FakeHistoricalArchiveSources implements HistoricalArchiveSources {
   Future<void> upsertSourceMetadata(
     HistoricalArchiveSourceMetadataUpdate update,
   ) async {}
+}
+
+final class _RecordingHistoricalArchiveSources
+    implements HistoricalArchiveSources {
+  var upsertCallCount = 0;
+
+  @override
+  Future<List<HistoricalArchiveSourceMetadata>> readKnownSources() async =>
+      const [];
+
+  @override
+  Future<void> upsertSourceMetadata(
+    HistoricalArchiveSourceMetadataUpdate update,
+  ) async {
+    upsertCallCount += 1;
+  }
 }

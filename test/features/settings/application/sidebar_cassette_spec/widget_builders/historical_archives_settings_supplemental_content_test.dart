@@ -275,7 +275,7 @@ void main() {
         final colors = container.read(themeColorsProvider.notifier);
         final archiveLabel = tester.widget<Text>(find.text('Archive-2017'));
         expect(archiveLabel.style?.color, colors.content.textPrimary);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 700));
         expect(borderWidth(), 1.25);
         expect(
           decoration().color,
@@ -290,9 +290,16 @@ void main() {
           colors.messagePanels.contextAnchorGlow.withValues(alpha: 0.18),
         );
 
+        await tester.pump(const Duration(milliseconds: 1300));
+        expect(borderWidth(), allOf(greaterThan(0.8), lessThan(1.25)));
+        await tester.pumpAndSettle();
+        expect(borderWidth(), 0.8);
+        expect(decoration().color, colors.surfaces.control);
+        expect(decoration().boxShadow, isNull);
+
         await pumpSource(isReferenced: true, pulseOccurrence: 1);
         await tester.pump(const Duration(milliseconds: 200));
-        expect(borderWidth(), 1.25);
+        expect(borderWidth(), 0.8);
 
         await pumpSource(isReferenced: true, pulseOccurrence: 2);
         await tester.pump(const Duration(milliseconds: 200));
