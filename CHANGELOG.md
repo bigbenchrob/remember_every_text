@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.51] — 2026-08-19
+
+### Changed
+
+- Historical Archives now presents a calmer sidebar hierarchy with compact
+  **Messages Folders** and **MessageLens Folders** source labels, clear section
+  spacing, and scan-friendly Messages-folder guidance before the single folder
+  chooser action. The future MessageLens Folders arm remains disabled.
+
 ## [0.2.50] — 2026-08-19
 
 ### Changed

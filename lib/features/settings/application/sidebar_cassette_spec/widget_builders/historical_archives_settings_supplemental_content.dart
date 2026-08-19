@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
+import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
 import '../../../../../config/theme/widgets/segmented/app_segmented_mode_control.dart';
 import '../../historical_archives_workflow_actions_provider.dart';
@@ -47,23 +48,18 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               _HistoricalArchiveSourceType.messagesFolders =>
                 'Messages Folders',
               _HistoricalArchiveSourceType.messageLensDataFolders =>
-                'MessageLens Data Folders',
+                'MessageLens Folders',
             };
           },
-          labelMaxLines: 2,
-          segmentPadding: const EdgeInsets.symmetric(
-            horizontal: 4,
-            vertical: 6,
-          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.sectionGap),
         Text(
           'Folders Already Added',
           style: typography.controlValue.copyWith(
             color: colors.content.textPrimary,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.sm),
         if (payload.knownSources.isEmpty)
           DecoratedBox(
             decoration: BoxDecoration(
@@ -82,25 +78,26 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             ),
           )
         else
-          for (final source in payload.knownSources) ...[
+          for (var index = 0; index < payload.knownSources.length; index++) ...[
             _HistoricalArchiveSourceTile(
-              key: ValueKey<String>(source.sourceKey),
-              source: source,
+              key: ValueKey<String>(payload.knownSources[index].sourceKey),
+              source: payload.knownSources[index],
             ),
-            const SizedBox(height: 10),
+            if (index < payload.knownSources.length - 1)
+              const SizedBox(height: AppSpacing.cassetteGap),
           ],
         if (showAddMessagesFolder) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.sectionGap),
           Text(
             'Add from a Messages Folder',
             style: typography.controlValue.copyWith(
               color: colors.content.textPrimary,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             "Choose a copy of your Mac's Messages folder - the folder "
-            'containing chat.db.',
+            'containing chat.db. Choose the folder itself, not the file.',
             key: const ValueKey<String>(
               'historical-archives-messages-folder-guidance',
             ),
@@ -108,37 +105,32 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               color: colors.content.textSecondary,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Usually: Home → Library → Messages',
-            style: typography.caption1.copyWith(
-              color: colors.content.textSecondary,
-            ),
+          const SizedBox(height: AppSpacing.md),
+          _HistoricalArchiveGuidanceTopic(
+            label: 'Usually found at',
+            supportingText: 'Home → Library → Messages',
+            typography: typography,
+            colors: colors,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Older copies may be on another drive, moved somewhere else, '
-            "or renamed. That's fine.",
-            style: typography.caption1.copyWith(
-              color: colors.content.textSecondary,
-            ),
+          const SizedBox(height: AppSpacing.md),
+          _HistoricalArchiveGuidanceTopic(
+            label: 'Using an older copy?',
+            supportingText:
+                'It may be on another drive, moved somewhere else, or '
+                "renamed. That's fine.",
+            typography: typography,
+            colors: colors,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Choose the folder itself, not the chat.db file.',
-            style: typography.caption1.copyWith(
-              color: colors.content.textSecondary,
-            ),
+          const SizedBox(height: AppSpacing.md),
+          _HistoricalArchiveGuidanceTopic(
+            label: 'Attachments',
+            supportingText:
+                'An Attachments folder may also be present. It is not '
+                'required for adding message history.',
+            typography: typography,
+            colors: colors,
           ),
-          const SizedBox(height: 8),
-          Text(
-            'An Attachments folder may contain images, videos, and other '
-            'message attachments. It is optional for adding message history.',
-            style: typography.caption1.copyWith(
-              color: colors.content.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
           DecoratedBox(
             decoration: BoxDecoration(
               color: colors.surfaces.control,
@@ -176,6 +168,44 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
 }
 
 enum _HistoricalArchiveSourceType { messagesFolders, messageLensDataFolders }
+
+class _HistoricalArchiveGuidanceTopic extends StatelessWidget {
+  const _HistoricalArchiveGuidanceTopic({
+    required this.label,
+    required this.supportingText,
+    required this.typography,
+    required this.colors,
+  });
+
+  final String label;
+  final String supportingText;
+  final ThemeTypography typography;
+  final ThemeColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: typography.caption1.copyWith(
+            color: colors.content.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          supportingText,
+          style: typography.caption1.copyWith(
+            color: colors.content.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _HistoricalArchiveSourceTile extends ConsumerStatefulWidget {
   const _HistoricalArchiveSourceTile({required this.source, super.key});

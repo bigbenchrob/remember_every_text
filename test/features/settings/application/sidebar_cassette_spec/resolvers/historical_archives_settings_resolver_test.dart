@@ -18,7 +18,9 @@ void main() {
       expect(payload.title, isNull);
       expect(payload.bodyText, contains('older message history'));
       expect(payload.bodyText, isNot(contains('Messages folders')));
+      expect(payload.bodyText, isNot(contains('chat.db')));
       expect(payload.bodyText, contains('without replacing'));
+      expect(payload.bodyText, contains('Choose where'));
       expect(payload.knownSources, isEmpty);
       expect(payload.footnote, isNull);
     });

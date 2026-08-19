@@ -4966,3 +4966,18 @@ production preservation authority mechanically enforceable.
   source-neutral umbrella introduction.
 - Confirmed that no MessageLens Data Folder workflow, persistence, source
   specialist, archive mutation, or database model was introduced.
+
+## 2026-08-19 — Historical Archives sidebar hierarchy polish
+
+- Added Feature 26 response
+  `24-HISTORICAL-ARCHIVES-SIDEBAR-HIERARCHY-POLISH-IMPLEMENTATION.md`.
+- Shortened the disabled future source arm to **MessageLens Folders** without
+  adding an execution path or placeholder content.
+- Recorded the three-level spacing grammar used to separate source selection,
+  known folders, guidance topics, and their subordinate text.
+- Structured Messages-folder guidance into a concise source contract, normal
+  location, older-copy guidance, and optional Attachments guidance before the
+  sole chooser action.
+- Confirmed that the virgin Historical Archives hub still leaves the center
+  panel empty and that no workflow, source, persistence, or mutation semantics
+  changed.
