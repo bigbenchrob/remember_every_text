@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../config/theme/widgets/segmented/app_segmented_mode_control.dart';
 import '../../historical_archives_workflow_actions_provider.dart';
 import '../../historical_archives_workflow_panel_model_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
@@ -32,6 +33,29 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        AppSegmentedModeControl<_HistoricalArchiveSourceType>(
+          key: const ValueKey<String>(
+            'historical-archives-source-type-control',
+          ),
+          options: _HistoricalArchiveSourceType.values,
+          selectedOption: _HistoricalArchiveSourceType.messagesFolders,
+          isOptionEnabled: (sourceType) =>
+              sourceType == _HistoricalArchiveSourceType.messagesFolders,
+          onSelected: (_) {},
+          labelBuilder: (sourceType) {
+            return switch (sourceType) {
+              _HistoricalArchiveSourceType.messagesFolders =>
+                'Messages Folders',
+              _HistoricalArchiveSourceType.messageLensDataFolders =>
+                'MessageLens Data Folders',
+            };
+          },
+          labelMaxLines: 2,
+          segmentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 6,
+          ),
+        ),
         const SizedBox(height: 16),
         Text(
           'Folders Already Added',
@@ -67,39 +91,8 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
           ],
         if (showAddMessagesFolder) ...[
           const SizedBox(height: 14),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.surfaces.control,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-            ),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () async {
-                  await ref
-                      .read(historicalArchivesWorkflowActionsProvider.notifier)
-                      .chooseMessagesFolder();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  child: Text(
-                    'Add a Messages Folder',
-                    style: typography.controlValue.copyWith(
-                      color: colors.accents.primary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
           Text(
-            'What am I looking for?',
+            'Add from a Messages Folder',
             style: typography.controlValue.copyWith(
               color: colors.content.textPrimary,
             ),
@@ -145,11 +138,44 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               color: colors.content.textSecondary,
             ),
           ),
+          const SizedBox(height: 12),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.surfaces.control,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
+            ),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () async {
+                  await ref
+                      .read(historicalArchivesWorkflowActionsProvider.notifier)
+                      .chooseMessagesFolder();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  child: Text(
+                    'Choose Messages Folder...',
+                    style: typography.controlValue.copyWith(
+                      color: colors.accents.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ],
     );
   }
 }
+
+enum _HistoricalArchiveSourceType { messagesFolders, messageLensDataFolders }
 
 class _HistoricalArchiveSourceTile extends ConsumerStatefulWidget {
   const _HistoricalArchiveSourceTile({required this.source, super.key});

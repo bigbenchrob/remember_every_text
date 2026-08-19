@@ -10,6 +10,8 @@ class AppSegmentedModeControl<T extends Object> extends ConsumerWidget {
     required this.selectedOption,
     required this.onSelected,
     required this.labelBuilder,
+    this.isOptionEnabled,
+    this.labelMaxLines = 1,
     this.padding = const EdgeInsets.all(3),
     this.segmentPadding = const EdgeInsets.symmetric(
       horizontal: 8,
@@ -24,6 +26,8 @@ class AppSegmentedModeControl<T extends Object> extends ConsumerWidget {
   final T selectedOption;
   final ValueChanged<T> onSelected;
   final String Function(T option) labelBuilder;
+  final bool Function(T option)? isOptionEnabled;
+  final int labelMaxLines;
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry segmentPadding;
   final BorderRadius borderRadius;
@@ -50,9 +54,11 @@ class AppSegmentedModeControl<T extends Object> extends ConsumerWidget {
                   option: option,
                   label: labelBuilder(option),
                   isSelected: option == selectedOption,
+                  isEnabled: isOptionEnabled?.call(option) ?? true,
                   onSelected: onSelected,
                   borderRadius: segmentBorderRadius,
                   padding: segmentPadding,
+                  labelMaxLines: labelMaxLines,
                 ),
               ),
           ],
@@ -68,17 +74,21 @@ class _SegmentedModeControlSegment<T extends Object>
     required this.option,
     required this.label,
     required this.isSelected,
+    required this.isEnabled,
     required this.onSelected,
     required this.borderRadius,
     required this.padding,
+    required this.labelMaxLines,
   });
 
   final T option;
   final String label;
   final bool isSelected;
+  final bool isEnabled;
   final ValueChanged<T> onSelected;
   final BorderRadius borderRadius;
   final EdgeInsetsGeometry padding;
+  final int labelMaxLines;
 
   @override
   ConsumerState<_SegmentedModeControlSegment<T>> createState() =>
@@ -97,60 +107,80 @@ class _SegmentedModeControlSegmentState<T extends Object>
     final isSelected = widget.isSelected;
     final backgroundColor = isSelected
         ? colors.accents.primary
+        : !widget.isEnabled
+        ? colors.surfaces.surface.withValues(alpha: 0)
         : _isHovered
         ? colors.surfaces.hover
         : colors.surfaces.surface.withValues(alpha: 0);
     final borderColor = isSelected
         ? colors.accents.primary
+        : !widget.isEnabled
+        ? colors.lines.borderSubtle.withValues(alpha: 0)
         : _isHovered
         ? colors.lines.borderSubtle
         : colors.lines.borderSubtle.withValues(alpha: 0);
     final contentColor = isSelected
         ? colors.buttons.primaryForeground
+        : !widget.isEnabled
+        ? colors.content.textDisabled
         : colors.content.textSecondary;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) {
-        setState(() {
-          _isHovered = true;
-        });
-      },
-      onExit: (_) {
-        if (!_isHovered) {
-          return;
-        }
-        setState(() {
-          _isHovered = false;
-        });
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          widget.onSelected(widget.option);
+    return Semantics(
+      button: true,
+      enabled: widget.isEnabled,
+      selected: isSelected,
+      label: widget.label,
+      excludeSemantics: true,
+      child: MouseRegion(
+        cursor: widget.isEnabled
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        onEnter: widget.isEnabled
+            ? (_) {
+                setState(() {
+                  _isHovered = true;
+                });
+              }
+            : null,
+        onExit: (_) {
+          if (!_isHovered) {
+            return;
+          }
+          setState(() {
+            _isHovered = false;
+          });
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            border: Border.all(color: borderColor),
-            borderRadius: widget.borderRadius,
-          ),
-          child: Padding(
-            padding: widget.padding,
-            child: Center(
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 120),
-                curve: Curves.easeOutCubic,
-                style: typography.caption.copyWith(
-                  color: contentColor,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                ),
-                child: Text(
-                  widget.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.isEnabled
+              ? () {
+                  widget.onSelected(widget.option);
+                }
+              : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              border: Border.all(color: borderColor),
+              borderRadius: widget.borderRadius,
+            ),
+            child: Padding(
+              padding: widget.padding,
+              child: Center(
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOutCubic,
+                  style: typography.caption.copyWith(
+                    color: contentColor,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  ),
+                  child: Text(
+                    widget.label,
+                    maxLines: widget.labelMaxLines,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ),

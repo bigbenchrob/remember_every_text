@@ -4952,3 +4952,17 @@ production preservation authority mechanically enforceable.
   `chat.db` structural requirement, and optional `Attachments` content.
 - Preserved the silent virgin center panel and confirmed that guidance creates
   no workflow context, source identity, persistence, or archive mutation.
+
+## 2026-08-19 — Historical Archives source-type hierarchy
+
+- Added Feature 26 response
+  `23-HISTORICAL-ARCHIVES-SOURCE-TYPE-SEGMENTED-CONTROL-IMPLEMENTATION.md`.
+- Recorded Historical Archives as the umbrella Settings identity and Messages
+  Folders / MessageLens Data Folders as its two intended source arms.
+- Documented Messages Folders as the only enabled arm and the second segment
+  as presentation-only, visibly disabled, and mechanically unable to dispatch
+  workflow behavior.
+- Recorded removal of the redundant inner Historical Archives heading and the
+  source-neutral umbrella introduction.
+- Confirmed that no MessageLens Data Folder workflow, persistence, source
+  specialist, archive mutation, or database model was introduced.

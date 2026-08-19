@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.50] — 2026-08-19
+
+### Changed
+
+- Historical Archives now shows its permanent source-type hierarchy with
+  **Messages Folders** selected and **MessageLens Data Folders** visibly
+  disabled. Messages-folder membership, guidance, and folder selection remain
+  the only active workflow, while redundant inner feature labeling has been
+  removed.
+
 ## [0.2.49] — 2026-08-19
 
 ### Changed

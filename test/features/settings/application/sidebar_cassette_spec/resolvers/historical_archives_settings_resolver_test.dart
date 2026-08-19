@@ -15,16 +15,12 @@ void main() {
           .resolve(cassetteIndex: 1);
 
       expect(payload, isA<HistoricalArchivesSettingsCassettePayload>());
-      expect(payload.title, 'Historical Archives');
-      expect(
-        payload.bodyText,
-        contains('Older Messages folders may contain message records'),
-      );
-      expect(payload.bodyText, contains('browsing data'));
-      expect(payload.bodyText, isNot(contains('migrates them into')));
+      expect(payload.title, isNull);
+      expect(payload.bodyText, contains('older message history'));
+      expect(payload.bodyText, isNot(contains('Messages folders')));
+      expect(payload.bodyText, contains('without replacing'));
       expect(payload.knownSources, isEmpty);
-      expect(payload.footnote, contains('keeps current message data intact'));
-      expect(payload.footnote, isNot(contains('real import wiring')));
+      expect(payload.footnote, isNull);
     });
 
     test('passes known source summaries into the payload', () {
