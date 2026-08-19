@@ -331,14 +331,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 375));
         expect(borderWidth(), 1.0);
         final maximumBackground = Color.alphaBlend(
-          colors.messagePanels.contextAnchorBackground.withValues(alpha: 0.08),
+          colors.messagePanels.contextAnchorBackground.withValues(alpha: 0.18),
           colors.surfaces.control,
         );
         expect(decoration().color, maximumBackground);
         expect(
           decoration().border!.top.color,
           Color.alphaBlend(
-            colors.messagePanels.contextAnchorBorder.withValues(alpha: 0.42),
+            colors.messagePanels.contextAnchorBorder.withValues(alpha: 0.72),
             colors.lines.borderSubtle,
           ),
         );

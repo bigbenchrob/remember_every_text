@@ -285,12 +285,12 @@ BoxDecoration _historicalArchivesReferenceDecoration({
   final boundedStrength = strength.clamp(0.0, 1.0);
   return BoxDecoration(
     color: Color.alphaBlend(
-      colors.contextAnchorBackground.withValues(alpha: 0.08 * boundedStrength),
+      colors.contextAnchorBackground.withValues(alpha: 0.18 * boundedStrength),
       ordinaryBackground,
     ),
     border: Border.all(
       color: Color.alphaBlend(
-        colors.contextAnchorBorder.withValues(alpha: 0.42 * boundedStrength),
+        colors.contextAnchorBorder.withValues(alpha: 0.72 * boundedStrength),
         ordinaryBorder,
       ),
       width: 0.8 + (0.2 * boundedStrength),
