@@ -120,7 +120,7 @@ void main() {
       );
       expect(
         find.text(
-          'Choose a folder containing Messages data if you want to add an archive.',
+          'Choose a folder that contains Messages data. It must contain the file chat.db.',
         ),
         findsOneWidget,
       );
@@ -131,7 +131,7 @@ void main() {
       expect(find.text('Choose Another Folder'), findsNothing);
       expect(find.text('Import Archive'), findsNothing);
       expect(find.text('Details'), findsNothing);
-      expect(find.textContaining('chat.db'), findsNothing);
+      expect(find.textContaining('chat.db'), findsOneWidget);
       expect(workflow.state.knownSourceReference, isNull);
       expect(workflow.state.selectedKnownSourceKey, isNull);
 

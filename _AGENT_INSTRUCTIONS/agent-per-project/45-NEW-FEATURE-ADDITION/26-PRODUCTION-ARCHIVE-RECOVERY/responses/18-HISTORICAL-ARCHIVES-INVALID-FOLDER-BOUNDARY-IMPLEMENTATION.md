@@ -41,7 +41,7 @@ state with the virgin hub before the modal is presented. The modal says:
 ```text
 This folder doesn’t appear to contain a Messages archive.
 
-Choose a folder containing Messages data if you want to add an archive.
+Choose a folder that contains Messages data. It must contain the file chat.db.
 ```
 
 The center panel remains empty behind the modal and after dismissal. The

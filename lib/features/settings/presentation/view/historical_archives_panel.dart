@@ -441,7 +441,7 @@ class _HistoricalArchivesPanelState
             'This folder doesn’t appear to contain a Messages archive.',
           ),
           content: const Text(
-            'Choose a folder containing Messages data if you want to add an archive.',
+            'Choose a folder that contains Messages data. It must contain the file chat.db.',
           ),
           actions: [
             CupertinoDialogAction(
