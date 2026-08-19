@@ -802,6 +802,11 @@ class _InstrumentationStatusMark extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
 
     return switch (status) {
+      HistoricalArchivesInstrumentationStatus.waiting => Icon(
+        CupertinoIcons.circle,
+        size: 18,
+        color: colors.content.textTertiary,
+      ),
       HistoricalArchivesInstrumentationStatus.working =>
         const CupertinoActivityIndicator(radius: 8),
       HistoricalArchivesInstrumentationStatus.resolved => Icon(
@@ -966,6 +971,8 @@ Color _instrumentationValueColor(
   required ThemeColors colors,
 }) {
   return switch (status) {
+    HistoricalArchivesInstrumentationStatus.waiting =>
+      colors.content.textTertiary,
     HistoricalArchivesInstrumentationStatus.working => colors.status.warning,
     HistoricalArchivesInstrumentationStatus.resolved => colors.status.success,
     HistoricalArchivesInstrumentationStatus.failed => colors.status.error,

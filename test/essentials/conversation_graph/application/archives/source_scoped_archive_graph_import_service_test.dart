@@ -278,8 +278,10 @@ void main() {
       expect(await _countGraphRows(graphDatabase, 'messages'), 2);
       expect(await _countImportRows(importLedgerDatabase, 'messages'), 2);
 
+      final observations = <SourceScopedArchiveGraphRemovalObservation>[];
       final removalResult = await removalService.removeArchiveSource(
         folderPath: archiveFolder.path,
+        onObservation: observations.add,
       );
 
       expect(removalResult.sourceId, sourceId);
@@ -287,6 +289,29 @@ void main() {
       expect(removalResult.deletedSourceFactCount, 4);
       expect(removalResult.deletedTopologyEdgeCount, 3);
       expect(removalResult.graphReprojected, isTrue);
+      expect(
+        observations
+            .map((observation) => (observation.stage, observation.transition))
+            .toList(),
+        const [
+          (
+            SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
+            SourceScopedArchiveGraphRemovalStageTransition.started,
+          ),
+          (
+            SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
+            SourceScopedArchiveGraphRemovalStageTransition.completed,
+          ),
+          (
+            SourceScopedArchiveGraphRemovalStage.rebuildingConversationGraph,
+            SourceScopedArchiveGraphRemovalStageTransition.started,
+          ),
+          (
+            SourceScopedArchiveGraphRemovalStage.rebuildingConversationGraph,
+            SourceScopedArchiveGraphRemovalStageTransition.completed,
+          ),
+        ],
+      );
 
       for (final tableName in <String>[
         'chats',

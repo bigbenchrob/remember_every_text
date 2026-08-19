@@ -11,6 +11,9 @@ import '../../../essentials/archive_environment/feature_level_providers.dart'
     show ArchiveMutationCoordinatorState, archiveMutationCoordinatorProvider;
 import '../../../essentials/conversation_graph/feature_level_providers.dart'
     show
+        SourceScopedArchiveGraphRemovalObservation,
+        SourceScopedArchiveGraphRemovalStage,
+        SourceScopedArchiveGraphRemovalStageTransition,
         sourceScopedArchiveGraphImportServiceProvider,
         sourceScopedArchiveGraphRemovalServiceProvider;
 import '../../../essentials/db/feature_level_providers.dart'
@@ -192,7 +195,79 @@ enum HistoricalArchivesNarratorPresentationKind {
   removalFailed,
 }
 
-enum HistoricalArchivesInstrumentationStatus { working, resolved, failed }
+enum HistoricalArchivesInstrumentationStatus {
+  waiting,
+  working,
+  resolved,
+  failed,
+}
+
+enum HistoricalArchiveRemovalStage {
+  removingImportedMessages,
+  updatingMessageLensHistory,
+  verifyingRemoval,
+}
+
+enum HistoricalArchiveRemovalStageStatus {
+  waiting,
+  running,
+  succeeded,
+  skipped,
+  failed,
+}
+
+final class HistoricalArchiveRemovalProgress {
+  const HistoricalArchiveRemovalProgress({
+    this.removingImportedMessages = HistoricalArchiveRemovalStageStatus.waiting,
+    this.updatingMessageLensHistory =
+        HistoricalArchiveRemovalStageStatus.waiting,
+    this.verifyingRemoval = HistoricalArchiveRemovalStageStatus.waiting,
+  });
+
+  final HistoricalArchiveRemovalStageStatus removingImportedMessages;
+  final HistoricalArchiveRemovalStageStatus updatingMessageLensHistory;
+  final HistoricalArchiveRemovalStageStatus verifyingRemoval;
+
+  HistoricalArchiveRemovalStageStatus statusFor(
+    HistoricalArchiveRemovalStage stage,
+  ) {
+    return switch (stage) {
+      HistoricalArchiveRemovalStage.removingImportedMessages =>
+        removingImportedMessages,
+      HistoricalArchiveRemovalStage.updatingMessageLensHistory =>
+        updatingMessageLensHistory,
+      HistoricalArchiveRemovalStage.verifyingRemoval => verifyingRemoval,
+    };
+  }
+
+  HistoricalArchiveRemovalProgress withStage(
+    HistoricalArchiveRemovalStage stage,
+    HistoricalArchiveRemovalStageStatus status,
+  ) {
+    return HistoricalArchiveRemovalProgress(
+      removingImportedMessages:
+          stage == HistoricalArchiveRemovalStage.removingImportedMessages
+          ? status
+          : removingImportedMessages,
+      updatingMessageLensHistory:
+          stage == HistoricalArchiveRemovalStage.updatingMessageLensHistory
+          ? status
+          : updatingMessageLensHistory,
+      verifyingRemoval: stage == HistoricalArchiveRemovalStage.verifyingRemoval
+          ? status
+          : verifyingRemoval,
+    );
+  }
+
+  HistoricalArchiveRemovalStage? get runningStage {
+    for (final stage in HistoricalArchiveRemovalStage.values) {
+      if (statusFor(stage) == HistoricalArchiveRemovalStageStatus.running) {
+        return stage;
+      }
+    }
+    return null;
+  }
+}
 
 final class HistoricalArchivesInstrumentationRowViewModel {
   const HistoricalArchivesInstrumentationRowViewModel({
@@ -302,6 +377,7 @@ final class HistoricalArchivesWorkflowState {
     this.invalidFolderNotice,
     this.selectedKnownSourceKey,
     this.removalFailureDetail,
+    this.removalProgress,
   });
 
   final HistoricalArchivesPreflightViewModel preflight;
@@ -326,6 +402,7 @@ final class HistoricalArchivesWorkflowState {
   /// Exact-key selection established only by a cartouche action this session.
   final String? selectedKnownSourceKey;
   final String? removalFailureDetail;
+  final HistoricalArchiveRemovalProgress? removalProgress;
 
   HistoricalArchivesWorkflowState copyWith({
     HistoricalArchivesPreflightViewModel? preflight,
@@ -356,6 +433,8 @@ final class HistoricalArchivesWorkflowState {
     bool clearSelectedKnownSourceKey = false,
     String? removalFailureDetail,
     bool clearRemovalFailureDetail = false,
+    HistoricalArchiveRemovalProgress? removalProgress,
+    bool clearRemovalProgress = false,
   }) {
     return HistoricalArchivesWorkflowState(
       preflight: preflight ?? this.preflight,
@@ -398,6 +477,9 @@ final class HistoricalArchivesWorkflowState {
       removalFailureDetail: clearRemovalFailureDetail
           ? null
           : removalFailureDetail ?? this.removalFailureDetail,
+      removalProgress: clearRemovalProgress
+          ? null
+          : removalProgress ?? this.removalProgress,
     );
   }
 }
@@ -933,6 +1015,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     final selectedSourceKey = state.selectedKnownSourceKey!;
     final selectedSourceState = state.copyWith(clearRemovalFailureDetail: true);
     final removalPresentationSessionOccurrence = _presentationSessionOccurrence;
+    const initialProgress = HistoricalArchiveRemovalProgress();
 
     final selectedChatDbPath = path.join(selectedFolderPath, 'chat.db');
     if (_isCurrentMacChatDbPath(
@@ -977,7 +1060,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                   ),
                   ...selectedSourceState.activityLog,
                 ],
-                phases: _runningArchiveRemovalPhases(),
+                phases: _archiveRemovalPhases(initialProgress),
+                removalProgress: initialProgress,
               );
 
               final removalService = await ref.read(
@@ -985,6 +1069,31 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               );
               await removalService.removeArchiveSource(
                 folderPath: selectedFolderPath,
+                onObservation: (observation) {
+                  try {
+                    _applyRemovalObservation(
+                      observation,
+                      sourceKey: selectedSourceKey,
+                      presentationSessionOccurrence:
+                          removalPresentationSessionOccurrence,
+                    );
+                  } catch (error, stackTrace) {
+                    _logHistoricalArchivesWarning(
+                      ref,
+                      message:
+                          'Historical archive removal progress could not be presented',
+                      error: error,
+                      stackTrace: stackTrace,
+                    );
+                  }
+                },
+              );
+              _setRemovalStageStatus(
+                stage: HistoricalArchiveRemovalStage.verifyingRemoval,
+                status: HistoricalArchiveRemovalStageStatus.running,
+                sourceKey: selectedSourceKey,
+                presentationSessionOccurrence:
+                    removalPresentationSessionOccurrence,
               );
               ref.read(messageDataVersionProvider.notifier).bump();
 
@@ -1001,13 +1110,27 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                 return;
               }
               if (remainingSource != null) {
-                state = selectedSourceState.copyWith(
+                _setRemovalStageStatus(
+                  stage: HistoricalArchiveRemovalStage.verifyingRemoval,
+                  status: HistoricalArchiveRemovalStageStatus.failed,
+                  sourceKey: selectedSourceKey,
+                  presentationSessionOccurrence:
+                      removalPresentationSessionOccurrence,
+                );
+                state = state.copyWith(
                   removalFailureDetail:
                       'The removal operation finished, but ${remainingSource.importedMessageCount} messages from this folder are still part of MessageLens.',
                 );
                 return;
               }
 
+              _setRemovalStageStatus(
+                stage: HistoricalArchiveRemovalStage.verifyingRemoval,
+                status: HistoricalArchiveRemovalStageStatus.succeeded,
+                sourceKey: selectedSourceKey,
+                presentationSessionOccurrence:
+                    removalPresentationSessionOccurrence,
+              );
               resetPresentationContext();
             },
           );
@@ -1033,6 +1156,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       final detail = 'Archive data removal failed: $error';
       ref.read(messageDataVersionProvider.notifier).bump();
       HistoricalArchiveImportedSourceMatch? remainingSource;
+      var membershipWasVerified = false;
       try {
         final importedSourceLookup = await ref.read(
           historicalArchiveImportedSourceLookupProvider.future,
@@ -1040,6 +1164,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         remainingSource = await importedSourceLookup.findImportedSourceByKey(
           sourceKey: selectedSourceKey,
         );
+        membershipWasVerified = true;
       } catch (lookupError, stackTrace) {
         _logHistoricalArchivesWarning(
           ref,
@@ -1055,39 +1180,84 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       )) {
         return;
       }
-      if (remainingSource != null) {
-        state = selectedSourceState.copyWith(
-          removalFailureDetail: detail,
-          activityLog: [
-            HistoricalArchivesLogEntryViewModel(
-              label: 'Archive removal failed',
-              message: detail,
-            ),
-            ...selectedSourceState.activityLog,
-          ],
-        );
-        return;
-      }
-      state = selectedSourceState.copyWith(
-        presentationContext:
-            HistoricalArchivesPresentationContext.removingSource,
-        presentationStage: HistoricalArchivesPresentationStage.laterWorkflow,
-        removalFailureDetail: detail,
+      final failedProgress = _failedCurrentRemovalProgress(
+        state.removalProgress ?? initialProgress,
+      );
+      final durableTruthDetail = !membershipWasVerified
+          ? 'MessageLens could not verify whether messages from this folder still remain.'
+          : remainingSource == null
+          ? 'Messages from this folder are no longer present, but MessageLens did not finish updating its browsing data.'
+          : '${remainingSource.importedMessageCount} messages from this folder still remain in MessageLens.';
+      final failureDetail = '$detail $durableTruthDetail';
+      state = state.copyWith(
+        removalFailureDetail: failureDetail,
         preflight: HistoricalArchivesPreflightViewModel(
           status: HistoricalArchivesPreflightStatus.failed,
           statusLabel: 'Folder removal failed',
-          detail: detail,
+          detail: failureDetail,
         ),
         activityLog: [
           HistoricalArchivesLogEntryViewModel(
             label: 'Archive removal failed',
-            message: detail,
+            message: failureDetail,
           ),
           ...state.activityLog,
         ],
-        phases: _failedArchiveRemovalPhases(detail: detail),
+        phases: _archiveRemovalPhases(
+          failedProgress,
+          failureDetail: failureDetail,
+        ),
+        removalProgress: failedProgress,
       );
     }
+  }
+
+  void _applyRemovalObservation(
+    SourceScopedArchiveGraphRemovalObservation observation, {
+    required String sourceKey,
+    required int presentationSessionOccurrence,
+  }) {
+    final stage = switch (observation.stage) {
+      SourceScopedArchiveGraphRemovalStage.removingImportedFacts =>
+        HistoricalArchiveRemovalStage.removingImportedMessages,
+      SourceScopedArchiveGraphRemovalStage.rebuildingConversationGraph =>
+        HistoricalArchiveRemovalStage.updatingMessageLensHistory,
+    };
+    final status = switch (observation.transition) {
+      SourceScopedArchiveGraphRemovalStageTransition.started =>
+        HistoricalArchiveRemovalStageStatus.running,
+      SourceScopedArchiveGraphRemovalStageTransition.completed =>
+        HistoricalArchiveRemovalStageStatus.succeeded,
+      SourceScopedArchiveGraphRemovalStageTransition.skipped =>
+        HistoricalArchiveRemovalStageStatus.skipped,
+    };
+    _setRemovalStageStatus(
+      stage: stage,
+      status: status,
+      sourceKey: sourceKey,
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    );
+  }
+
+  void _setRemovalStageStatus({
+    required HistoricalArchiveRemovalStage stage,
+    required HistoricalArchiveRemovalStageStatus status,
+    required String sourceKey,
+    required int presentationSessionOccurrence,
+  }) {
+    if (!_ownsCurrentRemovalPresentation(
+      sourceKey: sourceKey,
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    )) {
+      return;
+    }
+    final progress =
+        (state.removalProgress ?? const HistoricalArchiveRemovalProgress())
+            .withStage(stage, status);
+    state = state.copyWith(
+      removalProgress: progress,
+      phases: _archiveRemovalPhases(progress),
+    );
   }
 
   bool _ownsCurrentRemovalPresentation({
@@ -1587,6 +1757,9 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
   if (workflowState.presentationContext ==
       HistoricalArchivesPresentationContext.removingSource) {
     final failed = workflowState.removalFailureDetail != null;
+    final progress =
+        workflowState.removalProgress ??
+        const HistoricalArchiveRemovalProgress();
     return HistoricalArchivesNarratorPresentationViewModel(
       kind: failed
           ? HistoricalArchivesNarratorPresentationKind.removalFailed
@@ -1594,15 +1767,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
       narratorText: failed
           ? "MessageLens couldn't finish removing this folder."
           : 'Removing this folder from MessageLens.',
-      instrumentationRows: [
-        HistoricalArchivesInstrumentationRowViewModel(
-          label: 'Removing messages added from this folder',
-          value: failed ? "Couldn't finish" : 'Working',
-          status: failed
-              ? HistoricalArchivesInstrumentationStatus.failed
-              : HistoricalArchivesInstrumentationStatus.working,
-        ),
-      ],
+      instrumentationRows: _removalInstrumentationRows(progress),
       detailsLines: [
         'Your original Messages folder and its files were not changed.',
         if (workflowState.removalFailureDetail case final String failureDetail)
@@ -2675,26 +2840,107 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningPreflightPhases() {
   ];
 }
 
-List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveRemovalPhases() {
-  return const [
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Removing messages added from this folder',
-      status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'The source-scoped removal operation is still running.',
-    ),
+HistoricalArchiveRemovalProgress _failedCurrentRemovalProgress(
+  HistoricalArchiveRemovalProgress progress,
+) {
+  final failedStage =
+      progress.runningStage ??
+      HistoricalArchiveRemovalStage.values.firstWhere(
+        (stage) =>
+            progress.statusFor(stage) ==
+            HistoricalArchiveRemovalStageStatus.waiting,
+        orElse: () => HistoricalArchiveRemovalStage.verifyingRemoval,
+      );
+  return progress.withStage(
+    failedStage,
+    HistoricalArchiveRemovalStageStatus.failed,
+  );
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel> _removalInstrumentationRows(
+  HistoricalArchiveRemovalProgress progress,
+) {
+  return [
+    for (final stage in HistoricalArchiveRemovalStage.values)
+      HistoricalArchivesInstrumentationRowViewModel(
+        label: _removalStageLabel(stage),
+        value: _removalStageValue(progress.statusFor(stage)),
+        status: _removalInstrumentationStatus(progress.statusFor(stage)),
+      ),
   ];
 }
 
-List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveRemovalPhases({
-  required String detail,
+List<HistoricalArchivesWorkflowPhaseViewModel> _archiveRemovalPhases(
+  HistoricalArchiveRemovalProgress progress, {
+  String? failureDetail,
 }) {
   return [
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Removing messages added from this folder',
-      status: HistoricalArchivesWorkflowPhaseStatus.failed,
-      detail: detail,
-    ),
+    for (final stage in HistoricalArchiveRemovalStage.values)
+      HistoricalArchivesWorkflowPhaseViewModel(
+        label: _removalStageLabel(stage),
+        status: _removalWorkflowPhaseStatus(progress.statusFor(stage)),
+        detail:
+            progress.statusFor(stage) ==
+                    HistoricalArchiveRemovalStageStatus.failed &&
+                failureDetail != null
+            ? failureDetail
+            : _removalStageValue(progress.statusFor(stage)),
+      ),
   ];
+}
+
+String _removalStageLabel(HistoricalArchiveRemovalStage stage) {
+  return switch (stage) {
+    HistoricalArchiveRemovalStage.removingImportedMessages =>
+      'Removing messages added from this folder',
+    HistoricalArchiveRemovalStage.updatingMessageLensHistory =>
+      'Updating your MessageLens history',
+    HistoricalArchiveRemovalStage.verifyingRemoval =>
+      'Checking that removal finished',
+  };
+}
+
+String _removalStageValue(HistoricalArchiveRemovalStageStatus status) {
+  return switch (status) {
+    HistoricalArchiveRemovalStageStatus.waiting => 'Waiting',
+    HistoricalArchiveRemovalStageStatus.running => 'Working',
+    HistoricalArchiveRemovalStageStatus.succeeded => 'Done',
+    HistoricalArchiveRemovalStageStatus.skipped => 'Not needed',
+    HistoricalArchiveRemovalStageStatus.failed => "Couldn't finish",
+  };
+}
+
+HistoricalArchivesInstrumentationStatus _removalInstrumentationStatus(
+  HistoricalArchiveRemovalStageStatus status,
+) {
+  return switch (status) {
+    HistoricalArchiveRemovalStageStatus.waiting =>
+      HistoricalArchivesInstrumentationStatus.waiting,
+    HistoricalArchiveRemovalStageStatus.running =>
+      HistoricalArchivesInstrumentationStatus.working,
+    HistoricalArchiveRemovalStageStatus.succeeded ||
+    HistoricalArchiveRemovalStageStatus.skipped =>
+      HistoricalArchivesInstrumentationStatus.resolved,
+    HistoricalArchiveRemovalStageStatus.failed =>
+      HistoricalArchivesInstrumentationStatus.failed,
+  };
+}
+
+HistoricalArchivesWorkflowPhaseStatus _removalWorkflowPhaseStatus(
+  HistoricalArchiveRemovalStageStatus status,
+) {
+  return switch (status) {
+    HistoricalArchiveRemovalStageStatus.waiting =>
+      HistoricalArchivesWorkflowPhaseStatus.waiting,
+    HistoricalArchiveRemovalStageStatus.running =>
+      HistoricalArchivesWorkflowPhaseStatus.running,
+    HistoricalArchiveRemovalStageStatus.succeeded =>
+      HistoricalArchivesWorkflowPhaseStatus.succeeded,
+    HistoricalArchiveRemovalStageStatus.skipped =>
+      HistoricalArchivesWorkflowPhaseStatus.skipped,
+    HistoricalArchiveRemovalStageStatus.failed =>
+      HistoricalArchivesWorkflowPhaseStatus.failed,
+  };
 }
 
 List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveImportPhases() {

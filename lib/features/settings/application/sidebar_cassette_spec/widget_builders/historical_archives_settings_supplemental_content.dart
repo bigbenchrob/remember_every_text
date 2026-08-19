@@ -320,17 +320,25 @@ class _HistoricalArchiveSourceTileState
           border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
         );
         return Semantics(
-          button: true,
-          label: 'Show archive ${widget.source.label}',
+          button: !widget.source.isBusy,
+          label: widget.source.isBusy
+              ? 'Removing archive ${widget.source.label}'
+              : 'Show archive ${widget.source.label}',
           child: MouseRegion(
-            cursor: SystemMouseCursors.click,
+            cursor: widget.source.isBusy
+                ? SystemMouseCursors.basic
+                : SystemMouseCursors.click,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: () async {
-                await ref
-                    .read(historicalArchivesWorkflowActionsProvider.notifier)
-                    .showKnownSource(sourceKey: widget.source.sourceKey);
-              },
+              onTap: widget.source.isBusy
+                  ? null
+                  : () async {
+                      await ref
+                          .read(
+                            historicalArchivesWorkflowActionsProvider.notifier,
+                          )
+                          .showKnownSource(sourceKey: widget.source.sourceKey);
+                    },
               child: DecoratedBox(
                 key: ValueKey<String>(
                   'historical-archive-source-chrome:${widget.source.sourceKey}',

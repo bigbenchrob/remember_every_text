@@ -457,6 +457,43 @@ void main() {
       expect(workflow.chooseMessagesFolderCallCount, 0);
     });
 
+    testWidgets('removing-source cartouche cannot open competing context', (
+      tester,
+    ) async {
+      const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+      final workflow = _TestHistoricalArchivesWorkflow();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+          ],
+          child: const CupertinoApp(
+            home: HistoricalArchivesSettingsSupplementalContent(
+              payload: HistoricalArchivesSettingsCassettePayload(
+                knownSources: [
+                  HistoricalArchiveSidebarSourceSummary(
+                    sourceKey: sourceKey,
+                    label: 'Archive-2017',
+                    dateRangeLabel: 'Date range: 2012 to 2017',
+                    messageCountLabel: 'Messages: 8,882',
+                    isBusy: true,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Archive-2017'));
+      await tester.pump();
+
+      expect(workflow.shownSourceKeys, isEmpty);
+      final semantics = tester.getSemantics(find.text('Archive-2017'));
+      expect(semantics.label, contains('Removing archive Archive-2017'));
+    });
+
     testWidgets(
       'selected source uses blue selection without orange reference',
       (tester) async {

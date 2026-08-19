@@ -308,75 +308,92 @@ void main() {
       expect(actions.removeCallCount, 1);
     });
 
-    testWidgets('removal operation is one truthful tracked working row', (
-      tester,
-    ) async {
-      final matrix = buildHistoricalArchivesPageTrackLayoutMatrix(
-        umbrella: const FixedHeightTrackOccupant(height: 24),
-        sourceTypeControl: const FixedHeightTrackOccupant(height: 30),
-        sourceToKnownFoldersSpacing: const FixedHeightTrackOccupant(height: 56),
-        knownFoldersHeading: const FixedHeightTrackOccupant(height: 18),
-        knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(
-          height: 8,
-        ),
-      );
-      final resolved = ResolvedTrackLayoutMatrix.resolve(
-        matrix: matrix,
-        constraints: const PresentationConstraints(
-          availableWidth: 900,
-          textScaler: TextScaler.noScaling,
-          textDirection: TextDirection.ltr,
-        ),
-      );
-      await _pumpPanel(
-        tester,
-        resolvedTrackMatrix: resolved,
-        model: _narratorPanelModel(
-          presentation: const HistoricalArchivesNarratorPresentationViewModel(
-            kind: HistoricalArchivesNarratorPresentationKind.removingSource,
-            narratorText: 'Removing this folder from MessageLens.',
-            instrumentationRows: [
-              HistoricalArchivesInstrumentationRowViewModel(
-                label: 'Removing messages added from this folder',
-                value: 'Working',
-                status: HistoricalArchivesInstrumentationStatus.working,
-              ),
-            ],
-            detailsLines: [],
-            retryInspectionEnabled: false,
+    testWidgets(
+      'removal operation shows real resolved current and waiting rows',
+      (tester) async {
+        final matrix = buildHistoricalArchivesPageTrackLayoutMatrix(
+          umbrella: const FixedHeightTrackOccupant(height: 24),
+          sourceTypeControl: const FixedHeightTrackOccupant(height: 30),
+          sourceToKnownFoldersSpacing: const FixedHeightTrackOccupant(
+            height: 56,
           ),
-        ),
-      );
-
-      expect(
-        find.text('Removing this folder from MessageLens.'),
-        findsOneWidget,
-      );
-      expect(find.text('REMOVING MESSAGES FOLDER'), findsOneWidget);
-      expect(
-        find.text('Removing messages added from this folder'),
-        findsOneWidget,
-      );
-      expect(find.text('Working'), findsOneWidget);
-      expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
-      expect(find.text('Remove this folder…'), findsNothing);
-      expect(find.text('Import Archive'), findsNothing);
-      expect(find.textContaining('Reprojecting'), findsNothing);
-      expect(find.textContaining('Complete'), findsNothing);
-
-      final nativeFlow = find.byKey(
-        const Key('historical-archives-removal-native-flow'),
-      );
-      expect(
-        tester.getTopLeft(nativeFlow).dy,
-        moreOrLessEquals(
-          historicalArchivesSharedTrackIds.fold(
-            0,
-            (height, trackId) => height + resolved.heightFor(trackId),
+          knownFoldersHeading: const FixedHeightTrackOccupant(height: 18),
+          knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(
+            height: 8,
           ),
-        ),
-      );
-    });
+        );
+        final resolved = ResolvedTrackLayoutMatrix.resolve(
+          matrix: matrix,
+          constraints: const PresentationConstraints(
+            availableWidth: 900,
+            textScaler: TextScaler.noScaling,
+            textDirection: TextDirection.ltr,
+          ),
+        );
+        await _pumpPanel(
+          tester,
+          resolvedTrackMatrix: resolved,
+          model: _narratorPanelModel(
+            presentation: const HistoricalArchivesNarratorPresentationViewModel(
+              kind: HistoricalArchivesNarratorPresentationKind.removingSource,
+              narratorText: 'Removing this folder from MessageLens.',
+              instrumentationRows: [
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Removing messages added from this folder',
+                  value: 'Done',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Updating your MessageLens history',
+                  value: 'Working',
+                  status: HistoricalArchivesInstrumentationStatus.working,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Checking that removal finished',
+                  value: 'Waiting',
+                  status: HistoricalArchivesInstrumentationStatus.waiting,
+                ),
+              ],
+              detailsLines: [],
+              retryInspectionEnabled: false,
+            ),
+          ),
+        );
+
+        expect(
+          find.text('Removing this folder from MessageLens.'),
+          findsOneWidget,
+        );
+        expect(find.text('REMOVING MESSAGES FOLDER'), findsOneWidget);
+        expect(
+          find.text('Removing messages added from this folder'),
+          findsOneWidget,
+        );
+        expect(find.text('Updating your MessageLens history'), findsOneWidget);
+        expect(find.text('Checking that removal finished'), findsOneWidget);
+        expect(find.text('Done'), findsOneWidget);
+        expect(find.text('Working'), findsOneWidget);
+        expect(find.text('Waiting'), findsOneWidget);
+        expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
+        expect(find.text('Remove this folder…'), findsNothing);
+        expect(find.text('Import Archive'), findsNothing);
+        expect(find.textContaining('Reprojecting'), findsNothing);
+        expect(find.text('Complete'), findsNothing);
+
+        final nativeFlow = find.byKey(
+          const Key('historical-archives-removal-native-flow'),
+        );
+        expect(
+          tester.getTopLeft(nativeFlow).dy,
+          moreOrLessEquals(
+            historicalArchivesSharedTrackIds.fold(
+              0,
+              (height, trackId) => height + resolved.heightFor(trackId),
+            ),
+          ),
+        );
+      },
+    );
 
     testWidgets('selected-source native flow begins after shared Track E', (
       tester,

@@ -972,7 +972,7 @@ void main() {
     );
 
     test(
-      'selected source removal exposes one coarse operation then returns to hub',
+      'selected source removal exposes real ordered stages then returns to hub',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
         const source = HistoricalArchiveSourceMetadata(
@@ -993,19 +993,58 @@ void main() {
           lastImportError: null,
           lastImportedMessageCount: 42,
         );
-        final lookup = _MutableImportedSourceLookup(
+        final verificationCompleter =
+            Completer<HistoricalArchiveImportedSourceMatch?>();
+        final lookup = _FinalVerificationImportedSourceLookup(
           match: const HistoricalArchiveImportedSourceMatch(
             sourceKey: sourceKey,
             sourceId: 3,
             importedMessageCount: 42,
           ),
+          verificationCompleter: verificationCompleter,
         );
-        final removalCompleter =
-            Completer<SourceScopedArchiveGraphRemovalResult>();
-        final removalService = _RecordingArchiveRemovalService(() async {
-          final result = await removalCompleter.future;
-          lookup.match = null;
-          return result;
+        final factsRemovalCompleter = Completer<void>();
+        final graphRebuildCompleter = Completer<void>();
+        final removalService = _RecordingArchiveRemovalService((
+          observer,
+        ) async {
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.started,
+            ),
+          );
+          await factsRemovalCompleter.future;
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.completed,
+            ),
+          );
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage
+                  .rebuildingConversationGraph,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.started,
+            ),
+          );
+          await graphRebuildCompleter.future;
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage
+                  .rebuildingConversationGraph,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.completed,
+            ),
+          );
+          return const SourceScopedArchiveGraphRemovalResult(
+            sourceId: 3,
+            deletionResult: null,
+            graphReprojected: true,
+          );
         });
         final coordinator = _ImmediateArchiveMutationCoordinator();
         final container = ProviderContainer(
@@ -1052,23 +1091,49 @@ void main() {
           HistoricalArchivesNarratorPresentationKind.removingSource,
         );
         expect(
-          runningModel.narratorPresentation?.instrumentationRows,
-          hasLength(1),
-        );
-        expect(
-          runningModel.narratorPresentation?.instrumentationRows.single.label,
-          'Removing messages added from this folder',
+          runningModel.narratorPresentation?.instrumentationRows
+              .map((row) => (row.label, row.value))
+              .toList(),
+          const [
+            ('Removing messages added from this folder', 'Working'),
+            ('Updating your MessageLens history', 'Waiting'),
+            ('Checking that removal finished', 'Waiting'),
+          ],
         );
         expect(removalService.callCount, 1);
         expect(coordinator.runCallCount, 1);
 
-        removalCompleter.complete(
-          const SourceScopedArchiveGraphRemovalResult(
-            sourceId: 3,
-            deletionResult: null,
-            graphReprojected: true,
-          ),
+        factsRemovalCompleter.complete();
+        await Future<void>.delayed(Duration.zero);
+        final rebuildingModel = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: container.read(historicalArchivesWorkflowProvider),
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
+        expect(
+          rebuildingModel.narratorPresentation?.instrumentationRows
+              .map((row) => row.value)
+              .toList(),
+          const ['Done', 'Working', 'Waiting'],
+        );
+
+        graphRebuildCompleter.complete();
+        await Future<void>.delayed(Duration.zero);
+        final verifyingModel = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: container.read(historicalArchivesWorkflowProvider),
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          verifyingModel.narratorPresentation?.instrumentationRows
+              .map((row) => row.value)
+              .toList(),
+          const ['Done', 'Done', 'Working'],
+        );
+
+        verificationCompleter.complete(null);
         await removal;
 
         final completed = container.read(historicalArchivesWorkflowProvider);
@@ -1095,7 +1160,7 @@ void main() {
     );
 
     test(
-      'failed removal preserves selected context while imported facts remain',
+      'failed graph rebuild preserves stage truth while imported facts remain',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
         const source = HistoricalArchiveSourceMetadata(
@@ -1123,11 +1188,33 @@ void main() {
             importedMessageCount: 42,
           ),
         );
-        final removalService = _RecordingArchiveRemovalService(
-          () => Future<SourceScopedArchiveGraphRemovalResult>.error(
-            StateError('projection failed'),
-          ),
-        );
+        final removalService = _RecordingArchiveRemovalService((
+          observer,
+        ) async {
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.started,
+            ),
+          );
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.completed,
+            ),
+          );
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage
+                  .rebuildingConversationGraph,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.started,
+            ),
+          );
+          throw StateError('projection failed');
+        });
         final container = ProviderContainer(
           overrides: [
             archiveMutationCoordinatorProvider.overrideWith(
@@ -1164,16 +1251,133 @@ void main() {
         );
         expect(
           failed.presentationContext,
-          HistoricalArchivesPresentationContext.existingSource,
+          HistoricalArchivesPresentationContext.removingSource,
         );
         expect(failed.selectedKnownSourceKey, sourceKey);
         expect(failed.removalFailureDetail, contains('projection failed'));
         expect(
-          failedModel.existingSourcePresentation?.removalFailureStatement,
-          "MessageLens couldn't remove this folder. Its messages are still part of MessageLens.",
+          failedModel.narratorPresentation?.instrumentationRows
+              .map((row) => row.value)
+              .toList(),
+          const ['Done', "Couldn't finish", 'Waiting'],
         );
-        expect(failedModel.removeImportedArchiveDataEnabled, isTrue);
+        expect(
+          failedModel.narratorPresentation?.kind,
+          HistoricalArchivesNarratorPresentationKind.removalFailed,
+        );
+        expect(failedModel.removeImportedArchiveDataEnabled, isFalse);
         expect(removalService.callCount, 1);
+      },
+    );
+
+    test(
+      'partial failure after fact deletion cannot falsely return to hub',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        const source = HistoricalArchiveSourceMetadata(
+          sourceKey: sourceKey,
+          sourceChatDb: '/tmp/archive/chat.db',
+          folderPath: '/tmp/archive',
+          sourceLabel: 'Archive',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
+          totalMessages: 42,
+          earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+          latestMessageUtc: '2017-06-11T08:00:00.000Z',
+          preflightStatusLabel: 'Imported successfully',
+          dryRunNewMessages: 0,
+          dryRunDuplicateMessages: 42,
+          lastImportFinishedAtUtc: '2026-08-10T18:30:00.000Z',
+          lastImportSuccess: true,
+          lastImportError: null,
+          lastImportedMessageCount: 42,
+        );
+        final lookup = _MutableImportedSourceLookup(
+          match: const HistoricalArchiveImportedSourceMatch(
+            sourceKey: sourceKey,
+            sourceId: 3,
+            importedMessageCount: 42,
+          ),
+        );
+        final removalService = _RecordingArchiveRemovalService((
+          observer,
+        ) async {
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.started,
+            ),
+          );
+          lookup.match = null;
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.completed,
+            ),
+          );
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage
+                  .rebuildingConversationGraph,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.started,
+            ),
+          );
+          throw StateError('projection failed after deletion');
+        });
+        final container = ProviderContainer(
+          overrides: [
+            archiveMutationCoordinatorProvider.overrideWith(
+              _ImmediateArchiveMutationCoordinator.new,
+            ),
+            sourceScopedArchiveGraphRemovalServiceProvider.overrideWith(
+              (ref) async => removalService,
+            ),
+            historicalArchiveSourceMetadataProvider.overrideWith(
+              (ref) async => const [source],
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => lookup,
+            ),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => currentMessagesDatabasePath,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.showKnownSource(sourceKey: sourceKey);
+        await workflow.removeImportedArchiveDataForSelectedSource();
+
+        final failed = container.read(historicalArchivesWorkflowProvider);
+        final failedModel = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: failed,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          failed.presentationContext,
+          HistoricalArchivesPresentationContext.removingSource,
+        );
+        expect(failed.selectedKnownSourceKey, sourceKey);
+        expect(
+          failed.removalFailureDetail,
+          contains('Messages from this folder are no longer present'),
+        );
+        expect(
+          failedModel.narratorPresentation?.instrumentationRows
+              .map((row) => row.value)
+              .toList(),
+          const ['Done', "Couldn't finish", 'Waiting'],
+        );
+        expect(failedModel.isHub, isFalse);
+        expect(failedModel.narratorPresentation, isNotNull);
       },
     );
 
@@ -1702,19 +1906,53 @@ final class _MutableImportedSourceLookup
   }
 }
 
+final class _FinalVerificationImportedSourceLookup
+    implements HistoricalArchiveImportedSourceLookup {
+  _FinalVerificationImportedSourceLookup({
+    required this.match,
+    required this.verificationCompleter,
+  });
+
+  final HistoricalArchiveImportedSourceMatch match;
+  final Completer<HistoricalArchiveImportedSourceMatch?> verificationCompleter;
+  var _sourceKeyLookupCount = 0;
+
+  @override
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
+    required String folderPath,
+  }) async {
+    return match;
+  }
+
+  @override
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
+    required String sourceKey,
+  }) {
+    _sourceKeyLookupCount += 1;
+    if (_sourceKeyLookupCount == 1) {
+      return Future.value(match.sourceKey == sourceKey ? match : null);
+    }
+    return verificationCompleter.future;
+  }
+}
+
 final class _RecordingArchiveRemovalService
     implements SourceScopedArchiveGraphRemovalService {
   _RecordingArchiveRemovalService(this._remove);
 
-  final Future<SourceScopedArchiveGraphRemovalResult> Function() _remove;
+  final Future<SourceScopedArchiveGraphRemovalResult> Function(
+    SourceScopedArchiveGraphRemovalObserver? observer,
+  )
+  _remove;
   var callCount = 0;
 
   @override
   Future<SourceScopedArchiveGraphRemovalResult> removeArchiveSource({
     required String folderPath,
+    SourceScopedArchiveGraphRemovalObserver? onObservation,
   }) async {
     callCount += 1;
-    return _remove();
+    return _remove(onObservation);
   }
 
   @override

@@ -5071,3 +5071,12 @@ production preservation authority mechanically enforceable.
   coarse Directed Instrumentation, durable membership transition back to the
   hub, failure behavior, source-identity preservation, and staging review in
   `26-PRODUCTION-ARCHIVE-RECOVERY/responses/30-HISTORICAL-ARCHIVE-REMOVAL-JOURNEY-IMPLEMENTATION.md`.
+
+## 2026-08-19 — Historical archive removal directed instrumentation
+
+- Recorded the three real Historical Archives removal stages and their exact
+  service/workflow observation boundaries.
+- Documented the transient busy-cartouche presentation rule, terminal
+  membership verification, and truthful partial-failure behavior.
+- Reaffirmed that progress is event-driven rather than timer-driven and that
+  removal never writes to source folders or preservation data.

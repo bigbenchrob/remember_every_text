@@ -52,6 +52,26 @@ void main() {
       expect(source.sourceKey, sourceKey);
     });
 
+    test(
+      'holds only the actively removing source after durable count reaches zero',
+      () {
+        final summaries = buildHistoricalArchiveSidebarKnownSources(
+          sources: const [source],
+          importedSourcesByKey: const {},
+          presentationContext:
+              HistoricalArchivesPresentationContext.removingSource,
+          selectedSourceKey: sourceKey,
+          removingImportedMessageCount: 8882,
+        );
+
+        expect(summaries, hasLength(1));
+        expect(summaries.single.sourceKey, sourceKey);
+        expect(summaries.single.messageCountLabel, 'Messages: 8,882');
+        expect(summaries.single.isBusy, isTrue);
+        expect(summaries.single.isSelected, isFalse);
+      },
+    );
+
     test('builds an imported-source summary from ledger truth', () {
       final summaries = buildHistoricalArchiveSidebarKnownSources(
         sources: const [source],

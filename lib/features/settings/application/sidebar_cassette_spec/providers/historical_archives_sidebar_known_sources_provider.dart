@@ -36,6 +36,7 @@ historicalArchivesSidebarKnownSources(
       (state) => (
         context: state.presentationContext,
         selectedSourceKey: state.selectedKnownSourceKey,
+        removingImportedMessageCount: state.inspectionEvidence?.totalMessages,
         reference: state.knownSourceReference,
       ),
     ),
@@ -45,6 +46,7 @@ historicalArchivesSidebarKnownSources(
     importedSourcesByKey: importedSourcesByKey,
     presentationContext: presentation.context,
     selectedSourceKey: presentation.selectedSourceKey,
+    removingImportedMessageCount: presentation.removingImportedMessageCount,
     reference: presentation.reference,
   );
 }
@@ -57,28 +59,60 @@ buildHistoricalArchiveSidebarKnownSources({
   HistoricalArchivesPresentationContext presentationContext =
       HistoricalArchivesPresentationContext.hub,
   String? selectedSourceKey,
+  int? removingImportedMessageCount,
   HistoricalArchivesKnownSourceReference? reference,
 }) {
   return <HistoricalArchiveSidebarSourceSummary>[
     for (final source in sources)
-      if (importedSourcesByKey[source.sourceKey] case final importedSource?)
+      if (importedSourcesByKey[source.sourceKey] != null ||
+          presentationContext ==
+                  HistoricalArchivesPresentationContext.removingSource &&
+              source.sourceKey == selectedSourceKey)
         HistoricalArchiveSidebarSourceSummary(
           sourceKey: source.sourceKey,
           label: source.sourceLabel,
           dateRangeLabel: _buildDateRangeLabel(source),
-          messageCountLabel:
-              'Messages: ${CountLabelFormatter.formatCount(importedSource.importedMessageCount)}',
+          messageCountLabel: _buildMessageCountLabel(
+            source,
+            importedSource: importedSourcesByKey[source.sourceKey],
+            removingImportedMessageCount:
+                presentationContext ==
+                        HistoricalArchivesPresentationContext.removingSource &&
+                    source.sourceKey == selectedSourceKey
+                ? removingImportedMessageCount
+                : null,
+          ),
           importedOnLabel: _buildImportedOnLabel(source),
           isSelected:
               presentationContext ==
                   HistoricalArchivesPresentationContext.existingSource &&
               source.sourceKey == selectedSourceKey,
           isReferenced: source.sourceKey == reference?.sourceKey,
+          isBusy:
+              presentationContext ==
+                  HistoricalArchivesPresentationContext.removingSource &&
+              source.sourceKey == selectedSourceKey,
           referenceOccurrence: source.sourceKey == reference?.sourceKey
               ? reference?.referenceOccurrence ?? 0
               : 0,
         ),
   ];
+}
+
+String _buildMessageCountLabel(
+  HistoricalArchiveSourceMetadata source, {
+  required HistoricalArchiveImportedSourceMatch? importedSource,
+  required int? removingImportedMessageCount,
+}) {
+  final messageCount =
+      importedSource?.importedMessageCount ??
+      removingImportedMessageCount ??
+      source.lastImportedMessageCount ??
+      source.totalMessages;
+  if (messageCount == null) {
+    return 'Messages: unavailable';
+  }
+  return 'Messages: ${CountLabelFormatter.formatCount(messageCount)}';
 }
 
 String? _buildDateRangeLabel(HistoricalArchiveSourceMetadata source) {

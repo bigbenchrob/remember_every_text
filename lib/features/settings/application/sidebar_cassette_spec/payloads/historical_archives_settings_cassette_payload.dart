@@ -12,6 +12,7 @@ final class HistoricalArchiveSidebarSourceSummary {
     this.importedOnLabel,
     this.isReferenced = false,
     this.isSelected = false,
+    this.isBusy = false,
     this.referenceOccurrence = 0,
   });
 
@@ -22,6 +23,7 @@ final class HistoricalArchiveSidebarSourceSummary {
   final String? importedOnLabel;
   final bool isReferenced;
   final bool isSelected;
+  final bool isBusy;
   final int referenceOccurrence;
 }
 

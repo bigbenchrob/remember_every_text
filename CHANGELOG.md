@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.59] — 2026-08-19
+
+### Changed
+
+- Historical Archives removal now presents three truthful live stages for
+  removing imported messages, updating MessageLens history, and verifying
+  completion. The archive cartouche remains visible but unavailable until the
+  complete operation succeeds, and partial failures remain visible instead of
+  being mistaken for successful removal.
+
 ## [0.2.58] — 2026-08-19
 
 ### Changed
