@@ -550,7 +550,7 @@ void main() {
       expect(find.text('Jul 2012 – Jun 2017'), findsOneWidget);
       expect(find.text('2,369'), findsOneWidget);
       expect(find.text('6,513'), findsOneWidget);
-      expect(find.text('Import Archive'), findsOneWidget);
+      expect(find.text('Add Messages to MessageLens'), findsOneWidget);
       expect(find.text('Choose Another Folder'), findsOneWidget);
       expect(find.text('Messages database: $path'), findsNothing);
 
@@ -586,6 +586,93 @@ void main() {
 
       expect(find.text('Import Archive'), findsNothing);
       expect(find.text('Choose Another Folder'), findsOneWidget);
+    });
+
+    testWidgets(
+      'active import shows only real directed instrumentation and no decisions',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          model: _narratorPanelModel(
+            presentation: const HistoricalArchivesNarratorPresentationViewModel(
+              kind: HistoricalArchivesNarratorPresentationKind.importingArchive,
+              narratorText: 'Adding this Messages folder to MessageLens.',
+              instrumentationRows: [
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Adding messages from this folder',
+                  value: 'Done',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Preparing conversations for browsing',
+                  value: 'Working',
+                  status: HistoricalArchivesInstrumentationStatus.working,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Checking that import finished',
+                  value: 'Waiting',
+                  status: HistoricalArchivesInstrumentationStatus.waiting,
+                ),
+              ],
+              detailsLines: ['Source key: archive:/tmp/archive/chat.db'],
+              retryInspectionEnabled: false,
+            ),
+          ),
+        );
+
+        expect(find.text('ADDING MESSAGES FOLDER'), findsOneWidget);
+        expect(find.text('Adding messages from this folder'), findsOneWidget);
+        expect(
+          find.text('Preparing conversations for browsing'),
+          findsOneWidget,
+        );
+        expect(find.text('Checking that import finished'), findsOneWidget);
+        expect(find.text('Add Messages to MessageLens'), findsNothing);
+        expect(find.text('Choose Another Folder'), findsNothing);
+        expect(find.text('Execution Gate Blocked'), findsNothing);
+        expect(find.text('Activity Log'), findsNothing);
+        expect(find.text('Progress'), findsNothing);
+        expect(find.text('Result Summary'), findsNothing);
+        expect(find.textContaining('%'), findsNothing);
+      },
+    );
+
+    testWidgets('failed import offers bounded retry without claiming success', (
+      tester,
+    ) async {
+      await _pumpPanel(
+        tester,
+        model: _narratorPanelModel(
+          importButtonEnabled: true,
+          presentation: const HistoricalArchivesNarratorPresentationViewModel(
+            kind: HistoricalArchivesNarratorPresentationKind.importFailed,
+            narratorText: "MessageLens couldn't finish adding this folder.",
+            instrumentationRows: [
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Adding messages from this folder',
+                value: 'Done',
+                status: HistoricalArchivesInstrumentationStatus.resolved,
+              ),
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Preparing conversations for browsing',
+                value: 'Failed',
+                status: HistoricalArchivesInstrumentationStatus.failed,
+              ),
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Checking that import finished',
+                value: 'Waiting',
+                status: HistoricalArchivesInstrumentationStatus.waiting,
+              ),
+            ],
+            detailsLines: ['Graph projection failed.'],
+            retryInspectionEnabled: false,
+          ),
+        ),
+      );
+
+      expect(find.text('Try Again'), findsOneWidget);
+      expect(find.text('Choose Another Folder'), findsOneWidget);
+      expect(find.textContaining('part of MessageLens'), findsNothing);
     });
 
     testWidgets(

@@ -421,6 +421,43 @@ void main() {
       );
     });
 
+    for (final context in const [
+      HistoricalArchivesPresentationContext.importingArchive,
+      HistoricalArchivesPresentationContext.importFailed,
+    ]) {
+      testWidgets(
+        '$context keeps the sidebar chooser out of the active journey',
+        (tester) async {
+          final workflow = _TestHistoricalArchivesWorkflow(
+            initialState: buildInitialHistoricalArchivesWorkflowState()
+                .copyWith(
+                  presentationContext: context,
+                  presentationStage:
+                      context ==
+                          HistoricalArchivesPresentationContext.importingArchive
+                      ? HistoricalArchivesPresentationStage.importingArchive
+                      : HistoricalArchivesPresentationStage.importFailed,
+                ),
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+              ],
+              child: const CupertinoApp(
+                home: HistoricalArchivesSettingsSupplementalContent(
+                  payload: HistoricalArchivesSettingsCassettePayload(),
+                ),
+              ),
+            ),
+          );
+
+          expect(find.text('Choose Messages Folder...'), findsNothing);
+        },
+      );
+    }
+
     testWidgets('known-source cartouche requests exact-key navigation', (
       tester,
     ) async {

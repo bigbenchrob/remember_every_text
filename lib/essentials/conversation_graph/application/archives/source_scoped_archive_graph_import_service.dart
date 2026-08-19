@@ -14,6 +14,26 @@ import '../message_attachment_joins/message_to_attachment_projector.dart';
 import '../messages/message_projection_repository.dart';
 import '../messages/message_projector.dart';
 
+enum SourceScopedArchiveGraphImportStage {
+  importingSourceFacts,
+  projectingConversationGraph,
+}
+
+enum SourceScopedArchiveGraphImportStageTransition { started, completed }
+
+final class SourceScopedArchiveGraphImportObservation {
+  const SourceScopedArchiveGraphImportObservation({
+    required this.stage,
+    required this.transition,
+  });
+
+  final SourceScopedArchiveGraphImportStage stage;
+  final SourceScopedArchiveGraphImportStageTransition transition;
+}
+
+typedef SourceScopedArchiveGraphImportObserver =
+    void Function(SourceScopedArchiveGraphImportObservation observation);
+
 final class SourceScopedArchiveGraphProjectionResult {
   const SourceScopedArchiveGraphProjectionResult({
     required this.handles,
@@ -81,12 +101,33 @@ class SourceScopedArchiveGraphImportService {
   Future<SourceScopedArchiveGraphImportResult> importAndProject({
     required String folderPath,
     String? sourceLabel,
+    SourceScopedArchiveGraphImportObserver? onObservation,
   }) async {
+    // Observations expose boundaries already owned by this service. They never
+    // authorize, sequence, or otherwise control the import.
+    onObservation?.call(
+      const SourceScopedArchiveGraphImportObservation(
+        stage: SourceScopedArchiveGraphImportStage.importingSourceFacts,
+        transition: SourceScopedArchiveGraphImportStageTransition.started,
+      ),
+    );
     final importResult = await importService.importSourceFacts(
       folderPath: folderPath,
       sourceLabel: sourceLabel,
     );
+    onObservation?.call(
+      const SourceScopedArchiveGraphImportObservation(
+        stage: SourceScopedArchiveGraphImportStage.importingSourceFacts,
+        transition: SourceScopedArchiveGraphImportStageTransition.completed,
+      ),
+    );
 
+    onObservation?.call(
+      const SourceScopedArchiveGraphImportObservation(
+        stage: SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+        transition: SourceScopedArchiveGraphImportStageTransition.started,
+      ),
+    );
     final handles = await handleProjector.projectHandles();
     final chatHandleEdges = await chatToHandleProjector.projectEdges();
     final chats = await chatProjector.projectChats();
@@ -95,6 +136,12 @@ class SourceScopedArchiveGraphImportService {
     final chatMessageEdges = await chatToMessageProjector.projectEdges();
     final messageAttachmentEdges = await messageToAttachmentProjector
         .projectEdges();
+    onObservation?.call(
+      const SourceScopedArchiveGraphImportObservation(
+        stage: SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+        transition: SourceScopedArchiveGraphImportStageTransition.completed,
+      ),
+    );
 
     return SourceScopedArchiveGraphImportResult(
       importResult: importResult,

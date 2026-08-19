@@ -186,9 +186,11 @@ void main() {
   });
 
   test('imports and projects archive facts into the graph', () async {
+    final observations = <SourceScopedArchiveGraphImportObservation>[];
     final firstResult = await service.importAndProject(
       folderPath: archiveFolder.path,
       sourceLabel: 'Archive 2017',
+      onObservation: observations.add,
     );
     final secondResult = await service.importAndProject(
       folderPath: archiveFolder.path,
@@ -216,6 +218,29 @@ void main() {
     expect(firstResult.projectionResult.insertedGraphEdgeCount, 3);
     expect(secondResult.projectionResult.insertedGraphNodeCount, 0);
     expect(secondResult.projectionResult.insertedGraphEdgeCount, 0);
+    expect(
+      observations
+          .map((observation) => (observation.stage, observation.transition))
+          .toList(),
+      const [
+        (
+          SourceScopedArchiveGraphImportStage.importingSourceFacts,
+          SourceScopedArchiveGraphImportStageTransition.started,
+        ),
+        (
+          SourceScopedArchiveGraphImportStage.importingSourceFacts,
+          SourceScopedArchiveGraphImportStageTransition.completed,
+        ),
+        (
+          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+          SourceScopedArchiveGraphImportStageTransition.started,
+        ),
+        (
+          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+          SourceScopedArchiveGraphImportStageTransition.completed,
+        ),
+      ],
+    );
 
     final messages = await graphDatabase.database.query('messages');
     final chats = await graphDatabase.database.query('chats');

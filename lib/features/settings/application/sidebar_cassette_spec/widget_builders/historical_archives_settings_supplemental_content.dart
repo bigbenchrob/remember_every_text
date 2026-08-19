@@ -88,7 +88,11 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
       historicalArchivesWorkflowProvider.select(
         (state) =>
             state.presentationContext !=
-            HistoricalArchivesPresentationContext.addArchive,
+                HistoricalArchivesPresentationContext.addArchive &&
+            state.presentationContext !=
+                HistoricalArchivesPresentationContext.importingArchive &&
+            state.presentationContext !=
+                HistoricalArchivesPresentationContext.importFailed,
       ),
     );
 

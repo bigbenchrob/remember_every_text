@@ -5080,3 +5080,19 @@ production preservation authority mechanically enforceable.
   membership verification, and truthful partial-failure behavior.
 - Reaffirmed that progress is event-driven rather than timer-driven and that
   removal never writes to source folders or preservation data.
+
+## 2026-08-19 — Mac Messages ingestion directed instrumentation
+
+- Added Feature 26 response
+  `32-MAC-MESSAGES-INGESTION-NARRATOR-DIRECTED-INSTRUMENTATION-IMPLEMENTATION.md`.
+- Recorded the audited pre-authorization inspection and post-authorization
+  source-import, graph-projection, read-model refresh, and final-verification
+  sequence.
+- Documented the import service's typed descriptive observation seam and its
+  mapping to three truthful human-facing rows.
+- Recorded explicit import authorization, omission of a redundant confirmation
+  modal, finalized cartouche membership, bounded success correspondence, and
+  truthful partial-failure retry behavior.
+- Reaffirmed source-1 protection, donor immutability, owner-aware mutation
+  authority, Tracks A-E, and `DateConverter` as the sole Apple timestamp
+  authority.

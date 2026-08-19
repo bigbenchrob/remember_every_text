@@ -64,10 +64,11 @@ buildHistoricalArchiveSidebarKnownSources({
 }) {
   return <HistoricalArchiveSidebarSourceSummary>[
     for (final source in sources)
-      if (importedSourcesByKey[source.sourceKey] != null ||
-          presentationContext ==
+      if ((source.lastImportSuccess == true &&
+              importedSourcesByKey[source.sourceKey] != null) ||
+          (presentationContext ==
                   HistoricalArchivesPresentationContext.removingSource &&
-              source.sourceKey == selectedSourceKey)
+              source.sourceKey == selectedSourceKey))
         HistoricalArchiveSidebarSourceSummary(
           sourceKey: source.sourceKey,
           label: source.sourceLabel,

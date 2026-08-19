@@ -1,4 +1,5 @@
 export 'application/archives/graph_projection_resetter_provider.dart';
+export 'application/archives/source_scoped_archive_graph_import_service.dart';
 export 'application/archives/source_scoped_archive_graph_import_service_provider.dart';
 export 'application/archives/source_scoped_archive_graph_removal_service.dart';
 export 'application/archives/source_scoped_archive_graph_removal_service_provider.dart';

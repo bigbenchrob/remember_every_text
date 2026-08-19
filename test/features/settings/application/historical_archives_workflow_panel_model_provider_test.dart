@@ -129,6 +129,10 @@ void main() {
     test('reports ready source state after successful preflight', () {
       final workflowState = buildInitialHistoricalArchivesWorkflowState()
           .copyWith(
+            presentationContext:
+                HistoricalArchivesPresentationContext.addArchive,
+            presentationStage:
+                HistoricalArchivesPresentationStage.readyForImport,
             preflight: const HistoricalArchivesPreflightViewModel(
               status: HistoricalArchivesPreflightStatus.completeReadyToImport,
               statusLabel: 'Preflight complete',
@@ -258,6 +262,104 @@ void main() {
         containsAll(['8,882', 'Jul 2012 – Jun 2017', '2,369', '6,513']),
       );
       expect(model.importButtonEnabled, isTrue);
+    });
+
+    test('maps real import progress into directed instrumentation', () {
+      final workflowState = buildInitialHistoricalArchivesWorkflowState()
+          .copyWith(
+            presentationContext:
+                HistoricalArchivesPresentationContext.importingArchive,
+            presentationStage:
+                HistoricalArchivesPresentationStage.importingArchive,
+            selectedFolderPath: '/tmp/archive',
+            importProgress: const HistoricalArchiveImportProgress(
+              addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+              preparingConversations:
+                  HistoricalArchiveImportStageStatus.running,
+              verifyingImport: HistoricalArchiveImportStageStatus.waiting,
+            ),
+          );
+
+      final model = buildHistoricalArchivesWorkflowPanelModel(
+        executionGateState: const ArchiveMutationCoordinatorState(),
+        isMaintenanceLocked: true,
+        workflowState: workflowState,
+        currentMessagesDatabasePath: currentMessagesDatabasePath,
+      );
+
+      expect(
+        model.narratorPresentation?.kind,
+        HistoricalArchivesNarratorPresentationKind.importingArchive,
+      );
+      expect(
+        model.narratorPresentation?.instrumentationRows
+            .map((row) => (row.label, row.value))
+            .toList(),
+        const [
+          ('Adding messages from this folder', 'Done'),
+          ('Preparing conversations for browsing', 'Working'),
+          ('Checking that import finished', 'Waiting'),
+        ],
+      );
+      expect(model.importButtonEnabled, isFalse);
+    });
+
+    test('preserves completed stages when a later import stage fails', () {
+      const evidence = HistoricalArchivesInspectionEvidence(
+        folderPath: '/tmp/archive',
+        chatDbPath: '/tmp/archive/chat.db',
+        sourceLabel: 'archive',
+        chatDbStatusLabel: 'Found and readable',
+        attachmentsStatusLabel: 'Not found',
+        totalMessages: 42,
+        totalChats: 4,
+        totalHandles: 7,
+        missingGuids: 0,
+        earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+        latestMessageUtc: '2017-06-11T08:00:00.000Z',
+        dateRangeUnavailableReason: null,
+        dryRunNewMessages: 42,
+        dryRunDuplicateMessages: 0,
+        dryRunComparableMessages: 42,
+        dryRunUnavailableReason: null,
+      );
+      final workflowState = buildInitialHistoricalArchivesWorkflowState()
+          .copyWith(
+            presentationContext:
+                HistoricalArchivesPresentationContext.importFailed,
+            presentationStage: HistoricalArchivesPresentationStage.importFailed,
+            selectedFolderPath: evidence.folderPath,
+            inspectionEvidence: evidence,
+            importFailureDetail: 'Graph projection failed.',
+            importProgress: const HistoricalArchiveImportProgress(
+              addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+              preparingConversations: HistoricalArchiveImportStageStatus.failed,
+              verifyingImport: HistoricalArchiveImportStageStatus.waiting,
+            ),
+          );
+
+      final model = buildHistoricalArchivesWorkflowPanelModel(
+        executionGateState: const ArchiveMutationCoordinatorState(),
+        isMaintenanceLocked: false,
+        workflowState: workflowState,
+        currentMessagesDatabasePath: currentMessagesDatabasePath,
+      );
+
+      expect(
+        model.narratorPresentation?.kind,
+        HistoricalArchivesNarratorPresentationKind.importFailed,
+      );
+      expect(
+        model.narratorPresentation?.instrumentationRows
+            .map((row) => row.value)
+            .toList(),
+        const ['Done', 'Failed', 'Waiting'],
+      );
+      expect(model.importButtonEnabled, isTrue);
+      expect(
+        model.narratorPresentation?.detailsLines,
+        contains('Graph projection failed.'),
+      );
     });
 
     test('ready projection reports an unavailable comparison honestly', () {
@@ -502,7 +604,9 @@ void main() {
       'duplicate add restores hub and emits a bounded reference only after dismissal',
       (tester) async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
-        final archiveSources = _RecordingHistoricalArchiveSources();
+        final archiveSources = _RecordingHistoricalArchiveSources([
+          _successfullyImportedArchiveSource(sourceKey: sourceKey),
+        ]);
         final container = ProviderContainer(
           overrides: [
             historicalArchiveFolderChooserProvider.overrideWith(
@@ -782,7 +886,9 @@ void main() {
               (ref) async => const _ImmediateArchiveSourceInspector(),
             ),
             historicalArchiveSourcesProvider.overrideWith(
-              (ref) async => const _FakeHistoricalArchiveSources(),
+              (ref) async => _FakeHistoricalArchiveSources([
+                _successfullyImportedArchiveSource(sourceKey: sourceKey),
+              ]),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
               (ref) async => const _FakeImportedSourceLookup(
@@ -1980,11 +2086,15 @@ final class _ImmediateArchiveMutationCoordinator
 }
 
 final class _FakeHistoricalArchiveSources implements HistoricalArchiveSources {
-  const _FakeHistoricalArchiveSources();
+  const _FakeHistoricalArchiveSources([
+    this.sources = const <HistoricalArchiveSourceMetadata>[],
+  ]);
+
+  final List<HistoricalArchiveSourceMetadata> sources;
 
   @override
   Future<List<HistoricalArchiveSourceMetadata>> readKnownSources() async =>
-      const [];
+      sources;
 
   @override
   Future<void> upsertSourceMetadata(
@@ -1994,11 +2104,16 @@ final class _FakeHistoricalArchiveSources implements HistoricalArchiveSources {
 
 final class _RecordingHistoricalArchiveSources
     implements HistoricalArchiveSources {
+  _RecordingHistoricalArchiveSources([
+    this.sources = const <HistoricalArchiveSourceMetadata>[],
+  ]);
+
+  final List<HistoricalArchiveSourceMetadata> sources;
   var upsertCallCount = 0;
 
   @override
   Future<List<HistoricalArchiveSourceMetadata>> readKnownSources() async =>
-      const [];
+      sources;
 
   @override
   Future<void> upsertSourceMetadata(
@@ -2006,4 +2121,27 @@ final class _RecordingHistoricalArchiveSources
   ) async {
     upsertCallCount += 1;
   }
+}
+
+HistoricalArchiveSourceMetadata _successfullyImportedArchiveSource({
+  required String sourceKey,
+}) {
+  return HistoricalArchiveSourceMetadata(
+    sourceKey: sourceKey,
+    sourceChatDb: '/tmp/archive/chat.db',
+    folderPath: '/tmp/archive',
+    sourceLabel: 'archive',
+    chatDbStatusLabel: 'Found and readable',
+    attachmentsStatusLabel: 'Not found',
+    preflightStatusLabel: 'Imported successfully',
+    totalMessages: 42,
+    earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+    latestMessageUtc: '2017-06-11T08:00:00.000Z',
+    dryRunNewMessages: 42,
+    dryRunDuplicateMessages: 0,
+    lastImportFinishedAtUtc: '2026-08-19T12:00:00.000Z',
+    lastImportSuccess: true,
+    lastImportError: null,
+    lastImportedMessageCount: 42,
+  );
 }

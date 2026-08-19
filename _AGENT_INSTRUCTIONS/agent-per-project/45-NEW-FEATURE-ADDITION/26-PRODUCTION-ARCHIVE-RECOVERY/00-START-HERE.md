@@ -2,7 +2,7 @@
 tier: project
 scope: production-archive-recovery
 owner: agent-per-project
-last_reviewed: 2026-08-17
+last_reviewed: 2026-08-19
 source_of_truth: doc
 links:
   - ../../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md
@@ -55,8 +55,20 @@ owner-aware, operation-aware graph admission. The timestamp correction is
 implemented and verified in code; the GUI import has been rerun manually after
 that correction. Immutable post-import verification confirms all 8,882
 source-3 messages now span the correct 2012-2017 range and project exactly into
-the graph. The next concern is the Historical Archives UX/lifecycle behavior
-observed during maintenance; no redesign has begun.
+the graph.
+
+The Historical Archives UX/lifecycle concern has now produced a bounded Mac
+Messages workflow. Folder qualification, explicit authorization, import,
+projection, final verification, and partial failure are presented through
+Narrator and truthful Directed Instrumentation rather than the legacy control
+panel. See:
+
+- [Historical Archives Narrator And Directed Instrumentation Design](responses/10-HISTORICAL-ARCHIVES-NARRATOR-DIRECTED-INSTRUMENTATION-DESIGN.md)
+- [Historical Archive Removal Directed Instrumentation](responses/31-HISTORICAL-ARCHIVE-REMOVAL-DIRECTED-INSTRUMENTATION-IMPLEMENTATION.md)
+- [Mac Messages Ingestion Narrator And Directed Instrumentation](responses/32-MAC-MESSAGES-INGESTION-NARRATOR-DIRECTED-INSTRUMENTATION-IMPLEMENTATION.md)
+
+The MessageLens-folder arm and historical attachment-payload recovery remain
+out of scope.
 
 ## Original Emergency Objective
 

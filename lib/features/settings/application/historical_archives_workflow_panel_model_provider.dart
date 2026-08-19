@@ -11,6 +11,9 @@ import '../../../essentials/archive_environment/feature_level_providers.dart'
     show ArchiveMutationCoordinatorState, archiveMutationCoordinatorProvider;
 import '../../../essentials/conversation_graph/feature_level_providers.dart'
     show
+        SourceScopedArchiveGraphImportObservation,
+        SourceScopedArchiveGraphImportStage,
+        SourceScopedArchiveGraphImportStageTransition,
         SourceScopedArchiveGraphRemovalObservation,
         SourceScopedArchiveGraphRemovalStage,
         SourceScopedArchiveGraphRemovalStageTransition,
@@ -86,6 +89,8 @@ enum HistoricalArchivesPresentationStage {
   readyForImport,
   knownSource,
   existingSource,
+  importingArchive,
+  importFailed,
   laterWorkflow,
 }
 
@@ -94,6 +99,8 @@ enum HistoricalArchivesPresentationContext {
   hub,
   existingSource,
   addArchive,
+  importingArchive,
+  importFailed,
   removingSource,
 }
 
@@ -191,6 +198,8 @@ enum HistoricalArchivesNarratorPresentationKind {
   inspectionFailed,
   readyForImport,
   knownSource,
+  importingArchive,
+  importFailed,
   removingSource,
   removalFailed,
 }
@@ -214,6 +223,55 @@ enum HistoricalArchiveRemovalStageStatus {
   succeeded,
   skipped,
   failed,
+}
+
+enum HistoricalArchiveImportStage {
+  addingMessages,
+  preparingConversations,
+  verifyingImport,
+}
+
+enum HistoricalArchiveImportStageStatus { waiting, running, succeeded, failed }
+
+final class HistoricalArchiveImportProgress {
+  const HistoricalArchiveImportProgress({
+    this.addingMessages = HistoricalArchiveImportStageStatus.waiting,
+    this.preparingConversations = HistoricalArchiveImportStageStatus.waiting,
+    this.verifyingImport = HistoricalArchiveImportStageStatus.waiting,
+  });
+
+  final HistoricalArchiveImportStageStatus addingMessages;
+  final HistoricalArchiveImportStageStatus preparingConversations;
+  final HistoricalArchiveImportStageStatus verifyingImport;
+
+  HistoricalArchiveImportStageStatus statusFor(
+    HistoricalArchiveImportStage stage,
+  ) {
+    return switch (stage) {
+      HistoricalArchiveImportStage.addingMessages => addingMessages,
+      HistoricalArchiveImportStage.preparingConversations =>
+        preparingConversations,
+      HistoricalArchiveImportStage.verifyingImport => verifyingImport,
+    };
+  }
+
+  HistoricalArchiveImportProgress withStage(
+    HistoricalArchiveImportStage stage,
+    HistoricalArchiveImportStageStatus status,
+  ) {
+    return HistoricalArchiveImportProgress(
+      addingMessages: stage == HistoricalArchiveImportStage.addingMessages
+          ? status
+          : addingMessages,
+      preparingConversations:
+          stage == HistoricalArchiveImportStage.preparingConversations
+          ? status
+          : preparingConversations,
+      verifyingImport: stage == HistoricalArchiveImportStage.verifyingImport
+          ? status
+          : verifyingImport,
+    );
+  }
 }
 
 final class HistoricalArchiveRemovalProgress {
@@ -378,6 +436,8 @@ final class HistoricalArchivesWorkflowState {
     this.selectedKnownSourceKey,
     this.removalFailureDetail,
     this.removalProgress,
+    this.importFailureDetail,
+    this.importProgress,
   });
 
   final HistoricalArchivesPreflightViewModel preflight;
@@ -403,6 +463,8 @@ final class HistoricalArchivesWorkflowState {
   final String? selectedKnownSourceKey;
   final String? removalFailureDetail;
   final HistoricalArchiveRemovalProgress? removalProgress;
+  final String? importFailureDetail;
+  final HistoricalArchiveImportProgress? importProgress;
 
   HistoricalArchivesWorkflowState copyWith({
     HistoricalArchivesPreflightViewModel? preflight,
@@ -435,6 +497,10 @@ final class HistoricalArchivesWorkflowState {
     bool clearRemovalFailureDetail = false,
     HistoricalArchiveRemovalProgress? removalProgress,
     bool clearRemovalProgress = false,
+    String? importFailureDetail,
+    bool clearImportFailureDetail = false,
+    HistoricalArchiveImportProgress? importProgress,
+    bool clearImportProgress = false,
   }) {
     return HistoricalArchivesWorkflowState(
       preflight: preflight ?? this.preflight,
@@ -480,6 +546,12 @@ final class HistoricalArchivesWorkflowState {
       removalProgress: clearRemovalProgress
           ? null
           : removalProgress ?? this.removalProgress,
+      importFailureDetail: clearImportFailureDetail
+          ? null
+          : importFailureDetail ?? this.importFailureDetail,
+      importProgress: clearImportProgress
+          ? null
+          : importProgress ?? this.importProgress,
     );
   }
 }
@@ -820,7 +892,11 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    if (importedSourceMatch != null) {
+    if (importedSourceMatch != null &&
+        await _hasSuccessfulImportMetadata(
+          archiveSources: archiveSources,
+          sourceKey: importedSourceMatch.sourceKey,
+        )) {
       _nextDuplicateNoticeOccurrence += 1;
       state = buildInitialHistoricalArchivesWorkflowState().copyWith(
         duplicateFolderNotice: HistoricalArchivesDuplicateFolderNotice(
@@ -1271,6 +1347,20 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   Future<void> beginImportForSelectedSource() async {
+    final isFreshAuthorization =
+        state.presentationContext ==
+            HistoricalArchivesPresentationContext.addArchive &&
+        state.presentationStage ==
+            HistoricalArchivesPresentationStage.readyForImport;
+    final isExplicitRetry =
+        state.presentationContext ==
+            HistoricalArchivesPresentationContext.importFailed &&
+        state.presentationStage ==
+            HistoricalArchivesPresentationStage.importFailed;
+    if (!isFreshAuthorization && !isExplicitRetry) {
+      return;
+    }
+
     final selectedFolderPath = state.selectedFolderPath;
     if (selectedFolderPath == null) {
       _prependActivityLog(
@@ -1300,6 +1390,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
+    final importPresentationSessionOccurrence = _presentationSessionOccurrence;
+    const initialProgress = HistoricalArchiveImportProgress();
     try {
       await ref
           .read(archiveMutationCoordinatorProvider.notifier)
@@ -1307,33 +1399,23 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             operation: ArchiveMutationOperation.historicalArchiveImport,
             ownerLabel: 'historical-archives-import',
             action: () async {
+              state = state.copyWith(
+                presentationContext:
+                    HistoricalArchivesPresentationContext.importingArchive,
+                presentationStage:
+                    HistoricalArchivesPresentationStage.importingArchive,
+                clearImportFailureDetail: true,
+                importProgress: initialProgress,
+                preflight: const HistoricalArchivesPreflightViewModel(
+                  status: HistoricalArchivesPreflightStatus.running,
+                  statusLabel: 'Adding Messages folder',
+                  detail:
+                      'MessageLens is adding this folder and preparing its conversations for browsing.',
+                ),
+              );
               final archiveGraphImportService = await ref.read(
                 sourceScopedArchiveGraphImportServiceProvider.future,
               );
-              state = state.copyWith(
-                presentationStage:
-                    HistoricalArchivesPresentationStage.laterWorkflow,
-                preflight: const HistoricalArchivesPreflightViewModel(
-                  status: HistoricalArchivesPreflightStatus.running,
-                  statusLabel: 'Import running',
-                  detail:
-                      'Importing archive messages from the selected folder, then preparing them for browsing.',
-                ),
-                activityLog: [
-                  HistoricalArchivesLogEntryViewModel(
-                    label: 'Beginning import…',
-                    message:
-                        'Starting archive import for ${path.basename(selectedFolderPath)}.',
-                  ),
-                  ...state.activityLog,
-                ],
-                phases: _runningArchiveImportPhases(),
-                resultSummaryLines: const [
-                  'Archive import is running.',
-                  'Imported archive messages will become visible after MessageLens finishes preparing them.',
-                ],
-              );
-
               final archiveSources = await ref.read(
                 historicalArchiveSourcesProvider.future,
               );
@@ -1341,8 +1423,22 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                   .importAndProject(
                     folderPath: selectedFolderPath,
                     sourceLabel: state.sourceLabel,
+                    onObservation: (observation) {
+                      _applyImportObservation(
+                        observation: observation,
+                        presentationSessionOccurrence:
+                            importPresentationSessionOccurrence,
+                      );
+                    },
                   );
               ref.read(messageDataVersionProvider.notifier).bump();
+
+              _setImportStageStatus(
+                stage: HistoricalArchiveImportStage.verifyingImport,
+                status: HistoricalArchiveImportStageStatus.running,
+                presentationSessionOccurrence:
+                    importPresentationSessionOccurrence,
+              );
 
               ArchiveSourceInspector? archiveSourceInspector;
               try {
@@ -1362,8 +1458,29 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                 folderPath: selectedFolderPath,
                 archiveSourceInspector: archiveSourceInspector,
               );
+              if (refreshedResult.preflight.status !=
+                      HistoricalArchivesPreflightStatus.completeReadyToImport ||
+                  refreshedResult.chatDbStatusLabel != 'Found and readable') {
+                throw StateError(
+                  'Final source verification did not confirm a readable Messages archive.',
+                );
+              }
+
+              final importedSourceLookup = await ref.read(
+                historicalArchiveImportedSourceLookupProvider.future,
+              );
+              final sourceKey =
+                  archiveResult.importResult.registration.sourceKey;
+              final importedSourceMatch = await importedSourceLookup
+                  .findImportedSourceByKey(sourceKey: sourceKey);
+              if (importedSourceMatch == null ||
+                  importedSourceMatch.importedMessageCount <= 0) {
+                throw StateError(
+                  'Final import verification found no imported messages for the archive source.',
+                );
+              }
               final importedMessageCount =
-                  archiveResult.importResult.messages.insertedMessageCount;
+                  importedSourceMatch.importedMessageCount;
 
               final completedAtUtc = DateTime.now().toUtc().toIso8601String();
               await archiveSources.upsertSourceMetadata(
@@ -1392,28 +1509,18 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                   updatedAtUtc: completedAtUtc,
                 ),
               );
-
-              final refreshedState = _workflowStateFromPreflightResult(
-                refreshedResult,
+              ref.invalidate(historicalArchiveSourceMetadataProvider);
+              _setImportStageStatus(
+                stage: HistoricalArchiveImportStage.verifyingImport,
+                status: HistoricalArchiveImportStageStatus.succeeded,
+                presentationSessionOccurrence:
+                    importPresentationSessionOccurrence,
               );
-              state = refreshedState.copyWith(
-                presentationStage:
-                    HistoricalArchivesPresentationStage.laterWorkflow,
-                activityLog: [
-                  HistoricalArchivesLogEntryViewModel(
-                    label: 'Import complete',
-                    message:
-                        'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)} and refreshed browsing data.',
-                  ),
-                  ...refreshedState.activityLog,
-                ],
-                phases: _completedArchiveImportPhases(
-                  importedMessageCount: importedMessageCount,
-                ),
-                resultSummaryLines: [
-                  'Imported $importedMessageCount messages from ${path.basename(selectedFolderPath)}.',
-                  'Archive messages are ready to browse in MessageLens.',
-                ],
+              ref.read(messageDataVersionProvider.notifier).bump();
+              _completeImportJourney(
+                sourceKey: sourceKey,
+                presentationSessionOccurrence:
+                    importPresentationSessionOccurrence,
               );
             },
           );
@@ -1425,72 +1532,164 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               '${_describeExecutionOwnerLabel(error.currentOwner)} currently owns archive mutation authority. Archive import must wait.',
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
       final detail = 'Archive import failed: $error';
-      final archiveSources = await ref.read(
-        historicalArchiveSourcesProvider.future,
-      );
       final failedAtUtc = DateTime.now().toUtc().toIso8601String();
-      await archiveSources.upsertSourceMetadata(
-        HistoricalArchiveSourceMetadataUpdate(
-          sourceChatDb: selectedChatDbPath,
-          folderPath: selectedFolderPath,
-          sourceLabel: state.sourceLabel,
-          chatDbStatusLabel: state.chatDbStatusLabel,
-          attachmentsStatusLabel: state.attachmentsStatusLabel,
-          preflightStatusLabel: 'Import failed',
-          preflightDetail: detail,
-          totalMessages: _summaryLineInt(
-            state.preflightSummaryLines,
-            'Total messages:',
+      try {
+        final archiveSources = await ref.read(
+          historicalArchiveSourcesProvider.future,
+        );
+        final evidence = state.inspectionEvidence;
+        await archiveSources.upsertSourceMetadata(
+          HistoricalArchiveSourceMetadataUpdate(
+            sourceChatDb: selectedChatDbPath,
+            folderPath: selectedFolderPath,
+            sourceLabel: state.sourceLabel,
+            chatDbStatusLabel: state.chatDbStatusLabel,
+            attachmentsStatusLabel: state.attachmentsStatusLabel,
+            preflightStatusLabel: 'Import incomplete',
+            preflightDetail: detail,
+            totalMessages: evidence?.totalMessages,
+            totalChats: evidence?.totalChats,
+            totalHandles: evidence?.totalHandles,
+            missingGuids: evidence?.missingGuids,
+            earliestMessageUtc: evidence?.earliestMessageUtc,
+            latestMessageUtc: evidence?.latestMessageUtc,
+            dryRunNewMessages: evidence?.dryRunNewMessages,
+            dryRunDuplicateMessages: evidence?.dryRunDuplicateMessages,
+            lastImportFinishedAtUtc: failedAtUtc,
+            lastImportSuccess: false,
+            lastImportError: detail,
+            updatedAtUtc: failedAtUtc,
           ),
-          totalChats: _summaryLineInt(
-            state.preflightSummaryLines,
-            'Total chats:',
+        );
+        ref.invalidate(historicalArchiveSourceMetadataProvider);
+      } catch (metadataError, metadataStackTrace) {
+        _logHistoricalArchivesWarning(
+          ref,
+          message: 'Unable to record incomplete archive import metadata',
+          error: metadataError,
+          stackTrace: metadataStackTrace,
+        );
+      }
+      ref.read(messageDataVersionProvider.notifier).bump();
+      if (_ownsCurrentImportPresentation(
+        presentationSessionOccurrence: importPresentationSessionOccurrence,
+      )) {
+        final failedProgress = _progressWithRunningImportStageFailed(
+          state.importProgress ?? initialProgress,
+        );
+        state = state.copyWith(
+          presentationContext:
+              HistoricalArchivesPresentationContext.importFailed,
+          presentationStage: HistoricalArchivesPresentationStage.importFailed,
+          importFailureDetail: detail,
+          importProgress: failedProgress,
+          preflight: HistoricalArchivesPreflightViewModel(
+            status: HistoricalArchivesPreflightStatus.failed,
+            statusLabel: 'Import incomplete',
+            detail: detail,
           ),
-          totalHandles: _summaryLineInt(
-            state.preflightSummaryLines,
-            'Total handles:',
-          ),
-          missingGuids: _summaryLineInt(
-            state.preflightSummaryLines,
-            'Rows with missing GUIDs:',
-          ),
-          dryRunNewMessages: _summaryLineInt(
-            state.dryRunSummaryLines,
-            'Estimated new messages:',
-          ),
-          dryRunDuplicateMessages: _summaryLineInt(
-            state.dryRunSummaryLines,
-            'Estimated duplicates:',
-          ),
-          lastImportFinishedAtUtc: failedAtUtc,
-          lastImportSuccess: false,
-          lastImportError: detail,
-          updatedAtUtc: failedAtUtc,
-        ),
-      );
-      state = state.copyWith(
-        presentationStage: HistoricalArchivesPresentationStage.laterWorkflow,
-        preflight: HistoricalArchivesPreflightViewModel(
-          status: HistoricalArchivesPreflightStatus.failed,
-          statusLabel: 'Import failed',
-          detail: detail,
-        ),
-        activityLog: [
-          HistoricalArchivesLogEntryViewModel(
-            label: 'Import failed',
-            message: detail,
-          ),
-          ...state.activityLog,
-        ],
-        phases: _failedArchiveImportPhases(detail: detail),
-        resultSummaryLines: [
-          'Archive import failed before messages were ready to browse.',
-          detail,
-        ],
+        );
+      }
+      _logHistoricalArchivesWarning(
+        ref,
+        message: 'Historical archive import did not complete',
+        error: error,
+        stackTrace: stackTrace,
       );
     }
+  }
+
+  void _applyImportObservation({
+    required SourceScopedArchiveGraphImportObservation observation,
+    required int presentationSessionOccurrence,
+  }) {
+    final stage = switch (observation.stage) {
+      SourceScopedArchiveGraphImportStage.importingSourceFacts =>
+        HistoricalArchiveImportStage.addingMessages,
+      SourceScopedArchiveGraphImportStage.projectingConversationGraph =>
+        HistoricalArchiveImportStage.preparingConversations,
+    };
+    final status = switch (observation.transition) {
+      SourceScopedArchiveGraphImportStageTransition.started =>
+        HistoricalArchiveImportStageStatus.running,
+      SourceScopedArchiveGraphImportStageTransition.completed =>
+        HistoricalArchiveImportStageStatus.succeeded,
+    };
+    _setImportStageStatus(
+      stage: stage,
+      status: status,
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    );
+  }
+
+  void _setImportStageStatus({
+    required HistoricalArchiveImportStage stage,
+    required HistoricalArchiveImportStageStatus status,
+    required int presentationSessionOccurrence,
+  }) {
+    if (!_ownsCurrentImportPresentation(
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    )) {
+      return;
+    }
+    final progress =
+        (state.importProgress ?? const HistoricalArchiveImportProgress())
+            .withStage(stage, status);
+    state = state.copyWith(importProgress: progress);
+  }
+
+  bool _ownsCurrentImportPresentation({
+    required int presentationSessionOccurrence,
+  }) {
+    return _presentationSessionOccurrence == presentationSessionOccurrence &&
+        state.presentationContext ==
+            HistoricalArchivesPresentationContext.importingArchive;
+  }
+
+  HistoricalArchiveImportProgress _progressWithRunningImportStageFailed(
+    HistoricalArchiveImportProgress progress,
+  ) {
+    for (final stage in HistoricalArchiveImportStage.values) {
+      if (progress.statusFor(stage) ==
+          HistoricalArchiveImportStageStatus.running) {
+        return progress.withStage(
+          stage,
+          HistoricalArchiveImportStageStatus.failed,
+        );
+      }
+    }
+    return progress.withStage(
+      HistoricalArchiveImportStage.addingMessages,
+      HistoricalArchiveImportStageStatus.failed,
+    );
+  }
+
+  void _completeImportJourney({
+    required String sourceKey,
+    required int presentationSessionOccurrence,
+  }) {
+    if (!_ownsCurrentImportPresentation(
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    )) {
+      return;
+    }
+    _referenceClearTimer?.cancel();
+    _nextReferenceOccurrence += 1;
+    final referenceOccurrence = _nextReferenceOccurrence;
+    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+      knownSourceReference: HistoricalArchivesKnownSourceReference(
+        sourceKey: sourceKey,
+        referenceOccurrence: referenceOccurrence,
+      ),
+    );
+    _referenceClearTimer = Timer(historicalArchivesReferenceLifetime, () {
+      _clearKnownSourceReference(
+        referenceOccurrence: referenceOccurrence,
+        presentationSessionOccurrence: presentationSessionOccurrence,
+      );
+    });
   }
 
   void _prependActivityLog(HistoricalArchivesLogEntryViewModel entry) {
@@ -1518,6 +1717,31 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         stackTrace: stackTrace,
       );
       return null;
+    }
+  }
+
+  Future<bool> _hasSuccessfulImportMetadata({
+    required HistoricalArchiveSources? archiveSources,
+    required String sourceKey,
+  }) async {
+    if (archiveSources == null) {
+      return false;
+    }
+    try {
+      final sources = await archiveSources.readKnownSources();
+      return sources.any(
+        (source) =>
+            source.sourceKey == sourceKey && source.lastImportSuccess == true,
+      );
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message:
+            'Unable to verify finalized archive membership during folder inspection',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
     }
   }
 
@@ -1777,6 +2001,34 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
     );
   }
 
+  if (workflowState.presentationContext ==
+          HistoricalArchivesPresentationContext.importingArchive ||
+      workflowState.presentationContext ==
+          HistoricalArchivesPresentationContext.importFailed) {
+    final failed = workflowState.importFailureDetail != null;
+    final progress =
+        workflowState.importProgress ?? const HistoricalArchiveImportProgress();
+    return HistoricalArchivesNarratorPresentationViewModel(
+      kind: failed
+          ? HistoricalArchivesNarratorPresentationKind.importFailed
+          : HistoricalArchivesNarratorPresentationKind.importingArchive,
+      narratorText: failed
+          ? "MessageLens couldn't finish adding this folder."
+          : 'Adding this Messages folder to MessageLens.',
+      instrumentationRows: _importInstrumentationRows(progress),
+      detailsLines: [
+        ..._inspectionDetailsLines(
+          workflowState: workflowState,
+          executionGate: executionGate,
+        ),
+        'The original Messages folder and its files are read-only input and were not changed.',
+        if (workflowState.importFailureDetail case final String failureDetail)
+          failureDetail,
+      ],
+      retryInspectionEnabled: false,
+    );
+  }
+
   return switch (workflowState.presentationStage) {
     HistoricalArchivesPresentationStage.noSource =>
       const HistoricalArchivesNarratorPresentationViewModel(
@@ -1856,7 +2108,55 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
         retryInspectionEnabled: false,
       ),
     HistoricalArchivesPresentationStage.existingSource => null,
+    HistoricalArchivesPresentationStage.importingArchive => null,
+    HistoricalArchivesPresentationStage.importFailed => null,
     HistoricalArchivesPresentationStage.laterWorkflow => null,
+  };
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel> _importInstrumentationRows(
+  HistoricalArchiveImportProgress progress,
+) {
+  return [
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Adding messages from this folder',
+      value: _importStageValue(progress.addingMessages),
+      status: _importInstrumentationStatus(progress.addingMessages),
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Preparing conversations for browsing',
+      value: _importStageValue(progress.preparingConversations),
+      status: _importInstrumentationStatus(progress.preparingConversations),
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Checking that import finished',
+      value: _importStageValue(progress.verifyingImport),
+      status: _importInstrumentationStatus(progress.verifyingImport),
+    ),
+  ];
+}
+
+String _importStageValue(HistoricalArchiveImportStageStatus status) {
+  return switch (status) {
+    HistoricalArchiveImportStageStatus.waiting => 'Waiting',
+    HistoricalArchiveImportStageStatus.running => 'Working',
+    HistoricalArchiveImportStageStatus.succeeded => 'Done',
+    HistoricalArchiveImportStageStatus.failed => 'Failed',
+  };
+}
+
+HistoricalArchivesInstrumentationStatus _importInstrumentationStatus(
+  HistoricalArchiveImportStageStatus status,
+) {
+  return switch (status) {
+    HistoricalArchiveImportStageStatus.waiting =>
+      HistoricalArchivesInstrumentationStatus.waiting,
+    HistoricalArchiveImportStageStatus.running =>
+      HistoricalArchivesInstrumentationStatus.working,
+    HistoricalArchiveImportStageStatus.succeeded =>
+      HistoricalArchivesInstrumentationStatus.resolved,
+    HistoricalArchiveImportStageStatus.failed =>
+      HistoricalArchivesInstrumentationStatus.failed,
   };
 }
 
@@ -2220,6 +2520,10 @@ List<String> _importSafetySummaryLines(
 }
 
 String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
+  if (workflowState.presentationContext ==
+      HistoricalArchivesPresentationContext.importFailed) {
+    return 'Import Incomplete';
+  }
   if (workflowState.presentationStage ==
       HistoricalArchivesPresentationStage.knownSource) {
     return 'Known Archive Source';
@@ -2238,6 +2542,10 @@ String _availableStatusLabel(HistoricalArchivesWorkflowState workflowState) {
 }
 
 String _availableSummaryText(HistoricalArchivesWorkflowState workflowState) {
+  if (workflowState.presentationContext ==
+      HistoricalArchivesPresentationContext.importFailed) {
+    return 'MessageLens did not finish adding this folder. Completed work remains visible, and the same source-scoped operation can be tried again.';
+  }
   if (workflowState.presentationStage ==
       HistoricalArchivesPresentationStage.knownSource) {
     return 'The selected sidebar source is known to MessageLens. Choose its folder again before any import decision is offered.';
@@ -2262,6 +2570,10 @@ String _availableImportButtonDetail(
   HistoricalArchivesWorkflowState workflowState, {
   required String currentMessagesDatabasePath,
 }) {
+  if (workflowState.presentationContext ==
+      HistoricalArchivesPresentationContext.importFailed) {
+    return 'Try Again repeats the idempotent source-scoped import and verifies the complete result before the folder becomes an added archive.';
+  }
   if (workflowState.presentationStage ==
       HistoricalArchivesPresentationStage.knownSource) {
     return 'Import is not offered from persisted known-source information. Choose the folder again to establish current source truth.';
@@ -2324,8 +2636,17 @@ bool _importButtonEnabled({
     return false;
   }
 
-  return workflowState.preflight.status ==
-      HistoricalArchivesPreflightStatus.completeReadyToImport;
+  if (workflowState.presentationContext ==
+      HistoricalArchivesPresentationContext.importFailed) {
+    return workflowState.inspectionEvidence != null;
+  }
+
+  return workflowState.presentationContext ==
+          HistoricalArchivesPresentationContext.addArchive &&
+      workflowState.presentationStage ==
+          HistoricalArchivesPresentationStage.readyForImport &&
+      workflowState.preflight.status ==
+          HistoricalArchivesPreflightStatus.completeReadyToImport;
 }
 
 List<String> _archiveManagementSummaryLines(
@@ -2769,29 +3090,6 @@ String _dateSummaryLabel(String? utcIsoString) {
   return '${utc.year}-$month-$day';
 }
 
-int? _summaryLineInt(List<String> lines, String prefix) {
-  final line = _firstLineWithPrefix(lines, prefix);
-  if (line == null) {
-    return null;
-  }
-
-  final match = RegExp(r'(\d+)').firstMatch(line);
-  if (match == null) {
-    return null;
-  }
-  return int.tryParse(match.group(1)!);
-}
-
-String? _firstLineWithPrefix(List<String> lines, String prefix) {
-  for (final line in lines) {
-    if (line.startsWith(prefix)) {
-      return line;
-    }
-  }
-
-  return null;
-}
-
 bool _isCurrentMacChatDbPath(
   String sourceChatDbPath, {
   required String currentMessagesDatabasePath,
@@ -2941,131 +3239,6 @@ HistoricalArchivesWorkflowPhaseStatus _removalWorkflowPhaseStatus(
     HistoricalArchiveRemovalStageStatus.failed =>
       HistoricalArchivesWorkflowPhaseStatus.failed,
   };
-}
-
-List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveImportPhases() {
-  return const [
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Reading archive source',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Selected archive metadata was already validated in preflight.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Preparing archive records',
-      status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'MessageLens is reading archive source tables now.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Importing archive messages',
-      status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail: 'Archive messages are being imported into MessageLens.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Preparing messages for browsing',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Browsing preparation starts after archive import succeeds.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Rebuilding indexes/search/heatmap support tables',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Waiting for browsing preparation to complete.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing shared evidence surfaces',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Waiting for browsing preparation to complete.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Complete',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Archive import is still running.',
-    ),
-  ];
-}
-
-List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveImportPhases({
-  required String detail,
-}) {
-  return [
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Reading archive source',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Selected archive metadata was already validated in preflight.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Preparing archive records',
-      status: HistoricalArchivesWorkflowPhaseStatus.failed,
-      detail: detail,
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Importing archive messages',
-      status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail: 'Skipped because archive import did not complete successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Preparing messages for browsing',
-      status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail: 'Skipped because archive import did not complete successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Rebuilding indexes/search/heatmap support tables',
-      status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail: 'Skipped because archive import did not complete successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing shared evidence surfaces',
-      status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail: 'Skipped because archive import did not complete successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Complete',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Archive import did not complete.',
-    ),
-  ];
-}
-
-List<HistoricalArchivesWorkflowPhaseViewModel> _completedArchiveImportPhases({
-  required int importedMessageCount,
-}) {
-  return [
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Reading archive source',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Selected archive metadata was validated successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Preparing archive records',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Archive records were prepared successfully.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Importing archive messages',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail:
-          'Archive import wrote $importedMessageCount messages for this archive source.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Preparing messages for browsing',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Messages were prepared for browsing successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Rebuilding indexes/search/heatmap support tables',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Projection rebuild steps completed successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing shared evidence surfaces',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Shared message evidence surfaces refreshed successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Complete',
-      status: HistoricalArchivesWorkflowPhaseStatus.succeeded,
-      detail: 'Archive import completed successfully.',
-    ),
-  ];
 }
 
 String _describeExecutionOwnerLabel(String? owner) {

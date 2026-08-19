@@ -650,6 +650,13 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
                             HistoricalArchivesNarratorPresentationKind
                                 .removalFailed
                     ? 'REMOVING MESSAGES FOLDER'
+                    : presentation.kind ==
+                              HistoricalArchivesNarratorPresentationKind
+                                  .importingArchive ||
+                          presentation.kind ==
+                              HistoricalArchivesNarratorPresentationKind
+                                  .importFailed
+                    ? 'ADDING MESSAGES FOLDER'
                     : 'MESSAGES ARCHIVE',
                 style: typography.caption.copyWith(
                   color: colors.content.textTertiary,
@@ -678,21 +685,21 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
         ),
       ),
     );
+    final hasTrackLayout =
+        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
     final isRemoval =
         presentation.kind ==
             HistoricalArchivesNarratorPresentationKind.removingSource ||
         presentation.kind ==
             HistoricalArchivesNarratorPresentationKind.removalFailed;
-    final hasTrackLayout =
-        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
 
     return ColoredBox(
       color: colors.surfaces.canvas,
       child: SingleChildScrollView(
-        padding: isRemoval && hasTrackLayout
+        padding: hasTrackLayout
             ? EdgeInsets.zero
             : const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
-        child: isRemoval && hasTrackLayout
+        child: hasTrackLayout
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -710,7 +717,11 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
                       ),
                     ),
                   Padding(
-                    key: const Key('historical-archives-removal-native-flow'),
+                    key: Key(
+                      isRemoval
+                          ? 'historical-archives-removal-native-flow'
+                          : 'historical-archives-narrator-native-flow',
+                    ),
                     padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
                     child: content,
                   ),
@@ -726,10 +737,12 @@ bool _hasNarratorDecision(HistoricalArchivesNarratorPresentationKind kind) {
   return switch (kind) {
     HistoricalArchivesNarratorPresentationKind.noSource ||
     HistoricalArchivesNarratorPresentationKind.inspectingSource ||
+    HistoricalArchivesNarratorPresentationKind.importingArchive ||
     HistoricalArchivesNarratorPresentationKind.removingSource ||
     HistoricalArchivesNarratorPresentationKind.removalFailed => false,
     HistoricalArchivesNarratorPresentationKind.inspectionFailed ||
     HistoricalArchivesNarratorPresentationKind.readyForImport ||
+    HistoricalArchivesNarratorPresentationKind.importFailed ||
     HistoricalArchivesNarratorPresentationKind.knownSource => true,
   };
 }
@@ -843,6 +856,8 @@ class _NarratorDecision extends ConsumerWidget {
         const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.inspectingSource =>
         const SizedBox.shrink(),
+      HistoricalArchivesNarratorPresentationKind.importingArchive =>
+        const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.removingSource ||
       HistoricalArchivesNarratorPresentationKind.removalFailed =>
         const SizedBox.shrink(),
@@ -869,7 +884,24 @@ class _NarratorDecision extends ConsumerWidget {
         children: [
           if (panelModel.importButtonEnabled)
             _HistoricalArchiveActionButton(
-              label: 'Import Archive',
+              label: 'Add Messages to MessageLens',
+              enabled: true,
+              onPressed: actions.beginImportForSelectedSource,
+            ),
+          _HistoricalArchiveActionButton(
+            label: 'Choose Another Folder',
+            enabled: true,
+            onPressed: actions.chooseMessagesFolder,
+          ),
+        ],
+      ),
+      HistoricalArchivesNarratorPresentationKind.importFailed => Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          if (panelModel.importButtonEnabled)
+            _HistoricalArchiveActionButton(
+              label: 'Try Again',
               enabled: true,
               onPressed: actions.beginImportForSelectedSource,
             ),

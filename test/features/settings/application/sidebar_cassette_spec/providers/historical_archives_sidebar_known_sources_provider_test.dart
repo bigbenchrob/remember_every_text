@@ -119,9 +119,9 @@ void main() {
             importedSourcesByKey: const {sourceKey: importedMatch},
           );
 
-      expect(failedSummaries.single.importedOnLabel, isNull);
+      expect(failedSummaries, isEmpty);
       expect(missingTimestampSummaries.single.importedOnLabel, isNull);
-      expect(unverifiedTimestampSummaries.single.importedOnLabel, isNull);
+      expect(unverifiedTimestampSummaries, isEmpty);
     });
 
     test('omits an unsupported date range instead of showing a fallback', () {

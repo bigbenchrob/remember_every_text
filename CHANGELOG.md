@@ -10,6 +10,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.60] — 2026-08-19
+
+### Changed
+
+- Historical Archives now carries a valid Mac Messages folder from inspection
+  through explicit authorization, source import, conversation preparation, and
+  final verification using Narrator and three truthful live instrumentation
+  rows. The legacy giant control panel no longer owns the ordinary import
+  journey, partial failures remain retryable without becoming imported-folder
+  cartouches, and successful completion returns naturally to the archive hub.
+
 ## [0.2.59] — 2026-08-19
 
 ### Changed
