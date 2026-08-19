@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
-import 'package:remember_this_text/config/theme/spacing/app_spacing.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart';
@@ -196,18 +195,26 @@ void main() {
             .height!;
       }
 
-      expect(
-        gapHeight('historical-archives-source-to-known-folders-gap'),
-        AppSpacing.xl,
+      final sourceToKnownFolders = gapHeight(
+        'historical-archives-source-to-known-folders-gap',
       );
-      expect(
-        gapHeight('historical-archives-known-folders-to-add-gap'),
-        AppSpacing.xl,
+      final knownFoldersToAdd = gapHeight(
+        'historical-archives-known-folders-to-add-gap',
       );
-      expect(
-        gapHeight('historical-archives-guidance-to-chooser-gap'),
-        AppSpacing.lg,
+      final guidanceParagraph = gapHeight(
+        'historical-archives-guidance-paragraph-gap',
       );
+      final headingToContent = gapHeight(
+        'historical-archives-add-heading-to-content-gap',
+      );
+      final guidanceToChooser = gapHeight(
+        'historical-archives-guidance-to-chooser-gap',
+      );
+
+      expect(sourceToKnownFolders, greaterThan(guidanceParagraph));
+      expect(knownFoldersToAdd, greaterThan(guidanceParagraph));
+      expect(guidanceParagraph, greaterThan(headingToContent));
+      expect(guidanceToChooser, greaterThan(guidanceParagraph));
     });
 
     testWidgets('tapping choose messages folder triggers workflow chooser', (

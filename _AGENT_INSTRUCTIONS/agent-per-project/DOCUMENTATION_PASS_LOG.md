@@ -5010,3 +5010,16 @@ production preservation authority mechanically enforceable.
 - Confirmed that all copy, widths, source labels, disabled state, cartouches,
   center-panel silence, workflow, persistence, and archive semantics remain
   unchanged.
+
+## 2026-08-19 — Historical Archives decisive section spacing
+
+- Added Feature 26 response
+  `27-HISTORICAL-ARCHIVES-DECISIVE-SECTION-SPACING-IMPLEMENTATION.md`.
+- Recorded why the previous `32px` major separation remained perceptually
+  insufficient despite being structurally correct.
+- Established `56px` major section breaks, `24px` guidance rhythm, a `32px`
+  guidance-to-action handoff, and the preserved `8px` heading/content bond.
+- Documented that large section separation and internal paragraph rhythm are
+  distinct layout responsibilities.
+- Confirmed that the pass changes no content, workflow, source, persistence,
+  mutation, cartouche, modal, navigation, or center-panel behavior.

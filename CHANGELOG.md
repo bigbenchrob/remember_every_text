@@ -10,6 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.54] — 2026-08-19
+
+### Changed
+
+- Historical Archives now separates context, previously added folders, and
+  adding a new folder with decisive visual breaks, while preserving compact
+  heading relationships and the existing sidebar content and behavior.
+
 ## [0.2.53] — 2026-08-19
 
 ### Changed

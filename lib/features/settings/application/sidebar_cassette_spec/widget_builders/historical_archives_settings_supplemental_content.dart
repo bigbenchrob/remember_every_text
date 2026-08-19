@@ -9,6 +9,8 @@ import '../../historical_archives_workflow_actions_provider.dart';
 import '../../historical_archives_workflow_panel_model_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
 
+const _majorSectionGap = AppSpacing.xxl + AppSpacing.sm;
+
 class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
   const HistoricalArchivesSettingsSupplementalContent({
     super.key,
@@ -55,7 +57,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
           key: ValueKey<String>(
             'historical-archives-source-to-known-folders-gap',
           ),
-          height: AppSpacing.xl,
+          height: _majorSectionGap,
         ),
         Text(
           'Folders Already Added',
@@ -95,7 +97,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             key: ValueKey<String>(
               'historical-archives-known-folders-to-add-gap',
             ),
-            height: AppSpacing.xl,
+            height: _majorSectionGap,
           ),
           Text(
             'Add from a Messages Folder',
@@ -103,7 +105,12 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               color: colors.content.textPrimary,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(
+            key: ValueKey<String>(
+              'historical-archives-add-heading-to-content-gap',
+            ),
+            height: AppSpacing.sm,
+          ),
           Text(
             'Choose the folder containing chat.db, not the chat.db file itself.',
             key: const ValueKey<String>(
@@ -113,14 +120,17 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               color: colors.content.textSecondary,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(
+            key: ValueKey<String>('historical-archives-guidance-paragraph-gap'),
+            height: AppSpacing.lg,
+          ),
           Text(
             'Usually: Home → Library → Messages',
             style: typography.caption1.copyWith(
               color: colors.content.textSecondary,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
           Text(
             'Older copies can be on another drive, moved, or renamed. An '
             "Attachments folder may also be present, but it isn't required.",
@@ -132,7 +142,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             key: ValueKey<String>(
               'historical-archives-guidance-to-chooser-gap',
             ),
-            height: AppSpacing.lg,
+            height: AppSpacing.xl,
           ),
           DecoratedBox(
             decoration: BoxDecoration(
