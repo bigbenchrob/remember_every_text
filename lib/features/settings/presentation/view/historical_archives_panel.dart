@@ -6,6 +6,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
+import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
+import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
+import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../../essentials/debug/feature_level_providers.dart'
     show DeveloperModeValue, developerModeProvider;
 import '../../application/historical_archives_workflow_actions_provider.dart';
@@ -490,72 +493,103 @@ class _ExistingHistoricalArchiveSourcePanel extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final story = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: Column(
+          key: const Key('historical-archives-existing-source-story'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              presentation.sourceTypeStatement,
+              style: typography.title2.copyWith(
+                color: colors.content.textPrimary,
+              ),
+            ),
+            if (presentation.importDateStatement
+                case final importDateStatement?) ...[
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                importDateStatement,
+                style: typography.body.copyWith(
+                  color: colors.content.textSecondary,
+                ),
+              ),
+            ],
+            if (presentation.contentsStatement
+                case final contentsStatement?) ...[
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                contentsStatement,
+                style: typography.title3.copyWith(
+                  color: colors.content.textPrimary,
+                ),
+              ),
+            ],
+            if (presentation.detailsLines.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.xl),
+              _HistoricalArchivesDetailsDisclosure(
+                label: 'More Details',
+                lines: presentation.detailsLines,
+              ),
+            ],
+            if (panelModel.removeImportedArchiveDataEnabled) ...[
+              const SizedBox(height: AppSpacing.xxl),
+              _HistoricalArchiveActionButton(
+                label: 'Remove this folder…',
+                enabled: true,
+                destructive: true,
+                onPressed: () {
+                  unawaited(
+                    _showRemoveImportedArchiveDataConfirmationDialog(
+                      context: context,
+                      ref: ref,
+                      panelModel: panelModel,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+    final hasTrackLayout =
+        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
 
     return ColoredBox(
       color: colors.surfaces.canvas,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Column(
-              key: const Key('historical-archives-existing-source-story'),
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  presentation.sourceTypeStatement,
-                  style: typography.title2.copyWith(
-                    color: colors.content.textPrimary,
-                  ),
-                ),
-                if (presentation.importDateStatement
-                    case final importDateStatement?) ...[
-                  const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    importDateStatement,
-                    style: typography.body.copyWith(
-                      color: colors.content.textSecondary,
+        padding: hasTrackLayout
+            ? EdgeInsets.zero
+            : const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+        child: hasTrackLayout
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final trackId in const [
+                    TrackId.trackA,
+                    TrackId.trackB,
+                    TrackId.trackC,
+                    TrackId.trackD,
+                    TrackId.trackE,
+                  ])
+                    TrackCellView(
+                      cellId: CellId(
+                        trackId: trackId,
+                        columnId: TrackColumnId.column2,
+                      ),
                     ),
-                  ),
-                ],
-                if (presentation.contentsStatement
-                    case final contentsStatement?) ...[
-                  const SizedBox(height: AppSpacing.xl),
-                  Text(
-                    contentsStatement,
-                    style: typography.title3.copyWith(
-                      color: colors.content.textPrimary,
+                  Padding(
+                    key: const Key(
+                      'historical-archives-existing-source-native-flow',
                     ),
+                    padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
+                    child: story,
                   ),
                 ],
-                if (presentation.detailsLines.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xl),
-                  _HistoricalArchivesDetailsDisclosure(
-                    label: 'More Details',
-                    lines: presentation.detailsLines,
-                  ),
-                ],
-                if (panelModel.removeImportedArchiveDataEnabled) ...[
-                  const SizedBox(height: AppSpacing.xxl),
-                  _HistoricalArchiveActionButton(
-                    label: 'Remove this folder…',
-                    enabled: true,
-                    destructive: true,
-                    onPressed: () {
-                      unawaited(
-                        _showRemoveImportedArchiveDataConfirmationDialog(
-                          context: context,
-                          ref: ref,
-                          panelModel: panelModel,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
+              )
+            : story,
       ),
     );
   }

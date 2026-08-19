@@ -3,12 +3,89 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
+import 'package:remember_this_text/config/theme/theme_typography.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
+import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart';
 
 void main() {
   group('HistoricalArchivesSettingsSupplementalContent', () {
+    testWidgets('tracked cassette hands native flow off at the bottom of E', (
+      tester,
+    ) async {
+      const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+      late double expectedSharedHeight;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: CupertinoApp(
+            home: Consumer(
+              builder: (context, ref, child) {
+                final composition = composeHistoricalArchivesPageTrackLayout(
+                  presentationConstraints:
+                      PresentationConstraints.fromBuildContext(
+                        context,
+                        availableWidth: 900,
+                      ),
+                  typography: ref.watch(themeTypographyProvider),
+                );
+                expectedSharedHeight = historicalArchivesSharedTrackIds.fold(
+                  0,
+                  (height, trackId) =>
+                      height + composition.resolvedMatrix.heightFor(trackId),
+                );
+                return ResolvedTrackLayoutMatrixScope(
+                  matrix: composition.resolvedMatrix,
+                  child: const SizedBox(
+                    width: 320,
+                    child: HistoricalArchivesSettingsTrackedCassette(
+                      payload: HistoricalArchivesSettingsCassettePayload(
+                        knownSources: [
+                          HistoricalArchiveSidebarSourceSummary(
+                            sourceKey: sourceKey,
+                            label: 'Archive-2017',
+                            dateRangeLabel: 'Date range: 2012 to 2017',
+                            messageCountLabel: 'Messages: 8,882',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final cassette = find.byKey(
+        const ValueKey<String>('historical-archives-tracked-sidebar-cassette'),
+      );
+      final nativeFlow = find.byKey(
+        const ValueKey<String>('historical-archives-sidebar-native-flow'),
+      );
+      expect(
+        tester.getTopLeft(nativeFlow).dy - tester.getTopLeft(cassette).dy,
+        moreOrLessEquals(expectedSharedHeight),
+      );
+      expect(
+        tester
+            .getTopLeft(
+              find.byKey(
+                const ValueKey<String>(
+                  'historical-archive-source-chrome:$sourceKey',
+                ),
+              ),
+            )
+            .dy,
+        tester.getTopLeft(nativeFlow).dy,
+      );
+    });
+
     testWidgets('renders only durable human archive metadata', (tester) async {
       const payload = HistoricalArchivesSettingsCassettePayload(
         knownSources: [

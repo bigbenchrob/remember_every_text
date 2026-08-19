@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.57] — 2026-08-19
+
+### Changed
+
+- Historical Archives now uses the shared Track matrix for its fixed upper
+  sidebar geometry. The selected-source center story begins at the same
+  structural coordinate as the known-folder cartouche list, while both
+  variable content regions continue independently below that seam.
+
 ## [0.2.56] — 2026-08-19
 
 ### Changed

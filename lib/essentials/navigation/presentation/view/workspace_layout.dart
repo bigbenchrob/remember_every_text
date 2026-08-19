@@ -12,7 +12,7 @@ class WorkspaceLayout extends ConsumerWidget {
 
   final SidebarMode mode;
 
-  static const double _navigationColumnWidth = 320;
+  static const double navigationColumnWidth = 320;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,7 +21,7 @@ class WorkspaceLayout extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SidebarPlane(
-          width: _navigationColumnWidth,
+          width: navigationColumnWidth,
           child: isParked
               ? SidebarParkedOverlay(mode: mode)
               : LeftPanelHost(mode: mode),

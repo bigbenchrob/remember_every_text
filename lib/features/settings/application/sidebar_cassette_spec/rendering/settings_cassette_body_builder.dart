@@ -38,3 +38,9 @@ Widget? buildFeatureInfoSupplementalContent({
     ),
   };
 }
+
+Widget buildHistoricalArchivesSettingsCassette({
+  required HistoricalArchivesSettingsCassettePayload payload,
+}) {
+  return HistoricalArchivesSettingsTrackedCassette(payload: payload);
+}

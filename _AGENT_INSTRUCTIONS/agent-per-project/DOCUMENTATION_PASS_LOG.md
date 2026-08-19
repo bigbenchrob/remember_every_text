@@ -5048,3 +5048,16 @@ production preservation authority mechanically enforceable.
   unique-contribution claim and why omission is required.
 - Restored the existing confirmed removal entry with canonical destructive
   theme tokens while preserving removal execution and mutation authority.
+
+## 2026-08-19 — Historical archive selected-source Track alignment
+
+- Added Feature 26 response
+  `29-HISTORICAL-ARCHIVE-SELECTED-SOURCE-TRACK-ALIGNMENT-IMPLEMENTATION.md`.
+- Recorded Historical Archives Tracks A-E as the fixed shared upper region and
+  the trailing edge of E as the handoff to independent native flows.
+- Documented that the cartouche list and selected-source story share a start
+  coordinate without either variable-height region becoming a Track occupant.
+- Recorded truthful text/control dimensional claims and reuse of the approved
+  `AppSpacing` transitions as ordinary fixed-height occupants.
+- Confirmed that no dynamic row alignment, magic top inset, scroll
+  synchronization, source/persistence change, or workflow change was added.

@@ -36,6 +36,7 @@ import '../../application/panel_widget_providers.dart';
 import '../../application/sidebar_mode_provider.dart';
 import '../../domain/sidebar_mode.dart';
 import '../layout/contacts_page_track_plan.dart';
+import '../layout/historical_archives_page_track_plan.dart';
 import '../layout/recovered_messages_page_track_plan.dart';
 import '../layout/search_page_conversation_track_occupants.dart';
 import '../layout/search_page_track_plan.dart';
@@ -154,6 +155,10 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     final useContactsTrackPlan =
         activeMode == SidebarMode.messages &&
         sidebarFlowState.topMenuChoice == TopChatMenuChoice.contacts;
+    final useHistoricalArchivesTrackPlan =
+        activeMode == SidebarMode.settings &&
+        sidebarFlowState.persistentSettingsContext ==
+            SettingsMenuActionId.historicalArchives;
     final SearchPageTrackComposition? searchPageTrackComposition;
     final UnfamiliarSourcesPageTrackComposition?
     unfamiliarSourcesTrackComposition;
@@ -288,6 +293,32 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       }
     }
 
+    final HistoricalArchivesPageTrackComposition?
+    historicalArchivesTrackComposition;
+    if (useHistoricalArchivesTrackPlan) {
+      final typography = ref.watch(themeTypographyProvider);
+      historicalArchivesTrackComposition =
+          composeHistoricalArchivesPageTrackLayout(
+            presentationConstraints: PresentationConstraints.fromBuildContext(
+              context,
+              availableWidth: MediaQuery.sizeOf(context).width,
+            ),
+            typography: typography,
+          );
+    } else {
+      historicalArchivesTrackComposition = null;
+    }
+
+    Widget settingsWorkspace = const WorkspaceLayout(
+      mode: SidebarMode.settings,
+    );
+    if (historicalArchivesTrackComposition case final composition?) {
+      settingsWorkspace = ResolvedTrackLayoutMatrixScope(
+        matrix: composition.resolvedMatrix,
+        child: settingsWorkspace,
+      );
+    }
+
     Widget window = MacosWindow(
       endSidebar: Sidebar(
         key: ValueKey<String>('end-sidebar-${activeMode.name}'),
@@ -399,9 +430,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                 children: [
                   IndexedStack(
                     index: activeMode == SidebarMode.messages ? 0 : 1,
-                    children: const [
-                      WorkspaceLayout(mode: SidebarMode.messages),
-                      WorkspaceLayout(mode: SidebarMode.settings),
+                    children: [
+                      const WorkspaceLayout(mode: SidebarMode.messages),
+                      settingsWorkspace,
                     ],
                   ),
                   const OnboardingCenterPanelSyncObserver(),

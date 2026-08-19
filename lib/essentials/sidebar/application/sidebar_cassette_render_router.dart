@@ -37,6 +37,7 @@ import '../../../features/settings/feature_level_providers.dart'
         SettingsActionCardCassettePayload,
         SettingsInfoActionsCassettePayload,
         buildFeatureInfoSupplementalContent,
+        buildHistoricalArchivesSettingsCassette,
         buildPlacementGovernedCassetteBody;
 import '../../../features/sidebar_utilities/feature_level_providers.dart'
     as sidebar_utilities_feature
@@ -84,6 +85,13 @@ Widget buildSidebarCassettePayloadWidget({
   required ResolvedSidebarCassette resolvedCassette,
 }) {
   final payload = resolvedCassette.payload;
+
+  if (payload
+      case settings_feature.HistoricalArchivesSettingsCassettePayload()) {
+    return settings_feature.buildHistoricalArchivesSettingsCassette(
+      payload: payload,
+    );
+  }
 
   // LAW: Rendering is selected here from render kind plus allowed payload
   // subtype checks. Payloads must not smuggle builder callbacks or hidden

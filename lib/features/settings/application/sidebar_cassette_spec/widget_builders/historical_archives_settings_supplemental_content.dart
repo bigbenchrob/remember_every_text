@@ -4,20 +4,80 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../config/theme/widgets/segmented/app_segmented_mode_control.dart';
+import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
+import '../../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
+import '../../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
+import '../../../../../essentials/sidebar/presentation/view/sidebar_info_card.dart';
+import '../../../presentation/layout/historical_archives_track_occupants.dart';
 import '../../historical_archives_workflow_actions_provider.dart';
 import '../../historical_archives_workflow_panel_model_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
 
-const _majorSectionGap = AppSpacing.xxl + AppSpacing.sm;
-
-class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
-  const HistoricalArchivesSettingsSupplementalContent({
+class HistoricalArchivesSettingsTrackedCassette extends StatelessWidget {
+  const HistoricalArchivesSettingsTrackedCassette({
     super.key,
     required this.payload,
   });
 
   final HistoricalArchivesSettingsCassettePayload payload;
+
+  @override
+  Widget build(BuildContext context) {
+    if (ResolvedTrackLayoutMatrixScope.maybeOf(context) == null) {
+      return SidebarInfoCard(
+        bodyText: payload.bodyText,
+        content: HistoricalArchivesSettingsSupplementalContent(
+          payload: payload,
+        ),
+      );
+    }
+
+    return Column(
+      key: const ValueKey<String>(
+        'historical-archives-tracked-sidebar-cassette',
+      ),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final trackId in const [
+          TrackId.trackA,
+          TrackId.trackB,
+          TrackId.trackC,
+          TrackId.trackD,
+          TrackId.trackE,
+        ])
+          TrackCellView(
+            cellId: CellId(trackId: trackId, columnId: TrackColumnId.column1),
+          ),
+        Padding(
+          key: const ValueKey<String>(
+            'historical-archives-sidebar-native-flow',
+          ),
+          padding: const EdgeInsets.fromLTRB(
+            historicalArchivesSidebarHorizontalInset,
+            0,
+            historicalArchivesSidebarHorizontalInset,
+            historicalArchivesSidebarBottomInset,
+          ),
+          child: HistoricalArchivesSettingsSupplementalContent(
+            payload: payload,
+            includeFixedTrackContent: false,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
+  const HistoricalArchivesSettingsSupplementalContent({
+    super.key,
+    required this.payload,
+    this.includeFixedTrackContent = true,
+  });
+
+  final HistoricalArchivesSettingsCassettePayload payload;
+  final bool includeFixedTrackContent;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,36 +96,23 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppSegmentedModeControl<_HistoricalArchiveSourceType>(
-          key: const ValueKey<String>(
-            'historical-archives-source-type-control',
+        if (includeFixedTrackContent) ...[
+          const HistoricalArchivesSourceTypeControl(),
+          const SizedBox(
+            key: ValueKey<String>(
+              'historical-archives-source-to-known-folders-gap',
+            ),
+            height: historicalArchivesSourceToKnownFoldersGap,
           ),
-          options: _HistoricalArchiveSourceType.values,
-          selectedOption: _HistoricalArchiveSourceType.messagesFolders,
-          isOptionEnabled: (sourceType) =>
-              sourceType == _HistoricalArchiveSourceType.messagesFolders,
-          onSelected: (_) {},
-          labelBuilder: (sourceType) {
-            return switch (sourceType) {
-              _HistoricalArchiveSourceType.messagesFolders => 'Mac Messages',
-              _HistoricalArchiveSourceType.messageLensDataFolders =>
-                'MessageLens',
-            };
-          },
-        ),
-        const SizedBox(
-          key: ValueKey<String>(
-            'historical-archives-source-to-known-folders-gap',
+          HistoricalArchivesKnownFoldersHeading(
+            style: typography.controlValue.copyWith(
+              color: colors.content.textPrimary,
+            ),
           ),
-          height: _majorSectionGap,
-        ),
-        Text(
-          'Folders Already Added',
-          style: typography.controlValue.copyWith(
-            color: colors.content.textPrimary,
+          const SizedBox(
+            height: historicalArchivesKnownFoldersHeadingToListGap,
           ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
+        ],
         if (payload.knownSources.isEmpty)
           DecoratedBox(
             decoration: BoxDecoration(
@@ -97,7 +144,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             key: ValueKey<String>(
               'historical-archives-known-folders-to-add-gap',
             ),
-            height: _majorSectionGap,
+            height: historicalArchivesSourceToKnownFoldersGap,
           ),
           Text(
             'Add from a Messages Folder',
@@ -179,8 +226,6 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
     );
   }
 }
-
-enum _HistoricalArchiveSourceType { messagesFolders, messageLensDataFolders }
 
 class _HistoricalArchiveSourceTile extends ConsumerStatefulWidget {
   const _HistoricalArchiveSourceTile({required this.source, super.key});

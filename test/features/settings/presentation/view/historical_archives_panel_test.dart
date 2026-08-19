@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/presentation/view/historical_archives_panel.dart';
 
@@ -265,6 +268,56 @@ void main() {
         expect(find.byType(CupertinoAlertDialog), findsNothing);
       },
     );
+
+    testWidgets('selected-source native flow begins after shared Track E', (
+      tester,
+    ) async {
+      final matrix = buildHistoricalArchivesPageTrackLayoutMatrix(
+        umbrella: const FixedHeightTrackOccupant(height: 24),
+        sourceTypeControl: const FixedHeightTrackOccupant(height: 30),
+        sourceToKnownFoldersSpacing: const FixedHeightTrackOccupant(height: 56),
+        knownFoldersHeading: const FixedHeightTrackOccupant(height: 18),
+        knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(
+          height: 8,
+        ),
+      );
+      final resolved = ResolvedTrackLayoutMatrix.resolve(
+        matrix: matrix,
+        constraints: const PresentationConstraints(
+          availableWidth: 900,
+          textScaler: TextScaler.noScaling,
+          textDirection: TextDirection.ltr,
+        ),
+      );
+
+      await _pumpPanel(
+        tester,
+        resolvedTrackMatrix: resolved,
+        model: _narratorPanelModel(
+          presentation: null,
+          existingSourcePresentation:
+              const HistoricalArchivesExistingSourcePresentationViewModel(
+                sourceTypeStatement: 'This is a Mac Messages folder.',
+                importDateStatement: null,
+                contentsStatement: 'It contains 8,882 messages.',
+                detailsLines: [],
+              ),
+        ),
+      );
+
+      final nativeFlow = find.byKey(
+        const Key('historical-archives-existing-source-native-flow'),
+      );
+      expect(
+        tester.getTopLeft(nativeFlow).dy,
+        moreOrLessEquals(
+          historicalArchivesSharedTrackIds.fold(
+            0,
+            (height, trackId) => height + resolved.heightFor(trackId),
+          ),
+        ),
+      );
+    });
 
     testWidgets(
       'selected existing source omits unsupported import and contribution facts',
@@ -742,6 +795,7 @@ void main() {
 Future<void> _pumpPanel(
   WidgetTester tester, {
   required HistoricalArchivesWorkflowPanelViewModel model,
+  ResolvedTrackLayoutMatrix? resolvedTrackMatrix,
 }) async {
   final container = ProviderContainer(
     overrides: [
@@ -753,10 +807,14 @@ Future<void> _pumpPanel(
   );
   addTearDown(container.dispose);
 
+  Widget panel = const HistoricalArchivesPanel();
+  if (resolvedTrackMatrix case final matrix?) {
+    panel = ResolvedTrackLayoutMatrixScope(matrix: matrix, child: panel);
+  }
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const CupertinoApp(home: HistoricalArchivesPanel()),
+      child: CupertinoApp(home: panel),
     ),
   );
   await tester.pump();
