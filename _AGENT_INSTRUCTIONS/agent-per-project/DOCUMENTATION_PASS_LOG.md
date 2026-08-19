@@ -4996,3 +4996,17 @@ production preservation authority mechanically enforceable.
 - Confirmed that the sole chooser remains below guidance and that the virgin
   center panel, cartouches, modal boundaries, source semantics, persistence,
   and mutation behavior remain unchanged.
+
+## 2026-08-19 — Historical Archives sidebar breathing room
+
+- Added Feature 26 response
+  `26-HISTORICAL-ARCHIVES-SIDEBAR-BREATHING-ROOM-IMPLEMENTATION.md`.
+- Recorded that the established sidebar hierarchy was already semantically
+  complete and that this pass added no information or behavior.
+- Increased the shared-token major breaks between source selection, known
+  folders, and adding another folder from `24px` to `32px`.
+- Increased equal-weight guidance paragraph cadence from `8px` to `16px` and
+  the guidance-to-chooser handoff from `16px` to `24px`.
+- Confirmed that all copy, widths, source labels, disabled state, cartouches,
+  center-panel silence, workflow, persistence, and archive semantics remain
+  unchanged.

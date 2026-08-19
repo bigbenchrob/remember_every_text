@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
+import 'package:remember_this_text/config/theme/spacing/app_spacing.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart';
@@ -188,6 +189,25 @@ void main() {
         lessThan(tester.getTopLeft(find.text('Choose Messages Folder...')).dy),
       );
       expect(find.textContaining('Choose Messages Folder'), findsOneWidget);
+
+      double gapHeight(String key) {
+        return tester
+            .widget<SizedBox>(find.byKey(ValueKey<String>(key)))
+            .height!;
+      }
+
+      expect(
+        gapHeight('historical-archives-source-to-known-folders-gap'),
+        AppSpacing.xl,
+      );
+      expect(
+        gapHeight('historical-archives-known-folders-to-add-gap'),
+        AppSpacing.xl,
+      );
+      expect(
+        gapHeight('historical-archives-guidance-to-chooser-gap'),
+        AppSpacing.lg,
+      );
     });
 
     testWidgets('tapping choose messages folder triggers workflow chooser', (

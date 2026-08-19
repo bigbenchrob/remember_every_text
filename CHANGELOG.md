@@ -10,6 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.53] — 2026-08-19
+
+### Changed
+
+- Historical Archives now gives its three established sidebar regions more
+  breathing room, with wider major breaks, easier-to-scan guidance paragraphs,
+  and a clearer pause before the unchanged folder chooser action.
+
 ## [0.2.52] — 2026-08-19
 
 ### Changed

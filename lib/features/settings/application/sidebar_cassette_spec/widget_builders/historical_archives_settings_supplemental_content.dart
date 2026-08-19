@@ -51,7 +51,12 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             };
           },
         ),
-        const SizedBox(height: AppSpacing.sectionGap),
+        const SizedBox(
+          key: ValueKey<String>(
+            'historical-archives-source-to-known-folders-gap',
+          ),
+          height: AppSpacing.xl,
+        ),
         Text(
           'Folders Already Added',
           style: typography.controlValue.copyWith(
@@ -86,7 +91,12 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               const SizedBox(height: AppSpacing.cassetteGap),
           ],
         if (showAddMessagesFolder) ...[
-          const SizedBox(height: AppSpacing.sectionGap),
+          const SizedBox(
+            key: ValueKey<String>(
+              'historical-archives-known-folders-to-add-gap',
+            ),
+            height: AppSpacing.xl,
+          ),
           Text(
             'Add from a Messages Folder',
             style: typography.controlValue.copyWith(
@@ -103,14 +113,14 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               color: colors.content.textSecondary,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           Text(
             'Usually: Home → Library → Messages',
             style: typography.caption1.copyWith(
               color: colors.content.textSecondary,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           Text(
             'Older copies can be on another drive, moved, or renamed. An '
             "Attachments folder may also be present, but it isn't required.",
@@ -118,7 +128,12 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               color: colors.content.textSecondary,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(
+            key: ValueKey<String>(
+              'historical-archives-guidance-to-chooser-gap',
+            ),
+            height: AppSpacing.lg,
+          ),
           DecoratedBox(
             decoration: BoxDecoration(
               color: colors.surfaces.control,
