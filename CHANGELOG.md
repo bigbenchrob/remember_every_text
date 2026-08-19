@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.52] — 2026-08-19
+
+### Changed
+
+- Historical Archives now uses the compact source labels **Mac Messages** and
+  **MessageLens** and presents its Messages-folder instructions as three calm,
+  equal-weight notes before the chooser. The future MessageLens source remains
+  visibly disabled and inert.
+
 ## [0.2.51] — 2026-08-19
 
 ### Changed

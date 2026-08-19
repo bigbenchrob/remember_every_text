@@ -4981,3 +4981,18 @@ production preservation authority mechanically enforceable.
 - Confirmed that the virgin Historical Archives hub still leaves the center
   panel empty and that no workflow, source, persistence, or mutation semantics
   changed.
+
+## 2026-08-19 — Historical Archives sidebar simplification
+
+- Added Feature 26 response
+  `25-HISTORICAL-ARCHIVES-SIDEBAR-SIMPLIFICATION-IMPLEMENTATION.md`.
+- Replaced the source labels with compact **Mac Messages** and **MessageLens**
+  wording while preserving the disabled future arm.
+- Reduced the umbrella introduction to one source-neutral sentence and removed
+  the redundant instruction to choose a source below.
+- Collapsed the Messages-folder mini-heading hierarchy into three concise,
+  equal-weight notes that retain the `chat.db`, normal location, moved/renamed
+  copy, and optional Attachments facts.
+- Confirmed that the sole chooser remains below guidance and that the virgin
+  center panel, cartouches, modal boundaries, source semantics, persistence,
+  and mutation behavior remain unchanged.

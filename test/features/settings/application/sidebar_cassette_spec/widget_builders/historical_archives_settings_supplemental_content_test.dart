@@ -79,7 +79,7 @@ void main() {
     });
 
     testWidgets(
-      'source-type control selects Messages and disables MessageLens Folders',
+      'source-type control selects Mac Messages and disables MessageLens',
       (tester) async {
         final workflow = _TestHistoricalArchivesWorkflow();
 
@@ -96,12 +96,11 @@ void main() {
           ),
         );
 
-        expect(find.text('Messages Folders'), findsOneWidget);
-        expect(find.text('MessageLens Folders'), findsOneWidget);
-        expect(
-          tester.widget<Text>(find.text('MessageLens Folders')).maxLines,
-          1,
-        );
+        expect(find.text('Mac Messages'), findsOneWidget);
+        expect(find.text('MessageLens'), findsOneWidget);
+        expect(find.text('Messages Folders'), findsNothing);
+        expect(find.text('MessageLens Folders'), findsNothing);
+        expect(tester.widget<Text>(find.text('MessageLens')).maxLines, 1);
 
         TextStyle segmentStyle(String label) {
           return tester
@@ -115,94 +114,81 @@ void main() {
         }
 
         final container = ProviderScope.containerOf(
-          tester.element(find.text('Messages Folders')),
+          tester.element(find.text('Mac Messages')),
         );
         final colors = container.read(themeColorsProvider.notifier);
         expect(
-          segmentStyle('Messages Folders').color,
+          segmentStyle('Mac Messages').color,
           colors.buttons.primaryForeground,
         );
-        expect(
-          segmentStyle('MessageLens Folders').color,
-          colors.content.textDisabled,
-        );
+        expect(segmentStyle('MessageLens').color, colors.content.textDisabled);
 
         final stateBeforeTap = workflow.state;
-        await tester.tap(find.text('MessageLens Folders'));
+        await tester.tap(find.text('MessageLens'));
         await tester.pumpAndSettle();
 
         expect(workflow.state, stateBeforeTap);
         expect(workflow.chooseMessagesFolderCallCount, 0);
-        expect(find.text('Messages Folders'), findsOneWidget);
+        expect(find.text('Mac Messages'), findsOneWidget);
         expect(find.text('Folders Already Added'), findsOneWidget);
       },
     );
 
-    testWidgets(
-      'messages-folder guidance states the truthful source contract',
-      (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: CupertinoApp(
-              home: HistoricalArchivesSettingsSupplementalContent(
-                payload: HistoricalArchivesSettingsCassettePayload(),
-              ),
+    testWidgets('messages-folder guidance states the truthful source contract', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: CupertinoApp(
+            home: HistoricalArchivesSettingsSupplementalContent(
+              payload: HistoricalArchivesSettingsCassettePayload(),
             ),
           ),
-        );
+        ),
+      );
 
-        expect(find.text('Add from a Messages Folder'), findsOneWidget);
-        expect(
-          find.text(
-            "Choose a copy of your Mac's Messages folder - the folder "
-            'containing chat.db. Choose the folder itself, not the file.',
-          ),
-          findsOneWidget,
-        );
-        expect(find.text('Usually found at'), findsOneWidget);
-        expect(find.text('Home → Library → Messages'), findsOneWidget);
-        expect(find.textContaining('/Users/'), findsNothing);
-        expect(find.textContaining('rob'), findsNothing);
-        expect(find.text('Using an older copy?'), findsOneWidget);
-        expect(
-          find.text(
-            'It may be on another drive, moved somewhere else, '
-            "or renamed. That's fine.",
-          ),
-          findsOneWidget,
-        );
-        expect(find.text('Attachments'), findsOneWidget);
-        expect(
-          find.textContaining('It is not required for adding message history.'),
-          findsOneWidget,
-        );
-        expect(find.textContaining('Attachments is required'), findsNothing);
+      expect(find.text('Add from a Messages Folder'), findsOneWidget);
+      expect(
+        find.text(
+          'Choose the folder containing chat.db, not the chat.db file itself.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Usually: Home → Library → Messages'), findsOneWidget);
+      expect(find.textContaining('/Users/'), findsNothing);
+      expect(find.textContaining('rob'), findsNothing);
+      expect(
+        find.text(
+          'Older copies can be on another drive, moved, or renamed. An '
+          "Attachments folder may also be present, but it isn't required.",
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Usually found at'), findsNothing);
+      expect(find.text('Using an older copy?'), findsNothing);
+      expect(find.text('Attachments'), findsNothing);
+      expect(find.textContaining('Attachments is required'), findsNothing);
 
-        final sourceTypeControl = find.byKey(
-          const ValueKey<String>('historical-archives-source-type-control'),
-        );
-        final guidance = find.byKey(
-          const ValueKey<String>(
-            'historical-archives-messages-folder-guidance',
-          ),
-        );
-        expect(
-          tester.getBottomLeft(sourceTypeControl).dy,
-          lessThan(tester.getTopLeft(guidance).dy),
-        );
-        expect(
-          tester.getTopLeft(find.text('Add from a Messages Folder')).dy,
-          lessThan(tester.getTopLeft(guidance).dy),
-        );
-        expect(
-          tester.getTopLeft(guidance).dy,
-          lessThan(
-            tester.getTopLeft(find.text('Choose Messages Folder...')).dy,
-          ),
-        );
-        expect(find.textContaining('Choose Messages Folder'), findsOneWidget);
-      },
-    );
+      final sourceTypeControl = find.byKey(
+        const ValueKey<String>('historical-archives-source-type-control'),
+      );
+      final guidance = find.byKey(
+        const ValueKey<String>('historical-archives-messages-folder-guidance'),
+      );
+      expect(
+        tester.getBottomLeft(sourceTypeControl).dy,
+        lessThan(tester.getTopLeft(guidance).dy),
+      );
+      expect(
+        tester.getTopLeft(find.text('Add from a Messages Folder')).dy,
+        lessThan(tester.getTopLeft(guidance).dy),
+      );
+      expect(
+        tester.getTopLeft(guidance).dy,
+        lessThan(tester.getTopLeft(find.text('Choose Messages Folder...')).dy),
+      );
+      expect(find.textContaining('Choose Messages Folder'), findsOneWidget);
+    });
 
     testWidgets('tapping choose messages folder triggers workflow chooser', (
       tester,

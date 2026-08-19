@@ -26,7 +26,7 @@ final class HistoricalArchivesSettingsCassettePayload
     extends FeatureInfoSidebarCassettePayload {
   const HistoricalArchivesSettingsCassettePayload({
     super.bodyText =
-        'Add older message history to MessageLens without replacing your current data. Choose where that history comes from below.',
+        'Add older message history to MessageLens without replacing your current data.',
     super.role = SidebarCassetteRole.contextSecondary,
     super.topSpacing = 0,
     this.knownSources = const [],

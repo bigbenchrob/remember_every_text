@@ -16,11 +16,14 @@ void main() {
 
       expect(payload, isA<HistoricalArchivesSettingsCassettePayload>());
       expect(payload.title, isNull);
-      expect(payload.bodyText, contains('older message history'));
+      expect(
+        payload.bodyText,
+        'Add older message history to MessageLens without replacing your current data.',
+      );
       expect(payload.bodyText, isNot(contains('Messages folders')));
       expect(payload.bodyText, isNot(contains('chat.db')));
       expect(payload.bodyText, contains('without replacing'));
-      expect(payload.bodyText, contains('Choose where'));
+      expect(payload.bodyText, isNot(contains('Choose where')));
       expect(payload.knownSources, isEmpty);
       expect(payload.footnote, isNull);
     });

@@ -45,10 +45,9 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
           onSelected: (_) {},
           labelBuilder: (sourceType) {
             return switch (sourceType) {
-              _HistoricalArchiveSourceType.messagesFolders =>
-                'Messages Folders',
+              _HistoricalArchiveSourceType.messagesFolders => 'Mac Messages',
               _HistoricalArchiveSourceType.messageLensDataFolders =>
-                'MessageLens Folders',
+                'MessageLens',
             };
           },
         ),
@@ -96,8 +95,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            "Choose a copy of your Mac's Messages folder - the folder "
-            'containing chat.db. Choose the folder itself, not the file.',
+            'Choose the folder containing chat.db, not the chat.db file itself.',
             key: const ValueKey<String>(
               'historical-archives-messages-folder-guidance',
             ),
@@ -105,30 +103,20 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
               color: colors.content.textSecondary,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          _HistoricalArchiveGuidanceTopic(
-            label: 'Usually found at',
-            supportingText: 'Home → Library → Messages',
-            typography: typography,
-            colors: colors,
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Usually: Home → Library → Messages',
+            style: typography.caption1.copyWith(
+              color: colors.content.textSecondary,
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          _HistoricalArchiveGuidanceTopic(
-            label: 'Using an older copy?',
-            supportingText:
-                'It may be on another drive, moved somewhere else, or '
-                "renamed. That's fine.",
-            typography: typography,
-            colors: colors,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _HistoricalArchiveGuidanceTopic(
-            label: 'Attachments',
-            supportingText:
-                'An Attachments folder may also be present. It is not '
-                'required for adding message history.',
-            typography: typography,
-            colors: colors,
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Older copies can be on another drive, moved, or renamed. An '
+            "Attachments folder may also be present, but it isn't required.",
+            style: typography.caption1.copyWith(
+              color: colors.content.textSecondary,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           DecoratedBox(
@@ -168,44 +156,6 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
 }
 
 enum _HistoricalArchiveSourceType { messagesFolders, messageLensDataFolders }
-
-class _HistoricalArchiveGuidanceTopic extends StatelessWidget {
-  const _HistoricalArchiveGuidanceTopic({
-    required this.label,
-    required this.supportingText,
-    required this.typography,
-    required this.colors,
-  });
-
-  final String label;
-  final String supportingText;
-  final ThemeTypography typography;
-  final ThemeColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: typography.caption1.copyWith(
-            color: colors.content.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          supportingText,
-          style: typography.caption1.copyWith(
-            color: colors.content.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _HistoricalArchiveSourceTile extends ConsumerStatefulWidget {
   const _HistoricalArchiveSourceTile({required this.source, super.key});
