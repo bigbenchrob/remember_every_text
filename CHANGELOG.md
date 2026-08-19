@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.56] — 2026-08-19
+
+### Changed
+
+- Selecting a previously added Historical Archives folder now shows a quiet,
+  human-readable account of what the folder is and what it contains, while
+  leaving its identity in the selected sidebar cartouche. Technical details
+  remain available on demand, and the existing confirmed removal flow is
+  exposed with the established destructive styling.
+
 ## [0.2.55] — 2026-08-19
 
 ### Changed

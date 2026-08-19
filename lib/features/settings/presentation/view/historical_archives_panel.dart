@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
+import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../essentials/debug/feature_level_providers.dart'
     show DeveloperModeValue, developerModeProvider;
@@ -85,11 +86,19 @@ class _HistoricalArchivesPanelState
     final showDeveloperControls =
         developerMode.valueOrNull == DeveloperModeValue.developer;
     final narratorPresentation = panelModel.narratorPresentation;
+    final existingSourcePresentation = panelModel.existingSourcePresentation;
 
     if (panelModel.isHub) {
       return ColoredBox(
         key: const Key('historical-archives-empty-hub'),
         color: colors.surfaces.canvas,
+      );
+    }
+
+    if (existingSourcePresentation != null) {
+      return _ExistingHistoricalArchiveSourcePanel(
+        panelModel: panelModel,
+        presentation: existingSourcePresentation,
       );
     }
 
@@ -467,6 +476,91 @@ class _HistoricalArchivesPanelState
   }
 }
 
+class _ExistingHistoricalArchiveSourcePanel extends ConsumerWidget {
+  const _ExistingHistoricalArchiveSourcePanel({
+    required this.panelModel,
+    required this.presentation,
+  });
+
+  final HistoricalArchivesWorkflowPanelViewModel panelModel;
+  final HistoricalArchivesExistingSourcePresentationViewModel presentation;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return ColoredBox(
+      color: colors.surfaces.canvas,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Column(
+              key: const Key('historical-archives-existing-source-story'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  presentation.sourceTypeStatement,
+                  style: typography.title2.copyWith(
+                    color: colors.content.textPrimary,
+                  ),
+                ),
+                if (presentation.importDateStatement
+                    case final importDateStatement?) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    importDateStatement,
+                    style: typography.body.copyWith(
+                      color: colors.content.textSecondary,
+                    ),
+                  ),
+                ],
+                if (presentation.contentsStatement
+                    case final contentsStatement?) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    contentsStatement,
+                    style: typography.title3.copyWith(
+                      color: colors.content.textPrimary,
+                    ),
+                  ),
+                ],
+                if (presentation.detailsLines.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  _HistoricalArchivesDetailsDisclosure(
+                    label: 'More Details',
+                    lines: presentation.detailsLines,
+                  ),
+                ],
+                if (panelModel.removeImportedArchiveDataEnabled) ...[
+                  const SizedBox(height: AppSpacing.xxl),
+                  _HistoricalArchiveActionButton(
+                    label: 'Remove this folder…',
+                    enabled: true,
+                    destructive: true,
+                    onPressed: () {
+                      unawaited(
+                        _showRemoveImportedArchiveDataConfirmationDialog(
+                          context: context,
+                          ref: ref,
+                          panelModel: panelModel,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
   const _NarratorHistoricalArchivesPanel({
     required this.panelModel,
@@ -510,11 +604,7 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
                 if (presentation.instrumentationRows.isNotEmpty) ...[
                   const SizedBox(height: 40),
                   Text(
-                    presentation.kind ==
-                            HistoricalArchivesNarratorPresentationKind
-                                .existingSource
-                        ? 'HISTORICAL MESSAGES ARCHIVE'
-                        : 'MESSAGES ARCHIVE',
+                    'MESSAGES ARCHIVE',
                     style: typography.caption.copyWith(
                       color: colors.content.textTertiary,
                     ),
@@ -552,7 +642,6 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
 bool _hasNarratorDecision(HistoricalArchivesNarratorPresentationKind kind) {
   return switch (kind) {
     HistoricalArchivesNarratorPresentationKind.noSource ||
-    HistoricalArchivesNarratorPresentationKind.existingSource ||
     HistoricalArchivesNarratorPresentationKind.inspectingSource => false,
     HistoricalArchivesNarratorPresentationKind.inspectionFailed ||
     HistoricalArchivesNarratorPresentationKind.readyForImport ||
@@ -662,8 +751,6 @@ class _NarratorDecision extends ConsumerWidget {
     return switch (presentation.kind) {
       HistoricalArchivesNarratorPresentationKind.noSource =>
         const SizedBox.shrink(),
-      HistoricalArchivesNarratorPresentationKind.existingSource =>
-        const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.inspectingSource =>
         const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.inspectionFailed => Wrap(
@@ -711,9 +798,14 @@ class _NarratorDecision extends ConsumerWidget {
 }
 
 class _HistoricalArchivesDetailsDisclosure extends ConsumerStatefulWidget {
-  const _HistoricalArchivesDetailsDisclosure({required this.lines, super.key});
+  const _HistoricalArchivesDetailsDisclosure({
+    required this.lines,
+    this.label = 'Details',
+    super.key,
+  });
 
   final List<String> lines;
+  final String label;
 
   @override
   ConsumerState<_HistoricalArchivesDetailsDisclosure> createState() =>
@@ -754,7 +846,7 @@ class _HistoricalArchivesDetailsDisclosureState
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Details',
+                  widget.label,
                   style: typography.controlValue.copyWith(
                     color: colors.content.textSecondary,
                   ),
@@ -985,11 +1077,13 @@ class _HistoricalArchiveActionButton extends ConsumerWidget {
   const _HistoricalArchiveActionButton({
     required this.label,
     this.enabled = false,
+    this.destructive = false,
     this.onPressed,
   });
 
   final String label;
   final bool enabled;
+  final bool destructive;
   final VoidCallback? onPressed;
 
   @override
@@ -1007,12 +1101,16 @@ class _HistoricalArchiveActionButton extends ConsumerWidget {
         onTap: isInteractive ? onPressed : null,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: enabled
+            color: destructive
+                ? colors.surfaces.control
+                : enabled
                 ? colors.accents.primary.withValues(alpha: 0.10)
                 : colors.surfaces.control,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: enabled
+              color: destructive
+                  ? colors.buttons.destructiveBorder
+                  : enabled
                   ? colors.accents.primary.withValues(alpha: 0.25)
                   : colors.lines.borderSubtle,
               width: 0.8,
@@ -1023,7 +1121,9 @@ class _HistoricalArchiveActionButton extends ConsumerWidget {
             child: Text(
               label,
               style: typography.controlValue.copyWith(
-                color: enabled
+                color: destructive
+                    ? colors.buttons.destructiveForeground
+                    : enabled
                     ? colors.accents.primary
                     : colors.content.textTertiary,
               ),

@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/util/date_label_formatter.dart';
 import '../../../essentials/archive_environment/domain.dart'
     show ArchiveMutationDeniedException, ArchiveMutationOperation;
 import '../../../essentials/archive_environment/feature_level_providers.dart'
@@ -154,6 +155,7 @@ final class HistoricalArchivesInspectionEvidence {
     required this.dryRunDuplicateMessages,
     required this.dryRunComparableMessages,
     required this.dryRunUnavailableReason,
+    this.successfulImportFinishedAtUtc,
   });
 
   final String folderPath;
@@ -172,11 +174,11 @@ final class HistoricalArchivesInspectionEvidence {
   final int? dryRunDuplicateMessages;
   final int? dryRunComparableMessages;
   final String? dryRunUnavailableReason;
+  final String? successfulImportFinishedAtUtc;
 }
 
 enum HistoricalArchivesNarratorPresentationKind {
   noSource,
-  existingSource,
   inspectingSource,
   inspectionFailed,
   readyForImport,
@@ -211,6 +213,20 @@ final class HistoricalArchivesNarratorPresentationViewModel {
   final List<HistoricalArchivesInstrumentationRowViewModel> instrumentationRows;
   final List<String> detailsLines;
   final bool retryInspectionEnabled;
+}
+
+final class HistoricalArchivesExistingSourcePresentationViewModel {
+  const HistoricalArchivesExistingSourcePresentationViewModel({
+    required this.sourceTypeStatement,
+    required this.importDateStatement,
+    required this.contentsStatement,
+    required this.detailsLines,
+  });
+
+  final String sourceTypeStatement;
+  final String? importDateStatement;
+  final String? contentsStatement;
+  final List<String> detailsLines;
 }
 
 final class HistoricalArchivesPreflightViewModel {
@@ -442,6 +458,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
     required this.phases,
     this.isHub = false,
     this.narratorPresentation,
+    this.existingSourcePresentation,
   });
 
   final String statusLabel;
@@ -466,6 +483,8 @@ final class HistoricalArchivesWorkflowPanelViewModel {
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
   final bool isHub;
   final HistoricalArchivesNarratorPresentationViewModel? narratorPresentation;
+  final HistoricalArchivesExistingSourcePresentationViewModel?
+  existingSourcePresentation;
 }
 
 HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
@@ -1395,7 +1414,68 @@ buildHistoricalArchivesWorkflowPanelModel({
       executionGate: executionGate,
       importButtonEnabled: importButtonEnabled,
     ),
+    existingSourcePresentation: _buildExistingSourcePresentation(
+      workflowState: workflowState,
+      executionGate: executionGate,
+    ),
   );
+}
+
+HistoricalArchivesExistingSourcePresentationViewModel?
+_buildExistingSourcePresentation({
+  required HistoricalArchivesWorkflowState workflowState,
+  required HistoricalArchivesExecutionGateViewModel executionGate,
+}) {
+  if (workflowState.presentationContext !=
+      HistoricalArchivesPresentationContext.existingSource) {
+    return null;
+  }
+
+  final evidence = workflowState.inspectionEvidence;
+  final importDate = DateLabelFormatter.fullDateFromIso(
+    evidence?.successfulImportFinishedAtUtc,
+  );
+  final detailsLines = _inspectionDetailsLines(
+    workflowState: workflowState,
+    executionGate: executionGate,
+    importButtonEnabled: false,
+  );
+
+  return HistoricalArchivesExistingSourcePresentationViewModel(
+    sourceTypeStatement: 'This is a Mac Messages folder.',
+    importDateStatement: importDate == null
+        ? null
+        : 'You added it to MessageLens on $importDate.',
+    contentsStatement: _existingSourceContentsStatement(evidence),
+    detailsLines: [
+      ...detailsLines,
+      if (evidence?.successfulImportFinishedAtUtc case final completedAtUtc?)
+        'Successful import completed UTC: $completedAtUtc',
+    ],
+  );
+}
+
+String? _existingSourceContentsStatement(
+  HistoricalArchivesInspectionEvidence? evidence,
+) {
+  if (evidence == null) {
+    return null;
+  }
+
+  final totalMessages = evidence.totalMessages;
+  final earliest = _monthYearLong(evidence.earliestMessageUtc);
+  final latest = _monthYearLong(evidence.latestMessageUtc);
+  if (totalMessages != null && earliest != null && latest != null) {
+    return 'It contains ${_formattedCount(totalMessages)} messages sent or '
+        'received between $earliest and $latest.';
+  }
+  if (totalMessages != null) {
+    return 'It contains ${_formattedCount(totalMessages)} messages.';
+  }
+  if (earliest != null && latest != null) {
+    return 'Its messages span $earliest through $latest.';
+  }
+  return null;
 }
 
 HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
@@ -1410,19 +1490,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
 
   if (workflowState.presentationContext ==
       HistoricalArchivesPresentationContext.existingSource) {
-    return HistoricalArchivesNarratorPresentationViewModel(
-      kind: HistoricalArchivesNarratorPresentationKind.existingSource,
-      narratorText: workflowState.sourceLabel,
-      instrumentationRows: _sourceFactsInstrumentationRows(
-        workflowState.inspectionEvidence,
-      ),
-      detailsLines: _inspectionDetailsLines(
-        workflowState: workflowState,
-        executionGate: executionGate,
-        importButtonEnabled: false,
-      ),
-      retryInspectionEnabled: false,
-    );
+    return null;
   }
 
   return switch (workflowState.presentationStage) {
@@ -2304,6 +2372,9 @@ HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
       dryRunComparableMessages: null,
       dryRunUnavailableReason:
           'A fresh folder inspection is required before comparison.',
+      successfulImportFinishedAtUtc: source.lastImportSuccess == true
+          ? source.lastImportFinishedAtUtc
+          : null,
     ),
     selectedKnownSourceKey: selectedKnownSourceKey,
   );

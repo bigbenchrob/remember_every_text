@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
 import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/presentation/view/historical_archives_panel.dart';
@@ -189,37 +190,105 @@ void main() {
         await _pumpPanel(
           tester,
           model: _narratorPanelModel(
-            presentation: const HistoricalArchivesNarratorPresentationViewModel(
-              kind: HistoricalArchivesNarratorPresentationKind.existingSource,
-              narratorText: 'Messages_2012-IMPORT_SOURCE',
-              instrumentationRows: [
-                HistoricalArchivesInstrumentationRowViewModel(
-                  label: 'Messages',
-                  value: '8,882',
-                  status: HistoricalArchivesInstrumentationStatus.resolved,
+            presentation: null,
+            existingSourcePresentation:
+                const HistoricalArchivesExistingSourcePresentationViewModel(
+                  sourceTypeStatement: 'This is a Mac Messages folder.',
+                  importDateStatement:
+                      'You added it to MessageLens on Aug 10, 2026.',
+                  contentsStatement:
+                      'It contains 8,882 messages sent or received between July 2012 and June 2017.',
+                  detailsLines: [
+                    'Folder: /Archives/Messages_2012-IMPORT_SOURCE',
+                  ],
                 ),
-                HistoricalArchivesInstrumentationRowViewModel(
-                  label: 'Dates',
-                  value: 'Jul 2012 – Jun 2017',
-                  status: HistoricalArchivesInstrumentationStatus.resolved,
-                ),
-              ],
-              detailsLines: ['Folder: /Archives/2012'],
-              retryInspectionEnabled: false,
-            ),
+            removalTarget: '/Archives/Messages_2012-IMPORT_SOURCE/chat.db',
+            removalEnabled: true,
           ),
         );
 
-        expect(find.text('Messages_2012-IMPORT_SOURCE'), findsOneWidget);
-        expect(find.text('8,882'), findsOneWidget);
-        expect(find.text('Jul 2012 – Jun 2017'), findsOneWidget);
-        expect(find.text('Already imported'), findsNothing);
         expect(
-          find.text('This archive is already part of MessageLens.'),
+          find.byKey(const Key('historical-archives-existing-source-story')),
+          findsOneWidget,
+        );
+        expect(find.text('This is a Mac Messages folder.'), findsOneWidget);
+        expect(
+          find.text('You added it to MessageLens on Aug 10, 2026.'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'It contains 8,882 messages sent or received between July 2012 and June 2017.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Historical Archives'), findsNothing);
+        expect(find.text('HISTORICAL MESSAGES ARCHIVE'), findsNothing);
+        expect(find.text('Messages_2012-IMPORT_SOURCE'), findsNothing);
+        expect(
+          find.byKey(const Key('historical-archives-directed-instrumentation')),
           findsNothing,
         );
+        expect(
+          find.byIcon(CupertinoIcons.check_mark_circled_solid),
+          findsNothing,
+        );
+        expect(find.text('More Details'), findsOneWidget);
+        expect(find.text('Remove this folder…'), findsOneWidget);
+        expect(find.text('Choose Messages Folder...'), findsNothing);
         expect(find.text('Choose Another Folder'), findsNothing);
         expect(find.text('Import Archive'), findsNothing);
+        expect(find.text('2,369'), findsNothing);
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.text('Remove this folder…')),
+        );
+        final colors = container.read(themeColorsProvider.notifier);
+        expect(
+          tester.widget<Text>(find.text('Remove this folder…')).style?.color,
+          colors.buttons.destructiveForeground,
+        );
+
+        await tester.tap(find.text('More Details'));
+        await tester.pump();
+        expect(
+          find.text('Folder: /Archives/Messages_2012-IMPORT_SOURCE'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('Remove this folder…'));
+        await tester.pump();
+        expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+        expect(find.text('Remove Imported Archive Data?'), findsOneWidget);
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+        expect(find.byType(CupertinoAlertDialog), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'selected existing source omits unsupported import and contribution facts',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          model: _narratorPanelModel(
+            presentation: null,
+            existingSourcePresentation:
+                const HistoricalArchivesExistingSourcePresentationViewModel(
+                  sourceTypeStatement: 'This is a Mac Messages folder.',
+                  importDateStatement: null,
+                  contentsStatement: 'It contains 42 messages.',
+                  detailsLines: ['Folder: /Archives/2017'],
+                ),
+          ),
+        );
+
+        expect(find.text('This is a Mac Messages folder.'), findsOneWidget);
+        expect(find.text('It contains 42 messages.'), findsOneWidget);
+        expect(find.textContaining('You added it'), findsNothing);
+        expect(find.textContaining('additional messages'), findsNothing);
+        expect(find.textContaining('-6,513'), findsNothing);
+        expect(find.text('Remove this folder…'), findsNothing);
       },
     );
 
@@ -695,8 +764,12 @@ Future<void> _pumpPanel(
 
 HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
   required HistoricalArchivesNarratorPresentationViewModel? presentation,
+  HistoricalArchivesExistingSourcePresentationViewModel?
+  existingSourcePresentation,
   bool importButtonEnabled = false,
   bool isHub = false,
+  bool removalEnabled = false,
+  String? removalTarget,
 }) {
   return HistoricalArchivesWorkflowPanelViewModel(
     statusLabel: 'Unused legacy status',
@@ -720,15 +793,16 @@ HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
     importSafetySummaryLines: const [],
     importButtonEnabled: importButtonEnabled,
     importButtonDetail: 'Unused legacy detail',
-    archiveRemovalTargetChatDbPath: null,
+    archiveRemovalTargetChatDbPath: removalTarget,
     archiveManagementSummaryLines: const [],
-    removeImportedArchiveDataEnabled: false,
+    removeImportedArchiveDataEnabled: removalEnabled,
     removeImportedArchiveDataDetail: 'Unused legacy detail',
     activityLog: const [],
     resultSummaryLines: const [],
     phases: const [],
     isHub: isHub,
     narratorPresentation: presentation,
+    existingSourcePresentation: existingSourcePresentation,
   );
 }
 

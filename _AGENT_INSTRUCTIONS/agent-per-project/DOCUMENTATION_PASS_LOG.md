@@ -5031,3 +5031,20 @@ production preservation authority mechanically enforceable.
 - Preserved the stronger **Folders Already Added** heading, its compact
   heading-to-cartouche relationship, subordinate metadata, cartouche chrome,
   selection, correspondence, and all archive behavior.
+
+## 2026-08-19 — Historical archive selected-source story
+
+- Added Feature 26 response
+  `28-HISTORICAL-ARCHIVE-SELECTED-SOURCE-STORY-IMPLEMENTATION.md`.
+- Recorded the compositional rule that the selected sidebar cartouche owns
+  archive identity while the center panel owns meaning and management.
+- Replaced selected-source Narrator instrumentation with a dedicated human
+  story using the established readable-width, left-aligned vertical center
+  panel composition.
+- Documented that successful import dates require
+  `lastImportSuccess == true` and `lastImportFinishedAtUtc` and use the shared
+  `DateLabelFormatter`.
+- Recorded why current persisted evidence cannot truthfully support a numeric
+  unique-contribution claim and why omission is required.
+- Restored the existing confirmed removal entry with canonical destructive
+  theme tokens while preserving removal execution and mutation authority.

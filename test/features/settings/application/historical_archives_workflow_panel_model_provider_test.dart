@@ -899,7 +899,7 @@ void main() {
                   preflightStatusLabel: 'Preflight complete',
                   dryRunNewMessages: 0,
                   dryRunDuplicateMessages: 42,
-                  lastImportFinishedAtUtc: null,
+                  lastImportFinishedAtUtc: '2026-08-10T18:30:00.000Z',
                   lastImportSuccess: true,
                   lastImportError: null,
                   lastImportedMessageCount: 42,
@@ -935,23 +935,30 @@ void main() {
         expect(state.selectedFolderPath, '/tmp/archive');
         expect(state.selectedKnownSourceKey, sourceKey);
         expect(state.knownSourceReference, isNull);
-        final rows = buildHistoricalArchivesWorkflowPanelModel(
+        final model = buildHistoricalArchivesWorkflowPanelModel(
           executionGateState: const ArchiveMutationCoordinatorState(),
           isMaintenanceLocked: false,
           workflowState: state,
           currentMessagesDatabasePath: currentMessagesDatabasePath,
-        ).narratorPresentation?.instrumentationRows;
-        expect(rows?.map((row) => row.label), ['Messages', 'Dates']);
-        expect(rows?.first.value, '42');
-        expect(
-          buildHistoricalArchivesWorkflowPanelModel(
-            executionGateState: const ArchiveMutationCoordinatorState(),
-            isMaintenanceLocked: false,
-            workflowState: state,
-            currentMessagesDatabasePath: currentMessagesDatabasePath,
-          ).importButtonEnabled,
-          isFalse,
         );
+        expect(model.narratorPresentation, isNull);
+        expect(
+          model.existingSourcePresentation?.sourceTypeStatement,
+          'This is a Mac Messages folder.',
+        );
+        expect(
+          model.existingSourcePresentation?.importDateStatement,
+          'You added it to MessageLens on Aug 10, 2026.',
+        );
+        expect(
+          model.existingSourcePresentation?.contentsStatement,
+          'It contains 42 messages sent or received between July 2012 and June 2017.',
+        );
+        expect(
+          model.existingSourcePresentation?.detailsLines,
+          contains('Folder: /tmp/archive'),
+        );
+        expect(model.importButtonEnabled, isFalse);
       },
     );
 
