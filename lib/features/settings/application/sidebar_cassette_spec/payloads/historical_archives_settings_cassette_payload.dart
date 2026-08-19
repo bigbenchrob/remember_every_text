@@ -6,8 +6,7 @@ final class HistoricalArchiveSidebarSourceSummary {
     required this.label,
     required this.dateRangeLabel,
     required this.messageCountLabel,
-    required this.lastRunSummaryLabel,
-    required this.lastImportedLabel,
+    this.importedOnLabel,
     this.isReferenced = false,
     this.isSelected = false,
     this.referencePulseOccurrence = 0,
@@ -15,10 +14,9 @@ final class HistoricalArchiveSidebarSourceSummary {
 
   final String sourceKey;
   final String label;
-  final String dateRangeLabel;
+  final String? dateRangeLabel;
   final String messageCountLabel;
-  final String lastRunSummaryLabel;
-  final String lastImportedLabel;
+  final String? importedOnLabel;
   final bool isReferenced;
   final bool isSelected;
   final int referencePulseOccurrence;

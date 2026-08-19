@@ -268,30 +268,26 @@ class _HistoricalArchiveSourceTileState
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              widget.source.dateRangeLabel,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
+            if (widget.source.dateRangeLabel case final dateRangeLabel?)
+              Text(
+                dateRangeLabel,
+                style: typography.caption1.copyWith(
+                  color: colors.content.textSecondary,
+                ),
               ),
-            ),
             Text(
               widget.source.messageCountLabel,
               style: typography.caption1.copyWith(
                 color: colors.content.textSecondary,
               ),
             ),
-            Text(
-              widget.source.lastRunSummaryLabel,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
+            if (widget.source.importedOnLabel case final importedOnLabel?)
+              Text(
+                importedOnLabel,
+                style: typography.caption1.copyWith(
+                  color: colors.content.textSecondary,
+                ),
               ),
-            ),
-            Text(
-              widget.source.lastImportedLabel,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
           ],
         ),
       ),

@@ -37,9 +37,7 @@ void main() {
           label: 'Archive-2017',
           dateRangeLabel: 'Date range: not yet available',
           messageCountLabel: 'Total messages: 42',
-          lastRunSummaryLabel:
-              'Estimated new messages: 10 | Estimated duplicates: 32',
-          lastImportedLabel: 'Last imported: not recorded yet',
+          importedOnLabel: 'Imported on: Apr 29, 2026',
         ),
       ];
 

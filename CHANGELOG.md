@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.46] — 2026-08-19
+
+### Changed
+
+- Historical Archives sidebar cartouches now show only durable archive facts:
+  a human-readable historical date range, ledger-backed message count, and the
+  successful import date when that trustworthy completion fact exists. Dry-run
+  workflow evidence and contradictory not-yet-imported wording no longer
+  appear in **Folders Already Added**.
+
 ## [0.2.45] — 2026-08-18
 
 ### Fixed

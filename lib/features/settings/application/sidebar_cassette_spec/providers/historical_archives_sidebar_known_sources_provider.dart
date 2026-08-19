@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../core/util/count_label_formatter.dart';
+import '../../../../../core/util/date_label_formatter.dart';
 import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
 import '../../historical_archive_sources.dart';
 import '../../historical_archive_sources_provider.dart';
@@ -64,9 +66,9 @@ buildHistoricalArchiveSidebarKnownSources({
           sourceKey: source.sourceKey,
           label: source.sourceLabel,
           dateRangeLabel: _buildDateRangeLabel(source),
-          messageCountLabel: 'Messages: ${importedSource.importedMessageCount}',
-          lastRunSummaryLabel: _buildLastRunSummaryLabel(source),
-          lastImportedLabel: _buildLastImportedLabel(source),
+          messageCountLabel:
+              'Messages: ${CountLabelFormatter.formatCount(importedSource.importedMessageCount)}',
+          importedOnLabel: _buildImportedOnLabel(source),
           isSelected:
               presentationContext ==
                   HistoricalArchivesPresentationContext.existingSource &&
@@ -79,41 +81,34 @@ buildHistoricalArchiveSidebarKnownSources({
   ];
 }
 
-String _buildDateRangeLabel(HistoricalArchiveSourceMetadata source) {
+String? _buildDateRangeLabel(HistoricalArchiveSourceMetadata source) {
   final earliest = _formatDate(source.earliestMessageUtc);
   final latest = _formatDate(source.latestMessageUtc);
   if (earliest == null || latest == null) {
-    return 'Date range: unavailable';
+    return null;
   }
 
   if (earliest == latest) {
     return 'Date range: $earliest';
   }
 
-  return 'Date range: $earliest to $latest';
+  return 'Date range: $earliest – $latest';
 }
 
-String _buildLastRunSummaryLabel(HistoricalArchiveSourceMetadata source) {
-  if (source.lastImportSuccess == true &&
-      source.lastImportedMessageCount != null) {
-    return 'Last run: imported ${source.lastImportedMessageCount} messages';
+String? _buildImportedOnLabel(HistoricalArchiveSourceMetadata source) {
+  if (source.lastImportSuccess != true) {
+    return null;
   }
 
-  if (source.dryRunNewMessages != null &&
-      source.dryRunDuplicateMessages != null) {
-    return 'Last dry run: new ${source.dryRunNewMessages} | duplicates ${source.dryRunDuplicateMessages}';
+  final finishedAtUtc = source.lastImportFinishedAtUtc;
+  final parsed = finishedAtUtc == null
+      ? null
+      : DateTime.tryParse(finishedAtUtc);
+  if (parsed == null) {
+    return null;
   }
 
-  return 'Last dry run: unavailable';
-}
-
-String _buildLastImportedLabel(HistoricalArchiveSourceMetadata source) {
-  final formatted = _formatTimestamp(source.lastImportFinishedAtUtc);
-  if (formatted == null) {
-    return 'Last imported: not yet imported';
-  }
-
-  return 'Last imported: $formatted';
+  return 'Imported on: ${DateLabelFormatter.fullDate(parsed)}';
 }
 
 String? _formatDate(String? utcIsoString) {
@@ -122,22 +117,5 @@ String? _formatDate(String? utcIsoString) {
     return null;
   }
 
-  final utc = parsed.toUtc();
-  final month = utc.month.toString().padLeft(2, '0');
-  final day = utc.day.toString().padLeft(2, '0');
-  return '${utc.year}-$month-$day';
-}
-
-String? _formatTimestamp(String? utcIsoString) {
-  final parsed = utcIsoString == null ? null : DateTime.tryParse(utcIsoString);
-  if (parsed == null) {
-    return null;
-  }
-
-  final utc = parsed.toUtc();
-  final month = utc.month.toString().padLeft(2, '0');
-  final day = utc.day.toString().padLeft(2, '0');
-  final hour = utc.hour.toString().padLeft(2, '0');
-  final minute = utc.minute.toString().padLeft(2, '0');
-  return '${utc.year}-$month-$day $hour:$minute UTC';
+  return DateLabelFormatter.compactMonthYear(parsed);
 }

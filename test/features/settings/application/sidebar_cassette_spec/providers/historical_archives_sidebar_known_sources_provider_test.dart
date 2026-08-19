@@ -16,9 +16,9 @@ void main() {
     chatDbStatusLabel: 'Found and readable',
     attachmentsStatusLabel: 'Found',
     preflightStatusLabel: 'Imported successfully',
-    totalMessages: 42,
-    earliestMessageUtc: '2017-01-03T00:00:00.000Z',
-    latestMessageUtc: '2017-01-05T00:00:00.000Z',
+    totalMessages: 8882,
+    earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+    latestMessageUtc: '2017-06-11T08:00:00.000Z',
     dryRunNewMessages: 10,
     dryRunDuplicateMessages: 32,
     lastImportFinishedAtUtc: '2026-04-29T18:30:00.000Z',
@@ -29,7 +29,7 @@ void main() {
   const importedMatch = HistoricalArchiveImportedSourceMatch(
     sourceKey: sourceKey,
     sourceId: 3,
-    importedMessageCount: 40,
+    importedMessageCount: 8882,
   );
 
   group('buildHistoricalArchiveSidebarKnownSources', () {
@@ -62,17 +62,62 @@ void main() {
       expect(summaries.single.label, 'Archive-2017');
       expect(
         summaries.single.dateRangeLabel,
-        'Date range: 2017-01-03 to 2017-01-05',
+        'Date range: Jul 2012 – Jun 2017',
       );
-      expect(summaries.single.messageCountLabel, 'Messages: 40');
-      expect(
-        summaries.single.lastRunSummaryLabel,
-        'Last run: imported 40 messages',
+      expect(summaries.single.messageCountLabel, 'Messages: 8,882');
+      expect(summaries.single.importedOnLabel, 'Imported on: Apr 29, 2026');
+    });
+
+    test('omits imported-on without a trustworthy successful completion', () {
+      final failedSummaries = buildHistoricalArchiveSidebarKnownSources(
+        sources: [
+          _sourceWithImportCompletion(
+            finishedAtUtc: '2026-05-01T18:30:00.000Z',
+            wasSuccessful: false,
+          ),
+        ],
+        importedSourcesByKey: const {sourceKey: importedMatch},
       );
-      expect(
-        summaries.single.lastImportedLabel,
-        'Last imported: 2026-04-29 18:30 UTC',
+      final missingTimestampSummaries =
+          buildHistoricalArchiveSidebarKnownSources(
+            sources: [
+              _sourceWithImportCompletion(
+                finishedAtUtc: null,
+                wasSuccessful: true,
+              ),
+            ],
+            importedSourcesByKey: const {sourceKey: importedMatch},
+          );
+      final unverifiedTimestampSummaries =
+          buildHistoricalArchiveSidebarKnownSources(
+            sources: [
+              _sourceWithImportCompletion(
+                finishedAtUtc: '2026-05-02T18:30:00.000Z',
+                wasSuccessful: null,
+              ),
+            ],
+            importedSourcesByKey: const {sourceKey: importedMatch},
+          );
+
+      expect(failedSummaries.single.importedOnLabel, isNull);
+      expect(missingTimestampSummaries.single.importedOnLabel, isNull);
+      expect(unverifiedTimestampSummaries.single.importedOnLabel, isNull);
+    });
+
+    test('omits an unsupported date range instead of showing a fallback', () {
+      final summaries = buildHistoricalArchiveSidebarKnownSources(
+        sources: [
+          _sourceWithImportCompletion(
+            finishedAtUtc: '2026-04-29T18:30:00.000Z',
+            wasSuccessful: true,
+            earliestMessageUtc: null,
+          ),
+        ],
+        importedSourcesByKey: const {sourceKey: importedMatch},
       );
+
+      expect(summaries.single.dateRangeLabel, isNull);
+      expect(summaries.single.messageCountLabel, 'Messages: 8,882');
     });
 
     test('keeps selection and reference keyed to imported membership', () {
@@ -194,6 +239,32 @@ void main() {
       const [source],
     );
   });
+}
+
+HistoricalArchiveSourceMetadata _sourceWithImportCompletion({
+  required String? finishedAtUtc,
+  required bool? wasSuccessful,
+  String? earliestMessageUtc = '2012-07-25T08:00:00.000Z',
+  String? latestMessageUtc = '2017-06-11T08:00:00.000Z',
+}) {
+  return HistoricalArchiveSourceMetadata(
+    sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
+    sourceChatDb: '/Archives/2017/chat.db',
+    folderPath: '/Archives/2017',
+    sourceLabel: 'Archive-2017',
+    chatDbStatusLabel: 'Found and readable',
+    attachmentsStatusLabel: 'Found',
+    preflightStatusLabel: 'Preflight complete',
+    totalMessages: 8882,
+    earliestMessageUtc: earliestMessageUtc,
+    latestMessageUtc: latestMessageUtc,
+    dryRunNewMessages: 0,
+    dryRunDuplicateMessages: 8882,
+    lastImportFinishedAtUtc: finishedAtUtc,
+    lastImportSuccess: wasSuccessful,
+    lastImportError: wasSuccessful == false ? 'Import failed' : null,
+    lastImportedMessageCount: wasSuccessful == true ? 8882 : null,
+  );
 }
 
 final class _MutableImportedSourceLookup

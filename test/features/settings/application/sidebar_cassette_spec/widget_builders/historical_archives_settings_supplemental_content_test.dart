@@ -9,7 +9,7 @@ import 'package:remember_this_text/features/settings/application/sidebar_cassett
 
 void main() {
   group('HistoricalArchivesSettingsSupplementalContent', () {
-    testWidgets('renders known source last-run details', (tester) async {
+    testWidgets('renders only durable human archive metadata', (tester) async {
       const payload = HistoricalArchivesSettingsCassettePayload(
         knownSources: [
           HistoricalArchiveSidebarSourceSummary(
@@ -17,8 +17,7 @@ void main() {
             label: 'Jan 2017 MacBook Archive',
             dateRangeLabel: 'Range: Jan 2014 -> Nov 2017',
             messageCountLabel: 'Source messages: 8,882',
-            lastRunSummaryLabel: 'Last run counts: 8,120 new, 762 duplicates',
-            lastImportedLabel: 'Last imported: Apr 29, 2026 at 11:42 AM',
+            importedOnLabel: 'Imported on: Apr 29, 2026',
           ),
         ],
       );
@@ -38,15 +37,41 @@ void main() {
       expect(find.text('Jan 2017 MacBook Archive'), findsOneWidget);
       expect(find.text('Range: Jan 2014 -> Nov 2017'), findsOneWidget);
       expect(find.text('Source messages: 8,882'), findsOneWidget);
-      expect(
-        find.text('Last run counts: 8,120 new, 762 duplicates'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('Last imported: Apr 29, 2026 at 11:42 AM'),
-        findsOneWidget,
-      );
+      expect(find.text('Imported on: Apr 29, 2026'), findsOneWidget);
+      expect(find.textContaining('Last dry run'), findsNothing);
+      expect(find.textContaining('Last imported'), findsNothing);
+      expect(find.textContaining('not yet imported'), findsNothing);
       expect(find.text('Add an Archive Folder'), findsOneWidget);
+    });
+
+    testWidgets('omits imported-on when no trustworthy date is supplied', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: CupertinoApp(
+            home: HistoricalArchivesSettingsSupplementalContent(
+              payload: HistoricalArchivesSettingsCassettePayload(
+                knownSources: [
+                  HistoricalArchiveSidebarSourceSummary(
+                    sourceKey:
+                        'historical-messages-archive:/Archives/2017/chat.db',
+                    label: 'Archive-2017',
+                    dateRangeLabel: 'Date range: Jul 2012 – Jun 2017',
+                    messageCountLabel: 'Messages: 8,882',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Archive-2017'), findsOneWidget);
+      expect(find.text('Date range: Jul 2012 – Jun 2017'), findsOneWidget);
+      expect(find.text('Messages: 8,882'), findsOneWidget);
+      expect(find.textContaining('Imported on'), findsNothing);
+      expect(find.textContaining('not yet imported'), findsNothing);
     });
 
     testWidgets('tapping add archive folder triggers workflow chooser', (
@@ -177,8 +202,7 @@ void main() {
                     label: 'Archive-2017',
                     dateRangeLabel: 'Date range: 2012 to 2017',
                     messageCountLabel: 'Total messages: 8,882',
-                    lastRunSummaryLabel: 'Last run: imported 8,882 messages',
-                    lastImportedLabel: 'Last imported: today',
+                    importedOnLabel: 'Imported on: today',
                   ),
                 ],
               ),
@@ -209,8 +233,7 @@ void main() {
                       label: 'Archive-2017',
                       dateRangeLabel: 'Date range: 2012 to 2017',
                       messageCountLabel: 'Total messages: 8,882',
-                      lastRunSummaryLabel: 'Last run: imported 8,882 messages',
-                      lastImportedLabel: 'Last imported: today',
+                      importedOnLabel: 'Imported on: today',
                       isSelected: true,
                     ),
                   ],
@@ -265,9 +288,7 @@ void main() {
                         label: 'Archive-2017',
                         dateRangeLabel: 'Date range: 2012 to 2017',
                         messageCountLabel: 'Total messages: 8,882',
-                        lastRunSummaryLabel:
-                            'Last run: imported 8,882 messages',
-                        lastImportedLabel: 'Last imported: today',
+                        importedOnLabel: 'Imported on: today',
                         isReferenced: isReferenced,
                         referencePulseOccurrence: pulseOccurrence,
                       ),
@@ -356,8 +377,7 @@ void main() {
                   label: 'Archive-2017',
                   dateRangeLabel: 'Date range: 2012 to 2017',
                   messageCountLabel: 'Total messages: 8,882',
-                  lastRunSummaryLabel: 'Last run: imported 8,882 messages',
-                  lastImportedLabel: 'Last imported: today',
+                  importedOnLabel: 'Imported on: today',
                   isReferenced: isReferenced,
                   referencePulseOccurrence: pulseOccurrence,
                 ),
