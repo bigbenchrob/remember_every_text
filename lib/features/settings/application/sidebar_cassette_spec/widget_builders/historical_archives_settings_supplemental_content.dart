@@ -222,14 +222,13 @@ class _HistoricalArchiveSourceTileState
                         ),
                       )
                     : widget.source.isReferenced
-                    ? BoxDecoration.lerp(
-                        ordinaryDecoration,
-                        _historicalArchivesReferenceDecoration(
-                          colors: colors.messagePanels,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        referenceStrength,
-                      )!
+                    ? _historicalArchivesReferenceDecoration(
+                        colors: colors.messagePanels,
+                        ordinaryBackground: colors.surfaces.control,
+                        ordinaryBorder: colors.lines.borderSubtle,
+                        borderRadius: BorderRadius.circular(12),
+                        strength: referenceStrength,
+                      )
                     : ordinaryDecoration,
                 child: child,
               ),
@@ -278,12 +277,23 @@ class _HistoricalArchiveSourceTileState
 
 BoxDecoration _historicalArchivesReferenceDecoration({
   required MessagePanels colors,
+  required Color ordinaryBackground,
+  required Color ordinaryBorder,
   required BorderRadius borderRadius,
+  required double strength,
 }) {
+  final boundedStrength = strength.clamp(0.0, 1.0);
   return BoxDecoration(
-    color: colors.contextAnchorBackground.withValues(alpha: 0.08),
+    color: Color.alphaBlend(
+      colors.contextAnchorBackground.withValues(alpha: 0.08 * boundedStrength),
+      ordinaryBackground,
+    ),
     border: Border.all(
-      color: colors.contextAnchorBorder.withValues(alpha: 0.42),
+      color: Color.alphaBlend(
+        colors.contextAnchorBorder.withValues(alpha: 0.42 * boundedStrength),
+        ordinaryBorder,
+      ),
+      width: 0.8 + (0.2 * boundedStrength),
     ),
     borderRadius: borderRadius,
   );

@@ -315,10 +315,13 @@ void main() {
 
         await pumpSource(isReferenced: false, referenceOccurrence: 0);
         expect(borderWidth(), 0.8);
+        final ordinaryBackground = decoration().color!;
 
         await pumpSource(isReferenced: true, referenceOccurrence: 1);
         await tester.pump(const Duration(milliseconds: 375));
         expect(borderWidth(), allOf(greaterThan(0.8), lessThan(1.0)));
+        final fadeInBackground = decoration().color!;
+        expect(fadeInBackground.a, 1.0);
         final container = ProviderScope.containerOf(
           tester.element(find.text('Archive-2017')),
         );
@@ -327,21 +330,39 @@ void main() {
         expect(archiveLabel.style?.color, colors.content.textPrimary);
         await tester.pump(const Duration(milliseconds: 375));
         expect(borderWidth(), 1.0);
-        expect(
-          decoration().color,
+        final maximumBackground = Color.alphaBlend(
           colors.messagePanels.contextAnchorBackground.withValues(alpha: 0.08),
+          colors.surfaces.control,
         );
+        expect(decoration().color, maximumBackground);
         expect(
           decoration().border!.top.color,
-          colors.messagePanels.contextAnchorBorder.withValues(alpha: 0.42),
+          Color.alphaBlend(
+            colors.messagePanels.contextAnchorBorder.withValues(alpha: 0.42),
+            colors.lines.borderSubtle,
+          ),
         );
         expect(decoration().boxShadow, isNull);
         expect(decoration().color, isNot(colors.surfaces.selected));
+        final maximumDistance = _colorDistance(
+          ordinaryBackground,
+          maximumBackground,
+        );
+        expect(
+          _colorDistance(ordinaryBackground, fadeInBackground),
+          allOf(greaterThan(0), lessThan(maximumDistance)),
+        );
 
         await tester.pump(const Duration(milliseconds: 1000));
         expect(borderWidth(), 1.0);
         await tester.pump(const Duration(milliseconds: 1000));
         expect(borderWidth(), allOf(greaterThan(0.8), lessThan(1.0)));
+        final fadeOutBackground = decoration().color!;
+        expect(fadeOutBackground.a, 1.0);
+        expect(
+          _colorDistance(ordinaryBackground, fadeOutBackground),
+          allOf(greaterThan(0), lessThan(maximumDistance)),
+        );
         await tester.pump(const Duration(milliseconds: 1000));
         expect(borderWidth(), 0.8);
         expect(decoration().color, colors.surfaces.control);
@@ -428,6 +449,13 @@ void main() {
       expect(borderWidth(), 0.8);
     });
   });
+}
+
+double _colorDistance(Color first, Color second) {
+  return (first.a - second.a).abs() +
+      (first.r - second.r).abs() +
+      (first.g - second.g).abs() +
+      (first.b - second.b).abs();
 }
 
 class _TestHistoricalArchivesWorkflow extends HistoricalArchivesWorkflow {

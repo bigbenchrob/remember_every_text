@@ -4928,3 +4928,16 @@ production preservation authority mechanically enforceable.
   occurrence and presentation-session guards.
 - Confirmed that All Messages correspondence, duplicate semantics, archive
   persistence, mutation authority, and database behavior were not changed.
+
+## 2026-08-19 — Historical Archives monotonic reference fade correction
+
+- Added Feature 26 response
+  `21-HISTORICAL-ARCHIVES-MONOTONIC-REFERENCE-FADE-CORRECTION.md`.
+- Recorded that transparent endpoint interpolation caused the observed double
+  intensity peak despite a correctly ordered animation-strength sequence.
+- Replaced decoration interpolation with opaque tint and border compositing
+  driven directly by one bounded reference-strength value.
+- Added regression coverage for opaque frames, monotonic sampled intensity,
+  exact ordinary final chrome, and preserved reduced-motion behavior.
+- Confirmed that timing, occurrence/session safety, modal semantics, source
+  identity, persistence, and archive operations remain unchanged.

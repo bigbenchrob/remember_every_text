@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.48] — 2026-08-19
+
+### Fixed
+
+- Historical Archives' gentle orange folder reference now changes intensity
+  monotonically. The tint no longer produces a second visual peak while fading
+  because every animation frame is composited over the ordinary cartouche
+  surface rather than interpolated toward a transparent endpoint.
+
 ## [0.2.47] — 2026-08-19
 
 ### Changed
