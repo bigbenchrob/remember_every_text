@@ -10,6 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.55] — 2026-08-19
+
+### Changed
+
+- Historical Archives now renders archive-folder names one typographic step
+  below their section heading while preserving metadata, spacing, cartouche
+  chrome, and interaction behavior.
+
 ## [0.2.54] — 2026-08-19
 
 ### Changed

@@ -5023,3 +5023,11 @@ production preservation authority mechanically enforceable.
   distinct layout responsibilities.
 - Confirmed that the pass changes no content, workflow, source, persistence,
   mutation, cartouche, modal, navigation, or center-panel behavior.
+
+## 2026-08-19 — Historical Archives cartouche title hierarchy
+
+- Moved known archive-folder titles from the `controlValue` typography token
+  to the existing, slightly smaller semibold `headline` token.
+- Preserved the stronger **Folders Already Added** heading, its compact
+  heading-to-cartouche relationship, subordinate metadata, cartouche chrome,
+  selection, correspondence, and all archive behavior.

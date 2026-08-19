@@ -38,6 +38,17 @@ void main() {
       expect(find.text('Range: Jan 2014 -> Nov 2017'), findsOneWidget);
       expect(find.text('Source messages: 8,882'), findsOneWidget);
       expect(find.text('Imported on: Apr 29, 2026'), findsOneWidget);
+      final sectionHeadingStyle = tester
+          .widget<Text>(find.text('Folders Already Added'))
+          .style!;
+      final archiveTitleStyle = tester
+          .widget<Text>(find.text('Jan 2017 MacBook Archive'))
+          .style!;
+      expect(
+        archiveTitleStyle.fontSize,
+        lessThan(sectionHeadingStyle.fontSize!),
+      );
+      expect(archiveTitleStyle.fontWeight, FontWeight.w600);
       expect(find.textContaining('Last dry run'), findsNothing);
       expect(find.textContaining('Last imported'), findsNothing);
       expect(find.textContaining('not yet imported'), findsNothing);

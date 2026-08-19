@@ -322,7 +322,7 @@ class _HistoricalArchiveSourceTileState
           children: [
             Text(
               widget.source.label,
-              style: typography.controlValue.copyWith(
+              style: typography.headline.copyWith(
                 color: colors.content.textPrimary,
               ),
             ),
