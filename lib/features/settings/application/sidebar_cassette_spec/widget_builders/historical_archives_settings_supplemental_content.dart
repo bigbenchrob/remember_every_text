@@ -20,7 +20,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final showAddArchiveFolder = ref.watch(
+    final showAddMessagesFolder = ref.watch(
       historicalArchivesWorkflowProvider.select(
         (state) =>
             state.presentationContext !=
@@ -65,7 +65,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
           ],
-        if (showAddArchiveFolder) ...[
+        if (showAddMessagesFolder) ...[
           const SizedBox(height: 14),
           DecoratedBox(
             decoration: BoxDecoration(
@@ -88,13 +88,61 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
                     vertical: 10,
                   ),
                   child: Text(
-                    'Add an Archive Folder',
+                    'Add a Messages Folder',
                     style: typography.controlValue.copyWith(
                       color: colors.accents.primary,
                     ),
                   ),
                 ),
               ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'What am I looking for?',
+            style: typography.controlValue.copyWith(
+              color: colors.content.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "Choose a copy of your Mac's Messages folder - the folder "
+            'containing chat.db.',
+            key: const ValueKey<String>(
+              'historical-archives-messages-folder-guidance',
+            ),
+            style: typography.caption1.copyWith(
+              color: colors.content.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Usually: Home → Library → Messages',
+            style: typography.caption1.copyWith(
+              color: colors.content.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Older copies may be on another drive, moved somewhere else, '
+            "or renamed. That's fine.",
+            style: typography.caption1.copyWith(
+              color: colors.content.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Choose the folder itself, not the chat.db file.',
+            style: typography.caption1.copyWith(
+              color: colors.content.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'An Attachments folder may contain images, videos, and other '
+            'message attachments. It is optional for adding message history.',
+            style: typography.caption1.copyWith(
+              color: colors.content.textSecondary,
             ),
           ),
         ],

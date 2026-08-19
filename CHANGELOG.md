@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.49] — 2026-08-19
+
+### Changed
+
+- Historical Archives now asks the user to **Add a Messages Folder** and
+  explains, before Finder opens, that the folder must contain `chat.db`, may
+  have been moved or renamed, and may optionally include message attachments.
+  The normal location is shown without exposing a user-specific filesystem
+  path.
+
 ## [0.2.48] — 2026-08-19
 
 ### Fixed

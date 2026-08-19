@@ -4941,3 +4941,14 @@ production preservation authority mechanically enforceable.
   exact ordinary final chrome, and preserved reduced-motion behavior.
 - Confirmed that timing, occurrence/session safety, modal semantics, source
   identity, persistence, and archive operations remain unchanged.
+
+## 2026-08-19 — Historical Archives Messages-folder guidance
+
+- Added Feature 26 response
+  `22-HISTORICAL-ARCHIVES-MESSAGES-FOLDER-GUIDANCE-IMPLEMENTATION.md`.
+- Recorded **Historical Archives** as the umbrella concept and **Messages
+  Folder** as the concrete object selected by the current macOS source arm.
+- Documented sidebar ownership of pre-chooser orientation, the regular
+  `chat.db` structural requirement, and optional `Attachments` content.
+- Preserved the silent virgin center panel and confirmed that guidance creates
+  no workflow context, source identity, persistence, or archive mutation.

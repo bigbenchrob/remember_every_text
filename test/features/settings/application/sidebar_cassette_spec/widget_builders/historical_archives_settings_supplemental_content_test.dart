@@ -41,7 +41,8 @@ void main() {
       expect(find.textContaining('Last dry run'), findsNothing);
       expect(find.textContaining('Last imported'), findsNothing);
       expect(find.textContaining('not yet imported'), findsNothing);
-      expect(find.text('Add an Archive Folder'), findsOneWidget);
+      expect(find.text('Add a Messages Folder'), findsOneWidget);
+      expect(find.text('Add an Archive Folder'), findsNothing);
     });
 
     testWidgets('omits imported-on when no trustworthy date is supplied', (
@@ -74,7 +75,50 @@ void main() {
       expect(find.textContaining('not yet imported'), findsNothing);
     });
 
-    testWidgets('tapping add archive folder triggers workflow chooser', (
+    testWidgets(
+      'messages-folder guidance states the truthful source contract',
+      (tester) async {
+        await tester.pumpWidget(
+          const ProviderScope(
+            child: CupertinoApp(
+              home: HistoricalArchivesSettingsSupplementalContent(
+                payload: HistoricalArchivesSettingsCassettePayload(),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('What am I looking for?'), findsOneWidget);
+        expect(
+          find.text(
+            "Choose a copy of your Mac's Messages folder - the folder "
+            'containing chat.db.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Usually: Home → Library → Messages'), findsOneWidget);
+        expect(find.textContaining('/Users/'), findsNothing);
+        expect(find.textContaining('rob'), findsNothing);
+        expect(
+          find.text(
+            'Older copies may be on another drive, moved somewhere else, '
+            "or renamed. That's fine.",
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Choose the folder itself, not the chat.db file.'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('It is optional for adding message history.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Attachments is required'), findsNothing);
+      },
+    );
+
+    testWidgets('tapping add messages folder triggers workflow chooser', (
       tester,
     ) async {
       final workflow = _TestHistoricalArchivesWorkflow();
@@ -93,7 +137,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Add an Archive Folder'));
+      await tester.tap(find.text('Add a Messages Folder'));
       await tester.pump();
 
       expect(workflow.chooseMessagesFolderCallCount, 1);
@@ -123,7 +167,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Add an Archive Folder'), findsOneWidget);
+      expect(find.text('Add a Messages Folder'), findsOneWidget);
     });
 
     testWidgets('invalid-folder notice leaves the stable hub action visible', (
@@ -151,7 +195,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Add an Archive Folder'), findsOneWidget);
+      expect(find.text('Add a Messages Folder'), findsOneWidget);
       expect(find.text('Choose Another Folder'), findsNothing);
     });
 
@@ -179,7 +223,15 @@ void main() {
         ),
       );
 
-      expect(find.text('Add an Archive Folder'), findsNothing);
+      expect(find.text('Add a Messages Folder'), findsNothing);
+      expect(
+        find.byKey(
+          const ValueKey<String>(
+            'historical-archives-messages-folder-guidance',
+          ),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('known-source cartouche requests exact-key navigation', (
