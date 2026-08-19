@@ -9,7 +9,7 @@ final class HistoricalArchiveSidebarSourceSummary {
     this.importedOnLabel,
     this.isReferenced = false,
     this.isSelected = false,
-    this.referencePulseOccurrence = 0,
+    this.referenceOccurrence = 0,
   });
 
   final String sourceKey;
@@ -19,7 +19,7 @@ final class HistoricalArchiveSidebarSourceSummary {
   final String? importedOnLabel;
   final bool isReferenced;
   final bool isSelected;
-  final int referencePulseOccurrence;
+  final int referenceOccurrence;
 }
 
 final class HistoricalArchivesSettingsCassettePayload

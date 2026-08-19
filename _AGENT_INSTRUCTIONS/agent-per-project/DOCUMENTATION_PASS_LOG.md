@@ -4912,3 +4912,19 @@ production preservation authority mechanically enforceable.
 - Confirmed that the ephemeral notice carries only occurrence/session guards
   and that invalid selection performs no source persistence or archive
   mutation.
+
+## 2026-08-19 — Historical Archives gentle reference fade
+
+- Added Feature 26 prompt and response records for the Historical Archives
+  gentle referential-attention refinement.
+- Established that referential attention should be the smallest visual change
+  sufficient to direct human attention.
+- Replaced the Historical Archives pulse/glow presentation with a 750 ms light
+  orange fade-in, one-second hold, and two-second fade-out that returns exactly
+  to ordinary unselected chrome.
+- Recorded reduced-motion behavior as a calm static treatment with the same
+  bounded workflow lifetime.
+- Preserved canonical source identity separately from process-only reference
+  occurrence and presentation-session guards.
+- Confirmed that All Messages correspondence, duplicate semantics, archive
+  persistence, mutation authority, and database behavior were not changed.

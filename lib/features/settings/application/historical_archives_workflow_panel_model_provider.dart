@@ -89,15 +89,15 @@ enum HistoricalArchivesPresentationStage {
 enum HistoricalArchivesPresentationContext { hub, existingSource, addArchive }
 
 /// Ephemeral presentation state only. [sourceKey] identifies the archive;
-/// [pulseOccurrence] identifies a fresh "look here" event in this process.
+/// [referenceOccurrence] identifies a fresh "look here" event in this process.
 final class HistoricalArchivesKnownSourceReference {
   const HistoricalArchivesKnownSourceReference({
     required this.sourceKey,
-    required this.pulseOccurrence,
+    required this.referenceOccurrence,
   });
 
   final String sourceKey;
-  final int pulseOccurrence;
+  final int referenceOccurrence;
 }
 
 /// One-use presentation notice for a failed add attempt.
@@ -131,10 +131,10 @@ final class HistoricalArchivesInvalidFolderNotice {
   final int presentationSessionOccurrence;
 }
 
-const historicalArchivesReferencePulseDuration = Duration(milliseconds: 760);
-const historicalArchivesReferenceLingerDuration = Duration(milliseconds: 1200);
-const historicalArchivesReferenceFadeDuration = Duration(milliseconds: 1000);
-const historicalArchivesReferenceLifetime = Duration(milliseconds: 2960);
+const historicalArchivesReferenceFadeInDuration = Duration(milliseconds: 750);
+const historicalArchivesReferenceHoldDuration = Duration(milliseconds: 1000);
+const historicalArchivesReferenceFadeOutDuration = Duration(milliseconds: 2000);
+const historicalArchivesReferenceLifetime = Duration(milliseconds: 3750);
 
 final class HistoricalArchivesInspectionEvidence {
   const HistoricalArchivesInspectionEvidence({
@@ -558,7 +558,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
 
 @Riverpod(keepAlive: true)
 class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
-  var _nextReferencePulseOccurrence = 0;
+  var _nextReferenceOccurrence = 0;
   var _nextDuplicateNoticeOccurrence = 0;
   var _nextInvalidFolderNoticeOccurrence = 0;
   var _presentationSessionOccurrence = 0;
@@ -798,18 +798,18 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     }
 
     _referenceClearTimer?.cancel();
-    _nextReferencePulseOccurrence += 1;
-    final pulseOccurrence = _nextReferencePulseOccurrence;
+    _nextReferenceOccurrence += 1;
+    final referenceOccurrence = _nextReferenceOccurrence;
     state = state.copyWith(
       clearDuplicateFolderNotice: true,
       knownSourceReference: HistoricalArchivesKnownSourceReference(
         sourceKey: notice.sourceKey,
-        pulseOccurrence: pulseOccurrence,
+        referenceOccurrence: referenceOccurrence,
       ),
     );
     _referenceClearTimer = Timer(historicalArchivesReferenceLifetime, () {
       _clearKnownSourceReference(
-        pulseOccurrence: pulseOccurrence,
+        referenceOccurrence: referenceOccurrence,
         presentationSessionOccurrence: presentationSessionOccurrence,
       );
     });
@@ -848,11 +848,12 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   void _clearKnownSourceReference({
-    required int pulseOccurrence,
+    required int referenceOccurrence,
     required int presentationSessionOccurrence,
   }) {
     if (_presentationSessionOccurrence != presentationSessionOccurrence ||
-        state.knownSourceReference?.pulseOccurrence != pulseOccurrence) {
+        state.knownSourceReference?.referenceOccurrence !=
+            referenceOccurrence) {
       return;
     }
     state = state.copyWith(clearKnownSourceReference: true);

@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
-import '../../../../../config/theme/widgets/referential_correspondence_decoration.dart';
 import '../../historical_archives_workflow_actions_provider.dart';
 import '../../historical_archives_workflow_panel_model_provider.dart';
 import '../payloads/historical_archives_settings_cassette_payload.dart';
@@ -117,81 +116,65 @@ class _HistoricalArchiveSourceTile extends ConsumerStatefulWidget {
 class _HistoricalArchiveSourceTileState
     extends ConsumerState<_HistoricalArchiveSourceTile>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseController = AnimationController(
+  late final AnimationController _referenceController = AnimationController(
     vsync: this,
     duration: historicalArchivesReferenceLifetime,
   );
-  late final Animation<double> _pulse = TweenSequence<double>([
+  late final Animation<double> _referenceStrength = TweenSequence<double>([
     TweenSequenceItem(
       tween: Tween<double>(
         begin: 0,
         end: 1,
       ).chain(CurveTween(curve: Curves.easeOutCubic)),
-      weight: 150,
+      weight: historicalArchivesReferenceFadeInDuration.inMilliseconds
+          .toDouble(),
     ),
-    TweenSequenceItem(tween: ConstantTween<double>(1), weight: 360),
-    TweenSequenceItem(
-      tween: Tween<double>(
-        begin: 1,
-        end: 0,
-      ).chain(CurveTween(curve: Curves.easeOutCubic)),
-      weight: 250,
-    ),
-    TweenSequenceItem(
-      tween: ConstantTween<double>(0),
-      weight:
-          (historicalArchivesReferenceLingerDuration.inMilliseconds +
-                  historicalArchivesReferenceFadeDuration.inMilliseconds)
-              .toDouble(),
-    ),
-  ]).animate(_pulseController);
-  late final Animation<double> _referenceStrength = TweenSequence<double>([
     TweenSequenceItem(
       tween: ConstantTween<double>(1),
-      weight:
-          (historicalArchivesReferencePulseDuration.inMilliseconds +
-                  historicalArchivesReferenceLingerDuration.inMilliseconds)
-              .toDouble(),
+      weight: historicalArchivesReferenceHoldDuration.inMilliseconds.toDouble(),
     ),
     TweenSequenceItem(
       tween: Tween<double>(
         begin: 1,
         end: 0,
       ).chain(CurveTween(curve: Curves.easeInOutCubic)),
-      weight: historicalArchivesReferenceFadeDuration.inMilliseconds.toDouble(),
+      weight: historicalArchivesReferenceFadeOutDuration.inMilliseconds
+          .toDouble(),
     ),
-  ]).animate(_pulseController);
-  var _lastPulseOccurrence = 0;
+  ]).animate(_referenceController);
+  var _lastReferenceOccurrence = 0;
 
   @override
   void initState() {
     super.initState();
-    _lastPulseOccurrence = widget.source.referencePulseOccurrence;
+    _lastReferenceOccurrence = widget.source.referenceOccurrence;
   }
 
   @override
   void didUpdateWidget(covariant _HistoricalArchiveSourceTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.source.isReferenced) {
-      _pulseController.stop();
-      _pulseController.value = 0;
-      _lastPulseOccurrence = widget.source.referencePulseOccurrence;
+      _referenceController.stop();
+      _referenceController.value = 0;
+      _lastReferenceOccurrence = widget.source.referenceOccurrence;
       return;
     }
 
-    if (widget.source.referencePulseOccurrence != _lastPulseOccurrence) {
-      _lastPulseOccurrence = widget.source.referencePulseOccurrence;
+    if (widget.source.referenceOccurrence != _lastReferenceOccurrence) {
+      _lastReferenceOccurrence = widget.source.referenceOccurrence;
       if (_motionDisabled(context)) {
-        _pulseController.value = 0;
+        _referenceController.value =
+            historicalArchivesReferenceFadeInDuration.inMilliseconds /
+            historicalArchivesReferenceLifetime.inMilliseconds;
         return;
       }
-      _pulseController.forward(from: 0);
+      _referenceController.forward(from: 0);
     }
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _referenceController.dispose();
     super.dispose();
   }
 
@@ -202,9 +185,8 @@ class _HistoricalArchiveSourceTileState
     final typography = ref.watch(themeTypographyProvider);
 
     return AnimatedBuilder(
-      animation: _pulseController,
+      animation: _referenceController,
       builder: (context, child) {
-        final pulse = widget.source.isReferenced ? _pulse.value : 0.0;
         final referenceStrength = widget.source.isReferenced
             ? _referenceStrength.value
             : 0.0;
@@ -242,9 +224,8 @@ class _HistoricalArchiveSourceTileState
                     : widget.source.isReferenced
                     ? BoxDecoration.lerp(
                         ordinaryDecoration,
-                        referentialCorrespondenceDecoration(
+                        _historicalArchivesReferenceDecoration(
                           colors: colors.messagePanels,
-                          pulse: pulse,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         referenceStrength,
@@ -293,6 +274,19 @@ class _HistoricalArchiveSourceTileState
       ),
     );
   }
+}
+
+BoxDecoration _historicalArchivesReferenceDecoration({
+  required MessagePanels colors,
+  required BorderRadius borderRadius,
+}) {
+  return BoxDecoration(
+    color: colors.contextAnchorBackground.withValues(alpha: 0.08),
+    border: Border.all(
+      color: colors.contextAnchorBorder.withValues(alpha: 0.42),
+    ),
+    borderRadius: borderRadius,
+  );
 }
 
 bool _motionDisabled(BuildContext context) {

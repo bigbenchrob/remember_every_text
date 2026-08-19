@@ -269,13 +269,13 @@ void main() {
     );
 
     testWidgets(
-      'canonical reference pulses once per occurrence and not per rebuild',
+      'reference gently fades once per occurrence and returns to ordinary chrome',
       (tester) async {
         const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
 
         Future<void> pumpSource({
           required bool isReferenced,
-          required int pulseOccurrence,
+          required int referenceOccurrence,
         }) async {
           await tester.pumpWidget(
             ProviderScope(
@@ -290,7 +290,7 @@ void main() {
                         messageCountLabel: 'Total messages: 8,882',
                         importedOnLabel: 'Imported on: today',
                         isReferenced: isReferenced,
-                        referencePulseOccurrence: pulseOccurrence,
+                        referenceOccurrence: referenceOccurrence,
                       ),
                     ],
                   ),
@@ -313,119 +313,120 @@ void main() {
 
         double borderWidth() => decoration().border!.top.width;
 
-        await pumpSource(isReferenced: false, pulseOccurrence: 0);
+        await pumpSource(isReferenced: false, referenceOccurrence: 0);
         expect(borderWidth(), 0.8);
 
-        await pumpSource(isReferenced: true, pulseOccurrence: 1);
-        await tester.pump(const Duration(milliseconds: 200));
-        expect(borderWidth(), greaterThan(1.25));
+        await pumpSource(isReferenced: true, referenceOccurrence: 1);
+        await tester.pump(const Duration(milliseconds: 375));
+        expect(borderWidth(), allOf(greaterThan(0.8), lessThan(1.0)));
         final container = ProviderScope.containerOf(
           tester.element(find.text('Archive-2017')),
         );
         final colors = container.read(themeColorsProvider.notifier);
         final archiveLabel = tester.widget<Text>(find.text('Archive-2017'));
         expect(archiveLabel.style?.color, colors.content.textPrimary);
-        await tester.pump(const Duration(milliseconds: 700));
-        expect(borderWidth(), 1.25);
+        await tester.pump(const Duration(milliseconds: 375));
+        expect(borderWidth(), 1.0);
         expect(
           decoration().color,
-          colors.messagePanels.contextAnchorBackground.withValues(alpha: 0.10),
+          colors.messagePanels.contextAnchorBackground.withValues(alpha: 0.08),
         );
         expect(
           decoration().border!.top.color,
-          colors.messagePanels.contextAnchorBorder.withValues(alpha: 0.55),
+          colors.messagePanels.contextAnchorBorder.withValues(alpha: 0.42),
         );
-        expect(
-          decoration().boxShadow!.single.color,
-          colors.messagePanels.contextAnchorGlow.withValues(alpha: 0.18),
-        );
+        expect(decoration().boxShadow, isNull);
+        expect(decoration().color, isNot(colors.surfaces.selected));
 
-        await tester.pump(const Duration(milliseconds: 1300));
-        expect(borderWidth(), allOf(greaterThan(0.8), lessThan(1.25)));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 1000));
+        expect(borderWidth(), 1.0);
+        await tester.pump(const Duration(milliseconds: 1000));
+        expect(borderWidth(), allOf(greaterThan(0.8), lessThan(1.0)));
+        await tester.pump(const Duration(milliseconds: 1000));
         expect(borderWidth(), 0.8);
         expect(decoration().color, colors.surfaces.control);
         expect(decoration().boxShadow, isNull);
 
-        await pumpSource(isReferenced: true, pulseOccurrence: 1);
-        await tester.pump(const Duration(milliseconds: 200));
+        await pumpSource(isReferenced: true, referenceOccurrence: 1);
+        await tester.pump(const Duration(milliseconds: 375));
         expect(borderWidth(), 0.8);
 
-        await pumpSource(isReferenced: true, pulseOccurrence: 2);
-        await tester.pump(const Duration(milliseconds: 200));
-        expect(borderWidth(), greaterThan(1.25));
+        await pumpSource(isReferenced: true, referenceOccurrence: 2);
+        await tester.pump(const Duration(milliseconds: 375));
+        expect(borderWidth(), allOf(greaterThan(0.8), lessThan(1.0)));
 
-        await pumpSource(isReferenced: false, pulseOccurrence: 0);
+        await pumpSource(isReferenced: false, referenceOccurrence: 0);
         expect(borderWidth(), 0.8);
       },
     );
 
-    testWidgets(
-      'reduced motion keeps the reference without animating the pulse',
-      (tester) async {
-        const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
+    testWidgets('reduced motion shows a bounded static gentle reference', (
+      tester,
+    ) async {
+      const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
 
-        HistoricalArchivesSettingsSupplementalContent content({
-          required bool isReferenced,
-          required int pulseOccurrence,
-        }) {
-          return HistoricalArchivesSettingsSupplementalContent(
-            payload: HistoricalArchivesSettingsCassettePayload(
-              knownSources: [
-                HistoricalArchiveSidebarSourceSummary(
-                  sourceKey: sourceKey,
-                  label: 'Archive-2017',
-                  dateRangeLabel: 'Date range: 2012 to 2017',
-                  messageCountLabel: 'Total messages: 8,882',
-                  importedOnLabel: 'Imported on: today',
-                  isReferenced: isReferenced,
-                  referencePulseOccurrence: pulseOccurrence,
-                ),
-              ],
-            ),
-          );
-        }
+      HistoricalArchivesSettingsSupplementalContent content({
+        required bool isReferenced,
+        required int referenceOccurrence,
+      }) {
+        return HistoricalArchivesSettingsSupplementalContent(
+          payload: HistoricalArchivesSettingsCassettePayload(
+            knownSources: [
+              HistoricalArchiveSidebarSourceSummary(
+                sourceKey: sourceKey,
+                label: 'Archive-2017',
+                dateRangeLabel: 'Date range: 2012 to 2017',
+                messageCountLabel: 'Total messages: 8,882',
+                importedOnLabel: 'Imported on: today',
+                isReferenced: isReferenced,
+                referenceOccurrence: referenceOccurrence,
+              ),
+            ],
+          ),
+        );
+      }
 
-        Future<void> pumpSource({
-          required bool isReferenced,
-          required int pulseOccurrence,
-        }) async {
-          await tester.pumpWidget(
-            ProviderScope(
-              child: CupertinoApp(
-                builder: (context, child) => MediaQuery(
-                  data: MediaQuery.of(
-                    context,
-                  ).copyWith(disableAnimations: true),
-                  child: child!,
-                ),
-                home: content(
-                  isReferenced: isReferenced,
-                  pulseOccurrence: pulseOccurrence,
-                ),
+      Future<void> pumpSource({
+        required bool isReferenced,
+        required int referenceOccurrence,
+      }) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            child: CupertinoApp(
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: child!,
+              ),
+              home: content(
+                isReferenced: isReferenced,
+                referenceOccurrence: referenceOccurrence,
               ),
             ),
-          );
-        }
+          ),
+        );
+      }
 
-        double borderWidth() {
-          final decoratedBox = tester.widget<DecoratedBox>(
-            find.byKey(
-              const ValueKey<String>(
-                'historical-archive-source-chrome:$sourceKey',
-              ),
+      double borderWidth() {
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find.byKey(
+            const ValueKey<String>(
+              'historical-archive-source-chrome:$sourceKey',
             ),
-          );
-          return (decoratedBox.decoration as BoxDecoration).border!.top.width;
-        }
+          ),
+        );
+        return (decoratedBox.decoration as BoxDecoration).border!.top.width;
+      }
 
-        await pumpSource(isReferenced: false, pulseOccurrence: 0);
-        await pumpSource(isReferenced: true, pulseOccurrence: 1);
-        await tester.pump(const Duration(milliseconds: 200));
+      await pumpSource(isReferenced: false, referenceOccurrence: 0);
+      await pumpSource(isReferenced: true, referenceOccurrence: 1);
+      await tester.pump();
 
-        expect(borderWidth(), 1.25);
-      },
-    );
+      expect(borderWidth(), 1.0);
+      await tester.pump(const Duration(milliseconds: 2000));
+      expect(borderWidth(), 1.0);
+      await pumpSource(isReferenced: false, referenceOccurrence: 0);
+      expect(borderWidth(), 0.8);
+    });
   });
 }
 

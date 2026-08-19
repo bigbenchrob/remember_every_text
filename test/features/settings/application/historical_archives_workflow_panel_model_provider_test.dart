@@ -562,7 +562,7 @@ void main() {
         );
         expect(firstReference.duplicateFolderNotice, isNull);
         expect(firstReference.knownSourceReference?.sourceKey, sourceKey);
-        expect(firstReference.knownSourceReference?.pulseOccurrence, 1);
+        expect(firstReference.knownSourceReference?.referenceOccurrence, 1);
         expect(
           firstReference.presentationContext,
           HistoricalArchivesPresentationContext.hub,
@@ -584,7 +584,7 @@ void main() {
           container
               .read(historicalArchivesWorkflowProvider)
               .knownSourceReference
-              ?.pulseOccurrence,
+              ?.referenceOccurrence,
           2,
         );
 
@@ -593,10 +593,17 @@ void main() {
           container
               .read(historicalArchivesWorkflowProvider)
               .knownSourceReference
-              ?.pulseOccurrence,
+              ?.referenceOccurrence,
           2,
         );
-        await tester.pump(const Duration(milliseconds: 1960));
+        await tester.pump(const Duration(milliseconds: 2749));
+        expect(
+          container
+              .read(historicalArchivesWorkflowProvider)
+              .knownSourceReference,
+          isNotNull,
+        );
+        await tester.pump(const Duration(milliseconds: 1));
         expect(
           container
               .read(historicalArchivesWorkflowProvider)
@@ -872,7 +879,7 @@ void main() {
     );
 
     test(
-      'known-source navigation uses canonical identity without recognition pulse',
+      'known-source navigation uses canonical identity without a reference event',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
         final container = ProviderContainer(

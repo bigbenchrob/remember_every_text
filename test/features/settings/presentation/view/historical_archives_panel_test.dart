@@ -85,7 +85,7 @@ void main() {
         await tester.tap(find.text('OK'));
         await tester.pumpAndSettle();
         expect(workflow.dismissCallCount, 2);
-        expect(workflow.state.knownSourceReference?.pulseOccurrence, 2);
+        expect(workflow.state.knownSourceReference?.referenceOccurrence, 2);
       },
     );
 
@@ -762,7 +762,7 @@ final class _DuplicateNoticeHistoricalArchivesWorkflow
     state = buildInitialHistoricalArchivesWorkflowState().copyWith(
       knownSourceReference: HistoricalArchivesKnownSourceReference(
         sourceKey: sourceKey,
-        pulseOccurrence: noticeOccurrence,
+        referenceOccurrence: noticeOccurrence,
       ),
     );
   }

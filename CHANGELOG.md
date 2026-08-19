@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.47] — 2026-08-19
+
+### Changed
+
+- Historical Archives now points gently to a previously added folder after a
+  duplicate-folder notice: a light orange correspondence tint fades in, holds
+  briefly, and fades completely away without the former pulse or glow. Reduced
+  motion uses the same bounded meaning as a calm static treatment.
+
 ## [0.2.46] — 2026-08-19
 
 ### Changed

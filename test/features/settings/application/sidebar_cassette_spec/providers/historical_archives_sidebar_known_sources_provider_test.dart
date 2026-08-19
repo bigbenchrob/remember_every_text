@@ -134,7 +134,7 @@ void main() {
         presentationContext: HistoricalArchivesPresentationContext.hub,
         reference: const HistoricalArchivesKnownSourceReference(
           sourceKey: sourceKey,
-          pulseOccurrence: 3,
+          referenceOccurrence: 3,
         ),
       );
 
@@ -142,7 +142,7 @@ void main() {
       expect(selected.single.isReferenced, isFalse);
       expect(referenced.single.isSelected, isFalse);
       expect(referenced.single.isReferenced, isTrue);
-      expect(referenced.single.referencePulseOccurrence, 3);
+      expect(referenced.single.referenceOccurrence, 3);
     });
 
     test('reference targets only the matching canonical source key', () {
@@ -180,7 +180,7 @@ void main() {
         },
         reference: const HistoricalArchivesKnownSourceReference(
           sourceKey: sourceKey,
-          pulseOccurrence: 7,
+          referenceOccurrence: 7,
         ),
       );
 
@@ -192,7 +192,7 @@ void main() {
       expect(
         summaries
             .singleWhere((summary) => summary.sourceKey == otherSourceKey)
-            .referencePulseOccurrence,
+            .referenceOccurrence,
         0,
       );
     });

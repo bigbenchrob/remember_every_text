@@ -74,8 +74,8 @@ buildHistoricalArchiveSidebarKnownSources({
                   HistoricalArchivesPresentationContext.existingSource &&
               source.sourceKey == selectedSourceKey,
           isReferenced: source.sourceKey == reference?.sourceKey,
-          referencePulseOccurrence: source.sourceKey == reference?.sourceKey
-              ? reference?.pulseOccurrence ?? 0
+          referenceOccurrence: source.sourceKey == reference?.sourceKey
+              ? reference?.referenceOccurrence ?? 0
               : 0,
         ),
   ];
