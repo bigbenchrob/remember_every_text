@@ -526,6 +526,15 @@ class _ExistingHistoricalArchiveSourcePanel extends ConsumerWidget {
                 ),
               ),
             ],
+            if (presentation.removalFailureStatement
+                case final failureStatement?) ...[
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                failureStatement,
+                key: const Key('historical-archives-removal-failure-statement'),
+                style: typography.body.copyWith(color: colors.status.error),
+              ),
+            ],
             if (presentation.detailsLines.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.xl),
               _HistoricalArchivesDetailsDisclosure(
@@ -610,64 +619,104 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
 
+    final content = Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 760),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Historical Archives',
+              key: const Key('historical-archives-page-title'),
+              style: typography.title1.copyWith(
+                color: colors.content.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 44),
+            Text(
+              presentation.narratorText,
+              key: const Key('historical-archives-narrator'),
+              style: typography.title1.copyWith(
+                color: colors.content.textPrimary,
+              ),
+            ),
+            if (presentation.instrumentationRows.isNotEmpty) ...[
+              const SizedBox(height: 40),
+              Text(
+                presentation.kind ==
+                            HistoricalArchivesNarratorPresentationKind
+                                .removingSource ||
+                        presentation.kind ==
+                            HistoricalArchivesNarratorPresentationKind
+                                .removalFailed
+                    ? 'REMOVING MESSAGES FOLDER'
+                    : 'MESSAGES ARCHIVE',
+                style: typography.caption.copyWith(
+                  color: colors.content.textTertiary,
+                ),
+              ),
+              const SizedBox(height: 14),
+              _DirectedInstrumentation(rows: presentation.instrumentationRows),
+            ],
+            if (_hasNarratorDecision(presentation.kind)) ...[
+              const SizedBox(height: 36),
+              _NarratorDecision(
+                panelModel: panelModel,
+                presentation: presentation,
+              ),
+            ],
+            if (presentation.detailsLines.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              _HistoricalArchivesDetailsDisclosure(
+                key: ValueKey<HistoricalArchivesNarratorPresentationKind>(
+                  presentation.kind,
+                ),
+                lines: presentation.detailsLines,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+    final isRemoval =
+        presentation.kind ==
+            HistoricalArchivesNarratorPresentationKind.removingSource ||
+        presentation.kind ==
+            HistoricalArchivesNarratorPresentationKind.removalFailed;
+    final hasTrackLayout =
+        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
+
     return ColoredBox(
       color: colors.surfaces.canvas,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Historical Archives',
-                  key: const Key('historical-archives-page-title'),
-                  style: typography.title1.copyWith(
-                    color: colors.content.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 44),
-                Text(
-                  presentation.narratorText,
-                  key: const Key('historical-archives-narrator'),
-                  style: typography.title1.copyWith(
-                    color: colors.content.textPrimary,
-                  ),
-                ),
-                if (presentation.instrumentationRows.isNotEmpty) ...[
-                  const SizedBox(height: 40),
-                  Text(
-                    'MESSAGES ARCHIVE',
-                    style: typography.caption.copyWith(
-                      color: colors.content.textTertiary,
+        padding: isRemoval && hasTrackLayout
+            ? EdgeInsets.zero
+            : const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+        child: isRemoval && hasTrackLayout
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final trackId in const [
+                    TrackId.trackA,
+                    TrackId.trackB,
+                    TrackId.trackC,
+                    TrackId.trackD,
+                    TrackId.trackE,
+                  ])
+                    TrackCellView(
+                      cellId: CellId(
+                        trackId: trackId,
+                        columnId: TrackColumnId.column2,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  _DirectedInstrumentation(
-                    rows: presentation.instrumentationRows,
-                  ),
-                ],
-                if (_hasNarratorDecision(presentation.kind)) ...[
-                  const SizedBox(height: 36),
-                  _NarratorDecision(
-                    panelModel: panelModel,
-                    presentation: presentation,
+                  Padding(
+                    key: const Key('historical-archives-removal-native-flow'),
+                    padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
+                    child: content,
                   ),
                 ],
-                if (presentation.detailsLines.isNotEmpty) ...[
-                  const SizedBox(height: 28),
-                  _HistoricalArchivesDetailsDisclosure(
-                    key: ValueKey<HistoricalArchivesNarratorPresentationKind>(
-                      presentation.kind,
-                    ),
-                    lines: presentation.detailsLines,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
+              )
+            : content,
       ),
     );
   }
@@ -676,7 +725,9 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
 bool _hasNarratorDecision(HistoricalArchivesNarratorPresentationKind kind) {
   return switch (kind) {
     HistoricalArchivesNarratorPresentationKind.noSource ||
-    HistoricalArchivesNarratorPresentationKind.inspectingSource => false,
+    HistoricalArchivesNarratorPresentationKind.inspectingSource ||
+    HistoricalArchivesNarratorPresentationKind.removingSource ||
+    HistoricalArchivesNarratorPresentationKind.removalFailed => false,
     HistoricalArchivesNarratorPresentationKind.inspectionFailed ||
     HistoricalArchivesNarratorPresentationKind.readyForImport ||
     HistoricalArchivesNarratorPresentationKind.knownSource => true,
@@ -786,6 +837,9 @@ class _NarratorDecision extends ConsumerWidget {
       HistoricalArchivesNarratorPresentationKind.noSource =>
         const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.inspectingSource =>
+        const SizedBox.shrink(),
+      HistoricalArchivesNarratorPresentationKind.removingSource ||
+      HistoricalArchivesNarratorPresentationKind.removalFailed =>
         const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.inspectionFailed => Wrap(
         spacing: 10,
@@ -932,10 +986,9 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
     context: context,
     builder: (dialogContext) {
       return CupertinoAlertDialog(
-        title: const Text('Remove Imported Archive Data?'),
-        content: Text(
-          'Removal target chat.db: $targetPath\n\n'
-          'This deletes source-scoped import rows from MessageLens for this selected source, then reprojects the conversation graph from the remaining import facts. It does not delete or modify the source archive folder, and it does not reset overlay or user-intent data.',
+        title: const Text('Remove this folder from MessageLens?'),
+        content: const Text(
+          'The messages added from this folder will be removed from MessageLens. Your original Messages folder will not be changed.',
         ),
         actions: [
           CupertinoDialogAction(
@@ -949,7 +1002,7 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
             onPressed: () {
               Navigator.of(dialogContext).pop(true);
             },
-            child: const Text('Remove Imported Archive Data'),
+            child: const Text('Remove Folder'),
           ),
         ],
       );

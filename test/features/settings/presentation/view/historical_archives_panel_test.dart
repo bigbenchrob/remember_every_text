@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -7,6 +9,7 @@ import 'package:remember_this_text/config/theme/widgets/layout/cross_column_trac
 import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
+import 'package:remember_this_text/features/settings/application/historical_archives_workflow_actions_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/presentation/view/historical_archives_panel.dart';
 
@@ -187,87 +190,193 @@ void main() {
       expect(find.textContaining('Next'), findsNothing);
     });
 
-    testWidgets(
-      'selected existing source is a management context, not recognition',
-      (tester) async {
-        await _pumpPanel(
-          tester,
-          model: _narratorPanelModel(
-            presentation: null,
-            existingSourcePresentation:
-                const HistoricalArchivesExistingSourcePresentationViewModel(
-                  sourceTypeStatement: 'This is a Mac Messages folder.',
-                  importDateStatement:
-                      'You added it to MessageLens on Aug 10, 2026.',
-                  contentsStatement:
-                      'It contains 8,882 messages sent or received between July 2012 and June 2017.',
-                  detailsLines: [
-                    'Folder: /Archives/Messages_2012-IMPORT_SOURCE',
-                  ],
-                ),
-            removalTarget: '/Archives/Messages_2012-IMPORT_SOURCE/chat.db',
-            removalEnabled: true,
+    testWidgets('selected existing source is a management context, not recognition', (
+      tester,
+    ) async {
+      final actions = _RecordingHistoricalArchivesWorkflowActions();
+      await _pumpPanel(
+        tester,
+        actions: actions,
+        model: _narratorPanelModel(
+          presentation: null,
+          existingSourcePresentation:
+              const HistoricalArchivesExistingSourcePresentationViewModel(
+                sourceTypeStatement: 'This is a Mac Messages folder.',
+                importDateStatement:
+                    'You added it to MessageLens on Aug 10, 2026.',
+                contentsStatement:
+                    'It contains 8,882 messages sent or received between July 2012 and June 2017.',
+                detailsLines: ['Folder: /Archives/Messages_2012-IMPORT_SOURCE'],
+              ),
+          removalTarget: '/Archives/Messages_2012-IMPORT_SOURCE/chat.db',
+          removalEnabled: true,
+        ),
+      );
+
+      expect(
+        find.byKey(const Key('historical-archives-existing-source-story')),
+        findsOneWidget,
+      );
+      expect(find.text('This is a Mac Messages folder.'), findsOneWidget);
+      expect(
+        find.text('You added it to MessageLens on Aug 10, 2026.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'It contains 8,882 messages sent or received between July 2012 and June 2017.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Historical Archives'), findsNothing);
+      expect(find.text('HISTORICAL MESSAGES ARCHIVE'), findsNothing);
+      expect(find.text('Messages_2012-IMPORT_SOURCE'), findsNothing);
+      expect(
+        find.byKey(const Key('historical-archives-directed-instrumentation')),
+        findsNothing,
+      );
+      expect(
+        find.byIcon(CupertinoIcons.check_mark_circled_solid),
+        findsNothing,
+      );
+      expect(find.text('More Details'), findsOneWidget);
+      expect(find.text('Remove this folder…'), findsOneWidget);
+      expect(find.text('Choose Messages Folder...'), findsNothing);
+      expect(find.text('Choose Another Folder'), findsNothing);
+      expect(find.text('Import Archive'), findsNothing);
+      expect(find.text('2,369'), findsNothing);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.text('Remove this folder…')),
+      );
+      final colors = container.read(themeColorsProvider.notifier);
+      expect(
+        tester.widget<Text>(find.text('Remove this folder…')).style?.color,
+        colors.buttons.destructiveForeground,
+      );
+
+      await tester.tap(find.text('More Details'));
+      await tester.pump();
+      expect(
+        find.text('Folder: /Archives/Messages_2012-IMPORT_SOURCE'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Remove this folder…'));
+      await tester.pump();
+      expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+      expect(find.text('Remove this folder from MessageLens?'), findsOneWidget);
+      expect(
+        find.text(
+          'The messages added from this folder will be removed from MessageLens. Your original Messages folder will not be changed.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CupertinoAlertDialog), findsNothing);
+      expect(actions.removeCallCount, 0);
+    });
+
+    testWidgets('confirmation invokes removal exactly once', (tester) async {
+      final actions = _RecordingHistoricalArchivesWorkflowActions();
+      await _pumpPanel(
+        tester,
+        actions: actions,
+        model: _narratorPanelModel(
+          presentation: null,
+          existingSourcePresentation:
+              const HistoricalArchivesExistingSourcePresentationViewModel(
+                sourceTypeStatement: 'This is a Mac Messages folder.',
+                importDateStatement: null,
+                contentsStatement: 'It contains 42 messages.',
+                detailsLines: [],
+              ),
+          removalTarget: '/Archives/Archive-2017/chat.db',
+          removalEnabled: true,
+        ),
+      );
+
+      await tester.tap(find.text('Remove this folder…'));
+      await tester.pumpAndSettle();
+      expect(actions.removeCallCount, 0);
+
+      await tester.tap(find.text('Remove Folder'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CupertinoAlertDialog), findsNothing);
+      expect(actions.removeCallCount, 1);
+    });
+
+    testWidgets('removal operation is one truthful tracked working row', (
+      tester,
+    ) async {
+      final matrix = buildHistoricalArchivesPageTrackLayoutMatrix(
+        umbrella: const FixedHeightTrackOccupant(height: 24),
+        sourceTypeControl: const FixedHeightTrackOccupant(height: 30),
+        sourceToKnownFoldersSpacing: const FixedHeightTrackOccupant(height: 56),
+        knownFoldersHeading: const FixedHeightTrackOccupant(height: 18),
+        knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(
+          height: 8,
+        ),
+      );
+      final resolved = ResolvedTrackLayoutMatrix.resolve(
+        matrix: matrix,
+        constraints: const PresentationConstraints(
+          availableWidth: 900,
+          textScaler: TextScaler.noScaling,
+          textDirection: TextDirection.ltr,
+        ),
+      );
+      await _pumpPanel(
+        tester,
+        resolvedTrackMatrix: resolved,
+        model: _narratorPanelModel(
+          presentation: const HistoricalArchivesNarratorPresentationViewModel(
+            kind: HistoricalArchivesNarratorPresentationKind.removingSource,
+            narratorText: 'Removing this folder from MessageLens.',
+            instrumentationRows: [
+              HistoricalArchivesInstrumentationRowViewModel(
+                label: 'Removing messages added from this folder',
+                value: 'Working',
+                status: HistoricalArchivesInstrumentationStatus.working,
+              ),
+            ],
+            detailsLines: [],
+            retryInspectionEnabled: false,
           ),
-        );
+        ),
+      );
 
-        expect(
-          find.byKey(const Key('historical-archives-existing-source-story')),
-          findsOneWidget,
-        );
-        expect(find.text('This is a Mac Messages folder.'), findsOneWidget);
-        expect(
-          find.text('You added it to MessageLens on Aug 10, 2026.'),
-          findsOneWidget,
-        );
-        expect(
-          find.text(
-            'It contains 8,882 messages sent or received between July 2012 and June 2017.',
+      expect(
+        find.text('Removing this folder from MessageLens.'),
+        findsOneWidget,
+      );
+      expect(find.text('REMOVING MESSAGES FOLDER'), findsOneWidget);
+      expect(
+        find.text('Removing messages added from this folder'),
+        findsOneWidget,
+      );
+      expect(find.text('Working'), findsOneWidget);
+      expect(find.byType(CupertinoActivityIndicator), findsOneWidget);
+      expect(find.text('Remove this folder…'), findsNothing);
+      expect(find.text('Import Archive'), findsNothing);
+      expect(find.textContaining('Reprojecting'), findsNothing);
+      expect(find.textContaining('Complete'), findsNothing);
+
+      final nativeFlow = find.byKey(
+        const Key('historical-archives-removal-native-flow'),
+      );
+      expect(
+        tester.getTopLeft(nativeFlow).dy,
+        moreOrLessEquals(
+          historicalArchivesSharedTrackIds.fold(
+            0,
+            (height, trackId) => height + resolved.heightFor(trackId),
           ),
-          findsOneWidget,
-        );
-        expect(find.text('Historical Archives'), findsNothing);
-        expect(find.text('HISTORICAL MESSAGES ARCHIVE'), findsNothing);
-        expect(find.text('Messages_2012-IMPORT_SOURCE'), findsNothing);
-        expect(
-          find.byKey(const Key('historical-archives-directed-instrumentation')),
-          findsNothing,
-        );
-        expect(
-          find.byIcon(CupertinoIcons.check_mark_circled_solid),
-          findsNothing,
-        );
-        expect(find.text('More Details'), findsOneWidget);
-        expect(find.text('Remove this folder…'), findsOneWidget);
-        expect(find.text('Choose Messages Folder...'), findsNothing);
-        expect(find.text('Choose Another Folder'), findsNothing);
-        expect(find.text('Import Archive'), findsNothing);
-        expect(find.text('2,369'), findsNothing);
-
-        final container = ProviderScope.containerOf(
-          tester.element(find.text('Remove this folder…')),
-        );
-        final colors = container.read(themeColorsProvider.notifier);
-        expect(
-          tester.widget<Text>(find.text('Remove this folder…')).style?.color,
-          colors.buttons.destructiveForeground,
-        );
-
-        await tester.tap(find.text('More Details'));
-        await tester.pump();
-        expect(
-          find.text('Folder: /Archives/Messages_2012-IMPORT_SOURCE'),
-          findsOneWidget,
-        );
-
-        await tester.tap(find.text('Remove this folder…'));
-        await tester.pump();
-        expect(find.byType(CupertinoAlertDialog), findsOneWidget);
-        expect(find.text('Remove Imported Archive Data?'), findsOneWidget);
-        await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
-        expect(find.byType(CupertinoAlertDialog), findsNothing);
-      },
-    );
+        ),
+      );
+    });
 
     testWidgets('selected-source native flow begins after shared Track E', (
       tester,
@@ -767,26 +876,17 @@ void main() {
 
       final confirmationDialog = find.byType(CupertinoAlertDialog);
 
-      expect(find.text('Remove Imported Archive Data?'), findsOneWidget);
+      expect(find.text('Remove this folder from MessageLens?'), findsOneWidget);
       expect(
         find.descendant(
           of: confirmationDialog,
-          matching: find.textContaining(
-            'Removal target chat.db: /Users/rob/Library/Messages/Archive-2017/messages/chat.db',
+          matching: find.text(
+            'The messages added from this folder will be removed from MessageLens. Your original Messages folder will not be changed.',
           ),
         ),
         findsOneWidget,
       );
-      expect(
-        find.descendant(
-          of: confirmationDialog,
-          matching: find.textContaining(
-            'This deletes source-scoped import rows from MessageLens for this selected source, then reprojects the conversation graph from the remaining import facts.',
-          ),
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Remove Imported Archive Data'), findsOneWidget);
+      expect(find.text('Remove Folder'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
     });
   });
@@ -796,6 +896,7 @@ Future<void> _pumpPanel(
   WidgetTester tester, {
   required HistoricalArchivesWorkflowPanelViewModel model,
   ResolvedTrackLayoutMatrix? resolvedTrackMatrix,
+  _RecordingHistoricalArchivesWorkflowActions? actions,
 }) async {
   final container = ProviderContainer(
     overrides: [
@@ -803,6 +904,8 @@ Future<void> _pumpPanel(
       developerModeProvider.overrideWith(
         () => _FakeDeveloperMode(DeveloperModeValue.user),
       ),
+      if (actions != null)
+        historicalArchivesWorkflowActionsProvider.overrideWith(() => actions),
     ],
   );
   addTearDown(container.dispose);
@@ -818,6 +921,19 @@ Future<void> _pumpPanel(
     ),
   );
   await tester.pump();
+}
+
+final class _RecordingHistoricalArchivesWorkflowActions
+    extends HistoricalArchivesWorkflowActions {
+  var removeCallCount = 0;
+
+  @override
+  FutureOr<void> build() {}
+
+  @override
+  Future<void> removeImportedArchiveDataForSelectedSource() async {
+    removeCallCount += 1;
+  }
 }
 
 HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({

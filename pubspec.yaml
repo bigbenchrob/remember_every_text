@@ -2,7 +2,7 @@ name: remember_this_text
 description: "A new Flutter project."
 publish_to: "none"
 
-version: 0.2.57+75
+version: 0.2.58+76
 
 environment:
   sdk: ^3.8.1

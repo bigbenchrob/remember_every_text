@@ -248,16 +248,35 @@ void main() {
   });
 
   test(
-    'removes one archive source from import facts and graph projection',
+    'removes one archive source while preserving live facts and donor files',
     () async {
+      final donorBytesBefore = await File(chatDbPath).readAsBytes();
+      final liveBatchId = await importLedgerDatabase.insertImportBatch(
+        sourceId: 1,
+        startedAtUtc: '2026-08-19T12:00:00.000Z',
+      );
+      final liveMessageSsId = SourceScopedRowKey.pack(
+        sourceId: 1,
+        sourceRowId: 900,
+      );
+      await importLedgerDatabase.database.insert('messages', <String, Object?>{
+        'ss_id': liveMessageSsId,
+        'source_id': 1,
+        'source_rowid': 900,
+        'guid': 'live-message-guid',
+        'is_from_me': 0,
+        'date_utc': '2026-08-19T12:00:00.000Z',
+        'text': 'live current-Mac message',
+        'batch_id': liveBatchId,
+      });
       final importResult = await service.importAndProject(
         folderPath: archiveFolder.path,
         sourceLabel: 'Archive 2017',
       );
       final sourceId = importResult.importResult.registration.sourceId;
 
-      expect(await _countGraphRows(graphDatabase, 'messages'), 1);
-      expect(await _countImportRows(importLedgerDatabase, 'messages'), 1);
+      expect(await _countGraphRows(graphDatabase, 'messages'), 2);
+      expect(await _countImportRows(importLedgerDatabase, 'messages'), 2);
 
       final removalResult = await removalService.removeArchiveSource(
         folderPath: archiveFolder.path,
@@ -270,7 +289,6 @@ void main() {
       expect(removalResult.graphReprojected, isTrue);
 
       for (final tableName in <String>[
-        'messages',
         'chats',
         'handles',
         'attachments',
@@ -281,6 +299,18 @@ void main() {
         expect(await _countGraphRows(graphDatabase, tableName), 0);
         expect(await _countImportRows(importLedgerDatabase, tableName), 0);
       }
+
+      final importMessages = await importLedgerDatabase.database.query(
+        'messages',
+      );
+      final graphMessages = await graphDatabase.database.query('messages');
+      expect(importMessages, hasLength(1));
+      expect(importMessages.single['ss_id'], liveMessageSsId);
+      expect(importMessages.single['source_id'], 1);
+      expect(graphMessages, hasLength(1));
+      expect(graphMessages.single['ss_id'], liveMessageSsId);
+      expect(graphMessages.single['text'], 'live current-Mac message');
+      expect(await File(chatDbPath).readAsBytes(), donorBytesBefore);
 
       final registryRows = await importLedgerDatabase.database.query(
         'source_registry',
@@ -294,7 +324,7 @@ void main() {
         sourceLabel: 'Archive 2017',
       );
       expect(reimportResult.importResult.registration.sourceId, sourceId);
-      expect(await _countGraphRows(graphDatabase, 'messages'), 1);
+      expect(await _countGraphRows(graphDatabase, 'messages'), 2);
     },
   );
 }

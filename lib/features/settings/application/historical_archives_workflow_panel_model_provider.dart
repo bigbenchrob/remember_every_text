@@ -87,7 +87,12 @@ enum HistoricalArchivesPresentationStage {
 }
 
 /// Transient feature context. Durable source metadata never selects a context.
-enum HistoricalArchivesPresentationContext { hub, existingSource, addArchive }
+enum HistoricalArchivesPresentationContext {
+  hub,
+  existingSource,
+  addArchive,
+  removingSource,
+}
 
 /// Ephemeral presentation state only. [sourceKey] identifies the archive;
 /// [referenceOccurrence] identifies a fresh "look here" event in this process.
@@ -183,6 +188,8 @@ enum HistoricalArchivesNarratorPresentationKind {
   inspectionFailed,
   readyForImport,
   knownSource,
+  removingSource,
+  removalFailed,
 }
 
 enum HistoricalArchivesInstrumentationStatus { working, resolved, failed }
@@ -221,12 +228,14 @@ final class HistoricalArchivesExistingSourcePresentationViewModel {
     required this.importDateStatement,
     required this.contentsStatement,
     required this.detailsLines,
+    this.removalFailureStatement,
   });
 
   final String sourceTypeStatement;
   final String? importDateStatement;
   final String? contentsStatement;
   final List<String> detailsLines;
+  final String? removalFailureStatement;
 }
 
 final class HistoricalArchivesPreflightViewModel {
@@ -292,6 +301,7 @@ final class HistoricalArchivesWorkflowState {
     this.duplicateFolderNotice,
     this.invalidFolderNotice,
     this.selectedKnownSourceKey,
+    this.removalFailureDetail,
   });
 
   final HistoricalArchivesPreflightViewModel preflight;
@@ -315,6 +325,7 @@ final class HistoricalArchivesWorkflowState {
 
   /// Exact-key selection established only by a cartouche action this session.
   final String? selectedKnownSourceKey;
+  final String? removalFailureDetail;
 
   HistoricalArchivesWorkflowState copyWith({
     HistoricalArchivesPreflightViewModel? preflight,
@@ -343,6 +354,8 @@ final class HistoricalArchivesWorkflowState {
     bool clearInvalidFolderNotice = false,
     String? selectedKnownSourceKey,
     bool clearSelectedKnownSourceKey = false,
+    String? removalFailureDetail,
+    bool clearRemovalFailureDetail = false,
   }) {
     return HistoricalArchivesWorkflowState(
       preflight: preflight ?? this.preflight,
@@ -382,6 +395,9 @@ final class HistoricalArchivesWorkflowState {
       selectedKnownSourceKey: clearSelectedKnownSourceKey
           ? null
           : selectedKnownSourceKey ?? this.selectedKnownSourceKey,
+      removalFailureDetail: clearRemovalFailureDetail
+          ? null
+          : removalFailureDetail ?? this.removalFailureDetail,
     );
   }
 }
@@ -889,6 +905,19 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   Future<void> removeImportedArchiveDataForSelectedSource() async {
+    if (state.presentationContext !=
+            HistoricalArchivesPresentationContext.existingSource ||
+        state.selectedKnownSourceKey == null) {
+      _prependActivityLog(
+        const HistoricalArchivesLogEntryViewModel(
+          label: 'No selected imported folder',
+          message:
+              'Select a folder under Folders Already Added before removing it from MessageLens.',
+        ),
+      );
+      return;
+    }
+
     final selectedFolderPath = state.selectedFolderPath;
     if (selectedFolderPath == null) {
       _prependActivityLog(
@@ -900,6 +929,10 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       );
       return;
     }
+
+    final selectedSourceKey = state.selectedKnownSourceKey!;
+    final selectedSourceState = state.copyWith(clearRemovalFailureDetail: true);
+    final removalPresentationSessionOccurrence = _presentationSessionOccurrence;
 
     final selectedChatDbPath = path.join(selectedFolderPath, 'chat.db');
     if (_isCurrentMacChatDbPath(
@@ -925,22 +958,24 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             operation: ArchiveMutationOperation.historicalArchiveRemoval,
             ownerLabel: _historicalArchivesTestingOwner,
             action: () async {
-              state = state.copyWith(
+              state = selectedSourceState.copyWith(
+                presentationContext:
+                    HistoricalArchivesPresentationContext.removingSource,
                 presentationStage:
                     HistoricalArchivesPresentationStage.laterWorkflow,
+                clearRemovalFailureDetail: true,
                 preflight: const HistoricalArchivesPreflightViewModel(
                   status: HistoricalArchivesPreflightStatus.running,
-                  statusLabel: 'Removing imported archive data',
-                  detail:
-                      'Deleting previously imported source-scoped import rows for this source and refreshing graph-visible data.',
+                  statusLabel: 'Removing folder',
+                  detail: "Removing this folder's messages from MessageLens.",
                 ),
                 activityLog: [
                   HistoricalArchivesLogEntryViewModel(
-                    label: 'Removing imported archive data…',
+                    label: 'Removing folder…',
                     message:
-                        'Deleting previously imported archive rows for ${path.basename(selectedFolderPath)} and preparing a full rebuild.',
+                        'Removing messages added from ${path.basename(selectedFolderPath)}.',
                   ),
-                  ...state.activityLog,
+                  ...selectedSourceState.activityLog,
                 ],
                 phases: _runningArchiveRemovalPhases(),
               );
@@ -948,58 +983,99 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               final removalService = await ref.read(
                 sourceScopedArchiveGraphRemovalServiceProvider.future,
               );
-              final removalResult = await removalService.removeArchiveSource(
+              await removalService.removeArchiveSource(
                 folderPath: selectedFolderPath,
               );
               ref.read(messageDataVersionProvider.notifier).bump();
 
-              if (!removalResult.sourceWasRegistered ||
-                  removalResult.deletionResult == null ||
-                  removalResult.deletedSourceFactCount == 0) {
-                await loadFolder(folderPath: selectedFolderPath);
-                state = state.copyWith(
-                  presentationStage:
-                      HistoricalArchivesPresentationStage.laterWorkflow,
-                );
-                _prependActivityLog(
-                  const HistoricalArchivesLogEntryViewModel(
-                    label: 'No imported archive data found',
-                    message:
-                        'MessageLens did not find source-scoped imported rows for the selected archive source.',
-                  ),
+              final importedSourceLookup = await ref.read(
+                historicalArchiveImportedSourceLookupProvider.future,
+              );
+              final remainingSource = await importedSourceLookup
+                  .findImportedSourceByKey(sourceKey: selectedSourceKey);
+              if (!_ownsCurrentRemovalPresentation(
+                sourceKey: selectedSourceKey,
+                presentationSessionOccurrence:
+                    removalPresentationSessionOccurrence,
+              )) {
+                return;
+              }
+              if (remainingSource != null) {
+                state = selectedSourceState.copyWith(
+                  removalFailureDetail:
+                      'The removal operation finished, but ${remainingSource.importedMessageCount} messages from this folder are still part of MessageLens.',
                 );
                 return;
               }
 
-              await loadFolder(folderPath: selectedFolderPath);
-              state = state.copyWith(
-                presentationStage:
-                    HistoricalArchivesPresentationStage.laterWorkflow,
-              );
-              _prependActivityLog(
-                HistoricalArchivesLogEntryViewModel(
-                  label: 'Imported archive data removed',
-                  message:
-                      'Deleted ${removalResult.deletedSourceFactCount} source fact rows and ${removalResult.deletedTopologyEdgeCount} topology rows for this source, then reprojected the conversation graph.',
-                ),
-              );
+              resetPresentationContext();
             },
           );
     } on ArchiveMutationDeniedException catch (error) {
-      _prependActivityLog(
-        HistoricalArchivesLogEntryViewModel(
-          label: 'Execution gate busy',
-          message:
-              '${_describeExecutionOwnerLabel(error.currentOwner)} currently owns archive mutation authority. Archive removal must wait.',
-        ),
+      if (_presentationSessionOccurrence !=
+              removalPresentationSessionOccurrence ||
+          state.selectedKnownSourceKey != selectedSourceKey) {
+        return;
+      }
+      state = selectedSourceState.copyWith(
+        removalFailureDetail:
+            'MessageLens could not remove this folder because another message-data operation is running. Its messages remain part of MessageLens.',
+        activityLog: [
+          HistoricalArchivesLogEntryViewModel(
+            label: 'Removal unavailable',
+            message:
+                '${_describeExecutionOwnerLabel(error.currentOwner)} currently owns archive mutation authority.',
+          ),
+          ...selectedSourceState.activityLog,
+        ],
       );
     } catch (error) {
       final detail = 'Archive data removal failed: $error';
-      state = state.copyWith(
+      ref.read(messageDataVersionProvider.notifier).bump();
+      HistoricalArchiveImportedSourceMatch? remainingSource;
+      try {
+        final importedSourceLookup = await ref.read(
+          historicalArchiveImportedSourceLookupProvider.future,
+        );
+        remainingSource = await importedSourceLookup.findImportedSourceByKey(
+          sourceKey: selectedSourceKey,
+        );
+      } catch (lookupError, stackTrace) {
+        _logHistoricalArchivesWarning(
+          ref,
+          message:
+              'Historical archive membership could not be rechecked after removal failure',
+          error: lookupError,
+          stackTrace: stackTrace,
+        );
+      }
+      if (!_ownsCurrentRemovalPresentation(
+        sourceKey: selectedSourceKey,
+        presentationSessionOccurrence: removalPresentationSessionOccurrence,
+      )) {
+        return;
+      }
+      if (remainingSource != null) {
+        state = selectedSourceState.copyWith(
+          removalFailureDetail: detail,
+          activityLog: [
+            HistoricalArchivesLogEntryViewModel(
+              label: 'Archive removal failed',
+              message: detail,
+            ),
+            ...selectedSourceState.activityLog,
+          ],
+        );
+        return;
+      }
+      state = selectedSourceState.copyWith(
+        presentationContext:
+            HistoricalArchivesPresentationContext.removingSource,
         presentationStage: HistoricalArchivesPresentationStage.laterWorkflow,
+        removalFailureDetail: detail,
         preflight: HistoricalArchivesPreflightViewModel(
           status: HistoricalArchivesPreflightStatus.failed,
-          statusLabel: 'Archive data removal failed',
+          statusLabel: 'Folder removal failed',
           detail: detail,
         ),
         activityLog: [
@@ -1012,6 +1088,16 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         phases: _failedArchiveRemovalPhases(detail: detail),
       );
     }
+  }
+
+  bool _ownsCurrentRemovalPresentation({
+    required String sourceKey,
+    required int presentationSessionOccurrence,
+  }) {
+    return _presentationSessionOccurrence == presentationSessionOccurrence &&
+        state.presentationContext ==
+            HistoricalArchivesPresentationContext.removingSource &&
+        state.selectedKnownSourceKey == sourceKey;
   }
 
   Future<void> beginImportForSelectedSource() async {
@@ -1449,9 +1535,14 @@ _buildExistingSourcePresentation({
     contentsStatement: _existingSourceContentsStatement(evidence),
     detailsLines: [
       ...detailsLines,
+      if (workflowState.removalFailureDetail case final String failureDetail)
+        'Removal detail: $failureDetail',
       if (evidence?.successfulImportFinishedAtUtc case final completedAtUtc?)
         'Successful import completed UTC: $completedAtUtc',
     ],
+    removalFailureStatement: workflowState.removalFailureDetail == null
+        ? null
+        : "MessageLens couldn't remove this folder. Its messages are still part of MessageLens.",
   );
 }
 
@@ -1491,6 +1582,34 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
   if (workflowState.presentationContext ==
       HistoricalArchivesPresentationContext.existingSource) {
     return null;
+  }
+
+  if (workflowState.presentationContext ==
+      HistoricalArchivesPresentationContext.removingSource) {
+    final failed = workflowState.removalFailureDetail != null;
+    return HistoricalArchivesNarratorPresentationViewModel(
+      kind: failed
+          ? HistoricalArchivesNarratorPresentationKind.removalFailed
+          : HistoricalArchivesNarratorPresentationKind.removingSource,
+      narratorText: failed
+          ? "MessageLens couldn't finish removing this folder."
+          : 'Removing this folder from MessageLens.',
+      instrumentationRows: [
+        HistoricalArchivesInstrumentationRowViewModel(
+          label: 'Removing messages added from this folder',
+          value: failed ? "Couldn't finish" : 'Working',
+          status: failed
+              ? HistoricalArchivesInstrumentationStatus.failed
+              : HistoricalArchivesInstrumentationStatus.working,
+        ),
+      ],
+      detailsLines: [
+        'Your original Messages folder and its files were not changed.',
+        if (workflowState.removalFailureDetail case final String failureDetail)
+          failureDetail,
+      ],
+      retryInspectionEnabled: false,
+    );
   }
 
   return switch (workflowState.presentationStage) {
@@ -2068,6 +2187,11 @@ bool _removeImportedArchiveDataEnabled({
   required String currentMessagesDatabasePath,
 }) {
   final targetPath = workflowState.archiveRemovalTargetChatDbPath;
+  if (workflowState.presentationContext !=
+          HistoricalArchivesPresentationContext.existingSource ||
+      workflowState.selectedKnownSourceKey == null) {
+    return false;
+  }
   if (executionGate.status != HistoricalArchivesExecutionGateStatus.available) {
     return false;
   }
@@ -2554,26 +2678,9 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _runningPreflightPhases() {
 List<HistoricalArchivesWorkflowPhaseViewModel> _runningArchiveRemovalPhases() {
   return const [
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Removing archive source rows from source-scoped import',
+      label: 'Removing messages added from this folder',
       status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail:
-          'Deleting imported source facts and topology edges for the selected archive source.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Reprojecting conversation graph',
-      status: HistoricalArchivesWorkflowPhaseStatus.running,
-      detail:
-          'Rebuilding graph-visible data from the remaining source-scoped import facts.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing shared evidence surfaces',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Waiting for rebuild completion.',
-    ),
-    HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Complete',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Archive removal is still running.',
+      detail: 'The source-scoped removal operation is still running.',
     ),
   ];
 }
@@ -2583,26 +2690,9 @@ List<HistoricalArchivesWorkflowPhaseViewModel> _failedArchiveRemovalPhases({
 }) {
   return [
     HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Removing archive source rows from source-scoped import',
+      label: 'Removing messages added from this folder',
       status: HistoricalArchivesWorkflowPhaseStatus.failed,
       detail: detail,
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Reprojecting conversation graph',
-      status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail:
-          'Skipped because archive row removal did not complete successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Refreshing shared evidence surfaces',
-      status: HistoricalArchivesWorkflowPhaseStatus.skipped,
-      detail:
-          'Skipped because archive row removal did not complete successfully.',
-    ),
-    const HistoricalArchivesWorkflowPhaseViewModel(
-      label: 'Complete',
-      status: HistoricalArchivesWorkflowPhaseStatus.waiting,
-      detail: 'Archive removal did not complete.',
     ),
   ];
 }

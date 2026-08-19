@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.58] — 2026-08-19
+
+### Changed
+
+- Removing a previously added Historical Archives folder now requires a clear
+  destructive confirmation, presents one truthful live removal operation, and
+  returns automatically to the empty archive hub once durable imported
+  membership disappears. The original Messages folder and unrelated current
+  Mac data remain untouched.
+
 ## [0.2.57] — 2026-08-19
 
 ### Changed

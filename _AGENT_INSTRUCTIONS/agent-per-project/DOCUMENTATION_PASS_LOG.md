@@ -5061,3 +5061,13 @@ production preservation authority mechanically enforceable.
   `AppSpacing` transitions as ordinary fixed-height occupants.
 - Confirmed that no dynamic row alignment, magic top inset, scroll
   synchronization, source/persistence change, or workflow change was added.
+
+## 2026-08-19 — Historical Archives removal journey
+
+- Audited the existing source-scoped removal path and recorded that it exposes
+  only operation-level start/finish/failure, not live deletion or reprojection
+  stages.
+- Documented the destructive confirmation, original-folder safety guarantee,
+  coarse Directed Instrumentation, durable membership transition back to the
+  hub, failure behavior, source-identity preservation, and staging review in
+  `26-PRODUCTION-ARCHIVE-RECOVERY/responses/30-HISTORICAL-ARCHIVE-REMOVAL-JOURNEY-IMPLEMENTATION.md`.

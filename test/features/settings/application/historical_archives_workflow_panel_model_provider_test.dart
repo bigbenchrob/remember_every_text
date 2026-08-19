@@ -7,10 +7,18 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain.dart'
     show ArchiveMutationOperation;
 import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
-    show ArchiveMutationCoordinatorState;
+    show
+        ArchiveMutationCoordinator,
+        ArchiveMutationCoordinatorState,
+        archiveMutationCoordinatorProvider;
+import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service.dart';
+import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart'
+    show sourceScopedArchiveGraphRemovalServiceProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/navigation/application/sidebar_mode_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
+import 'package:remember_this_text/essentials/onboarding/feature_level_providers.dart'
+    show onboardingMessagesDatabasePathProvider;
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspector_provider.dart';
@@ -187,7 +195,7 @@ void main() {
         model.archiveManagementSummaryLines,
         contains('Source-scoped archive removal: available after preflight'),
       );
-      expect(model.removeImportedArchiveDataEnabled, isTrue);
+      expect(model.removeImportedArchiveDataEnabled, isFalse);
       expect(
         model.removeImportedArchiveDataDetail,
         contains('source-scoped import rows'),
@@ -959,6 +967,213 @@ void main() {
           contains('Folder: /tmp/archive'),
         );
         expect(model.importButtonEnabled, isFalse);
+        expect(model.removeImportedArchiveDataEnabled, isTrue);
+      },
+    );
+
+    test(
+      'selected source removal exposes one coarse operation then returns to hub',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        const source = HistoricalArchiveSourceMetadata(
+          sourceKey: sourceKey,
+          sourceChatDb: '/tmp/archive/chat.db',
+          folderPath: '/tmp/archive',
+          sourceLabel: 'Archive',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
+          totalMessages: 42,
+          earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+          latestMessageUtc: '2017-06-11T08:00:00.000Z',
+          preflightStatusLabel: 'Imported successfully',
+          dryRunNewMessages: 0,
+          dryRunDuplicateMessages: 42,
+          lastImportFinishedAtUtc: '2026-08-10T18:30:00.000Z',
+          lastImportSuccess: true,
+          lastImportError: null,
+          lastImportedMessageCount: 42,
+        );
+        final lookup = _MutableImportedSourceLookup(
+          match: const HistoricalArchiveImportedSourceMatch(
+            sourceKey: sourceKey,
+            sourceId: 3,
+            importedMessageCount: 42,
+          ),
+        );
+        final removalCompleter =
+            Completer<SourceScopedArchiveGraphRemovalResult>();
+        final removalService = _RecordingArchiveRemovalService(() async {
+          final result = await removalCompleter.future;
+          lookup.match = null;
+          return result;
+        });
+        final coordinator = _ImmediateArchiveMutationCoordinator();
+        final container = ProviderContainer(
+          overrides: [
+            archiveMutationCoordinatorProvider.overrideWith(() => coordinator),
+            sourceScopedArchiveGraphRemovalServiceProvider.overrideWith(
+              (ref) async => removalService,
+            ),
+            historicalArchiveSourceMetadataProvider.overrideWith(
+              (ref) async => const [source],
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => lookup,
+            ),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => currentMessagesDatabasePath,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.showKnownSource(sourceKey: sourceKey);
+
+        final removal = workflow.removeImportedArchiveDataForSelectedSource();
+        await Future<void>.delayed(Duration.zero);
+
+        final running = container.read(historicalArchivesWorkflowProvider);
+        final runningModel = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: running,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          running.presentationContext,
+          HistoricalArchivesPresentationContext.removingSource,
+        );
+        expect(running.selectedKnownSourceKey, sourceKey);
+        expect(
+          runningModel.narratorPresentation?.kind,
+          HistoricalArchivesNarratorPresentationKind.removingSource,
+        );
+        expect(
+          runningModel.narratorPresentation?.instrumentationRows,
+          hasLength(1),
+        );
+        expect(
+          runningModel.narratorPresentation?.instrumentationRows.single.label,
+          'Removing messages added from this folder',
+        );
+        expect(removalService.callCount, 1);
+        expect(coordinator.runCallCount, 1);
+
+        removalCompleter.complete(
+          const SourceScopedArchiveGraphRemovalResult(
+            sourceId: 3,
+            deletionResult: null,
+            graphReprojected: true,
+          ),
+        );
+        await removal;
+
+        final completed = container.read(historicalArchivesWorkflowProvider);
+        final completedModel = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: completed,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          completed.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(completed.selectedKnownSourceKey, isNull);
+        expect(completed.selectedFolderPath, isNull);
+        expect(completedModel.isHub, isTrue);
+        expect(completedModel.narratorPresentation, isNull);
+        expect(completedModel.existingSourcePresentation, isNull);
+        expect(
+          await container.read(historicalArchiveSourceMetadataProvider.future),
+          const [source],
+        );
+      },
+    );
+
+    test(
+      'failed removal preserves selected context while imported facts remain',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        const source = HistoricalArchiveSourceMetadata(
+          sourceKey: sourceKey,
+          sourceChatDb: '/tmp/archive/chat.db',
+          folderPath: '/tmp/archive',
+          sourceLabel: 'Archive',
+          chatDbStatusLabel: 'Found and readable',
+          attachmentsStatusLabel: 'Found',
+          totalMessages: 42,
+          earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+          latestMessageUtc: '2017-06-11T08:00:00.000Z',
+          preflightStatusLabel: 'Imported successfully',
+          dryRunNewMessages: 0,
+          dryRunDuplicateMessages: 42,
+          lastImportFinishedAtUtc: '2026-08-10T18:30:00.000Z',
+          lastImportSuccess: true,
+          lastImportError: null,
+          lastImportedMessageCount: 42,
+        );
+        final lookup = _MutableImportedSourceLookup(
+          match: const HistoricalArchiveImportedSourceMatch(
+            sourceKey: sourceKey,
+            sourceId: 3,
+            importedMessageCount: 42,
+          ),
+        );
+        final removalService = _RecordingArchiveRemovalService(
+          () => Future<SourceScopedArchiveGraphRemovalResult>.error(
+            StateError('projection failed'),
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            archiveMutationCoordinatorProvider.overrideWith(
+              _ImmediateArchiveMutationCoordinator.new,
+            ),
+            sourceScopedArchiveGraphRemovalServiceProvider.overrideWith(
+              (ref) async => removalService,
+            ),
+            historicalArchiveSourceMetadataProvider.overrideWith(
+              (ref) async => const [source],
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => lookup,
+            ),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => currentMessagesDatabasePath,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.showKnownSource(sourceKey: sourceKey);
+        await workflow.removeImportedArchiveDataForSelectedSource();
+
+        final failed = container.read(historicalArchivesWorkflowProvider);
+        final failedModel = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: failed,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          failed.presentationContext,
+          HistoricalArchivesPresentationContext.existingSource,
+        );
+        expect(failed.selectedKnownSourceKey, sourceKey);
+        expect(failed.removalFailureDetail, contains('projection failed'));
+        expect(
+          failedModel.existingSourcePresentation?.removalFailureStatement,
+          "MessageLens couldn't remove this folder. Its messages are still part of MessageLens.",
+        );
+        expect(failedModel.removeImportedArchiveDataEnabled, isTrue);
+        expect(removalService.callCount, 1);
       },
     );
 
@@ -1463,6 +1678,66 @@ final class _FakeImportedSourceLookup
     required String sourceKey,
   }) async {
     return match?.sourceKey == sourceKey ? match : null;
+  }
+}
+
+final class _MutableImportedSourceLookup
+    implements HistoricalArchiveImportedSourceLookup {
+  _MutableImportedSourceLookup({required this.match});
+
+  HistoricalArchiveImportedSourceMatch? match;
+
+  @override
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
+    required String folderPath,
+  }) async {
+    return match;
+  }
+
+  @override
+  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
+    required String sourceKey,
+  }) async {
+    return match?.sourceKey == sourceKey ? match : null;
+  }
+}
+
+final class _RecordingArchiveRemovalService
+    implements SourceScopedArchiveGraphRemovalService {
+  _RecordingArchiveRemovalService(this._remove);
+
+  final Future<SourceScopedArchiveGraphRemovalResult> Function() _remove;
+  var callCount = 0;
+
+  @override
+  Future<SourceScopedArchiveGraphRemovalResult> removeArchiveSource({
+    required String folderPath,
+  }) async {
+    callCount += 1;
+    return _remove();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+final class _ImmediateArchiveMutationCoordinator
+    extends ArchiveMutationCoordinator {
+  var runCallCount = 0;
+
+  @override
+  ArchiveMutationCoordinatorState build() {
+    return const ArchiveMutationCoordinatorState();
+  }
+
+  @override
+  Future<T> run<T>({
+    required ArchiveMutationOperation operation,
+    required String ownerLabel,
+    required Future<T> Function() action,
+  }) async {
+    runCallCount += 1;
+    return action();
   }
 }
 
