@@ -197,6 +197,12 @@ changes in meaning and scope; Directed Instrumentation exposes the factual
 work within that scope. A technical stage transition that does not alter the
 human mental model does not earn new Narrator content.
 
+Narrator commentary also has a lifecycle. It is present only while its
+interpretation applies to the current human-visible state. When that meaning
+expires, Narrator either transitions to a newly earned interpretation or
+becomes silent. Silence is preferable to commentary that merely paraphrases
+self-explanatory instrumentation.
+
 ### Directed Instrumentation
 
 Instrumentation shows only facts backed by a current check, operation, or

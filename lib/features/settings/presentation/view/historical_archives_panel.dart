@@ -690,6 +690,7 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
+    final narratorText = presentation.narratorText;
 
     final content = Center(
       child: ConstrainedBox(
@@ -705,15 +706,16 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 44),
-            Text(
-              presentation.narratorText,
-              key: const Key('historical-archives-narrator'),
-              style: typography.title1.copyWith(
-                color: colors.content.textPrimary,
+            if (narratorText != null)
+              Text(
+                narratorText,
+                key: const Key('historical-archives-narrator'),
+                style: typography.title1.copyWith(
+                  color: colors.content.textPrimary,
+                ),
               ),
-            ),
             if (presentation.instrumentationRows.isNotEmpty) ...[
-              const SizedBox(height: 40),
+              if (narratorText != null) const SizedBox(height: 40),
               Text(
                 presentation.kind ==
                             HistoricalArchivesNarratorPresentationKind

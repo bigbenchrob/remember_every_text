@@ -391,7 +391,7 @@ final class HistoricalArchivesNarratorPresentationViewModel {
   });
 
   final HistoricalArchivesNarratorPresentationKind kind;
-  final String narratorText;
+  final String? narratorText;
   final List<HistoricalArchivesInstrumentationRowViewModel> instrumentationRows;
   final List<String> detailsLines;
   final bool retryInspectionEnabled;
@@ -2236,15 +2236,19 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
   };
 }
 
-String _importNarratorText({
+String? _importNarratorText({
   required HistoricalArchiveImportProgress progress,
   required bool failed,
 }) {
-  final combinedHistoryIsCurrent =
-      progress.preparingConversations !=
-          HistoricalArchiveImportStageStatus.waiting ||
-      progress.verifyingImport != HistoricalArchiveImportStageStatus.waiting;
-  if (combinedHistoryIsCurrent) {
+  if (progress.verifyingImport != HistoricalArchiveImportStageStatus.waiting ||
+      progress.preparingConversations ==
+          HistoricalArchiveImportStageStatus.succeeded) {
+    return null;
+  }
+  if (progress.preparingConversations ==
+          HistoricalArchiveImportStageStatus.running ||
+      progress.preparingConversations ==
+          HistoricalArchiveImportStageStatus.failed) {
     return 'The messages from this folder are added. Now I\u2019m updating your '
         'combined MessageLens history so everything appears together.';
   }

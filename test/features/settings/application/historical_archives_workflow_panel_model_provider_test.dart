@@ -399,9 +399,38 @@ void main() {
             preparingConversations:
                 HistoricalArchiveImportStageStatus.succeeded,
             verifyingImport: HistoricalArchiveImportStageStatus.running,
+            graphProjectionProgress: SourceScopedArchiveGraphProjectionProgress(
+              activeUnit: SourceScopedArchiveGraphProjectionUnit.relationships,
+              completedUnitCount: 5,
+              totalUnitCount: 5,
+              completedWorkCount: 150000,
+              totalWorkCount: 150000,
+            ),
           ),
         ).narratorText,
-        combinedHistoryNarrator,
+        isNull,
+      );
+      expect(
+        presentationFor(
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+            preparingConversations:
+                HistoricalArchiveImportStageStatus.succeeded,
+          ),
+        ).narratorText,
+        isNull,
+      );
+      expect(
+        presentationFor(
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+            preparingConversations:
+                HistoricalArchiveImportStageStatus.succeeded,
+            verifyingImport: HistoricalArchiveImportStageStatus.failed,
+          ),
+          failureDetail: 'Final verification failed.',
+        ).narratorText,
+        isNull,
       );
       expect(
         presentationFor(

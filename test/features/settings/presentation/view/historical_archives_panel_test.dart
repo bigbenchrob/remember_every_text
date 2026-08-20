@@ -804,6 +804,54 @@ void main() {
     });
 
     testWidgets(
+      'final verification is narrator-silent and keeps instrumentation visible',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          model: _narratorPanelModel(
+            presentation: const HistoricalArchivesNarratorPresentationViewModel(
+              kind: HistoricalArchivesNarratorPresentationKind.importingArchive,
+              narratorText: null,
+              instrumentationRows: [
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Adding messages from this folder',
+                  value: 'Done',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Preparing conversations for browsing',
+                  value: 'Done',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Checking that import finished',
+                  value: 'Working',
+                  status: HistoricalArchivesInstrumentationStatus.working,
+                ),
+              ],
+              detailsLines: [],
+              retryInspectionEnabled: false,
+            ),
+          ),
+        );
+
+        expect(
+          find.byKey(const Key('historical-archives-narrator')),
+          findsNothing,
+        );
+        expect(
+          find.text(
+            'The messages from this folder are added. Now I\u2019m updating your combined MessageLens history so everything appears together.',
+          ),
+          findsNothing,
+        );
+        expect(find.text('ADDING MESSAGES FOLDER'), findsOneWidget);
+        expect(find.text('Checking that import finished'), findsOneWidget);
+        expect(find.text('Working'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'known-source state requires a fresh folder choice before import',
       (tester) async {
         await _pumpPanel(

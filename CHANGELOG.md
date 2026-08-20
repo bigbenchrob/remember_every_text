@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.66] — 2026-08-20
+
+### Fixed
+
+- Historical Archives Narrator commentary now becomes silent once combined
+  history preparation finishes, instead of continuing to describe completed
+  work during final verification. Directed Instrumentation remains visible and
+  unchanged.
+
 ## [0.2.65] — 2026-08-20
 
 ### Changed

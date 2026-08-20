@@ -71,6 +71,7 @@ panel. See:
 - [Mac Messages Import Completion And Chooser Feedback](responses/35-MAC-MESSAGES-IMPORT-COMPLETION-AND-CHOOSER-FEEDBACK-IMPLEMENTATION.md)
 - [Historical Archive Import Ledger Contention Correction](responses/36-HISTORICAL-ARCHIVE-IMPORT-LEDGER-CONTENTION-CORRECTION.md)
 - [Mac Messages Narrator Scope Transition](responses/37-MAC-MESSAGES-NARRATOR-SCOPE-TRANSITION-IMPLEMENTATION.md)
+- [Narrator Lifecycle And Stale Commentary](responses/38-NARRATOR-LIFECYCLE-AND-STALE-COMMENTARY-IMPLEMENTATION.md)
 
 The MessageLens-folder arm and historical attachment-payload recovery remain
 out of scope.

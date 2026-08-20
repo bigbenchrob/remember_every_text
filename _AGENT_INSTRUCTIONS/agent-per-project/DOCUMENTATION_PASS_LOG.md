@@ -5167,3 +5167,15 @@ production preservation authority mechanically enforceable.
 - Confirmed that the 8,882-message source count and the roughly 150,000-message
   combined graph workload are distinct truthful facts, with no synthetic
   progress introduced.
+
+## 2026-08-20 — Historical Archives Narrator lifecycle
+
+- Added Feature 26 response
+  `38-NARRATOR-LIFECYCLE-AND-STALE-COMMENTARY-IMPLEMENTATION.md`.
+- Recorded the typed boundary at which combined-history commentary expires and
+  final verification becomes intentionally Narrator-silent.
+- Codified that Narrator commentary exists only while its interpretation is
+  current and that silence is preferable to paraphrasing self-explanatory
+  Directed Instrumentation.
+- Audited removal and confirmed that its operation-wide Narrator statement
+  remains truthful through final removal verification.
