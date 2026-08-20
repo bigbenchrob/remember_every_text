@@ -1,3 +1,5 @@
+import '../projection_work_progress.dart';
+
 class MessageProjectionResult {
   const MessageProjectionResult({
     required this.examinedMessageCount,
@@ -9,7 +11,9 @@ class MessageProjectionResult {
 }
 
 abstract interface class MessageProjectionRepository {
-  Future<MessageProjectionResult> projectMessages();
+  Future<MessageProjectionResult> projectMessages({
+    GraphProjectionWorkObserver? onProgress,
+  });
 
   Future<MessageProjectionResult> projectMessagesAfterSourceRowId({
     required int sourceId,

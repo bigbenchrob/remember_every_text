@@ -1,3 +1,5 @@
+import '../projection_work_progress.dart';
+
 class AttachmentProjectionResult {
   const AttachmentProjectionResult({
     required this.examinedAttachmentCount,
@@ -9,7 +11,9 @@ class AttachmentProjectionResult {
 }
 
 abstract interface class AttachmentProjectionRepository {
-  Future<AttachmentProjectionResult> projectAttachments();
+  Future<AttachmentProjectionResult> projectAttachments({
+    GraphProjectionWorkObserver? onProgress,
+  });
 
   Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
     required int sourceId,

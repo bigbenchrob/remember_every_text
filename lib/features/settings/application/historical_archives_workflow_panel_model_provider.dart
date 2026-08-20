@@ -358,11 +358,13 @@ final class HistoricalArchivesInstrumentationRowViewModel {
     required this.label,
     required this.value,
     required this.status,
+    this.indentationLevel = 0,
   });
 
   final String label;
   final String value;
   final HistoricalArchivesInstrumentationStatus status;
+  final int indentationLevel;
 }
 
 final class HistoricalArchivesNarratorPresentationViewModel {
@@ -1380,7 +1382,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         state.selectedKnownSourceKey == sourceKey;
   }
 
-  Future<void> beginImportForSelectedSource() async {
+  Future<void> beginImportForSelectedSource({
+    Future<void> Function()? waitForOperationPresentation,
+  }) async {
     final isFreshAuthorization =
         state.presentationContext ==
             HistoricalArchivesPresentationContext.addArchive &&
@@ -1441,9 +1445,13 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       ),
     );
 
-    // The authorization state is already true. Yield one event-loop turn so
-    // presentation can project it before source import and graph work begin.
-    await Future<void>.delayed(Duration.zero);
+    // The authorization state is already true. The presentation boundary can
+    // now wait for a painted operation frame before admitted database work.
+    if (waitForOperationPresentation case final waitForPresentation?) {
+      await waitForPresentation();
+    } else {
+      await Future<void>.delayed(Duration.zero);
+    }
 
     try {
       await ref
@@ -2187,7 +2195,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
 List<HistoricalArchivesInstrumentationRowViewModel> _importInstrumentationRows(
   HistoricalArchiveImportProgress progress,
 ) {
-  return [
+  final rows = <HistoricalArchivesInstrumentationRowViewModel>[
     HistoricalArchivesInstrumentationRowViewModel(
       label: 'Adding messages from this folder',
       value: _importStageValue(progress.addingMessages),
@@ -2195,37 +2203,101 @@ List<HistoricalArchivesInstrumentationRowViewModel> _importInstrumentationRows(
     ),
     HistoricalArchivesInstrumentationRowViewModel(
       label: 'Preparing conversations for browsing',
-      value: _conversationPreparationValue(progress),
+      value: _importStageValue(progress.preparingConversations),
       status: _importInstrumentationStatus(progress.preparingConversations),
     ),
+  ];
+  if (progress.graphProjectionProgress != null) {
+    rows.addAll(_graphProjectionInstrumentationRows(progress));
+  }
+  rows.add(
     HistoricalArchivesInstrumentationRowViewModel(
       label: 'Checking that import finished',
       value: _importStageValue(progress.verifyingImport),
       status: _importInstrumentationStatus(progress.verifyingImport),
     ),
+  );
+  return rows;
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel>
+_graphProjectionInstrumentationRows(HistoricalArchiveImportProgress progress) {
+  final projection = progress.graphProjectionProgress!;
+  return [
+    for (final unit in SourceScopedArchiveGraphProjectionUnit.values)
+      HistoricalArchivesInstrumentationRowViewModel(
+        label: _graphProjectionUnitLabel(unit),
+        value: _graphProjectionUnitValue(
+          unit: unit,
+          progress: progress,
+          projection: projection,
+        ),
+        status: _graphProjectionUnitStatus(
+          unit: unit,
+          progress: progress,
+          projection: projection,
+        ),
+        indentationLevel: 1,
+      ),
   ];
 }
 
-String _conversationPreparationValue(HistoricalArchiveImportProgress progress) {
-  final status = progress.preparingConversations;
-  final projection = progress.graphProjectionProgress;
-  if (projection == null ||
-      status == HistoricalArchiveImportStageStatus.waiting ||
-      status == HistoricalArchiveImportStageStatus.succeeded) {
-    return _importStageValue(status);
-  }
-
-  final unitLabel = switch (projection.activeUnit) {
+String _graphProjectionUnitLabel(SourceScopedArchiveGraphProjectionUnit unit) {
+  return switch (unit) {
     SourceScopedArchiveGraphProjectionUnit.participants => 'Participants',
     SourceScopedArchiveGraphProjectionUnit.conversations => 'Conversations',
     SourceScopedArchiveGraphProjectionUnit.messages => 'Messages',
     SourceScopedArchiveGraphProjectionUnit.attachments => 'Attachments',
     SourceScopedArchiveGraphProjectionUnit.relationships => 'Relationships',
   };
-  final progressLabel =
-      '$unitLabel · ${projection.completedUnitCount} of ${projection.totalUnitCount}';
-  if (status == HistoricalArchiveImportStageStatus.failed) {
-    return 'Failed · $progressLabel';
+}
+
+HistoricalArchivesInstrumentationStatus _graphProjectionUnitStatus({
+  required SourceScopedArchiveGraphProjectionUnit unit,
+  required HistoricalArchiveImportProgress progress,
+  required SourceScopedArchiveGraphProjectionProgress projection,
+}) {
+  if (progress.preparingConversations ==
+      HistoricalArchiveImportStageStatus.succeeded) {
+    return HistoricalArchivesInstrumentationStatus.resolved;
+  }
+  if (unit.index < projection.activeUnit.index) {
+    return HistoricalArchivesInstrumentationStatus.resolved;
+  }
+  if (unit.index > projection.activeUnit.index) {
+    return HistoricalArchivesInstrumentationStatus.waiting;
+  }
+  if (progress.preparingConversations ==
+      HistoricalArchiveImportStageStatus.failed) {
+    return HistoricalArchivesInstrumentationStatus.failed;
+  }
+  return HistoricalArchivesInstrumentationStatus.working;
+}
+
+String _graphProjectionUnitValue({
+  required SourceScopedArchiveGraphProjectionUnit unit,
+  required HistoricalArchiveImportProgress progress,
+  required SourceScopedArchiveGraphProjectionProgress projection,
+}) {
+  final status = _graphProjectionUnitStatus(
+    unit: unit,
+    progress: progress,
+    projection: projection,
+  );
+  if (status == HistoricalArchivesInstrumentationStatus.resolved) {
+    return 'Done';
+  }
+  if (status == HistoricalArchivesInstrumentationStatus.waiting) {
+    return 'Waiting';
+  }
+
+  final completedWorkCount = projection.completedWorkCount;
+  final totalWorkCount = projection.totalWorkCount;
+  final progressLabel = completedWorkCount != null && totalWorkCount != null
+      ? '${_formattedCount(completedWorkCount)} / ${_formattedCount(totalWorkCount)}'
+      : 'Working';
+  if (status == HistoricalArchivesInstrumentationStatus.failed) {
+    return progressLabel == 'Working' ? 'Failed' : 'Failed · $progressLabel';
   }
   return progressLabel;
 }

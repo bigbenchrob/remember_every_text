@@ -13,6 +13,7 @@ import '../message_attachment_joins/message_to_attachment_projection_repository.
 import '../message_attachment_joins/message_to_attachment_projector.dart';
 import '../messages/message_projection_repository.dart';
 import '../messages/message_projector.dart';
+import '../projection_work_progress.dart';
 
 enum SourceScopedArchiveGraphImportStage {
   importingSourceFacts,
@@ -38,11 +39,15 @@ final class SourceScopedArchiveGraphProjectionProgress {
     required this.activeUnit,
     required this.completedUnitCount,
     required this.totalUnitCount,
+    this.completedWorkCount,
+    this.totalWorkCount,
   });
 
   final SourceScopedArchiveGraphProjectionUnit activeUnit;
   final int completedUnitCount;
   final int totalUnitCount;
+  final int? completedWorkCount;
+  final int? totalWorkCount;
 }
 
 final class SourceScopedArchiveGraphImportObservation {
@@ -166,19 +171,46 @@ class SourceScopedArchiveGraphImportService {
       unit: SourceScopedArchiveGraphProjectionUnit.conversations,
       completedUnitCount: 1,
     );
-    final chats = await chatProjector.projectChats();
+    final chats = await chatProjector.projectChats(
+      onProgress: (progress) {
+        _observeProjectionWork(
+          onObservation,
+          unit: SourceScopedArchiveGraphProjectionUnit.conversations,
+          completedUnitCount: 1,
+          progress: progress,
+        );
+      },
+    );
     _observeProjectionUnit(
       onObservation,
       unit: SourceScopedArchiveGraphProjectionUnit.messages,
       completedUnitCount: 2,
     );
-    final messages = await messageProjector.projectMessages();
+    final messages = await messageProjector.projectMessages(
+      onProgress: (progress) {
+        _observeProjectionWork(
+          onObservation,
+          unit: SourceScopedArchiveGraphProjectionUnit.messages,
+          completedUnitCount: 2,
+          progress: progress,
+        );
+      },
+    );
     _observeProjectionUnit(
       onObservation,
       unit: SourceScopedArchiveGraphProjectionUnit.attachments,
       completedUnitCount: 3,
     );
-    final attachments = await attachmentProjector.projectAttachments();
+    final attachments = await attachmentProjector.projectAttachments(
+      onProgress: (progress) {
+        _observeProjectionWork(
+          onObservation,
+          unit: SourceScopedArchiveGraphProjectionUnit.attachments,
+          completedUnitCount: 3,
+          progress: progress,
+        );
+      },
+    );
     _observeProjectionUnit(
       onObservation,
       unit: SourceScopedArchiveGraphProjectionUnit.relationships,
@@ -221,6 +253,27 @@ class SourceScopedArchiveGraphImportService {
           activeUnit: unit,
           completedUnitCount: completedUnitCount,
           totalUnitCount: SourceScopedArchiveGraphProjectionUnit.values.length,
+        ),
+      ),
+    );
+  }
+
+  void _observeProjectionWork(
+    SourceScopedArchiveGraphImportObserver? observer, {
+    required SourceScopedArchiveGraphProjectionUnit unit,
+    required int completedUnitCount,
+    required GraphProjectionWorkProgress progress,
+  }) {
+    observer?.call(
+      SourceScopedArchiveGraphImportObservation(
+        stage: SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+        transition: SourceScopedArchiveGraphImportStageTransition.progressed,
+        projectionProgress: SourceScopedArchiveGraphProjectionProgress(
+          activeUnit: unit,
+          completedUnitCount: completedUnitCount,
+          totalUnitCount: SourceScopedArchiveGraphProjectionUnit.values.length,
+          completedWorkCount: progress.completedWorkCount,
+          totalWorkCount: progress.totalWorkCount,
         ),
       ),
     );

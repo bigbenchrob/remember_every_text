@@ -5114,3 +5114,16 @@ production preservation authority mechanically enforceable.
 - Removed success-created orange correspondence while preserving duplicate
   folder reference semantics and all source, mutation, removal, Track, donor,
   and attachment boundaries.
+
+## 2026-08-20 — Historical Archives import responsiveness and real progress
+
+- Recorded the concrete authorization-to-first-paint defect and the new
+  end-of-frame presentation barrier.
+- Documented the shared primary-button hover/pressed correction.
+- Profiled all five real graph units on an isolated fixture and recorded their
+  exact workloads and relative durations.
+- Codified exact batched counts for Conversations, Messages, and Attachments,
+  plus the deliberate coarse treatment of composite Participants and
+  Relationships units.
+- Preserved the three-stage import story, five-unit hierarchy, completion
+  dwell, source safety, and DateConverter invariant.

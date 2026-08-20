@@ -1,3 +1,4 @@
+import '../projection_work_progress.dart';
 import 'message_projection_repository.dart';
 
 class MessageProjector {
@@ -5,8 +6,9 @@ class MessageProjector {
 
   final MessageProjectionRepository repository;
 
-  Future<MessageProjectionResult> projectMessages() =>
-      repository.projectMessages();
+  Future<MessageProjectionResult> projectMessages({
+    GraphProjectionWorkObserver? onProgress,
+  }) => repository.projectMessages(onProgress: onProgress);
 
   Future<MessageProjectionResult> projectMessagesAfterSourceRowId({
     required int sourceId,

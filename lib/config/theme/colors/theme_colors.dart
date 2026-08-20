@@ -380,6 +380,14 @@ class ButtonColors {
   /// Enabled primary button background (brand accent).
   Color get primaryBackground => _t.accents.primary;
 
+  /// Pointer-hover treatment composited over the enabled primary background.
+  Color get primaryBackgroundHovered =>
+      Color.alphaBlend(_t.surfaces.hover, primaryBackground);
+
+  /// Pointer-down treatment composited over the enabled primary background.
+  Color get primaryBackgroundPressed =>
+      Color.alphaBlend(_t.surfaces.pressed, primaryBackground);
+
   /// Enabled primary button text (always white on accent).
   Color get primaryForeground =>
       _r(const ColorPair(Color(0xFFFFFFFF), Color(0xFFFFFFFF)));

@@ -1,3 +1,4 @@
+import '../projection_work_progress.dart';
 import 'chat_projection_repository.dart';
 
 class ChatProjector {
@@ -5,5 +6,7 @@ class ChatProjector {
 
   final ChatProjectionRepository repository;
 
-  Future<ChatProjectionResult> projectChats() => repository.projectChats();
+  Future<ChatProjectionResult> projectChats({
+    GraphProjectionWorkObserver? onProgress,
+  }) => repository.projectChats(onProgress: onProgress);
 }

@@ -34,9 +34,9 @@ class _AppPrimaryButtonState extends ConsumerState<AppPrimaryButton> {
     final fillColor = !enabled
         ? btn.primaryBackgroundDisabled
         : _isPressed
-        ? btn.primaryBackground.withValues(alpha: 0.82)
+        ? btn.primaryBackgroundPressed
         : _isHovered
-        ? btn.primaryBackground.withValues(alpha: 0.92)
+        ? btn.primaryBackgroundHovered
         : btn.primaryBackground;
 
     final height = switch (widget.controlSize) {
@@ -84,25 +84,30 @@ class _AppPrimaryButtonState extends ConsumerState<AppPrimaryButton> {
           });
         },
         behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 80),
           curve: Curves.easeOut,
-          height: height,
-          decoration: BoxDecoration(
-            color: fillColor,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: enabled
-                ? [
-                    BoxShadow(
-                      color: colors.overlays.shadow,
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
+          scale: _isPressed ? 0.98 : 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            height: height,
+            decoration: BoxDecoration(
+              color: fillColor,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: enabled && !_isPressed
+                  ? [
+                      BoxShadow(
+                        color: colors.overlays.shadow,
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : null,
+            ),
+            alignment: Alignment.center,
+            child: widget.child,
           ),
-          alignment: Alignment.center,
-          child: widget.child,
         ),
       ),
     );

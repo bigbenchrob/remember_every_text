@@ -1,6 +1,7 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/chats/chat_projection_repository.dart';
+import '../../application/projection_work_progress.dart';
 
 class SqliteChatProjectionRepository implements ChatProjectionRepository {
   const SqliteChatProjectionRepository({
@@ -12,16 +13,25 @@ class SqliteChatProjectionRepository implements ChatProjectionRepository {
   final ConversationGraphDatabase graphDatabase;
 
   @override
-  Future<ChatProjectionResult> projectChats() async {
+  Future<ChatProjectionResult> projectChats({
+    GraphProjectionWorkObserver? onProgress,
+  }) async {
     final rows = await importLedgerDatabase.queryTable(
       'chats',
       columns: <String>['ss_id', 'guid', 'service', 'last_read_message_at_utc'],
       orderBy: 'ss_id ASC',
     );
 
+    onProgress?.call(
+      GraphProjectionWorkProgress(
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      ),
+    );
     var insertedChatCount = 0;
     await graphDatabase.transaction(() async {
-      for (final row in rows) {
+      for (var index = 0; index < rows.length; index++) {
+        final row = rows[index];
         final chatSsId = _requiredInt(row, 'ss_id');
         final participantCount = await _participantCount(
           graphDatabase,
@@ -47,6 +57,18 @@ class SqliteChatProjectionRepository implements ChatProjectionRepository {
         );
         if (insertedCount != 0) {
           insertedChatCount += 1;
+        }
+        final completedWorkCount = index + 1;
+        if (shouldPublishGraphProjectionProgress(
+          completedWorkCount: completedWorkCount,
+          totalWorkCount: rows.length,
+        )) {
+          onProgress?.call(
+            GraphProjectionWorkProgress(
+              completedWorkCount: completedWorkCount,
+              totalWorkCount: rows.length,
+            ),
+          );
         }
       }
     });

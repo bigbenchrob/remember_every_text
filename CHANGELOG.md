@@ -10,6 +10,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.62] — 2026-08-20
+
+### Changed
+
+- Historical Archives now paints its import-operation surface before admitted
+  database work begins, gives its primary Add action perceptible token-owned
+  hover and pressed feedback, and shows exact batched row counts while
+  conversations, messages, and attachments are projected. The existing three
+  import stages and five graph units remain intact, without estimated or
+  elapsed-time-derived progress.
+
 ## [0.2.61] — 2026-08-20
 
 ### Changed

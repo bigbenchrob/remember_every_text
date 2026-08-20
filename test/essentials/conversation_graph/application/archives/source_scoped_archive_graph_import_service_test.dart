@@ -218,53 +218,41 @@ void main() {
     expect(firstResult.projectionResult.insertedGraphEdgeCount, 3);
     expect(secondResult.projectionResult.insertedGraphNodeCount, 0);
     expect(secondResult.projectionResult.insertedGraphEdgeCount, 0);
+    final transitions = observations
+        .map((observation) => (observation.stage, observation.transition))
+        .toList();
+    expect(transitions.take(3), const [
+      (
+        SourceScopedArchiveGraphImportStage.importingSourceFacts,
+        SourceScopedArchiveGraphImportStageTransition.started,
+      ),
+      (
+        SourceScopedArchiveGraphImportStage.importingSourceFacts,
+        SourceScopedArchiveGraphImportStageTransition.completed,
+      ),
+      (
+        SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+        SourceScopedArchiveGraphImportStageTransition.started,
+      ),
+    ]);
+    expect(transitions.last, const (
+      SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+      SourceScopedArchiveGraphImportStageTransition.completed,
+    ));
     expect(
-      observations
-          .map((observation) => (observation.stage, observation.transition))
-          .toList(),
-      const [
-        (
-          SourceScopedArchiveGraphImportStage.importingSourceFacts,
-          SourceScopedArchiveGraphImportStageTransition.started,
-        ),
-        (
-          SourceScopedArchiveGraphImportStage.importingSourceFacts,
-          SourceScopedArchiveGraphImportStageTransition.completed,
-        ),
-        (
-          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
-          SourceScopedArchiveGraphImportStageTransition.started,
-        ),
-        (
-          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
-          SourceScopedArchiveGraphImportStageTransition.progressed,
-        ),
-        (
-          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
-          SourceScopedArchiveGraphImportStageTransition.progressed,
-        ),
-        (
-          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
-          SourceScopedArchiveGraphImportStageTransition.progressed,
-        ),
-        (
-          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
-          SourceScopedArchiveGraphImportStageTransition.progressed,
-        ),
-        (
-          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
-          SourceScopedArchiveGraphImportStageTransition.progressed,
-        ),
-        (
-          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
-          SourceScopedArchiveGraphImportStageTransition.completed,
-        ),
-      ],
+      transitions.skip(3).take(transitions.length - 4),
+      everyElement(const (
+        SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+        SourceScopedArchiveGraphImportStageTransition.progressed,
+      )),
     );
+    final projectionProgress = observations
+        .map((observation) => observation.projectionProgress)
+        .whereType<SourceScopedArchiveGraphProjectionProgress>()
+        .toList();
     expect(
-      observations
-          .map((observation) => observation.projectionProgress)
-          .whereType<SourceScopedArchiveGraphProjectionProgress>()
+      projectionProgress
+          .where((progress) => progress.totalWorkCount == null)
           .map(
             (progress) => (
               progress.activeUnit,
@@ -279,6 +267,25 @@ void main() {
         (SourceScopedArchiveGraphProjectionUnit.messages, 2, 5),
         (SourceScopedArchiveGraphProjectionUnit.attachments, 3, 5),
         (SourceScopedArchiveGraphProjectionUnit.relationships, 4, 5),
+      ],
+    );
+    expect(
+      projectionProgress
+          .where((progress) => progress.totalWorkCount != null)
+          .map(
+            (progress) => (
+              progress.activeUnit,
+              progress.completedWorkCount,
+              progress.totalWorkCount,
+            ),
+          ),
+      const [
+        (SourceScopedArchiveGraphProjectionUnit.conversations, 0, 1),
+        (SourceScopedArchiveGraphProjectionUnit.conversations, 1, 1),
+        (SourceScopedArchiveGraphProjectionUnit.messages, 0, 1),
+        (SourceScopedArchiveGraphProjectionUnit.messages, 1, 1),
+        (SourceScopedArchiveGraphProjectionUnit.attachments, 0, 1),
+        (SourceScopedArchiveGraphProjectionUnit.attachments, 1, 1),
       ],
     );
 
@@ -311,6 +318,86 @@ void main() {
     expect(messageAttachmentEdges.single['message_ss_id'], messageSsId);
     expect(messageAttachmentEdges.single['attachment_ss_id'], attachmentSsId);
   });
+
+  test(
+    'profiles real projector units and reports bounded exact workloads',
+    () async {
+      await _insertSyntheticArchiveRows(
+        chatDbPath,
+        additionalChatCount: 60,
+        additionalMessageCount: 1000,
+        additionalAttachmentCount: 100,
+      );
+      final stopwatch = Stopwatch()..start();
+      final unitStartedAt =
+          <SourceScopedArchiveGraphProjectionUnit, Duration>{};
+      final unitDurations =
+          <SourceScopedArchiveGraphProjectionUnit, Duration>{};
+      final workProgress =
+          <SourceScopedArchiveGraphProjectionUnit, List<(int, int)>>{};
+      SourceScopedArchiveGraphProjectionUnit? activeUnit;
+
+      await service.importAndProject(
+        folderPath: archiveFolder.path,
+        sourceLabel: 'Archive profile fixture',
+        onObservation: (observation) {
+          final progress = observation.projectionProgress;
+          if (progress != null && activeUnit != progress.activeUnit) {
+            if (activeUnit case final previousUnit?) {
+              unitDurations[previousUnit] =
+                  stopwatch.elapsed - unitStartedAt[previousUnit]!;
+            }
+            activeUnit = progress.activeUnit;
+            unitStartedAt[progress.activeUnit] = stopwatch.elapsed;
+          }
+          if (progress?.completedWorkCount case final int completed) {
+            final total = progress!.totalWorkCount!;
+            workProgress
+                .putIfAbsent(progress.activeUnit, () => <(int, int)>[])
+                .add((completed, total));
+          }
+          if (observation.transition ==
+                  SourceScopedArchiveGraphImportStageTransition.completed &&
+              observation.stage ==
+                  SourceScopedArchiveGraphImportStage
+                      .projectingConversationGraph) {
+            final finalUnit = activeUnit;
+            if (finalUnit != null) {
+              unitDurations[finalUnit] =
+                  stopwatch.elapsed - unitStartedAt[finalUnit]!;
+            }
+          }
+        },
+      );
+
+      expect(
+        unitDurations.keys,
+        containsAll(SourceScopedArchiveGraphProjectionUnit.values),
+      );
+      expect(
+        workProgress[SourceScopedArchiveGraphProjectionUnit.conversations],
+        [(0, 61), (61, 61)],
+      );
+      expect(workProgress[SourceScopedArchiveGraphProjectionUnit.messages], [
+        (0, 1001),
+        (250, 1001),
+        (500, 1001),
+        (750, 1001),
+        (1000, 1001),
+        (1001, 1001),
+      ]);
+      expect(workProgress[SourceScopedArchiveGraphProjectionUnit.attachments], [
+        (0, 101),
+        (101, 101),
+      ]);
+      for (final progress in workProgress.values) {
+        expect(
+          progress.map((entry) => entry.$1),
+          orderedEquals(progress.map((entry) => entry.$1).toList()..sort()),
+        );
+      }
+    },
+  );
 
   test(
     'removes one archive source while preserving live facts and donor files',
@@ -536,6 +623,67 @@ Future<void> _insertArchiveRows(String chatDbPath) async {
     'message_id': 300,
     'attachment_id': 400,
   });
+  await db.close();
+}
+
+Future<void> _insertSyntheticArchiveRows(
+  String chatDbPath, {
+  required int additionalChatCount,
+  required int additionalMessageCount,
+  required int additionalAttachmentCount,
+}) async {
+  final db = await openDatabase(chatDbPath);
+  final batch = db.batch();
+  for (var index = 0; index < additionalChatCount; index++) {
+    final chatRowId = 1000 + index;
+    final handleRowId = 2000 + index;
+    batch.insert('chat', <String, Object?>{
+      'ROWID': chatRowId,
+      'guid': 'profile-chat-$index',
+      'service_name': 'iMessage',
+    });
+    batch.insert('handle', <String, Object?>{
+      'ROWID': handleRowId,
+      'id': '+1604555${index.toString().padLeft(4, '0')}',
+      'service': 'iMessage',
+    });
+    batch.insert('chat_handle_join', <String, Object?>{
+      'chat_id': chatRowId,
+      'handle_id': handleRowId,
+    });
+  }
+  for (var index = 0; index < additionalMessageCount; index++) {
+    final messageRowId = 10000 + index;
+    batch.insert('message', <String, Object?>{
+      'ROWID': messageRowId,
+      'guid': 'profile-message-$index',
+      'handle_id': 200,
+      'is_from_me': index.isEven ? 1 : 0,
+      'text': 'Profile message $index',
+    });
+    batch.insert('chat_message_join', <String, Object?>{
+      'ROWID': 20000 + index,
+      'chat_id': 100,
+      'message_id': messageRowId,
+    });
+  }
+  for (var index = 0; index < additionalAttachmentCount; index++) {
+    final attachmentRowId = 30000 + index;
+    batch.insert('attachment', <String, Object?>{
+      'ROWID': attachmentRowId,
+      'guid': 'profile-attachment-$index',
+      'filename': 'Attachments/profile-$index.jpg',
+      'transfer_name': 'profile-$index.jpg',
+      'uti': 'public.jpeg',
+      'mime_type': 'image/jpeg',
+      'total_bytes': 1000 + index,
+    });
+    batch.insert('message_attachment_join', <String, Object?>{
+      'message_id': 10000 + index,
+      'attachment_id': attachmentRowId,
+    });
+  }
+  await batch.commit(noResult: true);
   await db.close();
 }
 

@@ -630,6 +630,36 @@ void main() {
                   status: HistoricalArchivesInstrumentationStatus.working,
                 ),
                 HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Participants',
+                  value: 'Done',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                  indentationLevel: 1,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Conversations',
+                  value: 'Done',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                  indentationLevel: 1,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Messages',
+                  value: '4,250 / 8,882',
+                  status: HistoricalArchivesInstrumentationStatus.working,
+                  indentationLevel: 1,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Attachments',
+                  value: 'Waiting',
+                  status: HistoricalArchivesInstrumentationStatus.waiting,
+                  indentationLevel: 1,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Relationships',
+                  value: 'Waiting',
+                  status: HistoricalArchivesInstrumentationStatus.waiting,
+                  indentationLevel: 1,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
                   label: 'Checking that import finished',
                   value: 'Waiting',
                   status: HistoricalArchivesInstrumentationStatus.waiting,
@@ -648,6 +678,15 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Checking that import finished'), findsOneWidget);
+        expect(find.text('4,250 / 8,882'), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.text('Messages')).dx,
+          greaterThan(
+            tester
+                .getTopLeft(find.text('Preparing conversations for browsing'))
+                .dx,
+          ),
+        );
         expect(find.text('Add Messages to MessageLens'), findsNothing);
         expect(find.text('Cancel'), findsNothing);
         expect(find.text('Choose Another Folder'), findsNothing);

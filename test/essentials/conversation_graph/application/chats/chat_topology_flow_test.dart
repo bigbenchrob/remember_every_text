@@ -7,6 +7,7 @@ import 'package:remember_this_text/essentials/conversation_graph/application/cha
 import 'package:remember_this_text/essentials/conversation_graph/application/chats/chat_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chats/chat_projector.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/handles/handle_projector.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/projection_work_progress.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_to_handle_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_to_message_projection_repository.dart';
@@ -402,7 +403,9 @@ class _FakeChatProjectionRepository implements ChatProjectionRepository {
   int callCount = 0;
 
   @override
-  Future<ChatProjectionResult> projectChats() async {
+  Future<ChatProjectionResult> projectChats({
+    GraphProjectionWorkObserver? onProgress,
+  }) async {
     callCount += 1;
     return result;
   }

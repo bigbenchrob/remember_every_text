@@ -1,3 +1,4 @@
+import '../projection_work_progress.dart';
 import 'attachment_projection_repository.dart';
 
 class AttachmentProjector {
@@ -5,8 +6,9 @@ class AttachmentProjector {
 
   final AttachmentProjectionRepository repository;
 
-  Future<AttachmentProjectionResult> projectAttachments() =>
-      repository.projectAttachments();
+  Future<AttachmentProjectionResult> projectAttachments({
+    GraphProjectionWorkObserver? onProgress,
+  }) => repository.projectAttachments(onProgress: onProgress);
 
   Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
     required int sourceId,

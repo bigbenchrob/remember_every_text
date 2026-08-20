@@ -62,10 +62,14 @@ class HistoricalArchivesWorkflowActions
         .retrySelectedFolderInspection();
   }
 
-  Future<void> beginImportForSelectedSource() async {
+  Future<void> beginImportForSelectedSource({
+    Future<void> Function()? waitForOperationPresentation,
+  }) async {
     await ref
         .read(historicalArchivesWorkflowProvider.notifier)
-        .beginImportForSelectedSource();
+        .beginImportForSelectedSource(
+          waitForOperationPresentation: waitForOperationPresentation,
+        );
   }
 
   Future<void> removeImportedArchiveDataForSelectedSource() async {

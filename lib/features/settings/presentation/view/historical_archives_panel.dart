@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
@@ -14,6 +15,10 @@ import '../../../../essentials/debug/feature_level_providers.dart'
     show DeveloperModeValue, developerModeProvider;
 import '../../application/historical_archives_workflow_actions_provider.dart';
 import '../../application/historical_archives_workflow_panel_model_provider.dart';
+
+Future<void> _waitForHistoricalArchiveOperationFrame() {
+  return SchedulerBinding.instance.endOfFrame;
+}
 
 class HistoricalArchivesPanel extends ConsumerStatefulWidget {
   const HistoricalArchivesPanel({super.key});
@@ -257,7 +262,10 @@ class _HistoricalArchivesPanelState
                                       historicalArchivesWorkflowActionsProvider
                                           .notifier,
                                     )
-                                    .beginImportForSelectedSource();
+                                    .beginImportForSelectedSource(
+                                      waitForOperationPresentation:
+                                          _waitForHistoricalArchiveOperationFrame,
+                                    );
                               }
                             : null,
                       ),
@@ -764,7 +772,11 @@ class _DirectedInstrumentation extends ConsumerWidget {
       children: [
         for (var index = 0; index < rows.length; index++) ...[
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 9),
+            padding: EdgeInsets.only(
+              left: rows[index].indentationLevel * 32,
+              top: 9,
+              bottom: 9,
+            ),
             child: Row(
               children: [
                 SizedBox(
@@ -795,9 +807,12 @@ class _DirectedInstrumentation extends ConsumerWidget {
             ),
           ),
           if (index < rows.length - 1)
-            ColoredBox(
-              color: colors.lines.borderSubtle,
-              child: const SizedBox(height: 1),
+            Padding(
+              padding: EdgeInsets.only(left: rows[index].indentationLevel * 32),
+              child: ColoredBox(
+                color: colors.lines.borderSubtle,
+                child: const SizedBox(height: 1),
+              ),
             ),
         ],
       ],
@@ -887,7 +902,12 @@ class _NarratorDecision extends ConsumerWidget {
             label: 'Add Messages to MessageLens',
             enabled: panelModel.importButtonEnabled,
             primary: true,
-            onPressed: actions.beginImportForSelectedSource,
+            onPressed: () {
+              actions.beginImportForSelectedSource(
+                waitForOperationPresentation:
+                    _waitForHistoricalArchiveOperationFrame,
+              );
+            },
           ),
           _HistoricalArchiveActionButton(
             label: 'Cancel',
@@ -904,7 +924,12 @@ class _NarratorDecision extends ConsumerWidget {
             _HistoricalArchiveActionButton(
               label: 'Try Again',
               enabled: true,
-              onPressed: actions.beginImportForSelectedSource,
+              onPressed: () {
+                actions.beginImportForSelectedSource(
+                  waitForOperationPresentation:
+                      _waitForHistoricalArchiveOperationFrame,
+                );
+              },
             ),
           _HistoricalArchiveActionButton(
             label: 'Choose Another Folder',

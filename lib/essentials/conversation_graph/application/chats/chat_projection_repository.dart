@@ -1,3 +1,5 @@
+import '../projection_work_progress.dart';
+
 class ChatProjectionResult {
   const ChatProjectionResult({
     required this.examinedChatCount,
@@ -9,5 +11,7 @@ class ChatProjectionResult {
 }
 
 abstract interface class ChatProjectionRepository {
-  Future<ChatProjectionResult> projectChats();
+  Future<ChatProjectionResult> projectChats({
+    GraphProjectionWorkObserver? onProgress,
+  });
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/attachments/attachment_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/attachments/attachment_projector.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/projection_work_progress.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/attachment_projection_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
@@ -177,7 +178,9 @@ class _FakeAttachmentProjectionRepository
   int? lastStartedAfterSourceRowId;
 
   @override
-  Future<AttachmentProjectionResult> projectAttachments() async {
+  Future<AttachmentProjectionResult> projectAttachments({
+    GraphProjectionWorkObserver? onProgress,
+  }) async {
     callCount += 1;
     return result;
   }

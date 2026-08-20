@@ -1,6 +1,7 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/messages/message_projection_repository.dart';
+import '../../application/projection_work_progress.dart';
 
 class SqliteMessageProjectionRepository implements MessageProjectionRepository {
   const SqliteMessageProjectionRepository({
@@ -12,10 +13,13 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
   final ConversationGraphDatabase graphDatabase;
 
   @override
-  Future<MessageProjectionResult> projectMessages() async {
+  Future<MessageProjectionResult> projectMessages({
+    GraphProjectionWorkObserver? onProgress,
+  }) async {
     return _projectMessagesWhere(
       whereClause: null,
       whereArgs: const <Object?>[],
+      onProgress: onProgress,
     );
   }
 
@@ -27,12 +31,14 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
     return _projectMessagesWhere(
       whereClause: 'source_id = ? AND source_rowid > ?',
       whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
+      onProgress: null,
     );
   }
 
   Future<MessageProjectionResult> _projectMessagesWhere({
     required String? whereClause,
     required List<Object?> whereArgs,
+    required GraphProjectionWorkObserver? onProgress,
   }) async {
     final rows = await importLedgerDatabase.queryTable(
       'messages',
@@ -58,9 +64,16 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
       orderBy: 'ss_id ASC',
     );
 
+    onProgress?.call(
+      GraphProjectionWorkProgress(
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      ),
+    );
     var insertedMessageCount = 0;
     await graphDatabase.transaction(() async {
-      for (final row in rows) {
+      for (var index = 0; index < rows.length; index++) {
+        final row = rows[index];
         final associatedMessageSsId = await _resolveAssociatedMessageSsId(row);
         final senderCanonicalHandleSsId =
             await _resolveSenderCanonicalHandleSsId(row);
@@ -169,6 +182,18 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
 
         if (insertedCount != 0) {
           insertedMessageCount += 1;
+        }
+        final completedWorkCount = index + 1;
+        if (shouldPublishGraphProjectionProgress(
+          completedWorkCount: completedWorkCount,
+          totalWorkCount: rows.length,
+        )) {
+          onProgress?.call(
+            GraphProjectionWorkProgress(
+              completedWorkCount: completedWorkCount,
+              totalWorkCount: rows.length,
+            ),
+          );
         }
       }
     });

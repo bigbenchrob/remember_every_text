@@ -354,6 +354,8 @@ void main() {
                     activeUnit: SourceScopedArchiveGraphProjectionUnit.messages,
                     completedUnitCount: 2,
                     totalUnitCount: 5,
+                    completedWorkCount: 500,
+                    totalWorkCount: 1000,
                   ),
             ),
           );
@@ -375,7 +377,12 @@ void main() {
             .toList(),
         const [
           ('Adding messages from this folder', 'Done'),
-          ('Preparing conversations for browsing', 'Messages · 2 of 5'),
+          ('Preparing conversations for browsing', 'Working'),
+          ('Participants', 'Done'),
+          ('Conversations', 'Done'),
+          ('Messages', '500 / 1,000'),
+          ('Attachments', 'Waiting'),
+          ('Relationships', 'Waiting'),
           ('Checking that import finished', 'Waiting'),
         ],
       );
@@ -732,6 +739,7 @@ void main() {
       'authorization paints import ownership before work and dwells on real completion',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        final releaseOperationPresentation = Completer<void>();
         final releaseImport = Completer<void>();
         final importedSourceLookup = _MutableImportedSourceLookup(match: null);
         final graphImportService = _ControlledArchiveGraphImportService((
@@ -789,7 +797,10 @@ void main() {
         );
         await workflow.chooseMessagesFolder();
 
-        final import = workflow.beginImportForSelectedSource();
+        final import = workflow.beginImportForSelectedSource(
+          waitForOperationPresentation: () =>
+              releaseOperationPresentation.future,
+        );
         final duplicateAuthorization = workflow.beginImportForSelectedSource();
 
         final authorized = container.read(historicalArchivesWorkflowProvider);
@@ -805,6 +816,11 @@ void main() {
         expect(archiveSources.successfulImportUpdateCount, 0);
 
         await duplicateAuthorization;
+        await Future<void>.delayed(Duration.zero);
+        expect(graphImportService.callCount, 0);
+        expect(coordinator.runCallCount, 0);
+
+        releaseOperationPresentation.complete();
         await _waitUntil(() => graphImportService.callCount == 1);
         expect(coordinator.runCallCount, 1);
         expect(
@@ -990,6 +1006,8 @@ void main() {
                 activeUnit: SourceScopedArchiveGraphProjectionUnit.messages,
                 completedUnitCount: 2,
                 totalUnitCount: 5,
+                completedWorkCount: 500,
+                totalWorkCount: 1000,
               ),
             ),
           );
@@ -1044,6 +1062,17 @@ void main() {
         expect(
           failed.importProgress?.graphProjectionProgress?.totalUnitCount,
           5,
+        );
+        expect(
+          buildHistoricalArchivesWorkflowPanelModel(
+                executionGateState: const ArchiveMutationCoordinatorState(),
+                isMaintenanceLocked: false,
+                workflowState: failed,
+                currentMessagesDatabasePath: currentMessagesDatabasePath,
+              ).narratorPresentation?.instrumentationRows
+              .singleWhere((row) => row.label == 'Messages')
+              .value,
+          'Failed · 500 / 1,000',
         );
         expect(failed.knownSourceReference, isNull);
         expect(failed.selectedKnownSourceKey, isNull);
