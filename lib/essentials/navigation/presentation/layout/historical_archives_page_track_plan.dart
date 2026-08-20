@@ -12,6 +12,14 @@ const historicalArchivesSharedTrackIds = [
   TrackId.trackE,
 ];
 
+const historicalArchivesPageTrackIds = [
+  ...historicalArchivesSharedTrackIds,
+  TrackId.trackF,
+  TrackId.trackG,
+  TrackId.trackH,
+  TrackId.trackI,
+];
+
 final class HistoricalArchivesPageTrackComposition {
   const HistoricalArchivesPageTrackComposition({
     required this.matrix,
@@ -30,6 +38,9 @@ composeHistoricalArchivesPageTrackLayout({
   final occupants = buildHistoricalArchivesSidebarTrackOccupants(
     typography: typography,
   );
+  final centerOccupants = buildHistoricalArchivesCenterTrackOccupants(
+    typography: typography,
+  );
   final matrix = buildHistoricalArchivesPageTrackLayoutMatrix(
     umbrella: occupants.umbrella,
     sourceTypeControl: occupants.sourceTypeControl,
@@ -39,6 +50,14 @@ composeHistoricalArchivesPageTrackLayout({
     knownFoldersHeading: occupants.knownFoldersHeading,
     knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(
       height: historicalArchivesKnownFoldersHeadingToListGap,
+    ),
+    centerPageTitle: centerOccupants.pageTitle,
+    titleToNarratorSpacing: const FixedHeightTrackOccupant(
+      height: historicalArchivesTitleToNarratorGap,
+    ),
+    centerNarrator: centerOccupants.narrator,
+    narratorToInstrumentationSpacing: const FixedHeightTrackOccupant(
+      height: historicalArchivesNarratorToInstrumentationGap,
     ),
   );
   return HistoricalArchivesPageTrackComposition(
@@ -57,38 +76,62 @@ buildHistoricalArchivesPageTrackLayoutMatrix({
   required TrackOccupant sourceToKnownFoldersSpacing,
   required TrackOccupant knownFoldersHeading,
   required TrackOccupant knownFoldersHeadingToListSpacing,
+  required TrackOccupant centerPageTitle,
+  required TrackOccupant titleToNarratorSpacing,
+  required TrackOccupant centerNarrator,
+  required TrackOccupant narratorToInstrumentationSpacing,
 }) {
-  final sidebarOccupants = <TrackId, ({TrackOccupant occupant, String label})>{
-    TrackId.trackA: (occupant: umbrella, label: 'Historical Archives context'),
-    TrackId.trackB: (
+  final occupants = <CellId, ({TrackOccupant occupant, String label})>{
+    const CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column1): (
+      occupant: umbrella,
+      label: 'Historical Archives context',
+    ),
+    const CellId(trackId: TrackId.trackB, columnId: TrackColumnId.column1): (
       occupant: sourceTypeControl,
       label: 'Historical archive source-type control',
     ),
-    TrackId.trackC: (
+    const CellId(trackId: TrackId.trackC, columnId: TrackColumnId.column1): (
       occupant: sourceToKnownFoldersSpacing,
       label: 'Source-type to known-folders section spacing',
     ),
-    TrackId.trackD: (
+    const CellId(trackId: TrackId.trackD, columnId: TrackColumnId.column1): (
       occupant: knownFoldersHeading,
       label: 'Known archive folders heading',
     ),
-    TrackId.trackE: (
+    const CellId(trackId: TrackId.trackE, columnId: TrackColumnId.column1): (
       occupant: knownFoldersHeadingToListSpacing,
       label: 'Known-folders heading-to-list spacing',
+    ),
+    const CellId(trackId: TrackId.trackF, columnId: TrackColumnId.column2): (
+      occupant: centerPageTitle,
+      label: 'Historical Archives page title',
+    ),
+    const CellId(trackId: TrackId.trackG, columnId: TrackColumnId.column2): (
+      occupant: titleToNarratorSpacing,
+      label: 'Page title to Narrator transition',
+    ),
+    const CellId(trackId: TrackId.trackH, columnId: TrackColumnId.column2): (
+      occupant: centerNarrator,
+      label: 'Historical Archives Narrator',
+    ),
+    const CellId(trackId: TrackId.trackI, columnId: TrackColumnId.column2): (
+      occupant: narratorToInstrumentationSpacing,
+      label: 'Narrator to Directed Instrumentation transition',
     ),
   };
 
   return PageTrackLayoutMatrix<TrackOccupant>(
-    trackIds: historicalArchivesSharedTrackIds,
+    trackIds: historicalArchivesPageTrackIds,
     columnIds: TrackColumnId.values,
     cells: [
-      for (final trackId in historicalArchivesSharedTrackIds)
+      for (final trackId in historicalArchivesPageTrackIds)
         for (final columnId in TrackColumnId.values)
-          if (columnId == TrackColumnId.column1)
+          if (occupants[CellId(trackId: trackId, columnId: columnId)]
+              case final occupant?)
             MatrixCell<TrackOccupant>.occupied(
               cellId: CellId(trackId: trackId, columnId: columnId),
-              occupant: sidebarOccupants[trackId]!.occupant,
-              debugLabel: sidebarOccupants[trackId]!.label,
+              occupant: occupant.occupant,
+              debugLabel: occupant.label,
             )
           else
             MatrixCell<TrackOccupant>.empty(

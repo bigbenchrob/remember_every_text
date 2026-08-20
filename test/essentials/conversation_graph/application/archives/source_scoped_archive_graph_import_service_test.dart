@@ -443,6 +443,11 @@ void main() {
       expect(removalResult.graphReprojected, isTrue);
       expect(
         observations
+            .where(
+              (observation) =>
+                  observation.transition !=
+                  SourceScopedArchiveGraphRemovalStageTransition.progressed,
+            )
             .map((observation) => (observation.stage, observation.transition))
             .toList(),
         const [
@@ -463,6 +468,25 @@ void main() {
             SourceScopedArchiveGraphRemovalStageTransition.completed,
           ),
         ],
+      );
+      expect(
+        observations
+            .where(
+              (observation) =>
+                  observation.transition ==
+                  SourceScopedArchiveGraphRemovalStageTransition.progressed,
+            )
+            .map((observation) => observation.projectionProgress?.activeUnit)
+            .toSet(),
+        SourceScopedArchiveGraphProjectionUnit.values.toSet(),
+      );
+      expect(
+        observations.any(
+          (observation) =>
+              observation.projectionProgress?.completedWorkCount != null &&
+              observation.projectionProgress?.totalWorkCount != null,
+        ),
+        isTrue,
       );
 
       for (final tableName in <String>[

@@ -983,8 +983,8 @@ void main() {
         expect(completed.importSuccessNotice, isNull);
         expect(archiveSources.successfulImportUpdateCount, 1);
         expect(
-          historicalArchivesImportSuccessDwellDuration,
-          const Duration(milliseconds: 750),
+          historicalArchivesTerminalCompletedDwellDuration,
+          const Duration(milliseconds: 1500),
         );
 
         final dwellStopwatch = Stopwatch()..start();
@@ -992,11 +992,11 @@ void main() {
         dwellStopwatch.stop();
         expect(
           dwellStopwatch.elapsed,
-          greaterThanOrEqualTo(const Duration(milliseconds: 500)),
+          greaterThanOrEqualTo(const Duration(milliseconds: 1250)),
         );
         expect(
           dwellStopwatch.elapsed,
-          lessThan(const Duration(milliseconds: 1100)),
+          lessThan(const Duration(milliseconds: 2000)),
         );
 
         final settled = container.read(historicalArchivesWorkflowProvider);
@@ -1789,6 +1789,21 @@ void main() {
                   SourceScopedArchiveGraphRemovalStageTransition.started,
             ),
           );
+          observer?.call(
+            const SourceScopedArchiveGraphRemovalObservation(
+              stage: SourceScopedArchiveGraphRemovalStage
+                  .rebuildingConversationGraph,
+              transition:
+                  SourceScopedArchiveGraphRemovalStageTransition.progressed,
+              projectionProgress: SourceScopedArchiveGraphProjectionProgress(
+                activeUnit: SourceScopedArchiveGraphProjectionUnit.messages,
+                completedUnitCount: 2,
+                totalUnitCount: 5,
+                completedWorkCount: 120,
+                totalWorkCount: 200,
+              ),
+            ),
+          );
           await graphRebuildCompleter.future;
           observer?.call(
             const SourceScopedArchiveGraphRemovalObservation(
@@ -1849,6 +1864,10 @@ void main() {
           HistoricalArchivesNarratorPresentationKind.removingSource,
         );
         expect(
+          runningModel.narratorPresentation?.narratorText,
+          'Removing the messages added from this folder.',
+        );
+        expect(
           runningModel.narratorPresentation?.instrumentationRows
               .map((row) => (row.label, row.value))
               .toList(),
@@ -1871,9 +1890,23 @@ void main() {
         );
         expect(
           rebuildingModel.narratorPresentation?.instrumentationRows
-              .map((row) => row.value)
+              .map((row) => (row.label, row.value, row.indentationLevel))
               .toList(),
-          const ['Done', 'Working', 'Waiting'],
+          const [
+            ('Removing messages added from this folder', 'Done', 0),
+            ('Updating your MessageLens history', 'Working', 0),
+            ('Participants', 'Done', 1),
+            ('Conversations', 'Done', 1),
+            ('Messages', '120 / 200', 1),
+            ('Attachments', 'Waiting', 1),
+            ('Relationships', 'Waiting', 1),
+            ('Checking that removal finished', 'Waiting', 0),
+          ],
+        );
+        expect(
+          rebuildingModel.narratorPresentation?.narratorText,
+          'Those messages are removed. Now I’m updating your remaining '
+          'MessageLens history so everything stays together.',
         );
 
         graphRebuildCompleter.complete();
@@ -1888,10 +1921,46 @@ void main() {
           verifyingModel.narratorPresentation?.instrumentationRows
               .map((row) => row.value)
               .toList(),
-          const ['Done', 'Done', 'Working'],
+          const [
+            'Done',
+            'Done',
+            'Done',
+            'Done',
+            'Done',
+            'Done',
+            'Done',
+            'Working',
+          ],
         );
+        expect(verifyingModel.narratorPresentation?.narratorText, isNull);
 
         verificationCompleter.complete(null);
+        await _waitUntil(
+          () =>
+              container
+                  .read(historicalArchivesWorkflowProvider)
+                  .removalProgress
+                  ?.isComplete ==
+              true,
+        );
+        final allDone = container.read(historicalArchivesWorkflowProvider);
+        final allDoneModel = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: allDone,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          allDone.presentationContext,
+          HistoricalArchivesPresentationContext.removingSource,
+        );
+        expect(allDoneModel.narratorPresentation?.narratorText, isNull);
+        expect(
+          allDoneModel.narratorPresentation?.instrumentationRows.map(
+            (row) => row.value,
+          ),
+          everyElement('Done'),
+        );
         await removal;
 
         final completed = container.read(historicalArchivesWorkflowProvider);

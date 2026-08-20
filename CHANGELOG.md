@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.67] — 2026-08-20
+
+### Changed
+
+- Historical Archives now keeps Narrator and Directed Instrumentation in a
+  stable operation layout, gives archive removal phase-specific commentary and
+  real graph-rebuild progress, and leaves fully completed import/removal
+  evidence visible for 1.5 seconds before returning to the hub.
+
 ## [0.2.66] — 2026-08-20
 
 ### Fixed

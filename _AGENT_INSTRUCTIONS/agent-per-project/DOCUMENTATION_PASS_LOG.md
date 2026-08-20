@@ -5179,3 +5179,19 @@ production preservation authority mechanically enforceable.
   Directed Instrumentation.
 - Audited removal and confirmed that its operation-wide Narrator statement
   remains truthful through final removal verification.
+
+## 2026-08-20 — Stable Narrator Track and removal lifecycle
+
+- Added Feature 26 response
+  `39-STABLE-NARRATOR-TRACK-REMOVAL-JOURNEY-AND-TERMINAL-PERCEPTION-IMPLEMENTATION.md`.
+- Recorded center-only Historical Archives Tracks F-I for page identity,
+  explicit transitions, and a typography-derived two-line Narrator allocation.
+- Corrected the earlier spatial lifecycle record: Narrator silence now leaves
+  its structural Track present so Directed Instrumentation remains fixed.
+- Documented truthful removal progress: source deletion remains one coarse
+  transaction while remaining-history rebuilding exposes the five real graph
+  projector units and existing numeric callbacks.
+- Codified phase-specific removal commentary, Narrator-silent verification,
+  and a 1,500 ms all-Done perceptual receipt after execution completes.
+- Propagated the reusable spatial-continuity and completed-evidence principles
+  to the canonical Presence Rendering document.

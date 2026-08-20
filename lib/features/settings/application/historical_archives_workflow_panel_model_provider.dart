@@ -167,8 +167,8 @@ const historicalArchivesReferenceFadeInDuration = Duration(milliseconds: 750);
 const historicalArchivesReferenceHoldDuration = Duration(milliseconds: 1000);
 const historicalArchivesReferenceFadeOutDuration = Duration(milliseconds: 2000);
 const historicalArchivesReferenceLifetime = Duration(milliseconds: 3750);
-const historicalArchivesImportSuccessDwellDuration = Duration(
-  milliseconds: 750,
+const historicalArchivesTerminalCompletedDwellDuration = Duration(
+  milliseconds: 1500,
 );
 
 final class HistoricalArchivesInspectionEvidence {
@@ -320,11 +320,13 @@ final class HistoricalArchiveRemovalProgress {
     this.updatingMessageLensHistory =
         HistoricalArchiveRemovalStageStatus.waiting,
     this.verifyingRemoval = HistoricalArchiveRemovalStageStatus.waiting,
+    this.graphProjectionProgress,
   });
 
   final HistoricalArchiveRemovalStageStatus removingImportedMessages;
   final HistoricalArchiveRemovalStageStatus updatingMessageLensHistory;
   final HistoricalArchiveRemovalStageStatus verifyingRemoval;
+  final SourceScopedArchiveGraphProjectionProgress? graphProjectionProgress;
 
   HistoricalArchiveRemovalStageStatus statusFor(
     HistoricalArchiveRemovalStage stage,
@@ -354,7 +356,31 @@ final class HistoricalArchiveRemovalProgress {
       verifyingRemoval: stage == HistoricalArchiveRemovalStage.verifyingRemoval
           ? status
           : verifyingRemoval,
+      graphProjectionProgress: graphProjectionProgress,
     );
+  }
+
+  HistoricalArchiveRemovalProgress withGraphProjectionProgress(
+    SourceScopedArchiveGraphProjectionProgress progress,
+  ) {
+    return HistoricalArchiveRemovalProgress(
+      removingImportedMessages: removingImportedMessages,
+      updatingMessageLensHistory: updatingMessageLensHistory,
+      verifyingRemoval: verifyingRemoval,
+      graphProjectionProgress: progress,
+    );
+  }
+
+  bool get isComplete {
+    final historyUpdateComplete =
+        updatingMessageLensHistory ==
+            HistoricalArchiveRemovalStageStatus.succeeded ||
+        updatingMessageLensHistory ==
+            HistoricalArchiveRemovalStageStatus.skipped;
+    return removingImportedMessages ==
+            HistoricalArchiveRemovalStageStatus.succeeded &&
+        historyUpdateComplete &&
+        verifyingRemoval == HistoricalArchiveRemovalStageStatus.succeeded;
   }
 
   HistoricalArchiveRemovalStage? get runningStage {
@@ -1283,9 +1309,12 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                 presentationSessionOccurrence:
                     removalPresentationSessionOccurrence,
               );
-              resetPresentationContext();
             },
           );
+      await _dwellOnCompletedRemovalThenReturnToHub(
+        sourceKey: selectedSourceKey,
+        presentationSessionOccurrence: removalPresentationSessionOccurrence,
+      );
     } on ArchiveMutationDeniedException catch (error) {
       if (_presentationSessionOccurrence !=
               removalPresentationSessionOccurrence ||
@@ -1369,6 +1398,18 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     required String sourceKey,
     required int presentationSessionOccurrence,
   }) {
+    if (observation.transition ==
+        SourceScopedArchiveGraphRemovalStageTransition.progressed) {
+      final projectionProgress = observation.projectionProgress;
+      if (projectionProgress != null) {
+        _setRemovalGraphProjectionProgress(
+          projectionProgress,
+          sourceKey: sourceKey,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        );
+      }
+      return;
+    }
     final stage = switch (observation.stage) {
       SourceScopedArchiveGraphRemovalStage.removingImportedFacts =>
         HistoricalArchiveRemovalStage.removingImportedMessages,
@@ -1382,12 +1423,34 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         HistoricalArchiveRemovalStageStatus.succeeded,
       SourceScopedArchiveGraphRemovalStageTransition.skipped =>
         HistoricalArchiveRemovalStageStatus.skipped,
+      SourceScopedArchiveGraphRemovalStageTransition.progressed =>
+        throw StateError('Progress observations are handled separately.'),
     };
     _setRemovalStageStatus(
       stage: stage,
       status: status,
       sourceKey: sourceKey,
       presentationSessionOccurrence: presentationSessionOccurrence,
+    );
+  }
+
+  void _setRemovalGraphProjectionProgress(
+    SourceScopedArchiveGraphProjectionProgress projectionProgress, {
+    required String sourceKey,
+    required int presentationSessionOccurrence,
+  }) {
+    if (!_ownsCurrentRemovalPresentation(
+      sourceKey: sourceKey,
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    )) {
+      return;
+    }
+    final progress =
+        (state.removalProgress ?? const HistoricalArchiveRemovalProgress())
+            .withGraphProjectionProgress(projectionProgress);
+    state = state.copyWith(
+      removalProgress: progress,
+      phases: _archiveRemovalPhases(progress),
     );
   }
 
@@ -1800,7 +1863,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         state.importProgress?.isComplete != true) {
       return;
     }
-    await Future<void>.delayed(historicalArchivesImportSuccessDwellDuration);
+    await Future<void>.delayed(
+      historicalArchivesTerminalCompletedDwellDuration,
+    );
     if (!_ownsCurrentImportPresentation(
           presentationSessionOccurrence: presentationSessionOccurrence,
         ) ||
@@ -1814,6 +1879,30 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         presentationSessionOccurrence: presentationSessionOccurrence,
       ),
     );
+  }
+
+  Future<void> _dwellOnCompletedRemovalThenReturnToHub({
+    required String sourceKey,
+    required int presentationSessionOccurrence,
+  }) async {
+    if (!_ownsCurrentRemovalPresentation(
+          sourceKey: sourceKey,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        ) ||
+        state.removalProgress?.isComplete != true) {
+      return;
+    }
+    await Future<void>.delayed(
+      historicalArchivesTerminalCompletedDwellDuration,
+    );
+    if (!_ownsCurrentRemovalPresentation(
+          sourceKey: sourceKey,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        ) ||
+        state.removalProgress?.isComplete != true) {
+      return;
+    }
+    resetPresentationContext();
   }
 
   void _prependActivityLog(HistoricalArchivesLogEntryViewModel entry) {
@@ -2112,9 +2201,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
       kind: failed
           ? HistoricalArchivesNarratorPresentationKind.removalFailed
           : HistoricalArchivesNarratorPresentationKind.removingSource,
-      narratorText: failed
-          ? "MessageLens couldn't finish removing this folder."
-          : 'Removing this folder from MessageLens.',
+      narratorText: _removalNarratorText(progress),
       instrumentationRows: _removalInstrumentationRows(progress),
       detailsLines: [
         'Your original Messages folder and its files were not changed.',
@@ -2273,8 +2360,19 @@ List<HistoricalArchivesInstrumentationRowViewModel> _importInstrumentationRows(
       status: _importInstrumentationStatus(progress.preparingConversations),
     ),
   ];
-  if (progress.graphProjectionProgress != null) {
-    rows.addAll(_graphProjectionInstrumentationRows(progress));
+  final projection = progress.graphProjectionProgress;
+  if (projection != null) {
+    rows.addAll(
+      _graphProjectionInstrumentationRows(
+        projection: projection,
+        stageSucceeded:
+            progress.preparingConversations ==
+            HistoricalArchiveImportStageStatus.succeeded,
+        stageFailed:
+            progress.preparingConversations ==
+            HistoricalArchiveImportStageStatus.failed,
+      ),
+    );
   }
   rows.add(
     HistoricalArchivesInstrumentationRowViewModel(
@@ -2287,21 +2385,26 @@ List<HistoricalArchivesInstrumentationRowViewModel> _importInstrumentationRows(
 }
 
 List<HistoricalArchivesInstrumentationRowViewModel>
-_graphProjectionInstrumentationRows(HistoricalArchiveImportProgress progress) {
-  final projection = progress.graphProjectionProgress!;
+_graphProjectionInstrumentationRows({
+  required SourceScopedArchiveGraphProjectionProgress projection,
+  required bool stageSucceeded,
+  required bool stageFailed,
+}) {
   return [
     for (final unit in SourceScopedArchiveGraphProjectionUnit.values)
       HistoricalArchivesInstrumentationRowViewModel(
         label: _graphProjectionUnitLabel(unit),
         value: _graphProjectionUnitValue(
           unit: unit,
-          progress: progress,
           projection: projection,
+          stageSucceeded: stageSucceeded,
+          stageFailed: stageFailed,
         ),
         status: _graphProjectionUnitStatus(
           unit: unit,
-          progress: progress,
           projection: projection,
+          stageSucceeded: stageSucceeded,
+          stageFailed: stageFailed,
         ),
         indentationLevel: 1,
       ),
@@ -2320,11 +2423,11 @@ String _graphProjectionUnitLabel(SourceScopedArchiveGraphProjectionUnit unit) {
 
 HistoricalArchivesInstrumentationStatus _graphProjectionUnitStatus({
   required SourceScopedArchiveGraphProjectionUnit unit,
-  required HistoricalArchiveImportProgress progress,
   required SourceScopedArchiveGraphProjectionProgress projection,
+  required bool stageSucceeded,
+  required bool stageFailed,
 }) {
-  if (progress.preparingConversations ==
-      HistoricalArchiveImportStageStatus.succeeded) {
+  if (stageSucceeded) {
     return HistoricalArchivesInstrumentationStatus.resolved;
   }
   if (unit.index < projection.activeUnit.index) {
@@ -2333,8 +2436,7 @@ HistoricalArchivesInstrumentationStatus _graphProjectionUnitStatus({
   if (unit.index > projection.activeUnit.index) {
     return HistoricalArchivesInstrumentationStatus.waiting;
   }
-  if (progress.preparingConversations ==
-      HistoricalArchiveImportStageStatus.failed) {
+  if (stageFailed) {
     return HistoricalArchivesInstrumentationStatus.failed;
   }
   return HistoricalArchivesInstrumentationStatus.working;
@@ -2342,13 +2444,15 @@ HistoricalArchivesInstrumentationStatus _graphProjectionUnitStatus({
 
 String _graphProjectionUnitValue({
   required SourceScopedArchiveGraphProjectionUnit unit,
-  required HistoricalArchiveImportProgress progress,
   required SourceScopedArchiveGraphProjectionProgress projection,
+  required bool stageSucceeded,
+  required bool stageFailed,
 }) {
   final status = _graphProjectionUnitStatus(
     unit: unit,
-    progress: progress,
     projection: projection,
+    stageSucceeded: stageSucceeded,
+    stageFailed: stageFailed,
   );
   if (status == HistoricalArchivesInstrumentationStatus.resolved) {
     return 'Done';
@@ -3390,14 +3494,59 @@ HistoricalArchiveRemovalProgress _failedCurrentRemovalProgress(
 List<HistoricalArchivesInstrumentationRowViewModel> _removalInstrumentationRows(
   HistoricalArchiveRemovalProgress progress,
 ) {
-  return [
-    for (final stage in HistoricalArchiveRemovalStage.values)
-      HistoricalArchivesInstrumentationRowViewModel(
-        label: _removalStageLabel(stage),
-        value: _removalStageValue(progress.statusFor(stage)),
-        status: _removalInstrumentationStatus(progress.statusFor(stage)),
+  final rows = <HistoricalArchivesInstrumentationRowViewModel>[
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: _removalStageLabel(
+        HistoricalArchiveRemovalStage.removingImportedMessages,
       ),
+      value: _removalStageValue(progress.removingImportedMessages),
+      status: _removalInstrumentationStatus(progress.removingImportedMessages),
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: _removalStageLabel(
+        HistoricalArchiveRemovalStage.updatingMessageLensHistory,
+      ),
+      value: _removalStageValue(progress.updatingMessageLensHistory),
+      status: _removalInstrumentationStatus(
+        progress.updatingMessageLensHistory,
+      ),
+    ),
   ];
+  final projection = progress.graphProjectionProgress;
+  if (projection != null) {
+    rows.addAll(
+      _graphProjectionInstrumentationRows(
+        projection: projection,
+        stageSucceeded:
+            progress.updatingMessageLensHistory ==
+            HistoricalArchiveRemovalStageStatus.succeeded,
+        stageFailed:
+            progress.updatingMessageLensHistory ==
+            HistoricalArchiveRemovalStageStatus.failed,
+      ),
+    );
+  }
+  rows.add(
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: _removalStageLabel(HistoricalArchiveRemovalStage.verifyingRemoval),
+      value: _removalStageValue(progress.verifyingRemoval),
+      status: _removalInstrumentationStatus(progress.verifyingRemoval),
+    ),
+  );
+  return rows;
+}
+
+String? _removalNarratorText(HistoricalArchiveRemovalProgress progress) {
+  if (progress.verifyingRemoval !=
+      HistoricalArchiveRemovalStageStatus.waiting) {
+    return null;
+  }
+  if (progress.updatingMessageLensHistory !=
+      HistoricalArchiveRemovalStageStatus.waiting) {
+    return 'Those messages are removed. Now I’m updating your remaining '
+        'MessageLens history so everything stays together.';
+  }
+  return 'Removing the messages added from this folder.';
 }
 
 List<HistoricalArchivesWorkflowPhaseViewModel> _archiveRemovalPhases(

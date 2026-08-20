@@ -8,7 +8,12 @@ import '../contacts/contact_projector.dart';
 import '../handles/handle_projector.dart';
 import '../message_attachment_joins/message_to_attachment_projector.dart';
 import '../messages/message_projector.dart';
+import '../projection_work_progress.dart';
 import 'graph_projection_resetter.dart';
+import 'source_scoped_archive_graph_import_service.dart'
+    show
+        SourceScopedArchiveGraphProjectionProgress,
+        SourceScopedArchiveGraphProjectionUnit;
 
 enum SourceScopedArchiveGraphRemovalStage {
   removingImportedFacts,
@@ -17,6 +22,7 @@ enum SourceScopedArchiveGraphRemovalStage {
 
 enum SourceScopedArchiveGraphRemovalStageTransition {
   started,
+  progressed,
   completed,
   skipped,
 }
@@ -25,10 +31,12 @@ final class SourceScopedArchiveGraphRemovalObservation {
   const SourceScopedArchiveGraphRemovalObservation({
     required this.stage,
     required this.transition,
+    this.projectionProgress,
   });
 
   final SourceScopedArchiveGraphRemovalStage stage;
   final SourceScopedArchiveGraphRemovalStageTransition transition;
+  final SourceScopedArchiveGraphProjectionProgress? projectionProgress;
 }
 
 typedef SourceScopedArchiveGraphRemovalObserver =
@@ -140,7 +148,7 @@ class SourceScopedArchiveGraphRemovalService {
       transition: SourceScopedArchiveGraphRemovalStageTransition.started,
     );
     await graphProjectionResetter.clearProjectionRows();
-    await _projectRemainingImportFacts();
+    await _projectRemainingImportFacts(onObservation);
     _publish(
       onObservation,
       stage: SourceScopedArchiveGraphRemovalStage.rebuildingConversationGraph,
@@ -158,23 +166,116 @@ class SourceScopedArchiveGraphRemovalService {
     SourceScopedArchiveGraphRemovalObserver? observer, {
     required SourceScopedArchiveGraphRemovalStage stage,
     required SourceScopedArchiveGraphRemovalStageTransition transition,
+    SourceScopedArchiveGraphProjectionProgress? projectionProgress,
   }) {
     observer?.call(
       SourceScopedArchiveGraphRemovalObservation(
         stage: stage,
         transition: transition,
+        projectionProgress: projectionProgress,
       ),
     );
   }
 
-  Future<void> _projectRemainingImportFacts() async {
+  Future<void> _projectRemainingImportFacts(
+    SourceScopedArchiveGraphRemovalObserver? observer,
+  ) async {
+    _observeProjectionUnit(
+      observer,
+      unit: SourceScopedArchiveGraphProjectionUnit.participants,
+      completedUnitCount: 0,
+    );
     await handleProjector.projectHandles();
     await contactProjector.projectContacts();
     await chatToHandleProjector.projectEdges();
-    await chatProjector.projectChats();
-    await messageProjector.projectMessages();
-    await attachmentProjector.projectAttachments();
+    _observeProjectionUnit(
+      observer,
+      unit: SourceScopedArchiveGraphProjectionUnit.conversations,
+      completedUnitCount: 1,
+    );
+    await chatProjector.projectChats(
+      onProgress: (progress) {
+        _observeProjectionWork(
+          observer,
+          unit: SourceScopedArchiveGraphProjectionUnit.conversations,
+          completedUnitCount: 1,
+          progress: progress,
+        );
+      },
+    );
+    _observeProjectionUnit(
+      observer,
+      unit: SourceScopedArchiveGraphProjectionUnit.messages,
+      completedUnitCount: 2,
+    );
+    await messageProjector.projectMessages(
+      onProgress: (progress) {
+        _observeProjectionWork(
+          observer,
+          unit: SourceScopedArchiveGraphProjectionUnit.messages,
+          completedUnitCount: 2,
+          progress: progress,
+        );
+      },
+    );
+    _observeProjectionUnit(
+      observer,
+      unit: SourceScopedArchiveGraphProjectionUnit.attachments,
+      completedUnitCount: 3,
+    );
+    await attachmentProjector.projectAttachments(
+      onProgress: (progress) {
+        _observeProjectionWork(
+          observer,
+          unit: SourceScopedArchiveGraphProjectionUnit.attachments,
+          completedUnitCount: 3,
+          progress: progress,
+        );
+      },
+    );
+    _observeProjectionUnit(
+      observer,
+      unit: SourceScopedArchiveGraphProjectionUnit.relationships,
+      completedUnitCount: 4,
+    );
     await chatToMessageProjector.projectEdges();
     await messageToAttachmentProjector.projectEdges();
+  }
+
+  static void _observeProjectionUnit(
+    SourceScopedArchiveGraphRemovalObserver? observer, {
+    required SourceScopedArchiveGraphProjectionUnit unit,
+    required int completedUnitCount,
+  }) {
+    _publish(
+      observer,
+      stage: SourceScopedArchiveGraphRemovalStage.rebuildingConversationGraph,
+      transition: SourceScopedArchiveGraphRemovalStageTransition.progressed,
+      projectionProgress: SourceScopedArchiveGraphProjectionProgress(
+        activeUnit: unit,
+        completedUnitCount: completedUnitCount,
+        totalUnitCount: SourceScopedArchiveGraphProjectionUnit.values.length,
+      ),
+    );
+  }
+
+  static void _observeProjectionWork(
+    SourceScopedArchiveGraphRemovalObserver? observer, {
+    required SourceScopedArchiveGraphProjectionUnit unit,
+    required int completedUnitCount,
+    required GraphProjectionWorkProgress progress,
+  }) {
+    _publish(
+      observer,
+      stage: SourceScopedArchiveGraphRemovalStage.rebuildingConversationGraph,
+      transition: SourceScopedArchiveGraphRemovalStageTransition.progressed,
+      projectionProgress: SourceScopedArchiveGraphProjectionProgress(
+        activeUnit: unit,
+        completedUnitCount: completedUnitCount,
+        totalUnitCount: SourceScopedArchiveGraphProjectionUnit.values.length,
+        completedWorkCount: progress.completedWorkCount,
+        totalWorkCount: progress.totalWorkCount,
+      ),
+    );
   }
 }

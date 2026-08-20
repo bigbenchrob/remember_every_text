@@ -2,7 +2,7 @@
 tier: project
 scope: production-archive-recovery
 owner: agent-per-project
-last_reviewed: 2026-08-17
+last_reviewed: 2026-08-20
 source_of_truth: design
 links:
   - 03-HISTORICAL-MESSAGES-2012-2016-INGESTION-AUDIT.md
@@ -203,6 +203,11 @@ expires, Narrator either transitions to a newly earned interpretation or
 becomes silent. Silence is preferable to commentary that merely paraphrases
 self-explanatory instrumentation.
 
+Narrator has a stable spatial Track but no obligation to speak. The Track is
+sized for the normal concise one-to-two-line grammar. Commentary may change or
+become silent without moving the Directed Instrumentation beneath it. Silence
+renders no placeholder; the structural Track itself preserves continuity.
+
 ### Directed Instrumentation
 
 Instrumentation shows only facts backed by a current check, operation, or
@@ -215,6 +220,11 @@ completed result. A row has one of four visible states:
 
 Rows unrelated to the current state are absent. No percentage is shown without
 a measurable denominator.
+
+When real terminal verification completes, the fully resolved instrumentation
+may remain visible for a short bounded perceptual dwell. This is a completed
+receipt, not prolonged execution: all real rows are resolved, no spinner is
+active, and Narrator is silent.
 
 ### Decision boundary
 

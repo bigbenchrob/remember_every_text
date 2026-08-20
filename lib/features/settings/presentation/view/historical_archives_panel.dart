@@ -15,6 +15,7 @@ import '../../../../essentials/debug/feature_level_providers.dart'
     show DeveloperModeValue, developerModeProvider;
 import '../../application/historical_archives_workflow_actions_provider.dart';
 import '../../application/historical_archives_workflow_panel_model_provider.dart';
+import '../layout/historical_archives_track_occupants.dart';
 
 Future<void> _waitForHistoricalArchiveOperationFrame() {
   return SchedulerBinding.instance.endOfFrame;
@@ -643,7 +644,10 @@ class _ExistingHistoricalArchiveSourcePanel extends ConsumerWidget {
       child: SingleChildScrollView(
         padding: hasTrackLayout
             ? EdgeInsets.zero
-            : const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+            : const EdgeInsets.symmetric(
+                horizontal: historicalArchivesCenterHorizontalInset,
+                vertical: 36,
+              ),
         child: hasTrackLayout
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -665,7 +669,12 @@ class _ExistingHistoricalArchiveSourcePanel extends ConsumerWidget {
                     key: const Key(
                       'historical-archives-existing-source-native-flow',
                     ),
-                    padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
+                    padding: const EdgeInsets.fromLTRB(
+                      historicalArchivesCenterHorizontalInset,
+                      0,
+                      historicalArchivesCenterHorizontalInset,
+                      36,
+                    ),
                     child: story,
                   ),
                 ],
@@ -692,30 +701,15 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
     final typography = ref.watch(themeTypographyProvider);
     final narratorText = presentation.narratorText;
 
-    final content = Center(
+    final instrumentationContent = Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
+        constraints: const BoxConstraints(
+          maxWidth: historicalArchivesCenterMaximumReadableWidth,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Historical Archives',
-              key: const Key('historical-archives-page-title'),
-              style: typography.title1.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 44),
-            if (narratorText != null)
-              Text(
-                narratorText,
-                key: const Key('historical-archives-narrator'),
-                style: typography.title1.copyWith(
-                  color: colors.content.textPrimary,
-                ),
-              ),
             if (presentation.instrumentationRows.isNotEmpty) ...[
-              if (narratorText != null) const SizedBox(height: 40),
               Text(
                 presentation.kind ==
                             HistoricalArchivesNarratorPresentationKind
@@ -772,7 +766,10 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
       child: SingleChildScrollView(
         padding: hasTrackLayout
             ? EdgeInsets.zero
-            : const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+            : const EdgeInsets.symmetric(
+                horizontal: historicalArchivesCenterHorizontalInset,
+                vertical: 36,
+              ),
         child: hasTrackLayout
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -783,6 +780,10 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
                     TrackId.trackC,
                     TrackId.trackD,
                     TrackId.trackE,
+                    TrackId.trackF,
+                    TrackId.trackG,
+                    TrackId.trackH,
+                    TrackId.trackI,
                   ])
                     TrackCellView(
                       cellId: CellId(
@@ -796,12 +797,50 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
                           ? 'historical-archives-removal-native-flow'
                           : 'historical-archives-narrator-native-flow',
                     ),
-                    padding: const EdgeInsets.fromLTRB(40, 0, 40, 36),
-                    child: content,
+                    padding: const EdgeInsets.fromLTRB(
+                      historicalArchivesCenterHorizontalInset,
+                      0,
+                      historicalArchivesCenterHorizontalInset,
+                      36,
+                    ),
+                    child: instrumentationContent,
                   ),
                 ],
               )
-            : content,
+            : Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: historicalArchivesCenterMaximumReadableWidth,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Historical Archives',
+                        key: const Key('historical-archives-page-title'),
+                        style: typography.title1.copyWith(
+                          color: colors.content.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(
+                        height: historicalArchivesTitleToNarratorGap,
+                      ),
+                      if (narratorText != null)
+                        Text(
+                          narratorText,
+                          key: const Key('historical-archives-narrator'),
+                          style: typography.title1.copyWith(
+                            color: colors.content.textPrimary,
+                          ),
+                        ),
+                      const SizedBox(
+                        height: historicalArchivesNarratorToInstrumentationGap,
+                      ),
+                      instrumentationContent,
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }

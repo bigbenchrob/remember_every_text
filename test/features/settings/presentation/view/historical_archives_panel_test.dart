@@ -381,6 +381,12 @@ void main() {
           knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(
             height: 8,
           ),
+          centerPageTitle: const FixedHeightTrackOccupant(height: 30),
+          titleToNarratorSpacing: const FixedHeightTrackOccupant(height: 44),
+          centerNarrator: const FixedHeightTrackOccupant(height: 60),
+          narratorToInstrumentationSpacing: const FixedHeightTrackOccupant(
+            height: 40,
+          ),
         );
         final resolved = ResolvedTrackLayoutMatrix.resolve(
           matrix: matrix,
@@ -420,10 +426,6 @@ void main() {
           ),
         );
 
-        expect(
-          find.text('Removing this folder from MessageLens.'),
-          findsOneWidget,
-        );
         expect(find.text('REMOVING MESSAGES FOLDER'), findsOneWidget);
         expect(
           find.text('Removing messages added from this folder'),
@@ -446,11 +448,80 @@ void main() {
         expect(
           tester.getTopLeft(nativeFlow).dy,
           moreOrLessEquals(
-            historicalArchivesSharedTrackIds.fold(
+            historicalArchivesPageTrackIds.fold(
               0,
               (height, trackId) => height + resolved.heightFor(trackId),
             ),
           ),
+        );
+      },
+    );
+
+    testWidgets(
+      'Narrator Track keeps instrumentation fixed while commentary changes or is silent',
+      (tester) async {
+        final matrix = buildHistoricalArchivesPageTrackLayoutMatrix(
+          umbrella: const FixedHeightTrackOccupant(height: 24),
+          sourceTypeControl: const FixedHeightTrackOccupant(height: 30),
+          sourceToKnownFoldersSpacing: const FixedHeightTrackOccupant(
+            height: 56,
+          ),
+          knownFoldersHeading: const FixedHeightTrackOccupant(height: 18),
+          knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(
+            height: 8,
+          ),
+          centerPageTitle: const FixedHeightTrackOccupant(height: 30),
+          titleToNarratorSpacing: const FixedHeightTrackOccupant(height: 44),
+          centerNarrator: const FixedHeightTrackOccupant(height: 60),
+          narratorToInstrumentationSpacing: const FixedHeightTrackOccupant(
+            height: 40,
+          ),
+        );
+        final resolved = ResolvedTrackLayoutMatrix.resolve(
+          matrix: matrix,
+          constraints: const PresentationConstraints(
+            availableWidth: 900,
+            textScaler: TextScaler.noScaling,
+            textDirection: TextDirection.ltr,
+          ),
+        );
+
+        await _pumpPanel(
+          tester,
+          resolvedTrackMatrix: resolved,
+          model: _narratorPanelModel(
+            presentation: const HistoricalArchivesNarratorPresentationViewModel(
+              kind: HistoricalArchivesNarratorPresentationKind.importingArchive,
+              narratorText: null,
+              instrumentationRows: [
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Checking that import finished',
+                  value: 'Working',
+                  status: HistoricalArchivesInstrumentationStatus.working,
+                ),
+              ],
+              detailsLines: [],
+              retryInspectionEnabled: false,
+            ),
+          ),
+        );
+
+        final nativeFlow = find.byKey(
+          const Key('historical-archives-narrator-native-flow'),
+        );
+        expect(
+          tester.getTopLeft(nativeFlow).dy,
+          moreOrLessEquals(
+            historicalArchivesPageTrackIds.fold(
+              0,
+              (height, trackId) => height + resolved.heightFor(trackId),
+            ),
+          ),
+        );
+        expect(resolved.heightFor(TrackId.trackH), 60);
+        expect(
+          find.byKey(const Key('historical-archives-narrator')),
+          findsNothing,
         );
       },
     );
@@ -465,6 +536,12 @@ void main() {
         knownFoldersHeading: const FixedHeightTrackOccupant(height: 18),
         knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(
           height: 8,
+        ),
+        centerPageTitle: const FixedHeightTrackOccupant(height: 30),
+        titleToNarratorSpacing: const FixedHeightTrackOccupant(height: 44),
+        centerNarrator: const FixedHeightTrackOccupant(height: 60),
+        narratorToInstrumentationSpacing: const FixedHeightTrackOccupant(
+          height: 40,
         ),
       );
       final resolved = ResolvedTrackLayoutMatrix.resolve(

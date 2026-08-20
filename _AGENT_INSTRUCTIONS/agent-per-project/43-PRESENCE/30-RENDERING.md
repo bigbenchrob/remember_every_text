@@ -385,6 +385,17 @@ It must not:
 Frequent updates preserve Episode identity while the interaction obligation
 remains unchanged.
 
+Where commentary and factual evidence form one continuing operational
+presentation, Presentation Policy may preserve their stable spatial
+relationship while commentary changes or becomes silent. Silence must not be
+filled with placeholder content, and spatial continuity must not imply that
+the absent commentary still applies.
+
+After operational truth becomes complete, Presentation Policy may retain the
+fully resolved evidence for a bounded readable opportunity. This does not
+extend the operation, retain active progress, or grant the Renderer completion
+authority. It only allows the human to perceive already-completed truth.
+
 ### Await
 
 The Renderer presents:

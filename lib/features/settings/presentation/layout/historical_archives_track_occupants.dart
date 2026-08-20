@@ -1,10 +1,14 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../config/theme/widgets/segmented/app_segmented_mode_control.dart';
 import '../../../../essentials/navigation/presentation/view/workspace_layout.dart';
+import '../../application/historical_archives_workflow_panel_model_provider.dart';
 import '../../application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
 
 const historicalArchivesSidebarHorizontalInset = AppSpacing.md;
@@ -14,6 +18,12 @@ const historicalArchivesBodyToSourceTypeGap = AppSpacing.sm + AppSpacing.xs;
 const historicalArchivesSourceToKnownFoldersGap =
     AppSpacing.xxl + AppSpacing.sm;
 const historicalArchivesKnownFoldersHeadingToListGap = AppSpacing.sm;
+const historicalArchivesCenterHorizontalInset = AppSpacing.xl + AppSpacing.sm;
+const historicalArchivesCenterMaximumReadableWidth = 760.0;
+const historicalArchivesTitleToNarratorGap =
+    AppSpacing.xl + AppSpacing.sm + AppSpacing.xs;
+const historicalArchivesNarratorToInstrumentationGap =
+    AppSpacing.xl + AppSpacing.sm;
 
 const _segmentedControlOuterPadding = EdgeInsets.all(3);
 const _segmentedControlSegmentPadding = EdgeInsets.symmetric(
@@ -47,6 +57,168 @@ buildHistoricalArchivesSidebarTrackOccupants({
     ),
     knownFoldersHeading: _HistoricalArchivesKnownFoldersHeadingTrackOccupant(
       style: typography.controlValue,
+    ),
+  );
+}
+
+final class HistoricalArchivesCenterTrackOccupants {
+  const HistoricalArchivesCenterTrackOccupants({
+    required this.pageTitle,
+    required this.narrator,
+  });
+
+  final TrackOccupant pageTitle;
+  final TrackOccupant narrator;
+}
+
+HistoricalArchivesCenterTrackOccupants
+buildHistoricalArchivesCenterTrackOccupants({
+  required ThemeTypography typography,
+}) {
+  return HistoricalArchivesCenterTrackOccupants(
+    pageTitle: _HistoricalArchivesCenterTextTrackOccupant(
+      text: 'Historical Archives',
+      style: typography.title1,
+      presentationKey: const Key('historical-archives-page-title'),
+    ),
+    narrator: _HistoricalArchivesNarratorTrackOccupant(
+      style: typography.title1,
+    ),
+  );
+}
+
+final class _HistoricalArchivesCenterTextTrackOccupant
+    implements TrackOccupant {
+  const _HistoricalArchivesCenterTextTrackOccupant({
+    required this.text,
+    required this.style,
+    required this.presentationKey,
+  });
+
+  final String text;
+  final TextStyle style;
+  final Key presentationKey;
+
+  @override
+  OccupantDimensionalClaim dimensionalClaim(
+    PresentationConstraints constraints,
+  ) {
+    final painter = _textPainter(
+      text: text,
+      style: style,
+      constraints: constraints,
+      maxWidth: _centerReadableWidth(constraints.availableWidth),
+      maxLines: 1,
+    );
+    return OccupantDimensionalClaim(
+      naturalHeight: painter.height,
+      preferredWidth: painter.width,
+    );
+  }
+
+  @override
+  Widget buildPresentation(
+    BuildContext context,
+    ResolvedTrackAllocation allocation,
+  ) {
+    return _HistoricalArchivesCenteredTrackPresentation(
+      child: Text(
+        text,
+        key: presentationKey,
+        style: style,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+final class _HistoricalArchivesNarratorTrackOccupant implements TrackOccupant {
+  const _HistoricalArchivesNarratorTrackOccupant({required this.style});
+
+  final TextStyle style;
+
+  @override
+  OccupantDimensionalClaim dimensionalClaim(
+    PresentationConstraints constraints,
+  ) {
+    final painter = _textPainter(
+      text: 'Narrator\nNarrator',
+      style: style,
+      constraints: constraints,
+      maxWidth: _centerReadableWidth(constraints.availableWidth),
+      maxLines: 2,
+    );
+    return OccupantDimensionalClaim(naturalHeight: painter.height);
+  }
+
+  @override
+  Widget buildPresentation(
+    BuildContext context,
+    ResolvedTrackAllocation allocation,
+  ) {
+    return _HistoricalArchivesNarratorTrackPresentation(style: style);
+  }
+}
+
+class _HistoricalArchivesNarratorTrackPresentation extends ConsumerWidget {
+  const _HistoricalArchivesNarratorTrackPresentation({required this.style});
+
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final narratorText = ref.watch(
+      historicalArchivesWorkflowPanelModelProvider.select(
+        (model) => model.narratorPresentation?.narratorText,
+      ),
+    );
+    return _HistoricalArchivesCenteredTrackPresentation(
+      child: narratorText == null
+          ? const SizedBox.shrink()
+          : Text(
+              narratorText,
+              key: const Key('historical-archives-narrator'),
+              style: style,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+    );
+  }
+}
+
+class _HistoricalArchivesCenteredTrackPresentation extends StatelessWidget {
+  const _HistoricalArchivesCenteredTrackPresentation({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: historicalArchivesCenterHorizontalInset,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: historicalArchivesCenterMaximumReadableWidth,
+            ),
+            child: Align(alignment: Alignment.topLeft, child: child),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+double _centerReadableWidth(double availableWidth) {
+  return math.max(
+    0,
+    math.min(
+      historicalArchivesCenterMaximumReadableWidth,
+      availableWidth - (historicalArchivesCenterHorizontalInset * 2),
     ),
   );
 }

@@ -56,9 +56,10 @@ Final verification is intentionally Narrator-silent. The existing **Checking
 that import finished** instrumentation row communicates the current work, so no
 replacement sentence was earned.
 
-Presentation omits the Narrator widget and its following spacing when text is
-absent. Directed Instrumentation moves into the normal space beneath the page
-title; no hidden reservation, Track change, or compensating offset was added.
+This first correction omitted the Narrator widget when text was absent. The
+follow-up stable-Track implementation supersedes that spatial behavior:
+Narrator may now be silent while its structural Track remains present, so
+Directed Instrumentation does not move.
 
 ## Failure Behavior
 
@@ -70,12 +71,13 @@ title; no hidden reservation, Track change, or compensating offset was added.
   existing failure instrumentation and actions.
 - Terminal success remains owned solely by the existing success modal.
 
-## Removal Audit
+## Removal Follow-Up
 
-Removal requires no correction. **Removing this folder from MessageLens.**
-describes the complete removal operation, including its final verification; it
-does not claim that an already completed substage is still active. Removal
-state, instrumentation, copy, and behavior are unchanged.
+The subsequent removal audit found a meaningful source-contribution to
+remaining-history scope transition. Removal now has phase-specific Narrator
+commentary, reuses the real graph projector observations, and becomes silent
+for final verification. See
+`39-STABLE-NARRATOR-TRACK-REMOVAL-JOURNEY-AND-TERMINAL-PERCEPTION-IMPLEMENTATION.md`.
 
 ## Preserved Semantics
 
