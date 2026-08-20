@@ -5096,3 +5096,21 @@ production preservation authority mechanically enforceable.
 - Reaffirmed source-1 protection, donor immutability, owner-aware mutation
   authority, Tracks A-E, and `DateConverter` as the sole Apple timestamp
   authority.
+
+## 2026-08-20 — Mac Messages ingestion temporal coherence
+
+- Added Feature 26 response
+  `33-MAC-MESSAGES-INGESTION-TEMPORAL-COHERENCE-IMPLEMENTATION.md`.
+- Documented the gate-derived disappearing-action defect and the invariant that
+  a qualified candidate remains visibly ready while temporary mutation
+  authority changes only the Add action's enabled state.
+- Recorded center-owned Cancel semantics, immediate operation presentation,
+  and the event-loop yield that lets truthful operation state paint before
+  expensive work begins.
+- Audited the seven graph-projector calls and grouped them into five real,
+  monotonic execution units without inventing record-level progress.
+- Established a 750 ms post-execution all-Done presentation dwell guarded by
+  presentation-session ownership.
+- Removed success-created orange correspondence while preserving duplicate
+  folder reference semantics and all source, mutation, removal, Track, donor,
+  and attachment boundaries.

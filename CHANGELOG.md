@@ -10,6 +10,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.61] — 2026-08-20
+
+### Changed
+
+- Historical Archives now keeps a qualified Mac Messages folder visibly ready
+  through incidental execution-gate refreshes, gives immediate feedback when
+  import is authorized, reports five real conversation-preparation units, and
+  briefly preserves the truthful all-Done state before returning to the hub.
+  Cancel now abandons the current candidate without reopening the chooser, and
+  successful imports no longer apply an unnecessary orange reference to their
+  newly created archive cartouche.
+
 ## [0.2.60] — 2026-08-19
 
 ### Changed

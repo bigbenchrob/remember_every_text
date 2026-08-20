@@ -22,6 +22,10 @@ class HistoricalArchivesWorkflowActions
     ref.read(historicalArchivesWorkflowProvider.notifier).clearSelection();
   }
 
+  void cancelAddArchive() {
+    ref.read(historicalArchivesWorkflowProvider.notifier).cancelAddArchive();
+  }
+
   void dismissDuplicateFolderNotice({
     required int noticeOccurrence,
     required int presentationSessionOccurrence,

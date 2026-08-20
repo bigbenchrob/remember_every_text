@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
+import 'package:remember_this_text/config/theme/widgets/buttons/app_primary_button.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
@@ -551,7 +552,15 @@ void main() {
       expect(find.text('2,369'), findsOneWidget);
       expect(find.text('6,513'), findsOneWidget);
       expect(find.text('Add Messages to MessageLens'), findsOneWidget);
-      expect(find.text('Choose Another Folder'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Choose Another Folder'), findsNothing);
+      expect(find.byType(AppPrimaryButton), findsOneWidget);
+      expect(
+        tester
+            .widget<AppPrimaryButton>(find.byType(AppPrimaryButton))
+            .onPressed,
+        isNotNull,
+      );
       expect(find.text('Messages database: $path'), findsNothing);
 
       await tester.tap(
@@ -584,8 +593,20 @@ void main() {
         ),
       );
 
-      expect(find.text('Import Archive'), findsNothing);
-      expect(find.text('Choose Another Folder'), findsOneWidget);
+      expect(find.text('Add Messages to MessageLens'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Choose Another Folder'), findsNothing);
+      expect(find.byType(AppPrimaryButton), findsOneWidget);
+      expect(
+        tester
+            .widget<AppPrimaryButton>(find.byType(AppPrimaryButton))
+            .onPressed,
+        isNull,
+      );
+      expect(
+        find.byKey(const Key('historical-archives-details-toggle')),
+        findsOneWidget,
+      );
     });
 
     testWidgets(
@@ -628,6 +649,7 @@ void main() {
         );
         expect(find.text('Checking that import finished'), findsOneWidget);
         expect(find.text('Add Messages to MessageLens'), findsNothing);
+        expect(find.text('Cancel'), findsNothing);
         expect(find.text('Choose Another Folder'), findsNothing);
         expect(find.text('Execution Gate Blocked'), findsNothing);
         expect(find.text('Activity Log'), findsNothing);

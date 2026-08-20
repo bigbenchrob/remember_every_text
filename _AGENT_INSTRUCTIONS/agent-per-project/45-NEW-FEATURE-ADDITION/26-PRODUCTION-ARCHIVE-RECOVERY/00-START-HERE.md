@@ -2,7 +2,7 @@
 tier: project
 scope: production-archive-recovery
 owner: agent-per-project
-last_reviewed: 2026-08-19
+last_reviewed: 2026-08-20
 source_of_truth: doc
 links:
   - ../../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md
@@ -66,6 +66,7 @@ panel. See:
 - [Historical Archives Narrator And Directed Instrumentation Design](responses/10-HISTORICAL-ARCHIVES-NARRATOR-DIRECTED-INSTRUMENTATION-DESIGN.md)
 - [Historical Archive Removal Directed Instrumentation](responses/31-HISTORICAL-ARCHIVE-REMOVAL-DIRECTED-INSTRUMENTATION-IMPLEMENTATION.md)
 - [Mac Messages Ingestion Narrator And Directed Instrumentation](responses/32-MAC-MESSAGES-INGESTION-NARRATOR-DIRECTED-INSTRUMENTATION-IMPLEMENTATION.md)
+- [Mac Messages Ingestion Temporal Coherence](responses/33-MAC-MESSAGES-INGESTION-TEMPORAL-COHERENCE-IMPLEMENTATION.md)
 
 The MessageLens-folder arm and historical attachment-payload recovery remain
 out of scope.

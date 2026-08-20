@@ -19,16 +19,42 @@ enum SourceScopedArchiveGraphImportStage {
   projectingConversationGraph,
 }
 
-enum SourceScopedArchiveGraphImportStageTransition { started, completed }
+enum SourceScopedArchiveGraphImportStageTransition {
+  started,
+  progressed,
+  completed,
+}
+
+enum SourceScopedArchiveGraphProjectionUnit {
+  participants,
+  conversations,
+  messages,
+  attachments,
+  relationships,
+}
+
+final class SourceScopedArchiveGraphProjectionProgress {
+  const SourceScopedArchiveGraphProjectionProgress({
+    required this.activeUnit,
+    required this.completedUnitCount,
+    required this.totalUnitCount,
+  });
+
+  final SourceScopedArchiveGraphProjectionUnit activeUnit;
+  final int completedUnitCount;
+  final int totalUnitCount;
+}
 
 final class SourceScopedArchiveGraphImportObservation {
   const SourceScopedArchiveGraphImportObservation({
     required this.stage,
     required this.transition,
+    this.projectionProgress,
   });
 
   final SourceScopedArchiveGraphImportStage stage;
   final SourceScopedArchiveGraphImportStageTransition transition;
+  final SourceScopedArchiveGraphProjectionProgress? projectionProgress;
 }
 
 typedef SourceScopedArchiveGraphImportObserver =
@@ -128,11 +154,36 @@ class SourceScopedArchiveGraphImportService {
         transition: SourceScopedArchiveGraphImportStageTransition.started,
       ),
     );
+    _observeProjectionUnit(
+      onObservation,
+      unit: SourceScopedArchiveGraphProjectionUnit.participants,
+      completedUnitCount: 0,
+    );
     final handles = await handleProjector.projectHandles();
     final chatHandleEdges = await chatToHandleProjector.projectEdges();
+    _observeProjectionUnit(
+      onObservation,
+      unit: SourceScopedArchiveGraphProjectionUnit.conversations,
+      completedUnitCount: 1,
+    );
     final chats = await chatProjector.projectChats();
+    _observeProjectionUnit(
+      onObservation,
+      unit: SourceScopedArchiveGraphProjectionUnit.messages,
+      completedUnitCount: 2,
+    );
     final messages = await messageProjector.projectMessages();
+    _observeProjectionUnit(
+      onObservation,
+      unit: SourceScopedArchiveGraphProjectionUnit.attachments,
+      completedUnitCount: 3,
+    );
     final attachments = await attachmentProjector.projectAttachments();
+    _observeProjectionUnit(
+      onObservation,
+      unit: SourceScopedArchiveGraphProjectionUnit.relationships,
+      completedUnitCount: 4,
+    );
     final chatMessageEdges = await chatToMessageProjector.projectEdges();
     final messageAttachmentEdges = await messageToAttachmentProjector
         .projectEdges();
@@ -153,6 +204,24 @@ class SourceScopedArchiveGraphImportService {
         attachments: attachments,
         chatMessageEdges: chatMessageEdges,
         messageAttachmentEdges: messageAttachmentEdges,
+      ),
+    );
+  }
+
+  void _observeProjectionUnit(
+    SourceScopedArchiveGraphImportObserver? observer, {
+    required SourceScopedArchiveGraphProjectionUnit unit,
+    required int completedUnitCount,
+  }) {
+    observer?.call(
+      SourceScopedArchiveGraphImportObservation(
+        stage: SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+        transition: SourceScopedArchiveGraphImportStageTransition.progressed,
+        projectionProgress: SourceScopedArchiveGraphProjectionProgress(
+          activeUnit: unit,
+          completedUnitCount: completedUnitCount,
+          totalUnitCount: SourceScopedArchiveGraphProjectionUnit.values.length,
+        ),
       ),
     );
   }

@@ -11,15 +11,35 @@ import 'package:remember_this_text/essentials/archive_environment/feature_level_
         ArchiveMutationCoordinator,
         ArchiveMutationCoordinatorState,
         archiveMutationCoordinatorProvider;
+import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/attachments/attachment_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/chat_handle_joins/chat_to_handle_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/chat_message_joins/chat_to_message_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/chats/chat_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/handles/handle_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/message_attachment_joins/message_to_attachment_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart'
-    show sourceScopedArchiveGraphRemovalServiceProvider;
+    show
+        sourceScopedArchiveGraphImportServiceProvider,
+        sourceScopedArchiveGraphRemovalServiceProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
 import 'package:remember_this_text/essentials/navigation/application/sidebar_mode_provider.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
 import 'package:remember_this_text/essentials/onboarding/feature_level_providers.dart'
     show onboardingMessagesDatabasePathProvider;
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_flow_state_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/archives/source_scoped_archive_import_service.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/chat_handle_joins/chat_handle_join_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/chat_message_joins/chat_message_join_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/chats/chat_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/handles/handle_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/message_attachment_joins/message_attachment_join_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspector_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_folder_chooser.dart';
@@ -206,6 +226,58 @@ void main() {
       );
     });
 
+    test(
+      'keeps a valid candidate visibly ready while gate availability refreshes',
+      () {
+        final workflowState = buildInitialHistoricalArchivesWorkflowState()
+            .copyWith(
+              presentationContext:
+                  HistoricalArchivesPresentationContext.addArchive,
+              presentationStage:
+                  HistoricalArchivesPresentationStage.readyForImport,
+              preflight: const HistoricalArchivesPreflightViewModel(
+                status: HistoricalArchivesPreflightStatus.completeReadyToImport,
+                statusLabel: 'Preflight complete',
+                detail: 'Source checks succeeded.',
+              ),
+              selectedFolderPath: '/tmp/Archive-2017',
+              chatDbStatusLabel: 'Found and readable',
+              attachmentsStatusLabel: 'Found',
+              sourceLabel: 'Archive-2017',
+            );
+
+        final available = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: workflowState,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        final busy = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(
+            operation: ArchiveMutationOperation.liveGraphUpdate,
+            ownerId: 'live-update#1',
+            ownerLabel: 'live-update',
+            holdCount: 1,
+          ),
+          isMaintenanceLocked: false,
+          workflowState: workflowState,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+
+        expect(
+          available.narratorPresentation?.kind,
+          HistoricalArchivesNarratorPresentationKind.readyForImport,
+        );
+        expect(
+          busy.narratorPresentation?.kind,
+          HistoricalArchivesNarratorPresentationKind.readyForImport,
+        );
+        expect(available.importButtonEnabled, isTrue);
+        expect(busy.importButtonEnabled, isFalse);
+        expect(busy.narratorPresentation?.detailsLines, isNotEmpty);
+      },
+    );
+
     test('projects typed ready evidence without summary-string parsing', () {
       const evidence = HistoricalArchivesInspectionEvidence(
         folderPath: '/tmp/archive',
@@ -277,6 +349,12 @@ void main() {
               preparingConversations:
                   HistoricalArchiveImportStageStatus.running,
               verifyingImport: HistoricalArchiveImportStageStatus.waiting,
+              graphProjectionProgress:
+                  SourceScopedArchiveGraphProjectionProgress(
+                    activeUnit: SourceScopedArchiveGraphProjectionUnit.messages,
+                    completedUnitCount: 2,
+                    totalUnitCount: 5,
+                  ),
             ),
           );
 
@@ -297,7 +375,7 @@ void main() {
             .toList(),
         const [
           ('Adding messages from this folder', 'Done'),
-          ('Preparing conversations for browsing', 'Working'),
+          ('Preparing conversations for browsing', 'Messages · 2 of 5'),
           ('Checking that import finished', 'Waiting'),
         ],
       );
@@ -597,6 +675,378 @@ void main() {
           HistoricalArchivesPresentationStage.readyForImport,
         );
         expect(resolvedState.inspectionEvidence?.totalMessages, 42);
+      },
+    );
+
+    test(
+      'cancel abandons the ready candidate without starting new work',
+      () async {
+        final coordinator = _ImmediateArchiveMutationCoordinator();
+        final folderChooser = _RecordingFolderChooser('/tmp/archive');
+        final archiveSources = _RecordingHistoricalArchiveSources();
+        final container = ProviderContainer(
+          overrides: [
+            archiveMutationCoordinatorProvider.overrideWith(() => coordinator),
+            historicalArchiveFolderChooserProvider.overrideWith(
+              (ref) => folderChooser,
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => archiveSources,
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.chooseMessagesFolder();
+        expect(
+          container.read(historicalArchivesWorkflowProvider).presentationStage,
+          HistoricalArchivesPresentationStage.readyForImport,
+        );
+
+        workflow.cancelAddArchive();
+
+        final cancelled = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          cancelled.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(cancelled.selectedFolderPath, isNull);
+        expect(cancelled.selectedKnownSourceKey, isNull);
+        expect(cancelled.knownSourceReference, isNull);
+        expect(folderChooser.callCount, 1);
+        expect(coordinator.runCallCount, 0);
+        expect(archiveSources.upsertCallCount, 1);
+      },
+    );
+
+    test(
+      'authorization paints import ownership before work and dwells on real completion',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        final releaseImport = Completer<void>();
+        final importedSourceLookup = _MutableImportedSourceLookup(match: null);
+        final graphImportService = _ControlledArchiveGraphImportService((
+          observer,
+        ) async {
+          observer?.call(
+            const SourceScopedArchiveGraphImportObservation(
+              stage: SourceScopedArchiveGraphImportStage.importingSourceFacts,
+              transition: SourceScopedArchiveGraphImportStageTransition.started,
+            ),
+          );
+          await releaseImport.future;
+          observer?.call(
+            const SourceScopedArchiveGraphImportObservation(
+              stage: SourceScopedArchiveGraphImportStage.importingSourceFacts,
+              transition:
+                  SourceScopedArchiveGraphImportStageTransition.completed,
+            ),
+          );
+          _emitCompleteGraphProjection(observer);
+          importedSourceLookup.match =
+              const HistoricalArchiveImportedSourceMatch(
+                sourceKey: sourceKey,
+                sourceId: 3,
+                importedMessageCount: 42,
+              );
+          return _successfulArchiveGraphImportResult(sourceKey: sourceKey);
+        });
+        final archiveSources = _RecordingHistoricalArchiveSources();
+        final coordinator = _ImmediateArchiveMutationCoordinator();
+        final container = ProviderContainer(
+          overrides: [
+            archiveMutationCoordinatorProvider.overrideWith(() => coordinator),
+            sourceScopedArchiveGraphImportServiceProvider.overrideWith(
+              (ref) async => graphImportService,
+            ),
+            historicalArchiveFolderChooserProvider.overrideWith(
+              (ref) => const _FakeFolderChooser('/tmp/archive'),
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => archiveSources,
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => importedSourceLookup,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.chooseMessagesFolder();
+
+        final import = workflow.beginImportForSelectedSource();
+        final duplicateAuthorization = workflow.beginImportForSelectedSource();
+
+        final authorized = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          authorized.presentationContext,
+          HistoricalArchivesPresentationContext.importingArchive,
+        );
+        expect(
+          authorized.presentationStage,
+          HistoricalArchivesPresentationStage.importingArchive,
+        );
+        expect(graphImportService.callCount, 0);
+        expect(archiveSources.successfulImportUpdateCount, 0);
+
+        await duplicateAuthorization;
+        await _waitUntil(() => graphImportService.callCount == 1);
+        expect(coordinator.runCallCount, 1);
+        expect(
+          container
+              .read(historicalArchivesWorkflowProvider)
+              .importProgress
+              ?.statusFor(HistoricalArchiveImportStage.addingMessages),
+          HistoricalArchiveImportStageStatus.running,
+        );
+
+        releaseImport.complete();
+        await _waitUntil(
+          () =>
+              container
+                  .read(historicalArchivesWorkflowProvider)
+                  .importProgress
+                  ?.isComplete ==
+              true,
+        );
+
+        final completed = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          completed.presentationContext,
+          HistoricalArchivesPresentationContext.importingArchive,
+        );
+        expect(
+          HistoricalArchiveImportStage.values.map(
+            completed.importProgress!.statusFor,
+          ),
+          everyElement(HistoricalArchiveImportStageStatus.succeeded),
+        );
+        expect(completed.knownSourceReference, isNull);
+        expect(completed.selectedKnownSourceKey, isNull);
+        expect(archiveSources.successfulImportUpdateCount, 1);
+        expect(
+          historicalArchivesImportSuccessDwellDuration,
+          const Duration(milliseconds: 750),
+        );
+
+        final dwellStopwatch = Stopwatch()..start();
+        await import;
+        dwellStopwatch.stop();
+        expect(
+          dwellStopwatch.elapsed,
+          greaterThanOrEqualTo(const Duration(milliseconds: 500)),
+        );
+        expect(
+          dwellStopwatch.elapsed,
+          lessThan(const Duration(milliseconds: 1100)),
+        );
+
+        final settled = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          settled.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(settled.importProgress, isNull);
+        expect(settled.knownSourceReference, isNull);
+        expect(settled.selectedKnownSourceKey, isNull);
+      },
+    );
+
+    test(
+      'an older success dwell cannot clear a newer ready candidate',
+      () async {
+        const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
+        final importedSourceLookup = _MutableImportedSourceLookup(match: null);
+        final graphImportService = _ControlledArchiveGraphImportService((
+          observer,
+        ) async {
+          observer?.call(
+            const SourceScopedArchiveGraphImportObservation(
+              stage: SourceScopedArchiveGraphImportStage.importingSourceFacts,
+              transition: SourceScopedArchiveGraphImportStageTransition.started,
+            ),
+          );
+          observer?.call(
+            const SourceScopedArchiveGraphImportObservation(
+              stage: SourceScopedArchiveGraphImportStage.importingSourceFacts,
+              transition:
+                  SourceScopedArchiveGraphImportStageTransition.completed,
+            ),
+          );
+          _emitCompleteGraphProjection(observer);
+          importedSourceLookup.match =
+              const HistoricalArchiveImportedSourceMatch(
+                sourceKey: sourceKey,
+                sourceId: 3,
+                importedMessageCount: 42,
+              );
+          return _successfulArchiveGraphImportResult(sourceKey: sourceKey);
+        });
+        final container = ProviderContainer(
+          overrides: [
+            archiveMutationCoordinatorProvider.overrideWith(
+              () => _ImmediateArchiveMutationCoordinator(),
+            ),
+            sourceScopedArchiveGraphImportServiceProvider.overrideWith(
+              (ref) async => graphImportService,
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => _RecordingHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => importedSourceLookup,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.loadFolder(folderPath: '/tmp/archive');
+        final oldImport = workflow.beginImportForSelectedSource();
+        await _waitUntil(
+          () =>
+              container
+                  .read(historicalArchivesWorkflowProvider)
+                  .importProgress
+                  ?.isComplete ==
+              true,
+        );
+
+        importedSourceLookup.match = null;
+        workflow.resetPresentationContext();
+        await workflow.loadFolder(folderPath: '/tmp/new-archive');
+        expect(
+          container.read(historicalArchivesWorkflowProvider).presentationStage,
+          HistoricalArchivesPresentationStage.readyForImport,
+        );
+
+        await oldImport;
+        final newer = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          newer.presentationContext,
+          HistoricalArchivesPresentationContext.addArchive,
+        );
+        expect(
+          newer.presentationStage,
+          HistoricalArchivesPresentationStage.readyForImport,
+        );
+        expect(newer.selectedFolderPath, '/tmp/new-archive');
+      },
+    );
+
+    test(
+      'partial graph failure preserves its last truthful unit and never dwells',
+      () async {
+        final graphImportService = _ControlledArchiveGraphImportService((
+          observer,
+        ) async {
+          observer?.call(
+            const SourceScopedArchiveGraphImportObservation(
+              stage: SourceScopedArchiveGraphImportStage.importingSourceFacts,
+              transition: SourceScopedArchiveGraphImportStageTransition.started,
+            ),
+          );
+          observer?.call(
+            const SourceScopedArchiveGraphImportObservation(
+              stage: SourceScopedArchiveGraphImportStage.importingSourceFacts,
+              transition:
+                  SourceScopedArchiveGraphImportStageTransition.completed,
+            ),
+          );
+          observer?.call(
+            const SourceScopedArchiveGraphImportObservation(
+              stage: SourceScopedArchiveGraphImportStage
+                  .projectingConversationGraph,
+              transition: SourceScopedArchiveGraphImportStageTransition.started,
+            ),
+          );
+          observer?.call(
+            const SourceScopedArchiveGraphImportObservation(
+              stage: SourceScopedArchiveGraphImportStage
+                  .projectingConversationGraph,
+              transition:
+                  SourceScopedArchiveGraphImportStageTransition.progressed,
+              projectionProgress: SourceScopedArchiveGraphProjectionProgress(
+                activeUnit: SourceScopedArchiveGraphProjectionUnit.messages,
+                completedUnitCount: 2,
+                totalUnitCount: 5,
+              ),
+            ),
+          );
+          throw StateError('graph projection failed for testing');
+        });
+        final container = ProviderContainer(
+          overrides: [
+            archiveMutationCoordinatorProvider.overrideWith(
+              () => _ImmediateArchiveMutationCoordinator(),
+            ),
+            sourceScopedArchiveGraphImportServiceProvider.overrideWith(
+              (ref) async => graphImportService,
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => _RecordingHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.loadFolder(folderPath: '/tmp/archive');
+        await workflow.beginImportForSelectedSource();
+
+        final failed = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          failed.presentationContext,
+          HistoricalArchivesPresentationContext.importFailed,
+        );
+        expect(
+          failed.importProgress?.statusFor(
+            HistoricalArchiveImportStage.preparingConversations,
+          ),
+          HistoricalArchiveImportStageStatus.failed,
+        );
+        expect(
+          failed.importProgress?.graphProjectionProgress?.activeUnit,
+          SourceScopedArchiveGraphProjectionUnit.messages,
+        );
+        expect(
+          failed.importProgress?.graphProjectionProgress?.completedUnitCount,
+          2,
+        );
+        expect(
+          failed.importProgress?.graphProjectionProgress?.totalUnitCount,
+          5,
+        );
+        expect(failed.knownSourceReference, isNull);
+        expect(failed.selectedKnownSourceKey, isNull);
       },
     );
 
@@ -1879,6 +2329,19 @@ final class _FakeFolderChooser implements HistoricalArchiveFolderChooser {
   Future<String?> chooseMessagesFolder() async => folderPath;
 }
 
+final class _RecordingFolderChooser implements HistoricalArchiveFolderChooser {
+  _RecordingFolderChooser(this.folderPath);
+
+  final String folderPath;
+  var callCount = 0;
+
+  @override
+  Future<String?> chooseMessagesFolder() async {
+    callCount += 1;
+    return folderPath;
+  }
+}
+
 final class _CompletingArchiveSourceInspector
     implements ArchiveSourceInspector {
   const _CompletingArchiveSourceInspector(this.inspection);
@@ -2042,6 +2505,30 @@ final class _FinalVerificationImportedSourceLookup
   }
 }
 
+final class _ControlledArchiveGraphImportService
+    implements SourceScopedArchiveGraphImportService {
+  _ControlledArchiveGraphImportService(this._importAndProject);
+
+  final Future<SourceScopedArchiveGraphImportResult> Function(
+    SourceScopedArchiveGraphImportObserver? observer,
+  )
+  _importAndProject;
+  var callCount = 0;
+
+  @override
+  Future<SourceScopedArchiveGraphImportResult> importAndProject({
+    required String folderPath,
+    String? sourceLabel,
+    SourceScopedArchiveGraphImportObserver? onObservation,
+  }) async {
+    callCount += 1;
+    return _importAndProject(onObservation);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 final class _RecordingArchiveRemovalService
     implements SourceScopedArchiveGraphRemovalService {
   _RecordingArchiveRemovalService(this._remove);
@@ -2110,6 +2597,7 @@ final class _RecordingHistoricalArchiveSources
 
   final List<HistoricalArchiveSourceMetadata> sources;
   var upsertCallCount = 0;
+  var successfulImportUpdateCount = 0;
 
   @override
   Future<List<HistoricalArchiveSourceMetadata>> readKnownSources() async =>
@@ -2120,7 +2608,133 @@ final class _RecordingHistoricalArchiveSources
     HistoricalArchiveSourceMetadataUpdate update,
   ) async {
     upsertCallCount += 1;
+    if (update.lastImportSuccess == true) {
+      successfulImportUpdateCount += 1;
+    }
   }
+}
+
+Future<void> _waitUntil(bool Function() predicate) async {
+  final stopwatch = Stopwatch()..start();
+  while (!predicate()) {
+    if (stopwatch.elapsed > const Duration(seconds: 2)) {
+      fail('Timed out waiting for asynchronous workflow state.');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+}
+
+void _emitCompleteGraphProjection(
+  SourceScopedArchiveGraphImportObserver? observer,
+) {
+  observer?.call(
+    const SourceScopedArchiveGraphImportObservation(
+      stage: SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+      transition: SourceScopedArchiveGraphImportStageTransition.started,
+    ),
+  );
+  for (
+    var index = 0;
+    index < SourceScopedArchiveGraphProjectionUnit.values.length;
+    index += 1
+  ) {
+    observer?.call(
+      SourceScopedArchiveGraphImportObservation(
+        stage: SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+        transition: SourceScopedArchiveGraphImportStageTransition.progressed,
+        projectionProgress: SourceScopedArchiveGraphProjectionProgress(
+          activeUnit: SourceScopedArchiveGraphProjectionUnit.values[index],
+          completedUnitCount: index,
+          totalUnitCount: SourceScopedArchiveGraphProjectionUnit.values.length,
+        ),
+      ),
+    );
+  }
+  observer?.call(
+    const SourceScopedArchiveGraphImportObservation(
+      stage: SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+      transition: SourceScopedArchiveGraphImportStageTransition.completed,
+    ),
+  );
+}
+
+SourceScopedArchiveGraphImportResult _successfulArchiveGraphImportResult({
+  required String sourceKey,
+}) {
+  return SourceScopedArchiveGraphImportResult(
+    importResult: SourceScopedArchiveImportResult(
+      registration: HistoricalMessagesArchiveSourceRegistration(
+        sourceId: 3,
+        sourceKey: sourceKey,
+        sourceKind: 'historical_messages_archive',
+        sourceLabel: 'archive',
+        selectedFolderPath: '/tmp/archive',
+        chatDbPath: '/tmp/archive/chat.db',
+      ),
+      messages: const MessageImportResult(
+        startedAfterSourceRowId: 0,
+        insertedMessageCount: 42,
+        lastImportedSourceRowId: 42,
+      ),
+      chats: const ChatImportResult(examinedChatCount: 4, insertedChatCount: 4),
+      handles: const HandleImportResult(
+        startedAfterSourceRowId: 0,
+        insertedHandleCount: 7,
+        lastImportedSourceRowId: 7,
+      ),
+      attachments: const AttachmentImportResult(
+        startedAfterSourceRowId: 0,
+        examinedAttachmentCount: 0,
+        insertedAttachmentCount: 0,
+        lastImportedSourceRowId: null,
+      ),
+      chatMessageEdges: const ChatMessageJoinImportResult(
+        examinedJoinCount: 42,
+        insertedJoinCount: 42,
+      ),
+      chatHandleEdges: const ChatHandleJoinImportResult(
+        examinedJoinCount: 7,
+        insertedJoinCount: 7,
+      ),
+      messageAttachmentEdges: const MessageAttachmentJoinImportResult(
+        examinedJoinCount: 0,
+        insertedJoinCount: 0,
+      ),
+      textEnrichment: const MessageRichTextEnrichmentResult(
+        candidateMessageCount: 0,
+        enrichedMessageCount: 0,
+        missingExtractionCount: 0,
+        extractorAvailable: true,
+      ),
+    ),
+    projectionResult: const SourceScopedArchiveGraphProjectionResult(
+      handles: HandleProjectionResult(
+        examinedHandleCount: 7,
+        insertedHandleCount: 7,
+      ),
+      chatHandleEdges: ChatToHandleProjectionResult(
+        examinedEdgeCount: 7,
+        insertedEdgeCount: 7,
+      ),
+      chats: ChatProjectionResult(examinedChatCount: 4, insertedChatCount: 4),
+      messages: MessageProjectionResult(
+        examinedMessageCount: 42,
+        insertedMessageCount: 42,
+      ),
+      attachments: AttachmentProjectionResult(
+        examinedAttachmentCount: 0,
+        insertedAttachmentCount: 0,
+      ),
+      chatMessageEdges: ChatToMessageProjectionResult(
+        examinedEdgeCount: 42,
+        insertedEdgeCount: 42,
+      ),
+      messageAttachmentEdges: MessageToAttachmentProjectionResult(
+        examinedEdgeCount: 0,
+        insertedEdgeCount: 0,
+      ),
+    ),
+  );
 }
 
 HistoricalArchiveSourceMetadata _successfullyImportedArchiveSource({

@@ -237,8 +237,48 @@ void main() {
         ),
         (
           SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+          SourceScopedArchiveGraphImportStageTransition.progressed,
+        ),
+        (
+          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+          SourceScopedArchiveGraphImportStageTransition.progressed,
+        ),
+        (
+          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+          SourceScopedArchiveGraphImportStageTransition.progressed,
+        ),
+        (
+          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+          SourceScopedArchiveGraphImportStageTransition.progressed,
+        ),
+        (
+          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
+          SourceScopedArchiveGraphImportStageTransition.progressed,
+        ),
+        (
+          SourceScopedArchiveGraphImportStage.projectingConversationGraph,
           SourceScopedArchiveGraphImportStageTransition.completed,
         ),
+      ],
+    );
+    expect(
+      observations
+          .map((observation) => observation.projectionProgress)
+          .whereType<SourceScopedArchiveGraphProjectionProgress>()
+          .map(
+            (progress) => (
+              progress.activeUnit,
+              progress.completedUnitCount,
+              progress.totalUnitCount,
+            ),
+          )
+          .toList(),
+      const [
+        (SourceScopedArchiveGraphProjectionUnit.participants, 0, 5),
+        (SourceScopedArchiveGraphProjectionUnit.conversations, 1, 5),
+        (SourceScopedArchiveGraphProjectionUnit.messages, 2, 5),
+        (SourceScopedArchiveGraphProjectionUnit.attachments, 3, 5),
+        (SourceScopedArchiveGraphProjectionUnit.relationships, 4, 5),
       ],
     );
 

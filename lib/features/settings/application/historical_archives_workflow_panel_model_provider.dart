@@ -12,6 +12,8 @@ import '../../../essentials/archive_environment/feature_level_providers.dart'
 import '../../../essentials/conversation_graph/feature_level_providers.dart'
     show
         SourceScopedArchiveGraphImportObservation,
+        SourceScopedArchiveGraphProjectionProgress,
+        SourceScopedArchiveGraphProjectionUnit,
         SourceScopedArchiveGraphImportStage,
         SourceScopedArchiveGraphImportStageTransition,
         SourceScopedArchiveGraphRemovalObservation,
@@ -151,6 +153,9 @@ const historicalArchivesReferenceFadeInDuration = Duration(milliseconds: 750);
 const historicalArchivesReferenceHoldDuration = Duration(milliseconds: 1000);
 const historicalArchivesReferenceFadeOutDuration = Duration(milliseconds: 2000);
 const historicalArchivesReferenceLifetime = Duration(milliseconds: 3750);
+const historicalArchivesImportSuccessDwellDuration = Duration(
+  milliseconds: 750,
+);
 
 final class HistoricalArchivesInspectionEvidence {
   const HistoricalArchivesInspectionEvidence({
@@ -238,11 +243,13 @@ final class HistoricalArchiveImportProgress {
     this.addingMessages = HistoricalArchiveImportStageStatus.waiting,
     this.preparingConversations = HistoricalArchiveImportStageStatus.waiting,
     this.verifyingImport = HistoricalArchiveImportStageStatus.waiting,
+    this.graphProjectionProgress,
   });
 
   final HistoricalArchiveImportStageStatus addingMessages;
   final HistoricalArchiveImportStageStatus preparingConversations;
   final HistoricalArchiveImportStageStatus verifyingImport;
+  final SourceScopedArchiveGraphProjectionProgress? graphProjectionProgress;
 
   HistoricalArchiveImportStageStatus statusFor(
     HistoricalArchiveImportStage stage,
@@ -270,7 +277,26 @@ final class HistoricalArchiveImportProgress {
       verifyingImport: stage == HistoricalArchiveImportStage.verifyingImport
           ? status
           : verifyingImport,
+      graphProjectionProgress: graphProjectionProgress,
     );
+  }
+
+  HistoricalArchiveImportProgress withGraphProjectionProgress(
+    SourceScopedArchiveGraphProjectionProgress progress,
+  ) {
+    return HistoricalArchiveImportProgress(
+      addingMessages: addingMessages,
+      preparingConversations: preparingConversations,
+      verifyingImport: verifyingImport,
+      graphProjectionProgress: progress,
+    );
+  }
+
+  bool get isComplete {
+    return addingMessages == HistoricalArchiveImportStageStatus.succeeded &&
+        preparingConversations ==
+            HistoricalArchiveImportStageStatus.succeeded &&
+        verifyingImport == HistoricalArchiveImportStageStatus.succeeded;
   }
 }
 
@@ -976,6 +1002,14 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     resetPresentationContext();
   }
 
+  void cancelAddArchive() {
+    if (state.presentationContext !=
+        HistoricalArchivesPresentationContext.addArchive) {
+      return;
+    }
+    resetPresentationContext();
+  }
+
   void dismissDuplicateFolderNotice({
     required int noticeOccurrence,
     required int presentationSessionOccurrence,
@@ -1392,6 +1426,25 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
     final importPresentationSessionOccurrence = _presentationSessionOccurrence;
     const initialProgress = HistoricalArchiveImportProgress();
+    final authorizedCandidateState = state;
+    state = state.copyWith(
+      presentationContext:
+          HistoricalArchivesPresentationContext.importingArchive,
+      presentationStage: HistoricalArchivesPresentationStage.importingArchive,
+      clearImportFailureDetail: true,
+      importProgress: initialProgress,
+      preflight: const HistoricalArchivesPreflightViewModel(
+        status: HistoricalArchivesPreflightStatus.running,
+        statusLabel: 'Adding Messages folder',
+        detail:
+            'MessageLens is adding this folder and preparing its conversations for browsing.',
+      ),
+    );
+
+    // The authorization state is already true. Yield one event-loop turn so
+    // presentation can project it before source import and graph work begin.
+    await Future<void>.delayed(Duration.zero);
+
     try {
       await ref
           .read(archiveMutationCoordinatorProvider.notifier)
@@ -1399,20 +1452,6 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             operation: ArchiveMutationOperation.historicalArchiveImport,
             ownerLabel: 'historical-archives-import',
             action: () async {
-              state = state.copyWith(
-                presentationContext:
-                    HistoricalArchivesPresentationContext.importingArchive,
-                presentationStage:
-                    HistoricalArchivesPresentationStage.importingArchive,
-                clearImportFailureDetail: true,
-                importProgress: initialProgress,
-                preflight: const HistoricalArchivesPreflightViewModel(
-                  status: HistoricalArchivesPreflightStatus.running,
-                  statusLabel: 'Adding Messages folder',
-                  detail:
-                      'MessageLens is adding this folder and preparing its conversations for browsing.',
-                ),
-              );
               final archiveGraphImportService = await ref.read(
                 sourceScopedArchiveGraphImportServiceProvider.future,
               );
@@ -1517,21 +1556,27 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                     importPresentationSessionOccurrence,
               );
               ref.read(messageDataVersionProvider.notifier).bump();
-              _completeImportJourney(
-                sourceKey: sourceKey,
-                presentationSessionOccurrence:
-                    importPresentationSessionOccurrence,
-              );
+              return;
             },
           );
-    } on ArchiveMutationDeniedException catch (error) {
-      _prependActivityLog(
-        HistoricalArchivesLogEntryViewModel(
-          label: 'Execution gate busy',
-          message:
-              '${_describeExecutionOwnerLabel(error.currentOwner)} currently owns archive mutation authority. Archive import must wait.',
-        ),
+      await _dwellOnCompletedImportThenReturnToHub(
+        presentationSessionOccurrence: importPresentationSessionOccurrence,
       );
+    } on ArchiveMutationDeniedException catch (error) {
+      if (_ownsCurrentImportPresentation(
+        presentationSessionOccurrence: importPresentationSessionOccurrence,
+      )) {
+        state = authorizedCandidateState.copyWith(
+          activityLog: [
+            HistoricalArchivesLogEntryViewModel(
+              label: 'Execution gate busy',
+              message:
+                  '${_describeExecutionOwnerLabel(error.currentOwner)} currently owns archive mutation authority. Archive import must wait.',
+            ),
+            ...authorizedCandidateState.activityLog,
+          ],
+        );
+      }
     } catch (error, stackTrace) {
       final detail = 'Archive import failed: $error';
       final failedAtUtc = DateTime.now().toUtc().toIso8601String();
@@ -1605,6 +1650,20 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     required SourceScopedArchiveGraphImportObservation observation,
     required int presentationSessionOccurrence,
   }) {
+    if (observation.transition ==
+        SourceScopedArchiveGraphImportStageTransition.progressed) {
+      final projectionProgress = observation.projectionProgress;
+      if (observation.stage ==
+              SourceScopedArchiveGraphImportStage.projectingConversationGraph &&
+          projectionProgress != null) {
+        _setGraphProjectionProgress(
+          progress: projectionProgress,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        );
+      }
+      return;
+    }
+
     final stage = switch (observation.stage) {
       SourceScopedArchiveGraphImportStage.importingSourceFacts =>
         HistoricalArchiveImportStage.addingMessages,
@@ -1616,11 +1675,29 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         HistoricalArchiveImportStageStatus.running,
       SourceScopedArchiveGraphImportStageTransition.completed =>
         HistoricalArchiveImportStageStatus.succeeded,
+      SourceScopedArchiveGraphImportStageTransition.progressed =>
+        throw StateError('Progress observations are handled separately.'),
     };
     _setImportStageStatus(
       stage: stage,
       status: status,
       presentationSessionOccurrence: presentationSessionOccurrence,
+    );
+  }
+
+  void _setGraphProjectionProgress({
+    required SourceScopedArchiveGraphProjectionProgress progress,
+    required int presentationSessionOccurrence,
+  }) {
+    if (!_ownsCurrentImportPresentation(
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    )) {
+      return;
+    }
+    final current =
+        state.importProgress ?? const HistoricalArchiveImportProgress();
+    state = state.copyWith(
+      importProgress: current.withGraphProjectionProgress(progress),
     );
   }
 
@@ -1666,30 +1743,23 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     );
   }
 
-  void _completeImportJourney({
-    required String sourceKey,
+  Future<void> _dwellOnCompletedImportThenReturnToHub({
     required int presentationSessionOccurrence,
-  }) {
+  }) async {
     if (!_ownsCurrentImportPresentation(
-      presentationSessionOccurrence: presentationSessionOccurrence,
-    )) {
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        ) ||
+        state.importProgress?.isComplete != true) {
       return;
     }
-    _referenceClearTimer?.cancel();
-    _nextReferenceOccurrence += 1;
-    final referenceOccurrence = _nextReferenceOccurrence;
-    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
-      knownSourceReference: HistoricalArchivesKnownSourceReference(
-        sourceKey: sourceKey,
-        referenceOccurrence: referenceOccurrence,
-      ),
-    );
-    _referenceClearTimer = Timer(historicalArchivesReferenceLifetime, () {
-      _clearKnownSourceReference(
-        referenceOccurrence: referenceOccurrence,
-        presentationSessionOccurrence: presentationSessionOccurrence,
-      );
-    });
+    await Future<void>.delayed(historicalArchivesImportSuccessDwellDuration);
+    if (!_ownsCurrentImportPresentation(
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        ) ||
+        state.importProgress?.isComplete != true) {
+      return;
+    }
+    state = buildInitialHistoricalArchivesWorkflowState();
   }
 
   void _prependActivityLog(HistoricalArchivesLogEntryViewModel entry) {
@@ -2125,7 +2195,7 @@ List<HistoricalArchivesInstrumentationRowViewModel> _importInstrumentationRows(
     ),
     HistoricalArchivesInstrumentationRowViewModel(
       label: 'Preparing conversations for browsing',
-      value: _importStageValue(progress.preparingConversations),
+      value: _conversationPreparationValue(progress),
       status: _importInstrumentationStatus(progress.preparingConversations),
     ),
     HistoricalArchivesInstrumentationRowViewModel(
@@ -2134,6 +2204,30 @@ List<HistoricalArchivesInstrumentationRowViewModel> _importInstrumentationRows(
       status: _importInstrumentationStatus(progress.verifyingImport),
     ),
   ];
+}
+
+String _conversationPreparationValue(HistoricalArchiveImportProgress progress) {
+  final status = progress.preparingConversations;
+  final projection = progress.graphProjectionProgress;
+  if (projection == null ||
+      status == HistoricalArchiveImportStageStatus.waiting ||
+      status == HistoricalArchiveImportStageStatus.succeeded) {
+    return _importStageValue(status);
+  }
+
+  final unitLabel = switch (projection.activeUnit) {
+    SourceScopedArchiveGraphProjectionUnit.participants => 'Participants',
+    SourceScopedArchiveGraphProjectionUnit.conversations => 'Conversations',
+    SourceScopedArchiveGraphProjectionUnit.messages => 'Messages',
+    SourceScopedArchiveGraphProjectionUnit.attachments => 'Attachments',
+    SourceScopedArchiveGraphProjectionUnit.relationships => 'Relationships',
+  };
+  final progressLabel =
+      '$unitLabel · ${projection.completedUnitCount} of ${projection.totalUnitCount}';
+  if (status == HistoricalArchiveImportStageStatus.failed) {
+    return 'Failed · $progressLabel';
+  }
+  return progressLabel;
 }
 
 String _importStageValue(HistoricalArchiveImportStageStatus status) {

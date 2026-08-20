@@ -9,6 +9,7 @@ import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
 import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
+import '../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../essentials/debug/feature_level_providers.dart'
     show DeveloperModeValue, developerModeProvider;
 import '../../application/historical_archives_workflow_actions_provider.dart';
@@ -882,16 +883,16 @@ class _NarratorDecision extends ConsumerWidget {
         spacing: 10,
         runSpacing: 10,
         children: [
-          if (panelModel.importButtonEnabled)
-            _HistoricalArchiveActionButton(
-              label: 'Add Messages to MessageLens',
-              enabled: true,
-              onPressed: actions.beginImportForSelectedSource,
-            ),
           _HistoricalArchiveActionButton(
-            label: 'Choose Another Folder',
+            label: 'Add Messages to MessageLens',
+            enabled: panelModel.importButtonEnabled,
+            primary: true,
+            onPressed: actions.beginImportForSelectedSource,
+          ),
+          _HistoricalArchiveActionButton(
+            label: 'Cancel',
             enabled: true,
-            onPressed: actions.chooseMessagesFolder,
+            onPressed: actions.cancelAddArchive,
           ),
         ],
       ),
@@ -1204,12 +1205,14 @@ class _HistoricalArchiveActionButton extends ConsumerWidget {
     required this.label,
     this.enabled = false,
     this.destructive = false,
+    this.primary = false,
     this.onPressed,
   });
 
   final String label;
   final bool enabled;
   final bool destructive;
+  final bool primary;
   final VoidCallback? onPressed;
 
   @override
@@ -1218,6 +1221,14 @@ class _HistoricalArchiveActionButton extends ConsumerWidget {
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
     final isInteractive = enabled && onPressed != null;
+
+    if (primary) {
+      return AppThemeWidgets.primaryButton(
+        ref: ref,
+        label: label,
+        onPressed: isInteractive ? onPressed : null,
+      );
+    }
 
     return MouseRegion(
       cursor: isInteractive
