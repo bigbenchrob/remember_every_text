@@ -6,6 +6,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/source
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqlite3/sqlite3.dart' as sqlite;
 
 void main() {
   late Directory tempDir;
@@ -105,6 +106,29 @@ void main() {
     expect(rows, hasLength(1));
     expect(rows.single['source_key'], liveChatDbSourceKey);
     expect(rows.single['source_kind'], liveChatDbSourceKind);
+  });
+
+  test('waits for a brief competing read lock before writing', () async {
+    final databasePath = '${tempDir.path}/macos_import_ss_test.db';
+    final competingReader = sqlite.sqlite3.open(databasePath);
+    competingReader.execute('BEGIN');
+    competingReader.select('SELECT COUNT(*) FROM messages');
+
+    final releaseReader = Future<void>.delayed(
+      const Duration(milliseconds: 100),
+      () {
+        competingReader.execute('COMMIT');
+        competingReader.dispose();
+      },
+    );
+
+    final batchId = await importDatabase.insertImportBatch(
+      sourceId: liveChatDbSourceId,
+      startedAtUtc: DateTime.utc(2026, 8, 20).toIso8601String(),
+    );
+    await releaseReader;
+
+    expect(batchId, greaterThan(0));
   });
 
   test('upgrades existing handles with local account identity', () async {

@@ -676,7 +676,8 @@ void main() {
           model: _narratorPanelModel(
             presentation: const HistoricalArchivesNarratorPresentationViewModel(
               kind: HistoricalArchivesNarratorPresentationKind.importingArchive,
-              narratorText: 'Adding this Messages folder to MessageLens.',
+              narratorText:
+                  'The messages from this folder are added. Now I\u2019m updating your combined MessageLens history so everything appears together.',
               instrumentationRows: [
                 HistoricalArchivesInstrumentationRowViewModel(
                   label: 'Adding messages from this folder',
@@ -731,6 +732,12 @@ void main() {
         );
 
         expect(find.text('ADDING MESSAGES FOLDER'), findsOneWidget);
+        expect(
+          find.text(
+            'The messages from this folder are added. Now I\u2019m updating your combined MessageLens history so everything appears together.',
+          ),
+          findsOneWidget,
+        );
         expect(find.text('Adding messages from this folder'), findsOneWidget);
         expect(
           find.text('Preparing conversations for browsing'),
@@ -766,7 +773,8 @@ void main() {
           importButtonEnabled: true,
           presentation: const HistoricalArchivesNarratorPresentationViewModel(
             kind: HistoricalArchivesNarratorPresentationKind.importFailed,
-            narratorText: "MessageLens couldn't finish adding this folder.",
+            narratorText:
+                'The messages from this folder are added. Now I\u2019m updating your combined MessageLens history so everything appears together.',
             instrumentationRows: [
               HistoricalArchivesInstrumentationRowViewModel(
                 label: 'Adding messages from this folder',

@@ -5139,3 +5139,31 @@ production preservation authority mechanically enforceable.
 - Confirmed that `OK` is acknowledgement only and that a successfully added
   cartouche receives neither orange correspondence nor automatic blue
   selection.
+
+## 2026-08-20 — Historical Archives import-ledger contention correction
+
+- Added Feature 26 response
+  `36-HISTORICAL-ARCHIVE-IMPORT-LEDGER-CONTENTION-CORRECTION.md`.
+- Recorded the staging failure caused by an Environment Readiness count probe
+  opening `macos_import_ss.db` while Historical Archives owned maintenance.
+- Codified that Environment Readiness opens neither derived store for
+  observational counts during admitted maintenance and instead reports the
+  truthful maintenance state.
+- Documented the canonical import ledger's three-second busy timeout as
+  bounded contention tolerance rather than resource authority.
+- Recorded that the failed staging attempt left one deterministic source
+  registration, no source-3 batch or message rows, no graph projection, and no
+  attachment operation, so the existing clone remains safe to retry.
+
+## 2026-08-20 — Historical Archives Narrator scope transition
+
+- Added Feature 26 response
+  `37-MAC-MESSAGES-NARRATOR-SCOPE-TRANSITION-IMPLEMENTATION.md`.
+- Recorded the typed transition from selected-folder source addition to
+  combined MessageLens history preparation.
+- Codified that Narrator intervenes when human meaning or scope changes, while
+  Directed Instrumentation retains ownership of factual work and exact
+  denominators within that scope.
+- Confirmed that the 8,882-message source count and the roughly 150,000-message
+  combined graph workload are distinct truthful facts, with no synthetic
+  progress introduced.

@@ -191,6 +191,12 @@ The Narrator appears at semantic boundaries:
 It uses one short heading and, only when needed, one supporting sentence. It
 does not report heartbeat status and does not repeat reassurance.
 
+Narrator should intervene when the human meaning or scope of the work changes,
+not merely because another implementation stage begins. Narrator explains
+changes in meaning and scope; Directed Instrumentation exposes the factual
+work within that scope. A technical stage transition that does not alter the
+human mental model does not earn new Narrator content.
+
 ### Directed Instrumentation
 
 Instrumentation shows only facts backed by a current check, operation, or

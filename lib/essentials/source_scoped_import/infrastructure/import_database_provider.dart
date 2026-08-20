@@ -10,6 +10,8 @@ import '../domain/ports/import_ledger_port.dart';
 class ImportDatabase implements ImportLedger {
   ImportDatabase._(this.database);
 
+  static const int _busyTimeoutMilliseconds = 3000;
+
   final Database database;
 
   static Future<ImportDatabase> open({
@@ -64,6 +66,9 @@ class ImportDatabase implements ImportLedger {
       },
       onOpen: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
+        // This tolerates brief SQLite contention. It does not authorize
+        // unrelated readers during admitted archive maintenance.
+        await db.execute('PRAGMA busy_timeout = $_busyTimeoutMilliseconds');
         await _createIncrementalProjectionIndexes(db);
       },
     );

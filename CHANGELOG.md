@@ -10,6 +10,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.65] — 2026-08-20
+
+### Changed
+
+- Historical Archives now explains when import work changes from the selected
+  Messages folder to the combined MessageLens history. Existing exact graph
+  progress counts remain unchanged while their larger scope is made explicit.
+
+## [0.2.64] — 2026-08-20
+
+### Fixed
+
+- Historical Archives no longer competes with Environment Readiness for the
+  source-scoped import ledger while admitted maintenance is active. The
+  canonical ledger connection also tolerates brief bounded SQLite contention,
+  preventing an otherwise valid folder addition from failing immediately with
+  `database is locked`.
+
 ## [0.2.63] — 2026-08-20
 
 ### Changed

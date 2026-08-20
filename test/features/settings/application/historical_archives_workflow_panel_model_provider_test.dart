@@ -336,6 +336,93 @@ void main() {
       expect(model.importButtonEnabled, isTrue);
     });
 
+    test('derives import narration from typed scope progression', () {
+      HistoricalArchivesNarratorPresentationViewModel presentationFor({
+        required HistoricalArchiveImportProgress progress,
+        String? failureDetail,
+      }) {
+        final failed = failureDetail != null;
+        final workflowState = buildInitialHistoricalArchivesWorkflowState()
+            .copyWith(
+              presentationContext: failed
+                  ? HistoricalArchivesPresentationContext.importFailed
+                  : HistoricalArchivesPresentationContext.importingArchive,
+              presentationStage: failed
+                  ? HistoricalArchivesPresentationStage.importFailed
+                  : HistoricalArchivesPresentationStage.importingArchive,
+              selectedFolderPath: '/tmp/archive',
+              importProgress: progress,
+              importFailureDetail: failureDetail,
+            );
+        return buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: !failed,
+          workflowState: workflowState,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        ).narratorPresentation!;
+      }
+
+      const sourceNarrator = 'Adding this Messages folder to MessageLens.';
+      const combinedHistoryNarrator =
+          'The messages from this folder are added. Now I\u2019m updating your '
+          'combined MessageLens history so everything appears together.';
+
+      expect(
+        presentationFor(
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.running,
+          ),
+        ).narratorText,
+        sourceNarrator,
+      );
+      expect(
+        presentationFor(
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+          ),
+        ).narratorText,
+        sourceNarrator,
+      );
+      expect(
+        presentationFor(
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+            preparingConversations: HistoricalArchiveImportStageStatus.running,
+          ),
+        ).narratorText,
+        combinedHistoryNarrator,
+      );
+      expect(
+        presentationFor(
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+            preparingConversations:
+                HistoricalArchiveImportStageStatus.succeeded,
+            verifyingImport: HistoricalArchiveImportStageStatus.running,
+          ),
+        ).narratorText,
+        combinedHistoryNarrator,
+      );
+      expect(
+        presentationFor(
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.failed,
+          ),
+          failureDetail: 'Source import failed.',
+        ).narratorText,
+        "MessageLens couldn't finish adding this folder.",
+      );
+      expect(
+        presentationFor(
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+          ),
+          failureDetail: 'Graph preparation did not begin.',
+        ).narratorText,
+        "MessageLens couldn't finish adding this folder.",
+      );
+    });
+
     test('maps real import progress into directed instrumentation', () {
       final workflowState = buildInitialHistoricalArchivesWorkflowState()
           .copyWith(
@@ -370,6 +457,11 @@ void main() {
       expect(
         model.narratorPresentation?.kind,
         HistoricalArchivesNarratorPresentationKind.importingArchive,
+      );
+      expect(
+        model.narratorPresentation?.narratorText,
+        'The messages from this folder are added. Now I\u2019m updating your '
+        'combined MessageLens history so everything appears together.',
       );
       expect(
         model.narratorPresentation?.instrumentationRows
@@ -433,6 +525,11 @@ void main() {
       expect(
         model.narratorPresentation?.kind,
         HistoricalArchivesNarratorPresentationKind.importFailed,
+      );
+      expect(
+        model.narratorPresentation?.narratorText,
+        'The messages from this folder are added. Now I\u2019m updating your '
+        'combined MessageLens history so everything appears together.',
       );
       expect(
         model.narratorPresentation?.instrumentationRows

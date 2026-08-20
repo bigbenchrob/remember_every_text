@@ -274,10 +274,14 @@ class _OnboardingEnvironmentEvaluator {
       queryOnly: true,
     );
 
-    final importRowCount = databaseProbeReader.readTableCount(
-      dbPath: sourceScopedImportDbPath,
-      tableName: 'messages',
-    );
+    // Maintenance owns the derived stores. Readiness reports that truthful
+    // state without opening either store for unrelated observational counts.
+    final importRowCount = isMaintenanceLocked
+        ? null
+        : databaseProbeReader.readTableCount(
+            dbPath: sourceScopedImportDbPath,
+            tableName: 'messages',
+          );
     final graphRowCount = isMaintenanceLocked
         ? null
         : databaseProbeReader.readTableCount(

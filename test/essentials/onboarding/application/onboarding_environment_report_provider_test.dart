@@ -7,15 +7,19 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
 import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
+import 'package:remember_this_text/essentials/db/application/conversation_graph_readiness.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show
         attachmentArchiveDirectoryProvider,
         dbMaintenanceLockProvider,
         overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_database_probe_reader.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_database_probe_reader_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/overlay_onboarding_failure_storage.dart';
+import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/sqlite_onboarding_database_probe_reader.dart';
 import 'package:remember_this_text/features/address_book_folders/application/address_book_folder_providers.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
@@ -312,11 +316,15 @@ void main() {
           appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
         );
         _createGraphDatabase(tempDir.path, graphComplete: false);
+        final databaseProbeReader = _RecordingOnboardingDatabaseProbeReader();
 
         container = ProviderContainer(
           overrides: [
             ..._lifecycleOverrides(),
             overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            onboardingDatabaseProbeReaderProvider.overrideWithValue(
+              databaseProbeReader,
+            ),
             dbMaintenanceLockProvider.overrideWith((ref) => true),
             onboardingFullDiskAccessProvider.overrideWith((ref) => true),
             onboardingMessagesDatabasePathProvider.overrideWith(
@@ -341,6 +349,29 @@ void main() {
         expect(report.state, OnboardingEnvironmentState.maintenanceInProgress);
         expect(report.blockerKind, OnboardingBlockerKind.none);
         expect(report.shouldResetAppDatabasesBeforeImport, isFalse);
+        expect(
+          databaseProbeReader.tableCountPaths,
+          isNot(
+            contains(
+              appDatabasePath(
+                AppDatabaseFile.sourceScopedImport,
+                databaseDirectory: tempDir.path,
+              ),
+            ),
+          ),
+        );
+        expect(
+          databaseProbeReader.tableCountPaths,
+          isNot(
+            contains(
+              appDatabasePath(
+                AppDatabaseFile.conversationGraph,
+                databaseDirectory: tempDir.path,
+              ),
+            ),
+          ),
+        );
+        expect(databaseProbeReader.graphReadinessPaths, isEmpty);
       },
     );
 
@@ -551,6 +582,44 @@ void main() {
       },
     );
   });
+}
+
+final class _RecordingOnboardingDatabaseProbeReader
+    implements OnboardingDatabaseProbeReader {
+  final SqliteOnboardingDatabaseProbeReader _delegate =
+      const SqliteOnboardingDatabaseProbeReader();
+  final List<String> tableCountPaths = <String>[];
+  final List<String> graphReadinessPaths = <String>[];
+
+  @override
+  OnboardingDatabaseProbe probeFile(String filePath, {int? rowCount}) {
+    return _delegate.probeFile(filePath, rowCount: rowCount);
+  }
+
+  @override
+  OnboardingDatabaseProbe probeDirectory(String directoryPath) {
+    return _delegate.probeDirectory(directoryPath);
+  }
+
+  @override
+  int? readTableCount({
+    required String dbPath,
+    required String tableName,
+    bool queryOnly = false,
+  }) {
+    tableCountPaths.add(dbPath);
+    return _delegate.readTableCount(
+      dbPath: dbPath,
+      tableName: tableName,
+      queryOnly: queryOnly,
+    );
+  }
+
+  @override
+  ConversationGraphReadiness readConversationGraphReadiness(String dbPath) {
+    graphReadinessPaths.add(dbPath);
+    return _delegate.readConversationGraphReadiness(dbPath);
+  }
 }
 
 String _createMessagesDatabase(

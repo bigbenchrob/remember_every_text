@@ -2136,9 +2136,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
       kind: failed
           ? HistoricalArchivesNarratorPresentationKind.importFailed
           : HistoricalArchivesNarratorPresentationKind.importingArchive,
-      narratorText: failed
-          ? "MessageLens couldn't finish adding this folder."
-          : 'Adding this Messages folder to MessageLens.',
+      narratorText: _importNarratorText(progress: progress, failed: failed),
       instrumentationRows: _importInstrumentationRows(progress),
       detailsLines: [
         ..._inspectionDetailsLines(
@@ -2236,6 +2234,24 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
     HistoricalArchivesPresentationStage.importFailed => null,
     HistoricalArchivesPresentationStage.laterWorkflow => null,
   };
+}
+
+String _importNarratorText({
+  required HistoricalArchiveImportProgress progress,
+  required bool failed,
+}) {
+  final combinedHistoryIsCurrent =
+      progress.preparingConversations !=
+          HistoricalArchiveImportStageStatus.waiting ||
+      progress.verifyingImport != HistoricalArchiveImportStageStatus.waiting;
+  if (combinedHistoryIsCurrent) {
+    return 'The messages from this folder are added. Now I\u2019m updating your '
+        'combined MessageLens history so everything appears together.';
+  }
+  if (failed) {
+    return "MessageLens couldn't finish adding this folder.";
+  }
+  return 'Adding this Messages folder to MessageLens.';
 }
 
 List<HistoricalArchivesInstrumentationRowViewModel> _importInstrumentationRows(
