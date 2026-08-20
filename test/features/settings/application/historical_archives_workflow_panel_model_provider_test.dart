@@ -854,6 +854,7 @@ void main() {
         );
         expect(completed.knownSourceReference, isNull);
         expect(completed.selectedKnownSourceKey, isNull);
+        expect(completed.importSuccessNotice, isNull);
         expect(archiveSources.successfulImportUpdateCount, 1);
         expect(
           historicalArchivesImportSuccessDwellDuration,
@@ -880,6 +881,23 @@ void main() {
         expect(settled.importProgress, isNull);
         expect(settled.knownSourceReference, isNull);
         expect(settled.selectedKnownSourceKey, isNull);
+        expect(settled.importSuccessNotice, isNotNull);
+        expect(archiveSources.successfulImportUpdateCount, 1);
+
+        final notice = settled.importSuccessNotice!;
+        workflow.dismissImportSuccessNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+        final acknowledged = container.read(historicalArchivesWorkflowProvider);
+        expect(acknowledged.importSuccessNotice, isNull);
+        expect(
+          acknowledged.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(acknowledged.selectedKnownSourceKey, isNull);
+        expect(acknowledged.knownSourceReference, isNull);
+        expect(archiveSources.successfulImportUpdateCount, 1);
       },
     );
 
@@ -967,6 +985,7 @@ void main() {
           HistoricalArchivesPresentationStage.readyForImport,
         );
         expect(newer.selectedFolderPath, '/tmp/new-archive');
+        expect(newer.importSuccessNotice, isNull);
       },
     );
 
@@ -1076,8 +1095,36 @@ void main() {
         );
         expect(failed.knownSourceReference, isNull);
         expect(failed.selectedKnownSourceKey, isNull);
+        expect(failed.importSuccessNotice, isNull);
       },
     );
+
+    test('stale success dismissal cannot change a newer presentation', () {
+      final workflow = _ControllableHistoricalArchivesWorkflow();
+      final container = ProviderContainer(
+        overrides: [
+          historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.read(historicalArchivesWorkflowProvider);
+
+      workflow.emitImportSuccessNotice();
+      workflow.resetPresentationContext();
+      workflow.emitNewCandidate();
+
+      workflow.dismissImportSuccessNotice(
+        noticeOccurrence: 1,
+        presentationSessionOccurrence: 0,
+      );
+
+      final state = container.read(historicalArchivesWorkflowProvider);
+      expect(
+        state.presentationContext,
+        HistoricalArchivesPresentationContext.addArchive,
+      );
+      expect(state.selectedFolderPath, '/tmp/new-archive');
+    });
 
     testWidgets(
       'duplicate add restores hub and emits a bounded reference only after dismissal',
@@ -2347,6 +2394,30 @@ INSERT INTO messages (ss_id, guid, is_from_me) VALUES
       expect(result.activityLog.single.label, 'Preflight failed');
     });
   });
+}
+
+final class _ControllableHistoricalArchivesWorkflow
+    extends HistoricalArchivesWorkflow {
+  @override
+  HistoricalArchivesWorkflowState build() =>
+      buildInitialHistoricalArchivesWorkflowState();
+
+  void emitImportSuccessNotice() {
+    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+      importSuccessNotice: const HistoricalArchivesImportSuccessNotice(
+        noticeOccurrence: 1,
+        presentationSessionOccurrence: 0,
+      ),
+    );
+  }
+
+  void emitNewCandidate() {
+    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+      presentationContext: HistoricalArchivesPresentationContext.addArchive,
+      presentationStage: HistoricalArchivesPresentationStage.readyForImport,
+      selectedFolderPath: '/tmp/new-archive',
+    );
+  }
 }
 
 final class _FakeFolderChooser implements HistoricalArchiveFolderChooser {

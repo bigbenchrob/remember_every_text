@@ -32,6 +32,7 @@ class _HistoricalArchivesPanelState
     extends ConsumerState<HistoricalArchivesPanel> {
   int? _presentedDuplicateNoticeOccurrence;
   int? _presentedInvalidFolderNoticeOccurrence;
+  int? _presentedImportSuccessNoticeOccurrence;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +85,32 @@ class _HistoricalArchivesPanelState
             return;
           }
           unawaited(_showInvalidFolderDialog(next));
+        });
+      },
+    );
+    ref.listen<HistoricalArchivesImportSuccessNotice?>(
+      historicalArchivesWorkflowProvider.select(
+        (state) => state.importSuccessNotice,
+      ),
+      (previous, next) {
+        if (next == null ||
+            next.noticeOccurrence == _presentedImportSuccessNoticeOccurrence) {
+          return;
+        }
+        _presentedImportSuccessNoticeOccurrence = next.noticeOccurrence;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          final currentNotice = ref
+              .read(historicalArchivesWorkflowProvider)
+              .importSuccessNotice;
+          if (currentNotice?.noticeOccurrence != next.noticeOccurrence ||
+              currentNotice?.presentationSessionOccurrence !=
+                  next.presentationSessionOccurrence) {
+            return;
+          }
+          unawaited(_showImportSuccessDialog(next));
         });
       },
     );
@@ -482,6 +509,42 @@ class _HistoricalArchivesPanelState
     ref
         .read(historicalArchivesWorkflowActionsProvider.notifier)
         .dismissInvalidFolderNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+  }
+
+  Future<void> _showImportSuccessDialog(
+    HistoricalArchivesImportSuccessNotice notice,
+  ) async {
+    await showCupertinoDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CupertinoAlertDialog(
+          title: const Text('Messages folder added'),
+          content: const Text(
+            'The Messages folder you selected has been successfully added to MessageLens.\n\n'
+            'You should now see the additional messages in your message timelines and heatmaps.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+    ref
+        .read(historicalArchivesWorkflowActionsProvider.notifier)
+        .dismissImportSuccessNotice(
           noticeOccurrence: notice.noticeOccurrence,
           presentationSessionOccurrence: notice.presentationSessionOccurrence,
         );

@@ -407,6 +407,14 @@ class ButtonColors {
   /// Enabled secondary button background.
   Color get secondaryBackground => _t.surfaces.control;
 
+  /// Pointer-hover treatment composited over the secondary background.
+  Color get secondaryBackgroundHovered =>
+      Color.alphaBlend(_t.surfaces.hover, secondaryBackground);
+
+  /// Pointer-down treatment composited over the secondary background.
+  Color get secondaryBackgroundPressed =>
+      Color.alphaBlend(_t.surfaces.pressed, secondaryBackground);
+
   /// Enabled secondary button text.
   Color get secondaryForeground => _t.content.textPrimary;
 

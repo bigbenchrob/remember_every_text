@@ -161,6 +161,65 @@ void main() {
       );
     });
 
+    testWidgets(
+      'terminal import success is acknowledged over the restored empty hub',
+      (tester) async {
+        final workflow = _ImportSuccessNoticeHistoricalArchivesWorkflow();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+              historicalArchivesWorkflowPanelModelProvider.overrideWith(
+                (ref) => _narratorPanelModel(isHub: true, presentation: null),
+              ),
+              developerModeProvider.overrideWith(
+                () => _FakeDeveloperMode(DeveloperModeValue.user),
+              ),
+            ],
+            child: const CupertinoApp(home: HistoricalArchivesPanel()),
+          ),
+        );
+        await tester.pump();
+
+        workflow.emitImportSuccessNotice();
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+        expect(find.text('Messages folder added'), findsOneWidget);
+        expect(
+          find.text(
+            'The Messages folder you selected has been successfully added to MessageLens.\n\n'
+            'You should now see the additional messages in your message timelines and heatmaps.',
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('historical-archives-empty-hub')),
+          findsOneWidget,
+        );
+        expect(
+          workflow.state.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(workflow.state.selectedKnownSourceKey, isNull);
+        expect(workflow.state.knownSourceReference, isNull);
+
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CupertinoAlertDialog), findsNothing);
+        expect(workflow.dismissCallCount, 1);
+        expect(workflow.state.importSuccessNotice, isNull);
+        expect(
+          workflow.state.presentationContext,
+          HistoricalArchivesPresentationContext.hub,
+        );
+        expect(workflow.state.selectedKnownSourceKey, isNull);
+        expect(workflow.state.knownSourceReference, isNull);
+      },
+    );
+
     testWidgets('no-source narrator shows only the truthful invitation', (
       tester,
     ) async {
@@ -1207,6 +1266,35 @@ final class _InvalidFolderNoticeHistoricalArchivesWorkflow
   }) {
     dismissCallCount += 1;
     state = buildInitialHistoricalArchivesWorkflowState();
+  }
+}
+
+final class _ImportSuccessNoticeHistoricalArchivesWorkflow
+    extends HistoricalArchivesWorkflow {
+  var dismissCallCount = 0;
+  var _noticeOccurrence = 0;
+
+  @override
+  HistoricalArchivesWorkflowState build() =>
+      buildInitialHistoricalArchivesWorkflowState();
+
+  void emitImportSuccessNotice() {
+    _noticeOccurrence += 1;
+    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+      importSuccessNotice: HistoricalArchivesImportSuccessNotice(
+        noticeOccurrence: _noticeOccurrence,
+        presentationSessionOccurrence: 0,
+      ),
+    );
+  }
+
+  @override
+  void dismissImportSuccessNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    dismissCallCount += 1;
+    state = state.copyWith(clearImportSuccessNotice: true);
   }
 }
 

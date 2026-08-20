@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../config/theme/widgets/buttons/app_secondary_button.dart';
 import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
 import '../../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
@@ -195,32 +196,18 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             ),
             height: AppSpacing.xl,
           ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.surfaces.control,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-            ),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () async {
-                  await ref
-                      .read(historicalArchivesWorkflowActionsProvider.notifier)
-                      .chooseMessagesFolder();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  child: Text(
-                    'Choose Messages Folder...',
-                    style: typography.controlValue.copyWith(
-                      color: colors.accents.primary,
-                    ),
-                  ),
+          AppSecondaryButton(
+            onPressed: () async {
+              await ref
+                  .read(historicalArchivesWorkflowActionsProvider.notifier)
+                  .chooseMessagesFolder();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Text(
+                'Choose Messages Folder...',
+                style: typography.controlValue.copyWith(
+                  color: colors.accents.primary,
                 ),
               ),
             ),

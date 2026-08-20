@@ -50,6 +50,18 @@ class HistoricalArchivesWorkflowActions
         );
   }
 
+  void dismissImportSuccessNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .dismissImportSuccessNotice(
+          noticeOccurrence: noticeOccurrence,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        );
+  }
+
   Future<void> showKnownSource({required String sourceKey}) async {
     await ref
         .read(historicalArchivesWorkflowProvider.notifier)

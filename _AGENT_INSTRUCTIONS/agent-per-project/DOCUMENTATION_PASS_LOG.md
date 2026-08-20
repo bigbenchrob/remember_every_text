@@ -5127,3 +5127,15 @@ production preservation authority mechanically enforceable.
   Relationships units.
 - Preserved the three-stage import story, five-unit hierarchy, completion
   dwell, source safety, and DateConverter invariant.
+
+## 2026-08-20 — Historical Archives completion and chooser feedback
+
+- Added Feature 26 response
+  `35-MAC-MESSAGES-IMPORT-COMPLETION-AND-CHOOSER-FEEDBACK-IMPLEMENTATION.md`.
+- Recorded the shared secondary-button normal, hover, and pressed grammar used
+  by **Choose Messages Folder...**, with no artificial delay before Finder.
+- Documented the exact terminal-success prerequisites, preserved 750 ms
+  all-Done dwell, restored-hub ordering, and process-only success notice.
+- Confirmed that `OK` is acknowledgement only and that a successfully added
+  cartouche receives neither orange correspondence nor automatic blue
+  selection.

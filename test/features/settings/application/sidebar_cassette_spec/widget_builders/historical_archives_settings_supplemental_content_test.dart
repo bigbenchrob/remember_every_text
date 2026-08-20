@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
 import 'package:remember_this_text/config/theme/theme_typography.dart';
+import 'package:remember_this_text/config/theme/widgets/buttons/app_secondary_button.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
@@ -329,6 +331,59 @@ void main() {
 
       expect(workflow.chooseMessagesFolderCallCount, 1);
     });
+
+    testWidgets(
+      'chooser uses the shared secondary button and acknowledges pointer down',
+      (tester) async {
+        final workflow = _TestHistoricalArchivesWorkflow();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+            ],
+            child: const CupertinoApp(
+              home: HistoricalArchivesSettingsSupplementalContent(
+                payload: HistoricalArchivesSettingsCassettePayload(),
+              ),
+            ),
+          ),
+        );
+
+        final button = find.byType(AppSecondaryButton);
+        final container = ProviderScope.containerOf(tester.element(button));
+        final colors = container.read(themeColorsProvider.notifier);
+        BoxDecoration decoration() {
+          return tester
+                  .widget<AnimatedContainer>(
+                    find.descendant(
+                      of: button,
+                      matching: find.byType(AnimatedContainer),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+        }
+
+        expect(decoration().color, colors.buttons.secondaryBackground);
+        final pointer = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await pointer.addPointer(location: Offset.zero);
+        await pointer.moveTo(tester.getCenter(button));
+        await tester.pumpAndSettle();
+        expect(decoration().color, colors.buttons.secondaryBackgroundHovered);
+
+        await pointer.down(tester.getCenter(button));
+        await tester.pump(const Duration(milliseconds: 120));
+        expect(decoration().color, colors.buttons.secondaryBackgroundPressed);
+        expect(workflow.chooseMessagesFolderCallCount, 0);
+
+        await pointer.up();
+        await tester.pump();
+        expect(workflow.chooseMessagesFolderCallCount, 1);
+      },
+    );
 
     testWidgets('existing-source context keeps add action available', (
       tester,

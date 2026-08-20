@@ -68,6 +68,7 @@ panel. See:
 - [Mac Messages Ingestion Narrator And Directed Instrumentation](responses/32-MAC-MESSAGES-INGESTION-NARRATOR-DIRECTED-INSTRUMENTATION-IMPLEMENTATION.md)
 - [Mac Messages Ingestion Temporal Coherence](responses/33-MAC-MESSAGES-INGESTION-TEMPORAL-COHERENCE-IMPLEMENTATION.md)
 - [Mac Messages Import Responsiveness And Real Progress](responses/34-MAC-MESSAGES-IMPORT-RESPONSIVENESS-AND-REAL-PROGRESS-IMPLEMENTATION.md)
+- [Mac Messages Import Completion And Chooser Feedback](responses/35-MAC-MESSAGES-IMPORT-COMPLETION-AND-CHOOSER-FEEDBACK-IMPLEMENTATION.md)
 
 The MessageLens-folder arm and historical attachment-payload recovery remain
 out of scope.

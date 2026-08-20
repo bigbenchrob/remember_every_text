@@ -149,6 +149,20 @@ final class HistoricalArchivesInvalidFolderNotice {
   final int presentationSessionOccurrence;
 }
 
+/// One-use acknowledgement of a terminally successful archive import.
+///
+/// Both occurrences are process-only guards. Import finalization and source
+/// membership are complete before this notice exists.
+final class HistoricalArchivesImportSuccessNotice {
+  const HistoricalArchivesImportSuccessNotice({
+    required this.noticeOccurrence,
+    required this.presentationSessionOccurrence,
+  });
+
+  final int noticeOccurrence;
+  final int presentationSessionOccurrence;
+}
+
 const historicalArchivesReferenceFadeInDuration = Duration(milliseconds: 750);
 const historicalArchivesReferenceHoldDuration = Duration(milliseconds: 1000);
 const historicalArchivesReferenceFadeOutDuration = Duration(milliseconds: 2000);
@@ -461,6 +475,7 @@ final class HistoricalArchivesWorkflowState {
     this.knownSourceReference,
     this.duplicateFolderNotice,
     this.invalidFolderNotice,
+    this.importSuccessNotice,
     this.selectedKnownSourceKey,
     this.removalFailureDetail,
     this.removalProgress,
@@ -486,6 +501,7 @@ final class HistoricalArchivesWorkflowState {
   final HistoricalArchivesKnownSourceReference? knownSourceReference;
   final HistoricalArchivesDuplicateFolderNotice? duplicateFolderNotice;
   final HistoricalArchivesInvalidFolderNotice? invalidFolderNotice;
+  final HistoricalArchivesImportSuccessNotice? importSuccessNotice;
 
   /// Exact-key selection established only by a cartouche action this session.
   final String? selectedKnownSourceKey;
@@ -519,6 +535,8 @@ final class HistoricalArchivesWorkflowState {
     bool clearDuplicateFolderNotice = false,
     HistoricalArchivesInvalidFolderNotice? invalidFolderNotice,
     bool clearInvalidFolderNotice = false,
+    HistoricalArchivesImportSuccessNotice? importSuccessNotice,
+    bool clearImportSuccessNotice = false,
     String? selectedKnownSourceKey,
     bool clearSelectedKnownSourceKey = false,
     String? removalFailureDetail,
@@ -565,6 +583,9 @@ final class HistoricalArchivesWorkflowState {
       invalidFolderNotice: clearInvalidFolderNotice
           ? null
           : invalidFolderNotice ?? this.invalidFolderNotice,
+      importSuccessNotice: clearImportSuccessNotice
+          ? null
+          : importSuccessNotice ?? this.importSuccessNotice,
       selectedKnownSourceKey: clearSelectedKnownSourceKey
           ? null
           : selectedKnownSourceKey ?? this.selectedKnownSourceKey,
@@ -778,6 +799,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   var _nextReferenceOccurrence = 0;
   var _nextDuplicateNoticeOccurrence = 0;
   var _nextInvalidFolderNoticeOccurrence = 0;
+  var _nextImportSuccessNoticeOccurrence = 0;
   var _presentationSessionOccurrence = 0;
   Timer? _referenceClearTimer;
 
@@ -1061,6 +1083,23 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     state = state.copyWith(clearInvalidFolderNotice: true);
   }
 
+  void dismissImportSuccessNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    final notice = state.importSuccessNotice;
+    if (notice == null ||
+        notice.noticeOccurrence != noticeOccurrence ||
+        notice.presentationSessionOccurrence != presentationSessionOccurrence ||
+        _presentationSessionOccurrence != presentationSessionOccurrence ||
+        state.presentationContext !=
+            HistoricalArchivesPresentationContext.hub) {
+      return;
+    }
+
+    state = state.copyWith(clearImportSuccessNotice: true);
+  }
+
   void resetPresentationContext() {
     _presentationSessionOccurrence += 1;
     _referenceClearTimer?.cancel();
@@ -1070,7 +1109,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         state.selectedKnownSourceKey == null &&
         state.knownSourceReference == null &&
         state.duplicateFolderNotice == null &&
-        state.invalidFolderNotice == null) {
+        state.invalidFolderNotice == null &&
+        state.importSuccessNotice == null) {
       return;
     }
     state = buildInitialHistoricalArchivesWorkflowState();
@@ -1767,7 +1807,13 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         state.importProgress?.isComplete != true) {
       return;
     }
-    state = buildInitialHistoricalArchivesWorkflowState();
+    _nextImportSuccessNoticeOccurrence += 1;
+    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
+      importSuccessNotice: HistoricalArchivesImportSuccessNotice(
+        noticeOccurrence: _nextImportSuccessNoticeOccurrence,
+        presentationSessionOccurrence: presentationSessionOccurrence,
+      ),
+    );
   }
 
   void _prependActivityLog(HistoricalArchivesLogEntryViewModel entry) {

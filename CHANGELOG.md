@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.63] — 2026-08-20
+
+### Changed
+
+- Historical Archives now gives the neutral Messages-folder chooser explicit
+  theme-owned hover and pressed feedback. A fully verified folder addition
+  restores the stable archive hub, leaves its new cartouche ordinary and
+  unselected, and then presents a concise success acknowledgement over that
+  truthful completed state.
+
 ## [0.2.62] — 2026-08-20
 
 ### Changed
