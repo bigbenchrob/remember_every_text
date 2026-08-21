@@ -77,9 +77,13 @@ panel. See:
 - [Historical Archives Typed Presentation State](responses/41-HISTORICAL-ARCHIVES-TYPED-PRESENTATION-STATE-IMPLEMENTATION.md)
 - [Historical Archives Stable Center Track Skeleton](responses/42-HISTORICAL-ARCHIVES-STABLE-CENTER-TRACK-SKELETON-IMPLEMENTATION.md)
 - [Historical Archive Canonical Source Identity](responses/43-HISTORICAL-ARCHIVE-CANONICAL-SOURCE-IDENTITY-IMPLEMENTATION.md)
+- [MessageLens Data-Folder Historical Archives Audit](responses/44-MESSAGELENS-DATA-FOLDER-HISTORICAL-ARCHIVES-AUDIT.md)
 
-The MessageLens-folder arm and historical attachment-payload recovery remain
-out of scope.
+The MessageLens-folder arm remains disabled. Its read-only identity and
+qualification foundation may now proceed, but source-fact ingestion is blocked
+until donor-qualified provenance and lineage are defined. Attachment and
+overlay recovery remain separate unresolved merge domains. Historical
+attachment-payload recovery also remains out of scope.
 
 ## Original Emergency Objective
 

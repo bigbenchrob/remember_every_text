@@ -5252,3 +5252,23 @@ production preservation authority mechanically enforceable.
   D4 remains the only deferred finding from that sequence.
 - Updated the project database index and Feature 26 navigation so the identity
   rule is unavoidable in future Historical Archives work.
+
+## 2026-08-21 - MessageLens data-folder Historical Archives audit
+
+- Added Feature 26 response
+  `44-MESSAGELENS-DATA-FOLDER-HISTORICAL-ARCHIVES-AUDIT.md` with the canonical
+  archive anatomy, qualification boundary, identity recommendation, data
+  classification, provenance strategy, and staged implementation boundary for
+  the future MessageLens source arm.
+- Established source kind plus archive instance ID as the recommended durable
+  outer source identity; path remains locator evidence only, and byte-identical
+  copies retaining the marker remain one logical source.
+- Identified donor-qualified provenance as the fact-import gate because raw
+  donor keys such as `live-chat-db` and `live-address-book` are recipient-local
+  reserved identities and cannot be merged directly.
+- Separated source-fact import, attachment preservation, and overlay recovery
+  into distinct contracts while preserving the existing sealed presentation
+  model, A-I Track skeleton, mutation authority, and source identity authority.
+- Confirmed that read-only identity/qualification work may begin with the
+  MessageLens segment still disabled, while mutation remains blocked pending
+  provenance, lineage, attachment, and overlay decisions.
