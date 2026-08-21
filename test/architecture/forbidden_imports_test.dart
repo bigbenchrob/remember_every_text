@@ -4019,6 +4019,25 @@ void main() {
       },
     );
 
+    test(
+      'Conversation graph readiness suppresses observation during maintenance',
+      () async {
+        final source = await File(
+          'lib/essentials/db/feature_level_providers/'
+          'conversation_graph_readiness_provider.dart',
+        ).readAsString();
+        final maintenanceGuard = source.indexOf(
+          'ref.watch(dbMaintenanceLockProvider)',
+        );
+        final graphObservation = source.indexOf(
+          'SqliteConversationGraphReadinessChecker().checkPath',
+        );
+
+        expect(maintenanceGuard, greaterThanOrEqualTo(0));
+        expect(graphObservation, greaterThan(maintenanceGuard));
+      },
+    );
+
     test('Database health audit service stays IO agnostic', () async {
       final offenders = await _findDatabaseHealthAuditServiceIoOffenders();
 
@@ -7033,6 +7052,49 @@ void main() {
             'Actual offenders:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'Historical archive qualification does not depend on status labels',
+      () async {
+        final source = await File(
+          'lib/features/settings/application/'
+          'historical_archives_workflow_panel_model_provider.dart',
+        ).readAsString();
+        final uncommented = _stripComments(source);
+
+        expect(
+          RegExp(r'chatDbStatusLabel\s*(?:==|!=)').hasMatch(uncommented),
+          isFalse,
+          reason:
+              'Historical Archives workflow decisions must consume '
+              'ArchiveSourceInspectionStatus. Human-readable labels are '
+              'presentation only.',
+        );
+      },
+    );
+
+    test(
+      'Archive import and removal share only neutral graph observations',
+      () async {
+        final removalSource = await File(
+          'lib/essentials/conversation_graph/application/archives/'
+          'source_scoped_archive_graph_removal_service.dart',
+        ).readAsString();
+        final imports = _extractImports(_stripComments(removalSource)).toList();
+
+        expect(
+          imports,
+          contains('source_scoped_archive_graph_projection_observation.dart'),
+        );
+        expect(
+          imports,
+          isNot(contains('source_scoped_archive_graph_import_service.dart')),
+          reason:
+              'Removal may share graph projection observation values, but it '
+              'must not depend on the import operation service.',
+        );
+      },
+    );
 
     test('Historical archives UI uses workflow action boundary', () async {
       final offenders =

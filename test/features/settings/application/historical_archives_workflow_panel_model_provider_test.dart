@@ -12,6 +12,7 @@ import 'package:remember_this_text/essentials/archive_environment/feature_level_
         ArchiveMutationCoordinatorState,
         archiveMutationCoordinatorProvider;
 import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_projection_observation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/attachments/attachment_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_handle_joins/chat_to_handle_projection_repository.dart';
@@ -283,7 +284,7 @@ void main() {
         folderPath: '/tmp/archive',
         chatDbPath: '/tmp/archive/chat.db',
         sourceLabel: 'archive',
-        chatDbStatusLabel: 'Found and readable',
+        chatDbStatus: ArchiveSourceInspectionStatus.readable,
         attachmentsStatusLabel: 'Found',
         totalMessages: 8882,
         totalChats: 140,
@@ -515,7 +516,7 @@ void main() {
         folderPath: '/tmp/archive',
         chatDbPath: '/tmp/archive/chat.db',
         sourceLabel: 'archive',
-        chatDbStatusLabel: 'Found and readable',
+        chatDbStatus: ArchiveSourceInspectionStatus.readable,
         attachmentsStatusLabel: 'Not found',
         totalMessages: 42,
         totalChats: 4,
@@ -578,7 +579,7 @@ void main() {
         folderPath: '/tmp/archive',
         chatDbPath: '/tmp/archive/chat.db',
         sourceLabel: 'archive',
-        chatDbStatusLabel: 'Found and readable',
+        chatDbStatus: ArchiveSourceInspectionStatus.readable,
         attachmentsStatusLabel: 'Not found',
         totalMessages: 42,
         totalChats: 4,
@@ -636,7 +637,7 @@ void main() {
           folderPath: '/tmp/archive',
           chatDbPath: '/tmp/archive/chat.db',
           sourceLabel: 'archive',
-          chatDbStatusLabel: 'Found and readable',
+          chatDbStatus: ArchiveSourceInspectionStatus.readable,
           attachmentsStatusLabel: 'Not found',
           totalMessages: 8882,
           totalChats: 4,
@@ -702,7 +703,7 @@ void main() {
       'failed inspection distinguishes deterministic and retryable failure',
       () {
         HistoricalArchivesWorkflowPanelViewModel buildFailure(
-          String chatDbStatus,
+          ArchiveSourceInspectionStatus chatDbStatus,
         ) {
           final workflowState = buildInitialHistoricalArchivesWorkflowState()
               .copyWith(
@@ -712,7 +713,8 @@ void main() {
                     HistoricalArchivesPresentationStage.inspectionFailed,
                 selectedFolderPath: '/tmp/archive',
                 archiveRemovalTargetChatDbPath: '/tmp/archive/chat.db',
-                chatDbStatusLabel: chatDbStatus,
+                chatDbStatus: chatDbStatus,
+                chatDbStatusLabel: chatDbStatus.label,
                 sourceLabel: 'archive',
                 preflight: const HistoricalArchivesPreflightViewModel(
                   status: HistoricalArchivesPreflightStatus.failed,
@@ -729,12 +731,14 @@ void main() {
         }
 
         expect(
-          buildFailure('Missing').narratorPresentation!.retryInspectionEnabled,
+          buildFailure(
+            ArchiveSourceInspectionStatus.missing,
+          ).narratorPresentation!.retryInspectionEnabled,
           isFalse,
         );
         expect(
           buildFailure(
-            'Read failed',
+            ArchiveSourceInspectionStatus.readFailed,
           ).narratorPresentation!.retryInspectionEnabled,
           isTrue,
         );
@@ -781,9 +785,8 @@ void main() {
             folderPath: '/tmp/archive',
             sourceLabel: 'archive',
             chatDbPath: '/tmp/archive/chat.db',
-            chatDbStatusLabel: 'Found and readable',
+            chatDbStatus: ArchiveSourceInspectionStatus.readable,
             attachmentsStatusLabel: 'Not found',
-            isReadable: true,
             detail: 'Archive source is readable.',
             dryRunEstimate: ArchiveSourceDryRunEstimate.available(
               comparableGuidCount: 42,
@@ -2400,9 +2403,8 @@ void main() {
             folderPath: '/tmp/archive',
             sourceLabel: 'archive',
             chatDbPath: '/tmp/archive/chat.db',
-            chatDbStatusLabel: 'Found and readable',
+            chatDbStatus: ArchiveSourceInspectionStatus.readable,
             attachmentsStatusLabel: 'Not found',
-            isReadable: true,
             detail: 'Archive source is readable.',
             dryRunEstimate: ArchiveSourceDryRunEstimate.available(
               comparableGuidCount: 42,
@@ -2659,9 +2661,8 @@ final class _ImmediateArchiveSourceInspector implements ArchiveSourceInspector {
         folderPath: folderPath,
         sourceLabel: 'archive',
         chatDbPath: '$folderPath/chat.db',
-        chatDbStatusLabel: 'Found and readable',
+        chatDbStatus: ArchiveSourceInspectionStatus.readable,
         attachmentsStatusLabel: 'Not found',
-        isReadable: true,
         detail: 'Archive source is readable.',
         dryRunEstimate: const ArchiveSourceDryRunEstimate.available(
           comparableGuidCount: 42,
@@ -2689,9 +2690,8 @@ final class _MissingArchiveSourceInspector implements ArchiveSourceInspector {
         folderPath: folderPath,
         sourceLabel: 'not-an-archive',
         chatDbPath: '$folderPath/chat.db',
-        chatDbStatusLabel: 'Missing',
+        chatDbStatus: ArchiveSourceInspectionStatus.missing,
         attachmentsStatusLabel: 'Not found',
-        isReadable: false,
         detail: 'The selected folder does not contain chat.db.',
         dryRunEstimate: const ArchiveSourceDryRunEstimate.unavailable(
           unavailableReason: 'source chat.db is missing.',
@@ -2712,9 +2712,8 @@ final class _ReadFailedArchiveSourceInspector
         folderPath: folderPath,
         sourceLabel: 'unreadable-archive',
         chatDbPath: '$folderPath/chat.db',
-        chatDbStatusLabel: 'Read failed',
+        chatDbStatus: ArchiveSourceInspectionStatus.readFailed,
         attachmentsStatusLabel: 'Not found',
-        isReadable: false,
         detail: 'MessageLens could not safely read chat.db.',
         dryRunEstimate: const ArchiveSourceDryRunEstimate.unavailable(
           unavailableReason: 'source chat.db could not be read safely.',

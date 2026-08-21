@@ -1,11 +1,34 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers/db_maintenance_lock_provider.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/repositories/sqlite_conversation_graph_readiness_checker.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
+  test(
+    'readiness reports maintenance without constructing graph observation',
+    () async {
+      final container = ProviderContainer(
+        overrides: [dbMaintenanceLockProvider.overrideWith((ref) => true)],
+      );
+      addTearDown(container.dispose);
+
+      final readiness = await container.read(
+        conversationGraphReadinessProvider.future,
+      );
+
+      expect(readiness.isReady, isFalse);
+      expect(readiness.reason, 'database maintenance is active');
+      expect(readiness.messageCount, 0);
+      expect(readiness.chatCount, 0);
+      expect(readiness.chatToMessageEdgeCount, 0);
+    },
+  );
+
   group('SqliteConversationGraphReadinessChecker', () {
     late Directory tempDir;
 

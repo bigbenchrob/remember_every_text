@@ -5195,3 +5195,16 @@ production preservation authority mechanically enforceable.
   and a 1,500 ms all-Done perceptual receipt after execution completes.
 - Propagated the reusable spatial-continuity and completed-evidence principles
   to the canonical Presence Rendering document.
+
+## 2026-08-20 — Historical Archives architecture-conformance audit
+
+- Added Feature 26 response
+  `40-HISTORICAL-ARCHIVES-ARCHITECTURE-CONFORMANCE-AUDIT.md` with the explicit
+  architecture checklist, complete workflow-state table, database lifecycle
+  map, risk-ranked findings, and bounded remediation boundary.
+- Codified that all ordinary graph-readiness observation, not only Environment
+  Readiness row counts, must stop before opening protected derived stores
+  during admitted maintenance.
+- Recorded the deferred design questions around workflow-state mechanical
+  impossibility, the Historical Archives state-dependent center Track
+  boundary, and offline-capable canonical source identity.

@@ -1,11 +1,26 @@
+enum ArchiveSourceInspectionStatus {
+  missing,
+  readable,
+  readFailed,
+  unavailable;
+
+  String get label {
+    return switch (this) {
+      ArchiveSourceInspectionStatus.missing => 'Missing',
+      ArchiveSourceInspectionStatus.readable => 'Found and readable',
+      ArchiveSourceInspectionStatus.readFailed => 'Read failed',
+      ArchiveSourceInspectionStatus.unavailable => 'Unavailable',
+    };
+  }
+}
+
 final class ArchiveSourceInspection {
   const ArchiveSourceInspection({
     required this.folderPath,
     required this.sourceLabel,
     required this.chatDbPath,
-    required this.chatDbStatusLabel,
+    required this.chatDbStatus,
     required this.attachmentsStatusLabel,
-    required this.isReadable,
     required this.detail,
     required this.dryRunEstimate,
     this.totalMessages,
@@ -20,9 +35,8 @@ final class ArchiveSourceInspection {
   final String folderPath;
   final String sourceLabel;
   final String chatDbPath;
-  final String chatDbStatusLabel;
+  final ArchiveSourceInspectionStatus chatDbStatus;
   final String attachmentsStatusLabel;
-  final bool isReadable;
   final String detail;
   final ArchiveSourceDryRunEstimate dryRunEstimate;
   final int? totalMessages;
@@ -32,6 +46,12 @@ final class ArchiveSourceInspection {
   final String? earliestMessageUtc;
   final String? latestMessageUtc;
   final String? dateRangeUnavailableReason;
+
+  String get chatDbStatusLabel => chatDbStatus.label;
+
+  bool get isReadable {
+    return chatDbStatus == ArchiveSourceInspectionStatus.readable;
+  }
 }
 
 final class ArchiveSourceDryRunEstimate {

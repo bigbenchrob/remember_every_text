@@ -10,10 +10,7 @@ import '../message_attachment_joins/message_to_attachment_projector.dart';
 import '../messages/message_projector.dart';
 import '../projection_work_progress.dart';
 import 'graph_projection_resetter.dart';
-import 'source_scoped_archive_graph_import_service.dart'
-    show
-        SourceScopedArchiveGraphProjectionProgress,
-        SourceScopedArchiveGraphProjectionUnit;
+import 'source_scoped_archive_graph_projection_observation.dart';
 
 enum SourceScopedArchiveGraphRemovalStage {
   removingImportedFacts,

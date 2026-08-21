@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
+import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 
@@ -32,6 +33,7 @@ void main() {
 
       expect(inspection.isReadable, isTrue);
       expect(inspection.chatDbStatusLabel, 'Found and readable');
+      expect(inspection.chatDbStatus, ArchiveSourceInspectionStatus.readable);
       expect(inspection.attachmentsStatusLabel, 'Found');
       expect(inspection.totalMessages, 1);
       expect(inspection.totalChats, 1);
@@ -76,6 +78,7 @@ void main() {
 
       expect(inspection.isReadable, isFalse);
       expect(inspection.chatDbStatusLabel, 'Missing');
+      expect(inspection.chatDbStatus, ArchiveSourceInspectionStatus.missing);
       expect(inspection.detail, 'The selected folder no longer exists.');
     });
 
@@ -92,6 +95,7 @@ void main() {
 
       expect(inspection.isReadable, isFalse);
       expect(inspection.chatDbStatusLabel, 'Missing');
+      expect(inspection.chatDbStatus, ArchiveSourceInspectionStatus.missing);
       expect(inspection.attachmentsStatusLabel, 'Found');
     });
 
@@ -116,6 +120,7 @@ void main() {
 
       expect(inspection.isReadable, isTrue);
       expect(inspection.chatDbStatusLabel, 'Found and readable');
+      expect(inspection.chatDbStatus, ArchiveSourceInspectionStatus.readable);
       expect(inspection.attachmentsStatusLabel, 'Not found');
     });
   });

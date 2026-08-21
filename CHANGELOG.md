@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.68] — 2026-08-20
+
+### Fixed
+
+- Historical Archives source qualification now uses typed evidence instead of
+  display labels, ordinary graph-readiness observation stays out of the
+  protected graph during admitted maintenance, and import/removal share a
+  neutral graph-projection progress contract without depending on one
+  another's operation service.
+
 ## [0.2.67] — 2026-08-20
 
 ### Changed

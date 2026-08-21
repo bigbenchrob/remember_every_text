@@ -14,6 +14,7 @@ import '../message_attachment_joins/message_to_attachment_projector.dart';
 import '../messages/message_projection_repository.dart';
 import '../messages/message_projector.dart';
 import '../projection_work_progress.dart';
+import 'source_scoped_archive_graph_projection_observation.dart';
 
 enum SourceScopedArchiveGraphImportStage {
   importingSourceFacts,
@@ -24,30 +25,6 @@ enum SourceScopedArchiveGraphImportStageTransition {
   started,
   progressed,
   completed,
-}
-
-enum SourceScopedArchiveGraphProjectionUnit {
-  participants,
-  conversations,
-  messages,
-  attachments,
-  relationships,
-}
-
-final class SourceScopedArchiveGraphProjectionProgress {
-  const SourceScopedArchiveGraphProjectionProgress({
-    required this.activeUnit,
-    required this.completedUnitCount,
-    required this.totalUnitCount,
-    this.completedWorkCount,
-    this.totalWorkCount,
-  });
-
-  final SourceScopedArchiveGraphProjectionUnit activeUnit;
-  final int completedUnitCount;
-  final int totalUnitCount;
-  final int? completedWorkCount;
-  final int? totalWorkCount;
 }
 
 final class SourceScopedArchiveGraphImportObservation {

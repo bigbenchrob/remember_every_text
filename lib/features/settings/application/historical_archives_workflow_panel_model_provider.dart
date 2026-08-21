@@ -176,7 +176,7 @@ final class HistoricalArchivesInspectionEvidence {
     required this.folderPath,
     required this.chatDbPath,
     required this.sourceLabel,
-    required this.chatDbStatusLabel,
+    required this.chatDbStatus,
     required this.attachmentsStatusLabel,
     required this.totalMessages,
     required this.totalChats,
@@ -195,7 +195,7 @@ final class HistoricalArchivesInspectionEvidence {
   final String folderPath;
   final String chatDbPath;
   final String sourceLabel;
-  final String chatDbStatusLabel;
+  final ArchiveSourceInspectionStatus chatDbStatus;
   final String attachmentsStatusLabel;
   final int? totalMessages;
   final int? totalChats;
@@ -209,6 +209,8 @@ final class HistoricalArchivesInspectionEvidence {
   final int? dryRunComparableMessages;
   final String? dryRunUnavailableReason;
   final String? successfulImportFinishedAtUtc;
+
+  String get chatDbStatusLabel => chatDbStatus.label;
 }
 
 enum HistoricalArchivesNarratorPresentationKind {
@@ -486,6 +488,7 @@ final class HistoricalArchivesWorkflowState {
     required this.preflight,
     required this.selectedFolderPath,
     required this.archiveRemovalTargetChatDbPath,
+    required this.chatDbStatus,
     required this.chatDbStatusLabel,
     required this.attachmentsStatusLabel,
     required this.sourceLabel,
@@ -512,6 +515,7 @@ final class HistoricalArchivesWorkflowState {
   final HistoricalArchivesPreflightViewModel preflight;
   final String? selectedFolderPath;
   final String? archiveRemovalTargetChatDbPath;
+  final ArchiveSourceInspectionStatus chatDbStatus;
   final String chatDbStatusLabel;
   final String attachmentsStatusLabel;
   final String sourceLabel;
@@ -542,6 +546,7 @@ final class HistoricalArchivesWorkflowState {
     String? archiveRemovalTargetChatDbPath,
     bool clearSelectedFolderPath = false,
     bool clearArchiveRemovalTargetChatDbPath = false,
+    ArchiveSourceInspectionStatus? chatDbStatus,
     String? chatDbStatusLabel,
     String? attachmentsStatusLabel,
     String? sourceLabel,
@@ -583,6 +588,7 @@ final class HistoricalArchivesWorkflowState {
           ? null
           : archiveRemovalTargetChatDbPath ??
                 this.archiveRemovalTargetChatDbPath,
+      chatDbStatus: chatDbStatus ?? this.chatDbStatus,
       chatDbStatusLabel: chatDbStatusLabel ?? this.chatDbStatusLabel,
       attachmentsStatusLabel:
           attachmentsStatusLabel ?? this.attachmentsStatusLabel,
@@ -636,7 +642,7 @@ final class HistoricalArchivesFolderPreflightResult {
     required this.preflight,
     required this.selectedFolderPath,
     required this.archiveRemovalTargetChatDbPath,
-    required this.chatDbStatusLabel,
+    required this.chatDbStatus,
     required this.attachmentsStatusLabel,
     required this.sourceLabel,
     required this.totalMessages,
@@ -659,7 +665,7 @@ final class HistoricalArchivesFolderPreflightResult {
   final HistoricalArchivesPreflightViewModel preflight;
   final String selectedFolderPath;
   final String archiveRemovalTargetChatDbPath;
-  final String chatDbStatusLabel;
+  final ArchiveSourceInspectionStatus chatDbStatus;
   final String attachmentsStatusLabel;
   final String sourceLabel;
   final int? totalMessages;
@@ -677,6 +683,8 @@ final class HistoricalArchivesFolderPreflightResult {
   final List<String> dryRunSummaryLines;
   final List<HistoricalArchivesLogEntryViewModel> activityLog;
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
+
+  String get chatDbStatusLabel => chatDbStatus.label;
 }
 
 final class HistoricalArchivesWorkflowPanelViewModel {
@@ -743,6 +751,7 @@ HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
     ),
     selectedFolderPath: null,
     archiveRemovalTargetChatDbPath: null,
+    chatDbStatus: ArchiveSourceInspectionStatus.unavailable,
     chatDbStatusLabel: 'Not checked yet',
     attachmentsStatusLabel: 'Not checked yet',
     sourceLabel: 'Not proposed yet',
@@ -887,6 +896,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       ),
       selectedFolderPath: folderPath,
       sourceLabel: path.basename(folderPath),
+      chatDbStatus: ArchiveSourceInspectionStatus.unavailable,
       chatDbStatusLabel: 'Checking...',
       attachmentsStatusLabel: 'Checking...',
       resultSummaryLines: const [
@@ -1610,7 +1620,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               );
               if (refreshedResult.preflight.status !=
                       HistoricalArchivesPreflightStatus.completeReadyToImport ||
-                  refreshedResult.chatDbStatusLabel != 'Found and readable') {
+                  refreshedResult.chatDbStatus !=
+                      ArchiveSourceInspectionStatus.readable) {
                 throw StateError(
                   'Final source verification did not confirm a readable Messages archive.',
                 );
@@ -1913,7 +1924,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     required HistoricalArchiveImportedSourceLookup? lookup,
     required HistoricalArchivesFolderPreflightResult result,
   }) async {
-    if (lookup == null || result.chatDbStatusLabel != 'Found and readable') {
+    if (lookup == null ||
+        result.chatDbStatus != ArchiveSourceInspectionStatus.readable) {
       return null;
     }
 
@@ -1965,7 +1977,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     if (archiveSources == null) {
       return;
     }
-    if (result.chatDbStatusLabel != 'Found and readable') {
+    if (result.chatDbStatus != ArchiveSourceInspectionStatus.readable) {
       return;
     }
 
@@ -2497,17 +2509,19 @@ HistoricalArchivesInstrumentationStatus _importInstrumentationStatus(
 }
 
 String _failedInspectionNarrator(HistoricalArchivesWorkflowState state) {
-  if (state.chatDbStatusLabel == 'Missing') {
-    return 'This folder does not contain a Messages database.';
-  }
-  if (state.chatDbStatusLabel == 'Read failed') {
-    return 'MessageLens couldn\u2019t read the Messages database in this folder.';
-  }
-  return 'MessageLens couldn\u2019t establish that this is a readable Messages archive.';
+  return switch (state.chatDbStatus) {
+    ArchiveSourceInspectionStatus.missing =>
+      'This folder does not contain a Messages database.',
+    ArchiveSourceInspectionStatus.readFailed =>
+      'MessageLens couldn\u2019t read the Messages database in this folder.',
+    ArchiveSourceInspectionStatus.readable ||
+    ArchiveSourceInspectionStatus.unavailable =>
+      'MessageLens couldn\u2019t establish that this is a readable Messages archive.',
+  };
 }
 
 bool _inspectionCanBeRetried(HistoricalArchivesWorkflowState state) {
-  return state.chatDbStatusLabel != 'Missing';
+  return state.chatDbStatus != ArchiveSourceInspectionStatus.missing;
 }
 
 String _readyNarrator(HistoricalArchivesInspectionEvidence? evidence) {
@@ -2528,7 +2542,7 @@ List<HistoricalArchivesInstrumentationRowViewModel> _readyInstrumentationRows(
   final rows = <HistoricalArchivesInstrumentationRowViewModel>[
     HistoricalArchivesInstrumentationRowViewModel(
       label: 'Messages database',
-      value: evidence.chatDbStatusLabel == 'Found and readable'
+      value: evidence.chatDbStatus == ArchiveSourceInspectionStatus.readable
           ? 'Found'
           : evidence.chatDbStatusLabel,
       status: HistoricalArchivesInstrumentationStatus.resolved,
@@ -3077,7 +3091,7 @@ preflightHistoricalArchivesFolder({
       sourceLabel: inspection.sourceLabel,
       detail: inspection.detail,
       archiveRemovalTargetChatDbPath: inspection.chatDbPath,
-      chatDbStatusLabel: inspection.chatDbStatusLabel,
+      chatDbStatus: inspection.chatDbStatus,
       attachmentsStatusLabel: inspection.attachmentsStatusLabel,
     );
   }
@@ -3091,7 +3105,7 @@ preflightHistoricalArchivesFolder({
     ),
     selectedFolderPath: inspection.folderPath,
     archiveRemovalTargetChatDbPath: inspection.chatDbPath,
-    chatDbStatusLabel: inspection.chatDbStatusLabel,
+    chatDbStatus: inspection.chatDbStatus,
     attachmentsStatusLabel: inspection.attachmentsStatusLabel,
     sourceLabel: inspection.sourceLabel,
     totalMessages: inspection.totalMessages,
@@ -3202,7 +3216,7 @@ preflightHistoricalArchivesFolder({
 bool _isInvalidFolderQualificationFailure(
   HistoricalArchivesFolderPreflightResult result,
 ) {
-  return result.chatDbStatusLabel == 'Missing';
+  return result.chatDbStatus == ArchiveSourceInspectionStatus.missing;
 }
 
 final class _UnavailableArchiveSourceInspector
@@ -3217,9 +3231,8 @@ final class _UnavailableArchiveSourceInspector
       folderPath: folderPath,
       sourceLabel: path.basename(folderPath),
       chatDbPath: path.join(folderPath, 'chat.db'),
-      chatDbStatusLabel: 'Unavailable',
+      chatDbStatus: ArchiveSourceInspectionStatus.unavailable,
       attachmentsStatusLabel: 'Unavailable',
-      isReadable: false,
       detail:
           'Archive source inspection is unavailable because the inspection service could not be constructed.',
       dryRunEstimate: const ArchiveSourceDryRunEstimate.unavailable(
@@ -3237,6 +3250,7 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
     preflight: result.preflight,
     selectedFolderPath: result.selectedFolderPath,
     archiveRemovalTargetChatDbPath: result.archiveRemovalTargetChatDbPath,
+    chatDbStatus: result.chatDbStatus,
     chatDbStatusLabel: result.chatDbStatusLabel,
     attachmentsStatusLabel: result.attachmentsStatusLabel,
     sourceLabel: result.sourceLabel,
@@ -3257,7 +3271,7 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
       folderPath: result.selectedFolderPath,
       chatDbPath: result.archiveRemovalTargetChatDbPath,
       sourceLabel: result.sourceLabel,
-      chatDbStatusLabel: result.chatDbStatusLabel,
+      chatDbStatus: result.chatDbStatus,
       attachmentsStatusLabel: result.attachmentsStatusLabel,
       totalMessages: result.totalMessages,
       totalChats: result.totalChats,
@@ -3289,6 +3303,7 @@ HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
     ),
     selectedFolderPath: source.folderPath,
     archiveRemovalTargetChatDbPath: source.sourceChatDb,
+    chatDbStatus: ArchiveSourceInspectionStatus.readable,
     chatDbStatusLabel: source.chatDbStatusLabel,
     attachmentsStatusLabel: source.attachmentsStatusLabel,
     sourceLabel: source.sourceLabel,
@@ -3304,7 +3319,7 @@ HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
       folderPath: source.folderPath,
       chatDbPath: source.sourceChatDb,
       sourceLabel: source.sourceLabel,
-      chatDbStatusLabel: source.chatDbStatusLabel,
+      chatDbStatus: ArchiveSourceInspectionStatus.readable,
       attachmentsStatusLabel: source.attachmentsStatusLabel,
       totalMessages: importedMessageCount,
       totalChats: null,
@@ -3331,7 +3346,7 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
   required String sourceLabel,
   required String detail,
   required String archiveRemovalTargetChatDbPath,
-  required String chatDbStatusLabel,
+  required ArchiveSourceInspectionStatus chatDbStatus,
   required String attachmentsStatusLabel,
 }) {
   return HistoricalArchivesFolderPreflightResult(
@@ -3342,7 +3357,7 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
     ),
     selectedFolderPath: folderPath,
     archiveRemovalTargetChatDbPath: archiveRemovalTargetChatDbPath,
-    chatDbStatusLabel: chatDbStatusLabel,
+    chatDbStatus: chatDbStatus,
     attachmentsStatusLabel: attachmentsStatusLabel,
     sourceLabel: sourceLabel,
     totalMessages: null,

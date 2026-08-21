@@ -46,9 +46,8 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
         folderPath: folderPath,
         sourceLabel: sourceLabel,
         chatDbPath: chatDbPath,
-        chatDbStatusLabel: 'Missing',
+        chatDbStatus: ArchiveSourceInspectionStatus.missing,
         attachmentsStatusLabel: 'Missing',
-        isReadable: false,
         detail: 'The selected folder no longer exists.',
         dryRunEstimate: const ArchiveSourceDryRunEstimate.unavailable(
           unavailableReason: 'source folder is missing.',
@@ -61,11 +60,10 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
         folderPath: folderPath,
         sourceLabel: sourceLabel,
         chatDbPath: chatDbPath,
-        chatDbStatusLabel: 'Missing',
+        chatDbStatus: ArchiveSourceInspectionStatus.missing,
         attachmentsStatusLabel: _isDirectory(attachmentsDirectory.path)
             ? 'Found'
             : 'Not found',
-        isReadable: false,
         detail: 'The selected folder does not contain chat.db.',
         dryRunEstimate: const ArchiveSourceDryRunEstimate.unavailable(
           unavailableReason: 'source chat.db is missing.',
@@ -105,11 +103,10 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
           folderPath: folderPath,
           sourceLabel: sourceLabel,
           chatDbPath: chatDbPath,
-          chatDbStatusLabel: 'Found and readable',
+          chatDbStatus: ArchiveSourceInspectionStatus.readable,
           attachmentsStatusLabel: _isDirectory(attachmentsDirectory.path)
               ? 'Found'
               : 'Not found',
-          isReadable: true,
           detail: dryRunEstimate.isAvailable
               ? 'Source checks succeeded and GUID-based dry-run estimates are now visible. Archive import can run when the evidence looks correct.'
               : 'Source checks succeeded, but conversation graph dry-run comparison is unavailable right now. Archive import can still run if the source evidence looks correct.',
@@ -131,11 +128,10 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
         folderPath: folderPath,
         sourceLabel: sourceLabel,
         chatDbPath: chatDbPath,
-        chatDbStatusLabel: 'Read failed',
+        chatDbStatus: ArchiveSourceInspectionStatus.readFailed,
         attachmentsStatusLabel: _isDirectory(attachmentsDirectory.path)
             ? 'Found'
             : 'Not found',
-        isReadable: false,
         detail: 'MessageLens could not safely read chat.db: $error',
         dryRunEstimate: ArchiveSourceDryRunEstimate.unavailable(
           unavailableReason: 'source chat.db could not be read safely: $error',

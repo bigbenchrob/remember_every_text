@@ -168,12 +168,12 @@ instead of reaching for the concrete physical provider.
   signals such as graph readiness or message-data version may use their
   explicit provider files when a tripwire requires narrow imports to avoid
   broad DB authority.
-- Environment Readiness must not open either `macos_import_ss.db` or
-  `working_ss.db` for observational row counts while admitted maintenance is
-  active. It reports the truthful maintenance state and waits for authority to
-  release before refreshing those facts. A database busy timeout is bounded
-  contention tolerance only; it does not authorize unrelated readiness reads
-  during maintenance.
+- Environment Readiness and ordinary graph-readiness providers must not open
+  either `macos_import_ss.db` or `working_ss.db` for observational row counts
+  or probes while admitted maintenance is active. They report the truthful
+  maintenance state and wait for authority to release before refreshing those
+  facts. A database busy timeout is bounded contention tolerance only; it does
+  not authorize unrelated readiness reads during maintenance.
 - One-off source/probe reads: infrastructure repositories may open `chat.db`,
   AddressBook candidates, historical archive `chat.db` files, or retired
   cleanup files for a named read-only query. They must set read-only/query-only

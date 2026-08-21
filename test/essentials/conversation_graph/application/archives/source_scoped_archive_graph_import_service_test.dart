@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service.dart';
+import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_projection_observation.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_removal_service.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/attachments/attachment_projector.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/chat_handle_joins/chat_to_handle_projector.dart';
