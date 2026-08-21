@@ -10,6 +10,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.71] — 2026-08-21
+
+### Changed
+
+- Historical Archives now uses one typed, offline-capable source identity for
+  inspection, registration, duplicate detection, persisted membership,
+  presentation targeting, removal, and deterministic reimport. Removing an
+  imported source no longer requires its external Messages folder to be
+  mounted.
+- The Historical Archives sidebar action now reads “Choose a Messages Folder
+  to add...” so its purpose is explicit.
+
 ## [0.2.70] — 2026-08-21
 
 ### Fixed

@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_sources.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/historical_archive_sources_repository.dart';
 
@@ -22,7 +23,10 @@ void main() {
 
     test('writes and reads metadata through overlay storage', () async {
       await repository.upsertSourceMetadata(
-        const HistoricalArchiveSourceMetadataUpdate(
+        HistoricalArchiveSourceMetadataUpdate(
+          identity: HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            '/Archives/2018/chat.db',
+          ),
           sourceChatDb: '/Archives/2018/chat.db',
           folderPath: '/Archives/2018',
           sourceLabel: 'Archive-2018',
@@ -65,44 +69,80 @@ void main() {
       expect(metadata.single.lastImportedMessageCount, 2);
     });
 
-    test(
-      'exposes canonical identity without changing stored metadata',
-      () async {
-        await repository.upsertSourceMetadata(
-          const HistoricalArchiveSourceMetadataUpdate(
-            sourceChatDb: '/Private/Archive/chat.db',
-            folderPath: '/Private/Archive',
-            sourceLabel: 'Archive',
-            chatDbStatusLabel: 'Found',
-            attachmentsStatusLabel: 'Found',
-            preflightStatusLabel: 'Preflight complete',
-            preflightDetail: 'Source checks succeeded.',
-            updatedAtUtc: '2026-06-10T00:00:00.000Z',
-            totalMessages: 12,
+    test('persists canonical identity with source metadata', () async {
+      await repository.upsertSourceMetadata(
+        HistoricalArchiveSourceMetadataUpdate(
+          identity: HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            '/Private/Archive/chat.db',
           ),
+          sourceChatDb: '/Private/Archive/chat.db',
+          folderPath: '/Private/Archive',
+          sourceLabel: 'Archive',
+          chatDbStatusLabel: 'Found',
+          attachmentsStatusLabel: 'Found',
+          preflightStatusLabel: 'Preflight complete',
+          preflightDetail: 'Source checks succeeded.',
+          updatedAtUtc: '2026-06-10T00:00:00.000Z',
+          totalMessages: 12,
+        ),
+      );
+
+      final rawSetting = await overlayDatabase.readOverlaySetting(
+        'historical_archive_sources/v1',
+      );
+      final metadata = await repository.readKnownSources();
+
+      expect(rawSetting, contains('/Private/Archive/chat.db'));
+      expect(rawSetting, isNot(contains('pulse')));
+      expect(
+        rawSetting,
+        contains(
+          '"sourceKey":"historical-messages-archive:/Private/Archive/chat.db"',
+        ),
+      );
+      expect(
+        metadata.single.sourceKey,
+        'historical-messages-archive:/Private/Archive/chat.db',
+      );
+      expect(metadata.single.sourceLabel, 'Archive');
+      expect(metadata.single.totalMessages, 12);
+      expect(metadata.single.preflightStatusLabel, 'Preflight complete');
+    });
+
+    test(
+      'reconstructs legacy identity without touching the source filesystem',
+      () async {
+        await overlayDatabase.writeOverlaySetting(
+          settingKey: 'historical_archive_sources/v1',
+          settingValue: '''
+[{"sourceChatDb":"/Offline/Archive/chat.db",
+"folderPath":"/Offline/Archive",
+"sourceLabel":"Offline Archive",
+"chatDbStatusLabel":"Previously readable",
+"attachmentsStatusLabel":"Unknown",
+"preflightStatusLabel":"Imported successfully",
+"preflightDetail":"Legacy metadata",
+"updatedAtUtc":"2026-06-10T00:00:00.000Z"}]
+''',
         );
 
-        final rawSetting = await overlayDatabase.readOverlaySetting(
-          'historical_archive_sources/v1',
-        );
         final metadata = await repository.readKnownSources();
 
-        expect(rawSetting, contains('/Private/Archive/chat.db'));
-        expect(rawSetting, isNot(contains('pulse')));
-        expect(rawSetting, isNot(contains('sourceKey')));
+        expect(metadata, hasLength(1));
         expect(
           metadata.single.sourceKey,
-          'historical-messages-archive:/Private/Archive/chat.db',
+          'historical-messages-archive:/Offline/Archive/chat.db',
         );
-        expect(metadata.single.sourceLabel, 'Archive');
-        expect(metadata.single.totalMessages, 12);
-        expect(metadata.single.preflightStatusLabel, 'Preflight complete');
+        expect(metadata.single.sourceLabel, 'Offline Archive');
       },
     );
 
-    test('replaces metadata by source chat database path', () async {
+    test('replaces metadata by canonical source identity', () async {
       await repository.upsertSourceMetadata(
-        const HistoricalArchiveSourceMetadataUpdate(
+        HistoricalArchiveSourceMetadataUpdate(
+          identity: HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            '/Archives/2018/chat.db',
+          ),
           sourceChatDb: '/Archives/2018/chat.db',
           folderPath: '/Archives/2018',
           sourceLabel: 'Archive-2018',
@@ -116,7 +156,10 @@ void main() {
       );
 
       await repository.upsertSourceMetadata(
-        const HistoricalArchiveSourceMetadataUpdate(
+        HistoricalArchiveSourceMetadataUpdate(
+          identity: HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            '/Archives/2018/chat.db',
+          ),
           sourceChatDb: '/Archives/2018/chat.db',
           folderPath: '/Archives/2018',
           sourceLabel: 'Archive-2018 updated',
@@ -138,7 +181,10 @@ void main() {
 
     test('returns known sources in latest-update order', () async {
       await repository.upsertSourceMetadata(
-        const HistoricalArchiveSourceMetadataUpdate(
+        HistoricalArchiveSourceMetadataUpdate(
+          identity: HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            '/Archives/2017/chat.db',
+          ),
           sourceChatDb: '/Archives/2017/chat.db',
           folderPath: '/Archives/2017',
           sourceLabel: 'Archive-2017',
@@ -150,7 +196,10 @@ void main() {
         ),
       );
       await repository.upsertSourceMetadata(
-        const HistoricalArchiveSourceMetadataUpdate(
+        HistoricalArchiveSourceMetadataUpdate(
+          identity: HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            '/Archives/2018/chat.db',
+          ),
           sourceChatDb: '/Archives/2018/chat.db',
           folderPath: '/Archives/2018',
           sourceLabel: 'Archive-2018',

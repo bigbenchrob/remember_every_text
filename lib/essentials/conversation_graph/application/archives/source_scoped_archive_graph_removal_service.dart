@@ -1,4 +1,4 @@
-import '../../../source_scoped_import/application/archives/historical_messages_archive_source_folder_resolver.dart';
+import '../../../source_scoped_import/domain/historical_archive_source_identity.dart';
 import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../attachments/attachment_projector.dart';
 import '../chat_handle_joins/chat_to_handle_projector.dart';
@@ -73,7 +73,6 @@ class SourceScopedArchiveGraphRemovalService {
     required this.attachmentProjector,
     required this.chatToMessageProjector,
     required this.messageToAttachmentProjector,
-    required this.folderResolver,
   });
 
   final ImportLedger importLedger;
@@ -86,10 +85,8 @@ class SourceScopedArchiveGraphRemovalService {
   final AttachmentProjector attachmentProjector;
   final ChatToMessageProjector chatToMessageProjector;
   final MessageToAttachmentProjector messageToAttachmentProjector;
-  final HistoricalMessagesArchiveSourceFolderResolver folderResolver;
-
   Future<SourceScopedArchiveGraphRemovalResult> removeArchiveSource({
-    required String folderPath,
+    required HistoricalArchiveSourceIdentity sourceIdentity,
     SourceScopedArchiveGraphRemovalObserver? onObservation,
   }) async {
     _publish(
@@ -97,8 +94,7 @@ class SourceScopedArchiveGraphRemovalService {
       stage: SourceScopedArchiveGraphRemovalStage.removingImportedFacts,
       transition: SourceScopedArchiveGraphRemovalStageTransition.started,
     );
-    final sourceKey = folderResolver.resolveFolder(folderPath).sourceKey;
-    final sourceId = await importLedger.sourceIdForKey(sourceKey);
+    final sourceId = await importLedger.sourceIdForKey(sourceIdentity.value);
     if (sourceId == null) {
       _publish(
         onObservation,

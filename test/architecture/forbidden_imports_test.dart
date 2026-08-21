@@ -6946,7 +6946,7 @@ void main() {
     );
 
     test(
-      'Historical archive source identity uses folder resolver boundary',
+      'Historical archive filesystem access uses folder resolver boundary',
       () async {
         final offenders =
             await _findHistoricalArchiveFolderResolverBoundaryOffenders();
@@ -6955,11 +6955,75 @@ void main() {
           offenders,
           isEmpty,
           reason:
-              'Historical archive source registration/removal may use a '
-              'source-folder resolver, but filesystem validation and source-key '
-              'path normalization belong behind that resolver boundary.\n'
+              'Historical archive source registration may use a source-folder '
+              'resolver, but filesystem validation belongs behind that '
+              'resolver boundary. Removal identifies persisted sources without '
+              'requiring the source folder to be mounted.\n'
               'Actual offenders:\n${offenders.join('\n')}',
         );
+      },
+    );
+
+    test(
+      'Historical archive source identity has one canonical authority',
+      () async {
+        const identityPath =
+            'lib/essentials/source_scoped_import/domain/'
+            'historical_archive_source_identity.dart';
+        const registrarPath =
+            'lib/essentials/source_scoped_import/application/archives/'
+            'historical_messages_archive_source_registrar.dart';
+        const removalPath =
+            'lib/essentials/conversation_graph/application/archives/'
+            'source_scoped_archive_graph_removal_service.dart';
+        const sidebarPath =
+            'lib/features/settings/application/sidebar_cassette_spec/'
+            'widget_builders/historical_archives_settings_supplemental_content.dart';
+        final identitySource = _stripComments(
+          await File(identityPath).readAsString(),
+        );
+        final registrarSource = _stripComments(
+          await File(registrarPath).readAsString(),
+        );
+        final removalSource = _stripComments(
+          await File(removalPath).readAsString(),
+        );
+        final sidebarSource = _stripComments(
+          await File(sidebarPath).readAsString(),
+        );
+        final projectFiles = await _collectDartFiles(
+          (path) => path.startsWith('lib/') && !path.endsWith('.g.dart'),
+        );
+        final keyConstructionOffenders = <String>[];
+
+        for (final filePath in projectFiles) {
+          if (filePath == identityPath) {
+            continue;
+          }
+          final source = _stripComments(await File(filePath).readAsString());
+          if (source.contains(
+            r"'$historicalMessagesArchiveSourceKeyPrefix$canonicalSourcePath'",
+          )) {
+            keyConstructionOffenders.add(filePath);
+          }
+          if (source.contains('buildSourceKey')) {
+            keyConstructionOffenders.add('$filePath defines buildSourceKey');
+          }
+        }
+
+        expect(
+          identitySource,
+          contains('class HistoricalArchiveSourceIdentity'),
+        );
+        expect(identitySource, contains('macMessagesFromChatDbPath'));
+        expect(identitySource, contains('fromPersistedValue'));
+        expect(registrarSource, isNot(contains('macMessagesFromChatDbPath')));
+        expect(registrarSource, isNot(contains('buildSourceKey')));
+        expect(removalSource, contains('HistoricalArchiveSourceIdentity'));
+        expect(removalSource, isNot(contains('resolveFolder')));
+        expect(sidebarSource, isNot(contains('macMessagesFromChatDbPath')));
+        expect(sidebarSource, isNot(contains('fromPersistedValue')));
+        expect(keyConstructionOffenders, isEmpty);
       },
     );
 

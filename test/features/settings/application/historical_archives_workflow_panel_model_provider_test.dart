@@ -41,6 +41,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/h
 import 'package:remember_this_text/essentials/source_scoped_import/application/message_attachment_joins/message_attachment_join_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspector_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_folder_chooser.dart';
@@ -105,19 +106,23 @@ void main() {
     });
 
     test('notices and orange references are exclusive hub variants', () {
-      const duplicate = HistoricalArchivesWorkflowState(
+      final duplicate = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesDuplicateNoticeState(
           notice: HistoricalArchivesDuplicateFolderNotice(
-            sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+            identity: _identity(
+              'historical-messages-archive:/tmp/archive/chat.db',
+            ),
             noticeOccurrence: 1,
             presentationSessionOccurrence: 1,
           ),
         ),
       );
-      const reference = HistoricalArchivesWorkflowState(
+      final reference = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesKnownSourceReferenceState(
           reference: HistoricalArchivesKnownSourceReference(
-            sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+            identity: _identity(
+              'historical-messages-archive:/tmp/archive/chat.db',
+            ),
             referenceOccurrence: 2,
           ),
         ),
@@ -152,10 +157,11 @@ void main() {
               ),
               (
                 name: 'duplicate notice',
-                presentation: const HistoricalArchivesDuplicateNoticeState(
+                presentation: HistoricalArchivesDuplicateNoticeState(
                   notice: HistoricalArchivesDuplicateFolderNotice(
-                    sourceKey:
-                        'historical-messages-archive:/tmp/archive/chat.db',
+                    identity: _identity(
+                      'historical-messages-archive:/tmp/archive/chat.db',
+                    ),
                     noticeOccurrence: 1,
                     presentationSessionOccurrence: 1,
                   ),
@@ -184,10 +190,11 @@ void main() {
               ),
               (
                 name: 'known-source reference',
-                presentation: const HistoricalArchivesKnownSourceReferenceState(
+                presentation: HistoricalArchivesKnownSourceReferenceState(
                   reference: HistoricalArchivesKnownSourceReference(
-                    sourceKey:
-                        'historical-messages-archive:/tmp/archive/chat.db',
+                    identity: _identity(
+                      'historical-messages-archive:/tmp/archive/chat.db',
+                    ),
                     referenceOccurrence: 1,
                   ),
                 ),
@@ -504,6 +511,7 @@ void main() {
 
     test('projects typed ready evidence without summary-string parsing', () {
       const evidence = HistoricalArchivesInspectionEvidence(
+        sourceIdentity: null,
         folderPath: '/tmp/archive',
         chatDbPath: '/tmp/archive/chat.db',
         sourceLabel: 'archive',
@@ -730,6 +738,7 @@ void main() {
 
     test('preserves completed stages when a later import stage fails', () {
       const evidence = HistoricalArchivesInspectionEvidence(
+        sourceIdentity: null,
         folderPath: '/tmp/archive',
         chatDbPath: '/tmp/archive/chat.db',
         sourceLabel: 'archive',
@@ -791,6 +800,7 @@ void main() {
 
     test('ready projection reports an unavailable comparison honestly', () {
       const evidence = HistoricalArchivesInspectionEvidence(
+        sourceIdentity: null,
         folderPath: '/tmp/archive',
         chatDbPath: '/tmp/archive/chat.db',
         sourceLabel: 'archive',
@@ -840,6 +850,7 @@ void main() {
       'ready projection refuses internally incoherent comparison evidence',
       () {
         const evidence = HistoricalArchivesInspectionEvidence(
+          sourceIdentity: null,
           folderPath: '/tmp/archive',
           chatDbPath: '/tmp/archive/chat.db',
           sourceLabel: 'archive',
@@ -953,7 +964,7 @@ void main() {
               (ref) async => const _FakeHistoricalArchiveSources(),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -970,14 +981,17 @@ void main() {
         );
 
         inspectionCompleter.complete(
-          const ArchiveSourceInspection(
+          ArchiveSourceInspection(
             folderPath: '/tmp/archive',
             sourceLabel: 'archive',
             chatDbPath: '/tmp/archive/chat.db',
+            sourceIdentity: _identity(
+              'historical-messages-archive:/tmp/archive/chat.db',
+            ),
             chatDbStatus: ArchiveSourceInspectionStatus.readable,
             attachmentsStatusLabel: 'Not found',
             detail: 'Archive source is readable.',
-            dryRunEstimate: ArchiveSourceDryRunEstimate.available(
+            dryRunEstimate: const ArchiveSourceDryRunEstimate.available(
               comparableGuidCount: 42,
               duplicateGuidCount: 10,
               newGuidCount: 32,
@@ -1022,7 +1036,7 @@ void main() {
               (ref) async => archiveSources,
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -1075,12 +1089,11 @@ void main() {
             ),
           );
           _emitCompleteGraphProjection(observer);
-          importedSourceLookup.match =
-              const HistoricalArchiveImportedSourceMatch(
-                sourceKey: sourceKey,
-                sourceId: 3,
-                importedMessageCount: 42,
-              );
+          importedSourceLookup.match = HistoricalArchiveImportedSourceMatch(
+            identity: _identity(sourceKey),
+            sourceId: 3,
+            importedMessageCount: 42,
+          );
           return _successfulArchiveGraphImportResult(sourceKey: sourceKey);
         });
         final archiveSources = _RecordingHistoricalArchiveSources();
@@ -1228,12 +1241,11 @@ void main() {
             ),
           );
           _emitCompleteGraphProjection(observer);
-          importedSourceLookup.match =
-              const HistoricalArchiveImportedSourceMatch(
-                sourceKey: sourceKey,
-                sourceId: 3,
-                importedMessageCount: 42,
-              );
+          importedSourceLookup.match = HistoricalArchiveImportedSourceMatch(
+            identity: _identity(sourceKey),
+            sourceId: 3,
+            importedMessageCount: 42,
+          );
           return _successfulArchiveGraphImportResult(sourceKey: sourceKey);
         });
         final container = ProviderContainer(
@@ -1345,7 +1357,7 @@ void main() {
               (ref) async => _RecordingHistoricalArchiveSources(),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -1437,10 +1449,10 @@ void main() {
               (ref) async => archiveSources,
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(
+              (ref) async => _FakeImportedSourceLookup(
                 matchingFolderPath: '/tmp/archive',
                 match: HistoricalArchiveImportedSourceMatch(
-                  sourceKey: sourceKey,
+                  identity: _identity(sourceKey),
                   sourceId: 3,
                   importedMessageCount: 42,
                 ),
@@ -1555,7 +1567,7 @@ void main() {
               (ref) async => archiveSources,
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -1616,7 +1628,7 @@ void main() {
               (ref) async => const _FakeHistoricalArchiveSources(),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -1656,7 +1668,7 @@ void main() {
               (ref) async => const _FakeHistoricalArchiveSources(),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -1691,10 +1703,10 @@ void main() {
               ]),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(
+              (ref) async => _FakeImportedSourceLookup(
                 matchingFolderPath: '/tmp/archive',
                 match: HistoricalArchiveImportedSourceMatch(
-                  sourceKey: sourceKey,
+                  identity: _identity(sourceKey),
                   sourceId: 3,
                   importedMessageCount: 42,
                 ),
@@ -1729,8 +1741,8 @@ void main() {
       'remembered source with no imported messages remains eligible for add flow',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
-        const source = HistoricalArchiveSourceMetadata(
-          sourceKey: sourceKey,
+        final source = HistoricalArchiveSourceMetadata(
+          identity: _identity(sourceKey),
           sourceChatDb: '/tmp/archive/chat.db',
           folderPath: '/tmp/archive',
           sourceLabel: 'Archive',
@@ -1759,10 +1771,10 @@ void main() {
               (ref) async => const _FakeHistoricalArchiveSources(),
             ),
             historicalArchiveSourceMetadataProvider.overrideWith(
-              (ref) async => const [source],
+              (ref) async => [source],
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -1777,7 +1789,7 @@ void main() {
         expect(state.knownSourceReference, isNull);
         expect(
           await container.read(historicalArchiveSourceMetadataProvider.future),
-          const [source],
+          [source],
         );
       },
     );
@@ -1789,9 +1801,9 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             historicalArchiveSourceMetadataProvider.overrideWith(
-              (ref) async => const [
+              (ref) async => [
                 HistoricalArchiveSourceMetadata(
-                  sourceKey: sourceKey,
+                  identity: _identity(sourceKey),
                   sourceChatDb: '/tmp/archive/chat.db',
                   folderPath: '/tmp/archive',
                   sourceLabel: 'Archive',
@@ -1811,9 +1823,9 @@ void main() {
               ],
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(
+              (ref) async => _FakeImportedSourceLookup(
                 match: HistoricalArchiveImportedSourceMatch(
-                  sourceKey: sourceKey,
+                  identity: _identity(sourceKey),
                   sourceId: 3,
                   importedMessageCount: 42,
                 ),
@@ -1825,7 +1837,7 @@ void main() {
 
         await container
             .read(historicalArchivesWorkflowProvider.notifier)
-            .showKnownSource(sourceKey: sourceKey);
+            .showKnownSource(identity: _identity(sourceKey));
 
         final state = container.read(historicalArchivesWorkflowProvider);
         expect(
@@ -1867,8 +1879,8 @@ void main() {
       'selected source removal exposes real ordered stages then returns to hub',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
-        const source = HistoricalArchiveSourceMetadata(
-          sourceKey: sourceKey,
+        final source = HistoricalArchiveSourceMetadata(
+          identity: _identity(sourceKey),
           sourceChatDb: '/tmp/archive/chat.db',
           folderPath: '/tmp/archive',
           sourceLabel: 'Archive',
@@ -1888,8 +1900,8 @@ void main() {
         final verificationCompleter =
             Completer<HistoricalArchiveImportedSourceMatch?>();
         final lookup = _FinalVerificationImportedSourceLookup(
-          match: const HistoricalArchiveImportedSourceMatch(
-            sourceKey: sourceKey,
+          match: HistoricalArchiveImportedSourceMatch(
+            identity: _identity(sourceKey),
             sourceId: 3,
             importedMessageCount: 42,
           ),
@@ -1961,7 +1973,7 @@ void main() {
               (ref) async => removalService,
             ),
             historicalArchiveSourceMetadataProvider.overrideWith(
-              (ref) async => const [source],
+              (ref) async => [source],
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
               (ref) async => lookup,
@@ -1976,7 +1988,7 @@ void main() {
         final workflow = container.read(
           historicalArchivesWorkflowProvider.notifier,
         );
-        await workflow.showKnownSource(sourceKey: sourceKey);
+        await workflow.showKnownSource(identity: _identity(sourceKey));
 
         final removal = workflow.removeImportedArchiveDataForSelectedSource();
         await Future<void>.delayed(Duration.zero);
@@ -2106,7 +2118,7 @@ void main() {
         expect(completedModel.existingSourcePresentation, isNull);
         expect(
           await container.read(historicalArchiveSourceMetadataProvider.future),
-          const [source],
+          [source],
         );
       },
     );
@@ -2115,8 +2127,8 @@ void main() {
       'failed graph rebuild preserves stage truth while imported facts remain',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
-        const source = HistoricalArchiveSourceMetadata(
-          sourceKey: sourceKey,
+        final source = HistoricalArchiveSourceMetadata(
+          identity: _identity(sourceKey),
           sourceChatDb: '/tmp/archive/chat.db',
           folderPath: '/tmp/archive',
           sourceLabel: 'Archive',
@@ -2134,8 +2146,8 @@ void main() {
           lastImportedMessageCount: 42,
         );
         final lookup = _MutableImportedSourceLookup(
-          match: const HistoricalArchiveImportedSourceMatch(
-            sourceKey: sourceKey,
+          match: HistoricalArchiveImportedSourceMatch(
+            identity: _identity(sourceKey),
             sourceId: 3,
             importedMessageCount: 42,
           ),
@@ -2176,7 +2188,7 @@ void main() {
               (ref) async => removalService,
             ),
             historicalArchiveSourceMetadataProvider.overrideWith(
-              (ref) async => const [source],
+              (ref) async => [source],
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
               (ref) async => lookup,
@@ -2191,7 +2203,7 @@ void main() {
         final workflow = container.read(
           historicalArchivesWorkflowProvider.notifier,
         );
-        await workflow.showKnownSource(sourceKey: sourceKey);
+        await workflow.showKnownSource(identity: _identity(sourceKey));
         await workflow.removeImportedArchiveDataForSelectedSource();
 
         final failed = container.read(historicalArchivesWorkflowProvider);
@@ -2226,8 +2238,8 @@ void main() {
       'partial failure after fact deletion cannot falsely return to hub',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
-        const source = HistoricalArchiveSourceMetadata(
-          sourceKey: sourceKey,
+        final source = HistoricalArchiveSourceMetadata(
+          identity: _identity(sourceKey),
           sourceChatDb: '/tmp/archive/chat.db',
           folderPath: '/tmp/archive',
           sourceLabel: 'Archive',
@@ -2245,8 +2257,8 @@ void main() {
           lastImportedMessageCount: 42,
         );
         final lookup = _MutableImportedSourceLookup(
-          match: const HistoricalArchiveImportedSourceMatch(
-            sourceKey: sourceKey,
+          match: HistoricalArchiveImportedSourceMatch(
+            identity: _identity(sourceKey),
             sourceId: 3,
             importedMessageCount: 42,
           ),
@@ -2288,7 +2300,7 @@ void main() {
               (ref) async => removalService,
             ),
             historicalArchiveSourceMetadataProvider.overrideWith(
-              (ref) async => const [source],
+              (ref) async => [source],
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
               (ref) async => lookup,
@@ -2303,7 +2315,7 @@ void main() {
         final workflow = container.read(
           historicalArchivesWorkflowProvider.notifier,
         );
-        await workflow.showKnownSource(sourceKey: sourceKey);
+        await workflow.showKnownSource(identity: _identity(sourceKey));
         await workflow.removeImportedArchiveDataForSelectedSource();
 
         final failed = container.read(historicalArchivesWorkflowProvider);
@@ -2340,9 +2352,9 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             historicalArchiveSourceMetadataProvider.overrideWith(
-              (ref) async => const [
+              (ref) async => [
                 HistoricalArchiveSourceMetadata(
-                  sourceKey: sourceKey,
+                  identity: _identity(sourceKey),
                   sourceChatDb: '/tmp/archive/chat.db',
                   folderPath: '/tmp/archive',
                   sourceLabel: 'Archive',
@@ -2362,7 +2374,7 @@ void main() {
               ],
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -2370,7 +2382,7 @@ void main() {
 
         await container
             .read(historicalArchivesWorkflowProvider.notifier)
-            .showKnownSource(sourceKey: sourceKey);
+            .showKnownSource(identity: _identity(sourceKey));
 
         final state = container.read(historicalArchivesWorkflowProvider);
         final model = buildHistoricalArchivesWorkflowPanelModel(
@@ -2391,8 +2403,8 @@ void main() {
       'leaving Historical Archives clears transient selection but not source facts',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
-        const source = HistoricalArchiveSourceMetadata(
-          sourceKey: sourceKey,
+        final source = HistoricalArchiveSourceMetadata(
+          identity: _identity(sourceKey),
           sourceChatDb: '/tmp/archive/chat.db',
           folderPath: '/tmp/archive',
           sourceLabel: 'Archive',
@@ -2412,12 +2424,12 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             historicalArchiveSourceMetadataProvider.overrideWith(
-              (ref) async => const [source],
+              (ref) async => [source],
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(
+              (ref) async => _FakeImportedSourceLookup(
                 match: HistoricalArchiveImportedSourceMatch(
-                  sourceKey: sourceKey,
+                  identity: _identity(sourceKey),
                   sourceId: 3,
                   importedMessageCount: 42,
                 ),
@@ -2438,7 +2450,7 @@ void main() {
         final workflow = container.read(
           historicalArchivesWorkflowProvider.notifier,
         );
-        await workflow.showKnownSource(sourceKey: sourceKey);
+        await workflow.showKnownSource(identity: _identity(sourceKey));
         expect(
           container
               .read(historicalArchivesWorkflowProvider)
@@ -2456,7 +2468,7 @@ void main() {
         expect(reset.knownSourceReference, isNull);
         expect(
           await container.read(historicalArchiveSourceMetadataProvider.future),
-          const [source],
+          [source],
         );
 
         container
@@ -2486,7 +2498,7 @@ void main() {
               (ref) async => const _FakeHistoricalArchiveSources(),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -2509,14 +2521,17 @@ void main() {
             .setMode(SidebarMode.messages);
 
         inspectionCompleter.complete(
-          const ArchiveSourceInspection(
+          ArchiveSourceInspection(
             folderPath: '/tmp/archive',
             sourceLabel: 'archive',
             chatDbPath: '/tmp/archive/chat.db',
+            sourceIdentity: _identity(
+              'historical-messages-archive:/tmp/archive/chat.db',
+            ),
             chatDbStatus: ArchiveSourceInspectionStatus.readable,
             attachmentsStatusLabel: 'Not found',
             detail: 'Archive source is readable.',
-            dryRunEstimate: ArchiveSourceDryRunEstimate.available(
+            dryRunEstimate: const ArchiveSourceDryRunEstimate.available(
               comparableGuidCount: 42,
               duplicateGuidCount: 10,
               newGuidCount: 32,
@@ -2551,7 +2566,7 @@ void main() {
               (ref) async => const _FakeHistoricalArchiveSources(),
             ),
             historicalArchiveImportedSourceLookupProvider.overrideWith(
-              (ref) async => const _FakeImportedSourceLookup(),
+              (ref) async => _FakeImportedSourceLookup(),
             ),
           ],
         );
@@ -2785,6 +2800,11 @@ HistoricalArchivesInspectionEvidence _testInspectionEvidence({
   String attachmentsStatusLabel = 'Not found',
 }) {
   return HistoricalArchivesInspectionEvidence(
+    sourceIdentity: chatDbStatus == ArchiveSourceInspectionStatus.readable
+        ? HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            chatDbPath ?? '$folderPath/chat.db',
+          )
+        : null,
     folderPath: folderPath,
     chatDbPath: chatDbPath ?? '$folderPath/chat.db',
     sourceLabel: sourceLabel,
@@ -2805,8 +2825,8 @@ HistoricalArchivesInspectionEvidence _testInspectionEvidence({
 }
 
 HistoricalArchivesImportedSourceFacts _testImportedSourceFacts() {
-  return const HistoricalArchivesImportedSourceFacts(
-    sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+  return HistoricalArchivesImportedSourceFacts(
+    identity: _identity('historical-messages-archive:/tmp/archive/chat.db'),
     importedMessageCount: 42,
     earliestMessageUtc: '2012-07-25T08:00:00.000Z',
     latestMessageUtc: '2017-06-11T08:00:00.000Z',
@@ -2886,6 +2906,10 @@ final class _PerFolderArchiveSourceInspector implements ArchiveSourceInspector {
         folderPath: folderPath,
         sourceLabel: folderPath.split('/').last,
         chatDbPath: '$folderPath/chat.db',
+        sourceIdentity:
+            HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+              '$folderPath/chat.db',
+            ),
         chatDbStatus: ArchiveSourceInspectionStatus.readable,
         attachmentsStatusLabel: 'Not found',
         detail: 'Archive source is readable.',
@@ -2922,6 +2946,10 @@ final class _ImmediateArchiveSourceInspector implements ArchiveSourceInspector {
         folderPath: folderPath,
         sourceLabel: 'archive',
         chatDbPath: '$folderPath/chat.db',
+        sourceIdentity:
+            HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+              '$folderPath/chat.db',
+            ),
         chatDbStatus: ArchiveSourceInspectionStatus.readable,
         attachmentsStatusLabel: 'Not found',
         detail: 'Archive source is readable.',
@@ -2986,26 +3014,20 @@ final class _ReadFailedArchiveSourceInspector
 
 final class _FakeImportedSourceLookup
     implements HistoricalArchiveImportedSourceLookup {
-  const _FakeImportedSourceLookup({this.matchingFolderPath, this.match});
+  _FakeImportedSourceLookup({this.matchingFolderPath, this.match});
 
   final String? matchingFolderPath;
   final HistoricalArchiveImportedSourceMatch? match;
 
   @override
   Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
-    required String folderPath,
+    required HistoricalArchiveSourceIdentity identity,
   }) async {
-    if (matchingFolderPath != null && folderPath != matchingFolderPath) {
+    if (matchingFolderPath != null &&
+        identity.canonicalSourcePath != '$matchingFolderPath/chat.db') {
       return null;
     }
-    return match;
-  }
-
-  @override
-  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
-    required String sourceKey,
-  }) async {
-    return match?.sourceKey == sourceKey ? match : null;
+    return match?.identity == identity ? match : null;
   }
 }
 
@@ -3017,16 +3039,9 @@ final class _MutableImportedSourceLookup
 
   @override
   Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
-    required String folderPath,
+    required HistoricalArchiveSourceIdentity identity,
   }) async {
-    return match;
-  }
-
-  @override
-  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
-    required String sourceKey,
-  }) async {
-    return match?.sourceKey == sourceKey ? match : null;
+    return match?.identity == identity ? match : null;
   }
 }
 
@@ -3039,22 +3054,15 @@ final class _FinalVerificationImportedSourceLookup
 
   final HistoricalArchiveImportedSourceMatch match;
   final Completer<HistoricalArchiveImportedSourceMatch?> verificationCompleter;
-  var _sourceKeyLookupCount = 0;
+  var _identityLookupCount = 0;
 
   @override
   Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
-    required String folderPath,
-  }) async {
-    return match;
-  }
-
-  @override
-  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity identity,
   }) {
-    _sourceKeyLookupCount += 1;
-    if (_sourceKeyLookupCount == 1) {
-      return Future.value(match.sourceKey == sourceKey ? match : null);
+    _identityLookupCount += 1;
+    if (_identityLookupCount == 1) {
+      return Future.value(match.identity == identity ? match : null);
     }
     return verificationCompleter.future;
   }
@@ -3096,7 +3104,7 @@ final class _RecordingArchiveRemovalService
 
   @override
   Future<SourceScopedArchiveGraphRemovalResult> removeArchiveSource({
-    required String folderPath,
+    required HistoricalArchiveSourceIdentity sourceIdentity,
     SourceScopedArchiveGraphRemovalObserver? onObservation,
   }) async {
     callCount += 1;
@@ -3220,8 +3228,7 @@ SourceScopedArchiveGraphImportResult _successfulArchiveGraphImportResult({
     importResult: SourceScopedArchiveImportResult(
       registration: HistoricalMessagesArchiveSourceRegistration(
         sourceId: 3,
-        sourceKey: sourceKey,
-        sourceKind: 'historical_messages_archive',
+        identity: _identity(sourceKey),
         sourceLabel: 'archive',
         selectedFolderPath: '/tmp/archive',
         chatDbPath: '/tmp/archive/chat.db',
@@ -3296,7 +3303,7 @@ HistoricalArchiveSourceMetadata _successfullyImportedArchiveSource({
   required String sourceKey,
 }) {
   return HistoricalArchiveSourceMetadata(
-    sourceKey: sourceKey,
+    identity: _identity(sourceKey),
     sourceChatDb: '/tmp/archive/chat.db',
     folderPath: '/tmp/archive',
     sourceLabel: 'archive',
@@ -3313,4 +3320,8 @@ HistoricalArchiveSourceMetadata _successfullyImportedArchiveSource({
     lastImportError: null,
     lastImportedMessageCount: 42,
   );
+}
+
+HistoricalArchiveSourceIdentity _identity(String sourceKey) {
+  return HistoricalArchiveSourceIdentity.fromPersistedValue(sourceKey);
 }

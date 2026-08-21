@@ -1,23 +1,24 @@
-import '../../domain/known_sources.dart';
+import '../../domain/historical_archive_source_identity.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import 'historical_messages_archive_source_folder_resolver.dart';
 
 final class HistoricalMessagesArchiveSourceRegistration {
   const HistoricalMessagesArchiveSourceRegistration({
     required this.sourceId,
-    required this.sourceKey,
-    required this.sourceKind,
+    required this.identity,
     required this.sourceLabel,
     required this.selectedFolderPath,
     required this.chatDbPath,
   });
 
   final int sourceId;
-  final String sourceKey;
-  final String sourceKind;
+  final HistoricalArchiveSourceIdentity identity;
   final String sourceLabel;
   final String selectedFolderPath;
   final String chatDbPath;
+
+  String get sourceKey => identity.value;
+  String get sourceKind => identity.sourceKind;
 }
 
 class HistoricalMessagesArchiveSourceRegistrar {
@@ -39,23 +40,18 @@ class HistoricalMessagesArchiveSourceRegistrar {
       defaultSourceLabel: sourceFolder.defaultSourceLabel,
     );
     final sourceId = await importLedger.getOrCreateSource(
-      sourceKey: sourceFolder.sourceKey,
-      sourceKind: historicalMessagesArchiveSourceKind,
+      sourceKey: sourceFolder.identity.value,
+      sourceKind: sourceFolder.identity.sourceKind,
       sourceLabel: normalizedSourceLabel,
     );
 
     return HistoricalMessagesArchiveSourceRegistration(
       sourceId: sourceId,
-      sourceKey: sourceFolder.sourceKey,
-      sourceKind: historicalMessagesArchiveSourceKind,
+      identity: sourceFolder.identity,
       sourceLabel: normalizedSourceLabel,
       selectedFolderPath: sourceFolder.selectedFolderPath,
       chatDbPath: sourceFolder.chatDbPath,
     );
-  }
-
-  static String buildSourceKey({required String chatDbPath}) {
-    return '$historicalMessagesArchiveSourceKeyPrefix$chatDbPath';
   }
 
   static String _normalizeSourceLabel({

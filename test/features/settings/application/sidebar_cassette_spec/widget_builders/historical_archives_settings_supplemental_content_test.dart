@@ -9,6 +9,7 @@ import 'package:remember_this_text/config/theme/widgets/buttons/app_secondary_bu
 import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
@@ -44,13 +45,13 @@ void main() {
                     );
                 return ResolvedTrackLayoutMatrixScope(
                   matrix: composition.resolvedMatrix,
-                  child: const SizedBox(
+                  child: SizedBox(
                     width: 320,
                     child: HistoricalArchivesSettingsTrackedCassette(
                       payload: HistoricalArchivesSettingsCassettePayload(
                         knownSources: [
                           HistoricalArchiveSidebarSourceSummary(
-                            sourceKey: sourceKey,
+                            identity: _identity(sourceKey),
                             label: 'Archive-2017',
                             dateRangeLabel: 'Date range: 2012 to 2017',
                             messageCountLabel: 'Messages: 8,882',
@@ -92,10 +93,12 @@ void main() {
     });
 
     testWidgets('renders only durable human archive metadata', (tester) async {
-      const payload = HistoricalArchivesSettingsCassettePayload(
+      final payload = HistoricalArchivesSettingsCassettePayload(
         knownSources: [
           HistoricalArchiveSidebarSourceSummary(
-            sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
+            identity: _identity(
+              'historical-messages-archive:/Archives/2017/chat.db',
+            ),
             label: 'Jan 2017 MacBook Archive',
             dateRangeLabel: 'Range: Jan 2014 -> Nov 2017',
             messageCountLabel: 'Source messages: 8,882',
@@ -105,7 +108,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        const ProviderScope(
+        ProviderScope(
           child: CupertinoApp(
             home: HistoricalArchivesSettingsSupplementalContent(
               payload: payload,
@@ -135,8 +138,8 @@ void main() {
       expect(find.textContaining('Last imported'), findsNothing);
       expect(find.textContaining('not yet imported'), findsNothing);
       expect(find.text('Add from a Messages Folder'), findsOneWidget);
-      expect(find.text('Choose Messages Folder...'), findsOneWidget);
-      expect(find.textContaining('Choose Messages Folder'), findsOneWidget);
+      expect(find.text('Choose a Messages Folder to add...'), findsOneWidget);
+      expect(find.textContaining('Choose a Messages Folder'), findsOneWidget);
       expect(find.text('Add a Messages Folder'), findsNothing);
       expect(find.text('Add an Archive Folder'), findsNothing);
     });
@@ -145,14 +148,15 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const ProviderScope(
+        ProviderScope(
           child: CupertinoApp(
             home: HistoricalArchivesSettingsSupplementalContent(
               payload: HistoricalArchivesSettingsCassettePayload(
                 knownSources: [
                   HistoricalArchiveSidebarSourceSummary(
-                    sourceKey:
-                        'historical-messages-archive:/Archives/2017/chat.db',
+                    identity: _identity(
+                      'historical-messages-archive:/Archives/2017/chat.db',
+                    ),
                     label: 'Archive-2017',
                     dateRangeLabel: 'Date range: Jul 2012 – Jun 2017',
                     messageCountLabel: 'Messages: 8,882',
@@ -278,9 +282,11 @@ void main() {
       );
       expect(
         tester.getTopLeft(guidance).dy,
-        lessThan(tester.getTopLeft(find.text('Choose Messages Folder...')).dy),
+        lessThan(
+          tester.getTopLeft(find.text('Choose a Messages Folder to add...')).dy,
+        ),
       );
-      expect(find.textContaining('Choose Messages Folder'), findsOneWidget);
+      expect(find.textContaining('Choose a Messages Folder'), findsOneWidget);
 
       double gapHeight(String key) {
         return tester
@@ -329,7 +335,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Choose Messages Folder...'));
+      await tester.tap(find.text('Choose a Messages Folder to add...'));
       await tester.pump();
 
       expect(workflow.chooseMessagesFolderCallCount, 1);
@@ -395,8 +401,10 @@ void main() {
         initialState: HistoricalArchivesWorkflowState(
           presentation: HistoricalArchivesExistingSourceState(
             data: _testPresentationData(),
-            facts: const HistoricalArchivesImportedSourceFacts(
-              sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+            facts: HistoricalArchivesImportedSourceFacts(
+              identity: _identity(
+                'historical-messages-archive:/tmp/archive/chat.db',
+              ),
               importedMessageCount: 42,
               earliestMessageUtc: '2012-07-25T08:00:00.000Z',
               latestMessageUtc: '2017-06-11T08:00:00.000Z',
@@ -419,7 +427,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Choose Messages Folder...'), findsOneWidget);
+      expect(find.text('Choose a Messages Folder to add...'), findsOneWidget);
     });
 
     testWidgets('invalid-folder notice leaves the stable hub action visible', (
@@ -449,7 +457,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Choose Messages Folder...'), findsOneWidget);
+      expect(find.text('Choose a Messages Folder to add...'), findsOneWidget);
       expect(find.text('Choose Another Folder'), findsNothing);
     });
 
@@ -478,7 +486,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Choose Messages Folder...'), findsNothing);
+      expect(find.text('Choose a Messages Folder to add...'), findsNothing);
       expect(
         find.byKey(
           const ValueKey<String>(
@@ -524,7 +532,7 @@ void main() {
             ),
           );
 
-          expect(find.text('Choose Messages Folder...'), findsNothing);
+          expect(find.text('Choose a Messages Folder to add...'), findsNothing);
         },
       );
     }
@@ -540,12 +548,12 @@ void main() {
           overrides: [
             historicalArchivesWorkflowProvider.overrideWith(() => workflow),
           ],
-          child: const CupertinoApp(
+          child: CupertinoApp(
             home: HistoricalArchivesSettingsSupplementalContent(
               payload: HistoricalArchivesSettingsCassettePayload(
                 knownSources: [
                   HistoricalArchiveSidebarSourceSummary(
-                    sourceKey: sourceKey,
+                    identity: _identity(sourceKey),
                     label: 'Archive-2017',
                     dateRangeLabel: 'Date range: 2012 to 2017',
                     messageCountLabel: 'Total messages: 8,882',
@@ -561,7 +569,7 @@ void main() {
       await tester.tap(find.text('Archive-2017'));
       await tester.pump();
 
-      expect(workflow.shownSourceKeys, [sourceKey]);
+      expect(workflow.shownSourceIdentities, [_identity(sourceKey)]);
       expect(workflow.chooseMessagesFolderCallCount, 0);
     });
 
@@ -576,12 +584,12 @@ void main() {
           overrides: [
             historicalArchivesWorkflowProvider.overrideWith(() => workflow),
           ],
-          child: const CupertinoApp(
+          child: CupertinoApp(
             home: HistoricalArchivesSettingsSupplementalContent(
               payload: HistoricalArchivesSettingsCassettePayload(
                 knownSources: [
                   HistoricalArchiveSidebarSourceSummary(
-                    sourceKey: sourceKey,
+                    identity: _identity(sourceKey),
                     label: 'Archive-2017',
                     dateRangeLabel: 'Date range: 2012 to 2017',
                     messageCountLabel: 'Messages: 8,882',
@@ -597,7 +605,7 @@ void main() {
       await tester.tap(find.text('Archive-2017'));
       await tester.pump();
 
-      expect(workflow.shownSourceKeys, isEmpty);
+      expect(workflow.shownSourceIdentities, isEmpty);
       final semantics = tester.getSemantics(find.text('Archive-2017'));
       expect(semantics.label, contains('Removing archive Archive-2017'));
     });
@@ -607,13 +615,13 @@ void main() {
       (tester) async {
         const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
         await tester.pumpWidget(
-          const ProviderScope(
+          ProviderScope(
             child: CupertinoApp(
               home: HistoricalArchivesSettingsSupplementalContent(
                 payload: HistoricalArchivesSettingsCassettePayload(
                   knownSources: [
                     HistoricalArchiveSidebarSourceSummary(
-                      sourceKey: sourceKey,
+                      identity: _identity(sourceKey),
                       label: 'Archive-2017',
                       dateRangeLabel: 'Date range: 2012 to 2017',
                       messageCountLabel: 'Total messages: 8,882',
@@ -668,7 +676,7 @@ void main() {
                   payload: HistoricalArchivesSettingsCassettePayload(
                     knownSources: [
                       HistoricalArchiveSidebarSourceSummary(
-                        sourceKey: sourceKey,
+                        identity: _identity(sourceKey),
                         label: 'Archive-2017',
                         dateRangeLabel: 'Date range: 2012 to 2017',
                         messageCountLabel: 'Total messages: 8,882',
@@ -778,7 +786,7 @@ void main() {
           payload: HistoricalArchivesSettingsCassettePayload(
             knownSources: [
               HistoricalArchiveSidebarSourceSummary(
-                sourceKey: sourceKey,
+                identity: _identity(sourceKey),
                 label: 'Archive-2017',
                 dateRangeLabel: 'Date range: 2012 to 2017',
                 messageCountLabel: 'Total messages: 8,882',
@@ -858,6 +866,7 @@ HistoricalArchivesPresentationData _testPresentationData() {
 
 HistoricalArchivesInspectionEvidence _testInspectionEvidence() {
   return const HistoricalArchivesInspectionEvidence(
+    sourceIdentity: null,
     folderPath: '/tmp/archive',
     chatDbPath: '/tmp/archive/chat.db',
     sourceLabel: 'archive',
@@ -892,7 +901,7 @@ class _TestHistoricalArchivesWorkflow extends HistoricalArchivesWorkflow {
 
   final HistoricalArchivesWorkflowState _initialState;
   int chooseMessagesFolderCallCount = 0;
-  final List<String> shownSourceKeys = [];
+  final List<HistoricalArchiveSourceIdentity> shownSourceIdentities = [];
 
   @override
   HistoricalArchivesWorkflowState build() {
@@ -905,7 +914,13 @@ class _TestHistoricalArchivesWorkflow extends HistoricalArchivesWorkflow {
   }
 
   @override
-  Future<void> showKnownSource({required String sourceKey}) async {
-    shownSourceKeys.add(sourceKey);
+  Future<void> showKnownSource({
+    required HistoricalArchiveSourceIdentity identity,
+  }) async {
+    shownSourceIdentities.add(identity);
   }
+}
+
+HistoricalArchiveSourceIdentity _identity(String sourceKey) {
+  return HistoricalArchiveSourceIdentity.fromPersistedValue(sourceKey);
 }

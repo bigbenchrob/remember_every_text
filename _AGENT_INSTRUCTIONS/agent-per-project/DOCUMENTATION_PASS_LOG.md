@@ -5237,3 +5237,18 @@ production preservation authority mechanically enforceable.
 - Recorded that the variable cartouche list remains outside center geometry
   and that no selected-row synchronization, magic top inset, or new spacer was
   introduced.
+
+## 2026-08-21 — Historical Archives canonical source identity
+
+- Added the canonical database rule
+  `10-DATABASES/14-historical-archive-source-identity.md` defining
+  `HistoricalArchiveSourceIdentity` as the sole authority for Historical
+  Archives source identity.
+- Added Feature 26 response
+  `43-HISTORICAL-ARCHIVE-CANONICAL-SOURCE-IDENTITY-IMPLEMENTATION.md` documenting
+  the former online/offline authority split, the final typed API, all identity
+  consumers, compatibility handling, and preserved boundaries.
+- Updated the Feature 26 architecture-conformance audit to mark D3 resolved;
+  D4 remains the only deferred finding from that sequence.
+- Updated the project database index and Feature 26 navigation so the identity
+  rule is unavoidable in future Historical Archives work.

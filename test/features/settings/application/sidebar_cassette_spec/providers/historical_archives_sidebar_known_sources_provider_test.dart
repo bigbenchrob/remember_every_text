@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/essentials/db/feature_level_providers/message_data_version_provider.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_sources.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_sources_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
@@ -8,8 +9,11 @@ import 'package:remember_this_text/features/settings/application/sidebar_cassett
 
 void main() {
   const sourceKey = 'historical-messages-archive:/Archives/2017/chat.db';
-  const source = HistoricalArchiveSourceMetadata(
-    sourceKey: sourceKey,
+  final sourceIdentity = HistoricalArchiveSourceIdentity.fromPersistedValue(
+    sourceKey,
+  );
+  final source = HistoricalArchiveSourceMetadata(
+    identity: sourceIdentity,
     sourceChatDb: '/Archives/2017/chat.db',
     folderPath: '/Archives/2017',
     sourceLabel: 'Archive-2017',
@@ -26,8 +30,8 @@ void main() {
     lastImportError: null,
     lastImportedMessageCount: 40,
   );
-  const importedMatch = HistoricalArchiveImportedSourceMatch(
-    sourceKey: sourceKey,
+  final importedMatch = HistoricalArchiveImportedSourceMatch(
+    identity: sourceIdentity,
     sourceId: 3,
     importedMessageCount: 8882,
   );
@@ -36,7 +40,7 @@ void main() {
     test('returns empty when no persisted archive source exists', () {
       final summaries = buildHistoricalArchiveSidebarKnownSources(
         sources: const [],
-        importedSourcesByKey: const {},
+        importedSourcesByIdentity: const {},
       );
 
       expect(summaries, isEmpty);
@@ -44,8 +48,8 @@ void main() {
 
     test('omits remembered source without positive imported truth', () {
       final summaries = buildHistoricalArchiveSidebarKnownSources(
-        sources: const [source],
-        importedSourcesByKey: const {},
+        sources: [source],
+        importedSourcesByIdentity: const {},
       );
 
       expect(summaries, isEmpty);
@@ -56,9 +60,9 @@ void main() {
       'holds only the actively removing source after durable count reaches zero',
       () {
         final summaries = buildHistoricalArchiveSidebarKnownSources(
-          sources: const [source],
-          importedSourcesByKey: const {},
-          removingSourceKey: sourceKey,
+          sources: [source],
+          importedSourcesByIdentity: const {},
+          removingSourceIdentity: sourceIdentity,
           removingImportedMessageCount: 8882,
         );
 
@@ -72,8 +76,8 @@ void main() {
 
     test('builds an imported-source summary from ledger truth', () {
       final summaries = buildHistoricalArchiveSidebarKnownSources(
-        sources: const [source],
-        importedSourcesByKey: const {sourceKey: importedMatch},
+        sources: [source],
+        importedSourcesByIdentity: {sourceIdentity: importedMatch},
       );
 
       expect(summaries, hasLength(1));
@@ -94,7 +98,7 @@ void main() {
             wasSuccessful: false,
           ),
         ],
-        importedSourcesByKey: const {sourceKey: importedMatch},
+        importedSourcesByIdentity: {sourceIdentity: importedMatch},
       );
       final missingTimestampSummaries =
           buildHistoricalArchiveSidebarKnownSources(
@@ -104,7 +108,7 @@ void main() {
                 wasSuccessful: true,
               ),
             ],
-            importedSourcesByKey: const {sourceKey: importedMatch},
+            importedSourcesByIdentity: {sourceIdentity: importedMatch},
           );
       final unverifiedTimestampSummaries =
           buildHistoricalArchiveSidebarKnownSources(
@@ -114,7 +118,7 @@ void main() {
                 wasSuccessful: null,
               ),
             ],
-            importedSourcesByKey: const {sourceKey: importedMatch},
+            importedSourcesByIdentity: {sourceIdentity: importedMatch},
           );
 
       expect(failedSummaries, isEmpty);
@@ -131,7 +135,7 @@ void main() {
             earliestMessageUtc: null,
           ),
         ],
-        importedSourcesByKey: const {sourceKey: importedMatch},
+        importedSourcesByIdentity: {sourceIdentity: importedMatch},
       );
 
       expect(summaries.single.dateRangeLabel, isNull);
@@ -140,15 +144,15 @@ void main() {
 
     test('keeps selection and reference keyed to imported membership', () {
       final selected = buildHistoricalArchiveSidebarKnownSources(
-        sources: const [source],
-        importedSourcesByKey: const {sourceKey: importedMatch},
-        selectedSourceKey: sourceKey,
+        sources: [source],
+        importedSourcesByIdentity: {sourceIdentity: importedMatch},
+        selectedSourceIdentity: sourceIdentity,
       );
       final referenced = buildHistoricalArchiveSidebarKnownSources(
-        sources: const [source],
-        importedSourcesByKey: const {sourceKey: importedMatch},
-        reference: const HistoricalArchivesKnownSourceReference(
-          sourceKey: sourceKey,
+        sources: [source],
+        importedSourcesByIdentity: {sourceIdentity: importedMatch},
+        reference: HistoricalArchivesKnownSourceReference(
+          identity: sourceIdentity,
           referenceOccurrence: 3,
         ),
       );
@@ -163,8 +167,10 @@ void main() {
     test('reference targets only the matching canonical source key', () {
       const otherSourceKey =
           'historical-messages-archive:/Archives/2016/chat.db';
-      const otherSource = HistoricalArchiveSourceMetadata(
-        sourceKey: otherSourceKey,
+      final otherSourceIdentity =
+          HistoricalArchiveSourceIdentity.fromPersistedValue(otherSourceKey);
+      final otherSource = HistoricalArchiveSourceMetadata(
+        identity: otherSourceIdentity,
         sourceChatDb: '/Archives/2016/chat.db',
         folderPath: '/Archives/2016',
         sourceLabel: 'Archive-2016',
@@ -181,20 +187,20 @@ void main() {
         lastImportError: null,
         lastImportedMessageCount: 10,
       );
-      const otherMatch = HistoricalArchiveImportedSourceMatch(
-        sourceKey: otherSourceKey,
+      final otherMatch = HistoricalArchiveImportedSourceMatch(
+        identity: otherSourceIdentity,
         sourceId: 4,
         importedMessageCount: 10,
       );
 
       final summaries = buildHistoricalArchiveSidebarKnownSources(
-        sources: const [source, otherSource],
-        importedSourcesByKey: const {
-          sourceKey: importedMatch,
-          otherSourceKey: otherMatch,
+        sources: [source, otherSource],
+        importedSourcesByIdentity: {
+          sourceIdentity: importedMatch,
+          otherSourceIdentity: otherMatch,
         },
-        reference: const HistoricalArchivesKnownSourceReference(
-          sourceKey: sourceKey,
+        reference: HistoricalArchivesKnownSourceReference(
+          identity: sourceIdentity,
           referenceOccurrence: 7,
         ),
       );
@@ -211,6 +217,55 @@ void main() {
         0,
       );
     });
+
+    test('same display label does not merge distinct identities', () {
+      final otherIdentity =
+          HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            '/Archives/2016/chat.db',
+          );
+      final otherSource = HistoricalArchiveSourceMetadata(
+        identity: otherIdentity,
+        sourceChatDb: '/Archives/2016/chat.db',
+        folderPath: '/Archives/2016',
+        sourceLabel: source.sourceLabel,
+        chatDbStatusLabel: 'Found and readable',
+        attachmentsStatusLabel: 'Not found',
+        preflightStatusLabel: 'Imported successfully',
+        totalMessages: 10,
+        earliestMessageUtc: '2016-01-01T00:00:00.000Z',
+        latestMessageUtc: '2016-12-31T00:00:00.000Z',
+        dryRunNewMessages: 10,
+        dryRunDuplicateMessages: 0,
+        lastImportFinishedAtUtc: '2026-04-30T18:30:00.000Z',
+        lastImportSuccess: true,
+        lastImportError: null,
+        lastImportedMessageCount: 10,
+      );
+      final otherMatch = HistoricalArchiveImportedSourceMatch(
+        identity: otherIdentity,
+        sourceId: 4,
+        importedMessageCount: 10,
+      );
+
+      final summaries = buildHistoricalArchiveSidebarKnownSources(
+        sources: [source, otherSource],
+        importedSourcesByIdentity: {
+          sourceIdentity: importedMatch,
+          otherIdentity: otherMatch,
+        },
+        selectedSourceIdentity: otherIdentity,
+      );
+
+      expect(summaries, hasLength(2));
+      expect(summaries.map((summary) => summary.label).toSet(), {
+        source.sourceLabel,
+      });
+      expect(summaries.where((summary) => summary.isSelected), hasLength(1));
+      expect(
+        summaries.singleWhere((summary) => summary.isSelected).identity,
+        otherIdentity,
+      );
+    });
   });
 
   test('message-data refresh removes zero-count sidebar membership', () async {
@@ -218,7 +273,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         historicalArchiveSourceMetadataProvider.overrideWith(
-          (ref) async => const [source],
+          (ref) async => [source],
         ),
         historicalArchiveImportedSourceLookupProvider.overrideWith(
           (ref) async => lookup,
@@ -251,7 +306,7 @@ void main() {
     );
     expect(
       await container.read(historicalArchiveSourceMetadataProvider.future),
-      const [source],
+      [source],
     );
   });
 }
@@ -263,7 +318,9 @@ HistoricalArchiveSourceMetadata _sourceWithImportCompletion({
   String? latestMessageUtc = '2017-06-11T08:00:00.000Z',
 }) {
   return HistoricalArchiveSourceMetadata(
-    sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
+    identity: HistoricalArchiveSourceIdentity.fromPersistedValue(
+      'historical-messages-archive:/Archives/2017/chat.db',
+    ),
     sourceChatDb: '/Archives/2017/chat.db',
     folderPath: '/Archives/2017',
     sourceLabel: 'Archive-2017',
@@ -290,16 +347,9 @@ final class _MutableImportedSourceLookup
 
   @override
   Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
-    required String folderPath,
-  }) async {
-    return match;
-  }
-
-  @override
-  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity identity,
   }) async {
     final current = match;
-    return current?.sourceKey == sourceKey ? current : null;
+    return current?.identity == identity ? current : null;
   }
 }

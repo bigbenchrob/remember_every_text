@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'historical_archives_workflow_panel_model_provider.dart';
 
 part 'historical_archives_workflow_actions_provider.g.dart';
@@ -62,10 +63,12 @@ class HistoricalArchivesWorkflowActions
         );
   }
 
-  Future<void> showKnownSource({required String sourceKey}) async {
+  Future<void> showKnownSource({
+    required HistoricalArchiveSourceIdentity identity,
+  }) async {
     await ref
         .read(historicalArchivesWorkflowProvider.notifier)
-        .showKnownSource(sourceKey: sourceKey);
+        .showKnownSource(identity: identity);
   }
 
   Future<void> retrySelectedFolderInspection() async {

@@ -2,7 +2,7 @@
 tier: project
 scope: production-archive-recovery
 owner: agent-per-project
-last_reviewed: 2026-08-20
+last_reviewed: 2026-08-21
 source_of_truth: doc
 links:
   - ../../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md
@@ -73,6 +73,10 @@ panel. See:
 - [Mac Messages Narrator Scope Transition](responses/37-MAC-MESSAGES-NARRATOR-SCOPE-TRANSITION-IMPLEMENTATION.md)
 - [Narrator Lifecycle And Stale Commentary](responses/38-NARRATOR-LIFECYCLE-AND-STALE-COMMENTARY-IMPLEMENTATION.md)
 - [Stable Narrator Track, Removal Journey, And Terminal Perception](responses/39-STABLE-NARRATOR-TRACK-REMOVAL-JOURNEY-AND-TERMINAL-PERCEPTION-IMPLEMENTATION.md)
+- [Historical Archives Architecture-Conformance Audit](responses/40-HISTORICAL-ARCHIVES-ARCHITECTURE-CONFORMANCE-AUDIT.md)
+- [Historical Archives Typed Presentation State](responses/41-HISTORICAL-ARCHIVES-TYPED-PRESENTATION-STATE-IMPLEMENTATION.md)
+- [Historical Archives Stable Center Track Skeleton](responses/42-HISTORICAL-ARCHIVES-STABLE-CENTER-TRACK-SKELETON-IMPLEMENTATION.md)
+- [Historical Archive Canonical Source Identity](responses/43-HISTORICAL-ARCHIVE-CANONICAL-SOURCE-IDENTITY-IMPLEMENTATION.md)
 
 The MessageLens-folder arm and historical attachment-payload recovery remain
 out of scope.

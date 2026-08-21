@@ -1,3 +1,5 @@
+import '../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
+
 enum ArchiveSourceInspectionStatus {
   missing,
   readable,
@@ -23,6 +25,7 @@ final class ArchiveSourceInspection {
     required this.attachmentsStatusLabel,
     required this.detail,
     required this.dryRunEstimate,
+    this.sourceIdentity,
     this.totalMessages,
     this.totalChats,
     this.totalHandles,
@@ -39,6 +42,7 @@ final class ArchiveSourceInspection {
   final String attachmentsStatusLabel;
   final String detail;
   final ArchiveSourceDryRunEstimate dryRunEstimate;
+  final HistoricalArchiveSourceIdentity? sourceIdentity;
   final int? totalMessages;
   final int? totalChats;
   final int? totalHandles;

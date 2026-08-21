@@ -12,6 +12,8 @@ links:
   - ./39-STABLE-NARRATOR-TRACK-REMOVAL-JOURNEY-AND-TERMINAL-PERCEPTION-IMPLEMENTATION.md
   - ./41-HISTORICAL-ARCHIVES-TYPED-PRESENTATION-STATE-IMPLEMENTATION.md
   - ./42-HISTORICAL-ARCHIVES-STABLE-CENTER-TRACK-SKELETON-IMPLEMENTATION.md
+  - ./43-HISTORICAL-ARCHIVE-CANONICAL-SOURCE-IDENTITY-IMPLEMENTATION.md
+  - ../../../10-DATABASES/14-historical-archive-source-identity.md
 ---
 
 # Historical Archives Architecture-Conformance Audit
@@ -225,13 +227,16 @@ responsibilities remain in the application layer and widgets still delegate
 actions, so this is not presently a layer violation. Splitting it would be a
 substantial state-model change and is deferred.
 
-### B2: source-key reconstruction has two normalization entry points
+### B2: resolved — source-key reconstruction has one typed authority
 
-Folder inspection can use the filesystem resolver, while persisted metadata
-must remain readable when the original folder is absent. The repository
-therefore reconstructs a key from persisted `sourceChatDb`. Consolidating this
-without losing offline metadata semantics requires a deliberately pure source
-identity contract or persistence change. No path/identity change is made here.
+`HistoricalArchiveSourceIdentity` now owns source-kind discrimination, path
+normalization, serialized key construction, and persisted-key validation.
+Fresh inspection, legacy metadata compatibility, registration, imported
+membership, duplicate detection, selection, correspondence, removal, and
+reimport consume that authority rather than reconstructing source keys. New
+metadata persists the canonical key directly, and offline reads require no
+mounted donor folder. See implementation record 43 and the canonical database
+identity rule.
 
 ### B3: superseded control-panel code remains as defensive fallback
 
@@ -283,12 +288,16 @@ Narrator presentation inside that skeleton; it cannot change the structural
 boundary. The sidebar still ends shared participation after E, so its variable
 cartouche list remains independent native flow. See implementation record 42.
 
-### D3: source identity reconstruction should have one offline-capable contract
+### D3: resolved — source identity has one offline-capable contract
 
-Inspection, persisted metadata, and absent-folder rendering need one canonical
-identity rule that does not require the source to exist. The current values are
-compatible, but the authority is duplicated. This should be designed before
-the future MessageLens-folder arm.
+`HistoricalArchiveSourceIdentity` is the single typed authority for Mac
+Messages historical-source identity. Its canonical serialized value combines
+the historical-source kind with the normalized absolute `chat.db` path. The
+rule is pure and does not require filesystem access, so persisted sources
+remain identifiable while their external volume is unavailable. Registration
+accepts the resolved identity rather than constructing it, and removal consumes
+the selected source's persisted identity without remounting the donor. See
+implementation record 43.
 
 ### D4: generated Drift APIs cannot prohibit legacy-table writes
 
@@ -314,9 +323,11 @@ part of Feature 26 remediation.
 
 The original audit pass implemented A1-A3 only. Remediation 41 subsequently
 resolved D1 without changing behavior, persistence, mutation authority,
-Tracks, or source identity. Remediation 42 subsequently resolved D2 through a
-page-local stable center skeleton. D3-D4 remain recorded rather than silently
-resolved because they require identity or schema decisions.
+Tracks, or source identity. Remediation 42 resolved D2 through a page-local
+stable center skeleton. Remediation 43 resolved D3 through one typed,
+offline-capable identity authority without a database schema change. D4
+remains recorded because mechanically prohibiting legacy generated Drift
+writes requires a schema-level decision.
 
 ## Completed Remediation
 
@@ -365,6 +376,22 @@ cannot leak into selected-source/removal state, and notice/reference variants
 cannot coexist with operations or selection. Static architecture checks and
 behavioral race/session tests preserve this boundary.
 
+### Canonical Historical Archive source identity
+
+`HistoricalArchiveSourceIdentity` now owns the sole Mac Messages historical
+source rule. Fresh inspection and legacy persisted metadata both enter the same
+construction/validation contract; source registration only persists the
+supplied identity. Duplicate lookup, imported membership, final verification,
+blue selection, orange correspondence, removal, and deterministic reimport
+all compare the typed value object.
+
+New overlay metadata stores the canonical serialized key. Older records that
+lack it pass their stored `sourceChatDb` through the same authority as a bounded
+compatibility path. Removal no longer resolves the donor folder merely to
+recover identity, so an offline imported source can still be managed. Static
+tripwires prohibit revival of the retired key builder and prevent registration,
+removal, or presentation from becoming alternative identity authorities.
+
 ## Dead And Superseded Code Result
 
 The context/stage state vocabulary and its compatibility fields were removed
@@ -374,13 +401,12 @@ requires a separate reachability audit.
 
 ## Verification
 
-- Focused typed-inspection, graph-readiness, graph import/removal, and workflow
-  tests: 48 passed.
-- Complete Settings suite: 129 passed.
-- Mutation authority, archive graph, owner admission, Onboarding readiness,
-  Track, and DateConverter regressions: 79 passed.
-- Architecture tripwires: 377 passed.
-- Full Flutter test suite: 1,828 passed.
+- Focused Historical Archives identity, persistence, workflow,
+  import/removal, Track, sidebar, and panel suite: 119 passed.
+- Complete Settings suite: 138 passed.
+- Architecture tripwires and focused Historical Archives architecture tests:
+  384 passed.
+- Full Flutter test suite: 1,848 passed.
 - `flutter analyze`: no issues.
 - macOS debug build: succeeded at
   `build/macos/Build/Products/Debug/MessageLens Development.app`.
@@ -391,10 +417,11 @@ requires a separate reachability audit.
 The current Mac Messages arm is architecturally conformant enough to remain the
 behavioral reference for future archive-source work in its proven areas:
 caller-aware mutation admission, typed operation observations, truthful
-progress, source-scoped provenance, DateConverter authority, preservation, and
-session-safe presentation.
+progress, source-scoped provenance, DateConverter authority, preservation,
+session-safe presentation, typed workflow state, stable Track boundaries, and
+single-authority source identity.
 
-The typed workflow-state shape can now serve as the state-model reference for a
-future archive-source arm. The complete Mac Messages arm should still not be
-copied mechanically until D3 is resolved, so a second source arm does not
-duplicate the offline source-key reconstruction split.
+A future MessageLens-folder arm may use this ownership shape, but must define
+its own source-kind evidence and canonical identity rule. It must not reuse the
+Mac Messages path rule mechanically. D4 remains the only deferred finding from
+this audit sequence.

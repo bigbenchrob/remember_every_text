@@ -1,9 +1,7 @@
 import 'dart:convert';
 
-import 'package:path/path.dart' as path;
-
 import '../../../../essentials/db/infrastructure/data_sources/local/overlay/overlay_database.dart';
-import '../../../../essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
+import '../../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import '../../application/historical_archive_sources.dart';
 
 class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
@@ -21,9 +19,7 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
     return [
       for (final record in records)
         HistoricalArchiveSourceMetadata(
-          sourceKey: HistoricalMessagesArchiveSourceRegistrar.buildSourceKey(
-            chatDbPath: path.normalize(path.absolute(record.sourceChatDb)),
-          ),
+          identity: record.identity,
           sourceChatDb: record.sourceChatDb,
           folderPath: record.folderPath,
           sourceLabel: record.sourceLabel,
@@ -47,11 +43,13 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
   Future<void> upsertSourceMetadata(
     HistoricalArchiveSourceMetadataUpdate update,
   ) async {
+    final identity = update.identity;
     final recordsBySource = {
-      for (final record in await _readRecords()) record.sourceChatDb: record,
+      for (final record in await _readRecords()) record.identity.value: record,
     };
-    recordsBySource[update.sourceChatDb] = _ArchiveSourceRecord.fromUpdate(
+    recordsBySource[identity.value] = _ArchiveSourceRecord.fromUpdate(
       update,
+      identity: identity,
     );
 
     final records = recordsBySource.values.toList()
@@ -83,6 +81,7 @@ class HistoricalArchiveSourcesRepository implements HistoricalArchiveSources {
 
 final class _ArchiveSourceRecord {
   const _ArchiveSourceRecord({
+    required this.identity,
     required this.sourceChatDb,
     required this.folderPath,
     required this.sourceLabel,
@@ -106,9 +105,11 @@ final class _ArchiveSourceRecord {
   });
 
   factory _ArchiveSourceRecord.fromUpdate(
-    HistoricalArchiveSourceMetadataUpdate update,
-  ) {
+    HistoricalArchiveSourceMetadataUpdate update, {
+    required HistoricalArchiveSourceIdentity identity,
+  }) {
     return _ArchiveSourceRecord(
+      identity: identity,
       sourceChatDb: update.sourceChatDb,
       folderPath: update.folderPath,
       sourceLabel: update.sourceLabel,
@@ -133,8 +134,17 @@ final class _ArchiveSourceRecord {
   }
 
   factory _ArchiveSourceRecord.fromJson(Map<String, Object?> json) {
+    final sourceChatDb = _stringValue(json['sourceChatDb']);
+    final persistedSourceKey = _nullableStringValue(json['sourceKey']);
     return _ArchiveSourceRecord(
-      sourceChatDb: _stringValue(json['sourceChatDb']),
+      identity: persistedSourceKey == null
+          ? HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+              sourceChatDb,
+            )
+          : HistoricalArchiveSourceIdentity.fromPersistedValue(
+              persistedSourceKey,
+            ),
+      sourceChatDb: sourceChatDb,
       folderPath: _stringValue(json['folderPath']),
       sourceLabel: _stringValue(json['sourceLabel']),
       chatDbStatusLabel: _stringValue(json['chatDbStatusLabel']),
@@ -159,6 +169,7 @@ final class _ArchiveSourceRecord {
     );
   }
 
+  final HistoricalArchiveSourceIdentity identity;
   final String sourceChatDb;
   final String folderPath;
   final String sourceLabel;
@@ -182,6 +193,7 @@ final class _ArchiveSourceRecord {
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
+      'sourceKey': identity.value,
       'sourceChatDb': sourceChatDb,
       'folderPath': folderPath,
       'sourceLabel': sourceLabel,

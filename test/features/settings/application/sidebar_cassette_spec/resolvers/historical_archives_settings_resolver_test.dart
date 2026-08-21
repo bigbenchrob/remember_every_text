@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/resolvers/historical_archives_settings_resolver.dart';
 
@@ -32,9 +33,11 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      const knownSources = [
+      final knownSources = [
         HistoricalArchiveSidebarSourceSummary(
-          sourceKey: 'historical-messages-archive:/Archives/2017/chat.db',
+          identity: HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+            '/Archives/2017/chat.db',
+          ),
           label: 'Archive-2017',
           dateRangeLabel: 'Date range: not yet available',
           messageCountLabel: 'Total messages: 42',

@@ -25,6 +25,7 @@ import 'package:remember_this_text/essentials/conversation_graph/infrastructure/
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/message_to_attachment_projection_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/archives/source_scoped_archive_import_service.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/filesystem_historical_messages_archive_source_folder_resolver.dart';
@@ -173,8 +174,6 @@ void main() {
           graphDatabase: graphDatabase,
         ),
       ),
-      folderResolver:
-          const FilesystemHistoricalMessagesArchiveSourceFolderResolver(),
     );
   });
 
@@ -433,7 +432,10 @@ void main() {
 
       final observations = <SourceScopedArchiveGraphRemovalObservation>[];
       final removalResult = await removalService.removeArchiveSource(
-        folderPath: archiveFolder.path,
+        sourceIdentity:
+            HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+              path.join(archiveFolder.path, 'chat.db'),
+            ),
         onObservation: observations.add,
       );
 

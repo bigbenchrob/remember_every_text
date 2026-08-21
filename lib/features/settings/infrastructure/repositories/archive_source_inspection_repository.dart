@@ -6,6 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 import '../../../../core/util/date_converter.dart';
 import '../../../../essentials/db/application/read_only_sql_guard.dart';
 import '../../../../essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import '../../application/archive_source_inspection.dart';
 
 final class ArchiveSourceDateRange {
@@ -111,6 +112,10 @@ class ArchiveSourceInspectionRepository implements ArchiveSourceInspector {
               ? 'Source checks succeeded and GUID-based dry-run estimates are now visible. Archive import can run when the evidence looks correct.'
               : 'Source checks succeeded, but conversation graph dry-run comparison is unavailable right now. Archive import can still run if the source evidence looks correct.',
           dryRunEstimate: dryRunEstimate,
+          sourceIdentity:
+              HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+                chatDbPath,
+              ),
           totalMessages: totalMessages,
           totalChats: totalChats,
           totalHandles: totalHandles,

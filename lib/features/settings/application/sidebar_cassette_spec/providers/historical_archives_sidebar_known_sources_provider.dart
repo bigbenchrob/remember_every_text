@@ -3,6 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../../core/util/count_label_formatter.dart';
 import '../../../../../core/util/date_label_formatter.dart';
 import '../../../../../essentials/db/feature_level_providers/message_data_version_provider.dart';
+import '../../../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import '../../historical_archive_sources.dart';
 import '../../historical_archive_sources_provider.dart';
 import '../../historical_archives_workflow_panel_model_provider.dart';
@@ -22,26 +23,27 @@ historicalArchivesSidebarKnownSources(
   final importedSourceLookup = await ref.watch(
     historicalArchiveImportedSourceLookupProvider.future,
   );
-  final importedSourcesByKey = <String, HistoricalArchiveImportedSourceMatch>{};
+  final importedSourcesByIdentity =
+      <HistoricalArchiveSourceIdentity, HistoricalArchiveImportedSourceMatch>{};
   for (final source in sources) {
-    final match = await importedSourceLookup.findImportedSourceByKey(
-      sourceKey: source.sourceKey,
+    final match = await importedSourceLookup.findImportedSource(
+      identity: source.identity,
     );
     if (match != null) {
-      importedSourcesByKey[source.sourceKey] = match;
+      importedSourcesByIdentity[source.identity] = match;
     }
   }
   final presentation = ref.watch(
     historicalArchivesWorkflowProvider.select((state) {
       final active = state.presentation;
       return (
-        selectedSourceKey: active is HistoricalArchivesExistingSourceState
-            ? active.facts.sourceKey
+        selectedSourceIdentity: active is HistoricalArchivesExistingSourceState
+            ? active.facts.identity
             : null,
-        removingSourceKey: active is HistoricalArchivesRemovingState
-            ? active.facts.sourceKey
+        removingSourceIdentity: active is HistoricalArchivesRemovingState
+            ? active.facts.identity
             : active is HistoricalArchivesRemovalFailedState
-            ? active.facts.sourceKey
+            ? active.facts.identity
             : null,
         removingImportedMessageCount: active is HistoricalArchivesRemovingState
             ? active.facts.importedMessageCount
@@ -54,9 +56,9 @@ historicalArchivesSidebarKnownSources(
   );
   return buildHistoricalArchiveSidebarKnownSources(
     sources: sources,
-    importedSourcesByKey: importedSourcesByKey,
-    selectedSourceKey: presentation.selectedSourceKey,
-    removingSourceKey: presentation.removingSourceKey,
+    importedSourcesByIdentity: importedSourcesByIdentity,
+    selectedSourceIdentity: presentation.selectedSourceIdentity,
+    removingSourceIdentity: presentation.removingSourceIdentity,
     removingImportedMessageCount: presentation.removingImportedMessageCount,
     reference: presentation.reference,
   );
@@ -65,34 +67,38 @@ historicalArchivesSidebarKnownSources(
 List<HistoricalArchiveSidebarSourceSummary>
 buildHistoricalArchiveSidebarKnownSources({
   required List<HistoricalArchiveSourceMetadata> sources,
-  required Map<String, HistoricalArchiveImportedSourceMatch>
-  importedSourcesByKey,
-  String? selectedSourceKey,
-  String? removingSourceKey,
+  required Map<
+    HistoricalArchiveSourceIdentity,
+    HistoricalArchiveImportedSourceMatch
+  >
+  importedSourcesByIdentity,
+  HistoricalArchiveSourceIdentity? selectedSourceIdentity,
+  HistoricalArchiveSourceIdentity? removingSourceIdentity,
   int? removingImportedMessageCount,
   HistoricalArchivesKnownSourceReference? reference,
 }) {
   return <HistoricalArchiveSidebarSourceSummary>[
     for (final source in sources)
       if ((source.lastImportSuccess == true &&
-              importedSourcesByKey[source.sourceKey] != null) ||
-          source.sourceKey == removingSourceKey)
+              importedSourcesByIdentity[source.identity] != null) ||
+          source.identity == removingSourceIdentity)
         HistoricalArchiveSidebarSourceSummary(
-          sourceKey: source.sourceKey,
+          identity: source.identity,
           label: source.sourceLabel,
           dateRangeLabel: _buildDateRangeLabel(source),
           messageCountLabel: _buildMessageCountLabel(
             source,
-            importedSource: importedSourcesByKey[source.sourceKey],
-            removingImportedMessageCount: source.sourceKey == removingSourceKey
+            importedSource: importedSourcesByIdentity[source.identity],
+            removingImportedMessageCount:
+                source.identity == removingSourceIdentity
                 ? removingImportedMessageCount
                 : null,
           ),
           importedOnLabel: _buildImportedOnLabel(source),
-          isSelected: source.sourceKey == selectedSourceKey,
-          isReferenced: source.sourceKey == reference?.sourceKey,
-          isBusy: source.sourceKey == removingSourceKey,
-          referenceOccurrence: source.sourceKey == reference?.sourceKey
+          isSelected: source.identity == selectedSourceIdentity,
+          isReferenced: source.identity == reference?.identity,
+          isBusy: source.identity == removingSourceIdentity,
+          referenceOccurrence: source.identity == reference?.identity
               ? reference?.referenceOccurrence ?? 0
               : 0,
         ),

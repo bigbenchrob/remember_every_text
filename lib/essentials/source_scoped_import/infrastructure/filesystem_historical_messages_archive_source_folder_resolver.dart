@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import '../application/archives/historical_messages_archive_source_folder_resolver.dart';
-import '../application/archives/historical_messages_archive_source_registrar.dart';
+import '../domain/historical_archive_source_identity.dart';
 
 final class FilesystemHistoricalMessagesArchiveSourceFolderResolver
     implements HistoricalMessagesArchiveSourceFolderResolver {
@@ -28,8 +28,8 @@ final class FilesystemHistoricalMessagesArchiveSourceFolderResolver
     return HistoricalMessagesArchiveSourceFolder(
       selectedFolderPath: normalizedFolderPath,
       chatDbPath: chatDbPath,
-      sourceKey: HistoricalMessagesArchiveSourceRegistrar.buildSourceKey(
-        chatDbPath: chatDbPath,
+      identity: HistoricalArchiveSourceIdentity.macMessagesFromChatDbPath(
+        chatDbPath,
       ),
       defaultSourceLabel: defaultSourceLabel,
     );
@@ -40,6 +40,6 @@ final class FilesystemHistoricalMessagesArchiveSourceFolderResolver
     if (trimmed.isEmpty) {
       throw ArgumentError.value(folderPath, 'folderPath', 'must not be empty');
     }
-    return Directory(trimmed).absolute.path;
+    return path.normalize(Directory(trimmed).absolute.path);
   }
 }

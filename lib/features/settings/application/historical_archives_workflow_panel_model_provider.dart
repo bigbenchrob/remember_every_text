@@ -33,6 +33,7 @@ import '../../../essentials/onboarding/feature_level_providers.dart'
     show onboardingMessagesDatabasePathProvider;
 import '../../../essentials/sidebar/feature_level_providers.dart'
     show sidebarFlowProvider;
+import '../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import '../../sidebar_utilities/domain/sidebar_utilities_constants.dart'
     show SettingsMenuActionId;
 import 'archive_source_inspection.dart';
@@ -84,16 +85,18 @@ enum HistoricalArchivesPreflightStatus {
   failed,
 }
 
-/// Ephemeral presentation state only. [sourceKey] identifies the archive;
+/// Ephemeral presentation state only. [identity] identifies the archive;
 /// [referenceOccurrence] identifies a fresh "look here" event in this process.
 final class HistoricalArchivesKnownSourceReference {
   const HistoricalArchivesKnownSourceReference({
-    required this.sourceKey,
+    required this.identity,
     required this.referenceOccurrence,
   });
 
-  final String sourceKey;
+  final HistoricalArchiveSourceIdentity identity;
   final int referenceOccurrence;
+
+  String get sourceKey => identity.value;
 }
 
 /// One-use presentation notice for a failed add attempt.
@@ -107,14 +110,16 @@ sealed class HistoricalArchivesNotice {
 final class HistoricalArchivesDuplicateFolderNotice
     extends HistoricalArchivesNotice {
   const HistoricalArchivesDuplicateFolderNotice({
-    required this.sourceKey,
+    required this.identity,
     required this.noticeOccurrence,
     required this.presentationSessionOccurrence,
   }) : super();
 
-  final String sourceKey;
+  final HistoricalArchiveSourceIdentity identity;
   final int noticeOccurrence;
   final int presentationSessionOccurrence;
+
+  String get sourceKey => identity.value;
 }
 
 /// One-use presentation notice for a folder that did not qualify as an archive.
@@ -158,6 +163,7 @@ const historicalArchivesTerminalCompletedDwellDuration = Duration(
 
 final class HistoricalArchivesInspectionEvidence {
   const HistoricalArchivesInspectionEvidence({
+    required this.sourceIdentity,
     required this.folderPath,
     required this.chatDbPath,
     required this.sourceLabel,
@@ -177,6 +183,7 @@ final class HistoricalArchivesInspectionEvidence {
     this.successfulImportFinishedAtUtc,
   });
 
+  final HistoricalArchiveSourceIdentity? sourceIdentity;
   final String folderPath;
   final String chatDbPath;
   final String sourceLabel;
@@ -623,14 +630,14 @@ final class HistoricalArchivesReadyToAddState
 
 final class HistoricalArchivesImportedSourceFacts {
   const HistoricalArchivesImportedSourceFacts({
-    required this.sourceKey,
+    required this.identity,
     required this.importedMessageCount,
     required this.earliestMessageUtc,
     required this.latestMessageUtc,
     required this.successfulImportFinishedAtUtc,
   });
 
-  final String sourceKey;
+  final HistoricalArchiveSourceIdentity identity;
   final int importedMessageCount;
   final String? earliestMessageUtc;
   final String? latestMessageUtc;
@@ -769,12 +776,15 @@ final class HistoricalArchivesWorkflowState {
         _ => null,
       };
 
-  String? get selectedKnownSourceKey => switch (presentation) {
-    HistoricalArchivesExistingSourceState(:final facts) ||
-    HistoricalArchivesRemovingState(:final facts) ||
-    HistoricalArchivesRemovalFailedState(:final facts) => facts.sourceKey,
-    _ => null,
-  };
+  HistoricalArchiveSourceIdentity? get selectedKnownSourceIdentity =>
+      switch (presentation) {
+        HistoricalArchivesExistingSourceState(:final facts) ||
+        HistoricalArchivesRemovingState(:final facts) ||
+        HistoricalArchivesRemovalFailedState(:final facts) => facts.identity,
+        _ => null,
+      };
+
+  String? get selectedKnownSourceKey => selectedKnownSourceIdentity?.value;
 
   String? get removalFailureDetail => switch (presentation) {
     HistoricalArchivesExistingSourceState(:final managementFailureDetail) =>
@@ -902,6 +912,7 @@ HistoricalArchivesPresentationState _withPresentationData(
 
 final class HistoricalArchivesFolderPreflightResult {
   const HistoricalArchivesFolderPreflightResult({
+    required this.sourceIdentity,
     required this.preflight,
     required this.selectedFolderPath,
     required this.archiveRemovalTargetChatDbPath,
@@ -925,6 +936,7 @@ final class HistoricalArchivesFolderPreflightResult {
     this.dryRunUnavailableReason,
   });
 
+  final HistoricalArchiveSourceIdentity? sourceIdentity;
   final HistoricalArchivesPreflightViewModel preflight;
   final String selectedFolderPath;
   final String archiveRemovalTargetChatDbPath;
@@ -1258,13 +1270,13 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     if (importedSourceMatch != null &&
         await _hasSuccessfulImportMetadata(
           archiveSources: archiveSources,
-          sourceKey: importedSourceMatch.sourceKey,
+          identity: importedSourceMatch.identity,
         )) {
       _nextDuplicateNoticeOccurrence += 1;
       state = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesDuplicateNoticeState(
           notice: HistoricalArchivesDuplicateFolderNotice(
-            sourceKey: importedSourceMatch.sourceKey,
+            identity: importedSourceMatch.identity,
             noticeOccurrence: _nextDuplicateNoticeOccurrence,
             presentationSessionOccurrence: _presentationSessionOccurrence,
           ),
@@ -1298,14 +1310,16 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         presentation.inspectionOccurrence == inspectionOccurrence;
   }
 
-  Future<void> showKnownSource({required String sourceKey}) async {
+  Future<void> showKnownSource({
+    required HistoricalArchiveSourceIdentity identity,
+  }) async {
     final presentationSessionOccurrence = _presentationSessionOccurrence;
     final sources = await ref.read(
       historicalArchiveSourceMetadataProvider.future,
     );
     HistoricalArchiveSourceMetadata? source;
     for (final candidate in sources) {
-      if (candidate.sourceKey == sourceKey) {
+      if (candidate.identity == identity) {
         source = candidate;
         break;
       }
@@ -1320,9 +1334,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       final lookup = await ref.read(
         historicalArchiveImportedSourceLookupProvider.future,
       );
-      importedSourceMatch = await lookup.findImportedSourceByKey(
-        sourceKey: sourceKey,
-      );
+      importedSourceMatch = await lookup.findImportedSource(identity: identity);
     } catch (error, stackTrace) {
       _logHistoricalArchivesWarning(
         ref,
@@ -1345,7 +1357,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     state = _workflowStateFromKnownSourceMetadata(
       source,
       importedMessageCount: importedSourceMatch.importedMessageCount,
-      selectedKnownSourceKey: sourceKey,
+      selectedKnownSourceIdentity: identity,
     );
   }
 
@@ -1383,7 +1395,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     state = HistoricalArchivesWorkflowState(
       presentation: HistoricalArchivesKnownSourceReferenceState(
         reference: HistoricalArchivesKnownSourceReference(
-          sourceKey: notice.sourceKey,
+          identity: notice.identity,
           referenceOccurrence: referenceOccurrence,
         ),
       ),
@@ -1481,7 +1493,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     }
 
     final selectedFolderPath = selectedPresentation.data.selectedFolderPath;
-    final selectedSourceKey = selectedPresentation.facts.sourceKey;
+    final selectedSourceIdentity = selectedPresentation.facts.identity;
     final selectedSourceState = HistoricalArchivesExistingSourceState(
       data: selectedPresentation.data,
       facts: selectedPresentation.facts,
@@ -1541,12 +1553,12 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                 sourceScopedArchiveGraphRemovalServiceProvider.future,
               );
               await removalService.removeArchiveSource(
-                folderPath: selectedFolderPath,
+                sourceIdentity: selectedSourceIdentity,
                 onObservation: (observation) {
                   try {
                     _applyRemovalObservation(
                       observation,
-                      sourceKey: selectedSourceKey,
+                      sourceIdentity: selectedSourceIdentity,
                       presentationSessionOccurrence:
                           removalPresentationSessionOccurrence,
                     );
@@ -1564,7 +1576,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               _setRemovalStageStatus(
                 stage: HistoricalArchiveRemovalStage.verifyingRemoval,
                 status: HistoricalArchiveRemovalStageStatus.running,
-                sourceKey: selectedSourceKey,
+                sourceIdentity: selectedSourceIdentity,
                 presentationSessionOccurrence:
                     removalPresentationSessionOccurrence,
               );
@@ -1574,9 +1586,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                 historicalArchiveImportedSourceLookupProvider.future,
               );
               final remainingSource = await importedSourceLookup
-                  .findImportedSourceByKey(sourceKey: selectedSourceKey);
+                  .findImportedSource(identity: selectedSourceIdentity);
               if (!_ownsCurrentRemovalPresentation(
-                sourceKey: selectedSourceKey,
+                sourceIdentity: selectedSourceIdentity,
                 presentationSessionOccurrence:
                     removalPresentationSessionOccurrence,
               )) {
@@ -1586,7 +1598,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
                 _setRemovalStageStatus(
                   stage: HistoricalArchiveRemovalStage.verifyingRemoval,
                   status: HistoricalArchiveRemovalStageStatus.failed,
-                  sourceKey: selectedSourceKey,
+                  sourceIdentity: selectedSourceIdentity,
                   presentationSessionOccurrence:
                       removalPresentationSessionOccurrence,
                 );
@@ -1608,20 +1620,20 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               _setRemovalStageStatus(
                 stage: HistoricalArchiveRemovalStage.verifyingRemoval,
                 status: HistoricalArchiveRemovalStageStatus.succeeded,
-                sourceKey: selectedSourceKey,
+                sourceIdentity: selectedSourceIdentity,
                 presentationSessionOccurrence:
                     removalPresentationSessionOccurrence,
               );
             },
           );
       await _dwellOnCompletedRemovalThenReturnToHub(
-        sourceKey: selectedSourceKey,
+        sourceIdentity: selectedSourceIdentity,
         presentationSessionOccurrence: removalPresentationSessionOccurrence,
       );
     } on ArchiveMutationDeniedException catch (error) {
       if (_presentationSessionOccurrence !=
               removalPresentationSessionOccurrence ||
-          state.selectedKnownSourceKey != selectedSourceKey) {
+          state.selectedKnownSourceIdentity != selectedSourceIdentity) {
         return;
       }
       state = HistoricalArchivesWorkflowState(
@@ -1650,8 +1662,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         final importedSourceLookup = await ref.read(
           historicalArchiveImportedSourceLookupProvider.future,
         );
-        remainingSource = await importedSourceLookup.findImportedSourceByKey(
-          sourceKey: selectedSourceKey,
+        remainingSource = await importedSourceLookup.findImportedSource(
+          identity: selectedSourceIdentity,
         );
         membershipWasVerified = true;
       } catch (lookupError, stackTrace) {
@@ -1664,7 +1676,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         );
       }
       if (!_ownsCurrentRemovalPresentation(
-        sourceKey: selectedSourceKey,
+        sourceIdentity: selectedSourceIdentity,
         presentationSessionOccurrence: removalPresentationSessionOccurrence,
       )) {
         return;
@@ -1721,7 +1733,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
   void _applyRemovalObservation(
     SourceScopedArchiveGraphRemovalObservation observation, {
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity sourceIdentity,
     required int presentationSessionOccurrence,
   }) {
     if (observation.transition ==
@@ -1730,7 +1742,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       if (projectionProgress != null) {
         _setRemovalGraphProjectionProgress(
           projectionProgress,
-          sourceKey: sourceKey,
+          sourceIdentity: sourceIdentity,
           presentationSessionOccurrence: presentationSessionOccurrence,
         );
       }
@@ -1755,18 +1767,18 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     _setRemovalStageStatus(
       stage: stage,
       status: status,
-      sourceKey: sourceKey,
+      sourceIdentity: sourceIdentity,
       presentationSessionOccurrence: presentationSessionOccurrence,
     );
   }
 
   void _setRemovalGraphProjectionProgress(
     SourceScopedArchiveGraphProjectionProgress projectionProgress, {
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity sourceIdentity,
     required int presentationSessionOccurrence,
   }) {
     if (!_ownsCurrentRemovalPresentation(
-      sourceKey: sourceKey,
+      sourceIdentity: sourceIdentity,
       presentationSessionOccurrence: presentationSessionOccurrence,
     )) {
       return;
@@ -1787,11 +1799,11 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   void _setRemovalStageStatus({
     required HistoricalArchiveRemovalStage stage,
     required HistoricalArchiveRemovalStageStatus status,
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity sourceIdentity,
     required int presentationSessionOccurrence,
   }) {
     if (!_ownsCurrentRemovalPresentation(
-      sourceKey: sourceKey,
+      sourceIdentity: sourceIdentity,
       presentationSessionOccurrence: presentationSessionOccurrence,
     )) {
       return;
@@ -1808,15 +1820,15 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   bool _ownsCurrentRemovalPresentation({
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity sourceIdentity,
     required int presentationSessionOccurrence,
   }) {
     return _presentationSessionOccurrence == presentationSessionOccurrence &&
         state.presentation is HistoricalArchivesRemovingState &&
         (state.presentation as HistoricalArchivesRemovingState)
                 .facts
-                .sourceKey ==
-            sourceKey;
+                .identity ==
+            sourceIdentity;
   }
 
   Future<void> beginImportForSelectedSource({
@@ -1946,10 +1958,10 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               final importedSourceLookup = await ref.read(
                 historicalArchiveImportedSourceLookupProvider.future,
               );
-              final sourceKey =
-                  archiveResult.importResult.registration.sourceKey;
+              final sourceIdentity =
+                  archiveResult.importResult.registration.identity;
               final importedSourceMatch = await importedSourceLookup
-                  .findImportedSourceByKey(sourceKey: sourceKey);
+                  .findImportedSource(identity: sourceIdentity);
               if (importedSourceMatch == null ||
                   importedSourceMatch.importedMessageCount <= 0) {
                 throw StateError(
@@ -1962,6 +1974,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               final completedAtUtc = DateTime.now().toUtc().toIso8601String();
               await archiveSources.upsertSourceMetadata(
                 HistoricalArchiveSourceMetadataUpdate(
+                  identity: sourceIdentity,
                   sourceChatDb: selectedChatDbPath,
                   folderPath: selectedFolderPath,
                   sourceLabel: refreshedResult.sourceLabel,
@@ -2031,6 +2044,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         final evidence = candidateEvidence;
         await archiveSources.upsertSourceMetadata(
           HistoricalArchiveSourceMetadataUpdate(
+            identity: _requireReadableSourceIdentity(evidence.sourceIdentity),
             sourceChatDb: selectedChatDbPath,
             folderPath: selectedFolderPath,
             sourceLabel: state.sourceLabel,
@@ -2231,11 +2245,11 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   }
 
   Future<void> _dwellOnCompletedRemovalThenReturnToHub({
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity sourceIdentity,
     required int presentationSessionOccurrence,
   }) async {
     if (!_ownsCurrentRemovalPresentation(
-          sourceKey: sourceKey,
+          sourceIdentity: sourceIdentity,
           presentationSessionOccurrence: presentationSessionOccurrence,
         ) ||
         state.removalProgress?.isComplete != true) {
@@ -2245,7 +2259,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       historicalArchivesTerminalCompletedDwellDuration,
     );
     if (!_ownsCurrentRemovalPresentation(
-          sourceKey: sourceKey,
+          sourceIdentity: sourceIdentity,
           presentationSessionOccurrence: presentationSessionOccurrence,
         ) ||
         state.removalProgress?.isComplete != true) {
@@ -2273,14 +2287,13 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     required HistoricalArchivesFolderPreflightResult result,
   }) async {
     if (lookup == null ||
-        result.chatDbStatus != ArchiveSourceInspectionStatus.readable) {
+        result.chatDbStatus != ArchiveSourceInspectionStatus.readable ||
+        result.sourceIdentity == null) {
       return null;
     }
 
     try {
-      return await lookup.findImportedSource(
-        folderPath: result.selectedFolderPath,
-      );
+      return await lookup.findImportedSource(identity: result.sourceIdentity!);
     } catch (error, stackTrace) {
       _logHistoricalArchivesWarning(
         ref,
@@ -2295,7 +2308,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
 
   Future<bool> _hasSuccessfulImportMetadata({
     required HistoricalArchiveSources? archiveSources,
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity identity,
   }) async {
     if (archiveSources == null) {
       return false;
@@ -2304,7 +2317,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       final sources = await archiveSources.readKnownSources();
       return sources.any(
         (source) =>
-            source.sourceKey == sourceKey && source.lastImportSuccess == true,
+            source.identity == identity && source.lastImportSuccess == true,
       );
     } catch (error, stackTrace) {
       _logHistoricalArchivesWarning(
@@ -2328,9 +2341,14 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     if (result.chatDbStatus != ArchiveSourceInspectionStatus.readable) {
       return;
     }
+    final sourceIdentity = result.sourceIdentity;
+    if (sourceIdentity == null) {
+      throw StateError('Readable archive source has no canonical identity.');
+    }
 
     await archiveSources.upsertSourceMetadata(
       HistoricalArchiveSourceMetadataUpdate(
+        identity: sourceIdentity,
         sourceChatDb: result.archiveRemovalTargetChatDbPath,
         folderPath: result.selectedFolderPath,
         sourceLabel: result.sourceLabel,
@@ -3365,7 +3383,11 @@ preflightHistoricalArchivesFolder({
   }
 
   final dryRunEstimate = inspection.dryRunEstimate;
+  final sourceIdentity = _requireReadableSourceIdentity(
+    inspection.sourceIdentity,
+  );
   return HistoricalArchivesFolderPreflightResult(
+    sourceIdentity: sourceIdentity,
     preflight: HistoricalArchivesPreflightViewModel(
       status: HistoricalArchivesPreflightStatus.completeReadyToImport,
       statusLabel: 'Preflight complete',
@@ -3530,6 +3552,7 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
     phases: result.phases,
   );
   final evidence = HistoricalArchivesInspectionEvidence(
+    sourceIdentity: result.sourceIdentity,
     folderPath: result.selectedFolderPath,
     chatDbPath: result.archiveRemovalTargetChatDbPath,
     sourceLabel: result.sourceLabel,
@@ -3562,10 +3585,10 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
 HistoricalArchivesWorkflowState _workflowStateFromKnownSourceMetadata(
   HistoricalArchiveSourceMetadata source, {
   required int importedMessageCount,
-  required String selectedKnownSourceKey,
+  required HistoricalArchiveSourceIdentity selectedKnownSourceIdentity,
 }) {
   final facts = HistoricalArchivesImportedSourceFacts(
-    sourceKey: selectedKnownSourceKey,
+    identity: selectedKnownSourceIdentity,
     importedMessageCount: importedMessageCount,
     earliestMessageUtc: source.earliestMessageUtc,
     latestMessageUtc: source.latestMessageUtc,
@@ -3611,6 +3634,7 @@ HistoricalArchivesFolderPreflightResult _failedPreflightResult({
   required String attachmentsStatusLabel,
 }) {
   return HistoricalArchivesFolderPreflightResult(
+    sourceIdentity: null,
     preflight: HistoricalArchivesPreflightViewModel(
       status: HistoricalArchivesPreflightStatus.failed,
       statusLabel: 'Preflight failed',
@@ -3914,4 +3938,13 @@ String _describeExecutionOwnerPhrase(String? owner) {
     null => 'another workflow',
     _ => 'execution owner "$owner"',
   };
+}
+
+HistoricalArchiveSourceIdentity _requireReadableSourceIdentity(
+  HistoricalArchiveSourceIdentity? identity,
+) {
+  if (identity == null) {
+    throw StateError('Readable archive source has no canonical identity.');
+  }
+  return identity;
 }

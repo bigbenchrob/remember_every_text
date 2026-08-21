@@ -139,7 +139,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
         else
           for (var index = 0; index < payload.knownSources.length; index++) ...[
             _HistoricalArchiveSourceTile(
-              key: ValueKey<String>(payload.knownSources[index].sourceKey),
+              key: ValueKey<String>(payload.knownSources[index].identity.value),
               source: payload.knownSources[index],
             ),
             if (index < payload.knownSources.length - 1)
@@ -206,7 +206,7 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Text(
-                'Choose Messages Folder...',
+                'Choose a Messages Folder to add...',
                 style: typography.controlValue.copyWith(
                   color: colors.accents.primary,
                 ),
@@ -329,11 +329,11 @@ class _HistoricalArchiveSourceTileState
                           .read(
                             historicalArchivesWorkflowActionsProvider.notifier,
                           )
-                          .showKnownSource(sourceKey: widget.source.sourceKey);
+                          .showKnownSource(identity: widget.source.identity);
                     },
               child: DecoratedBox(
                 key: ValueKey<String>(
-                  'historical-archive-source-chrome:${widget.source.sourceKey}',
+                  'historical-archive-source-chrome:${widget.source.identity.value}',
                 ),
                 decoration: widget.source.isSelected
                     ? BoxDecoration(

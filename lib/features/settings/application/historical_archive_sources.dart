@@ -1,6 +1,8 @@
+import '../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
+
 final class HistoricalArchiveSourceMetadata {
   const HistoricalArchiveSourceMetadata({
-    required this.sourceKey,
+    required this.identity,
     required this.sourceChatDb,
     required this.folderPath,
     required this.sourceLabel,
@@ -18,7 +20,7 @@ final class HistoricalArchiveSourceMetadata {
     required this.lastImportedMessageCount,
   });
 
-  final String sourceKey;
+  final HistoricalArchiveSourceIdentity identity;
   final String sourceChatDb;
   final String folderPath;
   final String sourceLabel;
@@ -34,32 +36,33 @@ final class HistoricalArchiveSourceMetadata {
   final bool? lastImportSuccess;
   final String? lastImportError;
   final int? lastImportedMessageCount;
+
+  String get sourceKey => identity.value;
 }
 
 final class HistoricalArchiveImportedSourceMatch {
   const HistoricalArchiveImportedSourceMatch({
-    required this.sourceKey,
+    required this.identity,
     required this.sourceId,
     required this.importedMessageCount,
   });
 
-  final String sourceKey;
+  final HistoricalArchiveSourceIdentity identity;
   final int sourceId;
   final int importedMessageCount;
+
+  String get sourceKey => identity.value;
 }
 
 abstract interface class HistoricalArchiveImportedSourceLookup {
   Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
-    required String folderPath,
-  });
-
-  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
-    required String sourceKey,
+    required HistoricalArchiveSourceIdentity identity,
   });
 }
 
 final class HistoricalArchiveSourceMetadataUpdate {
   const HistoricalArchiveSourceMetadataUpdate({
+    required this.identity,
     required this.sourceChatDb,
     required this.folderPath,
     required this.sourceLabel,
@@ -82,6 +85,7 @@ final class HistoricalArchiveSourceMetadataUpdate {
     this.lastImportedMessageCount,
   });
 
+  final HistoricalArchiveSourceIdentity identity;
   final String sourceChatDb;
   final String folderPath;
   final String sourceLabel;

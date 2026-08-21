@@ -1,4 +1,4 @@
-import '../../../../essentials/source_scoped_import/application/archives/historical_messages_archive_source_folder_resolver.dart';
+import '../../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import '../../../../essentials/source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/historical_archive_sources.dart';
 
@@ -6,26 +6,15 @@ final class ImportLedgerHistoricalArchiveImportedSourceLookup
     implements HistoricalArchiveImportedSourceLookup {
   const ImportLedgerHistoricalArchiveImportedSourceLookup({
     required ImportLedger importLedger,
-    required HistoricalMessagesArchiveSourceFolderResolver folderResolver,
-  }) : _importLedger = importLedger,
-       _folderResolver = folderResolver;
+  }) : _importLedger = importLedger;
 
   final ImportLedger _importLedger;
-  final HistoricalMessagesArchiveSourceFolderResolver _folderResolver;
 
   @override
   Future<HistoricalArchiveImportedSourceMatch?> findImportedSource({
-    required String folderPath,
+    required HistoricalArchiveSourceIdentity identity,
   }) async {
-    final sourceKey = _folderResolver.resolveFolder(folderPath).sourceKey;
-    return findImportedSourceByKey(sourceKey: sourceKey);
-  }
-
-  @override
-  Future<HistoricalArchiveImportedSourceMatch?> findImportedSourceByKey({
-    required String sourceKey,
-  }) async {
-    final sourceId = await _importLedger.sourceIdForKey(sourceKey);
+    final sourceId = await _importLedger.sourceIdForKey(identity.value);
     if (sourceId == null) {
       return null;
     }
@@ -38,7 +27,7 @@ final class ImportLedgerHistoricalArchiveImportedSourceLookup
     }
 
     return HistoricalArchiveImportedSourceMatch(
-      sourceKey: sourceKey,
+      identity: identity,
       sourceId: sourceId,
       importedMessageCount: importedMessageCount,
     );

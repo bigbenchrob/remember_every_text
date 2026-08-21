@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/source_scoped_import/application/archives/historical_messages_archive_source_registrar.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/filesystem_historical_messages_archive_source_folder_resolver.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
@@ -98,6 +99,12 @@ void main() {
 
     expect(secondRegistration.sourceId, firstRegistration.sourceId);
     expect(secondRegistration.sourceKey, firstRegistration.sourceKey);
+    expect(
+      secondRegistration.identity,
+      HistoricalArchiveSourceIdentity.fromPersistedValue(
+        firstRegistration.sourceKey,
+      ),
+    );
 
     final rows = await importDatabase.database.query(
       'source_registry',

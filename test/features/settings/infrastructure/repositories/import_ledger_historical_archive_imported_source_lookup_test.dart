@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/source_scoped_import/application/archives/historical_messages_archive_source_folder_resolver.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
@@ -11,6 +11,9 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
   const sourceKey = 'historical-messages-archive:/archive/chat.db';
+  final identity = HistoricalArchiveSourceIdentity.fromPersistedValue(
+    sourceKey,
+  );
   late Directory tempDirectory;
   late ImportDatabase importDatabase;
 
@@ -37,18 +40,16 @@ void main() {
   test('requires registration and a positive source message count', () async {
     final lookup = ImportLedgerHistoricalArchiveImportedSourceLookup(
       importLedger: importDatabase,
-      folderResolver: const _FakeFolderResolver(sourceKey),
     );
 
-    expect(await lookup.findImportedSource(folderPath: '/archive'), isNull);
-    expect(await lookup.findImportedSourceByKey(sourceKey: sourceKey), isNull);
+    expect(await lookup.findImportedSource(identity: identity), isNull);
 
     final sourceId = await importDatabase.getOrCreateSource(
       sourceKey: sourceKey,
       sourceKind: historicalMessagesArchiveSourceKind,
       sourceLabel: 'Archive',
     );
-    expect(await lookup.findImportedSource(folderPath: '/archive'), isNull);
+    expect(await lookup.findImportedSource(identity: identity), isNull);
 
     final batchId = await importDatabase.insertImportBatch(
       sourceId: sourceId,
@@ -63,32 +64,10 @@ void main() {
       'batch_id': batchId,
     });
 
-    final match = await lookup.findImportedSource(folderPath: '/archive');
-    final matchByKey = await lookup.findImportedSourceByKey(
-      sourceKey: sourceKey,
-    );
+    final match = await lookup.findImportedSource(identity: identity);
 
     expect(match?.sourceKey, sourceKey);
     expect(match?.sourceId, sourceId);
     expect(match?.importedMessageCount, 1);
-    expect(matchByKey?.sourceId, sourceId);
-    expect(matchByKey?.importedMessageCount, 1);
   });
-}
-
-final class _FakeFolderResolver
-    implements HistoricalMessagesArchiveSourceFolderResolver {
-  const _FakeFolderResolver(this.sourceKey);
-
-  final String sourceKey;
-
-  @override
-  HistoricalMessagesArchiveSourceFolder resolveFolder(String folderPath) {
-    return HistoricalMessagesArchiveSourceFolder(
-      selectedFolderPath: folderPath,
-      chatDbPath: '$folderPath/chat.db',
-      sourceKey: sourceKey,
-      defaultSourceLabel: 'Archive',
-    );
-  }
 }

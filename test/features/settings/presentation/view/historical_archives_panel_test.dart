@@ -11,6 +11,7 @@ import 'package:remember_this_text/config/theme/widgets/layout/page_track_layout
 import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_actions_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/presentation/view/historical_archives_panel.dart';
@@ -1403,11 +1404,14 @@ final class _DuplicateNoticeHistoricalArchivesWorkflow
       buildInitialHistoricalArchivesWorkflowState();
 
   void emitDuplicateNotice({required String sourceKey}) {
+    final identity = HistoricalArchiveSourceIdentity.fromPersistedValue(
+      sourceKey,
+    );
     _noticeOccurrence += 1;
     state = HistoricalArchivesWorkflowState(
       presentation: HistoricalArchivesDuplicateNoticeState(
         notice: HistoricalArchivesDuplicateFolderNotice(
-          sourceKey: sourceKey,
+          identity: identity,
           noticeOccurrence: _noticeOccurrence,
           presentationSessionOccurrence: 0,
         ),
@@ -1421,11 +1425,11 @@ final class _DuplicateNoticeHistoricalArchivesWorkflow
     required int presentationSessionOccurrence,
   }) {
     dismissCallCount += 1;
-    final sourceKey = state.duplicateFolderNotice!.sourceKey;
+    final identity = state.duplicateFolderNotice!.identity;
     state = HistoricalArchivesWorkflowState(
       presentation: HistoricalArchivesKnownSourceReferenceState(
         reference: HistoricalArchivesKnownSourceReference(
-          sourceKey: sourceKey,
+          identity: identity,
           referenceOccurrence: noticeOccurrence,
         ),
       ),

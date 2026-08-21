@@ -1,11 +1,12 @@
 import '../../../../../essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import '../../../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 
 const historicalArchivesSidebarDescription =
     'Add older message history to MessageLens without replacing your current data.';
 
 final class HistoricalArchiveSidebarSourceSummary {
   const HistoricalArchiveSidebarSourceSummary({
-    required this.sourceKey,
+    required this.identity,
     required this.label,
     required this.dateRangeLabel,
     required this.messageCountLabel,
@@ -16,7 +17,7 @@ final class HistoricalArchiveSidebarSourceSummary {
     this.referenceOccurrence = 0,
   });
 
-  final String sourceKey;
+  final HistoricalArchiveSourceIdentity identity;
   final String label;
   final String? dateRangeLabel;
   final String messageCountLabel;
@@ -25,6 +26,8 @@ final class HistoricalArchiveSidebarSourceSummary {
   final bool isSelected;
   final bool isBusy;
   final int referenceOccurrence;
+
+  String get sourceKey => identity.value;
 }
 
 final class HistoricalArchivesSettingsCassettePayload
