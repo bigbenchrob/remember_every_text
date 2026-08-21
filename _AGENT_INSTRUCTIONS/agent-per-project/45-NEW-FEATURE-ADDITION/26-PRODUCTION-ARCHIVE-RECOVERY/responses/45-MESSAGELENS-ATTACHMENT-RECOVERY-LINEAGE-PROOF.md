@@ -14,6 +14,11 @@ links:
 
 # MessageLens Attachment-Recovery Lineage Proof
 
+> **Promotion note (2026-08-21):** The proof established here is now owned by
+> the shared Historical Archives/source-scoped-import boundary and gates the
+> Mac Messages arm. See
+> [Shared Historical Archives Messages Lineage Admission](46-SHARED-HISTORICAL-ARCHIVES-MESSAGES-LINEAGE-ADMISSION.md).
+
 ## Result
 
 MessageLens now has a dormant, schema-free, read-only admission gate for one

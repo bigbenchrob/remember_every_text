@@ -51,6 +51,18 @@ class HistoricalArchivesWorkflowActions
         );
   }
 
+  void dismissLineageNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .dismissLineageNotice(
+          noticeOccurrence: noticeOccurrence,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        );
+  }
+
   void dismissImportSuccessNotice({
     required int noticeOccurrence,
     required int presentationSessionOccurrence,

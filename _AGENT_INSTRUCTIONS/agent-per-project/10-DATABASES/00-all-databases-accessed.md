@@ -12,6 +12,7 @@ links:
        - ./05-db-overlay.md
        - ./06-addressbook-path-resolution.md
        - ./07-overlay-database-independence.md
+       - ./15-messages-lineage-admission.md
        - ../45-NEW-FEATURE-ADDITION/21-PRESENCE-ITERATION-SIMPLE/15-PRESENCE-DATABASE-IN-PLAIN-ENGLISH.md
        - ../45-NEW-FEATURE-ADDITION/23-PRESENCE-CONSOLIDATION-AND-ONBOARDING-OWNERSHIP/09-PRESENCE-TESTSTEP-CONSOLIDATION-AUDIT.md
        - ../20-DATA-IMPORT-MIGRATION/02-import-migration-schema-reference.md
@@ -79,6 +80,10 @@ start with
   See
   [`ATTACHMENT-PRESERVATION-INVARIANT.md`](../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md).
 - **Shut everything down before manual access.** Quit the Flutter app and tooling prior to backups or ad-hoc SQL to avoid WAL/locking surprises.
+- **Historical ROWID use requires lineage admission.** Before a Historical
+  Archives operation may rely on original Apple Messages ROWIDs, it must pass
+  the canonical shared gate documented in
+  [`15-messages-lineage-admission.md`](15-messages-lineage-admission.md).
 
 ## Canonical Database Aliases
 

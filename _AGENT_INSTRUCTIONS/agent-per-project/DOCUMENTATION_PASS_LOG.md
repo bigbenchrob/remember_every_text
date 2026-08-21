@@ -5287,3 +5287,12 @@ production preservation authority mechanically enforceable.
   MessageLens-folder direction.
 - Recorded the dormant schema-free implementation and its fail-closed
   `sameLineage`, `contradictoryLineage`, and `insufficientEvidence` contract.
+## 2026-08-21 — Shared Historical Archives Messages lineage admission
+
+- Promoted the attachment-specific ROWID/GUID proof to the canonical
+  `essentials/source_scoped_import` authority.
+- Documented the shared anchor/evidence contract, Mac and MessageLens evidence
+  adapters, fail-closed threshold, workflow ordering, and source-identity
+  distinction.
+- Added the Feature 26 implementation record and linked the earlier proof and
+  project/database indexes without rewriting historical records.

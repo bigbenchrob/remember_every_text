@@ -41,7 +41,10 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/h
 import 'package:remember_this_text/essentials/source_scoped_import/application/message_attachment_joins/message_attachment_join_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages_lineage_admission_authority.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages_lineage_admission_authority_provider.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/messages_lineage_admission.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspector_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_folder_chooser.dart';
@@ -72,6 +75,7 @@ void main() {
     test('ready candidate can own evidence but no operation progress', () {
       final state = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesReadyToAddState(
+          lineageAdmission: _testSameLineageAdmission(),
           data: _testPresentationData(),
           evidence: _testInspectionEvidence(),
         ),
@@ -86,6 +90,7 @@ void main() {
     test('import and removal progress are owned by disjoint variants', () {
       final importing = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesImportingState(
+          lineageAdmission: _testSameLineageAdmission(),
           data: _testPresentationData(),
           evidence: _testInspectionEvidence(),
           progress: const HistoricalArchiveImportProgress(),
@@ -137,7 +142,7 @@ void main() {
 
   group('buildHistoricalArchivesWorkflowPanelModel', () {
     test(
-      'projects title occupancy exhaustively from all 13 typed variants',
+      'projects title occupancy exhaustively from all 14 typed variants',
       () {
         final data = _testPresentationData();
         final evidence = _testInspectionEvidence();
@@ -189,6 +194,17 @@ void main() {
                 titleVisible: false,
               ),
               (
+                name: 'lineage notice',
+                presentation: const HistoricalArchivesLineageNoticeState(
+                  notice: HistoricalArchivesLineageNotice(
+                    status: MessagesLineageAdmissionStatus.insufficientEvidence,
+                    noticeOccurrence: 1,
+                    presentationSessionOccurrence: 1,
+                  ),
+                ),
+                titleVisible: false,
+              ),
+              (
                 name: 'known-source reference',
                 presentation: HistoricalArchivesKnownSourceReferenceState(
                   reference: HistoricalArchivesKnownSourceReference(
@@ -219,6 +235,7 @@ void main() {
               (
                 name: 'ready to add',
                 presentation: HistoricalArchivesReadyToAddState(
+                  lineageAdmission: _testSameLineageAdmission(),
                   data: data,
                   evidence: evidence,
                 ),
@@ -235,6 +252,7 @@ void main() {
               (
                 name: 'importing',
                 presentation: HistoricalArchivesImportingState(
+                  lineageAdmission: _testSameLineageAdmission(),
                   data: data,
                   evidence: evidence,
                   progress: const HistoricalArchiveImportProgress(),
@@ -244,6 +262,7 @@ void main() {
               (
                 name: 'import failed',
                 presentation: HistoricalArchivesImportFailedState(
+                  lineageAdmission: _testSameLineageAdmission(),
                   data: data,
                   evidence: evidence,
                   progress: const HistoricalArchiveImportProgress(),
@@ -385,6 +404,7 @@ void main() {
     test('reports ready source state after successful preflight', () {
       final workflowState = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesReadyToAddState(
+          lineageAdmission: _testSameLineageAdmission(),
           data: _testPresentationData(
             folderPath: '/tmp/Archive-2017',
             sourceLabel: 'Archive-2017',
@@ -464,6 +484,7 @@ void main() {
       () {
         final workflowState = HistoricalArchivesWorkflowState(
           presentation: HistoricalArchivesReadyToAddState(
+            lineageAdmission: _testSameLineageAdmission(),
             data: _testPresentationData(
               folderPath: '/tmp/Archive-2017',
               sourceLabel: 'Archive-2017',
@@ -531,6 +552,7 @@ void main() {
       );
       final workflowState = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesReadyToAddState(
+          lineageAdmission: _testSameLineageAdmission(),
           data: _testPresentationData(
             folderPath: evidence.folderPath,
             chatDbPath: evidence.chatDbPath,
@@ -573,12 +595,14 @@ void main() {
         final workflowState = HistoricalArchivesWorkflowState(
           presentation: failed
               ? HistoricalArchivesImportFailedState(
+                  lineageAdmission: _testSameLineageAdmission(),
                   data: data,
                   evidence: evidence,
                   progress: progress,
                   failureDetail: failureDetail,
                 )
               : HistoricalArchivesImportingState(
+                  lineageAdmission: _testSameLineageAdmission(),
                   data: data,
                   evidence: evidence,
                   progress: progress,
@@ -685,6 +709,7 @@ void main() {
     test('maps real import progress into directed instrumentation', () {
       final workflowState = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesImportingState(
+          lineageAdmission: _testSameLineageAdmission(),
           data: _testPresentationData(),
           evidence: _testInspectionEvidence(),
           progress: const HistoricalArchiveImportProgress(
@@ -758,6 +783,7 @@ void main() {
       );
       final workflowState = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesImportFailedState(
+          lineageAdmission: _testSameLineageAdmission(),
           data: _testPresentationData(folderPath: evidence.folderPath),
           evidence: evidence,
           failureDetail: 'Graph projection failed.',
@@ -820,6 +846,7 @@ void main() {
       );
       final workflowState = HistoricalArchivesWorkflowState(
         presentation: HistoricalArchivesReadyToAddState(
+          lineageAdmission: _testSameLineageAdmission(),
           data: _testPresentationData(
             folderPath: evidence.folderPath,
             preflightDetail: 'Source checks succeeded without comparison.',
@@ -870,6 +897,7 @@ void main() {
         );
         final workflowState = HistoricalArchivesWorkflowState(
           presentation: HistoricalArchivesReadyToAddState(
+            lineageAdmission: _testSameLineageAdmission(),
             data: _testPresentationData(folderPath: evidence.folderPath),
             evidence: evidence,
           ),
@@ -953,6 +981,9 @@ void main() {
         final inspectionCompleter = Completer<ArchiveSourceInspection>();
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             historicalArchiveFolderChooserProvider.overrideWith(
               (ref) => const _FakeFolderChooser('/tmp/archive'),
             ),
@@ -1025,6 +1056,9 @@ void main() {
         final archiveSources = _RecordingHistoricalArchiveSources();
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveMutationCoordinatorProvider.overrideWith(() => coordinator),
             historicalArchiveFolderChooserProvider.overrideWith(
               (ref) => folderChooser,
@@ -1064,6 +1098,56 @@ void main() {
       },
     );
 
+    for (final admission in <MessagesLineageAdmission>[
+      _testContradictoryLineageAdmission(),
+      _testInsufficientLineageAdmission(),
+    ]) {
+      test(
+        '${admission.status.name} returns to hub notice without registration or import authorization',
+        () async {
+          final archiveSources = _RecordingHistoricalArchiveSources();
+          final coordinator = _ImmediateArchiveMutationCoordinator();
+          final container = ProviderContainer(
+            overrides: [
+              messagesLineageAdmissionAuthorityProvider.overrideWith(
+                (ref) async => _FixedLineageAuthority(admission),
+              ),
+              archiveMutationCoordinatorProvider.overrideWith(
+                () => coordinator,
+              ),
+              archiveSourceInspectorProvider.overrideWith(
+                (ref) async => const _ImmediateArchiveSourceInspector(),
+              ),
+              historicalArchiveSourcesProvider.overrideWith(
+                (ref) async => archiveSources,
+              ),
+              historicalArchiveImportedSourceLookupProvider.overrideWith(
+                (ref) async => _FakeImportedSourceLookup(),
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          final workflow = container.read(
+            historicalArchivesWorkflowProvider.notifier,
+          );
+          await workflow.loadFolder(folderPath: '/tmp/archive');
+
+          final rejected = container.read(historicalArchivesWorkflowProvider);
+          expect(
+            rejected.presentation,
+            isA<HistoricalArchivesLineageNoticeState>(),
+          );
+          expect(rejected.lineageNotice?.status, admission.status);
+          expect(rejected.isHub, isTrue);
+          expect(archiveSources.upsertCallCount, 0);
+
+          await workflow.beginImportForSelectedSource();
+          expect(coordinator.runCallCount, 0);
+        },
+      );
+    }
+
     test(
       'authorization paints import ownership before work and dwells on real completion',
       () async {
@@ -1100,6 +1184,9 @@ void main() {
         final coordinator = _ImmediateArchiveMutationCoordinator();
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveMutationCoordinatorProvider.overrideWith(() => coordinator),
             sourceScopedArchiveGraphImportServiceProvider.overrideWith(
               (ref) async => graphImportService,
@@ -1250,6 +1337,9 @@ void main() {
         });
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveMutationCoordinatorProvider.overrideWith(
               () => _ImmediateArchiveMutationCoordinator(),
             ),
@@ -1344,6 +1434,9 @@ void main() {
         });
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveMutationCoordinatorProvider.overrideWith(
               () => _ImmediateArchiveMutationCoordinator(),
             ),
@@ -1410,6 +1503,9 @@ void main() {
       final workflow = _ControllableHistoricalArchivesWorkflow();
       final container = ProviderContainer(
         overrides: [
+          messagesLineageAdmissionAuthorityProvider.overrideWith(
+            (ref) async => const _SameLineageAuthority(),
+          ),
           historicalArchivesWorkflowProvider.overrideWith(() => workflow),
         ],
       );
@@ -1439,6 +1535,9 @@ void main() {
         ]);
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             historicalArchiveFolderChooserProvider.overrideWith(
               (ref) => const _FakeFolderChooser('/tmp/archive'),
             ),
@@ -1557,6 +1656,9 @@ void main() {
         final archiveSources = _RecordingHistoricalArchiveSources();
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             historicalArchiveFolderChooserProvider.overrideWith(
               (ref) => const _FakeFolderChooser('/tmp/not-an-archive'),
             ),
@@ -1621,6 +1723,9 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveSourceInspectorProvider.overrideWith(
               (ref) async => const _MissingArchiveSourceInspector(),
             ),
@@ -1661,6 +1766,9 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveSourceInspectorProvider.overrideWith(
               (ref) async => const _ReadFailedArchiveSourceInspector(),
             ),
@@ -1694,6 +1802,9 @@ void main() {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveSourceInspectorProvider.overrideWith(
               (ref) async => const _ImmediateArchiveSourceInspector(),
             ),
@@ -1761,6 +1872,9 @@ void main() {
         );
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             historicalArchiveFolderChooserProvider.overrideWith(
               (ref) => const _FakeFolderChooser('/tmp/archive'),
             ),
@@ -1800,6 +1914,9 @@ void main() {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             historicalArchiveSourceMetadataProvider.overrideWith(
               (ref) async => [
                 HistoricalArchiveSourceMetadata(
@@ -1968,6 +2085,9 @@ void main() {
         final coordinator = _ImmediateArchiveMutationCoordinator();
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveMutationCoordinatorProvider.overrideWith(() => coordinator),
             sourceScopedArchiveGraphRemovalServiceProvider.overrideWith(
               (ref) async => removalService,
@@ -2181,6 +2301,9 @@ void main() {
         });
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveMutationCoordinatorProvider.overrideWith(
               _ImmediateArchiveMutationCoordinator.new,
             ),
@@ -2293,6 +2416,9 @@ void main() {
         });
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveMutationCoordinatorProvider.overrideWith(
               _ImmediateArchiveMutationCoordinator.new,
             ),
@@ -2351,6 +2477,9 @@ void main() {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             historicalArchiveSourceMetadataProvider.overrideWith(
               (ref) async => [
                 HistoricalArchiveSourceMetadata(
@@ -2423,6 +2552,9 @@ void main() {
         );
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             historicalArchiveSourceMetadataProvider.overrideWith(
               (ref) async => [source],
             ),
@@ -2487,6 +2619,9 @@ void main() {
         final inspectionCompleter = Completer<ArchiveSourceInspection>();
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             historicalArchiveFolderChooserProvider.overrideWith(
               (ref) => const _FakeFolderChooser('/tmp/archive'),
             ),
@@ -2559,6 +2694,9 @@ void main() {
         final inspector = _PerFolderArchiveSourceInspector();
         final container = ProviderContainer(
           overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
             archiveSourceInspectorProvider.overrideWith(
               (ref) async => inspector,
             ),
@@ -2753,6 +2891,101 @@ INSERT INTO messages (ss_id, guid, is_from_me) VALUES
   });
 }
 
+SameMessagesLineageAdmission _testSameLineageAdmission() {
+  return MessagesLineageAdmission.fromEvidence(
+        const MessagesLineageEvidence(
+          candidateRecordCount: 80,
+          usableCandidateIdentityCount: 80,
+          blankCandidateGuidCount: 0,
+          inconsistentCandidateIdentityCount: 0,
+          duplicateCandidateRowIdCount: 0,
+          currentRowsInCandidateRangeCount: 80,
+          comparableCount: 80,
+          matchingCount: 80,
+          contradictionCount: 0,
+          missingCurrentRowCount: 0,
+          unusableCurrentGuidCount: 0,
+          matchingRowIdBandCount: 4,
+          candidateSourceShapeIsCoherent: true,
+          currentSourceShapeIsCoherent: true,
+        ),
+      )
+      as SameMessagesLineageAdmission;
+}
+
+MessagesLineageAdmission _testContradictoryLineageAdmission() {
+  return MessagesLineageAdmission.fromEvidence(
+    const MessagesLineageEvidence(
+      candidateRecordCount: 80,
+      usableCandidateIdentityCount: 80,
+      blankCandidateGuidCount: 0,
+      inconsistentCandidateIdentityCount: 0,
+      duplicateCandidateRowIdCount: 0,
+      currentRowsInCandidateRangeCount: 80,
+      comparableCount: 80,
+      matchingCount: 79,
+      contradictionCount: 1,
+      missingCurrentRowCount: 0,
+      unusableCurrentGuidCount: 0,
+      matchingRowIdBandCount: 4,
+      candidateSourceShapeIsCoherent: true,
+      currentSourceShapeIsCoherent: true,
+    ),
+  );
+}
+
+MessagesLineageAdmission _testInsufficientLineageAdmission() {
+  return MessagesLineageAdmission.fromEvidence(
+    const MessagesLineageEvidence(
+      candidateRecordCount: 20,
+      usableCandidateIdentityCount: 20,
+      blankCandidateGuidCount: 0,
+      inconsistentCandidateIdentityCount: 0,
+      duplicateCandidateRowIdCount: 0,
+      currentRowsInCandidateRangeCount: 20,
+      comparableCount: 20,
+      matchingCount: 20,
+      contradictionCount: 0,
+      missingCurrentRowCount: 0,
+      unusableCurrentGuidCount: 0,
+      matchingRowIdBandCount: 4,
+      candidateSourceShapeIsCoherent: true,
+      currentSourceShapeIsCoherent: true,
+    ),
+  );
+}
+
+final class _SameLineageAuthority implements MessagesLineageAdmissionAuthority {
+  const _SameLineageAuthority();
+
+  @override
+  Future<MessagesLineageAdmission> verifyMacMessagesCandidate({
+    required String candidateChatDatabasePath,
+  }) async => _testSameLineageAdmission();
+
+  @override
+  Future<MessagesLineageAdmission> verifyMessageLensCandidate({
+    required String candidateImportLedgerPath,
+  }) async => _testSameLineageAdmission();
+}
+
+final class _FixedLineageAuthority
+    implements MessagesLineageAdmissionAuthority {
+  const _FixedLineageAuthority(this.admission);
+
+  final MessagesLineageAdmission admission;
+
+  @override
+  Future<MessagesLineageAdmission> verifyMacMessagesCandidate({
+    required String candidateChatDatabasePath,
+  }) async => admission;
+
+  @override
+  Future<MessagesLineageAdmission> verifyMessageLensCandidate({
+    required String candidateImportLedgerPath,
+  }) async => admission;
+}
+
 HistoricalArchivesPresentationData _testPresentationData({
   String folderPath = '/tmp/archive',
   String? chatDbPath,
@@ -2854,6 +3087,7 @@ final class _ControllableHistoricalArchivesWorkflow
   void emitNewCandidate() {
     state = HistoricalArchivesWorkflowState(
       presentation: HistoricalArchivesReadyToAddState(
+        lineageAdmission: _testSameLineageAdmission(),
         data: _testPresentationData(folderPath: '/tmp/new-archive'),
         evidence: _testInspectionEvidence(folderPath: '/tmp/new-archive'),
       ),

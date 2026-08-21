@@ -10,6 +10,7 @@ import 'package:remember_this_text/config/theme/widgets/layout/cross_column_trac
 import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/messages_lineage_admission.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
@@ -499,11 +500,13 @@ void main() {
 
     for (final presentation in [
       HistoricalArchivesImportingState(
+        lineageAdmission: _testSameLineageAdmission(),
         data: _testPresentationData(),
         evidence: _testInspectionEvidence(),
         progress: const HistoricalArchiveImportProgress(),
       ),
       HistoricalArchivesImportFailedState(
+        lineageAdmission: _testSameLineageAdmission(),
         data: _testPresentationData(),
         evidence: _testInspectionEvidence(),
         progress: const HistoricalArchiveImportProgress(),
@@ -923,4 +926,26 @@ class _TestHistoricalArchivesWorkflow extends HistoricalArchivesWorkflow {
 
 HistoricalArchiveSourceIdentity _identity(String sourceKey) {
   return HistoricalArchiveSourceIdentity.fromPersistedValue(sourceKey);
+}
+
+SameMessagesLineageAdmission _testSameLineageAdmission() {
+  return MessagesLineageAdmission.fromEvidence(
+        const MessagesLineageEvidence(
+          candidateRecordCount: 80,
+          usableCandidateIdentityCount: 80,
+          blankCandidateGuidCount: 0,
+          inconsistentCandidateIdentityCount: 0,
+          duplicateCandidateRowIdCount: 0,
+          currentRowsInCandidateRangeCount: 80,
+          comparableCount: 80,
+          matchingCount: 80,
+          contradictionCount: 0,
+          missingCurrentRowCount: 0,
+          unusableCurrentGuidCount: 0,
+          matchingRowIdBandCount: 4,
+          candidateSourceShapeIsCoherent: true,
+          currentSourceShapeIsCoherent: true,
+        ),
+      )
+      as SameMessagesLineageAdmission;
 }

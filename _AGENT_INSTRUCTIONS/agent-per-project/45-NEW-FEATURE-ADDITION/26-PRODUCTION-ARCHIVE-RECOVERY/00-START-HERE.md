@@ -79,6 +79,7 @@ panel. See:
 - [Historical Archive Canonical Source Identity](responses/43-HISTORICAL-ARCHIVE-CANONICAL-SOURCE-IDENTITY-IMPLEMENTATION.md)
 - [MessageLens Data-Folder Historical Archives Audit](responses/44-MESSAGELENS-DATA-FOLDER-HISTORICAL-ARCHIVES-AUDIT.md)
 - [MessageLens Attachment-Recovery Lineage Proof](responses/45-MESSAGELENS-ATTACHMENT-RECOVERY-LINEAGE-PROOF.md)
+- [Shared Historical Archives Messages Lineage Admission](responses/46-SHARED-HISTORICAL-ARCHIVES-MESSAGES-LINEAGE-ADMISSION.md)
 
 The MessageLens-folder arm remains disabled. Its read-only identity and
 qualification foundation may now proceed under a narrower product contract:
@@ -87,7 +88,9 @@ continuing local Mac Messages lineage. General source-fact, graph, source
 registry, and overlay ingestion is no longer planned for this arm. A dormant,
 schema-free exact ROWID/GUID lineage gate now exists, but attachment matching,
 durable admission, payload copying, and the MessageLens UI segment remain
-disabled and unresolved.
+disabled and unresolved. The lineage proof is now the shared admission gate
+for both source arms, and Mac Messages candidates must pass it before source
+registration or import authorization.
 
 ## Original Emergency Objective
 

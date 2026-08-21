@@ -34,6 +34,9 @@ import '../../../essentials/onboarding/feature_level_providers.dart'
 import '../../../essentials/sidebar/feature_level_providers.dart'
     show sidebarFlowProvider;
 import '../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
+import '../../../essentials/source_scoped_import/domain/messages_lineage_admission.dart';
+import '../../../essentials/source_scoped_import/feature_level_providers.dart'
+    show messagesLineageAdmissionAuthorityProvider;
 import '../../sidebar_utilities/domain/sidebar_utilities_constants.dart'
     show SettingsMenuActionId;
 import 'archive_source_inspection.dart';
@@ -134,6 +137,23 @@ final class HistoricalArchivesInvalidFolderNotice
     required this.presentationSessionOccurrence,
   }) : super();
 
+  final int noticeOccurrence;
+  final int presentationSessionOccurrence;
+}
+
+/// One-use presentation notice for a Messages-lineage admission failure.
+///
+/// It carries only the typed outcome and process-local stale-event guards. It
+/// is not source metadata and never identifies a sidebar object.
+final class HistoricalArchivesLineageNotice extends HistoricalArchivesNotice {
+  const HistoricalArchivesLineageNotice({
+    required this.status,
+    required this.noticeOccurrence,
+    required this.presentationSessionOccurrence,
+  }) : assert(status != MessagesLineageAdmissionStatus.sameLineage),
+       super();
+
+  final MessagesLineageAdmissionStatus status;
   final int noticeOccurrence;
   final int presentationSessionOccurrence;
 }
@@ -572,6 +592,16 @@ final class HistoricalArchivesInvalidNoticeState
   HistoricalArchivesPresentationData? get data => null;
 }
 
+final class HistoricalArchivesLineageNoticeState
+    extends HistoricalArchivesPresentationState {
+  const HistoricalArchivesLineageNoticeState({required this.notice});
+
+  final HistoricalArchivesLineageNotice notice;
+
+  @override
+  HistoricalArchivesPresentationData? get data => null;
+}
+
 final class HistoricalArchivesImportSuccessNoticeState
     extends HistoricalArchivesPresentationState {
   const HistoricalArchivesImportSuccessNoticeState({required this.notice});
@@ -621,11 +651,13 @@ final class HistoricalArchivesReadyToAddState
   const HistoricalArchivesReadyToAddState({
     required this.data,
     required this.evidence,
+    required this.lineageAdmission,
   });
 
   @override
   final HistoricalArchivesPresentationData data;
   final HistoricalArchivesInspectionEvidence evidence;
+  final SameMessagesLineageAdmission lineageAdmission;
 }
 
 final class HistoricalArchivesImportedSourceFacts {
@@ -664,12 +696,14 @@ final class HistoricalArchivesImportingState
     required this.data,
     required this.evidence,
     required this.progress,
+    required this.lineageAdmission,
   });
 
   @override
   final HistoricalArchivesPresentationData data;
   final HistoricalArchivesInspectionEvidence evidence;
   final HistoricalArchiveImportProgress progress;
+  final SameMessagesLineageAdmission lineageAdmission;
 }
 
 final class HistoricalArchivesImportFailedState
@@ -679,6 +713,7 @@ final class HistoricalArchivesImportFailedState
     required this.evidence,
     required this.progress,
     required this.failureDetail,
+    required this.lineageAdmission,
   });
 
   @override
@@ -686,6 +721,7 @@ final class HistoricalArchivesImportFailedState
   final HistoricalArchivesInspectionEvidence evidence;
   final HistoricalArchiveImportProgress progress;
   final String failureDetail;
+  final SameMessagesLineageAdmission lineageAdmission;
 }
 
 final class HistoricalArchivesRemovingState
@@ -727,6 +763,7 @@ final class HistoricalArchivesWorkflowState {
     HistoricalArchivesHubState() ||
     HistoricalArchivesDuplicateNoticeState() ||
     HistoricalArchivesInvalidNoticeState() ||
+    HistoricalArchivesLineageNoticeState() ||
     HistoricalArchivesImportSuccessNoticeState() ||
     HistoricalArchivesKnownSourceReferenceState() => true,
     _ => false,
@@ -760,6 +797,7 @@ final class HistoricalArchivesWorkflowState {
         HistoricalArchivesHubState() ||
         HistoricalArchivesDuplicateNoticeState() ||
         HistoricalArchivesInvalidNoticeState() ||
+        HistoricalArchivesLineageNoticeState() ||
         HistoricalArchivesImportSuccessNoticeState() ||
         HistoricalArchivesKnownSourceReferenceState() ||
         HistoricalArchivesInspectingCandidateState() ||
@@ -823,6 +861,11 @@ final class HistoricalArchivesWorkflowState {
         _ => null,
       };
 
+  HistoricalArchivesLineageNotice? get lineageNotice => switch (presentation) {
+    HistoricalArchivesLineageNoticeState(:final notice) => notice,
+    _ => null,
+  };
+
   HistoricalArchivesImportSuccessNotice? get importSuccessNotice =>
       switch (presentation) {
         HistoricalArchivesImportSuccessNoticeState(:final notice) => notice,
@@ -853,6 +896,7 @@ HistoricalArchivesPresentationState _withPresentationData(
     HistoricalArchivesHubState() => presentation,
     HistoricalArchivesDuplicateNoticeState() => presentation,
     HistoricalArchivesInvalidNoticeState() => presentation,
+    HistoricalArchivesLineageNoticeState() => presentation,
     HistoricalArchivesImportSuccessNoticeState() => presentation,
     HistoricalArchivesKnownSourceReferenceState() => presentation,
     HistoricalArchivesInspectingCandidateState(:final inspectionOccurrence) =>
@@ -862,8 +906,15 @@ HistoricalArchivesPresentationState _withPresentationData(
       ),
     HistoricalArchivesInspectionFailedState(:final evidence) =>
       HistoricalArchivesInspectionFailedState(data: data, evidence: evidence),
-    HistoricalArchivesReadyToAddState(:final evidence) =>
-      HistoricalArchivesReadyToAddState(data: data, evidence: evidence),
+    HistoricalArchivesReadyToAddState(
+      :final evidence,
+      :final lineageAdmission,
+    ) =>
+      HistoricalArchivesReadyToAddState(
+        data: data,
+        evidence: evidence,
+        lineageAdmission: lineageAdmission,
+      ),
     HistoricalArchivesExistingSourceState(
       :final facts,
       :final managementFailureDetail,
@@ -873,22 +924,29 @@ HistoricalArchivesPresentationState _withPresentationData(
         facts: facts,
         managementFailureDetail: managementFailureDetail,
       ),
-    HistoricalArchivesImportingState(:final evidence, :final progress) =>
+    HistoricalArchivesImportingState(
+      :final evidence,
+      :final progress,
+      :final lineageAdmission,
+    ) =>
       HistoricalArchivesImportingState(
         data: data,
         evidence: evidence,
         progress: progress,
+        lineageAdmission: lineageAdmission,
       ),
     HistoricalArchivesImportFailedState(
       :final evidence,
       :final progress,
       :final failureDetail,
+      :final lineageAdmission,
     ) =>
       HistoricalArchivesImportFailedState(
         data: data,
         evidence: evidence,
         progress: progress,
         failureDetail: failureDetail,
+        lineageAdmission: lineageAdmission,
       ),
     HistoricalArchivesRemovingState(:final facts, :final progress) =>
       HistoricalArchivesRemovingState(
@@ -1114,6 +1172,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   var _nextReferenceOccurrence = 0;
   var _nextDuplicateNoticeOccurrence = 0;
   var _nextInvalidFolderNoticeOccurrence = 0;
+  var _nextLineageNoticeOccurrence = 0;
   var _nextImportSuccessNoticeOccurrence = 0;
   var _presentationSessionOccurrence = 0;
   Timer? _referenceClearTimer;
@@ -1285,6 +1344,62 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
+    MessagesLineageAdmission lineageAdmission;
+    try {
+      final authority = await ref.read(
+        messagesLineageAdmissionAuthorityProvider.future,
+      );
+      lineageAdmission = await authority.verifyMacMessagesCandidate(
+        candidateChatDatabasePath: result.archiveRemovalTargetChatDbPath,
+      );
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message: 'Messages-lineage admission could not be completed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      lineageAdmission = MessagesLineageAdmission.fromEvidence(
+        const MessagesLineageEvidence(
+          candidateRecordCount: 0,
+          usableCandidateIdentityCount: 0,
+          blankCandidateGuidCount: 0,
+          inconsistentCandidateIdentityCount: 0,
+          duplicateCandidateRowIdCount: 0,
+          currentRowsInCandidateRangeCount: 0,
+          comparableCount: 0,
+          matchingCount: 0,
+          contradictionCount: 0,
+          missingCurrentRowCount: 0,
+          unusableCurrentGuidCount: 0,
+          matchingRowIdBandCount: 0,
+          candidateSourceShapeIsCoherent: false,
+          currentSourceShapeIsCoherent: false,
+        ),
+      );
+    }
+
+    if (!_ownsCandidateInspection(
+      presentationSessionOccurrence: expectedPresentationSessionOccurrence,
+      inspectionOccurrence: inspectionOccurrence,
+    )) {
+      return;
+    }
+
+    if (lineageAdmission is! SameMessagesLineageAdmission) {
+      _nextLineageNoticeOccurrence += 1;
+      state = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesLineageNoticeState(
+          notice: HistoricalArchivesLineageNotice(
+            status: lineageAdmission.status,
+            noticeOccurrence: _nextLineageNoticeOccurrence,
+            presentationSessionOccurrence: _presentationSessionOccurrence,
+          ),
+        ),
+      );
+      return;
+    }
+
     await _persistHistoricalArchiveSourceIfEligible(
       archiveSources: archiveSources,
       result: result,
@@ -1297,7 +1412,10 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
-    state = _workflowStateFromPreflightResult(result);
+    state = _workflowStateFromPreflightResult(
+      result,
+      lineageAdmission: lineageAdmission,
+    );
   }
 
   bool _ownsCandidateInspection({
@@ -1423,6 +1541,23 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
+    state = buildInitialHistoricalArchivesWorkflowState();
+  }
+
+  void dismissLineageNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    final presentation = state.presentation;
+    if (presentation is! HistoricalArchivesLineageNoticeState) {
+      return;
+    }
+    final notice = presentation.notice;
+    if (notice.noticeOccurrence != noticeOccurrence ||
+        notice.presentationSessionOccurrence != presentationSessionOccurrence ||
+        _presentationSessionOccurrence != presentationSessionOccurrence) {
+      return;
+    }
     state = buildInitialHistoricalArchivesWorkflowState();
   }
 
@@ -1835,18 +1970,28 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     Future<void> Function()? waitForOperationPresentation,
   }) async {
     final authorizedPresentation = state.presentation;
-    final (candidateData, candidateEvidence) = switch (authorizedPresentation) {
-      HistoricalArchivesReadyToAddState(:final data, :final evidence) => (
-        data,
-        evidence,
-      ),
-      HistoricalArchivesImportFailedState(:final data, :final evidence) => (
-        data,
-        evidence,
-      ),
-      _ => (null, null),
+    final (
+      candidateData,
+      candidateEvidence,
+      lineageAdmission,
+    ) = switch (authorizedPresentation) {
+      HistoricalArchivesReadyToAddState(
+        :final data,
+        :final evidence,
+        :final lineageAdmission,
+      ) =>
+        (data, evidence, lineageAdmission),
+      HistoricalArchivesImportFailedState(
+        :final data,
+        :final evidence,
+        :final lineageAdmission,
+      ) =>
+        (data, evidence, lineageAdmission),
+      _ => (null, null, null),
     };
-    if (candidateData == null || candidateEvidence == null) {
+    if (candidateData == null ||
+        candidateEvidence == null ||
+        lineageAdmission == null) {
       return;
     }
 
@@ -1883,6 +2028,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         ),
         evidence: candidateEvidence,
         progress: initialProgress,
+        lineageAdmission: lineageAdmission,
       ),
     );
 
@@ -2096,6 +2242,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             evidence: candidateEvidence,
             progress: failedProgress,
             failureDetail: detail,
+            lineageAdmission: lineageAdmission,
           ),
         );
       }
@@ -2165,6 +2312,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         data: current.data,
         evidence: current.evidence,
         progress: updatedProgress,
+        lineageAdmission: current.lineageAdmission,
       ),
     );
   }
@@ -2186,6 +2334,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         data: current.data,
         evidence: current.evidence,
         progress: progress,
+        lineageAdmission: current.lineageAdmission,
       ),
     );
   }
@@ -2488,6 +2637,7 @@ buildHistoricalArchivesWorkflowPanelModel({
       HistoricalArchivesHubState() ||
       HistoricalArchivesDuplicateNoticeState() ||
       HistoricalArchivesInvalidNoticeState() ||
+      HistoricalArchivesLineageNoticeState() ||
       HistoricalArchivesImportSuccessNoticeState() ||
       HistoricalArchivesKnownSourceReferenceState() ||
       HistoricalArchivesExistingSourceState() => false,
@@ -2626,6 +2776,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
     HistoricalArchivesHubState() ||
     HistoricalArchivesDuplicateNoticeState() ||
     HistoricalArchivesInvalidNoticeState() ||
+    HistoricalArchivesLineageNoticeState() ||
     HistoricalArchivesImportSuccessNoticeState() ||
     HistoricalArchivesKnownSourceReferenceState() =>
       const HistoricalArchivesNarratorPresentationViewModel(
@@ -3533,8 +3684,9 @@ final class _UnavailableArchiveSourceInspector
 }
 
 HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
-  HistoricalArchivesFolderPreflightResult result,
-) {
+  HistoricalArchivesFolderPreflightResult result, {
+  required SameMessagesLineageAdmission lineageAdmission,
+}) {
   final data = HistoricalArchivesPresentationData(
     preflight: result.preflight,
     selectedFolderPath: result.selectedFolderPath,
@@ -3574,7 +3726,11 @@ HistoricalArchivesWorkflowState _workflowStateFromPreflightResult(
     presentation:
         result.preflight.status ==
             HistoricalArchivesPreflightStatus.completeReadyToImport
-        ? HistoricalArchivesReadyToAddState(data: data, evidence: evidence)
+        ? HistoricalArchivesReadyToAddState(
+            data: data,
+            evidence: evidence,
+            lineageAdmission: lineageAdmission,
+          )
         : HistoricalArchivesInspectionFailedState(
             data: data,
             evidence: evidence,

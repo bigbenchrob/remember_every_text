@@ -12,6 +12,8 @@ import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dar
 import '../../../../config/theme/widgets/theme_widgets.dart';
 import '../../../../essentials/debug/feature_level_providers.dart'
     show DeveloperModeValue, developerModeProvider;
+import '../../../../essentials/source_scoped_import/domain/messages_lineage_admission.dart'
+    show MessagesLineageAdmissionStatus;
 import '../../application/historical_archives_workflow_actions_provider.dart';
 import '../../application/historical_archives_workflow_panel_model_provider.dart';
 import '../layout/historical_archives_track_occupants.dart';
@@ -32,6 +34,7 @@ class _HistoricalArchivesPanelState
     extends ConsumerState<HistoricalArchivesPanel> {
   int? _presentedDuplicateNoticeOccurrence;
   int? _presentedInvalidFolderNoticeOccurrence;
+  int? _presentedLineageNoticeOccurrence;
   int? _presentedImportSuccessNoticeOccurrence;
 
   @override
@@ -85,6 +88,30 @@ class _HistoricalArchivesPanelState
             return;
           }
           unawaited(_showInvalidFolderDialog(next));
+        });
+      },
+    );
+    ref.listen<HistoricalArchivesLineageNotice?>(
+      historicalArchivesWorkflowProvider.select((state) => state.lineageNotice),
+      (previous, next) {
+        if (next == null ||
+            next.noticeOccurrence == _presentedLineageNoticeOccurrence) {
+          return;
+        }
+        _presentedLineageNoticeOccurrence = next.noticeOccurrence;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          final currentNotice = ref
+              .read(historicalArchivesWorkflowProvider)
+              .lineageNotice;
+          if (currentNotice?.noticeOccurrence != next.noticeOccurrence ||
+              currentNotice?.presentationSessionOccurrence !=
+                  next.presentationSessionOccurrence) {
+            return;
+          }
+          unawaited(_showLineageDialog(next));
         });
       },
     );
@@ -544,6 +571,41 @@ class _HistoricalArchivesPanelState
     ref
         .read(historicalArchivesWorkflowActionsProvider.notifier)
         .dismissImportSuccessNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+  }
+
+  Future<void> _showLineageDialog(
+    HistoricalArchivesLineageNotice notice,
+  ) async {
+    final contradiction =
+        notice.status == MessagesLineageAdmissionStatus.contradictoryLineage;
+    await showCupertinoDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CupertinoAlertDialog(
+          title: Text(
+            contradiction
+                ? 'This Messages folder belongs to a different Messages history and can’t be added here.'
+                : 'MessageLens couldn’t verify that this folder came from the same Messages history.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted) {
+      return;
+    }
+    ref
+        .read(historicalArchivesWorkflowActionsProvider.notifier)
+        .dismissLineageNotice(
           noticeOccurrence: notice.noticeOccurrence,
           presentationSessionOccurrence: notice.presentationSessionOccurrence,
         );

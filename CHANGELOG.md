@@ -8,7 +8,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-No unreleased changes yet.
+### Changed
+
+- Historical Archives now proves that a selected Mac Messages folder belongs
+  to the current Messages history before registering it or offering import.
+  Foreign and unverifiable folders fail closed with distinct explanations.
 
 ## [0.2.71] — 2026-08-21
 

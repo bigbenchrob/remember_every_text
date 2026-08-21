@@ -12,6 +12,7 @@ import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_la
 import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/messages_lineage_admission.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_actions_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/presentation/view/historical_archives_panel.dart';
@@ -192,6 +193,66 @@ void main() {
         findsOneWidget,
       );
     });
+
+    for (final testCase
+        in <({MessagesLineageAdmissionStatus status, String expectedMessage})>[
+          (
+            status: MessagesLineageAdmissionStatus.contradictoryLineage,
+            expectedMessage:
+                'This Messages folder belongs to a different Messages history and can’t be added here.',
+          ),
+          (
+            status: MessagesLineageAdmissionStatus.insufficientEvidence,
+            expectedMessage:
+                'MessageLens couldn’t verify that this folder came from the same Messages history.',
+          ),
+        ]) {
+      testWidgets(
+        '${testCase.status.name} is modal-only and returns to the hub',
+        (tester) async {
+          final workflow = _LineageNoticeHistoricalArchivesWorkflow();
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+                historicalArchivesWorkflowPanelModelProvider.overrideWith(
+                  (ref) => _narratorPanelModel(isHub: true, presentation: null),
+                ),
+                developerModeProvider.overrideWith(
+                  () => _FakeDeveloperMode(DeveloperModeValue.user),
+                ),
+              ],
+              child: const CupertinoApp(home: HistoricalArchivesPanel()),
+            ),
+          );
+          await tester.pump();
+
+          workflow.emitLineageNotice(status: testCase.status);
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+          expect(find.text(testCase.expectedMessage), findsOneWidget);
+          expect(
+            find.byKey(const Key('historical-archives-empty-hub')),
+            findsOneWidget,
+          );
+          expect(workflow.state.knownSourceReference, isNull);
+          expect(workflow.state.selectedKnownSourceKey, isNull);
+          expect(find.text('Import Archive'), findsNothing);
+
+          await tester.tap(find.text('OK'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(CupertinoAlertDialog), findsNothing);
+          expect(workflow.dismissCallCount, 1);
+          expect(
+            workflow.state.presentation,
+            isA<HistoricalArchivesHubState>(),
+          );
+        },
+      );
+    }
 
     testWidgets(
       'terminal import success is acknowledged over the restored empty hub',
@@ -1460,6 +1521,38 @@ final class _InvalidFolderNoticeHistoricalArchivesWorkflow
 
   @override
   void dismissInvalidFolderNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    dismissCallCount += 1;
+    state = buildInitialHistoricalArchivesWorkflowState();
+  }
+}
+
+final class _LineageNoticeHistoricalArchivesWorkflow
+    extends HistoricalArchivesWorkflow {
+  var dismissCallCount = 0;
+  var _noticeOccurrence = 0;
+
+  @override
+  HistoricalArchivesWorkflowState build() =>
+      buildInitialHistoricalArchivesWorkflowState();
+
+  void emitLineageNotice({required MessagesLineageAdmissionStatus status}) {
+    _noticeOccurrence += 1;
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesLineageNoticeState(
+        notice: HistoricalArchivesLineageNotice(
+          status: status,
+          noticeOccurrence: _noticeOccurrence,
+          presentationSessionOccurrence: 0,
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dismissLineageNotice({
     required int noticeOccurrence,
     required int presentationSessionOccurrence,
   }) {

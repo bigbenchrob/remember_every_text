@@ -657,7 +657,6 @@ const Set<String> _externalLinkActionProviderAllowedFiles = {
 
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
-  'lib/features/attachments/infrastructure/repositories/source_database_message_lens_archive_lineage_evidence_repository.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
 };
 
@@ -1836,29 +1835,32 @@ void main() {
     });
 
     test(
-      'MessageLens attachment lineage stays read-only and identity-bounded',
+      'shared Messages lineage stays read-only and identity-bounded',
       () async {
         final repositorySource = await File(
-          'lib/features/attachments/infrastructure/repositories/'
-          'source_database_message_lens_archive_lineage_evidence_repository.dart',
+          'lib/essentials/source_scoped_import/infrastructure/'
+          'source_database_messages_lineage_anchor_repository.dart',
         ).readAsString();
-        final verifierSource = await File(
-          'lib/features/attachments/application/'
-          'message_lens_attachment_recovery_lineage_verifier.dart',
+        final authoritySource = await File(
+          'lib/essentials/source_scoped_import/application/'
+          'messages_lineage_admission_service.dart',
         ).readAsString();
-        final evidenceSource = await File(
-          'lib/features/attachments/domain/entities/'
-          'message_lens_archive_lineage_evidence.dart',
+        final workflowSource = await File(
+          'lib/features/settings/application/'
+          'historical_archives_workflow_panel_model_provider.dart',
         ).readAsString();
 
         expect(repositorySource, contains('SourceDatabaseOpener'));
+        expect(
+          repositorySource,
+          contains('ROWID AS original_messages_rowid, guid'),
+        );
         expect(repositorySource, contains('SourceScopedRowKey.unpackSourceId'));
         expect(
           repositorySource,
           contains('SourceScopedRowKey.unpackSourceRowId'),
         );
         expect(repositorySource, contains('liveChatDbSourceKind'));
-        expect(repositorySource, contains('ROWID AS source_rowid, guid'));
         expect(repositorySource, isNot(contains('package:sqlite3')));
         expect(repositorySource, isNot(contains('package:sqflite')));
         expect(repositorySource, isNot(contains('source_key')));
@@ -1871,18 +1873,46 @@ void main() {
         expect(repositorySource, isNot(contains('.update(')));
         expect(repositorySource, isNot(contains('.delete(')));
 
-        final verifyMethod = verifierSource.substring(
-          verifierSource.indexOf('verifyDonor'),
-        );
+        expect(authoritySource, contains('compareExactly'));
+        expect(authoritySource, isNot(contains('archiveInstanceId')));
+        expect(authoritySource, isNot(contains('AttachmentArchive')));
         expect(
-          verifyMethod.substring(0, verifyMethod.indexOf('}) async') + 2),
-          isNot(contains('currentMessagesDatabasePath')),
+          workflowSource,
+          contains('messagesLineageAdmissionAuthorityProvider.future'),
         );
-        expect(verifierSource, isNot(contains('archiveInstanceId')));
-        expect(verifierSource, isNot(contains('AttachmentArchive')));
-        expect(evidenceSource, contains('must still prove every candidate'));
+        expect(workflowSource, contains('required this.lineageAdmission'));
+        expect(
+          workflowSource,
+          contains('final SameMessagesLineageAdmission lineageAdmission'),
+        );
       },
     );
+
+    test('one shared ROWID-GUID lineage comparison authority exists', () async {
+      final owners = <String>[];
+      await for (final entity in Directory('lib').list(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) {
+          continue;
+        }
+        final source = await entity.readAsString();
+        if (source.contains('static MessagesLineageEvidence compareExactly')) {
+          owners.add(entity.path);
+        }
+      }
+
+      expect(
+        owners,
+        orderedEquals([
+          [
+            'lib',
+            'essentials',
+            'source_scoped_import',
+            'application',
+            'messages_lineage_admission_service.dart',
+          ].join(Platform.pathSeparator),
+        ]),
+      );
+    });
 
     test('Direct SQLite opens have explicit close ownership', () async {
       final offenders = await _findDirectSqliteOpenCleanupOffenders();
