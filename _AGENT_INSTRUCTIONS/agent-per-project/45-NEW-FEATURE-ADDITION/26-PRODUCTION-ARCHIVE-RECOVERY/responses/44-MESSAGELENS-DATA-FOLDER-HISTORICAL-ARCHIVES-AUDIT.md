@@ -20,6 +20,22 @@ links:
 
 # MessageLens Data-Folder Historical Archives Audit
 
+## Supersession Note
+
+The general archive-ingestion, donor-provenance, source-fact, overlay, and
+multi-store merge possibilities below remain historical design evidence, not
+the current product contract.
+
+Feature 26 has deliberately narrowed the supported MessageLens-folder use case
+to attachment payload recovery from an earlier snapshot of the same continuing
+local Mac Messages `chat.db` lineage. Donor messages, graph facts, overlays,
+source registries, and B/B1/B2/B3 ancestry will not be imported. See
+[MessageLens Attachment-Recovery Lineage Proof](45-MESSAGELENS-ATTACHMENT-RECOVERY-LINEAGE-PROOF.md).
+
+Sections below that describe general source-fact ingestion are superseded for
+the current product direction; they have not been erased because they document
+why the narrower boundary was chosen.
+
 ## Decision
 
 The future MessageLens arm is a legitimate second Historical Archives source

@@ -657,6 +657,7 @@ const Set<String> _externalLinkActionProviderAllowedFiles = {
 
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
+  'lib/features/attachments/infrastructure/repositories/source_database_message_lens_archive_lineage_evidence_repository.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
 };
 
@@ -1833,6 +1834,55 @@ void main() {
             'Actual users:\n${offenders.join('\n')}',
       );
     });
+
+    test(
+      'MessageLens attachment lineage stays read-only and identity-bounded',
+      () async {
+        final repositorySource = await File(
+          'lib/features/attachments/infrastructure/repositories/'
+          'source_database_message_lens_archive_lineage_evidence_repository.dart',
+        ).readAsString();
+        final verifierSource = await File(
+          'lib/features/attachments/application/'
+          'message_lens_attachment_recovery_lineage_verifier.dart',
+        ).readAsString();
+        final evidenceSource = await File(
+          'lib/features/attachments/domain/entities/'
+          'message_lens_archive_lineage_evidence.dart',
+        ).readAsString();
+
+        expect(repositorySource, contains('SourceDatabaseOpener'));
+        expect(repositorySource, contains('SourceScopedRowKey.unpackSourceId'));
+        expect(
+          repositorySource,
+          contains('SourceScopedRowKey.unpackSourceRowId'),
+        );
+        expect(repositorySource, contains('liveChatDbSourceKind'));
+        expect(repositorySource, contains('ROWID AS source_rowid, guid'));
+        expect(repositorySource, isNot(contains('package:sqlite3')));
+        expect(repositorySource, isNot(contains('package:sqflite')));
+        expect(repositorySource, isNot(contains('source_key')));
+        expect(repositorySource, isNot(contains('source_label')));
+        expect(repositorySource, isNot(contains('archiveInstanceId')));
+        expect(repositorySource, isNot(contains('importMessages')));
+        expect(repositorySource, isNot(contains('projectMessages')));
+        expect(repositorySource, isNot(contains('AttachmentArchive')));
+        expect(repositorySource, isNot(contains('.insert(')));
+        expect(repositorySource, isNot(contains('.update(')));
+        expect(repositorySource, isNot(contains('.delete(')));
+
+        final verifyMethod = verifierSource.substring(
+          verifierSource.indexOf('verifyDonor'),
+        );
+        expect(
+          verifyMethod.substring(0, verifyMethod.indexOf('}) async') + 2),
+          isNot(contains('currentMessagesDatabasePath')),
+        );
+        expect(verifierSource, isNot(contains('archiveInstanceId')));
+        expect(verifierSource, isNot(contains('AttachmentArchive')));
+        expect(evidenceSource, contains('must still prove every candidate'));
+      },
+    );
 
     test('Direct SQLite opens have explicit close ownership', () async {
       final offenders = await _findDirectSqliteOpenCleanupOffenders();

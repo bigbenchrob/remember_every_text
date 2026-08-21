@@ -78,12 +78,16 @@ panel. See:
 - [Historical Archives Stable Center Track Skeleton](responses/42-HISTORICAL-ARCHIVES-STABLE-CENTER-TRACK-SKELETON-IMPLEMENTATION.md)
 - [Historical Archive Canonical Source Identity](responses/43-HISTORICAL-ARCHIVE-CANONICAL-SOURCE-IDENTITY-IMPLEMENTATION.md)
 - [MessageLens Data-Folder Historical Archives Audit](responses/44-MESSAGELENS-DATA-FOLDER-HISTORICAL-ARCHIVES-AUDIT.md)
+- [MessageLens Attachment-Recovery Lineage Proof](responses/45-MESSAGELENS-ATTACHMENT-RECOVERY-LINEAGE-PROOF.md)
 
 The MessageLens-folder arm remains disabled. Its read-only identity and
-qualification foundation may now proceed, but source-fact ingestion is blocked
-until donor-qualified provenance and lineage are defined. Attachment and
-overlay recovery remain separate unresolved merge domains. Historical
-attachment-payload recovery also remains out of scope.
+qualification foundation may now proceed under a narrower product contract:
+recover attachment payloads only from an earlier snapshot of the same
+continuing local Mac Messages lineage. General source-fact, graph, source
+registry, and overlay ingestion is no longer planned for this arm. A dormant,
+schema-free exact ROWID/GUID lineage gate now exists, but attachment matching,
+durable admission, payload copying, and the MessageLens UI segment remain
+disabled and unresolved.
 
 ## Original Emergency Objective
 

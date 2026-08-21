@@ -9,6 +9,37 @@ void main() {
     expect(SourceScopedRowKey.unpackSourceRowId(packed), 42);
   });
 
+  test('round trips realistic and boundary rowids for every source kind', () {
+    const sourceIds = <int>[1, 2, 3, SourceScopedRowKey.maxSourceId];
+    const sourceRowIds = <int>[
+      1,
+      153403,
+      8796093022207,
+      SourceScopedRowKey.maxSourceRowId,
+    ];
+
+    for (final sourceId in sourceIds) {
+      for (final sourceRowId in sourceRowIds) {
+        final packed = SourceScopedRowKey.pack(
+          sourceId: sourceId,
+          sourceRowId: sourceRowId,
+        );
+
+        expect(SourceScopedRowKey.unpackSourceId(packed), sourceId);
+        expect(SourceScopedRowKey.unpackSourceRowId(packed), sourceRowId);
+      }
+    }
+  });
+
+  test('maximum packed key remains a positive signed SQLite integer', () {
+    final packed = SourceScopedRowKey.pack(
+      sourceId: SourceScopedRowKey.maxSourceId,
+      sourceRowId: SourceScopedRowKey.maxSourceRowId,
+    );
+
+    expect(packed, 0x7FFFFFFFFFFFFFFF);
+  });
+
   test('keeps source-local rowids collision-free across sources', () {
     final sourceOne = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 42);
     final sourceTwo = SourceScopedRowKey.pack(sourceId: 2, sourceRowId: 42);

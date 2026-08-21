@@ -5272,3 +5272,18 @@ production preservation authority mechanically enforceable.
 - Confirmed that read-only identity/qualification work may begin with the
   MessageLens segment still disabled, while mutation remains blocked pending
   provenance, lineage, attachment, and overlay decisions.
+
+## 2026-08-21 - MessageLens attachment-recovery lineage proof
+
+- Added Feature 26 response
+  `45-MESSAGELENS-ATTACHMENT-RECOVERY-LINEAGE-PROOF.md` documenting the narrowed
+  attachment-only product contract, reversible source-scoped identity,
+  supported local `chat.db` lineage, exact ROWID/GUID admission semantics,
+  typed evidence, performance findings, and future per-message proof.
+- Marked the general MessageLens data-folder merge assumptions in response 44
+  as superseded design history without erasing the audit.
+- Updated the Feature 26 start page to record that donor message, graph,
+  source-registry, and overlay ingestion is not part of the current
+  MessageLens-folder direction.
+- Recorded the dormant schema-free implementation and its fail-closed
+  `sameLineage`, `contradictoryLineage`, and `insufficientEvidence` contract.
