@@ -5208,3 +5208,17 @@ production preservation authority mechanically enforceable.
 - Recorded the deferred design questions around workflow-state mechanical
   impossibility, the Historical Archives state-dependent center Track
   boundary, and offline-capable canonical source identity.
+
+## 2026-08-21 — Historical Archives typed presentation state
+
+- Added Feature 26 response
+  `41-HISTORICAL-ARCHIVES-TYPED-PRESENTATION-STATE-IMPLEMENTATION.md` with the
+  final sealed state variants, transition table, durable/transient truth
+  boundary, notice/reference strategy, and mechanical guarantees.
+- Updated the architecture-conformance audit to mark D1 resolved while keeping
+  the Track-boundary, source-identity, and legacy-schema findings separate.
+- Recorded that candidate inspection evidence, imported-source facts, import
+  progress, removal progress, modal notices, and orange correspondence now
+  exist only in their truthful presentation variants.
+- Preserved the established mutation authority, persistence, source identity,
+  Track geometry, Narrator lifecycle, controls, copy, and archive behavior.

@@ -55,6 +55,81 @@ import 'package:sqlite3/sqlite3.dart';
 void main() {
   const currentMessagesDatabasePath = '/Users/test/Library/Messages/chat.db';
 
+  group('Historical Archives typed presentation state', () {
+    test('hub owns no candidate, selected source, progress, or reference', () {
+      final state = buildInitialHistoricalArchivesWorkflowState();
+
+      expect(state.presentation, isA<HistoricalArchivesHubState>());
+      expect(state.presentation.data, isNull);
+      expect(state.inspectionEvidence, isNull);
+      expect(state.selectedKnownSourceKey, isNull);
+      expect(state.importProgress, isNull);
+      expect(state.removalProgress, isNull);
+      expect(state.knownSourceReference, isNull);
+    });
+
+    test('ready candidate can own evidence but no operation progress', () {
+      final state = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesReadyToAddState(
+          data: _testPresentationData(),
+          evidence: _testInspectionEvidence(),
+        ),
+      );
+
+      expect(state.inspectionEvidence, isNotNull);
+      expect(state.selectedKnownSourceKey, isNull);
+      expect(state.importProgress, isNull);
+      expect(state.removalProgress, isNull);
+    });
+
+    test('import and removal progress are owned by disjoint variants', () {
+      final importing = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesImportingState(
+          data: _testPresentationData(),
+          evidence: _testInspectionEvidence(),
+          progress: const HistoricalArchiveImportProgress(),
+        ),
+      );
+      final removing = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesRemovingState(
+          data: _testPresentationData(),
+          facts: _testImportedSourceFacts(),
+          progress: const HistoricalArchiveRemovalProgress(),
+        ),
+      );
+
+      expect(importing.importProgress, isNotNull);
+      expect(importing.removalProgress, isNull);
+      expect(removing.importProgress, isNull);
+      expect(removing.removalProgress, isNotNull);
+    });
+
+    test('notices and orange references are exclusive hub variants', () {
+      const duplicate = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesDuplicateNoticeState(
+          notice: HistoricalArchivesDuplicateFolderNotice(
+            sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+            noticeOccurrence: 1,
+            presentationSessionOccurrence: 1,
+          ),
+        ),
+      );
+      const reference = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesKnownSourceReferenceState(
+          reference: HistoricalArchivesKnownSourceReference(
+            sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+            referenceOccurrence: 2,
+          ),
+        ),
+      );
+
+      expect(duplicate.duplicateFolderNotice, isNotNull);
+      expect(duplicate.knownSourceReference, isNull);
+      expect(reference.duplicateFolderNotice, isNull);
+      expect(reference.knownSourceReference, isNotNull);
+    });
+  });
+
   group('buildHistoricalArchivesWorkflowPanelModel', () {
     test('projects the empty workflow as a silent hub', () {
       final model = buildHistoricalArchivesWorkflowPanelModel(
@@ -148,22 +223,12 @@ void main() {
     );
 
     test('reports ready source state after successful preflight', () {
-      final workflowState = buildInitialHistoricalArchivesWorkflowState()
-          .copyWith(
-            presentationContext:
-                HistoricalArchivesPresentationContext.addArchive,
-            presentationStage:
-                HistoricalArchivesPresentationStage.readyForImport,
-            preflight: const HistoricalArchivesPreflightViewModel(
-              status: HistoricalArchivesPreflightStatus.completeReadyToImport,
-              statusLabel: 'Preflight complete',
-              detail: 'Source checks succeeded.',
-            ),
-            selectedFolderPath: '/tmp/Archive-2017',
-            chatDbStatusLabel: 'Found and readable',
-            attachmentsStatusLabel: 'Found',
+      final workflowState = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesReadyToAddState(
+          data: _testPresentationData(
+            folderPath: '/tmp/Archive-2017',
             sourceLabel: 'Archive-2017',
-            archiveRemovalTargetChatDbPath: '/tmp/Archive-2017/chat.db',
+            attachmentsStatusLabel: 'Found',
             preflightSummaryLines: const ['Total messages: 42'],
             dryRunSummaryLines: const ['Estimated new messages: unavailable'],
             activityLog: const [
@@ -172,7 +237,14 @@ void main() {
                 message: 'Ready for the next slice.',
               ),
             ],
-          );
+          ),
+          evidence: _testInspectionEvidence(
+            folderPath: '/tmp/Archive-2017',
+            sourceLabel: 'Archive-2017',
+            attachmentsStatusLabel: 'Found',
+          ),
+        ),
+      );
 
       final model = buildHistoricalArchivesWorkflowPanelModel(
         executionGateState: const ArchiveMutationCoordinatorState(),
@@ -230,22 +302,20 @@ void main() {
     test(
       'keeps a valid candidate visibly ready while gate availability refreshes',
       () {
-        final workflowState = buildInitialHistoricalArchivesWorkflowState()
-            .copyWith(
-              presentationContext:
-                  HistoricalArchivesPresentationContext.addArchive,
-              presentationStage:
-                  HistoricalArchivesPresentationStage.readyForImport,
-              preflight: const HistoricalArchivesPreflightViewModel(
-                status: HistoricalArchivesPreflightStatus.completeReadyToImport,
-                statusLabel: 'Preflight complete',
-                detail: 'Source checks succeeded.',
-              ),
-              selectedFolderPath: '/tmp/Archive-2017',
-              chatDbStatusLabel: 'Found and readable',
-              attachmentsStatusLabel: 'Found',
+        final workflowState = HistoricalArchivesWorkflowState(
+          presentation: HistoricalArchivesReadyToAddState(
+            data: _testPresentationData(
+              folderPath: '/tmp/Archive-2017',
               sourceLabel: 'Archive-2017',
-            );
+              attachmentsStatusLabel: 'Found',
+            ),
+            evidence: _testInspectionEvidence(
+              folderPath: '/tmp/Archive-2017',
+              sourceLabel: 'Archive-2017',
+              attachmentsStatusLabel: 'Found',
+            ),
+          ),
+        );
 
         final available = buildHistoricalArchivesWorkflowPanelModel(
           executionGateState: const ArchiveMutationCoordinatorState(),
@@ -298,24 +368,18 @@ void main() {
         dryRunComparableMessages: 8882,
         dryRunUnavailableReason: null,
       );
-      final workflowState = buildInitialHistoricalArchivesWorkflowState()
-          .copyWith(
-            presentationContext:
-                HistoricalArchivesPresentationContext.addArchive,
-            presentationStage:
-                HistoricalArchivesPresentationStage.readyForImport,
-            inspectionEvidence: evidence,
-            preflight: const HistoricalArchivesPreflightViewModel(
-              status: HistoricalArchivesPreflightStatus.completeReadyToImport,
-              statusLabel: 'Preflight complete',
-              detail: 'Source checks succeeded.',
-            ),
-            selectedFolderPath: evidence.folderPath,
-            archiveRemovalTargetChatDbPath: evidence.chatDbPath,
-            chatDbStatusLabel: evidence.chatDbStatusLabel,
-            attachmentsStatusLabel: evidence.attachmentsStatusLabel,
+      final workflowState = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesReadyToAddState(
+          data: _testPresentationData(
+            folderPath: evidence.folderPath,
+            chatDbPath: evidence.chatDbPath,
             sourceLabel: evidence.sourceLabel,
-          );
+            chatDbStatus: evidence.chatDbStatus,
+            attachmentsStatusLabel: evidence.attachmentsStatusLabel,
+          ),
+          evidence: evidence,
+        ),
+      );
 
       final model = buildHistoricalArchivesWorkflowPanelModel(
         executionGateState: const ArchiveMutationCoordinatorState(),
@@ -343,18 +407,22 @@ void main() {
         String? failureDetail,
       }) {
         final failed = failureDetail != null;
-        final workflowState = buildInitialHistoricalArchivesWorkflowState()
-            .copyWith(
-              presentationContext: failed
-                  ? HistoricalArchivesPresentationContext.importFailed
-                  : HistoricalArchivesPresentationContext.importingArchive,
-              presentationStage: failed
-                  ? HistoricalArchivesPresentationStage.importFailed
-                  : HistoricalArchivesPresentationStage.importingArchive,
-              selectedFolderPath: '/tmp/archive',
-              importProgress: progress,
-              importFailureDetail: failureDetail,
-            );
+        final data = _testPresentationData();
+        final evidence = _testInspectionEvidence();
+        final workflowState = HistoricalArchivesWorkflowState(
+          presentation: failed
+              ? HistoricalArchivesImportFailedState(
+                  data: data,
+                  evidence: evidence,
+                  progress: progress,
+                  failureDetail: failureDetail,
+                )
+              : HistoricalArchivesImportingState(
+                  data: data,
+                  evidence: evidence,
+                  progress: progress,
+                ),
+        );
         return buildHistoricalArchivesWorkflowPanelModel(
           executionGateState: const ArchiveMutationCoordinatorState(),
           isMaintenanceLocked: !failed,
@@ -454,28 +522,24 @@ void main() {
     });
 
     test('maps real import progress into directed instrumentation', () {
-      final workflowState = buildInitialHistoricalArchivesWorkflowState()
-          .copyWith(
-            presentationContext:
-                HistoricalArchivesPresentationContext.importingArchive,
-            presentationStage:
-                HistoricalArchivesPresentationStage.importingArchive,
-            selectedFolderPath: '/tmp/archive',
-            importProgress: const HistoricalArchiveImportProgress(
-              addingMessages: HistoricalArchiveImportStageStatus.succeeded,
-              preparingConversations:
-                  HistoricalArchiveImportStageStatus.running,
-              verifyingImport: HistoricalArchiveImportStageStatus.waiting,
-              graphProjectionProgress:
-                  SourceScopedArchiveGraphProjectionProgress(
-                    activeUnit: SourceScopedArchiveGraphProjectionUnit.messages,
-                    completedUnitCount: 2,
-                    totalUnitCount: 5,
-                    completedWorkCount: 500,
-                    totalWorkCount: 1000,
-                  ),
+      final workflowState = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesImportingState(
+          data: _testPresentationData(),
+          evidence: _testInspectionEvidence(),
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+            preparingConversations: HistoricalArchiveImportStageStatus.running,
+            verifyingImport: HistoricalArchiveImportStageStatus.waiting,
+            graphProjectionProgress: SourceScopedArchiveGraphProjectionProgress(
+              activeUnit: SourceScopedArchiveGraphProjectionUnit.messages,
+              completedUnitCount: 2,
+              totalUnitCount: 5,
+              completedWorkCount: 500,
+              totalWorkCount: 1000,
             ),
-          );
+          ),
+        ),
+      );
 
       final model = buildHistoricalArchivesWorkflowPanelModel(
         executionGateState: const ArchiveMutationCoordinatorState(),
@@ -530,20 +594,18 @@ void main() {
         dryRunComparableMessages: 42,
         dryRunUnavailableReason: null,
       );
-      final workflowState = buildInitialHistoricalArchivesWorkflowState()
-          .copyWith(
-            presentationContext:
-                HistoricalArchivesPresentationContext.importFailed,
-            presentationStage: HistoricalArchivesPresentationStage.importFailed,
-            selectedFolderPath: evidence.folderPath,
-            inspectionEvidence: evidence,
-            importFailureDetail: 'Graph projection failed.',
-            importProgress: const HistoricalArchiveImportProgress(
-              addingMessages: HistoricalArchiveImportStageStatus.succeeded,
-              preparingConversations: HistoricalArchiveImportStageStatus.failed,
-              verifyingImport: HistoricalArchiveImportStageStatus.waiting,
-            ),
-          );
+      final workflowState = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesImportFailedState(
+          data: _testPresentationData(folderPath: evidence.folderPath),
+          evidence: evidence,
+          failureDetail: 'Graph projection failed.',
+          progress: const HistoricalArchiveImportProgress(
+            addingMessages: HistoricalArchiveImportStageStatus.succeeded,
+            preparingConversations: HistoricalArchiveImportStageStatus.failed,
+            verifyingImport: HistoricalArchiveImportStageStatus.waiting,
+          ),
+        ),
+      );
 
       final model = buildHistoricalArchivesWorkflowPanelModel(
         executionGateState: const ArchiveMutationCoordinatorState(),
@@ -593,24 +655,15 @@ void main() {
         dryRunComparableMessages: null,
         dryRunUnavailableReason: 'Graph comparison is unavailable.',
       );
-      final workflowState = buildInitialHistoricalArchivesWorkflowState()
-          .copyWith(
-            presentationContext:
-                HistoricalArchivesPresentationContext.addArchive,
-            presentationStage:
-                HistoricalArchivesPresentationStage.readyForImport,
-            inspectionEvidence: evidence,
-            preflight: const HistoricalArchivesPreflightViewModel(
-              status: HistoricalArchivesPreflightStatus.completeReadyToImport,
-              statusLabel: 'Preflight complete',
-              detail: 'Source checks succeeded without comparison.',
-            ),
-            selectedFolderPath: evidence.folderPath,
-            archiveRemovalTargetChatDbPath: evidence.chatDbPath,
-            chatDbStatusLabel: evidence.chatDbStatusLabel,
-            attachmentsStatusLabel: evidence.attachmentsStatusLabel,
-            sourceLabel: evidence.sourceLabel,
-          );
+      final workflowState = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesReadyToAddState(
+          data: _testPresentationData(
+            folderPath: evidence.folderPath,
+            preflightDetail: 'Source checks succeeded without comparison.',
+          ),
+          evidence: evidence,
+        ),
+      );
 
       final model = buildHistoricalArchivesWorkflowPanelModel(
         executionGateState: const ArchiveMutationCoordinatorState(),
@@ -651,23 +704,12 @@ void main() {
           dryRunComparableMessages: 8882,
           dryRunUnavailableReason: null,
         );
-        final workflowState = buildInitialHistoricalArchivesWorkflowState()
-            .copyWith(
-              presentationContext:
-                  HistoricalArchivesPresentationContext.addArchive,
-              presentationStage:
-                  HistoricalArchivesPresentationStage.readyForImport,
-              inspectionEvidence: evidence,
-              preflight: const HistoricalArchivesPreflightViewModel(
-                status: HistoricalArchivesPreflightStatus.completeReadyToImport,
-                statusLabel: 'Preflight complete',
-                detail: 'Source checks succeeded.',
-              ),
-              selectedFolderPath: evidence.folderPath,
-              archiveRemovalTargetChatDbPath: evidence.chatDbPath,
-              chatDbStatusLabel: evidence.chatDbStatusLabel,
-              sourceLabel: evidence.sourceLabel,
-            );
+        final workflowState = HistoricalArchivesWorkflowState(
+          presentation: HistoricalArchivesReadyToAddState(
+            data: _testPresentationData(folderPath: evidence.folderPath),
+            evidence: evidence,
+          ),
+        );
 
         final model = buildHistoricalArchivesWorkflowPanelModel(
           executionGateState: const ArchiveMutationCoordinatorState(),
@@ -705,23 +747,17 @@ void main() {
         HistoricalArchivesWorkflowPanelViewModel buildFailure(
           ArchiveSourceInspectionStatus chatDbStatus,
         ) {
-          final workflowState = buildInitialHistoricalArchivesWorkflowState()
-              .copyWith(
-                presentationContext:
-                    HistoricalArchivesPresentationContext.addArchive,
-                presentationStage:
-                    HistoricalArchivesPresentationStage.inspectionFailed,
-                selectedFolderPath: '/tmp/archive',
-                archiveRemovalTargetChatDbPath: '/tmp/archive/chat.db',
+          final workflowState = HistoricalArchivesWorkflowState(
+            presentation: HistoricalArchivesInspectionFailedState(
+              data: _testPresentationData(
                 chatDbStatus: chatDbStatus,
-                chatDbStatusLabel: chatDbStatus.label,
-                sourceLabel: 'archive',
-                preflight: const HistoricalArchivesPreflightViewModel(
-                  status: HistoricalArchivesPreflightStatus.failed,
-                  statusLabel: 'Preflight failed',
-                  detail: 'Inspection failed for testing.',
-                ),
-              );
+                preflightStatus: HistoricalArchivesPreflightStatus.failed,
+                preflightStatusLabel: 'Preflight failed',
+                preflightDetail: 'Inspection failed for testing.',
+              ),
+              evidence: _testInspectionEvidence(chatDbStatus: chatDbStatus),
+            ),
+          );
           return buildHistoricalArchivesWorkflowPanelModel(
             executionGateState: const ArchiveMutationCoordinatorState(),
             isMaintenanceLocked: false,
@@ -776,8 +812,8 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         expect(
-          container.read(historicalArchivesWorkflowProvider).presentationStage,
-          HistoricalArchivesPresentationStage.inspectingSource,
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesInspectingCandidateState>(),
         );
 
         inspectionCompleter.complete(
@@ -807,8 +843,8 @@ void main() {
           historicalArchivesWorkflowProvider,
         );
         expect(
-          resolvedState.presentationStage,
-          HistoricalArchivesPresentationStage.readyForImport,
+          resolvedState.presentation,
+          isA<HistoricalArchivesReadyToAddState>(),
         );
         expect(resolvedState.inspectionEvidence?.totalMessages, 42);
       },
@@ -844,17 +880,14 @@ void main() {
         );
         await workflow.chooseMessagesFolder();
         expect(
-          container.read(historicalArchivesWorkflowProvider).presentationStage,
-          HistoricalArchivesPresentationStage.readyForImport,
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesReadyToAddState>(),
         );
 
         workflow.cancelAddArchive();
 
         final cancelled = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          cancelled.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(cancelled.presentation, isA<HistoricalArchivesHubState>());
         expect(cancelled.selectedFolderPath, isNull);
         expect(cancelled.selectedKnownSourceKey, isNull);
         expect(cancelled.knownSourceReference, isNull);
@@ -934,12 +967,8 @@ void main() {
 
         final authorized = container.read(historicalArchivesWorkflowProvider);
         expect(
-          authorized.presentationContext,
-          HistoricalArchivesPresentationContext.importingArchive,
-        );
-        expect(
-          authorized.presentationStage,
-          HistoricalArchivesPresentationStage.importingArchive,
+          authorized.presentation,
+          isA<HistoricalArchivesImportingState>(),
         );
         expect(graphImportService.callCount, 0);
         expect(archiveSources.successfulImportUpdateCount, 0);
@@ -971,10 +1000,7 @@ void main() {
         );
 
         final completed = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          completed.presentationContext,
-          HistoricalArchivesPresentationContext.importingArchive,
-        );
+        expect(completed.presentation, isA<HistoricalArchivesImportingState>());
         expect(
           HistoricalArchiveImportStage.values.map(
             completed.importProgress!.statusFor,
@@ -1004,8 +1030,8 @@ void main() {
 
         final settled = container.read(historicalArchivesWorkflowProvider);
         expect(
-          settled.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
+          settled.presentation,
+          isA<HistoricalArchivesImportSuccessNoticeState>(),
         );
         expect(settled.importProgress, isNull);
         expect(settled.knownSourceReference, isNull);
@@ -1020,10 +1046,7 @@ void main() {
         );
         final acknowledged = container.read(historicalArchivesWorkflowProvider);
         expect(acknowledged.importSuccessNotice, isNull);
-        expect(
-          acknowledged.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(acknowledged.presentation, isA<HistoricalArchivesHubState>());
         expect(acknowledged.selectedKnownSourceKey, isNull);
         expect(acknowledged.knownSourceReference, isNull);
         expect(archiveSources.successfulImportUpdateCount, 1);
@@ -1099,20 +1122,13 @@ void main() {
         workflow.resetPresentationContext();
         await workflow.loadFolder(folderPath: '/tmp/new-archive');
         expect(
-          container.read(historicalArchivesWorkflowProvider).presentationStage,
-          HistoricalArchivesPresentationStage.readyForImport,
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesReadyToAddState>(),
         );
 
         await oldImport;
         final newer = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          newer.presentationContext,
-          HistoricalArchivesPresentationContext.addArchive,
-        );
-        expect(
-          newer.presentationStage,
-          HistoricalArchivesPresentationStage.readyForImport,
-        );
+        expect(newer.presentation, isA<HistoricalArchivesReadyToAddState>());
         expect(newer.selectedFolderPath, '/tmp/new-archive');
         expect(newer.importSuccessNotice, isNull);
       },
@@ -1189,10 +1205,7 @@ void main() {
         await workflow.beginImportForSelectedSource();
 
         final failed = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          failed.presentationContext,
-          HistoricalArchivesPresentationContext.importFailed,
-        );
+        expect(failed.presentation, isA<HistoricalArchivesImportFailedState>());
         expect(
           failed.importProgress?.statusFor(
             HistoricalArchiveImportStage.preparingConversations,
@@ -1248,10 +1261,7 @@ void main() {
       );
 
       final state = container.read(historicalArchivesWorkflowProvider);
-      expect(
-        state.presentationContext,
-        HistoricalArchivesPresentationContext.addArchive,
-      );
+      expect(state.presentation, isA<HistoricalArchivesReadyToAddState>());
       expect(state.selectedFolderPath, '/tmp/new-archive');
     });
 
@@ -1294,12 +1304,8 @@ void main() {
 
         final recognized = container.read(historicalArchivesWorkflowProvider);
         expect(
-          recognized.presentationStage,
-          HistoricalArchivesPresentationStage.noSource,
-        );
-        expect(
-          recognized.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
+          recognized.presentation,
+          isA<HistoricalArchivesDuplicateNoticeState>(),
         );
         expect(recognized.duplicateFolderNotice?.sourceKey, sourceKey);
         expect(recognized.duplicateFolderNotice?.noticeOccurrence, 1);
@@ -1331,8 +1337,8 @@ void main() {
         expect(firstReference.knownSourceReference?.sourceKey, sourceKey);
         expect(firstReference.knownSourceReference?.referenceOccurrence, 1);
         expect(
-          firstReference.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
+          firstReference.presentation,
+          isA<HistoricalArchivesKnownSourceReferenceState>(),
         );
         await tester.pump(const Duration(milliseconds: 2000));
 
@@ -1409,12 +1415,8 @@ void main() {
 
         final rejected = container.read(historicalArchivesWorkflowProvider);
         expect(
-          rejected.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
-        expect(
-          rejected.presentationStage,
-          HistoricalArchivesPresentationStage.noSource,
+          rejected.presentation,
+          isA<HistoricalArchivesInvalidNoticeState>(),
         );
         expect(rejected.invalidFolderNotice?.noticeOccurrence, 1);
         expect(rejected.selectedFolderPath, isNull);
@@ -1442,10 +1444,7 @@ void main() {
 
         final dismissed = container.read(historicalArchivesWorkflowProvider);
         expect(dismissed.invalidFolderNotice, isNull);
-        expect(
-          dismissed.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(dismissed.presentation, isA<HistoricalArchivesHubState>());
         expect(dismissed.knownSourceReference, isNull);
         expect(dismissed.selectedKnownSourceKey, isNull);
         expect(archiveSources.upsertCallCount, 0);
@@ -1485,10 +1484,7 @@ void main() {
         );
 
         final state = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          state.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(state.presentation, isA<HistoricalArchivesHubState>());
         expect(state.invalidFolderNotice, isNull);
         expect(state.knownSourceReference, isNull);
         expect(state.selectedKnownSourceKey, isNull);
@@ -1519,12 +1515,8 @@ void main() {
 
         final state = container.read(historicalArchivesWorkflowProvider);
         expect(
-          state.presentationContext,
-          HistoricalArchivesPresentationContext.addArchive,
-        );
-        expect(
-          state.presentationStage,
-          HistoricalArchivesPresentationStage.inspectionFailed,
+          state.presentation,
+          isA<HistoricalArchivesInspectionFailedState>(),
         );
         expect(state.invalidFolderNotice, isNull);
         expect(state.chatDbStatusLabel, 'Read failed');
@@ -1574,10 +1566,7 @@ void main() {
         );
 
         final state = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          state.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(state.presentation, isA<HistoricalArchivesHubState>());
         expect(state.duplicateFolderNotice, isNull);
         expect(state.knownSourceReference, isNull);
       },
@@ -1631,14 +1620,7 @@ void main() {
             .chooseMessagesFolder();
 
         final state = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          state.presentationContext,
-          HistoricalArchivesPresentationContext.addArchive,
-        );
-        expect(
-          state.presentationStage,
-          HistoricalArchivesPresentationStage.readyForImport,
-        );
+        expect(state.presentation, isA<HistoricalArchivesReadyToAddState>());
         expect(state.knownSourceReference, isNull);
         expect(
           await container.read(historicalArchiveSourceMetadataProvider.future),
@@ -1694,12 +1676,8 @@ void main() {
 
         final state = container.read(historicalArchivesWorkflowProvider);
         expect(
-          state.presentationStage,
-          HistoricalArchivesPresentationStage.existingSource,
-        );
-        expect(
-          state.presentationContext,
-          HistoricalArchivesPresentationContext.existingSource,
+          state.presentation,
+          isA<HistoricalArchivesExistingSourceState>(),
         );
         expect(state.selectedFolderPath, '/tmp/archive');
         expect(state.selectedKnownSourceKey, sourceKey);
@@ -1857,10 +1835,7 @@ void main() {
           workflowState: running,
           currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
-        expect(
-          running.presentationContext,
-          HistoricalArchivesPresentationContext.removingSource,
-        );
+        expect(running.presentation, isA<HistoricalArchivesRemovingState>());
         expect(running.selectedKnownSourceKey, sourceKey);
         expect(
           runningModel.narratorPresentation?.kind,
@@ -1953,10 +1928,7 @@ void main() {
           workflowState: allDone,
           currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
-        expect(
-          allDone.presentationContext,
-          HistoricalArchivesPresentationContext.removingSource,
-        );
+        expect(allDone.presentation, isA<HistoricalArchivesRemovingState>());
         expect(allDoneModel.narratorPresentation?.narratorText, isNull);
         expect(
           allDoneModel.narratorPresentation?.instrumentationRows.map(
@@ -1973,10 +1945,7 @@ void main() {
           workflowState: completed,
           currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
-        expect(
-          completed.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(completed.presentation, isA<HistoricalArchivesHubState>());
         expect(completed.selectedKnownSourceKey, isNull);
         expect(completed.selectedFolderPath, isNull);
         expect(completedModel.isHub, isTrue);
@@ -2080,8 +2049,8 @@ void main() {
           currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
         expect(
-          failed.presentationContext,
-          HistoricalArchivesPresentationContext.removingSource,
+          failed.presentation,
+          isA<HistoricalArchivesRemovalFailedState>(),
         );
         expect(failed.selectedKnownSourceKey, sourceKey);
         expect(failed.removalFailureDetail, contains('projection failed'));
@@ -2192,8 +2161,8 @@ void main() {
           currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
         expect(
-          failed.presentationContext,
-          HistoricalArchivesPresentationContext.removingSource,
+          failed.presentation,
+          isA<HistoricalArchivesRemovalFailedState>(),
         );
         expect(failed.selectedKnownSourceKey, sourceKey);
         expect(
@@ -2257,14 +2226,7 @@ void main() {
           workflowState: state,
           currentMessagesDatabasePath: currentMessagesDatabasePath,
         );
-        expect(
-          state.presentationStage,
-          HistoricalArchivesPresentationStage.noSource,
-        );
-        expect(
-          state.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(state.presentation, isA<HistoricalArchivesHubState>());
         expect(state.selectedKnownSourceKey, isNull);
         expect(model.isHub, isTrue);
         expect(model.narratorPresentation, isNull);
@@ -2336,10 +2298,7 @@ void main() {
             .setMode(SidebarMode.messages);
 
         final reset = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          reset.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(reset.presentation, isA<HistoricalArchivesHubState>());
         expect(reset.selectedKnownSourceKey, isNull);
         expect(reset.knownSourceReference, isNull);
         expect(
@@ -2351,10 +2310,8 @@ void main() {
             .read(activeSidebarModeProvider.notifier)
             .setMode(SidebarMode.settings);
         expect(
-          container
-              .read(historicalArchivesWorkflowProvider)
-              .presentationContext,
-          HistoricalArchivesPresentationContext.hub,
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesHubState>(),
         );
       },
     );
@@ -2422,12 +2379,47 @@ void main() {
         await operation;
 
         final state = container.read(historicalArchivesWorkflowProvider);
-        expect(
-          state.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(state.presentation, isA<HistoricalArchivesHubState>());
         expect(state.selectedKnownSourceKey, isNull);
         expect(state.knownSourceReference, isNull);
+      },
+    );
+
+    test(
+      'older same-session inspection cannot replace a newer candidate',
+      () async {
+        final inspector = _PerFolderArchiveSourceInspector();
+        final container = ProviderContainer(
+          overrides: [
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => inspector,
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => const _FakeHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => const _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+
+        final older = workflow.loadFolder(folderPath: '/tmp/older');
+        await _waitUntil(() => inspector.hasRequest('/tmp/older'));
+        final newer = workflow.loadFolder(folderPath: '/tmp/newer');
+        await _waitUntil(() => inspector.hasRequest('/tmp/newer'));
+
+        inspector.complete('/tmp/newer');
+        await newer;
+        inspector.complete('/tmp/older');
+        await older;
+
+        final state = container.read(historicalArchivesWorkflowProvider);
+        expect(state.presentation, isA<HistoricalArchivesReadyToAddState>());
+        expect(state.selectedFolderPath, '/tmp/newer');
       },
     );
   });
@@ -2593,6 +2585,82 @@ INSERT INTO messages (ss_id, guid, is_from_me) VALUES
   });
 }
 
+HistoricalArchivesPresentationData _testPresentationData({
+  String folderPath = '/tmp/archive',
+  String? chatDbPath,
+  String sourceLabel = 'archive',
+  ArchiveSourceInspectionStatus chatDbStatus =
+      ArchiveSourceInspectionStatus.readable,
+  String attachmentsStatusLabel = 'Not found',
+  HistoricalArchivesPreflightStatus preflightStatus =
+      HistoricalArchivesPreflightStatus.completeReadyToImport,
+  String preflightStatusLabel = 'Preflight complete',
+  String preflightDetail = 'Source checks succeeded.',
+  List<String> preflightSummaryLines = const [],
+  List<String> dryRunSummaryLines = const [],
+  List<String> importSafetySummaryLines = const [],
+  List<String> resultSummaryLines = const [],
+  List<HistoricalArchivesLogEntryViewModel> activityLog = const [],
+  List<HistoricalArchivesWorkflowPhaseViewModel> phases = const [],
+}) {
+  return HistoricalArchivesPresentationData(
+    preflight: HistoricalArchivesPreflightViewModel(
+      status: preflightStatus,
+      statusLabel: preflightStatusLabel,
+      detail: preflightDetail,
+    ),
+    selectedFolderPath: folderPath,
+    archiveRemovalTargetChatDbPath: chatDbPath ?? '$folderPath/chat.db',
+    chatDbStatus: chatDbStatus,
+    attachmentsStatusLabel: attachmentsStatusLabel,
+    sourceLabel: sourceLabel,
+    preflightSummaryLines: preflightSummaryLines,
+    dryRunSummaryLines: dryRunSummaryLines,
+    importSafetySummaryLines: importSafetySummaryLines,
+    resultSummaryLines: resultSummaryLines,
+    activityLog: activityLog,
+    phases: phases,
+  );
+}
+
+HistoricalArchivesInspectionEvidence _testInspectionEvidence({
+  String folderPath = '/tmp/archive',
+  String? chatDbPath,
+  String sourceLabel = 'archive',
+  ArchiveSourceInspectionStatus chatDbStatus =
+      ArchiveSourceInspectionStatus.readable,
+  String attachmentsStatusLabel = 'Not found',
+}) {
+  return HistoricalArchivesInspectionEvidence(
+    folderPath: folderPath,
+    chatDbPath: chatDbPath ?? '$folderPath/chat.db',
+    sourceLabel: sourceLabel,
+    chatDbStatus: chatDbStatus,
+    attachmentsStatusLabel: attachmentsStatusLabel,
+    totalMessages: null,
+    totalChats: null,
+    totalHandles: null,
+    missingGuids: null,
+    earliestMessageUtc: null,
+    latestMessageUtc: null,
+    dateRangeUnavailableReason: 'Not supplied by this fixture.',
+    dryRunNewMessages: null,
+    dryRunDuplicateMessages: null,
+    dryRunComparableMessages: null,
+    dryRunUnavailableReason: 'Not supplied by this fixture.',
+  );
+}
+
+HistoricalArchivesImportedSourceFacts _testImportedSourceFacts() {
+  return const HistoricalArchivesImportedSourceFacts(
+    sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+    importedMessageCount: 42,
+    earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+    latestMessageUtc: '2017-06-11T08:00:00.000Z',
+    successfulImportFinishedAtUtc: '2026-08-19T12:00:00.000Z',
+  );
+}
+
 final class _ControllableHistoricalArchivesWorkflow
     extends HistoricalArchivesWorkflow {
   @override
@@ -2600,19 +2668,22 @@ final class _ControllableHistoricalArchivesWorkflow
       buildInitialHistoricalArchivesWorkflowState();
 
   void emitImportSuccessNotice() {
-    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
-      importSuccessNotice: const HistoricalArchivesImportSuccessNotice(
-        noticeOccurrence: 1,
-        presentationSessionOccurrence: 0,
+    state = const HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesImportSuccessNoticeState(
+        notice: HistoricalArchivesImportSuccessNotice(
+          noticeOccurrence: 1,
+          presentationSessionOccurrence: 0,
+        ),
       ),
     );
   }
 
   void emitNewCandidate() {
-    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
-      presentationContext: HistoricalArchivesPresentationContext.addArchive,
-      presentationStage: HistoricalArchivesPresentationStage.readyForImport,
-      selectedFolderPath: '/tmp/new-archive',
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesReadyToAddState(
+        data: _testPresentationData(folderPath: '/tmp/new-archive'),
+        evidence: _testInspectionEvidence(folderPath: '/tmp/new-archive'),
+      ),
     );
   }
 }
@@ -2648,6 +2719,43 @@ final class _CompletingArchiveSourceInspector
   @override
   Future<ArchiveSourceInspection> inspectFolder({required String folderPath}) {
     return inspection;
+  }
+}
+
+final class _PerFolderArchiveSourceInspector implements ArchiveSourceInspector {
+  final _requests = <String, Completer<ArchiveSourceInspection>>{};
+
+  bool hasRequest(String folderPath) => _requests.containsKey(folderPath);
+
+  void complete(String folderPath) {
+    _requests[folderPath]!.complete(
+      ArchiveSourceInspection(
+        folderPath: folderPath,
+        sourceLabel: folderPath.split('/').last,
+        chatDbPath: '$folderPath/chat.db',
+        chatDbStatus: ArchiveSourceInspectionStatus.readable,
+        attachmentsStatusLabel: 'Not found',
+        detail: 'Archive source is readable.',
+        dryRunEstimate: const ArchiveSourceDryRunEstimate.available(
+          comparableGuidCount: 42,
+          duplicateGuidCount: 10,
+          newGuidCount: 32,
+        ),
+        totalMessages: 42,
+        totalChats: 4,
+        totalHandles: 7,
+        missingGuids: 0,
+        earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+        latestMessageUtc: '2017-06-11T08:00:00.000Z',
+      ),
+    );
+  }
+
+  @override
+  Future<ArchiveSourceInspection> inspectFolder({required String folderPath}) {
+    final completer = Completer<ArchiveSourceInspection>();
+    _requests[folderPath] = completer;
+    return completer.future;
   }
 }
 

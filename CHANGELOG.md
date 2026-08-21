@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.69] — 2026-08-21
+
+### Changed
+
+- Historical Archives now models hub, candidate inspection, selected source,
+  import, removal, notices, and orange correspondence as exclusive typed
+  presentation states. Invalid combinations such as simultaneous import and
+  removal progress or a duplicate notice attached to an active operation are
+  no longer representable by the workflow state.
+
 ## [0.2.68] — 2026-08-20
 
 ### Fixed

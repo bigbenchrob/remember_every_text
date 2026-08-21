@@ -10,6 +10,7 @@ links:
   - ./08-ARCHIVE-MUTATION-OWNER-AWARE-DATABASE-ADMISSION-IMPLEMENTATION.md
   - ./10-HISTORICAL-ARCHIVES-NARRATOR-DIRECTED-INSTRUMENTATION-DESIGN.md
   - ./39-STABLE-NARRATOR-TRACK-REMOVAL-JOURNEY-AND-TERMINAL-PERCEPTION-IMPLEMENTATION.md
+  - ./41-HISTORICAL-ARCHIVES-TYPED-PRESENTATION-STATE-IMPLEMENTATION.md
 ---
 
 # Historical Archives Architecture-Conformance Audit
@@ -95,10 +96,12 @@ The implementation was traced against these questions:
 
 ## Historical Archives State And Transition Audit
 
-The current implementation expresses state with a presentation context, a
-presentation stage, operation progress, selected/candidate identities, and
-ephemeral notices. The following are the coherent combinations used by the
-current action paths.
+At the time of this audit, the implementation expressed state with a
+presentation context, a presentation stage, operation progress,
+selected/candidate identities, and ephemeral notices. The following table is
+the evidence that led to finding D1. The implementation now represents these
+meanings with the sealed variants recorded in
+`41-HISTORICAL-ARCHIVES-TYPED-PRESENTATION-STATE-IMPLEMENTATION.md`.
 
 | State | Required durable facts | Required transient facts | Sidebar | Center | Allowed controls | Authority / next transition |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -118,13 +121,12 @@ current action paths.
 
 ### State-model conclusion
 
-The action paths construct coherent states, and the tests cover the most
-important session and operation transitions. However, the type itself permits
-contradictory combinations because context, stage, notices, selected source,
-candidate evidence, and progress are independent fields. A sealed state model
-could make more invalid combinations impossible, but that is a broad workflow
-redesign. It is classified as a future architecture gap, not repaired in this
-bounded pass.
+The audit found that action paths constructed coherent states but the type
+permitted contradictory combinations because context, stage, notices,
+selected source, candidate evidence, and progress were independent fields.
+Remediation 41 replaced that field bag with one sealed presentation-state
+variant and confined notices, references, candidate evidence, imported-source
+facts, and operation progress to their truthful variants. D1 is resolved.
 
 ## Database Lifecycle Audit
 
@@ -262,12 +264,13 @@ than solve the state-model problem.
 
 ## D. Architectural Gaps Requiring Future Design
 
-### D1: the workflow state does not make contradictory combinations impossible
+### D1: resolved — workflow combinations are typed variants
 
-The current independent context/stage/nullable-field model relies on action
-methods to construct coherent combinations. A sealed workflow state is a
-plausible future direction, but changing it now would broaden behavior and
-tests substantially.
+The independent context/stage/nullable-field model has been removed.
+`HistoricalArchivesWorkflowState` now owns one sealed presentation variant.
+Candidate evidence, imported-source facts, import progress, removal progress,
+notices, and orange correspondence are available only in the variants that can
+truthfully own them. See implementation record 41.
 
 ### D2: Historical Archives has a state-dependent center shared-track boundary
 
@@ -308,9 +311,10 @@ part of Feature 26 remediation.
 
 ## Remediation Boundary
 
-This pass implemented A1-A3 only. D1-D4 remain recorded rather than silently
-resolved because they require broader state, layout, identity, or schema
-decisions.
+The original audit pass implemented A1-A3 only. Remediation 41 subsequently
+resolved D1 without changing behavior, persistence, mutation authority,
+Tracks, or source identity. D2-D4 remain recorded rather than silently
+resolved because they require layout, identity, or schema decisions.
 
 ## Completed Remediation
 
@@ -349,12 +353,22 @@ results, source-fact algorithms, and error behavior remain separate.
 
 A tripwire prohibits the removal service from depending on the import service.
 
+### Typed Historical Archives presentation state
+
+The former context/stage/nullable-field model is gone. A sealed
+`HistoricalArchivesPresentationState` now expresses hub, notices, orange
+reference, candidate inspection, ready, selected-source, import, and removal
+meanings. Import/removal progress are structurally disjoint, candidate evidence
+cannot leak into selected-source/removal state, and notice/reference variants
+cannot coexist with operations or selection. Static architecture checks and
+behavioral race/session tests preserve this boundary.
+
 ## Dead And Superseded Code Result
 
-No code was removed. The old control-panel fallback looks superseded for all
-currently coherent states, but the present state type does not make it
-unreachable. Removing it before addressing D1 would trade visible defensive
-behavior for an unproved assumption.
+The context/stage state vocabulary and its compatibility fields were removed
+by remediation 41. The bounded state refactor did not use that work as license
+to remove unrelated legacy control-panel presentation; any such deletion still
+requires a separate reachability audit.
 
 ## Verification
 
@@ -378,7 +392,8 @@ caller-aware mutation admission, typed operation observations, truthful
 progress, source-scoped provenance, DateConverter authority, preservation, and
 session-safe presentation.
 
-It should not yet be copied mechanically as the structural template for a
-MessageLens-folder arm. D1-D3 must be resolved first so a second source arm
-does not duplicate the permissive workflow-state shape, the state-dependent
-Track-boundary tension, or the offline source-key reconstruction split.
+The typed workflow-state shape can now serve as the state-model reference for a
+future archive-source arm. The complete Mac Messages arm should still not be
+copied mechanically until D2-D3 are resolved, so a second source arm does not
+duplicate the state-dependent Track-boundary tension or the offline source-key
+reconstruction split.

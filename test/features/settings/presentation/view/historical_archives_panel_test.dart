@@ -79,8 +79,8 @@ void main() {
         expect(find.byType(CupertinoAlertDialog), findsNothing);
         expect(workflow.dismissCallCount, 1);
         expect(
-          workflow.state.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
+          workflow.state.presentation,
+          isA<HistoricalArchivesKnownSourceReferenceState>(),
         );
         expect(workflow.state.duplicateFolderNotice, isNull);
         expect(workflow.state.knownSourceReference?.sourceKey, sourceKey);
@@ -148,10 +148,7 @@ void main() {
 
       expect(find.byType(CupertinoAlertDialog), findsNothing);
       expect(workflow.dismissCallCount, 1);
-      expect(
-        workflow.state.presentationContext,
-        HistoricalArchivesPresentationContext.hub,
-      );
+      expect(workflow.state.presentation, isA<HistoricalArchivesHubState>());
       expect(workflow.state.invalidFolderNotice, isNull);
       expect(workflow.state.knownSourceReference, isNull);
       expect(workflow.state.selectedKnownSourceKey, isNull);
@@ -199,8 +196,8 @@ void main() {
           findsOneWidget,
         );
         expect(
-          workflow.state.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
+          workflow.state.presentation,
+          isA<HistoricalArchivesImportSuccessNoticeState>(),
         );
         expect(workflow.state.selectedKnownSourceKey, isNull);
         expect(workflow.state.knownSourceReference, isNull);
@@ -211,10 +208,7 @@ void main() {
         expect(find.byType(CupertinoAlertDialog), findsNothing);
         expect(workflow.dismissCallCount, 1);
         expect(workflow.state.importSuccessNotice, isNull);
-        expect(
-          workflow.state.presentationContext,
-          HistoricalArchivesPresentationContext.hub,
-        );
+        expect(workflow.state.presentation, isA<HistoricalArchivesHubState>());
         expect(workflow.state.selectedKnownSourceKey, isNull);
         expect(workflow.state.knownSourceReference, isNull);
       },
@@ -1348,11 +1342,13 @@ final class _DuplicateNoticeHistoricalArchivesWorkflow
 
   void emitDuplicateNotice({required String sourceKey}) {
     _noticeOccurrence += 1;
-    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
-      duplicateFolderNotice: HistoricalArchivesDuplicateFolderNotice(
-        sourceKey: sourceKey,
-        noticeOccurrence: _noticeOccurrence,
-        presentationSessionOccurrence: 0,
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesDuplicateNoticeState(
+        notice: HistoricalArchivesDuplicateFolderNotice(
+          sourceKey: sourceKey,
+          noticeOccurrence: _noticeOccurrence,
+          presentationSessionOccurrence: 0,
+        ),
       ),
     );
   }
@@ -1364,10 +1360,12 @@ final class _DuplicateNoticeHistoricalArchivesWorkflow
   }) {
     dismissCallCount += 1;
     final sourceKey = state.duplicateFolderNotice!.sourceKey;
-    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
-      knownSourceReference: HistoricalArchivesKnownSourceReference(
-        sourceKey: sourceKey,
-        referenceOccurrence: noticeOccurrence,
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesKnownSourceReferenceState(
+        reference: HistoricalArchivesKnownSourceReference(
+          sourceKey: sourceKey,
+          referenceOccurrence: noticeOccurrence,
+        ),
       ),
     );
   }
@@ -1384,10 +1382,12 @@ final class _InvalidFolderNoticeHistoricalArchivesWorkflow
 
   void emitInvalidFolderNotice() {
     _noticeOccurrence += 1;
-    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
-      invalidFolderNotice: HistoricalArchivesInvalidFolderNotice(
-        noticeOccurrence: _noticeOccurrence,
-        presentationSessionOccurrence: 0,
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesInvalidNoticeState(
+        notice: HistoricalArchivesInvalidFolderNotice(
+          noticeOccurrence: _noticeOccurrence,
+          presentationSessionOccurrence: 0,
+        ),
       ),
     );
   }
@@ -1413,10 +1413,12 @@ final class _ImportSuccessNoticeHistoricalArchivesWorkflow
 
   void emitImportSuccessNotice() {
     _noticeOccurrence += 1;
-    state = buildInitialHistoricalArchivesWorkflowState().copyWith(
-      importSuccessNotice: HistoricalArchivesImportSuccessNotice(
-        noticeOccurrence: _noticeOccurrence,
-        presentationSessionOccurrence: 0,
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesImportSuccessNoticeState(
+        notice: HistoricalArchivesImportSuccessNotice(
+          noticeOccurrence: _noticeOccurrence,
+          presentationSessionOccurrence: 0,
+        ),
       ),
     );
   }
@@ -1427,7 +1429,7 @@ final class _ImportSuccessNoticeHistoricalArchivesWorkflow
     required int presentationSessionOccurrence,
   }) {
     dismissCallCount += 1;
-    state = state.copyWith(clearImportSuccessNotice: true);
+    state = buildInitialHistoricalArchivesWorkflowState();
   }
 }
 

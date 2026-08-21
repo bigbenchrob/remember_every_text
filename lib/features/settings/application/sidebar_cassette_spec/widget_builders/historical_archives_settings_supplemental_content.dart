@@ -87,13 +87,14 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
     final typography = ref.watch(themeTypographyProvider);
     final showAddMessagesFolder = ref.watch(
       historicalArchivesWorkflowProvider.select(
-        (state) =>
-            state.presentationContext !=
-                HistoricalArchivesPresentationContext.addArchive &&
-            state.presentationContext !=
-                HistoricalArchivesPresentationContext.importingArchive &&
-            state.presentationContext !=
-                HistoricalArchivesPresentationContext.importFailed,
+        (state) => switch (state.presentation) {
+          HistoricalArchivesInspectingCandidateState() ||
+          HistoricalArchivesInspectionFailedState() ||
+          HistoricalArchivesReadyToAddState() ||
+          HistoricalArchivesImportingState() ||
+          HistoricalArchivesImportFailedState() => false,
+          _ => true,
+        },
       ),
     );
 

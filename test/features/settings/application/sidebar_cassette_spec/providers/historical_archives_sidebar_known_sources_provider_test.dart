@@ -58,9 +58,7 @@ void main() {
         final summaries = buildHistoricalArchiveSidebarKnownSources(
           sources: const [source],
           importedSourcesByKey: const {},
-          presentationContext:
-              HistoricalArchivesPresentationContext.removingSource,
-          selectedSourceKey: sourceKey,
+          removingSourceKey: sourceKey,
           removingImportedMessageCount: 8882,
         );
 
@@ -144,14 +142,11 @@ void main() {
       final selected = buildHistoricalArchiveSidebarKnownSources(
         sources: const [source],
         importedSourcesByKey: const {sourceKey: importedMatch},
-        presentationContext:
-            HistoricalArchivesPresentationContext.existingSource,
         selectedSourceKey: sourceKey,
       );
       final referenced = buildHistoricalArchiveSidebarKnownSources(
         sources: const [source],
         importedSourcesByKey: const {sourceKey: importedMatch},
-        presentationContext: HistoricalArchivesPresentationContext.hub,
         reference: const HistoricalArchivesKnownSourceReference(
           sourceKey: sourceKey,
           referenceOccurrence: 3,

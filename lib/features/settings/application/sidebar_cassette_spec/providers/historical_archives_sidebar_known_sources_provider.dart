@@ -32,20 +32,31 @@ historicalArchivesSidebarKnownSources(
     }
   }
   final presentation = ref.watch(
-    historicalArchivesWorkflowProvider.select(
-      (state) => (
-        context: state.presentationContext,
-        selectedSourceKey: state.selectedKnownSourceKey,
-        removingImportedMessageCount: state.inspectionEvidence?.totalMessages,
+    historicalArchivesWorkflowProvider.select((state) {
+      final active = state.presentation;
+      return (
+        selectedSourceKey: active is HistoricalArchivesExistingSourceState
+            ? active.facts.sourceKey
+            : null,
+        removingSourceKey: active is HistoricalArchivesRemovingState
+            ? active.facts.sourceKey
+            : active is HistoricalArchivesRemovalFailedState
+            ? active.facts.sourceKey
+            : null,
+        removingImportedMessageCount: active is HistoricalArchivesRemovingState
+            ? active.facts.importedMessageCount
+            : active is HistoricalArchivesRemovalFailedState
+            ? active.facts.importedMessageCount
+            : null,
         reference: state.knownSourceReference,
-      ),
-    ),
+      );
+    }),
   );
   return buildHistoricalArchiveSidebarKnownSources(
     sources: sources,
     importedSourcesByKey: importedSourcesByKey,
-    presentationContext: presentation.context,
     selectedSourceKey: presentation.selectedSourceKey,
+    removingSourceKey: presentation.removingSourceKey,
     removingImportedMessageCount: presentation.removingImportedMessageCount,
     reference: presentation.reference,
   );
@@ -56,9 +67,8 @@ buildHistoricalArchiveSidebarKnownSources({
   required List<HistoricalArchiveSourceMetadata> sources,
   required Map<String, HistoricalArchiveImportedSourceMatch>
   importedSourcesByKey,
-  HistoricalArchivesPresentationContext presentationContext =
-      HistoricalArchivesPresentationContext.hub,
   String? selectedSourceKey,
+  String? removingSourceKey,
   int? removingImportedMessageCount,
   HistoricalArchivesKnownSourceReference? reference,
 }) {
@@ -66,9 +76,7 @@ buildHistoricalArchiveSidebarKnownSources({
     for (final source in sources)
       if ((source.lastImportSuccess == true &&
               importedSourcesByKey[source.sourceKey] != null) ||
-          (presentationContext ==
-                  HistoricalArchivesPresentationContext.removingSource &&
-              source.sourceKey == selectedSourceKey))
+          source.sourceKey == removingSourceKey)
         HistoricalArchiveSidebarSourceSummary(
           sourceKey: source.sourceKey,
           label: source.sourceLabel,
@@ -76,23 +84,14 @@ buildHistoricalArchiveSidebarKnownSources({
           messageCountLabel: _buildMessageCountLabel(
             source,
             importedSource: importedSourcesByKey[source.sourceKey],
-            removingImportedMessageCount:
-                presentationContext ==
-                        HistoricalArchivesPresentationContext.removingSource &&
-                    source.sourceKey == selectedSourceKey
+            removingImportedMessageCount: source.sourceKey == removingSourceKey
                 ? removingImportedMessageCount
                 : null,
           ),
           importedOnLabel: _buildImportedOnLabel(source),
-          isSelected:
-              presentationContext ==
-                  HistoricalArchivesPresentationContext.existingSource &&
-              source.sourceKey == selectedSourceKey,
+          isSelected: source.sourceKey == selectedSourceKey,
           isReferenced: source.sourceKey == reference?.sourceKey,
-          isBusy:
-              presentationContext ==
-                  HistoricalArchivesPresentationContext.removingSource &&
-              source.sourceKey == selectedSourceKey,
+          isBusy: source.sourceKey == removingSourceKey,
           referenceOccurrence: source.sourceKey == reference?.sourceKey
               ? reference?.referenceOccurrence ?? 0
               : 0,

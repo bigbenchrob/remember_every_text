@@ -9,6 +9,7 @@ import 'package:remember_this_text/config/theme/widgets/buttons/app_secondary_bu
 import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
+import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/payloads/historical_archives_settings_cassette_payload.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/widget_builders/historical_archives_settings_supplemental_content.dart';
@@ -389,10 +390,17 @@ void main() {
       tester,
     ) async {
       final workflow = _TestHistoricalArchivesWorkflow(
-        initialState: buildInitialHistoricalArchivesWorkflowState().copyWith(
-          presentationContext:
-              HistoricalArchivesPresentationContext.existingSource,
-          presentationStage: HistoricalArchivesPresentationStage.knownSource,
+        initialState: HistoricalArchivesWorkflowState(
+          presentation: HistoricalArchivesExistingSourceState(
+            data: _testPresentationData(),
+            facts: const HistoricalArchivesImportedSourceFacts(
+              sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+              importedMessageCount: 42,
+              earliestMessageUtc: '2012-07-25T08:00:00.000Z',
+              latestMessageUtc: '2017-06-11T08:00:00.000Z',
+              successfulImportFinishedAtUtc: '2026-08-19T12:00:00.000Z',
+            ),
+          ),
         ),
       );
 
@@ -416,10 +424,12 @@ void main() {
       tester,
     ) async {
       final workflow = _TestHistoricalArchivesWorkflow(
-        initialState: buildInitialHistoricalArchivesWorkflowState().copyWith(
-          invalidFolderNotice: const HistoricalArchivesInvalidFolderNotice(
-            noticeOccurrence: 1,
-            presentationSessionOccurrence: 0,
+        initialState: const HistoricalArchivesWorkflowState(
+          presentation: HistoricalArchivesInvalidNoticeState(
+            notice: HistoricalArchivesInvalidFolderNotice(
+              noticeOccurrence: 1,
+              presentationSessionOccurrence: 0,
+            ),
           ),
         ),
       );
@@ -445,10 +455,11 @@ void main() {
       tester,
     ) async {
       final workflow = _TestHistoricalArchivesWorkflow(
-        initialState: buildInitialHistoricalArchivesWorkflowState().copyWith(
-          presentationContext: HistoricalArchivesPresentationContext.addArchive,
-          presentationStage:
-              HistoricalArchivesPresentationStage.inspectingSource,
+        initialState: HistoricalArchivesWorkflowState(
+          presentation: HistoricalArchivesInspectingCandidateState(
+            data: _testPresentationData(),
+            inspectionOccurrence: 1,
+          ),
         ),
       );
 
@@ -476,23 +487,26 @@ void main() {
       );
     });
 
-    for (final context in const [
-      HistoricalArchivesPresentationContext.importingArchive,
-      HistoricalArchivesPresentationContext.importFailed,
+    for (final presentation in [
+      HistoricalArchivesImportingState(
+        data: _testPresentationData(),
+        evidence: _testInspectionEvidence(),
+        progress: const HistoricalArchiveImportProgress(),
+      ),
+      HistoricalArchivesImportFailedState(
+        data: _testPresentationData(),
+        evidence: _testInspectionEvidence(),
+        progress: const HistoricalArchiveImportProgress(),
+        failureDetail: 'Import failed.',
+      ),
     ]) {
       testWidgets(
-        '$context keeps the sidebar chooser out of the active journey',
+        '${presentation.runtimeType} keeps the sidebar chooser out of the active journey',
         (tester) async {
           final workflow = _TestHistoricalArchivesWorkflow(
-            initialState: buildInitialHistoricalArchivesWorkflowState()
-                .copyWith(
-                  presentationContext: context,
-                  presentationStage:
-                      context ==
-                          HistoricalArchivesPresentationContext.importingArchive
-                      ? HistoricalArchivesPresentationStage.importingArchive
-                      : HistoricalArchivesPresentationStage.importFailed,
-                ),
+            initialState: HistoricalArchivesWorkflowState(
+              presentation: presentation,
+            ),
           );
 
           await tester.pumpWidget(
@@ -817,6 +831,48 @@ void main() {
       expect(borderWidth(), 0.8);
     });
   });
+}
+
+HistoricalArchivesPresentationData _testPresentationData() {
+  return const HistoricalArchivesPresentationData(
+    preflight: HistoricalArchivesPreflightViewModel(
+      status: HistoricalArchivesPreflightStatus.completeReadyToImport,
+      statusLabel: 'Preflight complete',
+      detail: 'Source checks succeeded.',
+    ),
+    selectedFolderPath: '/tmp/archive',
+    archiveRemovalTargetChatDbPath: '/tmp/archive/chat.db',
+    chatDbStatus: ArchiveSourceInspectionStatus.readable,
+    attachmentsStatusLabel: 'Not found',
+    sourceLabel: 'archive',
+    preflightSummaryLines: [],
+    dryRunSummaryLines: [],
+    importSafetySummaryLines: [],
+    resultSummaryLines: [],
+    activityLog: [],
+    phases: [],
+  );
+}
+
+HistoricalArchivesInspectionEvidence _testInspectionEvidence() {
+  return const HistoricalArchivesInspectionEvidence(
+    folderPath: '/tmp/archive',
+    chatDbPath: '/tmp/archive/chat.db',
+    sourceLabel: 'archive',
+    chatDbStatus: ArchiveSourceInspectionStatus.readable,
+    attachmentsStatusLabel: 'Not found',
+    totalMessages: null,
+    totalChats: null,
+    totalHandles: null,
+    missingGuids: null,
+    earliestMessageUtc: null,
+    latestMessageUtc: null,
+    dateRangeUnavailableReason: 'Not supplied by this fixture.',
+    dryRunNewMessages: null,
+    dryRunDuplicateMessages: null,
+    dryRunComparableMessages: null,
+    dryRunUnavailableReason: 'Not supplied by this fixture.',
+  );
 }
 
 double _colorDistance(Color first, Color second) {
