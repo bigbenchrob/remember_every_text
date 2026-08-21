@@ -76,10 +76,8 @@ buildHistoricalArchivesCenterTrackOccupants({
   required ThemeTypography typography,
 }) {
   return HistoricalArchivesCenterTrackOccupants(
-    pageTitle: _HistoricalArchivesCenterTextTrackOccupant(
-      text: 'Historical Archives',
+    pageTitle: _HistoricalArchivesPageTitleTrackOccupant(
       style: typography.title1,
-      presentationKey: const Key('historical-archives-page-title'),
     ),
     narrator: _HistoricalArchivesNarratorTrackOccupant(
       style: typography.title1,
@@ -87,24 +85,17 @@ buildHistoricalArchivesCenterTrackOccupants({
   );
 }
 
-final class _HistoricalArchivesCenterTextTrackOccupant
-    implements TrackOccupant {
-  const _HistoricalArchivesCenterTextTrackOccupant({
-    required this.text,
-    required this.style,
-    required this.presentationKey,
-  });
+final class _HistoricalArchivesPageTitleTrackOccupant implements TrackOccupant {
+  const _HistoricalArchivesPageTitleTrackOccupant({required this.style});
 
-  final String text;
   final TextStyle style;
-  final Key presentationKey;
 
   @override
   OccupantDimensionalClaim dimensionalClaim(
     PresentationConstraints constraints,
   ) {
     final painter = _textPainter(
-      text: text,
+      text: 'Historical Archives',
       style: style,
       constraints: constraints,
       maxWidth: _centerReadableWidth(constraints.availableWidth),
@@ -121,14 +112,32 @@ final class _HistoricalArchivesCenterTextTrackOccupant
     BuildContext context,
     ResolvedTrackAllocation allocation,
   ) {
-    return _HistoricalArchivesCenteredTrackPresentation(
-      child: Text(
-        text,
-        key: presentationKey,
-        style: style,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    return _HistoricalArchivesPageTitleTrackPresentation(style: style);
+  }
+}
+
+class _HistoricalArchivesPageTitleTrackPresentation extends ConsumerWidget {
+  const _HistoricalArchivesPageTitleTrackPresentation({required this.style});
+
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showTitle = ref.watch(
+      historicalArchivesWorkflowPanelModelProvider.select(
+        (model) => model.centerPageTitleVisible,
       ),
+    );
+    return _HistoricalArchivesCenteredTrackPresentation(
+      child: showTitle
+          ? Text(
+              'Historical Archives',
+              key: const Key('historical-archives-page-title'),
+              style: style,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : const SizedBox.shrink(),
     );
   }
 }

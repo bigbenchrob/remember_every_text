@@ -131,6 +131,159 @@ void main() {
   });
 
   group('buildHistoricalArchivesWorkflowPanelModel', () {
+    test(
+      'projects title occupancy exhaustively from all 13 typed variants',
+      () {
+        final data = _testPresentationData();
+        final evidence = _testInspectionEvidence();
+        final facts = _testImportedSourceFacts();
+        final cases =
+            <
+              ({
+                String name,
+                HistoricalArchivesPresentationState presentation,
+                bool titleVisible,
+              })
+            >[
+              (
+                name: 'hub',
+                presentation: const HistoricalArchivesHubState(),
+                titleVisible: false,
+              ),
+              (
+                name: 'duplicate notice',
+                presentation: const HistoricalArchivesDuplicateNoticeState(
+                  notice: HistoricalArchivesDuplicateFolderNotice(
+                    sourceKey:
+                        'historical-messages-archive:/tmp/archive/chat.db',
+                    noticeOccurrence: 1,
+                    presentationSessionOccurrence: 1,
+                  ),
+                ),
+                titleVisible: false,
+              ),
+              (
+                name: 'invalid notice',
+                presentation: const HistoricalArchivesInvalidNoticeState(
+                  notice: HistoricalArchivesInvalidFolderNotice(
+                    noticeOccurrence: 1,
+                    presentationSessionOccurrence: 1,
+                  ),
+                ),
+                titleVisible: false,
+              ),
+              (
+                name: 'success notice',
+                presentation: const HistoricalArchivesImportSuccessNoticeState(
+                  notice: HistoricalArchivesImportSuccessNotice(
+                    noticeOccurrence: 1,
+                    presentationSessionOccurrence: 1,
+                  ),
+                ),
+                titleVisible: false,
+              ),
+              (
+                name: 'known-source reference',
+                presentation: const HistoricalArchivesKnownSourceReferenceState(
+                  reference: HistoricalArchivesKnownSourceReference(
+                    sourceKey:
+                        'historical-messages-archive:/tmp/archive/chat.db',
+                    referenceOccurrence: 1,
+                  ),
+                ),
+                titleVisible: false,
+              ),
+              (
+                name: 'inspecting candidate',
+                presentation: HistoricalArchivesInspectingCandidateState(
+                  data: data,
+                  inspectionOccurrence: 1,
+                ),
+                titleVisible: true,
+              ),
+              (
+                name: 'inspection failed',
+                presentation: HistoricalArchivesInspectionFailedState(
+                  data: data,
+                  evidence: evidence,
+                ),
+                titleVisible: true,
+              ),
+              (
+                name: 'ready to add',
+                presentation: HistoricalArchivesReadyToAddState(
+                  data: data,
+                  evidence: evidence,
+                ),
+                titleVisible: true,
+              ),
+              (
+                name: 'existing source',
+                presentation: HistoricalArchivesExistingSourceState(
+                  data: data,
+                  facts: facts,
+                ),
+                titleVisible: false,
+              ),
+              (
+                name: 'importing',
+                presentation: HistoricalArchivesImportingState(
+                  data: data,
+                  evidence: evidence,
+                  progress: const HistoricalArchiveImportProgress(),
+                ),
+                titleVisible: true,
+              ),
+              (
+                name: 'import failed',
+                presentation: HistoricalArchivesImportFailedState(
+                  data: data,
+                  evidence: evidence,
+                  progress: const HistoricalArchiveImportProgress(),
+                  failureDetail: 'fixture failure',
+                ),
+                titleVisible: true,
+              ),
+              (
+                name: 'removing',
+                presentation: HistoricalArchivesRemovingState(
+                  data: data,
+                  facts: facts,
+                  progress: const HistoricalArchiveRemovalProgress(),
+                ),
+                titleVisible: true,
+              ),
+              (
+                name: 'removal failed',
+                presentation: HistoricalArchivesRemovalFailedState(
+                  data: data,
+                  facts: facts,
+                  progress: const HistoricalArchiveRemovalProgress(),
+                  failureDetail: 'fixture failure',
+                ),
+                titleVisible: true,
+              ),
+            ];
+
+        for (final testCase in cases) {
+          final model = buildHistoricalArchivesWorkflowPanelModel(
+            executionGateState: const ArchiveMutationCoordinatorState(),
+            isMaintenanceLocked: false,
+            workflowState: HistoricalArchivesWorkflowState(
+              presentation: testCase.presentation,
+            ),
+            currentMessagesDatabasePath: currentMessagesDatabasePath,
+          );
+
+          expect(
+            model.centerPageTitleVisible,
+            testCase.titleVisible,
+            reason: testCase.name,
+          );
+        }
+      },
+    );
+
     test('projects the empty workflow as a silent hub', () {
       final model = buildHistoricalArchivesWorkflowPanelModel(
         executionGateState: const ArchiveMutationCoordinatorState(),

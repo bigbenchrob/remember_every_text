@@ -2,7 +2,7 @@
 tier: project
 scope: cross-column-layout-contract
 owner: agent-per-project
-last_reviewed: 2026-07-26
+last_reviewed: 2026-08-21
 source_of_truth: doc
 links:
   - ./README.md
@@ -48,6 +48,10 @@ track system.
 
 > The Matrix coordinates shared geometry. It does not require unrelated
 > columns to share a common vertical lifetime.
+
+> A page column's shared Track boundary is structural and stable.
+> Presentation variants choose occupants, including empty presentation; they
+> do not choose whether the column participates in the Track system.
 
 The important invariant is that every participating column receives the same
 resolved height for each Track inside its declared shared lifetime.

@@ -2,7 +2,7 @@
 tier: project
 scope: production-archive-recovery
 owner: agent-per-project
-last_reviewed: 2026-08-20
+last_reviewed: 2026-08-21
 source_of_truth: architecture-audit
 links:
   - ../prompts/39-PAUSE-AND-REVIEW-FOR-ARCHITECTURE-VIOLATIONS.md
@@ -11,6 +11,7 @@ links:
   - ./10-HISTORICAL-ARCHIVES-NARRATOR-DIRECTED-INSTRUMENTATION-DESIGN.md
   - ./39-STABLE-NARRATOR-TRACK-REMOVAL-JOURNEY-AND-TERMINAL-PERCEPTION-IMPLEMENTATION.md
   - ./41-HISTORICAL-ARCHIVES-TYPED-PRESENTATION-STATE-IMPLEMENTATION.md
+  - ./42-HISTORICAL-ARCHIVES-STABLE-CENTER-TRACK-SKELETON-IMPLEMENTATION.md
 ---
 
 # Historical Archives Architecture-Conformance Audit
@@ -272,15 +273,15 @@ Candidate evidence, imported-source facts, import progress, removal progress,
 notices, and orange correspondence are available only in the variants that can
 truthfully own them. See implementation record 41.
 
-### D2: Historical Archives has a state-dependent center shared-track boundary
+### D2: resolved — the center column has one stable A-I boundary
 
-Operation presentation consumes center Tracks A-I, while existing-source
-presentation leaves the shared Matrix after E. The page Track contract says a
-column's shared boundary is stable page composition, not transient selected or
-loading state. The center-only Narrator Tracks are truthful geometry, but the
-state-dependent consumption boundary creates tension with that rule. Fixing it
-could disturb the approved existing-source/cartouche-list alignment and needs
-a page-composition decision. No layout change is made in this audit.
+Hub-family presentation formerly bypassed center Track rendering, selected
+source presentation consumed A-E, and candidate/import/removal presentation
+consumed A-I. All Historical Archives center variants now render one shared
+A-I skeleton and reach one native-flow seam after I. State changes title and
+Narrator presentation inside that skeleton; it cannot change the structural
+boundary. The sidebar still ends shared participation after E, so its variable
+cartouche list remains independent native flow. See implementation record 42.
 
 ### D3: source identity reconstruction should have one offline-capable contract
 
@@ -313,8 +314,9 @@ part of Feature 26 remediation.
 
 The original audit pass implemented A1-A3 only. Remediation 41 subsequently
 resolved D1 without changing behavior, persistence, mutation authority,
-Tracks, or source identity. D2-D4 remain recorded rather than silently
-resolved because they require layout, identity, or schema decisions.
+Tracks, or source identity. Remediation 42 subsequently resolved D2 through a
+page-local stable center skeleton. D3-D4 remain recorded rather than silently
+resolved because they require identity or schema decisions.
 
 ## Completed Remediation
 
@@ -394,6 +396,5 @@ session-safe presentation.
 
 The typed workflow-state shape can now serve as the state-model reference for a
 future archive-source arm. The complete Mac Messages arm should still not be
-copied mechanically until D2-D3 are resolved, so a second source arm does not
-duplicate the state-dependent Track-boundary tension or the offline source-key
-reconstruction split.
+copied mechanically until D3 is resolved, so a second source arm does not
+duplicate the offline source-key reconstruction split.

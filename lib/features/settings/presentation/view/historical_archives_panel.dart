@@ -7,7 +7,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
 import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../../config/theme/widgets/theme_widgets.dart';
@@ -126,9 +125,8 @@ class _HistoricalArchivesPanelState
     final existingSourcePresentation = panelModel.existingSourcePresentation;
 
     if (panelModel.isHub) {
-      return ColoredBox(
-        key: const Key('historical-archives-empty-hub'),
-        color: colors.surfaces.canvas,
+      return const _HistoricalArchivesCenterTrackScaffold(
+        surfaceKey: Key('historical-archives-empty-hub'),
       );
     }
 
@@ -636,51 +634,11 @@ class _ExistingHistoricalArchiveSourcePanel extends ConsumerWidget {
         ),
       ),
     );
-    final hasTrackLayout =
-        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
-
-    return ColoredBox(
-      color: colors.surfaces.canvas,
-      child: SingleChildScrollView(
-        padding: hasTrackLayout
-            ? EdgeInsets.zero
-            : const EdgeInsets.symmetric(
-                horizontal: historicalArchivesCenterHorizontalInset,
-                vertical: 36,
-              ),
-        child: hasTrackLayout
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final trackId in const [
-                    TrackId.trackA,
-                    TrackId.trackB,
-                    TrackId.trackC,
-                    TrackId.trackD,
-                    TrackId.trackE,
-                  ])
-                    TrackCellView(
-                      cellId: CellId(
-                        trackId: trackId,
-                        columnId: TrackColumnId.column2,
-                      ),
-                    ),
-                  Padding(
-                    key: const Key(
-                      'historical-archives-existing-source-native-flow',
-                    ),
-                    padding: const EdgeInsets.fromLTRB(
-                      historicalArchivesCenterHorizontalInset,
-                      0,
-                      historicalArchivesCenterHorizontalInset,
-                      36,
-                    ),
-                    child: story,
-                  ),
-                ],
-              )
-            : story,
+    return _HistoricalArchivesCenterTrackScaffold(
+      nativeFlowKey: const Key(
+        'historical-archives-existing-source-native-flow',
       ),
+      nativeFlowBody: story,
     );
   }
 }
@@ -753,94 +711,119 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
         ),
       ),
     );
-    final hasTrackLayout =
-        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
     final isRemoval =
         presentation.kind ==
             HistoricalArchivesNarratorPresentationKind.removingSource ||
         presentation.kind ==
             HistoricalArchivesNarratorPresentationKind.removalFailed;
 
-    return ColoredBox(
-      color: colors.surfaces.canvas,
-      child: SingleChildScrollView(
-        padding: hasTrackLayout
-            ? EdgeInsets.zero
-            : const EdgeInsets.symmetric(
-                horizontal: historicalArchivesCenterHorizontalInset,
-                vertical: 36,
-              ),
-        child: hasTrackLayout
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final trackId in const [
-                    TrackId.trackA,
-                    TrackId.trackB,
-                    TrackId.trackC,
-                    TrackId.trackD,
-                    TrackId.trackE,
-                    TrackId.trackF,
-                    TrackId.trackG,
-                    TrackId.trackH,
-                    TrackId.trackI,
-                  ])
-                    TrackCellView(
-                      cellId: CellId(
-                        trackId: trackId,
-                        columnId: TrackColumnId.column2,
-                      ),
-                    ),
-                  Padding(
-                    key: Key(
-                      isRemoval
-                          ? 'historical-archives-removal-native-flow'
-                          : 'historical-archives-narrator-native-flow',
-                    ),
-                    padding: const EdgeInsets.fromLTRB(
-                      historicalArchivesCenterHorizontalInset,
-                      0,
-                      historicalArchivesCenterHorizontalInset,
-                      36,
-                    ),
-                    child: instrumentationContent,
-                  ),
-                ],
-              )
-            : Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: historicalArchivesCenterMaximumReadableWidth,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Historical Archives',
-                        key: const Key('historical-archives-page-title'),
-                        style: typography.title1.copyWith(
-                          color: colors.content.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(
-                        height: historicalArchivesTitleToNarratorGap,
-                      ),
-                      if (narratorText != null)
-                        Text(
-                          narratorText,
-                          key: const Key('historical-archives-narrator'),
-                          style: typography.title1.copyWith(
-                            color: colors.content.textPrimary,
-                          ),
-                        ),
-                      const SizedBox(
-                        height: historicalArchivesNarratorToInstrumentationGap,
-                      ),
-                      instrumentationContent,
-                    ],
-                  ),
+    return _HistoricalArchivesCenterTrackScaffold(
+      nativeFlowKey: Key(
+        isRemoval
+            ? 'historical-archives-removal-native-flow'
+            : 'historical-archives-narrator-native-flow',
+      ),
+      nativeFlowBody: instrumentationContent,
+      fallbackBody: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: historicalArchivesCenterMaximumReadableWidth,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Historical Archives',
+                key: const Key('historical-archives-page-title'),
+                style: typography.title1.copyWith(
+                  color: colors.content.textPrimary,
                 ),
               ),
+              const SizedBox(height: historicalArchivesTitleToNarratorGap),
+              if (narratorText != null)
+                Text(
+                  narratorText,
+                  key: const Key('historical-archives-narrator'),
+                  style: typography.title1.copyWith(
+                    color: colors.content.textPrimary,
+                  ),
+                ),
+              const SizedBox(
+                height: historicalArchivesNarratorToInstrumentationGap,
+              ),
+              instrumentationContent,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoricalArchivesCenterTrackScaffold extends ConsumerWidget {
+  const _HistoricalArchivesCenterTrackScaffold({
+    this.surfaceKey,
+    this.nativeFlowKey,
+    this.nativeFlowBody,
+    this.fallbackBody,
+  });
+
+  final Key? surfaceKey;
+  final Key? nativeFlowKey;
+  final Widget? nativeFlowBody;
+  final Widget? fallbackBody;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final resolvedMatrix = ResolvedTrackLayoutMatrixScope.maybeOf(context);
+    final body = nativeFlowBody;
+
+    if (resolvedMatrix == null) {
+      return ColoredBox(
+        key: surfaceKey,
+        color: colors.surfaces.canvas,
+        child: body == null && fallbackBody == null
+            ? const SizedBox.expand()
+            : SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: historicalArchivesCenterHorizontalInset,
+                  vertical: 36,
+                ),
+                child: fallbackBody ?? body,
+              ),
+      );
+    }
+
+    return ColoredBox(
+      key: surfaceKey,
+      color: colors.surfaces.canvas,
+      child: SingleChildScrollView(
+        child: Column(
+          key: const Key('historical-archives-center-track-skeleton'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final trackId in resolvedMatrix.trackIds)
+              TrackCellView(
+                cellId: CellId(
+                  trackId: trackId,
+                  columnId: TrackColumnId.column2,
+                ),
+              ),
+            if (body != null)
+              Padding(
+                key: nativeFlowKey,
+                padding: const EdgeInsets.fromLTRB(
+                  historicalArchivesCenterHorizontalInset,
+                  0,
+                  historicalArchivesCenterHorizontalInset,
+                  36,
+                ),
+                child: body,
+              ),
+          ],
+        ),
       ),
     );
   }

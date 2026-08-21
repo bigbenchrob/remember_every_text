@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
 import 'package:remember_this_text/config/theme/widgets/buttons/app_primary_button.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/page_track_layout_matrix.dart';
 import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import 'package:remember_this_text/essentials/debug/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/navigation/presentation/layout/historical_archives_page_track_plan.dart';
@@ -28,6 +29,39 @@ void main() {
       );
       expect(find.text('Historical Archives'), findsNothing);
       expect(find.textContaining('Choose an existing archive'), findsNothing);
+    });
+
+    testWidgets('hub consumes the complete empty A-I center skeleton', (
+      tester,
+    ) async {
+      final resolved = _resolvedTestTrackMatrix();
+
+      await _pumpPanel(
+        tester,
+        resolvedTrackMatrix: resolved,
+        model: _narratorPanelModel(isHub: true, presentation: null),
+      );
+
+      final skeleton = find.byKey(
+        const Key('historical-archives-center-track-skeleton'),
+      );
+      final cells = tester
+          .widgetList<TrackCellView>(
+            find.descendant(of: skeleton, matching: find.byType(TrackCellView)),
+          )
+          .map((view) => view.cellId)
+          .toList();
+
+      expect(
+        cells,
+        historicalArchivesCenterSharedTrackIds
+            .map(
+              (trackId) =>
+                  CellId(trackId: trackId, columnId: TrackColumnId.column2),
+            )
+            .toList(),
+      );
+      expect(find.text('Historical Archives'), findsNothing);
     });
 
     testWidgets(
@@ -520,7 +554,7 @@ void main() {
       },
     );
 
-    testWidgets('selected-source native flow begins after shared Track E', (
+    testWidgets('selected-source native flow begins after stable Track I', (
       tester,
     ) async {
       final matrix = buildHistoricalArchivesPageTrackLayoutMatrix(
@@ -568,12 +602,13 @@ void main() {
       expect(
         tester.getTopLeft(nativeFlow).dy,
         moreOrLessEquals(
-          historicalArchivesSharedTrackIds.fold(
+          historicalArchivesCenterSharedTrackIds.fold(
             0,
             (height, trackId) => height + resolved.heightFor(trackId),
           ),
         ),
       );
+      expect(find.text('Historical Archives'), findsNothing);
     });
 
     testWidgets(
@@ -1053,6 +1088,7 @@ void main() {
           ),
         ],
         resultSummaryLines: ['The previous import completed successfully.'],
+        centerPageTitleVisible: false,
         phases: [
           HistoricalArchivesWorkflowPhaseViewModel(
             label: 'Reading archive source',
@@ -1189,6 +1225,7 @@ void main() {
           ),
         ],
         resultSummaryLines: ['No archive import has run yet.'],
+        centerPageTitleVisible: false,
         phases: [
           HistoricalArchivesWorkflowPhaseViewModel(
             label: 'Reading archive source',
@@ -1274,6 +1311,30 @@ Future<void> _pumpPanel(
   await tester.pump();
 }
 
+ResolvedTrackLayoutMatrix _resolvedTestTrackMatrix() {
+  final matrix = buildHistoricalArchivesPageTrackLayoutMatrix(
+    umbrella: const FixedHeightTrackOccupant(height: 24),
+    sourceTypeControl: const FixedHeightTrackOccupant(height: 30),
+    sourceToKnownFoldersSpacing: const FixedHeightTrackOccupant(height: 56),
+    knownFoldersHeading: const FixedHeightTrackOccupant(height: 18),
+    knownFoldersHeadingToListSpacing: const FixedHeightTrackOccupant(height: 8),
+    centerPageTitle: const FixedHeightTrackOccupant(height: 30),
+    titleToNarratorSpacing: const FixedHeightTrackOccupant(height: 44),
+    centerNarrator: const FixedHeightTrackOccupant(height: 60),
+    narratorToInstrumentationSpacing: const FixedHeightTrackOccupant(
+      height: 40,
+    ),
+  );
+  return ResolvedTrackLayoutMatrix.resolve(
+    matrix: matrix,
+    constraints: const PresentationConstraints(
+      availableWidth: 900,
+      textScaler: TextScaler.noScaling,
+      textDirection: TextDirection.ltr,
+    ),
+  );
+}
+
 final class _RecordingHistoricalArchivesWorkflowActions
     extends HistoricalArchivesWorkflowActions {
   var removeCallCount = 0;
@@ -1325,6 +1386,7 @@ HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
     activityLog: const [],
     resultSummaryLines: const [],
     phases: const [],
+    centerPageTitleVisible: presentation != null,
     isHub: isHub,
     narratorPresentation: presentation,
     existingSourcePresentation: existingSourcePresentation,

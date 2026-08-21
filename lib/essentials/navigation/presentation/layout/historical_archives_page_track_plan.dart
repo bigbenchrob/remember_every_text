@@ -4,7 +4,7 @@ import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
 import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../../features/settings/presentation/layout/historical_archives_track_occupants.dart';
 
-const historicalArchivesSharedTrackIds = [
+const historicalArchivesSidebarSharedTrackIds = [
   TrackId.trackA,
   TrackId.trackB,
   TrackId.trackC,
@@ -13,12 +13,14 @@ const historicalArchivesSharedTrackIds = [
 ];
 
 const historicalArchivesPageTrackIds = [
-  ...historicalArchivesSharedTrackIds,
+  ...historicalArchivesSidebarSharedTrackIds,
   TrackId.trackF,
   TrackId.trackG,
   TrackId.trackH,
   TrackId.trackI,
 ];
+
+const historicalArchivesCenterSharedTrackIds = historicalArchivesPageTrackIds;
 
 final class HistoricalArchivesPageTrackComposition {
   const HistoricalArchivesPageTrackComposition({

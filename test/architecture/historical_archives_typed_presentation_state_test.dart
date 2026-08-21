@@ -6,6 +6,11 @@ void main() {
   const providerPath =
       'lib/features/settings/application/'
       'historical_archives_workflow_panel_model_provider.dart';
+  const panelPath =
+      'lib/features/settings/presentation/view/historical_archives_panel.dart';
+  const trackPlanPath =
+      'lib/essentials/navigation/presentation/layout/'
+      'historical_archives_page_track_plan.dart';
 
   test('Historical Archives models presentation as sealed typed variants', () {
     final source = File(providerPath).readAsStringSync();
@@ -130,6 +135,40 @@ void main() {
       contains('HistoricalArchiveRemovalProgress progress'),
     );
     expect(removingSource, isNot(contains('HistoricalArchiveImportProgress')));
+  });
+
+  test('all center variants share one structural A-I renderer boundary', () {
+    final panelSource = File(panelPath).readAsStringSync();
+    final trackPlanSource = File(trackPlanPath).readAsStringSync();
+
+    expect(
+      trackPlanSource,
+      contains(
+        'const historicalArchivesCenterSharedTrackIds = '
+        'historicalArchivesPageTrackIds;',
+      ),
+    );
+    expect(
+      panelSource,
+      contains('for (final trackId in resolvedMatrix.trackIds)'),
+    );
+    expect(
+      'for (final trackId in resolvedMatrix.trackIds)'.allMatches(panelSource),
+      hasLength(1),
+    );
+    expect(
+      '_HistoricalArchivesCenterTrackScaffold('.allMatches(panelSource),
+      hasLength(4),
+      reason:
+          'hub, existing-source, and Narrator routes use the one scaffold; '
+          'the fourth occurrence is its constructor declaration',
+    );
+    expect(panelSource, isNot(contains('historicalArchivesSharedTrackIds')));
+    expect(panelSource, isNot(contains('TrackId.trackA')));
+    expect(
+      panelSource,
+      contains("'historical-archives-center-track-skeleton'"),
+    );
   });
 }
 

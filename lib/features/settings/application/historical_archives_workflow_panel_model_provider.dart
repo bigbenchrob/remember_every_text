@@ -972,6 +972,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
     required this.activityLog,
     required this.resultSummaryLines,
     required this.phases,
+    required this.centerPageTitleVisible,
     this.isHub = false,
     this.narratorPresentation,
     this.existingSourcePresentation,
@@ -997,6 +998,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
   final List<HistoricalArchivesLogEntryViewModel> activityLog;
   final List<String> resultSummaryLines;
   final List<HistoricalArchivesWorkflowPhaseViewModel> phases;
+  final bool centerPageTitleVisible;
   final bool isHub;
   final HistoricalArchivesNarratorPresentationViewModel? narratorPresentation;
   final HistoricalArchivesExistingSourcePresentationViewModel?
@@ -2457,6 +2459,21 @@ buildHistoricalArchivesWorkflowPanelModel({
     ),
     resultSummaryLines: workflowState.resultSummaryLines,
     phases: workflowState.phases,
+    centerPageTitleVisible: switch (workflowState.presentation) {
+      HistoricalArchivesInspectingCandidateState() ||
+      HistoricalArchivesInspectionFailedState() ||
+      HistoricalArchivesReadyToAddState() ||
+      HistoricalArchivesImportingState() ||
+      HistoricalArchivesImportFailedState() ||
+      HistoricalArchivesRemovingState() ||
+      HistoricalArchivesRemovalFailedState() => true,
+      HistoricalArchivesHubState() ||
+      HistoricalArchivesDuplicateNoticeState() ||
+      HistoricalArchivesInvalidNoticeState() ||
+      HistoricalArchivesImportSuccessNoticeState() ||
+      HistoricalArchivesKnownSourceReferenceState() ||
+      HistoricalArchivesExistingSourceState() => false,
+    },
     isHub: workflowState.isHub,
     narratorPresentation: _buildNarratorPresentation(
       workflowState: workflowState,

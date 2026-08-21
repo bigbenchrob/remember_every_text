@@ -2,7 +2,7 @@
 tier: project
 scope: column-specific-shared-track-boundaries
 owner: agent-per-project
-last_reviewed: 2026-07-26
+last_reviewed: 2026-08-21
 source_of_truth: doc
 links:
   - ./00-cross-column-layout-contract.md
@@ -27,6 +27,10 @@ These are independent composition decisions.
 
 > A column participates in shared Track coordination only while it has a
 > genuine cross-column alignment responsibility.
+
+> Once declared, that boundary is stable page composition. Presentation
+> variants may change visible occupants or leave a presentation empty, but
+> they do not shorten or extend the column's shared lifetime.
 
 Native flow means the rendering mechanism already owned by that column after
 shared cross-column coordination ends, such as the sidebar cassette chain or a

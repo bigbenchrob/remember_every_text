@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 No unreleased changes yet.
 
+## [0.2.70] — 2026-08-21
+
+### Fixed
+
+- Historical Archives now keeps one stable center-column Track A-I skeleton
+  across hub, selected-source, candidate, import, removal, and notice states.
+  Workflow changes alter visible occupancy without changing the page's shared
+  geometry contract.
+
 ## [0.2.69] — 2026-08-21
 
 ### Changed

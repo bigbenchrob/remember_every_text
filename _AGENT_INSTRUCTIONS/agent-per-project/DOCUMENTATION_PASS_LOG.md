@@ -5222,3 +5222,18 @@ production preservation authority mechanically enforceable.
   exist only in their truthful presentation variants.
 - Preserved the established mutation authority, persistence, source identity,
   Track geometry, Narrator lifecycle, controls, copy, and archive behavior.
+
+## 2026-08-21 — Historical Archives stable center Track skeleton
+
+- Added Feature 26 response
+  `42-HISTORICAL-ARCHIVES-STABLE-CENTER-TRACK-SKELETON-IMPLEMENTATION.md` with
+  the page-specific A-I occupancy map, all 13 typed variants, the post-I center
+  seam, and the independent post-E sidebar flow.
+- Updated the architecture-conformance audit to mark D2 resolved while leaving
+  D3 source identity and D4 legacy-schema mechanics separate.
+- Elevated the reusable rule that a column's shared Track boundary is stable
+  page composition: presentation variants may change visible occupancy, but
+  not the column's declared shared lifetime.
+- Recorded that the variable cartouche list remains outside center geometry
+  and that no selected-row synchronization, magic top inset, or new spacer was
+  introduced.

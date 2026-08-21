@@ -26,7 +26,19 @@ void main() {
           'I2': 'Narrator to Directed Instrumentation transition',
         });
 
-        for (final trackId in historicalArchivesSharedTrackIds) {
+        expect(historicalArchivesSidebarSharedTrackIds, const [
+          TrackId.trackA,
+          TrackId.trackB,
+          TrackId.trackC,
+          TrackId.trackD,
+          TrackId.trackE,
+        ]);
+        expect(
+          historicalArchivesCenterSharedTrackIds,
+          historicalArchivesPageTrackIds,
+        );
+
+        for (final trackId in historicalArchivesSidebarSharedTrackIds) {
           expect(
             matrix
                 .cellAt(

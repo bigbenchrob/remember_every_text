@@ -35,11 +35,13 @@ void main() {
                       ),
                   typography: ref.watch(themeTypographyProvider),
                 );
-                expectedSharedHeight = historicalArchivesSharedTrackIds.fold(
-                  0,
-                  (height, trackId) =>
-                      height + composition.resolvedMatrix.heightFor(trackId),
-                );
+                expectedSharedHeight = historicalArchivesSidebarSharedTrackIds
+                    .fold(
+                      0,
+                      (height, trackId) =>
+                          height +
+                          composition.resolvedMatrix.heightFor(trackId),
+                    );
                 return ResolvedTrackLayoutMatrixScope(
                   matrix: composition.resolvedMatrix,
                   child: const SizedBox(
