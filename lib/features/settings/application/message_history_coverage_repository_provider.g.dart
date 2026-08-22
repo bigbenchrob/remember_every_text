@@ -7,7 +7,7 @@ part of 'message_history_coverage_repository_provider.dart';
 // **************************************************************************
 
 String _$messageHistoryCoverageRepositoryHash() =>
-    r'2635d8948dfd17b1e552cb27960957636df0be11';
+    r'80df00d769f0eca330fd66e8c9eafa8f5802f772';
 
 /// See also [messageHistoryCoverageRepository].
 @ProviderFor(messageHistoryCoverageRepository)

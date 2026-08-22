@@ -1,136 +1,219 @@
-import 'dart:io';
-
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/db/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
+import 'package:remember_this_text/features/settings/application/message_history_coverage_repository.dart';
 import 'package:remember_this_text/features/settings/application/message_history_coverage_repository_provider.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
-import 'package:remember_this_text/features/settings/infrastructure/repositories/message_history_coverage_repository.dart';
-import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   group('MessageHistoryCoverageSettingsResolver', () {
-    test('returns the overview info payload', () {
+    test('returns the explanatory sidebar payloads', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      final resolver = container.read(
+        messageHistoryCoverageSettingsResolverProvider.notifier,
+      );
 
-      final payload = container
-          .read(messageHistoryCoverageSettingsResolverProvider.notifier)
-          .resolveOverview(cassetteIndex: 2);
+      final overview = resolver.resolveOverview(cassetteIndex: 2);
+      final howTo = resolver.resolveHowToRead(cassetteIndex: 3);
+      final olderMessages = resolver.resolveOlderMessagesNote(cassetteIndex: 4);
 
-      expect(payload, isA<StaticFeatureInfoSidebarCassettePayload>());
-      expect(payload.title, 'Message History Coverage');
-      expect(
-        payload.bodyText,
-        contains(
-          "MessageLens compares the messages stored in your Mac's Messages database (chat.db) with the messages it has imported and organized.",
+      expect(overview, isA<StaticFeatureInfoSidebarCassettePayload>());
+      expect(overview.title, 'Message History Coverage');
+      expect(overview.bodyText, contains('chat.db'));
+      expect(howTo.title, 'How to read this report');
+      expect(howTo.topSpacing, 10);
+      expect(howTo.bodyText, contains('recovered but not linked'));
+      expect(olderMessages.title, 'About older messages');
+      expect(olderMessages.topSpacing, 16);
+    });
+
+    test('reconciles exact current-source identities', () async {
+      final repository = _FakeCoverageRepository(
+        evidence: _evidence(
+          sourceRows: const <int>{1, 2, 3},
+          graphRows: const <int, CurrentSourceMessageGraphPlacement>{
+            1: CurrentSourceMessageGraphPlacement.conversationLinked,
+            2: CurrentSourceMessageGraphPlacement.recoveredUnlinked,
+          },
         ),
       );
-      expect(payload.footnote, isNull);
-    });
-
-    test('returns the how-to-read info payload', () {
-      final container = ProviderContainer();
+      final container = _container(repository: repository);
       addTearDown(container.dispose);
 
-      final payload = container
-          .read(messageHistoryCoverageSettingsResolverProvider.notifier)
-          .resolveHowToRead(cassetteIndex: 3);
-
-      expect(payload.title, 'How to read this report');
-      expect(payload.topSpacing, 10);
-      expect(
-        payload.bodyText,
-        contains('Messages on this Mac are grouped into:'),
+      final report = await container.read(
+        messageHistoryCoverageReportProvider.future,
       );
-      expect(
-        payload.bodyText,
-        contains('• Messages recovered but not linked to a conversation'),
-      );
-      expect(payload.footnote, isNull);
-    });
 
-    test('returns the older-messages note payload', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final payload = container
-          .read(messageHistoryCoverageSettingsResolverProvider.notifier)
-          .resolveOlderMessagesNote(cassetteIndex: 4);
-
-      expect(payload.title, 'About older messages');
-      expect(payload.topSpacing, 16);
-      expect(
-        payload.bodyText,
-        'This report only reflects the messages stored on this Mac.\n\nIf you expected to see older messages, they may exist on another device or in iCloud but are not present here.',
-      );
-      expect(payload.footnote, isNull);
+      expect(report.totalCurrentMessages, 3);
+      expect(report.accountedInConversations, 1);
+      expect(report.recoveredUnlinked, 1);
+      expect(report.unaccounted, 1);
+      expect(report.status, MessageHistoryCoverageStatus.incomplete);
+      expect(repository.readCount, 1);
     });
 
     test(
-      'reads conversation-linked and recovered counts from the graph',
+      'provider cache prevents widget rebuild from repeating query',
       () async {
-        final tempDir = await Directory.systemTemp.createTemp(
-          'message_history_coverage_settings_resolver_test',
+        final repository = _FakeCoverageRepository(
+          evidence: _evidence(
+            sourceRows: const <int>{1},
+            graphRows: const <int, CurrentSourceMessageGraphPlacement>{
+              1: CurrentSourceMessageGraphPlacement.conversationLinked,
+            },
+          ),
         );
-        final chatDbPath = '${tempDir.path}/chat.db';
-        final graphDb = ConversationGraphDatabase(NativeDatabase.memory());
-        final sourceDb = sqlite3.open(chatDbPath);
-        try {
-          sourceDb.execute('''
-          CREATE TABLE message (
-            ROWID INTEGER PRIMARY KEY,
-            date INTEGER
-          )
-        ''');
-          sourceDb.execute(
-            'INSERT INTO message (ROWID, date) VALUES (1, 0), (2, 0), (3, 0)',
-          );
-          await graphDb.executeSql('''
-          INSERT INTO messages (ss_id, guid, is_from_me)
-          VALUES
-            (8796093022209, 'graph-message-1', 0),
-            (8796093022210, 'graph-message-2', 1)
-        ''');
-          await graphDb.executeSql('''
-          INSERT INTO chat_to_message (chat_ss_id, message_ss_id)
-          VALUES (8796093022300, 8796093022209)
-        ''');
+        final container = _container(repository: repository);
+        addTearDown(container.dispose);
 
-          final container = ProviderContainer(
-            overrides: [
-              onboardingFullDiskAccessProvider.overrideWith((ref) => true),
-              onboardingMessagesDatabasePathProvider.overrideWith(
-                (ref) => chatDbPath,
-              ),
-              messageHistoryCoverageRepositoryProvider.overrideWith(
-                (ref) async =>
-                    MessageHistoryCoverageRepository(graphDb: graphDb),
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
+        await container.read(messageHistoryCoverageReportProvider.future);
+        await container.read(messageHistoryCoverageReportProvider.future);
 
-          final report = await container.read(
-            messageHistoryCoverageReportProvider.future,
-          );
-
-          expect(report.chatDbTotalCount, 3);
-          expect(report.graphConversationLinkedCount, 1);
-          expect(report.graphRecoveredOrphanCount, 1);
-          expect(report.status, MessageHistoryCoverageStatus.incompleteImport);
-        } finally {
-          sourceDb.dispose();
-          await graphDb.close();
-          if (tempDir.existsSync()) {
-            await tempDir.delete(recursive: true);
-          }
-        }
+        expect(repository.readCount, 1);
       },
     );
+
+    test('maintenance is unavailable and opens no evidence stores', () async {
+      var repositoryWasRequested = false;
+      final container = ProviderContainer(
+        overrides: [
+          dbMaintenanceLockProvider.overrideWith((ref) => true),
+          onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+          onboardingMessagesDatabasePathProvider.overrideWith(
+            (ref) => '/source/chat.db',
+          ),
+          messageHistoryCoverageRepositoryProvider.overrideWith((ref) async {
+            repositoryWasRequested = true;
+            throw StateError('repository must not be opened');
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final report = await container.read(
+        messageHistoryCoverageReportProvider.future,
+      );
+
+      expect(
+        report.status,
+        MessageHistoryCoverageStatus.temporarilyUnavailable,
+      );
+      expect(repositoryWasRequested, isFalse);
+      expect(report.totalCurrentMessages, isNull);
+    });
+
+    test('maintenance release recomputes current truth', () async {
+      var maintenance = true;
+      final repository = _FakeCoverageRepository(
+        evidence: _evidence(
+          sourceRows: const <int>{1},
+          graphRows: const <int, CurrentSourceMessageGraphPlacement>{
+            1: CurrentSourceMessageGraphPlacement.conversationLinked,
+          },
+        ),
+      );
+      final container = _container(
+        repository: repository,
+        maintenance: () => maintenance,
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        (await container.read(
+          messageHistoryCoverageReportProvider.future,
+        )).status,
+        MessageHistoryCoverageStatus.temporarilyUnavailable,
+      );
+      maintenance = false;
+      container.invalidate(dbMaintenanceLockProvider);
+
+      expect(
+        (await container.read(
+          messageHistoryCoverageReportProvider.future,
+        )).status,
+        MessageHistoryCoverageStatus.complete,
+      );
+      expect(repository.readCount, 1);
+    });
+
+    test('genuine repository failure becomes failed', () async {
+      final container = _container(repository: _FailingCoverageRepository());
+      addTearDown(container.dispose);
+
+      final report = await container.read(
+        messageHistoryCoverageReportProvider.future,
+      );
+
+      expect(report.status, MessageHistoryCoverageStatus.failed);
+      expect(report.detail, contains('query failed'));
+    });
   });
+}
+
+ProviderContainer _container({
+  required MessageHistoryCoverageRepository repository,
+  bool Function()? maintenance,
+}) {
+  return ProviderContainer(
+    overrides: [
+      dbMaintenanceLockProvider.overrideWith(
+        (ref) => maintenance?.call() ?? false,
+      ),
+      onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+      onboardingMessagesDatabasePathProvider.overrideWith(
+        (ref) => '/source/chat.db',
+      ),
+      messageHistoryCoverageRepositoryProvider.overrideWith(
+        (ref) async => repository,
+      ),
+    ],
+  );
+}
+
+MessageHistoryCoverageEvidence _evidence({
+  required Set<int> sourceRows,
+  required Map<int, CurrentSourceMessageGraphPlacement> graphRows,
+}) {
+  return MessageHistoryCoverageEvidence(
+    currentSource: CurrentMessagesSourceCoverageEvidence(
+      sourceRowIds: sourceRows,
+      earliestMessageDate: DateTime.utc(2012, 7, 25),
+      latestMessageDate: DateTime.utc(2026, 8, 22),
+    ),
+    currentSourceGraph: CurrentSourceMessageGraphCoverageEvidence(
+      placementBySourceRowId: graphRows,
+    ),
+  );
+}
+
+final class _FakeCoverageRepository
+    implements MessageHistoryCoverageRepository {
+  _FakeCoverageRepository({required this.evidence});
+
+  final MessageHistoryCoverageEvidence evidence;
+  var readCount = 0;
+
+  @override
+  Future<MessageHistoryCoverageEvidence> readEvidence({
+    required String chatDatabasePath,
+  }) async {
+    readCount++;
+    return evidence;
+  }
+}
+
+final class _FailingCoverageRepository
+    implements MessageHistoryCoverageRepository {
+  @override
+  Future<MessageHistoryCoverageEvidence> readEvidence({
+    required String chatDatabasePath,
+  }) {
+    throw StateError('query failed');
+  }
 }

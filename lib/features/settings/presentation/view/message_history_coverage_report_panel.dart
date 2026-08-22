@@ -291,11 +291,12 @@ class _HeroCard extends StatelessWidget {
   Color _statusTint(ThemeColors colors) {
     return switch (panelModel.status) {
       MessageHistoryCoverageStatus.complete => colors.accents.primary,
-      MessageHistoryCoverageStatus.incompleteImport =>
+      MessageHistoryCoverageStatus.incomplete =>
         colors.buttons.destructiveForeground,
-      MessageHistoryCoverageStatus.incompleteSourceHistory =>
-        colors.accents.secondary,
-      MessageHistoryCoverageStatus.unknown => colors.content.textSecondary,
+      MessageHistoryCoverageStatus.temporarilyUnavailable =>
+        colors.content.textSecondary,
+      MessageHistoryCoverageStatus.failed =>
+        colors.buttons.destructiveForeground,
     };
   }
 }
@@ -366,12 +367,6 @@ class _AccountingBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final segments = panelModel.segments;
-    final totalFraction = segments.fold<double>(
-      0,
-      (sum, segment) => sum + segment.fraction,
-    );
-    final remainingFraction = math.max(0.0, 1.0 - totalFraction);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -394,11 +389,6 @@ class _AccountingBar extends StatelessWidget {
                         color: _segmentColor(segment.semanticKind),
                         child: const SizedBox.expand(),
                       ),
-                    ),
-                  if (remainingFraction > 0)
-                    Expanded(
-                      flex: math.max(1, (remainingFraction * 1000).round()),
-                      child: const SizedBox.expand(),
                     ),
                 ],
               ),

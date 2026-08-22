@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../../essentials/db/feature_level_providers.dart'
+    show dbMaintenanceLockProvider;
 import '../../../../../essentials/logging/feature_level_providers.dart'
     show appLoggerProvider;
 import '../../../../../essentials/onboarding/feature_level_providers.dart'
@@ -32,78 +34,64 @@ const _messageHistoryCoverageOlderMessagesBody =
 Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(
   MessageHistoryCoverageReportRef ref,
 ) async {
-  final generatedAt = DateTime.now().toUtc();
+  if (ref.watch(dbMaintenanceLockProvider)) {
+    return MessageHistoryCoverageReport.temporarilyUnavailable(
+      generatedAt: DateTime.now().toUtc(),
+      detail:
+          'Message History Coverage is temporarily unavailable while MessageLens updates its data.',
+    );
+  }
+
   final chatDbPath = ref.read(onboardingMessagesDatabasePathProvider);
   if (!ref.read(onboardingFullDiskAccessProvider)) {
-    return MessageHistoryCoverageReport(
-      status: MessageHistoryCoverageStatus.unknown,
-      chatDbTotalCount: null,
-      graphConversationLinkedCount: null,
-      graphRecoveredOrphanCount: null,
-      earliestMessageDate: null,
-      latestMessageDate: null,
-      generatedAt: generatedAt,
+    return MessageHistoryCoverageReport.failed(
+      generatedAt: DateTime.now().toUtc(),
       detail:
           'MessageLens cannot currently read the Messages database on this Mac. Check Full Disk Access and try again.',
     );
   }
 
-  final repository = await ref.read(
-    messageHistoryCoverageRepositoryProvider.future,
-  );
-  final sourceSummary = repository.readChatDbSummary(chatDbPath);
-  if (sourceSummary == null) {
-    return MessageHistoryCoverageReport(
-      status: MessageHistoryCoverageStatus.unknown,
-      chatDbTotalCount: null,
-      graphConversationLinkedCount: null,
-      graphRecoveredOrphanCount: null,
-      earliestMessageDate: null,
-      latestMessageDate: null,
-      generatedAt: generatedAt,
-      detail:
-          'MessageLens could not safely read message totals from the local Messages database.',
-    );
-  }
-
   try {
-    final graphSummary = await repository.readGraphSummary();
-    final status = classifyMessageHistoryCoverageReport(
-      sourceCount: sourceSummary.totalCount,
-      accountedCount: graphSummary.totalAccountedCount,
-      earliestMessageDate: sourceSummary.earliestMessageDate,
+    final repository = await ref.read(
+      messageHistoryCoverageRepositoryProvider.future,
     );
+    final evidence = await repository.readEvidence(
+      chatDatabasePath: chatDbPath,
+    );
+    if (ref.read(dbMaintenanceLockProvider)) {
+      return MessageHistoryCoverageReport.temporarilyUnavailable(
+        generatedAt: DateTime.now().toUtc(),
+        detail:
+            'Message History Coverage became unavailable while MessageLens began updating its data.',
+      );
+    }
 
-    return MessageHistoryCoverageReport(
-      status: status,
-      chatDbTotalCount: sourceSummary.totalCount,
-      graphConversationLinkedCount: graphSummary.conversationLinkedCount,
-      graphRecoveredOrphanCount: graphSummary.recoveredOrphanCount,
-      earliestMessageDate: sourceSummary.earliestMessageDate,
-      latestMessageDate: sourceSummary.latestMessageDate,
-      generatedAt: generatedAt,
+    return reconcileMessageHistoryCoverage(
+      evidence: evidence,
+      generatedAt: DateTime.now().toUtc(),
     );
   } catch (error, stackTrace) {
+    if (ref.read(dbMaintenanceLockProvider)) {
+      return MessageHistoryCoverageReport.temporarilyUnavailable(
+        generatedAt: DateTime.now().toUtc(),
+        detail:
+            'Message History Coverage is temporarily unavailable while MessageLens updates its data.',
+      );
+    }
     ref
         .read(appLoggerProvider.notifier)
         .warn(
-          'MessageHistoryCoverage: failed to read graph summary',
+          'MessageHistoryCoverage: reconciliation failed',
           source: 'MessageHistoryCoverageSettingsResolver',
           context: <String, Object?>{
             'error': error.toString(),
             'stackTrace': stackTrace.toString(),
           },
         );
-    return MessageHistoryCoverageReport(
-      status: MessageHistoryCoverageStatus.unknown,
-      chatDbTotalCount: sourceSummary.totalCount,
-      graphConversationLinkedCount: null,
-      graphRecoveredOrphanCount: null,
-      earliestMessageDate: sourceSummary.earliestMessageDate,
-      latestMessageDate: sourceSummary.latestMessageDate,
-      generatedAt: generatedAt,
+    return MessageHistoryCoverageReport.failed(
+      generatedAt: DateTime.now().toUtc(),
       detail:
-          'MessageLens could not safely read the conversation graph database: $error',
+          'MessageLens could not safely reconcile current message history: $error',
     );
   }
 }

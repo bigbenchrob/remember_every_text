@@ -25,6 +25,8 @@ export 'application/conversations/conversation_repository_provider.dart';
 export 'application/handles/handle_projection_repository_provider.dart';
 export 'application/health/graph_health_repository_provider.dart';
 export 'application/message_attachment_joins/message_to_attachment_projection_repository_provider.dart';
+export 'application/messages/current_source_message_graph_coverage_reader.dart';
+export 'application/messages/current_source_message_graph_coverage_reader_provider.dart';
 export 'application/messages/message_graph_reader_provider.dart';
 export 'application/messages/message_graph_repository_provider.dart';
 export 'application/messages/message_projection_repository_provider.dart';

@@ -1,33 +1,42 @@
 import 'package:intl/intl.dart';
 
+import '../../../../../essentials/conversation_graph/feature_level_providers.dart'
+    show CurrentSourceMessageGraphPlacement;
+import '../../message_history_coverage_repository.dart';
 import 'message_history_coverage_report.dart';
 
 const _suspiciouslyRecentWindowDays = 365 * 5;
 
-MessageHistoryCoverageStatus classifyMessageHistoryCoverageReport({
-  required int? sourceCount,
-  required int? accountedCount,
-  required DateTime? earliestMessageDate,
-  DateTime? nowUtc,
+MessageHistoryCoverageReport reconcileMessageHistoryCoverage({
+  required MessageHistoryCoverageEvidence evidence,
+  required DateTime generatedAt,
 }) {
-  if (sourceCount == null || accountedCount == null) {
-    return MessageHistoryCoverageStatus.unknown;
+  final source = evidence.currentSource;
+  final graphPlacements = evidence.currentSourceGraph.placementBySourceRowId;
+
+  var accountedInConversations = 0;
+  var recoveredUnlinked = 0;
+  var unaccounted = 0;
+  for (final sourceRowId in source.sourceRowIds) {
+    switch (graphPlacements[sourceRowId]) {
+      case CurrentSourceMessageGraphPlacement.conversationLinked:
+        accountedInConversations++;
+      case CurrentSourceMessageGraphPlacement.recoveredUnlinked:
+        recoveredUnlinked++;
+      case null:
+        unaccounted++;
+    }
   }
 
-  if (sourceCount > accountedCount) {
-    return MessageHistoryCoverageStatus.incompleteImport;
-  }
-
-  if (sourceCount == accountedCount &&
-      earliestMessageDate != null &&
-      isSuspiciouslyRecentMessageHistoryStart(
-        earliestMessageDate,
-        nowUtc: nowUtc,
-      )) {
-    return MessageHistoryCoverageStatus.incompleteSourceHistory;
-  }
-
-  return MessageHistoryCoverageStatus.complete;
+  return MessageHistoryCoverageReport.reconciled(
+    totalCurrentMessages: source.totalRowCount,
+    accountedInConversations: accountedInConversations,
+    recoveredUnlinked: recoveredUnlinked,
+    unaccounted: unaccounted,
+    earliestMessageDate: source.earliestMessageDate,
+    latestMessageDate: source.latestMessageDate,
+    generatedAt: generatedAt,
+  );
 }
 
 bool isSuspiciouslyRecentMessageHistoryStart(
@@ -45,57 +54,28 @@ String buildMessageHistoryCoverageBodyText(
   MessageHistoryCoverageReport report,
 ) {
   final summaryLines = [
-    'Total messages on this Mac: ${_formatCount(report.chatDbTotalCount)}',
-    'Visible in MessageLens: ${_formatCount(report.graphConversationLinkedCount)}',
-    'Recovered (unlinked): ${_formatCount(report.graphRecoveredOrphanCount)}',
-    'Total accounted for: ${_formatCount(report.graphTotalAccountedCount)}',
-    'Missing: ${_formatCount(report.missingCount)}',
+    'Total messages on this Mac: ${_formatCount(report.totalCurrentMessages)}',
+    'Visible in MessageLens: ${_formatCount(report.accountedInConversations)}',
+    'Recovered (unlinked): ${_formatCount(report.recoveredUnlinked)}',
+    'Total accounted for: ${_formatCount(report.totalAccounted)}',
+    'Missing: ${_formatCount(report.unaccounted)}',
     'Date range: ${_formatDateRange(report)}',
   ].join('\n');
 
   final interpretation = switch (report.status) {
     MessageHistoryCoverageStatus.complete =>
       'MessageLens has accounted for all messages currently available on this Mac. No missing messages were detected.',
-    MessageHistoryCoverageStatus.incompleteImport =>
-      "Some messages in your Mac's Messages database were not imported into MessageLens. This may indicate an interrupted or incomplete import.",
-    MessageHistoryCoverageStatus.incompleteSourceHistory =>
-      "MessageLens has imported all messages available on this Mac. However, this Mac's Messages database only appears to contain messages starting from ${_formatDate(report.earliestMessageDate)}. Older messages may exist on another device or in iCloud.",
-    MessageHistoryCoverageStatus.unknown =>
+    MessageHistoryCoverageStatus.incomplete =>
+      "Some messages in your Mac's Messages database could not be reconciled to MessageLens.",
+    MessageHistoryCoverageStatus.temporarilyUnavailable =>
+      report.detail ??
+          'Message History Coverage is temporarily unavailable while MessageLens updates its data.',
+    MessageHistoryCoverageStatus.failed =>
       report.detail ??
           'MessageLens could not complete the coverage check safely.',
   };
 
-  final detail = report.detail;
-  final troubleshootingGuidance = _buildTroubleshootingGuidance(report);
-
-  if (report.status == MessageHistoryCoverageStatus.unknown ||
-      detail == null ||
-      detail.isEmpty) {
-    if (troubleshootingGuidance == null) {
-      return '$interpretation\n\n$summaryLines';
-    }
-
-    return '$interpretation\n\n$summaryLines\n\n$troubleshootingGuidance';
-  }
-
-  if (troubleshootingGuidance == null) {
-    return '$interpretation\n\n$summaryLines\n\n$detail';
-  }
-
-  return '$interpretation\n\n$summaryLines\n\n$troubleshootingGuidance\n\n$detail';
-}
-
-String? _buildTroubleshootingGuidance(MessageHistoryCoverageReport report) {
-  if (report.status != MessageHistoryCoverageStatus.incompleteSourceHistory) {
-    return null;
-  }
-
-  return [
-    'Troubleshooting steps:',
-    '1. Open Messages on this Mac and scroll farther back to confirm whether older conversations are available locally.',
-    '2. Check another device signed into the same Apple Account. Older history may still exist there even if this Mac only has recent messages downloaded.',
-    '3. If older messages appear on another device, allow Messages to finish syncing on this Mac and then run Message History Coverage again.',
-  ].join('\n');
+  return '$interpretation\n\n$summaryLines';
 }
 
 String _formatCount(int? value) {

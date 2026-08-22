@@ -35,9 +35,8 @@ String messageHistoryCoverageReportExportJson({
   final effectiveNow = now ?? DateTime.now();
   const encoder = JsonEncoder.withIndent('  ');
   final payload = <String, Object?>{
-    'generatedAt':
-        report.generatedAt?.toUtc().toIso8601String() ??
-        effectiveNow.toUtc().toIso8601String(),
+    'generatedAt': report.generatedAt.toUtc().toIso8601String(),
+    'exportedAt': effectiveNow.toUtc().toIso8601String(),
     ...report.toJson(),
   };
   return '${encoder.convert(payload)}\n';

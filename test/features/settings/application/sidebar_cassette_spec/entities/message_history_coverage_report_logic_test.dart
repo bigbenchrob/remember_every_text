@@ -1,145 +1,154 @@
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
+import 'package:remember_this_text/features/settings/application/message_history_coverage_repository.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/entities/message_history_coverage_report_logic.dart';
 
 void main() {
-  group('classifyMessageHistoryCoverageReport', () {
-    test('returns complete when totals match and history is not recent', () {
-      final status = classifyMessageHistoryCoverageReport(
-        sourceCount: 100,
-        accountedCount: 100,
-        earliestMessageDate: DateTime.utc(2010, 01, 01),
-        nowUtc: DateTime.utc(2026, 04, 26),
-      );
-
-      expect(status, MessageHistoryCoverageStatus.complete);
-    });
-
-    test('returns incomplete import when source total is higher', () {
-      final status = classifyMessageHistoryCoverageReport(
-        sourceCount: 100,
-        accountedCount: 96,
-        earliestMessageDate: DateTime.utc(2010, 01, 01),
-        nowUtc: DateTime.utc(2026, 04, 26),
-      );
-
-      expect(status, MessageHistoryCoverageStatus.incompleteImport);
-    });
-
-    test('returns incomplete source history when earliest date is recent', () {
-      final status = classifyMessageHistoryCoverageReport(
-        sourceCount: 100,
-        accountedCount: 100,
-        earliestMessageDate: DateTime.utc(2024, 01, 01),
-        nowUtc: DateTime.utc(2026, 04, 26),
-      );
-
-      expect(status, MessageHistoryCoverageStatus.incompleteSourceHistory);
-    });
-
-    test('returns unknown when totals are unavailable', () {
-      final status = classifyMessageHistoryCoverageReport(
-        sourceCount: null,
-        accountedCount: 100,
-        earliestMessageDate: null,
-        nowUtc: DateTime.utc(2026, 04, 26),
-      );
-
-      expect(status, MessageHistoryCoverageStatus.unknown);
-    });
-  });
-
-  group('buildMessageHistoryCoverageBodyText', () {
-    test('includes summary lines and complete interpretation', () {
-      final bodyText = buildMessageHistoryCoverageBodyText(
-        MessageHistoryCoverageReport(
-          status: MessageHistoryCoverageStatus.complete,
-          chatDbTotalCount: 1200,
-          graphConversationLinkedCount: 1190,
-          graphRecoveredOrphanCount: 10,
-          earliestMessageDate: DateTime.utc(2014, 05, 01),
-          latestMessageDate: DateTime.utc(2026, 04, 26),
+  group('reconcileMessageHistoryCoverage', () {
+    test('partitions every current source row exactly once', () {
+      final report = reconcileMessageHistoryCoverage(
+        evidence: _evidence(
+          sourceRows: const <int>{1, 2, 3},
+          graphRows: const <int, CurrentSourceMessageGraphPlacement>{
+            1: CurrentSourceMessageGraphPlacement.conversationLinked,
+            2: CurrentSourceMessageGraphPlacement.recoveredUnlinked,
+          },
         ),
+        generatedAt: _generatedAt,
       );
 
-      expect(bodyText, contains('MessageLens has accounted for all messages'));
-      expect(bodyText, contains('Total messages on this Mac: 1,200'));
-      expect(bodyText, contains('Visible in MessageLens: 1,190'));
-      expect(bodyText, contains('Recovered (unlinked): 10'));
-      expect(bodyText, contains('Total accounted for: 1,200'));
-      expect(bodyText, contains('Missing: 0'));
-      expect(bodyText, contains('Date range:'));
-      expect(bodyText, isNot(contains('Troubleshooting steps:')));
+      expect(report.status, MessageHistoryCoverageStatus.incomplete);
+      expect(report.totalCurrentMessages, 3);
+      expect(report.accountedInConversations, 1);
+      expect(report.recoveredUnlinked, 1);
+      expect(report.unaccounted, 1);
+      expect(
+        report.accountedInConversations! +
+            report.recoveredUnlinked! +
+            report.unaccounted!,
+        report.totalCurrentMessages,
+      );
     });
 
-    test(
-      'adds inline troubleshooting guidance for incomplete source history',
-      () {
-        final bodyText = buildMessageHistoryCoverageBodyText(
-          MessageHistoryCoverageReport(
-            status: MessageHistoryCoverageStatus.incompleteSourceHistory,
-            chatDbTotalCount: 120,
-            graphConversationLinkedCount: 115,
-            graphRecoveredOrphanCount: 5,
-            earliestMessageDate: DateTime.utc(2024, 01, 01),
-            latestMessageDate: DateTime.utc(2026, 04, 26),
-          ),
-        );
+    test('complete derives only from an empty unaccounted set', () {
+      final report = reconcileMessageHistoryCoverage(
+        evidence: _evidence(
+          sourceRows: const <int>{1, 2},
+          graphRows: const <int, CurrentSourceMessageGraphPlacement>{
+            1: CurrentSourceMessageGraphPlacement.conversationLinked,
+            2: CurrentSourceMessageGraphPlacement.recoveredUnlinked,
+          },
+        ),
+        generatedAt: _generatedAt,
+      );
 
-        expect(bodyText, contains('Troubleshooting steps:'));
-        expect(
-          bodyText,
-          contains('Open Messages on this Mac and scroll farther back'),
-        );
-        expect(
-          bodyText,
-          contains('Check another device signed into the same Apple Account'),
-        );
-        expect(bodyText, contains('run Message History Coverage again'));
-      },
-    );
+      expect(report.status, MessageHistoryCoverageStatus.complete);
+      expect(report.unaccounted, 0);
+    });
 
-    test('uses detail text for unknown reports', () {
-      final bodyText = buildMessageHistoryCoverageBodyText(
-        const MessageHistoryCoverageReport(
-          status: MessageHistoryCoverageStatus.unknown,
-          chatDbTotalCount: null,
-          graphConversationLinkedCount: null,
-          graphRecoveredOrphanCount: null,
+    test('equal gross totals do not conceal different row identities', () {
+      final report = reconcileMessageHistoryCoverage(
+        evidence: _evidence(
+          sourceRows: const <int>{1, 2},
+          graphRows: const <int, CurrentSourceMessageGraphPlacement>{
+            1: CurrentSourceMessageGraphPlacement.conversationLinked,
+            3: CurrentSourceMessageGraphPlacement.recoveredUnlinked,
+          },
+        ),
+        generatedAt: _generatedAt,
+      );
+
+      expect(report.status, MessageHistoryCoverageStatus.incomplete);
+      expect(report.accountedInConversations, 1);
+      expect(report.recoveredUnlinked, 0);
+      expect(report.unaccounted, 1);
+    });
+
+    test('impossible arithmetic is rejected instead of clamped', () {
+      expect(
+        () => MessageHistoryCoverageReport.reconciled(
+          totalCurrentMessages: 2,
+          accountedInConversations: 2,
+          recoveredUnlinked: 1,
+          unaccounted: 0,
           earliestMessageDate: null,
           latestMessageDate: null,
-          detail: 'Full Disk Access is not currently granted.',
+          generatedAt: _generatedAt,
         ),
+        throwsStateError,
       );
-
-      expect(bodyText, contains('Full Disk Access is not currently granted.'));
-      expect(bodyText, contains('Unavailable'));
+      expect(
+        () => MessageHistoryCoverageReport.reconciled(
+          totalCurrentMessages: 2,
+          accountedInConversations: 1,
+          recoveredUnlinked: 0,
+          unaccounted: -1,
+          earliestMessageDate: null,
+          latestMessageDate: null,
+          generatedAt: _generatedAt,
+        ),
+        throwsStateError,
+      );
     });
   });
 
   group('MessageHistoryCoverageReport', () {
-    test('serializes the expected JSON fields', () {
-      final report = MessageHistoryCoverageReport(
-        status: MessageHistoryCoverageStatus.complete,
-        chatDbTotalCount: 120,
-        graphConversationLinkedCount: 115,
-        graphRecoveredOrphanCount: 5,
-        earliestMessageDate: DateTime.utc(2020, 01, 01),
-        latestMessageDate: DateTime.utc(2026, 04, 26),
+    test('serializes the exact current-source partition', () {
+      final report = MessageHistoryCoverageReport.reconciled(
+        totalCurrentMessages: 120,
+        accountedInConversations: 115,
+        recoveredUnlinked: 5,
+        unaccounted: 0,
+        earliestMessageDate: DateTime.utc(2020),
+        latestMessageDate: DateTime.utc(2026, 4, 26),
+        generatedAt: _generatedAt,
       );
 
       expect(report.toJson(), {
-        'chatDbTotal': 120,
-        'visible': 115,
-        'recovered': 5,
+        'totalCurrentMessages': 120,
+        'accountedInConversations': 115,
+        'recoveredUnlinked': 5,
+        'unaccounted': 0,
         'accounted': 120,
-        'missing': 0,
         'earliest': '2020-01-01T00:00:00.000Z',
         'latest': '2026-04-26T00:00:00.000Z',
+        'generatedAt': '2026-08-22T12:00:00.000Z',
         'status': 'complete',
         'detail': null,
       });
     });
+
+    test('body text uses unavailable rather than stale success counts', () {
+      final body = buildMessageHistoryCoverageBodyText(
+        MessageHistoryCoverageReport.temporarilyUnavailable(
+          generatedAt: _generatedAt,
+          detail: 'Database maintenance is active.',
+        ),
+      );
+
+      expect(body, contains('Database maintenance is active.'));
+      expect(body, contains('Unavailable'));
+      expect(body, isNot(contains('No missing messages were detected')));
+    });
   });
+}
+
+final _generatedAt = DateTime.utc(2026, 8, 22, 12);
+
+MessageHistoryCoverageEvidence _evidence({
+  required Set<int> sourceRows,
+  required Map<int, CurrentSourceMessageGraphPlacement> graphRows,
+}) {
+  return MessageHistoryCoverageEvidence(
+    currentSource: CurrentMessagesSourceCoverageEvidence(
+      sourceRowIds: sourceRows,
+      earliestMessageDate: DateTime.utc(2012, 7, 25),
+      latestMessageDate: DateTime.utc(2026, 8, 22),
+    ),
+    currentSourceGraph: CurrentSourceMessageGraphCoverageEvidence(
+      placementBySourceRowId: graphRows,
+    ),
+  );
 }

@@ -158,6 +158,26 @@ graph readers, feature providers, widgets, and presentation code must consume
 semantic ports, repository providers, or `sourceScopedImportLedgerProvider`
 instead of reaching for the concrete physical provider.
 
+## Current-Mac Message Coverage
+
+Message History Coverage is a cross-store reconciliation, not a comparison of
+gross database counts.
+
+- The denominator is every physical `ROWID` currently present in
+  `db-chat.message`.
+- Source-scoped import owns the named, read-only source evidence reader.
+- Conversation Graph owns the named source-1 topology evidence reader.
+- Graph identity is decoded only through `SourceScopedRowSql` and the canonical
+  live-source identity.
+- Settings composes the evidence and partitions each denominator identity into
+  conversation-linked, recovered/unlinked, or unaccounted.
+- Historical-source graph rows and ephemeral attachment-recovery donors do not
+  participate.
+
+Coverage must never subtract gross graph totals, clamp a negative remainder,
+or open the protected graph store while admitted maintenance is active. See
+[Feature 27](../45-NEW-FEATURE-ADDITION/27-MESSAGE-HISTORY-COVERAGE/README.md).
+
 ## Persistent vs One-Off Database Access
 
 - Persistent DB instances: import ledger, conversation graph, overlay,

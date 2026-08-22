@@ -1,55 +1,126 @@
 final class MessageHistoryCoverageReport {
-  const MessageHistoryCoverageReport({
+  MessageHistoryCoverageReport._({
     required this.status,
-    required this.chatDbTotalCount,
-    required this.graphConversationLinkedCount,
-    required this.graphRecoveredOrphanCount,
+    required this.totalCurrentMessages,
+    required this.accountedInConversations,
+    required this.recoveredUnlinked,
+    required this.unaccounted,
     required this.earliestMessageDate,
     required this.latestMessageDate,
-    this.generatedAt,
-    this.detail,
+    required this.generatedAt,
+    required this.detail,
   });
 
-  final MessageHistoryCoverageStatus status;
-  final int? chatDbTotalCount;
-  final int? graphConversationLinkedCount;
-  final int? graphRecoveredOrphanCount;
-  final DateTime? earliestMessageDate;
-  final DateTime? latestMessageDate;
-  final DateTime? generatedAt;
-  final String? detail;
-
-  int? get graphTotalAccountedCount {
-    final visibleCount = graphConversationLinkedCount;
-    final recoveredCount = graphRecoveredOrphanCount;
-    if (visibleCount == null || recoveredCount == null) {
-      return null;
+  factory MessageHistoryCoverageReport.reconciled({
+    required int totalCurrentMessages,
+    required int accountedInConversations,
+    required int recoveredUnlinked,
+    required int unaccounted,
+    required DateTime? earliestMessageDate,
+    required DateTime? latestMessageDate,
+    required DateTime generatedAt,
+  }) {
+    final counts = <int>[
+      totalCurrentMessages,
+      accountedInConversations,
+      recoveredUnlinked,
+      unaccounted,
+    ];
+    if (counts.any((count) => count < 0)) {
+      throw StateError('Message History Coverage counts cannot be negative.');
     }
-    return visibleCount + recoveredCount;
+    if (accountedInConversations > totalCurrentMessages ||
+        recoveredUnlinked > totalCurrentMessages ||
+        unaccounted > totalCurrentMessages) {
+      throw StateError(
+        'No Message History Coverage category may exceed the denominator.',
+      );
+    }
+    if (accountedInConversations + recoveredUnlinked + unaccounted !=
+        totalCurrentMessages) {
+      throw StateError(
+        'Message History Coverage categories must partition the denominator.',
+      );
+    }
+
+    return MessageHistoryCoverageReport._(
+      status: unaccounted == 0
+          ? MessageHistoryCoverageStatus.complete
+          : MessageHistoryCoverageStatus.incomplete,
+      totalCurrentMessages: totalCurrentMessages,
+      accountedInConversations: accountedInConversations,
+      recoveredUnlinked: recoveredUnlinked,
+      unaccounted: unaccounted,
+      earliestMessageDate: earliestMessageDate,
+      latestMessageDate: latestMessageDate,
+      generatedAt: generatedAt,
+      detail: null,
+    );
   }
 
-  int? get missingCount {
-    final sourceCount = chatDbTotalCount;
-    final accountedCount = graphTotalAccountedCount;
-    if (sourceCount == null || accountedCount == null) {
+  factory MessageHistoryCoverageReport.temporarilyUnavailable({
+    required DateTime generatedAt,
+    required String detail,
+  }) {
+    return MessageHistoryCoverageReport._(
+      status: MessageHistoryCoverageStatus.temporarilyUnavailable,
+      totalCurrentMessages: null,
+      accountedInConversations: null,
+      recoveredUnlinked: null,
+      unaccounted: null,
+      earliestMessageDate: null,
+      latestMessageDate: null,
+      generatedAt: generatedAt,
+      detail: detail,
+    );
+  }
+
+  factory MessageHistoryCoverageReport.failed({
+    required DateTime generatedAt,
+    required String detail,
+  }) {
+    return MessageHistoryCoverageReport._(
+      status: MessageHistoryCoverageStatus.failed,
+      totalCurrentMessages: null,
+      accountedInConversations: null,
+      recoveredUnlinked: null,
+      unaccounted: null,
+      earliestMessageDate: null,
+      latestMessageDate: null,
+      generatedAt: generatedAt,
+      detail: detail,
+    );
+  }
+
+  final MessageHistoryCoverageStatus status;
+  final int? totalCurrentMessages;
+  final int? accountedInConversations;
+  final int? recoveredUnlinked;
+  final int? unaccounted;
+  final DateTime? earliestMessageDate;
+  final DateTime? latestMessageDate;
+  final DateTime generatedAt;
+  final String? detail;
+
+  int? get totalAccounted {
+    final conversationCount = accountedInConversations;
+    final recoveredCount = recoveredUnlinked;
+    if (conversationCount == null || recoveredCount == null) {
       return null;
     }
-    final delta = sourceCount - accountedCount;
-    if (delta > 0) {
-      return delta;
-    }
-    return 0;
+    return conversationCount + recoveredCount;
   }
 
   Map<String, Object?> toJson() {
     return {
-      'chatDbTotal': chatDbTotalCount,
-      'visible': graphConversationLinkedCount,
-      'recovered': graphRecoveredOrphanCount,
-      'accounted': graphTotalAccountedCount,
-      'missing': missingCount,
+      'totalCurrentMessages': totalCurrentMessages,
+      'accountedInConversations': accountedInConversations,
+      'recoveredUnlinked': recoveredUnlinked,
+      'unaccounted': unaccounted,
+      'accounted': totalAccounted,
       'earliest': earliestMessageDate?.toUtc().toIso8601String(),
       'latest': latestMessageDate?.toUtc().toIso8601String(),
+      'generatedAt': generatedAt.toUtc().toIso8601String(),
       'status': status.jsonValue,
       'detail': detail,
     };
@@ -58,9 +129,9 @@ final class MessageHistoryCoverageReport {
 
 enum MessageHistoryCoverageStatus {
   complete('complete'),
-  incompleteImport('incomplete_import'),
-  incompleteSourceHistory('incomplete_source_history'),
-  unknown('unknown');
+  incomplete('incomplete'),
+  temporarilyUnavailable('temporarily_unavailable'),
+  failed('failed');
 
   const MessageHistoryCoverageStatus(this.jsonValue);
 

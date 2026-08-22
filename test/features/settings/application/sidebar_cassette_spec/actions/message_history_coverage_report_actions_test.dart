@@ -25,13 +25,14 @@ void main() {
       );
 
       final result = await exporter.export(
-        report: MessageHistoryCoverageReport(
-          status: MessageHistoryCoverageStatus.complete,
-          chatDbTotalCount: 120,
-          graphConversationLinkedCount: 115,
-          graphRecoveredOrphanCount: 5,
+        report: MessageHistoryCoverageReport.reconciled(
+          totalCurrentMessages: 120,
+          accountedInConversations: 115,
+          recoveredUnlinked: 5,
+          unaccounted: 0,
           earliestMessageDate: DateTime.utc(2020, 01, 01),
           latestMessageDate: DateTime.utc(2026, 04, 26),
+          generatedAt: DateTime.utc(2026, 04, 26, 17, 45, 11),
         ),
         exportDirectoryPath: tempDirectory.path,
         now: DateTime.utc(2026, 04, 26, 17, 45, 12),
@@ -47,14 +48,15 @@ void main() {
 
       final decoded =
           jsonDecode(await exportFile.readAsString()) as Map<String, Object?>;
-      expect(decoded['chatDbTotal'], 120);
-      expect(decoded['visible'], 115);
-      expect(decoded['recovered'], 5);
-      expect(decoded['missing'], 0);
+      expect(decoded['totalCurrentMessages'], 120);
+      expect(decoded['accountedInConversations'], 115);
+      expect(decoded['recoveredUnlinked'], 5);
+      expect(decoded['unaccounted'], 0);
       expect(decoded['earliest'], '2020-01-01T00:00:00.000Z');
       expect(decoded['latest'], '2026-04-26T00:00:00.000Z');
       expect(decoded['status'], 'complete');
-      expect(decoded['generatedAt'], '2026-04-26T17:45:12.000Z');
+      expect(decoded['generatedAt'], '2026-04-26T17:45:11.000Z');
+      expect(decoded['exportedAt'], '2026-04-26T17:45:12.000Z');
     });
 
     test('exports unknown reports without crashing', () async {
@@ -72,13 +74,8 @@ void main() {
       );
 
       final result = await exporter.export(
-        report: const MessageHistoryCoverageReport(
-          status: MessageHistoryCoverageStatus.unknown,
-          chatDbTotalCount: null,
-          graphConversationLinkedCount: null,
-          graphRecoveredOrphanCount: null,
-          earliestMessageDate: null,
-          latestMessageDate: null,
+        report: MessageHistoryCoverageReport.failed(
+          generatedAt: DateTime.utc(2026, 04, 26, 17, 45, 59),
           detail: 'chat.db is unavailable',
         ),
         exportDirectoryPath: tempDirectory.path,
@@ -89,8 +86,8 @@ void main() {
       final exportFile = File(result.exportPath!);
       final decoded =
           jsonDecode(await exportFile.readAsString()) as Map<String, Object?>;
-      expect(decoded['status'], 'unknown');
-      expect(decoded['chatDbTotal'], isNull);
+      expect(decoded['status'], 'failed');
+      expect(decoded['totalCurrentMessages'], isNull);
       expect(decoded['detail'], 'chat.db is unavailable');
     });
 
@@ -111,13 +108,9 @@ void main() {
       );
 
       final result = await exporter.export(
-        report: const MessageHistoryCoverageReport(
-          status: MessageHistoryCoverageStatus.unknown,
-          chatDbTotalCount: null,
-          graphConversationLinkedCount: null,
-          graphRecoveredOrphanCount: null,
-          earliestMessageDate: null,
-          latestMessageDate: null,
+        report: MessageHistoryCoverageReport.failed(
+          generatedAt: DateTime.utc(2026, 04, 26, 17, 46, 59),
+          detail: 'unavailable',
         ),
         exportDirectoryPath: filePath,
         now: DateTime.utc(2026, 04, 26, 17, 47, 00),
@@ -148,13 +141,9 @@ void main() {
       );
 
       final result = await exporter.export(
-        report: const MessageHistoryCoverageReport(
-          status: MessageHistoryCoverageStatus.unknown,
-          chatDbTotalCount: null,
-          graphConversationLinkedCount: null,
-          graphRecoveredOrphanCount: null,
-          earliestMessageDate: null,
-          latestMessageDate: null,
+        report: MessageHistoryCoverageReport.failed(
+          generatedAt: DateTime.utc(2026, 04, 26, 17, 47, 59),
+          detail: 'unavailable',
         ),
         exportDirectoryPath: exportLink.path,
         now: DateTime.utc(2026, 04, 26, 17, 48, 00),
@@ -194,13 +183,9 @@ void main() {
       );
 
       final result = await exporter.export(
-        report: const MessageHistoryCoverageReport(
-          status: MessageHistoryCoverageStatus.unknown,
-          chatDbTotalCount: null,
-          graphConversationLinkedCount: null,
-          graphRecoveredOrphanCount: null,
-          earliestMessageDate: null,
-          latestMessageDate: null,
+        report: MessageHistoryCoverageReport.failed(
+          generatedAt: DateTime.utc(2026, 04, 26, 17, 48, 59),
+          detail: 'unavailable',
         ),
         exportDirectoryPath: exportDirectory.path,
         now: now,

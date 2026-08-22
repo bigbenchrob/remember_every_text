@@ -12,11 +12,11 @@ void main() {
       'renders the rich complete-state report with a zero-missing badge',
       (tester) async {
         final model = buildMessageCoveragePanelViewModel(
-          MessageHistoryCoverageReport(
-            status: MessageHistoryCoverageStatus.complete,
-            chatDbTotalCount: 120,
-            graphConversationLinkedCount: 115,
-            graphRecoveredOrphanCount: 5,
+          MessageHistoryCoverageReport.reconciled(
+            totalCurrentMessages: 120,
+            accountedInConversations: 115,
+            recoveredUnlinked: 5,
+            unaccounted: 0,
             earliestMessageDate: DateTime.utc(2020, 01, 01),
             latestMessageDate: DateTime.utc(2026, 04, 26),
             generatedAt: DateTime.utc(2026, 04, 26, 18),
@@ -103,13 +103,14 @@ void main() {
       tester,
     ) async {
       final model = buildMessageCoveragePanelViewModel(
-        MessageHistoryCoverageReport(
-          status: MessageHistoryCoverageStatus.incompleteImport,
-          chatDbTotalCount: 100,
-          graphConversationLinkedCount: 80,
-          graphRecoveredOrphanCount: 10,
+        MessageHistoryCoverageReport.reconciled(
+          totalCurrentMessages: 100,
+          accountedInConversations: 80,
+          recoveredUnlinked: 10,
+          unaccounted: 10,
           earliestMessageDate: DateTime.utc(2020, 01, 01),
           latestMessageDate: DateTime.utc(2026, 04, 26),
+          generatedAt: DateTime.utc(2026, 04, 26, 18),
         ),
       );
 

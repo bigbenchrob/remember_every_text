@@ -318,7 +318,6 @@ const Set<String> _directSqliteImportAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/sqlite_message_lens_attachment_donor_evidence_reader.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_message_lens_attachment_recovery_donor_qualifier.dart',
   'lib/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart',
-  'lib/features/settings/infrastructure/repositories/message_history_coverage_repository.dart',
   'lib/main.dart',
 };
 
@@ -7384,6 +7383,37 @@ void main() {
         );
       }
     });
+
+    test(
+      'Message history coverage reconciles source identities without gross counts',
+      () async {
+        final settingsRepository = await File(
+          'lib/features/settings/infrastructure/repositories/message_history_coverage_repository.dart',
+        ).readAsString();
+        final graphReader = await File(
+          'lib/essentials/conversation_graph/infrastructure/repositories/sqlite_current_source_message_graph_coverage_reader.dart',
+        ).readAsString();
+        final report = await File(
+          'lib/features/settings/application/sidebar_cassette_spec/entities/message_history_coverage_report.dart',
+        ).readAsString();
+        final applicationContract = await File(
+          'lib/features/settings/application/message_history_coverage_repository.dart',
+        ).readAsString();
+
+        expect(settingsRepository, isNot(contains('COUNT(*)')));
+        expect(settingsRepository, isNot(contains('readGraphSummary')));
+        expect(settingsRepository, isNot(contains('attachment')));
+        expect(applicationContract, isNot(contains('attachment')));
+        expect(graphReader, contains('SourceScopedRowSql.sourceId'));
+        expect(graphReader, contains('SourceScopedRowSql.sourceRowId'));
+        expect(graphReader, contains('liveChatDbSourceId'));
+        expect(graphReader, contains('WITH linked_message_ids AS'));
+        expect(graphReader, isNot(contains('WHERE EXISTS')));
+        expect(graphReader, isNot(contains('WHERE NOT EXISTS')));
+        expect(report, isNot(contains('.clamp(')));
+        expect(report, isNot(contains('math.max')));
+      },
+    );
 
     test(
       'Historical archive source metadata storage stays infrastructure-owned',

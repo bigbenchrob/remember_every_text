@@ -5440,3 +5440,33 @@ production preservation authority mechanically enforceable.
   feature-local accessibility semantics.
 - Updated the Feature 26 start document from temporarily reopened to complete.
 - Confirmed that the prompt folder contains no byte-identical duplicate files.
+## 2026-08-22 - Feature 27 Message History Coverage opening audit
+
+- Created the Feature 27 Message History Coverage work package and preserved
+  its opening prompt as `seed.md`.
+- Added the read-only semantics and architecture audit.
+- Established that the current denominator is every live
+  `chat.db.message` row, while graph categories count every durable source.
+- Recorded staging proof that 8,882 Historical Archives rows contaminate the
+  current-Mac numerator.
+- Recorded the false-complete clamp, missing identity reconciliation,
+  maintenance-state gap, and correlated-query performance defect.
+- Defined a row-identity-based terminal partition, honest product states, and
+  ordered implementation slices. No application code or data changed.
+
+## 2026-08-22 - Message History Coverage correctness architecture
+
+- Added the Feature 27 implementation record and work-package index.
+- Codified exact current `chat.db.message.ROWID` reconciliation across the
+  source-scoped import and source-1 Conversation Graph evidence boundaries.
+- Recorded the mutually exclusive conversation-linked, recovered/unlinked,
+  and unaccounted partition and removal of defensive arithmetic clamps.
+- Added the permanent maintenance, historical-source exclusion, attachment
+  donor exclusion, and set-query invariants to the canonical database guide.
+- Recorded the typed complete, incomplete, temporarily unavailable, and failed
+  report states and the minimal presentation adaptation.
+- Recorded representative staging query improvement from a greater-than-30
+  second bounded failure to 0.10 seconds for all 137,340 source-1 rows.
+- Recorded clean verification: 29 focused tests, 410 focused-plus-architecture
+  tests, 201 broader database/Settings tests, the complete 1,951-test Flutter
+  suite, analyzer, formatting, diff check, and macOS debug build.

@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../essentials/navigation/presentation/view/center_panel_report_layout.dart';
 import '../../application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
+import '../../application/sidebar_cassette_spec/entities/message_history_coverage_report_logic.dart';
 import '../../application/sidebar_cassette_spec/resolvers/message_history_coverage_settings_resolver.dart';
 
 part 'message_history_coverage_panel_model_provider.g.dart';
@@ -105,11 +106,11 @@ Future<MessageCoveragePanelViewModel> messageHistoryCoveragePanelModel(
 MessageCoveragePanelViewModel buildMessageCoveragePanelViewModel(
   MessageHistoryCoverageReport report,
 ) {
-  final chatDbTotal = report.chatDbTotalCount;
-  final visibleCount = report.graphConversationLinkedCount;
-  final recoveredCount = report.graphRecoveredOrphanCount;
-  final accountedCount = report.graphTotalAccountedCount;
-  final missingCount = report.missingCount;
+  final chatDbTotal = report.totalCurrentMessages;
+  final visibleCount = report.accountedInConversations;
+  final recoveredCount = report.recoveredUnlinked;
+  final accountedCount = report.totalAccounted;
+  final missingCount = report.unaccounted;
   final notes = _notesFor(report);
 
   return MessageCoveragePanelViewModel(
@@ -183,35 +184,36 @@ List<PanelSection<MessageCoveragePanelSectionChild>> _sectionsFor({
 String _statusLabel(MessageHistoryCoverageStatus status) {
   return switch (status) {
     MessageHistoryCoverageStatus.complete => 'Fully Accounted For',
-    MessageHistoryCoverageStatus.incompleteImport => 'Needs Attention',
-    MessageHistoryCoverageStatus.incompleteSourceHistory => 'Limited History',
-    MessageHistoryCoverageStatus.unknown => 'Unknown',
+    MessageHistoryCoverageStatus.incomplete => 'Needs Attention',
+    MessageHistoryCoverageStatus.temporarilyUnavailable =>
+      'Temporarily Unavailable',
+    MessageHistoryCoverageStatus.failed => 'Check Failed',
   };
 }
 
 String _headline(MessageHistoryCoverageReport report) {
-  if (report.chatDbTotalCount == 0) {
+  if (report.totalCurrentMessages == 0) {
     return "No messages were found in this Mac's Messages database.";
   }
 
   return switch (report.status) {
     MessageHistoryCoverageStatus.complete =>
       'Every message on this Mac has been accounted for.',
-    MessageHistoryCoverageStatus.incompleteImport =>
+    MessageHistoryCoverageStatus.incomplete =>
       'Some messages could not be accounted for.',
-    MessageHistoryCoverageStatus.incompleteSourceHistory =>
-      "This Mac's Messages history begins on ${_formatDate(report.earliestMessageDate)}.",
-    MessageHistoryCoverageStatus.unknown =>
+    MessageHistoryCoverageStatus.temporarilyUnavailable =>
+      'Message history coverage is temporarily unavailable.',
+    MessageHistoryCoverageStatus.failed =>
       'MessageLens could not complete the coverage check.',
   };
 }
 
 String _summaryText(MessageHistoryCoverageReport report) {
-  if (report.chatDbTotalCount == 0) {
+  if (report.totalCurrentMessages == 0) {
     return 'MessageLens did not find any source messages to reconcile on this Mac.';
   }
 
-  final chatDbTotal = report.chatDbTotalCount;
+  final chatDbTotal = report.totalCurrentMessages;
 
   return switch (report.status) {
     MessageHistoryCoverageStatus.complete
@@ -219,38 +221,33 @@ String _summaryText(MessageHistoryCoverageReport report) {
       'All ${_formatCount(chatDbTotal)} messages on this Mac are accounted for.',
     MessageHistoryCoverageStatus.complete =>
       "Nothing in this Mac's Messages database is missing from MessageLens.",
-    MessageHistoryCoverageStatus.incompleteImport =>
+    MessageHistoryCoverageStatus.incomplete =>
       'Some source messages are missing from the MessageLens import and need follow-up.',
-    MessageHistoryCoverageStatus.incompleteSourceHistory =>
-      'MessageLens accounted for the messages available locally, but older messages may exist on another device or in iCloud.',
-    MessageHistoryCoverageStatus.unknown =>
+    MessageHistoryCoverageStatus.temporarilyUnavailable =>
+      'MessageLens is updating its data. Coverage will be checked again when that work finishes.',
+    MessageHistoryCoverageStatus.failed =>
       "MessageLens could not safely compare this Mac's Messages database with the imported data.",
   };
 }
 
 String _reconciliationResultLabel(MessageHistoryCoverageReport report) {
-  if (report.chatDbTotalCount == 0) {
+  if (report.totalCurrentMessages == 0) {
     return 'Result: no source messages found';
   }
 
-  final overlapNote = _hasAccountingOverlap(report)
-      ? '\n\nA small overlap was detected while reconciling visible and recovered messages. This does not indicate missing data.'
-      : '';
-
   return switch (report.status) {
-    MessageHistoryCoverageStatus.complete =>
-      'Result: fully reconciled$overlapNote',
-    MessageHistoryCoverageStatus.incompleteImport =>
+    MessageHistoryCoverageStatus.complete => 'Result: fully reconciled',
+    MessageHistoryCoverageStatus.incomplete =>
       'Result: some source messages are still missing',
-    MessageHistoryCoverageStatus.incompleteSourceHistory =>
-      "Result: locally complete, but this Mac's source history is limited",
-    MessageHistoryCoverageStatus.unknown =>
+    MessageHistoryCoverageStatus.temporarilyUnavailable =>
+      'Result: temporarily unavailable during maintenance',
+    MessageHistoryCoverageStatus.failed =>
       'Result: could not complete the check',
   };
 }
 
 String _timelineCoverageLabel(MessageHistoryCoverageReport report) {
-  if (report.chatDbTotalCount == 0) {
+  if (report.totalCurrentMessages == 0) {
     return 'This Mac currently has no local Messages history to display.';
   }
 
@@ -258,7 +255,7 @@ String _timelineCoverageLabel(MessageHistoryCoverageReport report) {
 }
 
 String? _timelineCoverageDetail(MessageHistoryCoverageReport report) {
-  if (report.chatDbTotalCount == null || report.chatDbTotalCount == 0) {
+  if (report.totalCurrentMessages == null || report.totalCurrentMessages == 0) {
     return null;
   }
 
@@ -266,7 +263,7 @@ String? _timelineCoverageDetail(MessageHistoryCoverageReport report) {
 }
 
 String _recoveredExplanation(MessageHistoryCoverageReport report) {
-  final recoveredCount = report.graphRecoveredOrphanCount;
+  final recoveredCount = report.recoveredUnlinked;
   if (recoveredCount == null) {
     return 'Recovered-message details are unavailable until the coverage check can complete.';
   }
@@ -281,28 +278,25 @@ String _recoveredExplanation(MessageHistoryCoverageReport report) {
 List<CoverageSegmentViewModel> _segmentsFor(
   MessageHistoryCoverageReport report,
 ) {
-  final chatDbTotal = report.chatDbTotalCount;
-  final visibleCount = report.graphConversationLinkedCount;
-  final recoveredCount = report.graphRecoveredOrphanCount;
-  final missingCount = report.missingCount;
+  final chatDbTotal = report.totalCurrentMessages;
+  final visibleCount = report.accountedInConversations;
+  final recoveredCount = report.recoveredUnlinked;
+  final missingCount = report.unaccounted;
 
-  if (chatDbTotal == null || chatDbTotal <= 0) {
+  if (chatDbTotal == null ||
+      chatDbTotal <= 0 ||
+      visibleCount == null ||
+      recoveredCount == null ||
+      missingCount == null) {
     return const <CoverageSegmentViewModel>[];
   }
 
-  final visible = visibleCount ?? 0;
-  final recovered = recoveredCount ?? 0;
-  final missing = missingCount ?? 0;
-  final visibleFraction = (visible / chatDbTotal).clamp(0.0, 1.0);
-
-  final recoveredFraction = visible + recovered <= chatDbTotal
-      ? (recovered / chatDbTotal).clamp(0.0, 1.0)
-      : ((chatDbTotal - visible).clamp(0, chatDbTotal) / chatDbTotal).clamp(
-          0.0,
-          1.0,
-        );
-
-  final missingFraction = (missing / chatDbTotal).clamp(0.0, 1.0);
+  final visible = visibleCount;
+  final recovered = recoveredCount;
+  final missing = missingCount;
+  final visibleFraction = visible / chatDbTotal;
+  final recoveredFraction = recovered / chatDbTotal;
+  final missingFraction = missing / chatDbTotal;
 
   final segments = <CoverageSegmentViewModel>[];
   if (visible > 0) {
@@ -345,20 +339,21 @@ List<CoverageSegmentViewModel> _segmentsFor(
 List<String> _notesFor(MessageHistoryCoverageReport report) {
   final notes = <String>[];
 
-  if (report.chatDbTotalCount == 0) {
+  if (report.totalCurrentMessages == 0) {
     notes.add("This Mac's Messages database appears to be empty.");
   }
 
   switch (report.status) {
     case MessageHistoryCoverageStatus.complete:
       break;
-    case MessageHistoryCoverageStatus.incompleteImport:
+    case MessageHistoryCoverageStatus.incomplete:
       notes.add('Some messages in chat.db were not imported into MessageLens.');
-    case MessageHistoryCoverageStatus.incompleteSourceHistory:
+    case MessageHistoryCoverageStatus.temporarilyUnavailable:
       notes.add(
-        'Older messages may exist on another Apple device or in iCloud.',
+        report.detail ??
+            'Coverage will be checked again after database maintenance.',
       );
-    case MessageHistoryCoverageStatus.unknown:
+    case MessageHistoryCoverageStatus.failed:
       if (report.detail != null && report.detail!.isNotEmpty) {
         notes.add(report.detail!);
       } else {
@@ -366,33 +361,20 @@ List<String> _notesFor(MessageHistoryCoverageReport report) {
       }
   }
 
-  if (_hasAccountingOverlap(report)) {
-    notes.add(
-      'MessageLens detected a small overlap while reconciling visible and recovered messages.',
-    );
+  final earliestMessageDate = report.earliestMessageDate;
+  if (earliestMessageDate != null &&
+      isSuspiciouslyRecentMessageHistoryStart(earliestMessageDate)) {
+    notes.add('Older messages may exist on another Apple device or in iCloud.');
   }
 
-  if (report.chatDbTotalCount != null &&
-      report.chatDbTotalCount! > 0 &&
+  if (report.totalCurrentMessages != null &&
+      report.totalCurrentMessages! > 0 &&
       (report.earliestMessageDate == null ||
           report.latestMessageDate == null)) {
     notes.add('Some date coverage details are unavailable.');
   }
 
   return notes;
-}
-
-bool _hasAccountingOverlap(MessageHistoryCoverageReport report) {
-  final chatDbTotal = report.chatDbTotalCount;
-  final visibleCount = report.graphConversationLinkedCount;
-  final recoveredCount = report.graphRecoveredOrphanCount;
-  final missingCount = report.missingCount;
-
-  if (chatDbTotal == null || visibleCount == null || recoveredCount == null) {
-    return false;
-  }
-
-  return visibleCount + recoveredCount > chatDbTotal && missingCount == 0;
 }
 
 String _formatCount(int? value) {

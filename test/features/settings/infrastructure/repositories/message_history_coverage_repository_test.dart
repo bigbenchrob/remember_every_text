@@ -1,52 +1,65 @@
-import 'dart:io';
-
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:remember_this_text/essentials/db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/feature_level_providers.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/message_history_coverage_repository.dart';
 
 void main() {
-  group('MessageHistoryCoverageRepository', () {
-    late ConversationGraphDatabase graphDb;
+  test(
+    'composes evidence without reinterpreting either owning domain',
+    () async {
+      final sourceEvidence = CurrentMessagesSourceCoverageEvidence(
+        sourceRowIds: const <int>{1, 2},
+        earliestMessageDate: null,
+        latestMessageDate: null,
+      );
+      final graphEvidence = CurrentSourceMessageGraphCoverageEvidence(
+        placementBySourceRowId: const <int, CurrentSourceMessageGraphPlacement>{
+          1: CurrentSourceMessageGraphPlacement.conversationLinked,
+        },
+      );
+      final sourceReader = _SourceReader(sourceEvidence);
+      final graphReader = _GraphReader(graphEvidence);
+      final repository = CanonicalMessageHistoryCoverageRepository(
+        currentSourceReader: sourceReader,
+        currentSourceGraphReader: graphReader,
+      );
 
-    setUp(() {
-      graphDb = ConversationGraphDatabase(NativeDatabase.memory());
-    });
+      final result = await repository.readEvidence(
+        chatDatabasePath: '/source/chat.db',
+      );
 
-    tearDown(() async {
-      await graphDb.close();
-    });
+      expect(result.currentSource, same(sourceEvidence));
+      expect(result.currentSourceGraph, same(graphEvidence));
+      expect(sourceReader.paths, <String>['/source/chat.db']);
+      expect(graphReader.readCount, 1);
+    },
+  );
+}
 
-    test(
-      'reports source summary read failures through diagnostic callback',
-      () {
-        final tempDirectory = Directory.systemTemp.createTempSync(
-          'message-history-coverage-invalid-',
-        );
-        addTearDown(() {
-          if (tempDirectory.existsSync()) {
-            tempDirectory.deleteSync(recursive: true);
-          }
-        });
+final class _SourceReader implements CurrentMessagesSourceCoverageReader {
+  _SourceReader(this.evidence);
 
-        final invalidChatDb = File('${tempDirectory.path}/chat.db')
-          ..writeAsStringSync('not sqlite');
-        Object? reportedError;
-        StackTrace? reportedStackTrace;
-        final repository = MessageHistoryCoverageRepository(
-          graphDb: graphDb,
-          onSourceReadFailure: (error, stackTrace) {
-            reportedError = error;
-            reportedStackTrace = stackTrace;
-          },
-        );
+  final CurrentMessagesSourceCoverageEvidence evidence;
+  final paths = <String>[];
 
-        final summary = repository.readChatDbSummary(invalidChatDb.path);
+  @override
+  Future<CurrentMessagesSourceCoverageEvidence> read({
+    required String databasePath,
+  }) async {
+    paths.add(databasePath);
+    return evidence;
+  }
+}
 
-        expect(summary, isNull);
-        expect(reportedError, isNotNull);
-        expect(reportedStackTrace, isNotNull);
-      },
-    );
-  });
+final class _GraphReader implements CurrentSourceMessageGraphCoverageReader {
+  _GraphReader(this.evidence);
+
+  final CurrentSourceMessageGraphCoverageEvidence evidence;
+  var readCount = 0;
+
+  @override
+  Future<CurrentSourceMessageGraphCoverageEvidence> read() async {
+    readCount++;
+    return evidence;
+  }
 }

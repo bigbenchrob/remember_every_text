@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Message History Coverage now reconciles every current Mac `chat.db` row by
+  exact source identity against source-1 conversation-graph evidence. Imported
+  historical archives no longer contaminate the report, impossible arithmetic
+  fails instead of being clamped into success, and admitted maintenance is
+  shown as temporarily unavailable without opening protected stores.
+
 - Historical Archives now rejects abandoned folder inspections and imports at
   their asynchronous presentation boundaries, keeps admitted work bound to
   captured source evidence, and removes the superseded generic control-panel
