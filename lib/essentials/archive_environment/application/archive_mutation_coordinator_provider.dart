@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/archive_checkpoint_required_exception.dart';
 import '../domain/archive_environment.dart';
 import '../domain/archive_instance_id.dart';
+import '../domain/archive_mutation_capability_denied_exception.dart';
 import '../domain/archive_mutation_denied_exception.dart';
 import '../domain/archive_mutation_operation.dart';
 import 'archive_access_authority_provider.dart';
@@ -18,11 +19,37 @@ final Object _archiveMutationOwnerZoneKey = Object();
 final class _ArchiveMutationAsyncContext {
   const _ArchiveMutationAsyncContext({
     required this.ownerId,
+    required this.scopeId,
     required this.operation,
   });
 
   final String ownerId;
+  final int scopeId;
   final ArchiveMutationOperation operation;
+}
+
+/// Opaque proof that one exact async scope owns an admitted archive mutation.
+///
+/// The coordinator is the only authority that can create this capability. It
+/// becomes unusable outside its originating Zone, while a nested scope is
+/// active, and as soon as its originating scope is released.
+final class ArchiveMutationCapability {
+  const ArchiveMutationCapability._({
+    required this.operation,
+    required bool Function() isActive,
+  }) : _isActive = isActive;
+
+  final ArchiveMutationOperation operation;
+  final bool Function() _isActive;
+
+  void requireOperation(ArchiveMutationOperation requestedOperation) {
+    if (operation != requestedOperation || !_isActive()) {
+      throw ArchiveMutationCapabilityDeniedException(
+        requestedOperation: requestedOperation,
+        capabilityOperation: operation,
+      );
+    }
+  }
 }
 
 class ArchiveMutationCoordinatorState {
@@ -90,6 +117,34 @@ class ArchiveMutationCoordinator extends _$ArchiveMutationCoordinator {
     required ArchiveMutationOperation operation,
     required String ownerLabel,
     required Future<T> Function() action,
+  }) {
+    return _run<T>(
+      operation: operation,
+      ownerLabel: ownerLabel,
+      action: (_) => action(),
+    );
+  }
+
+  /// Runs an operation with caller-specific proof of its admitted scope.
+  ///
+  /// Mutation boundaries that must be mechanically inaccessible without
+  /// admission accept this capability instead of trusting caller convention.
+  Future<T> runWithCapability<T>({
+    required ArchiveMutationOperation operation,
+    required String ownerLabel,
+    required Future<T> Function(ArchiveMutationCapability capability) action,
+  }) {
+    return _run<T>(
+      operation: operation,
+      ownerLabel: ownerLabel,
+      action: action,
+    );
+  }
+
+  Future<T> _run<T>({
+    required ArchiveMutationOperation operation,
+    required String ownerLabel,
+    required Future<T> Function(ArchiveMutationCapability capability) action,
   }) async {
     final inheritedContext =
         Zone.current[_archiveMutationOwnerZoneKey]
@@ -112,11 +167,20 @@ class ArchiveMutationCoordinator extends _$ArchiveMutationCoordinator {
 
     try {
       await _requireVerifiedCheckpointWhenApplicable(operation);
+      final capability = ArchiveMutationCapability._(
+        operation: operation,
+        isActive: () => _scopeIsActiveForCurrentCaller(
+          ownerId: ownerId,
+          scopeId: scopeId,
+          operation: operation,
+        ),
+      );
       return await runZoned(
-        action,
+        () => action(capability),
         zoneValues: {
           _archiveMutationOwnerZoneKey: _ArchiveMutationAsyncContext(
             ownerId: ownerId,
+            scopeId: scopeId,
             operation: operation,
           ),
         },
@@ -124,6 +188,22 @@ class ArchiveMutationCoordinator extends _$ArchiveMutationCoordinator {
     } finally {
       _release(ownerId: ownerId, scopeId: scopeId);
     }
+  }
+
+  bool _scopeIsActiveForCurrentCaller({
+    required String ownerId,
+    required int scopeId,
+    required ArchiveMutationOperation operation,
+  }) {
+    if (_isDisposed || _activeScopes[scopeId] != operation) {
+      return false;
+    }
+    final context =
+        Zone.current[_archiveMutationOwnerZoneKey]
+            as _ArchiveMutationAsyncContext?;
+    return context?.ownerId == ownerId &&
+        context?.scopeId == scopeId &&
+        context?.operation == operation;
   }
 
   ArchiveMutationResourceAdmission resourceAdmissionForCurrentCaller(

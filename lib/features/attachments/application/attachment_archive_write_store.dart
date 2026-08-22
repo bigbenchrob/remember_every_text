@@ -8,6 +8,7 @@ class ArchivedAttachmentWrite {
     required this.archivedAtUtc,
     required this.fileSizeBytes,
     required this.contentHash,
+    this.provenance = 'archived',
     required this.originalLocalPath,
   });
 
@@ -17,6 +18,7 @@ class ArchivedAttachmentWrite {
   final String archivedAtUtc;
   final int fileSizeBytes;
   final String? contentHash;
+  final String provenance;
   final String? originalLocalPath;
 }
 
@@ -37,6 +39,10 @@ abstract interface class AttachmentArchiveWriteStore {
   Future<bool> hasArchiveRecord(ArchiveCompatibilityKey archiveKey);
 
   Future<void> writeArchiveRecord(ArchivedAttachmentWrite record);
+
+  /// Reconciles metadata after a verified payload exists. This is idempotent
+  /// for crash recovery and never precedes physical installation.
+  Future<void> reconcileArchiveRecord(ArchivedAttachmentWrite record);
 
   Future<List<ArchiveIntegrityEntry>> readIntegrityEntries();
 

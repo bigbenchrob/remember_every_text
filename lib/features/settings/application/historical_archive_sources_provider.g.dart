@@ -47,7 +47,7 @@ final historicalArchiveSourceMetadataProvider =
 typedef HistoricalArchiveSourceMetadataRef =
     AutoDisposeFutureProviderRef<List<HistoricalArchiveSourceMetadata>>;
 String _$historicalArchiveImportedSourceLookupHash() =>
-    r'bced14228779eeb069fd22499811ab4cbf816dea';
+    r'116953cd29467b629fc81d785cd94100217456f8';
 
 /// See also [historicalArchiveImportedSourceLookup].
 @ProviderFor(historicalArchiveImportedSourceLookup)

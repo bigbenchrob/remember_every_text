@@ -2,7 +2,7 @@
 tier: project
 scope: production-archive-recovery
 owner: agent-per-project
-last_reviewed: 2026-08-21
+last_reviewed: 2026-08-22
 source_of_truth: doc
 links:
   - ../../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md
@@ -80,17 +80,19 @@ panel. See:
 - [MessageLens Data-Folder Historical Archives Audit](responses/44-MESSAGELENS-DATA-FOLDER-HISTORICAL-ARCHIVES-AUDIT.md)
 - [MessageLens Attachment-Recovery Lineage Proof](responses/45-MESSAGELENS-ATTACHMENT-RECOVERY-LINEAGE-PROOF.md)
 - [Shared Historical Archives Messages Lineage Admission](responses/46-SHARED-HISTORICAL-ARCHIVES-MESSAGES-LINEAGE-ADMISSION.md)
+- [MessageLens Attachment Matching And Safe Recovery](responses/47-MESSAGELENS-ATTACHMENT-MATCHING-AND-PRESERVATION-SAFE-RECOVERY.md)
+- [Preservation-Safe Attachment Recovery Infrastructure](responses/48-PRESERVATION-SAFE-ATTACHMENT-RECOVERY-INFRASTRUCTURE.md)
+- [MessageLens Historical Archives Ready-State Implementation](responses/50-ENABLE-MESSAGELENS-HISTORICAL-ARCHIVES-THROUGH-READY-STATE.md)
 
-The MessageLens-folder arm remains disabled. Its read-only identity and
-qualification foundation may now proceed under a narrower product contract:
-recover attachment payloads only from an earlier snapshot of the same
-continuing local Mac Messages lineage. General source-fact, graph, source
-registry, and overlay ingestion is no longer planned for this arm. A dormant,
-schema-free exact ROWID/GUID lineage gate now exists, but attachment matching,
-durable admission, payload copying, and the MessageLens UI segment remain
-disabled and unresolved. The lineage proof is now the shared admission gate
-for both source arms, and Mac Messages candidates must pass it before source
-registration or import authorization.
+The MessageLens-folder arm is now enabled through a safe read-only ready state
+under a deliberately narrow product contract: recover attachment payloads only
+from an older snapshot of the same continuing local Mac Messages lineage.
+General donor source-fact, graph, source-registry, overlay, and Presence
+ingestion is excluded. The arm qualifies a MessageLens archive, uses archive
+instance identity, proves same Messages lineage, and reports exact recoverable
+attachment count and bytes. No donor source is persisted and no recovery
+mutation is offered yet because aggregate batch execution and terminal outcome
+ownership remain intentionally unimplemented.
 
 ## Original Emergency Objective
 

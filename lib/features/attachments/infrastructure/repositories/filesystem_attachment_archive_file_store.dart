@@ -2,13 +2,24 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../application/atomic_no_overwrite_file_installer.dart';
 import '../../application/attachment_archive_file_store.dart';
+import 'darwin_atomic_no_overwrite_file_installer.dart';
 
 class FilesystemAttachmentArchiveFileStore
     implements AttachmentArchiveFileStore {
-  const FilesystemAttachmentArchiveFileStore();
+  const FilesystemAttachmentArchiveFileStore({
+    AtomicNoOverwriteFileInstaller atomicInstaller =
+        const DarwinAtomicNoOverwriteFileInstaller(),
+  }) : _atomicInstaller = atomicInstaller;
+
+  static const _temporaryMarker = '.messagelens-install-';
+  static const _uuid = Uuid();
+
+  final AtomicNoOverwriteFileInstaller _atomicInstaller;
 
   @override
   String expandHomePath(String rawPath) {
@@ -50,34 +61,153 @@ class FilesystemAttachmentArchiveFileStore
       return null;
     }
 
-    final contentHash = sha256Hex ?? await _computeSha256(sourceFile);
+    final computedHash = await _computeSha256(sourceFile);
+    if (computedHash == null) {
+      return null;
+    }
+    final suppliedHash = sha256Hex?.trim().toLowerCase();
+    final contentHash = _isSha256(suppliedHash) ? suppliedHash! : computedHash;
+    if (contentHash != computedHash) {
+      return null;
+    }
     final extension = path.extension(sourcePath).toLowerCase();
-    final String relativePath;
-    if (contentHash != null && contentHash.length >= 2) {
-      final prefix = contentHash.substring(0, 2);
-      relativePath = '$prefix/$contentHash$extension';
-    } else {
-      relativePath =
-          '_by_id/${archiveKey.archiveCompatibilityAttachmentId}$extension';
+    final install = await installVerifiedArchiveEntry(
+      archiveDirectoryPath: archiveDirectoryPath,
+      sourceBytes: sourceFile.openRead(),
+      sourceExtension: extension,
+      expectedSizeBytes: await sourceFile.length(),
+      expectedSha256: contentHash,
+    );
+    if (install.status != AttachmentArchiveFileInstallStatus.installed &&
+        install.status != AttachmentArchiveFileInstallStatus.alreadyPresent) {
+      return null;
     }
 
+    return ArchivedAttachmentFileWrite(
+      sourcePath: sourcePath,
+      relativePath: install.relativePath,
+      fileSizeBytes: install.fileSizeBytes,
+      contentHash: install.contentHash,
+    );
+  }
+
+  @override
+  Future<AttachmentArchiveFileInstall> installVerifiedArchiveEntry({
+    required String archiveDirectoryPath,
+    required Stream<List<int>> sourceBytes,
+    required String sourceExtension,
+    required int expectedSizeBytes,
+    required String expectedSha256,
+  }) async {
+    final normalizedHash = expectedSha256.trim().toLowerCase();
+    if (!_isSha256(normalizedHash) || expectedSizeBytes < 0) {
+      throw ArgumentError('Verified archive payload evidence is invalid.');
+    }
+    if (_isSymlink(archiveDirectoryPath)) {
+      throw StateError('Attachment archive directory must not be a symlink.');
+    }
+
+    await ensureArchiveDirectory(archiveDirectoryPath);
+    final extension = _safeExtension(sourceExtension);
+    final relativePath =
+        '${normalizedHash.substring(0, 2)}/$normalizedHash$extension';
     final destinationFile = File(path.join(archiveDirectoryPath, relativePath));
-    if (_isSymlink(destinationFile.path) ||
+    await destinationFile.parent.create(recursive: true);
+    if (_isSymlink(destinationFile.parent.path) ||
+        _isSymlink(destinationFile.path) ||
         _isDirectory(destinationFile.path)) {
       throw StateError(
         'Attachment archive destination must be a regular file path.',
       );
     }
 
-    await destinationFile.parent.create(recursive: true);
-    await sourceFile.copy(destinationFile.path);
-
-    return ArchivedAttachmentFileWrite(
-      sourcePath: sourcePath,
+    final existing = await _classifyExistingDestination(
+      destinationFile: destinationFile,
       relativePath: relativePath,
-      fileSizeBytes: await destinationFile.length(),
-      contentHash: contentHash,
+      expectedSizeBytes: expectedSizeBytes,
+      expectedSha256: normalizedHash,
     );
+    if (existing != null) {
+      return existing;
+    }
+
+    final temporaryFile = File(
+      path.join(
+        destinationFile.parent.path,
+        '.${path.basename(destinationFile.path)}'
+        '$_temporaryMarker${_uuid.v4()}.tmp',
+      ),
+    );
+    await temporaryFile.create(exclusive: true);
+    try {
+      final output = await temporaryFile.open(mode: FileMode.write);
+      try {
+        await for (final chunk in sourceBytes) {
+          await output.writeFrom(chunk);
+        }
+        await output.flush();
+      } finally {
+        await output.close();
+      }
+
+      final temporarySize = await temporaryFile.length();
+      final temporaryHash = await _computeSha256(temporaryFile);
+      if (temporarySize != expectedSizeBytes ||
+          temporaryHash != normalizedHash) {
+        return AttachmentArchiveFileInstall(
+          status: AttachmentArchiveFileInstallStatus.donorChanged,
+          relativePath: relativePath,
+          fileSizeBytes: temporarySize,
+          contentHash: temporaryHash ?? '',
+        );
+      }
+
+      final installResult = await _atomicInstaller.install(
+        temporaryPath: temporaryFile.path,
+        destinationPath: destinationFile.path,
+      );
+      if (installResult == AtomicFileInstallResult.destinationExists) {
+        return await _classifyExistingDestination(
+              destinationFile: destinationFile,
+              relativePath: relativePath,
+              expectedSizeBytes: expectedSizeBytes,
+              expectedSha256: normalizedHash,
+            ) ??
+            AttachmentArchiveFileInstall(
+              status: AttachmentArchiveFileInstallStatus.conflict,
+              relativePath: relativePath,
+              fileSizeBytes: 0,
+              contentHash: normalizedHash,
+            );
+      }
+
+      final installed = await _classifyExistingDestination(
+        destinationFile: destinationFile,
+        relativePath: relativePath,
+        expectedSizeBytes: expectedSizeBytes,
+        expectedSha256: normalizedHash,
+      );
+      if (installed == null ||
+          installed.status !=
+              AttachmentArchiveFileInstallStatus.alreadyPresent) {
+        return AttachmentArchiveFileInstall(
+          status: AttachmentArchiveFileInstallStatus.verificationFailed,
+          relativePath: relativePath,
+          fileSizeBytes: 0,
+          contentHash: normalizedHash,
+        );
+      }
+      return AttachmentArchiveFileInstall(
+        status: AttachmentArchiveFileInstallStatus.installed,
+        relativePath: relativePath,
+        fileSizeBytes: expectedSizeBytes,
+        contentHash: normalizedHash,
+      );
+    } finally {
+      if (temporaryFile.existsSync()) {
+        await temporaryFile.delete();
+      }
+    }
   }
 
   @override
@@ -93,6 +223,7 @@ class FilesystemAttachmentArchiveFileStore
     if (file == null) {
       return const ArchiveIntegrityFileCheck(
         fileExists: false,
+        actualSizeBytes: null,
         hashMatches: null,
         actualHash: null,
       );
@@ -101,14 +232,16 @@ class FilesystemAttachmentArchiveFileStore
     if (!file.existsSync()) {
       return const ArchiveIntegrityFileCheck(
         fileExists: false,
+        actualSizeBytes: null,
         hashMatches: null,
         actualHash: null,
       );
     }
 
     if (storedHash == null || storedHash.isEmpty) {
-      return const ArchiveIntegrityFileCheck(
+      return ArchiveIntegrityFileCheck(
         fileExists: true,
+        actualSizeBytes: await file.length(),
         hashMatches: null,
         actualHash: null,
       );
@@ -117,6 +250,7 @@ class FilesystemAttachmentArchiveFileStore
     final actualHash = await _computeSha256(file);
     return ArchiveIntegrityFileCheck(
       fileExists: true,
+      actualSizeBytes: await file.length(),
       hashMatches: actualHash == storedHash,
       actualHash: actualHash,
     );
@@ -124,11 +258,63 @@ class FilesystemAttachmentArchiveFileStore
 
   static Future<String?> _computeSha256(File file) async {
     try {
-      final bytes = await file.readAsBytes();
-      return sha256.convert(bytes).toString();
+      return (await sha256.bind(file.openRead()).first).toString();
     } on Exception {
       return null;
     }
+  }
+
+  static Future<AttachmentArchiveFileInstall?> _classifyExistingDestination({
+    required File destinationFile,
+    required String relativePath,
+    required int expectedSizeBytes,
+    required String expectedSha256,
+  }) async {
+    final type = FileSystemEntity.typeSync(
+      destinationFile.path,
+      followLinks: false,
+    );
+    if (type == FileSystemEntityType.notFound) {
+      return null;
+    }
+    if (type != FileSystemEntityType.file) {
+      return AttachmentArchiveFileInstall(
+        status: AttachmentArchiveFileInstallStatus.conflict,
+        relativePath: relativePath,
+        fileSizeBytes: 0,
+        contentHash: expectedSha256,
+      );
+    }
+
+    final size = await destinationFile.length();
+    final hash = await _computeSha256(destinationFile);
+    return AttachmentArchiveFileInstall(
+      status: size == expectedSizeBytes && hash == expectedSha256
+          ? AttachmentArchiveFileInstallStatus.alreadyPresent
+          : AttachmentArchiveFileInstallStatus.conflict,
+      relativePath: relativePath,
+      fileSizeBytes: size,
+      contentHash: hash ?? '',
+    );
+  }
+
+  static bool _isSha256(String? value) {
+    return value != null && RegExp(r'^[0-9a-f]{64}$').hasMatch(value);
+  }
+
+  static String _safeExtension(String rawExtension) {
+    final extension = rawExtension.trim().toLowerCase();
+    if (extension.isEmpty) {
+      return '';
+    }
+    if (!RegExp(r'^\.[a-z0-9]{1,16}$').hasMatch(extension)) {
+      throw ArgumentError.value(
+        rawExtension,
+        'sourceExtension',
+        'Attachment extension is unsafe.',
+      );
+    }
+    return extension;
   }
 
   static bool _isRegularFile(String filePath) {

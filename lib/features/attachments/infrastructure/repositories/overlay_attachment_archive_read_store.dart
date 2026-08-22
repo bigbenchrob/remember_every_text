@@ -26,7 +26,8 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
     final archiveRows = await _overlayDb
         .customSelect(
           '''
-          SELECT archive_relative_path, provenance
+          SELECT archive_relative_path, file_size_bytes, content_hash,
+                 provenance
           FROM archived_attachments
           WHERE message_guid = ? AND import_attachment_id = ?
           LIMIT 1
@@ -56,6 +57,8 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
       archiveRelativePath: relativePath,
       archiveAbsolutePath: absolutePath,
       archiveFileExists: _regularFileExists(absolutePath),
+      fileSizeBytes: row.read<int>('file_size_bytes'),
+      contentHash: row.readNullable<String>('content_hash'),
       provenance: row.readNullable<String>('provenance'),
     );
   }

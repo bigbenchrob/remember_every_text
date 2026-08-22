@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-08-21
+last_reviewed: 2026-08-22
 source_of_truth: architecture
 links:
   - ../45-NEW-FEATURE-ADDITION/26-PRODUCTION-ARCHIVE-RECOVERY/responses/43-HISTORICAL-ARCHIVE-CANONICAL-SOURCE-IDENTITY-IMPLEMENTATION.md
@@ -19,6 +19,16 @@ links:
 One semantic fact has one authority. Inspection, source registration,
 persisted metadata, imported membership, duplicate detection, selection,
 correspondence, removal, and reimport all consume the same typed identity.
+
+Historical Archives has two distinct arms:
+
+- **Mac Messages** adds historical messages from another snapshot of the same
+  Messages lineage.
+- **MessageLens** inspects an older same-lineage MessageLens data folder for
+  attachment payloads that are missing from the current archive.
+
+The MessageLens arm imports no donor messages, graph, overlays, or source
+registry and does not rebuild the graph merely to inspect attachment recovery.
 
 ## Mac Messages Identity
 
@@ -95,9 +105,30 @@ Selecting the same canonical path again after removal deterministically
 produces the same identity. A moved or copied archive at another path remains a
 different identity under the current policy.
 
-## Future Source Kinds
+## MessageLens Recovery Identity
 
-The identity type owns a source-kind discriminator, but only Mac Messages is
-implemented. A future MessageLens-folder source must define its own evidence
-and canonical rule before adding another identity kind. It must not reuse or
-silently alter the Mac Messages path rule.
+A MessageLens attachment-recovery donor is identified by:
+
+```text
+message_lens_recovery_archive source kind
+    +
+archiveInstanceId from the donor archive marker
+```
+
+Its stable serialized form is:
+
+```text
+message-lens-recovery-archive:<canonical-archive-instance-id>
+```
+
+`HistoricalArchiveSourceIdentity.messageLensFromArchiveInstanceId(...)` is the
+sole construction rule. The archive instance identifier is validated and
+canonicalized through `ArchiveInstanceId`. The selected folder path is locator
+evidence only and is never part of MessageLens donor identity.
+
+The MessageLens ready-state slice does not persist recovery donors as content
+sources or create sidebar cartouches. Re-selecting a donor is a fresh,
+idempotent inspection of its current attachment evidence.
+
+Adding another source kind requires its own evidence and canonical rule. It
+must not reuse or silently alter either established identity rule.

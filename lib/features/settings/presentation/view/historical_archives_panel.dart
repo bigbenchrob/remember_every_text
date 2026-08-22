@@ -36,6 +36,7 @@ class _HistoricalArchivesPanelState
   int? _presentedInvalidFolderNoticeOccurrence;
   int? _presentedLineageNoticeOccurrence;
   int? _presentedImportSuccessNoticeOccurrence;
+  int? _presentedMessageLensNoticeOccurrence;
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +139,32 @@ class _HistoricalArchivesPanelState
             return;
           }
           unawaited(_showImportSuccessDialog(next));
+        });
+      },
+    );
+    ref.listen<HistoricalArchivesMessageLensNotice?>(
+      historicalArchivesWorkflowProvider.select(
+        (state) => state.messageLensNotice,
+      ),
+      (previous, next) {
+        if (next == null ||
+            next.noticeOccurrence == _presentedMessageLensNoticeOccurrence) {
+          return;
+        }
+        _presentedMessageLensNoticeOccurrence = next.noticeOccurrence;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          final currentNotice = ref
+              .read(historicalArchivesWorkflowProvider)
+              .messageLensNotice;
+          if (currentNotice?.noticeOccurrence != next.noticeOccurrence ||
+              currentNotice?.presentationSessionOccurrence !=
+                  next.presentationSessionOccurrence) {
+            return;
+          }
+          unawaited(_showMessageLensNoticeDialog(next));
         });
       },
     );
@@ -610,6 +637,58 @@ class _HistoricalArchivesPanelState
           presentationSessionOccurrence: notice.presentationSessionOccurrence,
         );
   }
+
+  Future<void> _showMessageLensNoticeDialog(
+    HistoricalArchivesMessageLensNotice notice,
+  ) async {
+    final (title, content) = switch (notice.kind) {
+      HistoricalArchivesMessageLensNoticeKind.invalidFolder => (
+        'This doesn’t appear to be a MessageLens data folder.',
+        'Choose an older MessageLens data folder and try again.',
+      ),
+      HistoricalArchivesMessageLensNoticeKind.incompatibleArchive => (
+        'MessageLens can’t safely inspect this data folder.',
+        'This appears to be a MessageLens folder, but its recovery evidence is not compatible with this version.',
+      ),
+      HistoricalArchivesMessageLensNoticeKind.contradictoryLineage => (
+        'This MessageLens folder belongs to a different Messages history.',
+        'It can’t be used to recover attachments here.',
+      ),
+      HistoricalArchivesMessageLensNoticeKind.insufficientLineage => (
+        'MessageLens couldn’t verify this folder’s Messages history.',
+        'Attachment recovery requires proof that both folders came from the same Messages history.',
+      ),
+      HistoricalArchivesMessageLensNoticeKind.nothingRecoverable => (
+        'No missing attachments were found.',
+        'There are no missing attachments in this folder that MessageLens can safely recover.',
+      ),
+    };
+    await showCupertinoDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return CupertinoAlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted) {
+      return;
+    }
+    ref
+        .read(historicalArchivesWorkflowActionsProvider.notifier)
+        .dismissMessageLensNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+  }
 }
 
 class _ExistingHistoricalArchiveSourcePanel extends ConsumerWidget {
@@ -731,12 +810,15 @@ class _NarratorHistoricalArchivesPanel extends ConsumerWidget {
           children: [
             if (presentation.instrumentationRows.isNotEmpty) ...[
               Text(
-                presentation.kind ==
-                            HistoricalArchivesNarratorPresentationKind
-                                .removingSource ||
-                        presentation.kind ==
-                            HistoricalArchivesNarratorPresentationKind
-                                .removalFailed
+                panelModel.sourceType ==
+                        HistoricalArchiveSourceType.messageLensDataFolders
+                    ? 'MESSAGELENS ATTACHMENT RECOVERY'
+                    : presentation.kind ==
+                              HistoricalArchivesNarratorPresentationKind
+                                  .removingSource ||
+                          presentation.kind ==
+                              HistoricalArchivesNarratorPresentationKind
+                                  .removalFailed
                     ? 'REMOVING MESSAGES FOLDER'
                     : presentation.kind ==
                               HistoricalArchivesNarratorPresentationKind
@@ -895,11 +977,13 @@ bool _hasNarratorDecision(HistoricalArchivesNarratorPresentationKind kind) {
   return switch (kind) {
     HistoricalArchivesNarratorPresentationKind.noSource ||
     HistoricalArchivesNarratorPresentationKind.inspectingSource ||
+    HistoricalArchivesNarratorPresentationKind.inspectingMessageLensSource ||
     HistoricalArchivesNarratorPresentationKind.importingArchive ||
     HistoricalArchivesNarratorPresentationKind.removingSource ||
     HistoricalArchivesNarratorPresentationKind.removalFailed => false,
     HistoricalArchivesNarratorPresentationKind.inspectionFailed ||
     HistoricalArchivesNarratorPresentationKind.readyForImport ||
+    HistoricalArchivesNarratorPresentationKind.messageLensReady ||
     HistoricalArchivesNarratorPresentationKind.importFailed ||
     HistoricalArchivesNarratorPresentationKind.knownSource => true,
   };
@@ -1021,6 +1105,8 @@ class _NarratorDecision extends ConsumerWidget {
         const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.inspectingSource =>
         const SizedBox.shrink(),
+      HistoricalArchivesNarratorPresentationKind.inspectingMessageLensSource =>
+        const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.importingArchive =>
         const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.removingSource ||
@@ -1058,6 +1144,17 @@ class _NarratorDecision extends ConsumerWidget {
               );
             },
           ),
+          _HistoricalArchiveActionButton(
+            label: 'Cancel',
+            enabled: true,
+            onPressed: actions.cancelAddArchive,
+          ),
+        ],
+      ),
+      HistoricalArchivesNarratorPresentationKind.messageLensReady => Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
           _HistoricalArchiveActionButton(
             label: 'Cancel',
             enabled: true,

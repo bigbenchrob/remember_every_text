@@ -160,11 +160,43 @@ For each attachment where:
 
 Actions:
 1. Compute SHA-256 hash (or use `sha256_hex` from import if available)
-2. Copy file to `attachment_archive/{hash_prefix}/{hash}.{ext}`
-3. Insert overlay `archived_attachments` row
-4. Verify integrity post-copy (re-hash comparison)
+2. Copy into a recognizable temporary file beside the canonical destination
+3. Flush, close, and verify exact size and SHA-256
+4. Atomically install at `attachment_archive/{hash_prefix}/{hash}.{ext}` using
+   no-overwrite semantics
+5. Insert or reconcile the overlay `archived_attachments` row only after the
+   payload exists
+6. Verify resulting archive integrity
 
 **Idempotency:** Already-archived pairs are skipped based on unique constraint.
+
+### Preservation-Safe Installation
+
+`AttachmentArchiveFileStore` is the sole canonical destination and physical
+installation authority. Its verified installation primitive creates the temp
+file in the destination directory and uses macOS POSIX `link(2)` to create the
+final directory entry atomically. `link(2)` fails if that entry already exists;
+it never replaces an existing payload. The writer then classifies the existing
+file as identical or conflicting.
+
+Temporary names contain `.messagelens-install-` and are never valid archive
+payload names. Ordinary failures remove them. A process death may leave one
+detectable temp file, but cannot expose it as a final attachment.
+
+Metadata publication follows physical installation. If overlay reconciliation
+fails after installation, the valid payload remains preservation data. Retry
+finds the same content-addressed path, reports it already present, and
+reconciles metadata without copying or overwriting.
+
+> Historical attachment recovery must install payloads only through the
+> canonical preservation-safe attachment writer. Do not copy directly into
+> managed attachment storage.
+
+The dormant MessageLens recovery installer additionally requires an active,
+caller-specific `ArchiveMutationCapability` for
+`attachmentReconciliation`. The mutation coordinator alone mints that proof.
+It is valid only in its exact admitted async scope and cannot be retained for a
+later install.
 
 ### Ongoing Archiving
 
@@ -200,6 +232,8 @@ boundary unless current code introduces one.
 |------|------|
 | `lib/features/attachments/application/attachment_archive_service_provider.dart` | Archive orchestration, progress, and policy flow |
 | `lib/features/attachments/application/attachment_archive_file_store.dart` | File-copy, hash, home-expansion, and archive integrity file boundary |
+| `lib/features/attachments/application/message_lens_attachment_recovery_installer.dart` | Dormant typed payload-install and metadata-reconciliation orchestration |
+| `lib/features/attachments/application/verified_donor_attachment_payload.dart` | Read-only capability consumed instead of donor path strings |
 | `lib/features/attachments/application/attachment_archive_write_store.dart` | Archive record, recovery hint, and integrity-row persistence boundary |
 | `lib/features/attachments/application/graph_attachment_archive_candidate_reader.dart` | Graph attachment candidate selection boundary |
 | `lib/features/attachments/application/attachment_resolver_provider.dart` | Multi-source resolution pipeline |
@@ -208,6 +242,9 @@ boundary unless current code introduces one.
 | `lib/features/attachments/domain/constants/attachment_provenance.dart` | Provenance enum |
 | `lib/features/attachments/domain/constants/resolved_attachment_availability.dart` | Runtime display availability enum |
 | `lib/features/attachments/infrastructure/repositories/overlay_attachment_archive_write_store.dart` | Overlay-backed archive write-store implementation |
+| `lib/features/attachments/infrastructure/repositories/darwin_atomic_no_overwrite_file_installer.dart` | macOS `link(2)` atomic no-overwrite primitive |
+| `lib/features/attachments/infrastructure/repositories/sqlite_message_lens_attachment_donor_evidence_reader.dart` | Read-only, fail-closed donor compatibility reader |
+| `lib/features/attachments/infrastructure/repositories/import_ledger_message_lens_attachment_evidence_reader.dart` | Current evidence through canonical ledger/archive stores |
 | `lib/essentials/db/infrastructure/.../overlay_database.dart` | `archived_attachments` table schema |
 
 ## Invariants
@@ -226,3 +263,10 @@ boundary unless current code introduces one.
    recovery, migration-cleanup, or test-cleanup target.
 7. Archive-enabled resolution displays from the archive and treats live Messages paths as ingestion sources.
 8. Archive service code must use feature ports for graph candidates, archive writes, settings, directory paths, and file work; Drift/overlay SQL belongs in infrastructure repositories.
+9. Final payload installation must be atomic and no-overwrite. A prior
+   existence check alone is not an installation guarantee.
+10. Archive metadata must never claim success before the corresponding final
+    payload exists.
+11. MessageLens attachment recovery cannot invoke its installer without an
+    active exact-scope `attachmentReconciliation` capability minted by the
+    archive mutation coordinator.

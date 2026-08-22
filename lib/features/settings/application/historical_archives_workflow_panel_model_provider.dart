@@ -44,6 +44,8 @@ import 'archive_source_inspector_provider.dart';
 import 'historical_archive_folder_chooser_provider.dart';
 import 'historical_archive_sources.dart';
 import 'historical_archive_sources_provider.dart';
+import 'message_lens_historical_archive_preflight.dart';
+import 'message_lens_historical_archive_preflight_provider.dart';
 
 part 'historical_archives_workflow_panel_model_provider.g.dart';
 
@@ -68,6 +70,8 @@ void _logHistoricalArchivesWarning(
 }
 
 enum HistoricalArchivesExecutionGateStatus { available, busy, blocked }
+
+enum HistoricalArchiveSourceType { messagesFolders, messageLensDataFolders }
 
 final class HistoricalArchivesExecutionGateViewModel {
   const HistoricalArchivesExecutionGateViewModel({
@@ -173,6 +177,29 @@ final class HistoricalArchivesImportSuccessNotice
   final int presentationSessionOccurrence;
 }
 
+enum HistoricalArchivesMessageLensNoticeKind {
+  invalidFolder,
+  incompatibleArchive,
+  contradictoryLineage,
+  insufficientLineage,
+  nothingRecoverable,
+}
+
+final class HistoricalArchivesMessageLensNotice
+    extends HistoricalArchivesNotice {
+  const HistoricalArchivesMessageLensNotice({
+    required this.kind,
+    required this.noticeOccurrence,
+    required this.presentationSessionOccurrence,
+    this.detail,
+  });
+
+  final HistoricalArchivesMessageLensNoticeKind kind;
+  final int noticeOccurrence;
+  final int presentationSessionOccurrence;
+  final String? detail;
+}
+
 const historicalArchivesReferenceFadeInDuration = Duration(milliseconds: 750);
 const historicalArchivesReferenceHoldDuration = Duration(milliseconds: 1000);
 const historicalArchivesReferenceFadeOutDuration = Duration(milliseconds: 2000);
@@ -228,8 +255,10 @@ final class HistoricalArchivesInspectionEvidence {
 enum HistoricalArchivesNarratorPresentationKind {
   noSource,
   inspectingSource,
+  inspectingMessageLensSource,
   inspectionFailed,
   readyForImport,
+  messageLensReady,
   knownSource,
   importingArchive,
   importFailed,
@@ -566,7 +595,45 @@ sealed class HistoricalArchivesPresentationState {
 
 final class HistoricalArchivesHubState
     extends HistoricalArchivesPresentationState {
-  const HistoricalArchivesHubState();
+  const HistoricalArchivesHubState({
+    this.sourceType = HistoricalArchiveSourceType.messagesFolders,
+  });
+
+  final HistoricalArchiveSourceType sourceType;
+
+  @override
+  HistoricalArchivesPresentationData? get data => null;
+}
+
+final class HistoricalArchivesMessageLensNoticeState
+    extends HistoricalArchivesPresentationState {
+  const HistoricalArchivesMessageLensNoticeState({required this.notice});
+
+  final HistoricalArchivesMessageLensNotice notice;
+
+  @override
+  HistoricalArchivesPresentationData? get data => null;
+}
+
+final class HistoricalArchivesMessageLensInspectingState
+    extends HistoricalArchivesPresentationState {
+  const HistoricalArchivesMessageLensInspectingState({
+    required this.folderPath,
+    required this.inspectionOccurrence,
+  });
+
+  final String folderPath;
+  final int inspectionOccurrence;
+
+  @override
+  HistoricalArchivesPresentationData? get data => null;
+}
+
+final class HistoricalArchivesMessageLensReadyState
+    extends HistoricalArchivesPresentationState {
+  const HistoricalArchivesMessageLensReadyState({required this.evidence});
+
+  final MessageLensHistoricalArchiveReady evidence;
 
   @override
   HistoricalArchivesPresentationData? get data => null;
@@ -761,6 +828,7 @@ final class HistoricalArchivesWorkflowState {
 
   bool get isHub => switch (presentation) {
     HistoricalArchivesHubState() ||
+    HistoricalArchivesMessageLensNoticeState() ||
     HistoricalArchivesDuplicateNoticeState() ||
     HistoricalArchivesInvalidNoticeState() ||
     HistoricalArchivesLineageNoticeState() ||
@@ -769,11 +837,30 @@ final class HistoricalArchivesWorkflowState {
     _ => false,
   };
 
+  HistoricalArchiveSourceType get sourceType => switch (presentation) {
+    HistoricalArchivesHubState(:final sourceType) => sourceType,
+    HistoricalArchivesMessageLensNoticeState() ||
+    HistoricalArchivesMessageLensInspectingState() ||
+    HistoricalArchivesMessageLensReadyState() =>
+      HistoricalArchiveSourceType.messageLensDataFolders,
+    _ => HistoricalArchiveSourceType.messagesFolders,
+  };
+
+  bool get sourceTypeSwitchEnabled =>
+      presentation is! HistoricalArchivesImportingState &&
+      presentation is! HistoricalArchivesRemovingState;
+
   HistoricalArchivesPresentationData get _data =>
       presentation.data ?? _historicalArchivesHubPresentationData;
 
   HistoricalArchivesPreflightViewModel get preflight => _data.preflight;
-  String? get selectedFolderPath => presentation.data?.selectedFolderPath;
+  String? get selectedFolderPath => switch (presentation) {
+    HistoricalArchivesMessageLensInspectingState(:final folderPath) =>
+      folderPath,
+    HistoricalArchivesMessageLensReadyState(:final evidence) =>
+      evidence.folderPath,
+    _ => presentation.data?.selectedFolderPath,
+  };
   String? get archiveRemovalTargetChatDbPath =>
       presentation.data?.archiveRemovalTargetChatDbPath;
   ArchiveSourceInspectionStatus get chatDbStatus => _data.chatDbStatus;
@@ -795,6 +882,9 @@ final class HistoricalArchivesWorkflowState {
         HistoricalArchivesImportingState(:final evidence) ||
         HistoricalArchivesImportFailedState(:final evidence) => evidence,
         HistoricalArchivesHubState() ||
+        HistoricalArchivesMessageLensNoticeState() ||
+        HistoricalArchivesMessageLensInspectingState() ||
+        HistoricalArchivesMessageLensReadyState() ||
         HistoricalArchivesDuplicateNoticeState() ||
         HistoricalArchivesInvalidNoticeState() ||
         HistoricalArchivesLineageNoticeState() ||
@@ -866,6 +956,12 @@ final class HistoricalArchivesWorkflowState {
     _ => null,
   };
 
+  HistoricalArchivesMessageLensNotice? get messageLensNotice =>
+      switch (presentation) {
+        HistoricalArchivesMessageLensNoticeState(:final notice) => notice,
+        _ => null,
+      };
+
   HistoricalArchivesImportSuccessNotice? get importSuccessNotice =>
       switch (presentation) {
         HistoricalArchivesImportSuccessNoticeState(:final notice) => notice,
@@ -894,6 +990,9 @@ HistoricalArchivesPresentationState _withPresentationData(
 ) {
   return switch (presentation) {
     HistoricalArchivesHubState() => presentation,
+    HistoricalArchivesMessageLensNoticeState() => presentation,
+    HistoricalArchivesMessageLensInspectingState() => presentation,
+    HistoricalArchivesMessageLensReadyState() => presentation,
     HistoricalArchivesDuplicateNoticeState() => presentation,
     HistoricalArchivesInvalidNoticeState() => presentation,
     HistoricalArchivesLineageNoticeState() => presentation,
@@ -1022,6 +1121,7 @@ final class HistoricalArchivesFolderPreflightResult {
 
 final class HistoricalArchivesWorkflowPanelViewModel {
   const HistoricalArchivesWorkflowPanelViewModel({
+    this.sourceType = HistoricalArchiveSourceType.messagesFolders,
     required this.statusLabel,
     required this.summaryText,
     required this.executionGate,
@@ -1048,6 +1148,7 @@ final class HistoricalArchivesWorkflowPanelViewModel {
     this.existingSourcePresentation,
   });
 
+  final HistoricalArchiveSourceType sourceType;
   final String statusLabel;
   final String summaryText;
   final HistoricalArchivesExecutionGateViewModel executionGate;
@@ -1160,9 +1261,12 @@ const _historicalArchivesHubPresentationData = HistoricalArchivesPresentationDat
   ],
 );
 
-HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState() {
-  return const HistoricalArchivesWorkflowState(
-    presentation: HistoricalArchivesHubState(),
+HistoricalArchivesWorkflowState buildInitialHistoricalArchivesWorkflowState({
+  HistoricalArchiveSourceType sourceType =
+      HistoricalArchiveSourceType.messagesFolders,
+}) {
+  return HistoricalArchivesWorkflowState(
+    presentation: HistoricalArchivesHubState(sourceType: sourceType),
   );
 }
 
@@ -1174,6 +1278,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   var _nextInvalidFolderNoticeOccurrence = 0;
   var _nextLineageNoticeOccurrence = 0;
   var _nextImportSuccessNoticeOccurrence = 0;
+  var _nextMessageLensNoticeOccurrence = 0;
   var _presentationSessionOccurrence = 0;
   Timer? _referenceClearTimer;
 
@@ -1211,6 +1316,144 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     await loadFolder(
       folderPath: folderPath,
       presentationSessionOccurrence: presentationSessionOccurrence,
+    );
+  }
+
+  Future<void> chooseMessageLensFolder() async {
+    if (state.sourceType !=
+        HistoricalArchiveSourceType.messageLensDataFolders) {
+      return;
+    }
+    final presentationSessionOccurrence = _presentationSessionOccurrence;
+    final folderChooser = ref.read(historicalArchiveFolderChooserProvider);
+    final folderPath = await folderChooser.chooseMessageLensFolder();
+    if (folderPath == null ||
+        presentationSessionOccurrence != _presentationSessionOccurrence ||
+        state.sourceType !=
+            HistoricalArchiveSourceType.messageLensDataFolders) {
+      return;
+    }
+    await loadMessageLensFolder(
+      folderPath: folderPath,
+      presentationSessionOccurrence: presentationSessionOccurrence,
+    );
+  }
+
+  void selectSourceType(HistoricalArchiveSourceType sourceType) {
+    if (!state.sourceTypeSwitchEnabled || state.sourceType == sourceType) {
+      return;
+    }
+    resetPresentationContext(sourceType: sourceType);
+  }
+
+  Future<void> loadMessageLensFolder({
+    required String folderPath,
+    int? presentationSessionOccurrence,
+  }) async {
+    if (state.sourceType !=
+        HistoricalArchiveSourceType.messageLensDataFolders) {
+      return;
+    }
+    final expectedSession =
+        presentationSessionOccurrence ?? _presentationSessionOccurrence;
+    _nextInspectionOccurrence += 1;
+    final inspectionOccurrence = _nextInspectionOccurrence;
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesMessageLensInspectingState(
+        folderPath: folderPath,
+        inspectionOccurrence: inspectionOccurrence,
+      ),
+    );
+
+    final MessageLensHistoricalArchivePreflightResult result;
+    try {
+      final preflight = await ref.read(
+        messageLensHistoricalArchivePreflightProvider.future,
+      );
+      result = await preflight.inspect(folderPath: folderPath);
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message: 'MessageLens archive preflight could not be completed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!_ownsMessageLensInspection(
+        presentationSessionOccurrence: expectedSession,
+        inspectionOccurrence: inspectionOccurrence,
+      )) {
+        return;
+      }
+      _showMessageLensNotice(
+        kind: HistoricalArchivesMessageLensNoticeKind.incompatibleArchive,
+        detail: error.toString(),
+      );
+      return;
+    }
+
+    if (!_ownsMessageLensInspection(
+      presentationSessionOccurrence: expectedSession,
+      inspectionOccurrence: inspectionOccurrence,
+    )) {
+      return;
+    }
+    switch (result) {
+      case MessageLensHistoricalArchiveInvalidFolder():
+        _showMessageLensNotice(
+          kind: HistoricalArchivesMessageLensNoticeKind.invalidFolder,
+        );
+      case MessageLensHistoricalArchiveIncompatible(:final detail):
+        _showMessageLensNotice(
+          kind: HistoricalArchivesMessageLensNoticeKind.incompatibleArchive,
+          detail: detail,
+        );
+      case MessageLensHistoricalArchiveLineageRejected(:final admission):
+        _showMessageLensNotice(
+          kind:
+              admission.status ==
+                  MessagesLineageAdmissionStatus.contradictoryLineage
+              ? HistoricalArchivesMessageLensNoticeKind.contradictoryLineage
+              : HistoricalArchivesMessageLensNoticeKind.insufficientLineage,
+        );
+      case MessageLensHistoricalArchiveReady(:final attachmentPreflight):
+        if (attachmentPreflight.recoverableCount == 0) {
+          _showMessageLensNotice(
+            kind: HistoricalArchivesMessageLensNoticeKind.nothingRecoverable,
+          );
+          return;
+        }
+        state = HistoricalArchivesWorkflowState(
+          presentation: HistoricalArchivesMessageLensReadyState(
+            evidence: result,
+          ),
+        );
+    }
+  }
+
+  bool _ownsMessageLensInspection({
+    required int presentationSessionOccurrence,
+    required int inspectionOccurrence,
+  }) {
+    final presentation = state.presentation;
+    return presentationSessionOccurrence == _presentationSessionOccurrence &&
+        presentation is HistoricalArchivesMessageLensInspectingState &&
+        presentation.inspectionOccurrence == inspectionOccurrence;
+  }
+
+  void _showMessageLensNotice({
+    required HistoricalArchivesMessageLensNoticeKind kind,
+    String? detail,
+  }) {
+    _nextMessageLensNoticeOccurrence += 1;
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesMessageLensNoticeState(
+        notice: HistoricalArchivesMessageLensNotice(
+          kind: kind,
+          noticeOccurrence: _nextMessageLensNoticeOccurrence,
+          presentationSessionOccurrence: _presentationSessionOccurrence,
+          detail: detail,
+        ),
+      ),
     );
   }
 
@@ -1486,7 +1729,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   void cancelAddArchive() {
     if (state.presentation is! HistoricalArchivesInspectingCandidateState &&
         state.presentation is! HistoricalArchivesInspectionFailedState &&
-        state.presentation is! HistoricalArchivesReadyToAddState) {
+        state.presentation is! HistoricalArchivesReadyToAddState &&
+        state.presentation is! HistoricalArchivesMessageLensInspectingState &&
+        state.presentation is! HistoricalArchivesMessageLensReadyState) {
       return;
     }
     resetPresentationContext();
@@ -1579,14 +1824,38 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     state = buildInitialHistoricalArchivesWorkflowState();
   }
 
-  void resetPresentationContext() {
+  void dismissMessageLensNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    final presentation = state.presentation;
+    if (presentation is! HistoricalArchivesMessageLensNoticeState) {
+      return;
+    }
+    final notice = presentation.notice;
+    if (notice.noticeOccurrence != noticeOccurrence ||
+        notice.presentationSessionOccurrence != presentationSessionOccurrence ||
+        _presentationSessionOccurrence != presentationSessionOccurrence) {
+      return;
+    }
+    state = buildInitialHistoricalArchivesWorkflowState(
+      sourceType: HistoricalArchiveSourceType.messageLensDataFolders,
+    );
+  }
+
+  void resetPresentationContext({HistoricalArchiveSourceType? sourceType}) {
+    final destinationSourceType = sourceType ?? state.sourceType;
     _presentationSessionOccurrence += 1;
     _referenceClearTimer?.cancel();
     _referenceClearTimer = null;
-    if (state.presentation is HistoricalArchivesHubState) {
+    if (state.presentation case HistoricalArchivesHubState(
+      sourceType: final currentSourceType,
+    ) when currentSourceType == destinationSourceType) {
       return;
     }
-    state = buildInitialHistoricalArchivesWorkflowState();
+    state = buildInitialHistoricalArchivesWorkflowState(
+      sourceType: destinationSourceType,
+    );
   }
 
   void _clearKnownSourceReference({
@@ -1601,7 +1870,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             referenceOccurrence) {
       return;
     }
-    state = buildInitialHistoricalArchivesWorkflowState();
+    state = buildInitialHistoricalArchivesWorkflowState(
+      sourceType: state.sourceType,
+    );
     _referenceClearTimer = null;
   }
 
@@ -2587,6 +2858,7 @@ buildHistoricalArchivesWorkflowPanelModel({
   );
 
   return HistoricalArchivesWorkflowPanelViewModel(
+    sourceType: workflowState.sourceType,
     statusLabel: statusLabel,
     summaryText: summaryText,
     executionGate: executionGate,
@@ -2628,6 +2900,8 @@ buildHistoricalArchivesWorkflowPanelModel({
     phases: workflowState.phases,
     centerPageTitleVisible: switch (workflowState.presentation) {
       HistoricalArchivesInspectingCandidateState() ||
+      HistoricalArchivesMessageLensInspectingState() ||
+      HistoricalArchivesMessageLensReadyState() ||
       HistoricalArchivesInspectionFailedState() ||
       HistoricalArchivesReadyToAddState() ||
       HistoricalArchivesImportingState() ||
@@ -2635,6 +2909,7 @@ buildHistoricalArchivesWorkflowPanelModel({
       HistoricalArchivesRemovingState() ||
       HistoricalArchivesRemovalFailedState() => true,
       HistoricalArchivesHubState() ||
+      HistoricalArchivesMessageLensNoticeState() ||
       HistoricalArchivesDuplicateNoticeState() ||
       HistoricalArchivesInvalidNoticeState() ||
       HistoricalArchivesLineageNoticeState() ||
@@ -2718,6 +2993,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
 }) {
   final presentation = workflowState.presentation;
   if (presentation is HistoricalArchivesHubState ||
+      presentation is HistoricalArchivesMessageLensNoticeState ||
       presentation is HistoricalArchivesDuplicateNoticeState ||
       presentation is HistoricalArchivesInvalidNoticeState ||
       presentation is HistoricalArchivesImportSuccessNoticeState ||
@@ -2774,6 +3050,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
 
   return switch (presentation) {
     HistoricalArchivesHubState() ||
+    HistoricalArchivesMessageLensNoticeState() ||
     HistoricalArchivesDuplicateNoticeState() ||
     HistoricalArchivesInvalidNoticeState() ||
     HistoricalArchivesLineageNoticeState() ||
@@ -2804,6 +3081,25 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
           workflowState: workflowState,
           executionGate: executionGate,
         ),
+        retryInspectionEnabled: false,
+      ),
+    HistoricalArchivesMessageLensInspectingState(:final folderPath) =>
+      HistoricalArchivesNarratorPresentationViewModel(
+        kind: HistoricalArchivesNarratorPresentationKind
+            .inspectingMessageLensSource,
+        narratorText:
+            'I’ll check this MessageLens folder for attachments that are missing here.',
+        instrumentationRows: const [
+          HistoricalArchivesInstrumentationRowViewModel(
+            label: 'Inspecting MessageLens recovery source',
+            value: 'Working',
+            status: HistoricalArchivesInstrumentationStatus.working,
+          ),
+        ],
+        detailsLines: [
+          'Folder: $folderPath',
+          'No donor data is being changed.',
+        ],
         retryInspectionEnabled: false,
       ),
     HistoricalArchivesInspectionFailedState() =>
@@ -2837,12 +3133,63 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
         ),
         retryInspectionEnabled: false,
       ),
+    HistoricalArchivesMessageLensReadyState(:final evidence) =>
+      HistoricalArchivesNarratorPresentationViewModel(
+        kind: HistoricalArchivesNarratorPresentationKind.messageLensReady,
+        narratorText:
+            'This folder comes from the same Messages history. I found attachments that are missing from MessageLens.',
+        instrumentationRows: [
+          HistoricalArchivesInstrumentationRowViewModel(
+            label: 'Recoverable attachments',
+            value: _formattedCount(
+              evidence.attachmentPreflight.recoverableCount,
+            ),
+            status: HistoricalArchivesInstrumentationStatus.resolved,
+          ),
+          HistoricalArchivesInstrumentationRowViewModel(
+            label: 'Recoverable size',
+            value: _formattedByteCount(
+              evidence.attachmentPreflight.recoverableBytes,
+            ),
+            status: HistoricalArchivesInstrumentationStatus.resolved,
+          ),
+        ],
+        detailsLines: [
+          'Folder: ${evidence.folderPath}',
+          'Archive instance: ${evidence.archiveInstanceId}',
+          'Relationships examined: ${_formattedCount(evidence.attachmentPreflight.examinedCount)}',
+          'Already present: ${_formattedCount(evidence.attachmentPreflight.alreadyPresentCount)}',
+          'Donor payload missing: ${_formattedCount(evidence.attachmentPreflight.donorMissingCount)}',
+          'Message mismatches: ${_formattedCount(evidence.attachmentPreflight.messageMismatchCount)}',
+          'Attachment mismatches: ${_formattedCount(evidence.attachmentPreflight.attachmentMismatchCount)}',
+          'Conflicts: ${_formattedCount(evidence.attachmentPreflight.conflictCount)}',
+          'Ambiguous: ${_formattedCount(evidence.attachmentPreflight.ambiguousCount)}',
+          'Unsafe donor paths: ${_formattedCount(evidence.attachmentPreflight.unsafeDonorPathCount)}',
+          'Recovery is not authorized in this read-only slice.',
+        ],
+        retryInspectionEnabled: false,
+      ),
     HistoricalArchivesExistingSourceState() ||
     HistoricalArchivesImportingState() ||
     HistoricalArchivesImportFailedState() ||
     HistoricalArchivesRemovingState() ||
     HistoricalArchivesRemovalFailedState() => null,
   };
+}
+
+String _formattedByteCount(int bytes) {
+  if (bytes < 1024) {
+    return '$bytes B';
+  }
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  var value = bytes / 1024;
+  var unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  final decimals = value >= 10 ? 1 : 2;
+  return '${value.toStringAsFixed(decimals)} ${units[unitIndex]}';
 }
 
 String? _importNarratorText({

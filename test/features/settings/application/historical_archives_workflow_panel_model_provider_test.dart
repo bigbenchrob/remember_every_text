@@ -45,6 +45,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/m
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages_lineage_admission_authority_provider.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/messages_lineage_admission.dart';
+import 'package:remember_this_text/features/attachments/domain/entities/message_lens_attachment_recovery.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspector_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_folder_chooser.dart';
@@ -52,6 +53,8 @@ import 'package:remember_this_text/features/settings/application/historical_arch
 import 'package:remember_this_text/features/settings/application/historical_archive_sources.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_sources_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archives_workflow_panel_model_provider.dart';
+import 'package:remember_this_text/features/settings/application/message_lens_historical_archive_preflight.dart';
+import 'package:remember_this_text/features/settings/application/message_lens_historical_archive_preflight_provider.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -142,7 +145,7 @@ void main() {
 
   group('buildHistoricalArchivesWorkflowPanelModel', () {
     test(
-      'projects title occupancy exhaustively from all 14 typed variants',
+      'projects title occupancy exhaustively from all 17 typed variants',
       () {
         final data = _testPresentationData();
         final evidence = _testInspectionEvidence();
@@ -215,6 +218,36 @@ void main() {
                   ),
                 ),
                 titleVisible: false,
+              ),
+              (
+                name: 'MessageLens notice',
+                presentation: const HistoricalArchivesMessageLensNoticeState(
+                  notice: HistoricalArchivesMessageLensNotice(
+                    kind: HistoricalArchivesMessageLensNoticeKind.invalidFolder,
+                    noticeOccurrence: 1,
+                    presentationSessionOccurrence: 1,
+                  ),
+                ),
+                titleVisible: false,
+              ),
+              (
+                name: 'inspecting MessageLens archive',
+                presentation:
+                    const HistoricalArchivesMessageLensInspectingState(
+                      folderPath: '/tmp/donor',
+                      inspectionOccurrence: 1,
+                    ),
+                titleVisible: true,
+              ),
+              (
+                name: 'MessageLens archive ready',
+                presentation: HistoricalArchivesMessageLensReadyState(
+                  evidence: _messageLensReady(
+                    recoverableCount: 3,
+                    recoverableBytes: 8192,
+                  ),
+                ),
+                titleVisible: true,
               ),
               (
                 name: 'inspecting candidate',
@@ -975,6 +1008,228 @@ void main() {
   });
 
   group('HistoricalArchivesWorkflow narrator lifecycle', () {
+    test('arm switching creates a virgin destination hub', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final workflow = container.read(
+        historicalArchivesWorkflowProvider.notifier,
+      );
+
+      workflow.selectSourceType(
+        HistoricalArchiveSourceType.messageLensDataFolders,
+      );
+      var state = container.read(historicalArchivesWorkflowProvider);
+      expect(state.presentation, isA<HistoricalArchivesHubState>());
+      expect(
+        state.sourceType,
+        HistoricalArchiveSourceType.messageLensDataFolders,
+      );
+      expect(state.selectedFolderPath, isNull);
+      expect(state.messageLensNotice, isNull);
+
+      workflow.selectSourceType(HistoricalArchiveSourceType.messagesFolders);
+      state = container.read(historicalArchivesWorkflowProvider);
+      expect(state.presentation, isA<HistoricalArchivesHubState>());
+      expect(state.sourceType, HistoricalArchiveSourceType.messagesFolders);
+      expect(state.selectedFolderPath, isNull);
+    });
+
+    test(
+      'arm switching discards completed transient candidate evidence',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            messageLensHistoricalArchivePreflightProvider.overrideWith(
+              (ref) async => _FakeMessageLensHistoricalArchivePreflight(
+                _messageLensReady(recoverableCount: 3, recoverableBytes: 8192),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        workflow.selectSourceType(
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+        await workflow.loadMessageLensFolder(folderPath: '/tmp/donor');
+        expect(
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesMessageLensReadyState>(),
+        );
+
+        workflow.selectSourceType(HistoricalArchiveSourceType.messagesFolders);
+        var state = container.read(historicalArchivesWorkflowProvider);
+        expect(state.presentation, isA<HistoricalArchivesHubState>());
+        expect(state.sourceType, HistoricalArchiveSourceType.messagesFolders);
+        expect(state.selectedFolderPath, isNull);
+
+        workflow.selectSourceType(
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+        state = container.read(historicalArchivesWorkflowProvider);
+        expect(state.presentation, isA<HistoricalArchivesHubState>());
+        expect(
+          state.sourceType,
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+        expect(state.selectedFolderPath, isNull);
+      },
+    );
+
+    test('active mutation mechanically blocks source-arm switching', () {
+      final container = ProviderContainer(
+        overrides: [
+          historicalArchivesWorkflowProvider.overrideWith(
+            () => _MutationOwnedHistoricalArchivesWorkflow(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final workflow = container.read(
+        historicalArchivesWorkflowProvider.notifier,
+      );
+      final before = container.read(historicalArchivesWorkflowProvider);
+      expect(before.presentation, isA<HistoricalArchivesImportingState>());
+      expect(before.sourceTypeSwitchEnabled, isFalse);
+
+      workflow.selectSourceType(
+        HistoricalArchiveSourceType.messageLensDataFolders,
+      );
+
+      final after = container.read(historicalArchivesWorkflowProvider);
+      expect(after.presentation, isA<HistoricalArchivesImportingState>());
+      expect(after.sourceType, HistoricalArchiveSourceType.messagesFolders);
+    });
+
+    test('MessageLens ready evidence remains typed and exact', () async {
+      final preflight = _FakeMessageLensHistoricalArchivePreflight(
+        _messageLensReady(recoverableCount: 3, recoverableBytes: 8192),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          messageLensHistoricalArchivePreflightProvider.overrideWith(
+            (ref) async => preflight,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final workflow = container.read(
+        historicalArchivesWorkflowProvider.notifier,
+      );
+      workflow.selectSourceType(
+        HistoricalArchiveSourceType.messageLensDataFolders,
+      );
+
+      await workflow.loadMessageLensFolder(folderPath: '/tmp/donor');
+
+      final state = container.read(historicalArchivesWorkflowProvider);
+      expect(
+        state.presentation,
+        isA<HistoricalArchivesMessageLensReadyState>(),
+      );
+      final model = buildHistoricalArchivesWorkflowPanelModel(
+        executionGateState: const ArchiveMutationCoordinatorState(),
+        isMaintenanceLocked: false,
+        workflowState: state,
+        currentMessagesDatabasePath: currentMessagesDatabasePath,
+      );
+      expect(
+        model.narratorPresentation?.kind,
+        HistoricalArchivesNarratorPresentationKind.messageLensReady,
+      );
+      expect(
+        model.narratorPresentation?.instrumentationRows.map(
+          (row) => (row.label, row.value),
+        ),
+        containsAll(const [
+          ('Recoverable attachments', '3'),
+          ('Recoverable size', '8.00 KB'),
+        ]),
+      );
+      expect(preflight.inspectedFolders, const ['/tmp/donor']);
+    });
+
+    test(
+      'zero recoverable attachments is an informational hub notice',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            messageLensHistoricalArchivePreflightProvider.overrideWith(
+              (ref) async => _FakeMessageLensHistoricalArchivePreflight(
+                _messageLensReady(recoverableCount: 0, recoverableBytes: 0),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        workflow.selectSourceType(
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+
+        await workflow.loadMessageLensFolder(folderPath: '/tmp/donor');
+
+        final state = container.read(historicalArchivesWorkflowProvider);
+        expect(state.isHub, isTrue);
+        expect(
+          state.messageLensNotice?.kind,
+          HistoricalArchivesMessageLensNoticeKind.nothingRecoverable,
+        );
+        expect(
+          state.sourceType,
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+      },
+    );
+
+    for (final entry
+        in <
+          (MessagesLineageAdmission, HistoricalArchivesMessageLensNoticeKind)
+        >[
+          (
+            _testContradictoryLineageAdmission(),
+            HistoricalArchivesMessageLensNoticeKind.contradictoryLineage,
+          ),
+          (
+            _testInsufficientLineageAdmission(),
+            HistoricalArchivesMessageLensNoticeKind.insufficientLineage,
+          ),
+        ]) {
+      test(
+        'MessageLens ${entry.$1.status.name} is a typed hub notice',
+        () async {
+          final container = ProviderContainer(
+            overrides: [
+              messageLensHistoricalArchivePreflightProvider.overrideWith(
+                (ref) async => _FakeMessageLensHistoricalArchivePreflight(
+                  MessageLensHistoricalArchiveLineageRejected(
+                    admission: entry.$1,
+                  ),
+                ),
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+          final workflow = container.read(
+            historicalArchivesWorkflowProvider.notifier,
+          );
+          workflow.selectSourceType(
+            HistoricalArchiveSourceType.messageLensDataFolders,
+          );
+
+          await workflow.loadMessageLensFolder(folderPath: '/tmp/donor');
+
+          final state = container.read(historicalArchivesWorkflowProvider);
+          expect(state.isHub, isTrue);
+          expect(state.messageLensNotice?.kind, entry.$2);
+        },
+      );
+    }
+
     test(
       'folder choice enters real inspection and resolves automatically',
       () async {
@@ -3067,6 +3322,64 @@ HistoricalArchivesImportedSourceFacts _testImportedSourceFacts() {
   );
 }
 
+MessageLensHistoricalArchiveReady _messageLensReady({
+  required int recoverableCount,
+  required int recoverableBytes,
+}) {
+  return MessageLensHistoricalArchiveReady(
+    folderPath: '/tmp/donor',
+    identity: HistoricalArchiveSourceIdentity.messageLensFromArchiveInstanceId(
+      '123e4567-e89b-42d3-a456-426614174000',
+    ),
+    archiveInstanceId: '123e4567-e89b-42d3-a456-426614174000',
+    lineageAdmission: _testSameLineageAdmission(),
+    attachmentPreflight: MessageLensAttachmentRecoveryPreflight(
+      candidates: const [],
+      examinedCount: recoverableCount,
+      recoverableCount: recoverableCount,
+      recoverableBytes: recoverableBytes,
+      alreadyPresentCount: 0,
+      donorMissingCount: 0,
+      messageMismatchCount: 0,
+      attachmentMismatchCount: 0,
+      conflictCount: 0,
+      ambiguousCount: 0,
+      unsafeDonorPathCount: 0,
+    ),
+  );
+}
+
+final class _FakeMessageLensHistoricalArchivePreflight
+    implements MessageLensHistoricalArchivePreflight {
+  _FakeMessageLensHistoricalArchivePreflight(this.result);
+
+  final MessageLensHistoricalArchivePreflightResult result;
+  final List<String> inspectedFolders = [];
+
+  @override
+  Future<MessageLensHistoricalArchivePreflightResult> inspect({
+    required String folderPath,
+  }) async {
+    inspectedFolders.add(folderPath);
+    return result;
+  }
+}
+
+final class _MutationOwnedHistoricalArchivesWorkflow
+    extends HistoricalArchivesWorkflow {
+  @override
+  HistoricalArchivesWorkflowState build() {
+    return HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesImportingState(
+        lineageAdmission: _testSameLineageAdmission(),
+        data: _testPresentationData(),
+        evidence: _testInspectionEvidence(),
+        progress: const HistoricalArchiveImportProgress(),
+      ),
+    );
+  }
+}
+
 final class _ControllableHistoricalArchivesWorkflow
     extends HistoricalArchivesWorkflow {
   @override
@@ -3102,6 +3415,9 @@ final class _FakeFolderChooser implements HistoricalArchiveFolderChooser {
 
   @override
   Future<String?> chooseMessagesFolder() async => folderPath;
+
+  @override
+  Future<String?> chooseMessageLensFolder() async => folderPath;
 }
 
 final class _RecordingFolderChooser implements HistoricalArchiveFolderChooser {
@@ -3112,6 +3428,12 @@ final class _RecordingFolderChooser implements HistoricalArchiveFolderChooser {
 
   @override
   Future<String?> chooseMessagesFolder() async {
+    callCount += 1;
+    return folderPath;
+  }
+
+  @override
+  Future<String?> chooseMessageLensFolder() async {
     callCount += 1;
     return folderPath;
   }

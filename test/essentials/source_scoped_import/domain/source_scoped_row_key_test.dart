@@ -2,6 +2,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 
 void main() {
+  test('attachment ROWID round-trips through canonical source scoping', () {
+    const originalAppleAttachmentRowId = 8796093012345;
+    final scopedAttachmentId = SourceScopedRowKey.pack(
+      sourceId: 3,
+      sourceRowId: originalAppleAttachmentRowId,
+    );
+
+    expect(SourceScopedRowKey.unpackSourceId(scopedAttachmentId), 3);
+    expect(
+      SourceScopedRowKey.unpackSourceRowId(scopedAttachmentId),
+      originalAppleAttachmentRowId,
+    );
+  });
+
   test('packs and unpacks source id and source rowid exactly', () {
     final packed = SourceScopedRowKey.pack(sourceId: 7, sourceRowId: 42);
 

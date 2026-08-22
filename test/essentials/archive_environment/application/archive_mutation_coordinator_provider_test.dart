@@ -113,6 +113,53 @@ void main() {
   });
 
   test(
+    'capability is valid only in its exact active operation scope',
+    () async {
+      final harness = await _CoordinatorHarness.create();
+      addTearDown(harness.dispose);
+      late ArchiveMutationCapability outerCapability;
+
+      await harness.coordinator.runWithCapability<void>(
+        operation: ArchiveMutationOperation.attachmentReconciliation,
+        ownerLabel: 'outer-attachment-reconciliation',
+        action: (capability) async {
+          outerCapability = capability;
+          capability.requireOperation(
+            ArchiveMutationOperation.attachmentReconciliation,
+          );
+
+          await harness.coordinator.runWithCapability<void>(
+            operation: ArchiveMutationOperation.attachmentReconciliation,
+            ownerLabel: 'nested-attachment-reconciliation',
+            action: (nestedCapability) async {
+              expect(
+                () => outerCapability.requireOperation(
+                  ArchiveMutationOperation.attachmentReconciliation,
+                ),
+                throwsA(isA<ArchiveMutationCapabilityDeniedException>()),
+              );
+              nestedCapability.requireOperation(
+                ArchiveMutationOperation.attachmentReconciliation,
+              );
+            },
+          );
+
+          outerCapability.requireOperation(
+            ArchiveMutationOperation.attachmentReconciliation,
+          );
+        },
+      );
+
+      expect(
+        () => outerCapability.requireOperation(
+          ArchiveMutationOperation.attachmentReconciliation,
+        ),
+        throwsA(isA<ArchiveMutationCapabilityDeniedException>()),
+      );
+    },
+  );
+
+  test(
     'nested scopes preserve stronger reopen policy and restore it',
     () async {
       final harness = await _CoordinatorHarness.create();

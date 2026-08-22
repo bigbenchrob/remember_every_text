@@ -4,6 +4,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import 'package:remember_this_text/features/attachments/application/atomic_no_overwrite_file_installer.dart';
+import 'package:remember_this_text/features/attachments/application/attachment_archive_file_store.dart';
 import 'package:remember_this_text/features/attachments/infrastructure/repositories/filesystem_attachment_archive_file_store.dart';
 
 void main() {
@@ -105,7 +107,9 @@ void main() {
   test('writes archive entry using supplied content hash', () async {
     final sourceFile = File(path.join(tempDir.path, 'photo.png'));
     await sourceFile.writeAsString('image bytes');
-    const suppliedHash = 'abcdef123456';
+    final suppliedHash = sha256
+        .convert(await sourceFile.readAsBytes())
+        .toString();
 
     final write = await store.writeArchiveEntry(
       archiveDirectoryPath: archiveDir.path,
@@ -115,10 +119,19 @@ void main() {
     );
 
     expect(write, isNotNull);
-    expect(write!.relativePath, 'ab/$suppliedHash.png');
+    expect(
+      write!.relativePath,
+      '${suppliedHash.substring(0, 2)}/$suppliedHash.png',
+    );
     expect(write.contentHash, suppliedHash);
     expect(
-      File(path.join(archiveDir.path, 'ab/$suppliedHash.png')).existsSync(),
+      File(
+        path.join(
+          archiveDir.path,
+          suppliedHash.substring(0, 2),
+          '$suppliedHash.png',
+        ),
+      ).existsSync(),
       isTrue,
     );
   });
@@ -126,10 +139,14 @@ void main() {
   test('rejects symlinked archive destination target', () async {
     final sourceFile = File(path.join(tempDir.path, 'photo.png'));
     await sourceFile.writeAsString('image bytes');
-    const suppliedHash = 'abcdef123456';
+    final suppliedHash = sha256
+        .convert(await sourceFile.readAsBytes())
+        .toString();
     final outsideFile = File(path.join(tempDir.path, 'outside.png'));
     await outsideFile.writeAsString('outside');
-    final destinationParent = Directory(path.join(archiveDir.path, 'ab'));
+    final destinationParent = Directory(
+      path.join(archiveDir.path, suppliedHash.substring(0, 2)),
+    );
     await destinationParent.create(recursive: true);
     final destinationLink = Link(
       path.join(destinationParent.path, '$suppliedHash.png'),
@@ -148,7 +165,7 @@ void main() {
     expect(outsideFile.readAsStringSync(), 'outside');
   });
 
-  test('falls back to compatibility id path when hash is unusable', () async {
+  test('computes canonical hash when supplied hash is unusable', () async {
     final sourceFile = File(path.join(tempDir.path, 'photo.heic'));
     await sourceFile.writeAsString('image bytes');
 
@@ -160,12 +177,182 @@ void main() {
     );
 
     expect(write, isNotNull);
-    expect(write!.relativePath, '_by_id/200.heic');
-    expect(write.contentHash, 'a');
+    final expectedHash = sha256
+        .convert(await sourceFile.readAsBytes())
+        .toString();
     expect(
-      File(path.join(archiveDir.path, '_by_id/200.heic')).existsSync(),
+      write!.relativePath,
+      '${expectedHash.substring(0, 2)}/$expectedHash.heic',
+    );
+    expect(write.contentHash, expectedHash);
+    expect(
+      File(
+        path.join(
+          archiveDir.path,
+          expectedHash.substring(0, 2),
+          '$expectedHash.heic',
+        ),
+      ).existsSync(),
       isTrue,
     );
+  });
+
+  group('preservation-safe installation', () {
+    test(
+      'installs atomically and removes its recognizable temp file',
+      () async {
+        final bytes = 'verified donor payload'.codeUnits;
+        final expectedHash = sha256.convert(bytes).toString();
+
+        final result = await store.installVerifiedArchiveEntry(
+          archiveDirectoryPath: archiveDir.path,
+          sourceBytes: Stream<List<int>>.value(bytes),
+          sourceExtension: '.bin',
+          expectedSizeBytes: bytes.length,
+          expectedSha256: expectedHash,
+        );
+
+        expect(result.status, AttachmentArchiveFileInstallStatus.installed);
+        expect(
+          File(
+            path.join(archiveDir.path, result.relativePath),
+          ).readAsBytesSync(),
+          bytes,
+        );
+        expect(
+          archiveDir
+              .listSync(recursive: true)
+              .where((entity) => entity.path.contains('.messagelens-install-')),
+          isEmpty,
+        );
+      },
+    );
+
+    test('verification mismatch leaves no final or temporary file', () async {
+      final bytes = 'changed donor payload'.codeUnits;
+      final expectedHash = sha256.convert('expected'.codeUnits).toString();
+
+      final result = await store.installVerifiedArchiveEntry(
+        archiveDirectoryPath: archiveDir.path,
+        sourceBytes: Stream<List<int>>.value(bytes),
+        sourceExtension: '.bin',
+        expectedSizeBytes: bytes.length,
+        expectedSha256: expectedHash,
+      );
+
+      expect(result.status, AttachmentArchiveFileInstallStatus.donorChanged);
+      expect(
+        File(
+          path.join(
+            archiveDir.path,
+            expectedHash.substring(0, 2),
+            '$expectedHash.bin',
+          ),
+        ).existsSync(),
+        isFalse,
+      );
+      expect(
+        archiveDir
+            .listSync(recursive: true)
+            .where((entity) => entity.path.contains('.messagelens-install-')),
+        isEmpty,
+      );
+    });
+
+    test('copy failure cleans temp and exposes no final file', () async {
+      final expectedHash = sha256.convert('expected'.codeUnits).toString();
+      final failingStream = Stream<List<int>>.error(
+        const FileSystemException('donor disappeared'),
+      );
+
+      await expectLater(
+        store.installVerifiedArchiveEntry(
+          archiveDirectoryPath: archiveDir.path,
+          sourceBytes: failingStream,
+          sourceExtension: '.bin',
+          expectedSizeBytes: 8,
+          expectedSha256: expectedHash,
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+
+      expect(archiveDir.listSync(recursive: true).whereType<File>(), isEmpty);
+    });
+
+    test('identical retry is already present and does not rewrite', () async {
+      final bytes = 'stable payload'.codeUnits;
+      final expectedHash = sha256.convert(bytes).toString();
+      final first = await store.installVerifiedArchiveEntry(
+        archiveDirectoryPath: archiveDir.path,
+        sourceBytes: Stream<List<int>>.value(bytes),
+        sourceExtension: '.pdf',
+        expectedSizeBytes: bytes.length,
+        expectedSha256: expectedHash,
+      );
+      final destination = File(path.join(archiveDir.path, first.relativePath));
+      final firstModified = destination.lastModifiedSync();
+
+      final second = await store.installVerifiedArchiveEntry(
+        archiveDirectoryPath: archiveDir.path,
+        sourceBytes: Stream<List<int>>.value(bytes),
+        sourceExtension: '.pdf',
+        expectedSizeBytes: bytes.length,
+        expectedSha256: expectedHash,
+      );
+
+      expect(second.status, AttachmentArchiveFileInstallStatus.alreadyPresent);
+      expect(destination.lastModifiedSync(), firstModified);
+      expect(destination.readAsBytesSync(), bytes);
+    });
+
+    test('conflicting existing destination is never overwritten', () async {
+      final bytes = 'expected payload'.codeUnits;
+      final expectedHash = sha256.convert(bytes).toString();
+      final destination = File(
+        path.join(
+          archiveDir.path,
+          expectedHash.substring(0, 2),
+          '$expectedHash.bin',
+        ),
+      );
+      await destination.parent.create(recursive: true);
+      await destination.writeAsString('conflict');
+
+      final result = await store.installVerifiedArchiveEntry(
+        archiveDirectoryPath: archiveDir.path,
+        sourceBytes: Stream<List<int>>.value(bytes),
+        sourceExtension: '.bin',
+        expectedSizeBytes: bytes.length,
+        expectedSha256: expectedHash,
+      );
+
+      expect(result.status, AttachmentArchiveFileInstallStatus.conflict);
+      expect(destination.readAsStringSync(), 'conflict');
+    });
+
+    test('concurrent destination creation wins without overwrite', () async {
+      final bytes = 'expected payload'.codeUnits;
+      final expectedHash = sha256.convert(bytes).toString();
+      const racingStore = FilesystemAttachmentArchiveFileStore(
+        atomicInstaller: _RacingAtomicInstaller('concurrent payload'),
+      );
+
+      final result = await racingStore.installVerifiedArchiveEntry(
+        archiveDirectoryPath: archiveDir.path,
+        sourceBytes: Stream<List<int>>.value(bytes),
+        sourceExtension: '.bin',
+        expectedSizeBytes: bytes.length,
+        expectedSha256: expectedHash,
+      );
+
+      expect(result.status, AttachmentArchiveFileInstallStatus.conflict);
+      expect(
+        File(
+          path.join(archiveDir.path, result.relativePath),
+        ).readAsStringSync(),
+        'concurrent payload',
+      );
+    });
   });
 
   test('checks archive integrity using stored hash', () async {
@@ -228,6 +415,22 @@ void main() {
     expect(result.hashMatches, isNull);
     expect(result.actualHash, isNull);
   });
+}
+
+class _RacingAtomicInstaller implements AtomicNoOverwriteFileInstaller {
+  const _RacingAtomicInstaller(this.concurrentContents);
+
+  final String concurrentContents;
+
+  @override
+  Future<AtomicFileInstallResult> install({
+    required String temporaryPath,
+    required String destinationPath,
+  }) async {
+    expect(File(destinationPath).existsSync(), isFalse);
+    await File(destinationPath).writeAsString(concurrentContents);
+    return AtomicFileInstallResult.destinationExists;
+  }
 }
 
 ArchiveCompatibilityKey _archiveKey() {

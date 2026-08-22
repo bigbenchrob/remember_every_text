@@ -254,6 +254,98 @@ void main() {
       );
     }
 
+    for (final testCase
+        in <
+          ({
+            HistoricalArchivesMessageLensNoticeKind kind,
+            String expectedTitle,
+            String expectedContent,
+          })
+        >[
+          (
+            kind: HistoricalArchivesMessageLensNoticeKind.invalidFolder,
+            expectedTitle:
+                'This doesn’t appear to be a MessageLens data folder.',
+            expectedContent:
+                'Choose an older MessageLens data folder and try again.',
+          ),
+          (
+            kind: HistoricalArchivesMessageLensNoticeKind.incompatibleArchive,
+            expectedTitle: 'MessageLens can’t safely inspect this data folder.',
+            expectedContent:
+                'This appears to be a MessageLens folder, but its recovery evidence is not compatible with this version.',
+          ),
+          (
+            kind: HistoricalArchivesMessageLensNoticeKind.contradictoryLineage,
+            expectedTitle:
+                'This MessageLens folder belongs to a different Messages history.',
+            expectedContent: 'It can’t be used to recover attachments here.',
+          ),
+          (
+            kind: HistoricalArchivesMessageLensNoticeKind.insufficientLineage,
+            expectedTitle:
+                'MessageLens couldn’t verify this folder’s Messages history.',
+            expectedContent:
+                'Attachment recovery requires proof that both folders came from the same Messages history.',
+          ),
+          (
+            kind: HistoricalArchivesMessageLensNoticeKind.nothingRecoverable,
+            expectedTitle: 'No missing attachments were found.',
+            expectedContent:
+                'There are no missing attachments in this folder that MessageLens can safely recover.',
+          ),
+        ]) {
+      testWidgets('${testCase.kind.name} MessageLens outcome is modal-only', (
+        tester,
+      ) async {
+        final workflow = _MessageLensNoticeHistoricalArchivesWorkflow();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+              historicalArchivesWorkflowPanelModelProvider.overrideWith(
+                (ref) => _narratorPanelModel(
+                  isHub: true,
+                  presentation: null,
+                  sourceType:
+                      HistoricalArchiveSourceType.messageLensDataFolders,
+                ),
+              ),
+              developerModeProvider.overrideWith(
+                () => _FakeDeveloperMode(DeveloperModeValue.user),
+              ),
+            ],
+            child: const CupertinoApp(home: HistoricalArchivesPanel()),
+          ),
+        );
+        await tester.pump();
+
+        workflow.emitNotice(testCase.kind);
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(CupertinoAlertDialog), findsOneWidget);
+        expect(find.text(testCase.expectedTitle), findsOneWidget);
+        expect(find.text(testCase.expectedContent), findsOneWidget);
+        expect(
+          find.byKey(const Key('historical-archives-empty-hub')),
+          findsOneWidget,
+        );
+        expect(find.text('Recover Attachments'), findsNothing);
+
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CupertinoAlertDialog), findsNothing);
+        expect(workflow.dismissCallCount, 1);
+        expect(workflow.state.presentation, isA<HistoricalArchivesHubState>());
+        expect(
+          workflow.state.sourceType,
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+      });
+    }
+
     testWidgets(
       'terminal import success is acknowledged over the restored empty hub',
       (tester) async {
@@ -339,6 +431,46 @@ void main() {
       expect(find.text('Progress'), findsNothing);
       expect(find.textContaining('Next'), findsNothing);
     });
+
+    testWidgets(
+      'MessageLens ready state reports exact evidence without a recovery command',
+      (tester) async {
+        await _pumpPanel(
+          tester,
+          model: _narratorPanelModel(
+            sourceType: HistoricalArchiveSourceType.messageLensDataFolders,
+            presentation: const HistoricalArchivesNarratorPresentationViewModel(
+              kind: HistoricalArchivesNarratorPresentationKind.messageLensReady,
+              narratorText:
+                  'This folder comes from the same Messages history. I found attachments that are missing from MessageLens.',
+              instrumentationRows: [
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Recoverable attachments',
+                  value: '1,842',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+                HistoricalArchivesInstrumentationRowViewModel(
+                  label: 'Recoverable size',
+                  value: '19.2 GB',
+                  status: HistoricalArchivesInstrumentationStatus.resolved,
+                ),
+              ],
+              detailsLines: ['Archive instance: donor-id'],
+              retryInspectionEnabled: false,
+            ),
+          ),
+        );
+
+        expect(find.text('MESSAGELENS ATTACHMENT RECOVERY'), findsOneWidget);
+        expect(find.text('Recoverable attachments'), findsOneWidget);
+        expect(find.text('1,842'), findsOneWidget);
+        expect(find.text('Recoverable size'), findsOneWidget);
+        expect(find.text('19.2 GB'), findsOneWidget);
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Recover Attachments'), findsNothing);
+        expect(find.text('Add Messages to MessageLens'), findsNothing);
+      },
+    );
 
     testWidgets('selected existing source is a management context, not recognition', (
       tester,
@@ -1412,6 +1544,8 @@ final class _RecordingHistoricalArchivesWorkflowActions
 
 HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
   required HistoricalArchivesNarratorPresentationViewModel? presentation,
+  HistoricalArchiveSourceType sourceType =
+      HistoricalArchiveSourceType.messagesFolders,
   HistoricalArchivesExistingSourcePresentationViewModel?
   existingSourcePresentation,
   bool importButtonEnabled = false,
@@ -1450,6 +1584,7 @@ HistoricalArchivesWorkflowPanelViewModel _narratorPanelModel({
     phases: const [],
     centerPageTitleVisible: presentation != null,
     isHub: isHub,
+    sourceType: sourceType,
     narratorPresentation: presentation,
     existingSourcePresentation: existingSourcePresentation,
   );
@@ -1589,6 +1724,42 @@ final class _ImportSuccessNoticeHistoricalArchivesWorkflow
   }) {
     dismissCallCount += 1;
     state = buildInitialHistoricalArchivesWorkflowState();
+  }
+}
+
+final class _MessageLensNoticeHistoricalArchivesWorkflow
+    extends HistoricalArchivesWorkflow {
+  var dismissCallCount = 0;
+  var _noticeOccurrence = 0;
+
+  @override
+  HistoricalArchivesWorkflowState build() =>
+      buildInitialHistoricalArchivesWorkflowState(
+        sourceType: HistoricalArchiveSourceType.messageLensDataFolders,
+      );
+
+  void emitNotice(HistoricalArchivesMessageLensNoticeKind kind) {
+    _noticeOccurrence += 1;
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesMessageLensNoticeState(
+        notice: HistoricalArchivesMessageLensNotice(
+          kind: kind,
+          noticeOccurrence: _noticeOccurrence,
+          presentationSessionOccurrence: 0,
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dismissMessageLensNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    dismissCallCount += 1;
+    state = buildInitialHistoricalArchivesWorkflowState(
+      sourceType: HistoricalArchiveSourceType.messageLensDataFolders,
+    );
   }
 }
 

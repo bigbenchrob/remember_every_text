@@ -44,9 +44,47 @@ class OverlayAttachmentArchiveWriteStore
             archivedAtUtc: record.archivedAtUtc,
             fileSizeBytes: record.fileSizeBytes,
             contentHash: Value(record.contentHash),
+            provenance: Value(record.provenance),
             originalLocalPath: Value(record.originalLocalPath),
           ),
         );
+  }
+
+  @override
+  Future<void> reconcileArchiveRecord(ArchivedAttachmentWrite record) async {
+    if (!_isSafeArchiveRelativePath(record.archiveRelativePath)) {
+      throw StateError('Archive relative path must stay inside the archive.');
+    }
+
+    await _overlayDatabase.transaction(() async {
+      final existing =
+          await (_overlayDatabase.select(_overlayDatabase.archivedAttachments)
+                ..where(
+                  (t) =>
+                      t.messageGuid.equals(record.archiveKey.messageGuid) &
+                      t.importAttachmentId.equals(
+                        record.archiveKey.importAttachmentId,
+                      ),
+                ))
+              .getSingleOrNull();
+      if (existing == null) {
+        await writeArchiveRecord(record);
+        return;
+      }
+
+      await (_overlayDatabase.update(
+        _overlayDatabase.archivedAttachments,
+      )..where((t) => t.id.equals(existing.id))).write(
+        ArchivedAttachmentsCompanion(
+          archiveRelativePath: Value(record.archiveRelativePath),
+          archivedAtUtc: Value(record.archivedAtUtc),
+          fileSizeBytes: Value(record.fileSizeBytes),
+          contentHash: Value(record.contentHash),
+          provenance: Value(record.provenance),
+          originalLocalPath: Value(record.originalLocalPath),
+        ),
+      );
+    });
   }
 
   @override

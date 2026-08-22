@@ -6,12 +6,16 @@ class AttachmentArchiveLookupRecord {
     required this.archiveRelativePath,
     required this.archiveAbsolutePath,
     required this.archiveFileExists,
+    required this.fileSizeBytes,
+    required this.contentHash,
     required this.provenance,
   });
 
   final String archiveRelativePath;
   final String archiveAbsolutePath;
   final bool archiveFileExists;
+  final int? fileSizeBytes;
+  final String? contentHash;
   final String? provenance;
 }
 

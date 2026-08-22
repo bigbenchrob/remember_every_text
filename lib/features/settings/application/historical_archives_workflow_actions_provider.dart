@@ -19,6 +19,18 @@ class HistoricalArchivesWorkflowActions
         .chooseMessagesFolder();
   }
 
+  Future<void> chooseMessageLensFolder() async {
+    await ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .chooseMessageLensFolder();
+  }
+
+  void selectSourceType(HistoricalArchiveSourceType sourceType) {
+    ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .selectSourceType(sourceType);
+  }
+
   void clearSelection() {
     ref.read(historicalArchivesWorkflowProvider.notifier).clearSelection();
   }
@@ -70,6 +82,18 @@ class HistoricalArchivesWorkflowActions
     ref
         .read(historicalArchivesWorkflowProvider.notifier)
         .dismissImportSuccessNotice(
+          noticeOccurrence: noticeOccurrence,
+          presentationSessionOccurrence: presentationSessionOccurrence,
+        );
+  }
+
+  void dismissMessageLensNotice({
+    required int noticeOccurrence,
+    required int presentationSessionOccurrence,
+  }) {
+    ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .dismissMessageLensNotice(
           noticeOccurrence: noticeOccurrence,
           presentationSessionOccurrence: presentationSessionOccurrence,
         );

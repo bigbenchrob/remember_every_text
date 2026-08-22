@@ -17,13 +17,37 @@ class ArchivedAttachmentFileWrite {
 class ArchiveIntegrityFileCheck {
   const ArchiveIntegrityFileCheck({
     required this.fileExists,
+    required this.actualSizeBytes,
     required this.hashMatches,
     required this.actualHash,
   });
 
   final bool fileExists;
+  final int? actualSizeBytes;
   final bool? hashMatches;
   final String? actualHash;
+}
+
+enum AttachmentArchiveFileInstallStatus {
+  installed,
+  alreadyPresent,
+  conflict,
+  donorChanged,
+  verificationFailed,
+}
+
+class AttachmentArchiveFileInstall {
+  const AttachmentArchiveFileInstall({
+    required this.status,
+    required this.relativePath,
+    required this.fileSizeBytes,
+    required this.contentHash,
+  });
+
+  final AttachmentArchiveFileInstallStatus status;
+  final String relativePath;
+  final int fileSizeBytes;
+  final String contentHash;
 }
 
 abstract interface class AttachmentArchiveFileStore {
@@ -39,6 +63,16 @@ abstract interface class AttachmentArchiveFileStore {
     required String sourcePath,
     required ArchiveCompatibilityKey archiveKey,
     required String? sha256Hex,
+  });
+
+  /// Installs already-proven payload bytes through the canonical
+  /// content-addressed archive path using atomic no-overwrite semantics.
+  Future<AttachmentArchiveFileInstall> installVerifiedArchiveEntry({
+    required String archiveDirectoryPath,
+    required Stream<List<int>> sourceBytes,
+    required String sourceExtension,
+    required int expectedSizeBytes,
+    required String expectedSha256,
   });
 
   Future<ArchiveIntegrityFileCheck> checkIntegrity({

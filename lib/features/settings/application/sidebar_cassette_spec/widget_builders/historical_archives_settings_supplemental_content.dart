@@ -85,18 +85,16 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final showAddMessagesFolder = ref.watch(
-      historicalArchivesWorkflowProvider.select(
-        (state) => switch (state.presentation) {
-          HistoricalArchivesInspectingCandidateState() ||
-          HistoricalArchivesInspectionFailedState() ||
-          HistoricalArchivesReadyToAddState() ||
-          HistoricalArchivesImportingState() ||
-          HistoricalArchivesImportFailedState() => false,
-          _ => true,
-        },
-      ),
-    );
+    final workflowState = ref.watch(historicalArchivesWorkflowProvider);
+    final sourceType = workflowState.sourceType;
+    final showAddMessagesFolder = switch (workflowState.presentation) {
+      HistoricalArchivesInspectingCandidateState() ||
+      HistoricalArchivesInspectionFailedState() ||
+      HistoricalArchivesReadyToAddState() ||
+      HistoricalArchivesImportingState() ||
+      HistoricalArchivesImportFailedState() => false,
+      _ => true,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -119,7 +117,40 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             height: historicalArchivesKnownFoldersHeadingToListGap,
           ),
         ],
-        if (payload.knownSources.isEmpty)
+        if (sourceType ==
+            HistoricalArchiveSourceType.messageLensDataFolders) ...[
+          Text(
+            'Choose an older MessageLens data folder from this Messages history. '
+            'MessageLens will check it for attachment files that are missing here.',
+            key: const ValueKey<String>(
+              'historical-archives-message-lens-guidance',
+            ),
+            style: typography.caption1.copyWith(
+              color: colors.content.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppSecondaryButton(
+            onPressed: workflowState.sourceTypeSwitchEnabled
+                ? () async {
+                    await ref
+                        .read(
+                          historicalArchivesWorkflowActionsProvider.notifier,
+                        )
+                        .chooseMessageLensFolder();
+                  }
+                : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Text(
+                'Choose MessageLens Folder…',
+                style: typography.controlValue.copyWith(
+                  color: colors.accents.primary,
+                ),
+              ),
+            ),
+          ),
+        ] else if (payload.knownSources.isEmpty)
           DecoratedBox(
             decoration: BoxDecoration(
               color: colors.surfaces.control,
@@ -145,7 +176,8 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             if (index < payload.knownSources.length - 1)
               const SizedBox(height: AppSpacing.cassetteGap),
           ],
-        if (showAddMessagesFolder) ...[
+        if (sourceType == HistoricalArchiveSourceType.messagesFolders &&
+            showAddMessagesFolder) ...[
           const SizedBox(
             key: ValueKey<String>(
               'historical-archives-known-folders-to-add-gap',

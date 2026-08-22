@@ -177,7 +177,7 @@ void main() {
     });
 
     testWidgets(
-      'source-type control selects Mac Messages and disables MessageLens',
+      'source-type control switches to the virgin MessageLens recovery hub',
       (tester) async {
         final workflow = _TestHistoricalArchivesWorkflow();
 
@@ -219,16 +219,32 @@ void main() {
           segmentStyle('Mac Messages').color,
           colors.buttons.primaryForeground,
         );
-        expect(segmentStyle('MessageLens').color, colors.content.textDisabled);
+        expect(segmentStyle('MessageLens').color, colors.content.textSecondary);
 
-        final stateBeforeTap = workflow.state;
         await tester.tap(find.text('MessageLens'));
         await tester.pumpAndSettle();
 
-        expect(workflow.state, stateBeforeTap);
+        expect(
+          workflow.state.sourceType,
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+        expect(workflow.state.presentation, isA<HistoricalArchivesHubState>());
         expect(workflow.chooseMessagesFolderCallCount, 0);
         expect(find.text('Mac Messages'), findsOneWidget);
-        expect(find.text('Folders Already Added'), findsOneWidget);
+        expect(find.text('Folders Already Added'), findsNothing);
+        expect(find.text('Recover from a MessageLens Folder'), findsOneWidget);
+        expect(
+          find.byKey(
+            const ValueKey<String>('historical-archives-message-lens-guidance'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Choose MessageLens Folder…'), findsOneWidget);
+
+        await tester.tap(find.text('Choose MessageLens Folder…'));
+        await tester.pump();
+
+        expect(workflow.chooseMessageLensFolderCallCount, 1);
       },
     );
 
@@ -904,6 +920,7 @@ class _TestHistoricalArchivesWorkflow extends HistoricalArchivesWorkflow {
 
   final HistoricalArchivesWorkflowState _initialState;
   int chooseMessagesFolderCallCount = 0;
+  int chooseMessageLensFolderCallCount = 0;
   final List<HistoricalArchiveSourceIdentity> shownSourceIdentities = [];
 
   @override
@@ -914,6 +931,11 @@ class _TestHistoricalArchivesWorkflow extends HistoricalArchivesWorkflow {
   @override
   Future<void> chooseMessagesFolder() async {
     chooseMessagesFolderCallCount += 1;
+  }
+
+  @override
+  Future<void> chooseMessageLensFolder() async {
+    chooseMessageLensFolderCallCount += 1;
   }
 
   @override

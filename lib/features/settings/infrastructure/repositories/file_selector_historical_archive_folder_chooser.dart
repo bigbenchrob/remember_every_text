@@ -12,4 +12,11 @@ class FileSelectorHistoricalArchiveFolderChooser
       const FileDialogOptions(confirmButtonText: 'Use This Folder'),
     );
   }
+
+  @override
+  Future<String?> chooseMessageLensFolder() {
+    return FileSelectorPlatform.instance.getDirectoryPathWithOptions(
+      const FileDialogOptions(confirmButtonText: 'Use This Folder'),
+    );
+  }
 }

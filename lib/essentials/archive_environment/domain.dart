@@ -9,6 +9,7 @@ export 'domain/archive_environment.dart';
 export 'domain/archive_identity_validator.dart';
 export 'domain/archive_instance_id.dart';
 export 'domain/archive_marker.dart';
+export 'domain/archive_mutation_capability_denied_exception.dart';
 export 'domain/archive_mutation_denied_exception.dart';
 export 'domain/archive_mutation_operation.dart';
 export 'domain/canonical_archive_root_policy.dart';

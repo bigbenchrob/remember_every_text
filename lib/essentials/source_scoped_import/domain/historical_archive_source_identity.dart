@@ -1,15 +1,17 @@
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
+import '../../archive_environment/domain/archive_instance_id.dart';
 import 'known_sources.dart';
 
-enum HistoricalArchiveSourceKind { macMessages }
+enum HistoricalArchiveSourceKind { macMessages, messageLens }
 
 /// Canonical identity for one historical archive.
 ///
-/// Identity is the source kind plus the normalized absolute path to its
-/// `chat.db`. Constructing or validating the identity requires no filesystem
-/// access, so persisted identity remains usable while the source is offline.
+/// Mac Messages identity uses the normalized absolute path to its `chat.db`.
+/// MessageLens recovery identity uses the donor's archive instance ID; its path
+/// remains locator evidence only. Validation requires no filesystem access, so
+/// persisted identity remains usable while the source is offline.
 @immutable
 final class HistoricalArchiveSourceIdentity {
   const HistoricalArchiveSourceIdentity._({
@@ -29,8 +31,37 @@ final class HistoricalArchiveSourceIdentity {
     );
   }
 
+  factory HistoricalArchiveSourceIdentity.messageLensFromArchiveInstanceId(
+    String archiveInstanceId,
+  ) {
+    final canonicalArchiveInstanceId = ArchiveInstanceId(
+      archiveInstanceId,
+    ).value;
+    return HistoricalArchiveSourceIdentity._(
+      kind: HistoricalArchiveSourceKind.messageLens,
+      canonicalSourcePath: '',
+      value:
+          '$messageLensRecoveryArchiveSourceKeyPrefix$canonicalArchiveInstanceId',
+    );
+  }
+
   factory HistoricalArchiveSourceIdentity.fromPersistedValue(String value) {
     final trimmed = value.trim();
+    if (trimmed.startsWith(messageLensRecoveryArchiveSourceKeyPrefix)) {
+      final archiveInstanceId = trimmed.substring(
+        messageLensRecoveryArchiveSourceKeyPrefix.length,
+      );
+      final identity =
+          HistoricalArchiveSourceIdentity.messageLensFromArchiveInstanceId(
+            archiveInstanceId,
+          );
+      if (identity.value != trimmed) {
+        throw const FormatException(
+          'Historical archive source key is not canonical.',
+        );
+      }
+      return identity;
+    }
     if (!trimmed.startsWith(historicalMessagesArchiveSourceKeyPrefix)) {
       throw const FormatException('Unsupported historical archive source key.');
     }
@@ -55,6 +86,8 @@ final class HistoricalArchiveSourceIdentity {
   String get sourceKind => switch (kind) {
     HistoricalArchiveSourceKind.macMessages =>
       historicalMessagesArchiveSourceKind,
+    HistoricalArchiveSourceKind.messageLens =>
+      messageLensRecoveryArchiveSourceKind,
   };
 
   @override

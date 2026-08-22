@@ -2,7 +2,7 @@
 tier: project
 scope: production-archive-recovery
 owner: agent-per-project
-last_reviewed: 2026-08-21
+last_reviewed: 2026-08-22
 source_of_truth: architecture-audit
 links:
   - ../prompts/43-RESPONSE-TO-AUDIT-04.md
@@ -36,6 +36,12 @@ Sections below that describe general source-fact ingestion are superseded for
 the current product direction; they have not been erased because they document
 why the narrower boundary was chosen.
 
+The narrower read-only arm is now implemented through ready state. It performs
+structural archive qualification, archive-instance identity, shared
+same-Messages-lineage admission, and exact attachment recovery preflight. It
+does not import or merge donor facts. See
+[MessageLens Historical Archives Ready-State Implementation](50-ENABLE-MESSAGELENS-HISTORICAL-ARCHIVES-THROUGH-READY-STATE.md).
+
 ## Decision
 
 The future MessageLens arm is a legitimate second Historical Archives source
@@ -47,14 +53,12 @@ guards are sound foundations. The source semantics are materially different.
 A MessageLens donor is a versioned archive containing multiple stores, multiple
 original sources, user overlays, and preservation payloads.
 
-Implementation may safely begin with read-only qualification and source
-identity infrastructure. The segment must remain disabled, and ingestion must
-not begin, until three blocking contracts are settled:
-
-1. donor-qualified provenance for recipient-local source keys such as
-   `live-chat-db` and `live-address-book`;
-2. source-aware attachment metadata and payload merge semantics; and
-3. per-overlay-category merge and removal semantics.
+The implemented MessageLens segment remains strictly attachment-recovery-only.
+That scope makes donor-qualified fact provenance, arbitrary overlay merge, and
+donor graph ingestion inapplicable rather than deferred blockers. Recovery
+mutation remains deferred for the narrower reason that the preservation-safe
+per-candidate installer does not yet have an aggregate batch executor owning
+iteration, interruption, and truthful terminal outcomes.
 
 This audit changes no application behavior, schema, archive, donor, or data.
 
@@ -256,35 +260,32 @@ idempotent.
 
 ## 7. Attachment Strategy
 
+The current contract no longer merges arbitrary donor attachment metadata or
+imports donor source occurrences. It recovers payload bytes only after the
+donor passes same-Messages-lineage admission and each relationship proves the
+same original Apple message and attachment ROWIDs, matching message GUID, and
+noncontradictory attachment GUID.
+
 Preserved payloads live under `attachment_archive/`. Hash-addressed payloads
 use a SHA-256-derived relative path; compatibility fallback payloads may live
-under `_by_id`. Overlay rows currently relate payloads by
-`(message_guid, import_attachment_id)`, where `import_attachment_id` is an
-Apple attachment row ID. `ArchiveCompatibilityKey` currently supports live
-graph endpoints and is not a general donor-source identity.
+under `_by_id`. Overlay rows relate payloads by
+`(message_guid, import_attachment_id)`, where `import_attachment_id` is the
+original Apple attachment ROWID.
 
-No existing API safely merges an arbitrary MessageLens donor attachment
-archive. The future operation must:
-
-1. inventory donor attachment metadata and payload files read-only;
-2. validate relative paths, byte lengths, and hashes;
-3. map the donor message and attachment occurrence to recipient source-aware
-   identity;
-4. reuse an existing payload only when verified bytes match;
-5. copy to a content-addressed destination without overwriting different
-   bytes;
-6. report missing, unreadable, hash-mismatched, fallback-only, and opaque
-   payloads truthfully; and
-7. commit recipient metadata only after payload durability is established.
+The read-only matching and path/integrity contract is now documented in
+[MessageLens Attachment Matching And Preservation-Safe Recovery](47-MESSAGELENS-ATTACHMENT-MATCHING-AND-PRESERVATION-SAFE-RECOVERY.md).
+The Attachments-owned writer now provides atomic verified installation without
+destructive overwrite. Actual copy remains disabled until that primitive is
+composed behind an aggregate recovery executor with truthful batch outcomes.
 
 Payload files are preservation data. Removing a MessageLens historical source
 must not automatically delete them. A future preservation-aware garbage
 collector may delete only payloads proven unreferenced under a separately
 authorized policy; that policy does not exist now.
 
-The ready journey should report available payload count and size, missing or
-unverified payload count, and whether attachment import is included in the
-authorized operation.
+The ready journey should report safely recoverable payload count and exact
+validated byte total. Mismatches and unavailable donor payloads remain typed
+diagnostics, not guesses.
 
 ## 8. Overlay Strategy
 

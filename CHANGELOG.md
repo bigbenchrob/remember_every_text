@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Historical Archives now enables its MessageLens arm for safe, read-only
+  attachment recovery inspection. A selected older MessageLens data folder is
+  structurally qualified, identified by archive instance, admitted through the
+  shared Messages-lineage authority, and compared with current attachment
+  evidence before exact recoverable counts and bytes are shown. Attachment
+  mutation remains intentionally unavailable pending a batch executor.
+- Attachment preservation now has a dormant, atomic no-overwrite installation
+  boundary for verified MessageLens archive payloads, mechanically gated by an
+  exact-scope archive-mutation capability. The recovery UI remains disabled
+  while the infrastructure is exercised in isolated tests.
 - Historical Archives now proves that a selected Mac Messages folder belongs
   to the current Messages history before registering it or offering import.
   Foreign and unverifiable folders fail closed with distinct explanations.

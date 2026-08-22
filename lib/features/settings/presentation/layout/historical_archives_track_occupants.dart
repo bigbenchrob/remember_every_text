@@ -330,7 +330,7 @@ final class _HistoricalArchivesKnownFoldersHeadingTrackOccupant
   OccupantDimensionalClaim dimensionalClaim(
     PresentationConstraints constraints,
   ) {
-    final painter = _textPainter(
+    final macPainter = _textPainter(
       text: 'Folders Already Added',
       style: style,
       constraints: constraints,
@@ -339,9 +339,18 @@ final class _HistoricalArchivesKnownFoldersHeadingTrackOccupant
           (historicalArchivesSidebarHorizontalInset * 2),
       maxLines: 1,
     );
+    final messageLensPainter = _textPainter(
+      text: 'Recover from a MessageLens Folder',
+      style: style,
+      constraints: constraints,
+      maxWidth:
+          WorkspaceLayout.navigationColumnWidth -
+          (historicalArchivesSidebarHorizontalInset * 2),
+      maxLines: 2,
+    );
     return OccupantDimensionalClaim(
-      naturalHeight: painter.height,
-      preferredWidth: painter.width,
+      naturalHeight: math.max(macPainter.height, messageLensPainter.height),
+      preferredWidth: math.max(macPainter.width, messageLensPainter.width),
     );
   }
 
@@ -375,18 +384,22 @@ TextPainter _textPainter({
   )..layout(maxWidth: maxWidth);
 }
 
-class HistoricalArchivesSourceTypeControl extends StatelessWidget {
+class HistoricalArchivesSourceTypeControl extends ConsumerWidget {
   const HistoricalArchivesSourceTypeControl({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workflowState = ref.watch(historicalArchivesWorkflowProvider);
     return AppSegmentedModeControl<HistoricalArchiveSourceType>(
       key: const ValueKey<String>('historical-archives-source-type-control'),
       options: HistoricalArchiveSourceType.values,
-      selectedOption: HistoricalArchiveSourceType.messagesFolders,
-      isOptionEnabled: (sourceType) =>
-          sourceType == HistoricalArchiveSourceType.messagesFolders,
-      onSelected: (_) {},
+      selectedOption: workflowState.sourceType,
+      isOptionEnabled: (_) => workflowState.sourceTypeSwitchEnabled,
+      onSelected: (sourceType) {
+        ref
+            .read(historicalArchivesWorkflowProvider.notifier)
+            .selectSourceType(sourceType);
+      },
       labelBuilder: (sourceType) {
         return switch (sourceType) {
           HistoricalArchiveSourceType.messagesFolders => 'Mac Messages',
@@ -399,15 +412,20 @@ class HistoricalArchivesSourceTypeControl extends StatelessWidget {
   }
 }
 
-class HistoricalArchivesKnownFoldersHeading extends StatelessWidget {
+class HistoricalArchivesKnownFoldersHeading extends ConsumerWidget {
   const HistoricalArchivesKnownFoldersHeading({required this.style, super.key});
 
   final TextStyle style;
 
   @override
-  Widget build(BuildContext context) {
-    return Text('Folders Already Added', style: style);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sourceType = ref.watch(
+      historicalArchivesWorkflowProvider.select((state) => state.sourceType),
+    );
+    return Text(switch (sourceType) {
+      HistoricalArchiveSourceType.messagesFolders => 'Folders Already Added',
+      HistoricalArchiveSourceType.messageLensDataFolders =>
+        'Recover from a MessageLens Folder',
+    }, style: style);
   }
 }
-
-enum HistoricalArchiveSourceType { messagesFolders, messageLensDataFolders }

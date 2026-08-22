@@ -10,3 +10,8 @@ const String historicalMessagesArchiveSourceKind =
     'historical_messages_archive';
 const String historicalMessagesArchiveSourceKeyPrefix =
     'historical-messages-archive:';
+
+const String messageLensRecoveryArchiveSourceKind =
+    'message_lens_recovery_archive';
+const String messageLensRecoveryArchiveSourceKeyPrefix =
+    'message-lens-recovery-archive:';

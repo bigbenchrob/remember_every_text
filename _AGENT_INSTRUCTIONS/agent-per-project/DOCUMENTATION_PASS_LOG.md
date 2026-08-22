@@ -182,6 +182,31 @@ column's explicitly declared final shared Track.
 
 # Documentation Pass Log
 
+## 2026-08-22 - MessageLens Historical Archives ready state
+
+- Added Feature 26 response 50 documenting the enabled MessageLens arm through
+  structural qualification, archive-instance identity, shared Messages-lineage
+  admission, and exact read-only attachment recovery preflight.
+- Updated the canonical historical-source identity guide with the two-arm
+  product distinction and MessageLens archive-instance identity rule.
+- Updated the Feature 26 index and broad MessageLens data-folder audit to
+  replace obsolete disabled-arm and arbitrary donor-ingestion assumptions.
+- Recorded that recovery mutation remains intentionally absent until an
+  aggregate batch executor owns iteration, interruption, and terminal truth.
+
+## 2026-08-21 - MessageLens attachment matching and safe recovery
+
+- Added Feature 26 response 47 documenting the exact Apple Messages to
+  MessageLens attachment identity chain, relationship proof, payload/path
+  safety, typed classifications, aggregate preflight, mutation boundary,
+  idempotency, and donor lifecycle recommendation.
+- Corrected the broad MessageLens archive audit so its attachment section
+  reflects the narrowed same-lineage payload-recovery contract rather than the
+  superseded arbitrary donor-merge model.
+- Recorded the dormant Attachments-owned matcher and read-only payload
+  inspector. No MessageLens recovery segment, copy operation, or schema change
+  was enabled.
+
 Date: 2026-07-09
 
 Scope: Autonomous maintenance pass confined to
@@ -5296,3 +5321,21 @@ production preservation authority mechanically enforceable.
   distinction.
 - Added the Feature 26 implementation record and linked the earlier proof and
   project/database indexes without rewriting historical records.
+## 2026-08-21 - Preservation-safe attachment recovery infrastructure
+
+- Strengthened the canonical attachment file store with verified temporary
+  writes and macOS `link(2)` atomic no-overwrite installation.
+- Added the dormant typed MessageLens recovery installer with payload-first,
+  metadata-second ordering and retry reconciliation after metadata failure.
+- Added read-only donor and canonical-current evidence adapters without donor
+  migration or ad-hoc current database construction.
+- Updated the canonical attachment archive guide with the no-overwrite writer
+  rule, crash semantics, ownership inventory, and metadata ordering invariant.
+- Added Feature 26 response
+  `48-PRESERVATION-SAFE-ATTACHMENT-RECOVERY-INFRASTRUCTURE.md` and removed the
+  byte-identical untracked Prompt 46 duplicate.
+- Corrected the implementation record after worktree verification showed that
+  mutation admission was described but not enforced at the dormant installer
+  boundary. The archive mutation coordinator now mints an opaque capability
+  valid only in the exact admitted async scope, and the installer rejects
+  stale or wrong-operation capabilities before any payload or metadata access.

@@ -142,6 +142,7 @@ const Set<String> _appDatabaseFileHelperAllowedFiles = {
   'lib/essentials/onboarding/application/database_existence_checker.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
+  'lib/features/settings/infrastructure/repositories/message_lens_historical_archive_preflight_service.dart',
 };
 
 const Set<String> _archiveAccessAuthorityConsumerFiles = {
@@ -157,6 +158,7 @@ const Set<String> _archiveAccessAuthorityConsumerFiles = {
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
   'lib/features/attachments/application/video_thumbnail_cache_provider.dart',
+  'lib/features/settings/application/message_lens_historical_archive_preflight_provider.dart',
   'lib/features/presence_iteration_simple/application/development_contacts_source_provider.dart',
   'lib/main.dart',
 };
@@ -311,6 +313,7 @@ const Set<String> _directSqliteImportAllowedFiles = {
   'lib/essentials/source_scoped_import/infrastructure/source_database/sqflite_source_database.dart',
   'lib/features/address_book_folders/infrastructure/data_sources/local/address_book_db_helper_multi_instance.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_historical_snapshot_reader.dart',
+  'lib/features/attachments/infrastructure/repositories/sqlite_message_lens_attachment_donor_evidence_reader.dart',
   'lib/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart',
   'lib/features/settings/infrastructure/repositories/message_history_coverage_repository.dart',
   'lib/main.dart',
@@ -408,6 +411,7 @@ const Set<String> _platformRuntimeAllowedFiles = {
   'lib/essentials/logging/infrastructure/support_bundle_export_service.dart',
   'lib/essentials/source_scoped_import/infrastructure/extraction/rust_message_extractor.dart',
   'lib/essentials/window_state/infrastructure/persistence/macos_window_manager.dart',
+  'lib/features/attachments/infrastructure/repositories/darwin_atomic_no_overwrite_file_installer.dart',
   'lib/features/settings/infrastructure/repositories/filesystem_message_history_coverage_report_exporter.dart',
   'lib/main.dart',
 };
@@ -657,6 +661,8 @@ const Set<String> _externalLinkActionProviderAllowedFiles = {
 
 const Set<String> _attachmentSourceScopedIdentityAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/graph_cross_snapshot_mapper.dart',
+  'lib/features/attachments/infrastructure/repositories/import_ledger_message_lens_attachment_evidence_reader.dart',
+  'lib/features/attachments/infrastructure/repositories/message_lens_attachment_identity_evidence_factory.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart',
 };
 

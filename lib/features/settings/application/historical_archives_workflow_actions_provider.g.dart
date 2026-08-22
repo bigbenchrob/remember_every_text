@@ -7,7 +7,7 @@ part of 'historical_archives_workflow_actions_provider.dart';
 // **************************************************************************
 
 String _$historicalArchivesWorkflowActionsHash() =>
-    r'0a036ee4180da476ab7819ed48e133f83aa8dbe9';
+    r'20dc59771189ca80fc6ec376738d170109d1a153';
 
 /// See also [HistoricalArchivesWorkflowActions].
 @ProviderFor(HistoricalArchivesWorkflowActions)
