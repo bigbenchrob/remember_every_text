@@ -20,6 +20,38 @@ class OverlayAttachmentArchiveReadStore implements AttachmentArchiveReadStore {
   final String _archiveDirectory;
 
   @override
+  Future<Map<ArchiveCompatibilityKey, AttachmentArchiveMetadataRecord>>
+  readAllArchiveMetadata() async {
+    final rows = await _overlayDb.customSelect('''
+          SELECT message_guid, import_attachment_id, archive_relative_path,
+                 file_size_bytes, content_hash, provenance
+          FROM archived_attachments
+          ''').get();
+    final records =
+        <ArchiveCompatibilityKey, AttachmentArchiveMetadataRecord>{};
+    for (final row in rows) {
+      final key = ArchiveCompatibilityKey.fromStoredTuple(
+        messageGuid: row.read<String>('message_guid'),
+        importAttachmentId: row.read<int>('import_attachment_id'),
+      );
+      final relativePath = row.read<String>('archive_relative_path');
+      if (_boundedArchivePath(
+            archiveDirectory: _archiveDirectory,
+            relativePath: relativePath,
+          ) ==
+          null) {
+        continue;
+      }
+      records[key] = AttachmentArchiveMetadataRecord(
+        archiveRelativePath: relativePath,
+        fileSizeBytes: row.read<int>('file_size_bytes'),
+        contentHash: row.readNullable<String>('content_hash'),
+      );
+    }
+    return records;
+  }
+
+  @override
   Future<AttachmentArchiveLookupRecord?> readArchiveRecord(
     ArchiveCompatibilityKey archiveKey,
   ) async {

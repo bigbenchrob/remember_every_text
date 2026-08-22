@@ -143,4 +143,64 @@ void main() {
       expect(trackOccupants, contains('messageLensDataFolders'));
     },
   );
+
+  test('MessageLens preflight is batched, observable, and hash-free', () {
+    final service = File(
+      'lib/features/settings/infrastructure/repositories/'
+      'message_lens_historical_archive_preflight_service.dart',
+    ).readAsStringSync();
+    final currentAdapter = File(
+      'lib/features/attachments/infrastructure/repositories/'
+      'import_ledger_message_lens_attachment_evidence_reader.dart',
+    ).readAsStringSync();
+    final payloadInspector = File(
+      'lib/features/attachments/infrastructure/repositories/'
+      'message_lens_attachment_payload_inspector.dart',
+    ).readAsStringSync();
+    final donorAdapter = File(
+      'lib/features/attachments/infrastructure/repositories/'
+      'sqlite_message_lens_attachment_donor_evidence_reader.dart',
+    ).readAsStringSync();
+    final qualifier = File(
+      'lib/features/attachments/infrastructure/repositories/'
+      'sqlite_message_lens_attachment_recovery_donor_qualifier.dart',
+    ).readAsStringSync();
+    final workflow = File(
+      'lib/features/settings/application/'
+      'historical_archives_workflow_panel_model_provider.dart',
+    ).readAsStringSync();
+    final preflightInspection = payloadInspector.substring(
+      payloadInspector.indexOf('Future<AttachmentPayloadInspection> inspect('),
+      payloadInspector.indexOf(
+        'Future<VerifiedDonorAttachmentPayloadResult> inspectVerified(',
+      ),
+    );
+
+    expect(service, contains('.readPayloadStatuses('));
+    expect(service, isNot(contains('.readPayloadStatus(')));
+    expect(service, isNot(contains('Timer(')));
+    expect(currentAdapter, contains('readAllArchiveMetadata'));
+    expect(currentAdapter, contains('inspectClaims'));
+    expect(payloadInspector, contains('list(recursive: true'));
+    expect(payloadInspector, contains('const batchSize = 250'));
+    expect(
+      currentAdapter,
+      contains("columns: const <String>['source_rowid', 'guid']"),
+    );
+    expect(preflightInspection, isNot(contains('sha256.bind')));
+    expect(preflightInspection, isNot(contains('openRead()')));
+    expect(payloadInspector, contains('inspectVerified'));
+    expect(payloadInspector, contains('sha256.bind'));
+    expect(donorAdapter, contains('validateExecutionIntegrity'));
+    expect(donorAdapter, contains('PRAGMA integrity_check'));
+    expect(qualifier, isNot(contains('validateExecutionIntegrity')));
+    expect(
+      workflow.indexOf('await waitForInspectionPresentation()'),
+      lessThan(
+        workflow.indexOf(
+          'messageLensHistoricalArchivePreflightProvider.future',
+        ),
+      ),
+    );
+  });
 }

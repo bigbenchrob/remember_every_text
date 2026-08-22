@@ -19,7 +19,24 @@ class AttachmentArchiveLookupRecord {
   final String? provenance;
 }
 
+class AttachmentArchiveMetadataRecord {
+  const AttachmentArchiveMetadataRecord({
+    required this.archiveRelativePath,
+    required this.fileSizeBytes,
+    required this.contentHash,
+  });
+
+  final String archiveRelativePath;
+  final int? fileSizeBytes;
+  final String? contentHash;
+}
+
 abstract interface class AttachmentArchiveReadStore {
+  /// Reads the current archive metadata in one snapshot for bounded comparison
+  /// work. Physical payloads are inspected separately in one filesystem pass.
+  Future<Map<ArchiveCompatibilityKey, AttachmentArchiveMetadataRecord>>
+  readAllArchiveMetadata();
+
   /// Reads an archive record by the current overlay archive compatibility key.
   Future<AttachmentArchiveLookupRecord?> readArchiveRecord(
     ArchiveCompatibilityKey archiveKey,

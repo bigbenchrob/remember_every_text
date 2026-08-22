@@ -1,11 +1,11 @@
 import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../../../essentials/source_scoped_import/domain/known_sources.dart';
 import '../../../../essentials/source_scoped_import/domain/ports/import_ledger_port.dart';
-import '../../application/attachment_archive_file_store.dart';
 import '../../application/attachment_archive_read_store.dart';
 import '../../application/message_lens_attachment_evidence_reader.dart';
 import '../../domain/entities/message_lens_attachment_recovery.dart';
 import 'message_lens_attachment_identity_evidence_factory.dart';
+import 'message_lens_attachment_payload_inspector.dart';
 
 /// Current-side evidence adapter. It consumes canonical import-ledger and
 /// archive-store abstractions and never opens an application database itself.
@@ -14,21 +14,22 @@ class ImportLedgerMessageLensAttachmentEvidenceReader
   const ImportLedgerMessageLensAttachmentEvidenceReader({
     required ImportLedger importLedger,
     required AttachmentArchiveReadStore archiveReadStore,
-    required AttachmentArchiveFileStore archiveFileStore,
     required String archiveDirectoryPath,
     MessageLensAttachmentIdentityEvidenceFactory evidenceFactory =
         const MessageLensAttachmentIdentityEvidenceFactory(),
+    MessageLensAttachmentPayloadInspector payloadInspector =
+        const MessageLensAttachmentPayloadInspector(),
   }) : _importLedger = importLedger,
        _archiveReadStore = archiveReadStore,
-       _archiveFileStore = archiveFileStore,
        _archiveDirectoryPath = archiveDirectoryPath,
-       _evidenceFactory = evidenceFactory;
+       _evidenceFactory = evidenceFactory,
+       _payloadInspector = payloadInspector;
 
   final ImportLedger _importLedger;
   final AttachmentArchiveReadStore _archiveReadStore;
-  final AttachmentArchiveFileStore _archiveFileStore;
   final String _archiveDirectoryPath;
   final MessageLensAttachmentIdentityEvidenceFactory _evidenceFactory;
+  final MessageLensAttachmentPayloadInspector _payloadInspector;
 
   @override
   Future<List<MessageLensAttachmentRelationshipEvidence>>
@@ -46,16 +47,34 @@ class ImportLedgerMessageLensAttachmentEvidenceReader
     final sourceId = _requiredInt(sourceRows.single, 'source_id');
     final relationships = await _importLedger.queryTable(
       'message_to_attachment',
+      columns: const <String>[
+        'message_source_id',
+        'attachment_source_id',
+        'source_message_rowid',
+        'source_attachment_rowid',
+        'message_ss_id',
+        'attachment_ss_id',
+      ],
       where: 'message_source_id = ? AND attachment_source_id = ?',
       whereArgs: <Object?>[sourceId, sourceId],
     );
     final messages = await _importLedger.queryTable(
       'messages',
+      columns: const <String>['source_rowid', 'guid'],
       where: 'source_id = ?',
       whereArgs: <Object?>[sourceId],
     );
     final attachments = await _importLedger.queryTable(
       'attachments',
+      columns: const <String>[
+        'source_rowid',
+        'guid',
+        'filename',
+        'transfer_name',
+        'mime_type',
+        'uti',
+        'total_bytes',
+      ],
       where: 'source_id = ?',
       whereArgs: <Object?>[sourceId],
     );
@@ -184,29 +203,61 @@ class ImportLedgerMessageLensAttachmentEvidenceReader
   }
 
   @override
-  Future<CurrentAttachmentPayloadStatus> readPayloadStatus(
-    ArchiveCompatibilityKey archiveKey,
-  ) async {
-    final record = await _archiveReadStore.readArchiveRecord(archiveKey);
-    if (record == null || !record.archiveFileExists) {
-      return CurrentAttachmentPayloadStatus.missing;
+  Future<Map<ArchiveCompatibilityKey, CurrentAttachmentPayloadStatus>>
+  readPayloadStatuses(
+    List<ArchiveCompatibilityKey> archiveKeys, {
+    void Function(int completed, int total)? onProgress,
+  }) async {
+    final records = await _archiveReadStore.readAllArchiveMetadata();
+    final statuses =
+        <ArchiveCompatibilityKey, CurrentAttachmentPayloadStatus>{};
+    final claims = <MessageLensArchivedPayloadClaim>[];
+    var metadataMissingCount = 0;
+    for (final archiveKey in archiveKeys) {
+      final metadata = records[archiveKey];
+      if (metadata == null || metadata.fileSizeBytes == null) {
+        statuses[archiveKey] = CurrentAttachmentPayloadStatus.missing;
+        metadataMissingCount += 1;
+      } else {
+        claims.add(
+          MessageLensArchivedPayloadClaim(
+            archiveCompatibilityKey: archiveKey,
+            payload: MessageLensArchivedPayloadEvidence(
+              archiveRelativePath: metadata.archiveRelativePath,
+              recordedSizeBytes: metadata.fileSizeBytes!,
+              recordedSha256: metadata.contentHash,
+            ),
+          ),
+        );
+      }
     }
-    final integrity = await _archiveFileStore.checkIntegrity(
+    if (metadataMissingCount > 0) {
+      onProgress?.call(metadataMissingCount, archiveKeys.length);
+    }
+    if (claims.isEmpty) {
+      return statuses;
+    }
+
+    final inspections = await _payloadInspector.inspectClaims(
       archiveDirectoryPath: _archiveDirectoryPath,
-      relativePath: record.archiveRelativePath,
-      storedHash: record.contentHash,
+      claims: claims,
+      onProgress: (completed, _) {
+        onProgress?.call(metadataMissingCount + completed, archiveKeys.length);
+      },
     );
-    if (!integrity.fileExists) {
-      return CurrentAttachmentPayloadStatus.missing;
+    for (final claim in claims) {
+      final inspection = inspections[claim.archiveCompatibilityKey];
+      statuses[claim.archiveCompatibilityKey] = switch (inspection?.status) {
+        AttachmentPayloadInspectionStatus.valid =>
+          CurrentAttachmentPayloadStatus.presentValid,
+        AttachmentPayloadInspectionStatus.missing =>
+          CurrentAttachmentPayloadStatus.missing,
+        AttachmentPayloadInspectionStatus.invalid ||
+        AttachmentPayloadInspectionStatus.unsafePath ||
+        null => CurrentAttachmentPayloadStatus.presentConflict,
+      };
     }
-    if (record.contentHash != null && integrity.hashMatches != true) {
-      return CurrentAttachmentPayloadStatus.presentConflict;
-    }
-    if (record.fileSizeBytes != null &&
-        integrity.actualSizeBytes != record.fileSizeBytes) {
-      return CurrentAttachmentPayloadStatus.presentConflict;
-    }
-    return CurrentAttachmentPayloadStatus.presentValid;
+    return statuses;
   }
 
   static int _requiredInt(Map<String, Object?> row, String key) {

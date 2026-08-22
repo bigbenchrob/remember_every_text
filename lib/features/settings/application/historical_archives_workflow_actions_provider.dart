@@ -19,10 +19,14 @@ class HistoricalArchivesWorkflowActions
         .chooseMessagesFolder();
   }
 
-  Future<void> chooseMessageLensFolder() async {
+  Future<void> chooseMessageLensFolder({
+    Future<void> Function()? waitForInspectionPresentation,
+  }) async {
     await ref
         .read(historicalArchivesWorkflowProvider.notifier)
-        .chooseMessageLensFolder();
+        .chooseMessageLensFolder(
+          waitForInspectionPresentation: waitForInspectionPresentation,
+        );
   }
 
   void selectSourceType(HistoricalArchiveSourceType sourceType) {

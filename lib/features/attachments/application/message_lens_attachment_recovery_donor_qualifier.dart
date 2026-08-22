@@ -1,5 +1,16 @@
 import '../domain/entities/message_lens_attachment_recovery_donor.dart';
 
+enum MessageLensAttachmentRecoveryDonorQualificationStage {
+  structuralQualification,
+  compatibilityInspection,
+}
+
+typedef MessageLensAttachmentRecoveryDonorQualificationObserver =
+    void Function(
+      MessageLensAttachmentRecoveryDonorQualificationStage stage, {
+      required bool completed,
+    });
+
 sealed class MessageLensAttachmentRecoveryDonorQualification {
   const MessageLensAttachmentRecoveryDonorQualification();
 }
@@ -26,5 +37,6 @@ final class SupportedMessageLensAttachmentRecoveryDonor
 abstract interface class MessageLensAttachmentRecoveryDonorQualifier {
   Future<MessageLensAttachmentRecoveryDonorQualification> qualify({
     required String folderPath,
+    MessageLensAttachmentRecoveryDonorQualificationObserver? onProgress,
   });
 }

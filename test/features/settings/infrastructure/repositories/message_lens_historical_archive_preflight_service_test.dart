@@ -204,12 +204,67 @@ void main() {
       expect(ready.attachmentPreflight.alreadyPresentCount, 0);
       expect(currentEvidenceReader.liveRelationshipReadCount, 1);
       expect(currentEvidenceReader.payloadStatusReadCount, 1);
+      expect(ready.phaseTimings, isNotEmpty);
       expect(File(importPath).lastModifiedSync(), importModifiedAt);
       expect(File(overlayPath).lastModifiedSync(), overlayModifiedAt);
       expect(File('$importPath-wal').existsSync(), isFalse);
       expect(File('$overlayPath-wal').existsSync(), isFalse);
     },
   );
+
+  test('publishes progress from completed work in bounded phases', () async {
+    await _createCompatibleDonor(donorRoot);
+    final progress = <MessageLensHistoricalArchivePreflightProgress>[];
+
+    final result = await service().inspect(
+      folderPath: donorRoot.path,
+      onProgress: progress.add,
+    );
+
+    expect(result, isA<MessageLensHistoricalArchiveReady>());
+    expect(
+      progress.map((item) => item.phase),
+      containsAllInOrder(const [
+        MessageLensHistoricalArchivePreflightPhase.structuralQualification,
+        MessageLensHistoricalArchivePreflightPhase.compatibilityInspection,
+        MessageLensHistoricalArchivePreflightPhase.lineageAdmission,
+        MessageLensHistoricalArchivePreflightPhase.donorAttachmentEvidence,
+        MessageLensHistoricalArchivePreflightPhase.currentAttachmentEvidence,
+        MessageLensHistoricalArchivePreflightPhase.donorPayloadEvidence,
+        MessageLensHistoricalArchivePreflightPhase.relationshipMatching,
+        MessageLensHistoricalArchivePreflightPhase.currentPayloadPresence,
+        MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence,
+        MessageLensHistoricalArchivePreflightPhase.classification,
+      ]),
+    );
+    expect(
+      progress.where((item) => item.totalUnits != null),
+      everyElement(
+        predicate<MessageLensHistoricalArchivePreflightProgress>(
+          (item) => item.completedUnits <= item.totalUnits!,
+        ),
+      ),
+    );
+  });
+
+  test('cancellation stops before attachment evidence is loaded', () async {
+    await _createCompatibleDonor(donorRoot);
+    var cancel = false;
+
+    final result = await service().inspect(
+      folderPath: donorRoot.path,
+      onProgress: (progress) {
+        if (progress.phase ==
+            MessageLensHistoricalArchivePreflightPhase.lineageAdmission) {
+          cancel = true;
+        }
+      },
+      isCancelled: () => cancel,
+    );
+
+    expect(result, isA<MessageLensHistoricalArchivePreflightCancelled>());
+    expect(currentEvidenceReader.liveRelationshipReadCount, 0);
+  });
 
   test('reselecting an ephemeral donor recomputes preflight', () async {
     await _createCompatibleDonor(donorRoot, includeMarker: false);
@@ -394,11 +449,17 @@ final class _FakeCurrentEvidenceReader
   }
 
   @override
-  Future<CurrentAttachmentPayloadStatus> readPayloadStatus(
-    ArchiveCompatibilityKey archiveKey,
-  ) async {
+  Future<Map<ArchiveCompatibilityKey, CurrentAttachmentPayloadStatus>>
+  readPayloadStatuses(
+    List<ArchiveCompatibilityKey> archiveKeys, {
+    void Function(int completed, int total)? onProgress,
+  }) async {
     payloadStatusReadCount += 1;
-    return CurrentAttachmentPayloadStatus.missing;
+    onProgress?.call(archiveKeys.length, archiveKeys.length);
+    return <ArchiveCompatibilityKey, CurrentAttachmentPayloadStatus>{
+      for (final archiveKey in archiveKeys)
+        archiveKey: CurrentAttachmentPayloadStatus.missing,
+    };
   }
 
   @override

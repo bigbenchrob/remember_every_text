@@ -1,3 +1,4 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -137,7 +138,10 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
                         .read(
                           historicalArchivesWorkflowActionsProvider.notifier,
                         )
-                        .chooseMessageLensFolder();
+                        .chooseMessageLensFolder(
+                          waitForInspectionPresentation: () =>
+                              SchedulerBinding.instance.endOfFrame,
+                        );
                   }
                 : null,
             child: Padding(

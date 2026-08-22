@@ -39,6 +39,8 @@ void main() {
         donorOverlayDatabasePath: overlayPath,
       );
 
+      await reader.validateCompatibility();
+      await reader.validateExecutionIntegrity();
       final relationships = await reader.readRelationships(
         sourceId: 1,
         originalMessageRowId: 11,
@@ -94,6 +96,12 @@ void main() {
 void _createSupportedImportDatabase(String databasePath) {
   final database = sqlite3.open(databasePath);
   database.execute('''
+    CREATE TABLE source_registry (
+      source_id INTEGER PRIMARY KEY,
+      source_kind TEXT NOT NULL
+    )
+  ''');
+  database.execute('''
     CREATE TABLE messages (
       ss_id INTEGER PRIMARY KEY,
       source_id INTEGER NOT NULL,
@@ -126,6 +134,7 @@ void _createSupportedImportDatabase(String databasePath) {
   ''');
   final messageSsId = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 11);
   final attachmentSsId = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 22);
+  database.execute("INSERT INTO source_registry VALUES (1, 'live_chat_db')");
   database.execute('INSERT INTO messages VALUES (?, 1, 11, ?)', <Object?>[
     messageSsId,
     'message-guid',

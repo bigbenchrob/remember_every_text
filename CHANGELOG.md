@@ -10,6 +10,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- MessageLens attachment-recovery preflight now paints truthful inspection
+  state before work begins, compares indexed evidence in bounded batches, and
+  reports real phase counts. It no longer hashes every donor payload or repeats
+  whole-database integrity scans merely to preview recoverable attachments;
+  those exact proofs remain required immediately before future installation.
 - Historical Archives now treats selected MessageLens data folders as
   ephemeral attachment-recovery donors rather than durable sources. Documented
   pre-marker formats can reach the same read-only ready state as modern marked

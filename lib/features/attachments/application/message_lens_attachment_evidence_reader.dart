@@ -20,12 +20,20 @@ abstract interface class MessageLensDonorAttachmentEvidenceReader
 
   Future<List<MessageLensArchivedPayloadClaim>> readArchivedPayloadClaims();
 
+  /// Proves that the stores expose the exact read-only evidence needed by
+  /// preflight. It deliberately does not perform exhaustive database scans.
   Future<void> validateCompatibility();
+
+  /// Performs exhaustive donor database integrity checks immediately before
+  /// a future recovery execution is authorized.
+  Future<void> validateExecutionIntegrity();
 }
 
 abstract interface class CurrentMessageLensAttachmentEvidenceReader
     implements MessageLensAttachmentRelationshipEvidenceReader {
-  Future<CurrentAttachmentPayloadStatus> readPayloadStatus(
-    ArchiveCompatibilityKey archiveKey,
-  );
+  Future<Map<ArchiveCompatibilityKey, CurrentAttachmentPayloadStatus>>
+  readPayloadStatuses(
+    List<ArchiveCompatibilityKey> archiveKeys, {
+    void Function(int completed, int total)? onProgress,
+  });
 }

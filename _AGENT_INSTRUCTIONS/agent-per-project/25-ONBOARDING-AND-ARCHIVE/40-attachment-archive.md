@@ -198,6 +198,26 @@ caller-specific `ArchiveMutationCapability` for
 It is valid only in its exact admitted async scope and cannot be retained for a
 later install.
 
+### MessageLens Recovery Preflight And Execution Revalidation
+
+MessageLens-folder preflight and recovery execution own different proofs.
+
+Preflight is read-only. It establishes supported evidence shape, same-Messages
+lineage, exact message/attachment relationships, bounded archive paths,
+regular-file presence, and recorded size. It reads donor/current metadata in
+snapshots and inventories payload directories once. It does not stream payload
+bytes, recompute SHA-256, or run exhaustive whole-database integrity scans.
+
+Future execution must revalidate before mutation. It must run exhaustive donor
+database integrity checks, reread the exact relationship evidence, and call
+`inspectVerified()` for each authorized payload. That method recomputes exact
+size and SHA-256 immediately before the canonical no-overwrite installer
+receives a read-only payload capability.
+
+This lifecycle split avoids doing mutation-time work twice while preserving
+the safety boundary: stored hashes support preflight comparison; freshly
+computed hashes authorize installation.
+
 ### Ongoing Archiving
 
 The `ChatDbChangeMonitor` auto-sync cycle archives newly imported live graph
@@ -245,6 +265,7 @@ boundary unless current code introduces one.
 | `lib/features/attachments/infrastructure/repositories/darwin_atomic_no_overwrite_file_installer.dart` | macOS `link(2)` atomic no-overwrite primitive |
 | `lib/features/attachments/infrastructure/repositories/sqlite_message_lens_attachment_donor_evidence_reader.dart` | Read-only, fail-closed donor compatibility reader |
 | `lib/features/attachments/infrastructure/repositories/import_ledger_message_lens_attachment_evidence_reader.dart` | Current evidence through canonical ledger/archive stores |
+| `lib/features/attachments/infrastructure/repositories/message_lens_attachment_payload_inspector.dart` | Batched read-only preflight inventory and execution-time verified payload capability |
 | `lib/essentials/db/infrastructure/.../overlay_database.dart` | `archived_attachments` table schema |
 
 ## Invariants
@@ -270,3 +291,7 @@ boundary unless current code introduces one.
 11. MessageLens attachment recovery cannot invoke its installer without an
     active exact-scope `attachmentReconciliation` capability minted by the
     archive mutation coordinator.
+12. MessageLens recovery preflight must not hash payload bytes or run
+    exhaustive database integrity scans. A future recovery execution must run
+    exhaustive donor integrity checks and recompute payload size/SHA-256 before
+    installation.

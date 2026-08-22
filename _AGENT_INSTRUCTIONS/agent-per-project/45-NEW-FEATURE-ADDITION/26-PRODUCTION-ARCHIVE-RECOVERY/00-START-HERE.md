@@ -85,6 +85,7 @@ panel. See:
 - [MessageLens Historical Archives Ready-State Implementation](responses/50-ENABLE-MESSAGELENS-HISTORICAL-ARCHIVES-THROUGH-READY-STATE.md)
 - [Backward-Compatible MessageLens Archive Qualification Audit](responses/51-BACKWARD-COMPATIBLE-MESSAGELENS-ARCHIVE-QUALIFICATION-AUDIT.md)
 - [Ephemeral MessageLens Recovery Donors](responses/52-EPHEMERAL-MESSAGELENS-RECOVERY-DONORS-IMPLEMENTATION.md)
+- [MessageLens Attachment Preflight Performance And Observability](responses/53-MESSAGELENS-ATTACHMENT-PREFLIGHT-PERFORMANCE-AND-OBSERVABILITY-IMPLEMENTATION.md)
 
 The MessageLens-folder arm is now enabled through a safe read-only ready state
 under a deliberately narrow product contract: recover attachment payloads only
@@ -97,6 +98,15 @@ recoverable attachment count and bytes. A modern marker UUID is optional
 diagnostic evidence, not recovery authority. No donor source is persisted and
 no recovery mutation is offered yet because aggregate batch execution and
 terminal outcome ownership remain intentionally unimplemented.
+
+Representative donor profiling then corrected the arm's read-only preflight
+from a multi-minute, hash-heavy operation to a 7.455-second bounded comparison.
+Inspection state now paints before work begins; database evidence runs off the
+UI isolate; relationship matching is indexed; current metadata is read once;
+and current/donor payload presence uses one symlink-aware filesystem inventory
+with real count progress. Exhaustive database integrity and payload hashing
+remain mandatory at the future recovery execution boundary rather than being
+duplicated during preflight.
 
 Read-only compatibility review confirmed that pre-July 2026 MessageLens
 archives can retain healthy, readable attachment evidence while predating the

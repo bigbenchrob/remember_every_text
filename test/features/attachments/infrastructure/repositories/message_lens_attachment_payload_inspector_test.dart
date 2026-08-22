@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
+import 'package:remember_this_text/essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/message_lens_attachment_recovery.dart';
 import 'package:remember_this_text/features/attachments/infrastructure/repositories/message_lens_attachment_payload_inspector.dart';
 
@@ -22,27 +23,35 @@ void main() {
     }
   });
 
-  test('validates contained regular file by exact size and SHA-256', () async {
-    final bytes = <int>[1, 2, 3];
-    final file = File(
-      path.join(temporaryRoot.path, 'attachment_archive', 'ab', 'payload.bin'),
-    );
-    await file.parent.create(recursive: true);
-    await file.writeAsBytes(bytes);
+  test(
+    'preflight validates contained regular file without hashing bytes',
+    () async {
+      final bytes = <int>[1, 2, 3];
+      final file = File(
+        path.join(
+          temporaryRoot.path,
+          'attachment_archive',
+          'ab',
+          'payload.bin',
+        ),
+      );
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(bytes);
 
-    final result = await inspector.inspect(
-      donorArchiveRoot: temporaryRoot.path,
-      payload: MessageLensArchivedPayloadEvidence(
-        archiveRelativePath: 'ab/payload.bin',
-        recordedSizeBytes: bytes.length,
-        recordedSha256: sha256.convert(bytes).toString(),
-      ),
-    );
+      final result = await inspector.inspect(
+        donorArchiveRoot: temporaryRoot.path,
+        payload: MessageLensArchivedPayloadEvidence(
+          archiveRelativePath: 'ab/payload.bin',
+          recordedSizeBytes: bytes.length,
+          recordedSha256: sha256.convert(bytes).toString(),
+        ),
+      );
 
-    expect(result.status, AttachmentPayloadInspectionStatus.valid);
-    expect(result.actualSizeBytes, 3);
-    expect(result.actualSha256, sha256.convert(bytes).toString());
-  });
+      expect(result.status, AttachmentPayloadInspectionStatus.valid);
+      expect(result.actualSizeBytes, 3);
+      expect(result.actualSha256, sha256.convert(bytes).toString());
+    },
+  );
 
   test('produces a read-only capability only for validated payload', () async {
     final bytes = <int>[4, 5, 6];
@@ -138,7 +147,7 @@ void main() {
   });
 
   test(
-    'size or hash mismatch is invalid, never recoverable evidence',
+    'preflight rejects size mismatch without reading payload bytes',
     () async {
       final file = File(
         path.join(temporaryRoot.path, 'attachment_archive', 'payload.bin'),
@@ -151,11 +160,78 @@ void main() {
         payload: const MessageLensArchivedPayloadEvidence(
           archiveRelativePath: 'payload.bin',
           recordedSizeBytes: 4,
-          recordedSha256: 'not-the-hash',
+          recordedSha256: 'recorded-hash-is-not-read-during-preflight',
         ),
       );
 
       expect(result.status, AttachmentPayloadInspectionStatus.invalid);
     },
   );
+
+  test('execution verification rejects a same-size hash mismatch', () async {
+    final file = File(
+      path.join(temporaryRoot.path, 'attachment_archive', 'payload.bin'),
+    );
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes([1, 2, 3]);
+    const payload = MessageLensArchivedPayloadEvidence(
+      archiveRelativePath: 'payload.bin',
+      recordedSizeBytes: 3,
+      recordedSha256: 'not-the-hash',
+    );
+
+    final preflight = await inspector.inspect(
+      donorArchiveRoot: temporaryRoot.path,
+      payload: payload,
+    );
+    final execution = await inspector.inspectVerified(
+      donorArchiveRoot: temporaryRoot.path,
+      payload: payload,
+    );
+
+    expect(preflight.status, AttachmentPayloadInspectionStatus.valid);
+    expect(
+      execution.inspection.status,
+      AttachmentPayloadInspectionStatus.invalid,
+    );
+    expect(execution.payload, isNull);
+  });
+
+  test('batch inventory publishes bounded completed-work progress', () async {
+    final archiveDirectory = Directory(
+      path.join(temporaryRoot.path, 'attachment_archive'),
+    );
+    final claims = <MessageLensArchivedPayloadClaim>[];
+    for (var index = 0; index < 501; index++) {
+      final relativePath = 'ab/payload-$index.bin';
+      final file = File(path.join(archiveDirectory.path, relativePath));
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(const [1]);
+      claims.add(
+        MessageLensArchivedPayloadClaim(
+          archiveCompatibilityKey: ArchiveCompatibilityKey(
+            messageGuid: 'message-$index',
+            importAttachmentId: index,
+          ),
+          payload: MessageLensArchivedPayloadEvidence(
+            archiveRelativePath: relativePath,
+            recordedSizeBytes: 1,
+            recordedSha256: null,
+          ),
+        ),
+      );
+    }
+    final progress = <(int, int)>[];
+
+    final result = await inspector.inspectClaims(
+      archiveDirectoryPath: archiveDirectory.path,
+      claims: claims,
+      onProgress: (completed, total) {
+        progress.add((completed, total));
+      },
+    );
+
+    expect(result, hasLength(501));
+    expect(progress, const [(250, 501), (500, 501), (501, 501)]);
+  });
 }

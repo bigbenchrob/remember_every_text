@@ -27,7 +27,6 @@ messageLensHistoricalArchivePreflight(
     archiveReadStore: await ref.watch(
       attachmentArchiveReadStoreProvider.future,
     ),
-    archiveFileStore: ref.watch(attachmentArchiveFileStoreProvider),
     archiveDirectoryPath: ref.watch(attachmentArchiveDirectoryProvider),
   );
   return MessageLensHistoricalArchivePreflightService(

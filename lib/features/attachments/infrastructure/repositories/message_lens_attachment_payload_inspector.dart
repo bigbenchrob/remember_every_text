@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import '../../application/verified_donor_attachment_payload.dart';
 import '../../domain/entities/message_lens_attachment_recovery.dart';
 
@@ -49,14 +50,194 @@ class VerifiedDonorAttachmentPayloadResult {
 class MessageLensAttachmentPayloadInspector {
   const MessageLensAttachmentPayloadInspector();
 
+  /// Inspects all preflight claims in one read-only directory traversal.
+  ///
+  /// Directory entries establish regular-file and symlink truth. Each claimed
+  /// regular file is statted once for its size; payload bytes are never read.
+  Future<Map<ArchiveCompatibilityKey, AttachmentPayloadInspection>>
+  inspectClaims({
+    required String archiveDirectoryPath,
+    required List<MessageLensArchivedPayloadClaim> claims,
+    void Function(int completed, int total)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
+    final normalizedRoot = path.normalize(path.absolute(archiveDirectoryPath));
+    final inspections =
+        <ArchiveCompatibilityKey, AttachmentPayloadInspection>{};
+    var lastPublishedCompleted = 0;
+    void publishProgress(int completed, {bool force = false}) {
+      const batchSize = 250;
+      if (completed == lastPublishedCompleted) {
+        return;
+      }
+      if (force ||
+          completed == claims.length ||
+          completed - lastPublishedCompleted >= batchSize) {
+        lastPublishedCompleted = completed;
+        onProgress?.call(completed, claims.length);
+      }
+    }
+
+    if (_isLink(normalizedRoot) ||
+        FileSystemEntity.typeSync(normalizedRoot, followLinks: false) !=
+            FileSystemEntityType.directory) {
+      return <ArchiveCompatibilityKey, AttachmentPayloadInspection>{
+        for (final claim in claims)
+          claim.archiveCompatibilityKey:
+              const AttachmentPayloadInspection.unsafePath(),
+      };
+    }
+
+    final claimsByPath = <String, List<MessageLensArchivedPayloadClaim>>{};
+    var completed = 0;
+    for (final claim in claims) {
+      final relativePath = claim.payload.archiveRelativePath;
+      if (!_lexicalPayloadPathIsSafe(relativePath)) {
+        inspections[claim.archiveCompatibilityKey] =
+            const AttachmentPayloadInspection.unsafePath();
+        completed += 1;
+      } else {
+        claimsByPath.putIfAbsent(relativePath, () => []).add(claim);
+      }
+    }
+    publishProgress(completed);
+
+    final linkPaths = <String>[];
+    try {
+      await for (final entity in Directory(
+        normalizedRoot,
+      ).list(recursive: true, followLinks: false)) {
+        if (isCancelled?.call() ?? false) {
+          throw const MessageLensAttachmentInspectionCancelled();
+        }
+        final relativePath = path.normalize(
+          path.relative(entity.path, from: normalizedRoot),
+        );
+        if (entity is Link) {
+          linkPaths.add(relativePath);
+          final linkedClaims = claimsByPath.remove(relativePath);
+          if (linkedClaims != null) {
+            for (final claim in linkedClaims) {
+              inspections[claim.archiveCompatibilityKey] =
+                  const AttachmentPayloadInspection.unsafePath();
+            }
+            completed += linkedClaims.length;
+            publishProgress(completed);
+          }
+          continue;
+        }
+        final matchingClaims = claimsByPath.remove(relativePath);
+        if (matchingClaims == null) {
+          continue;
+        }
+        final stat = await entity.stat();
+        for (final claim in matchingClaims) {
+          inspections[claim.archiveCompatibilityKey] =
+              stat.type == FileSystemEntityType.file &&
+                  stat.size == claim.payload.recordedSizeBytes
+              ? AttachmentPayloadInspection(
+                  status: AttachmentPayloadInspectionStatus.valid,
+                  actualSizeBytes: stat.size,
+                  actualSha256: claim.payload.recordedSha256
+                      ?.trim()
+                      .toLowerCase(),
+                )
+              : AttachmentPayloadInspection(
+                  status: AttachmentPayloadInspectionStatus.invalid,
+                  actualSizeBytes: stat.size,
+                  actualSha256: null,
+                );
+        }
+        completed += matchingClaims.length;
+        publishProgress(completed);
+      }
+    } on MessageLensAttachmentInspectionCancelled {
+      rethrow;
+    } on FileSystemException {
+      for (final unresolved in claimsByPath.values.expand((items) => items)) {
+        inspections[unresolved.archiveCompatibilityKey] =
+            const AttachmentPayloadInspection(
+              status: AttachmentPayloadInspectionStatus.invalid,
+              actualSizeBytes: null,
+              actualSha256: null,
+            );
+      }
+      publishProgress(claims.length, force: true);
+      return inspections;
+    }
+
+    for (final entry in claimsByPath.entries) {
+      final crossesLink = linkPaths.any(
+        (linkPath) =>
+            path.equals(entry.key, linkPath) ||
+            path.isWithin(linkPath, entry.key),
+      );
+      for (final claim in entry.value) {
+        inspections[claim.archiveCompatibilityKey] = crossesLink
+            ? const AttachmentPayloadInspection.unsafePath()
+            : const AttachmentPayloadInspection.missing();
+      }
+      completed += entry.value.length;
+      publishProgress(completed);
+    }
+    publishProgress(claims.length, force: true);
+    return inspections;
+  }
+
+  /// Performs the read-only proof required to classify a preflight candidate.
+  ///
+  /// This deliberately validates path containment, regular-file presence, and
+  /// recorded size without reading payload bytes. [inspectVerified] repeats
+  /// these checks and verifies SHA-256 immediately before installation.
   Future<AttachmentPayloadInspection> inspect({
     required String donorArchiveRoot,
     required MessageLensArchivedPayloadEvidence payload,
   }) async {
-    return (await inspectVerified(
+    if (!_lexicalPathIsSafe(
       donorArchiveRoot: donorArchiveRoot,
-      payload: payload,
-    )).inspection;
+      relativePath: payload.archiveRelativePath,
+    )) {
+      return const AttachmentPayloadInspection.unsafePath();
+    }
+    final absoluteDonorRoot = path.normalize(path.absolute(donorArchiveRoot));
+    final payloadRoot = path.normalize(
+      path.join(absoluteDonorRoot, 'attachment_archive'),
+    );
+    if (_isLink(absoluteDonorRoot) || _isLink(payloadRoot)) {
+      return const AttachmentPayloadInspection.unsafePath();
+    }
+    final candidatePath = path.normalize(
+      path.join(payloadRoot, payload.archiveRelativePath),
+    );
+    var cursor = payloadRoot;
+    for (final component in path.split(payload.archiveRelativePath)) {
+      cursor = path.join(cursor, component);
+      if (_isLink(cursor)) {
+        return const AttachmentPayloadInspection.unsafePath();
+      }
+    }
+    if (FileSystemEntity.typeSync(candidatePath, followLinks: false) !=
+        FileSystemEntityType.file) {
+      return const AttachmentPayloadInspection.missing();
+    }
+    try {
+      final actualSize = await File(candidatePath).length();
+      return AttachmentPayloadInspection(
+        status: actualSize == payload.recordedSizeBytes
+            ? AttachmentPayloadInspectionStatus.valid
+            : AttachmentPayloadInspectionStatus.invalid,
+        actualSizeBytes: actualSize,
+        // The trusted donor record is sufficient for preflight identity and
+        // duplicate-claim comparison. Execution recomputes this hash.
+        actualSha256: payload.recordedSha256?.trim().toLowerCase(),
+      );
+    } on FileSystemException {
+      return const AttachmentPayloadInspection(
+        status: AttachmentPayloadInspectionStatus.invalid,
+        actualSizeBytes: null,
+        actualSha256: null,
+      );
+    }
   }
 
   Future<VerifiedDonorAttachmentPayloadResult> inspectVerified({
@@ -183,8 +364,20 @@ class MessageLensAttachmentPayloadInspector {
     return path.isWithin(payloadRoot, candidatePath);
   }
 
+  static bool _lexicalPayloadPathIsSafe(String relativePath) {
+    if (relativePath.trim().isEmpty || path.isAbsolute(relativePath)) {
+      return false;
+    }
+    final normalized = path.normalize(relativePath);
+    return normalized != '..' && !normalized.startsWith('../');
+  }
+
   static bool _isLink(String candidatePath) {
     return FileSystemEntity.typeSync(candidatePath, followLinks: false) ==
         FileSystemEntityType.link;
   }
+}
+
+final class MessageLensAttachmentInspectionCancelled implements Exception {
+  const MessageLensAttachmentInspectionCancelled();
 }

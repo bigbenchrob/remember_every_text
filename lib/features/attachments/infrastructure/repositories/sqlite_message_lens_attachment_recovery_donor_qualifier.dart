@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
@@ -29,13 +30,29 @@ final class SqliteMessageLensAttachmentRecoveryDonorQualifier
   @override
   Future<MessageLensAttachmentRecoveryDonorQualification> qualify({
     required String folderPath,
+    MessageLensAttachmentRecoveryDonorQualificationObserver? onProgress,
   }) async {
+    onProgress?.call(
+      MessageLensAttachmentRecoveryDonorQualificationStage
+          .structuralQualification,
+      completed: false,
+    );
     final normalizedFolder = path.normalize(path.absolute(folderPath));
     if (FileSystemEntity.typeSync(normalizedFolder, followLinks: false) !=
         FileSystemEntityType.directory) {
+      onProgress?.call(
+        MessageLensAttachmentRecoveryDonorQualificationStage
+            .structuralQualification,
+        completed: true,
+      );
       return const InvalidMessageLensAttachmentRecoveryDonor();
     }
     if (path.equals(normalizedFolder, path.normalize(currentArchiveRoot))) {
+      onProgress?.call(
+        MessageLensAttachmentRecoveryDonorQualificationStage
+            .structuralQualification,
+        completed: true,
+      );
       return const IncompatibleMessageLensAttachmentRecoveryDonor(
         detail: 'The active MessageLens data folder cannot be its own donor.',
       );
@@ -47,18 +64,47 @@ final class SqliteMessageLensAttachmentRecoveryDonorQualifier
         rootPath: normalizedFolder,
       ).read();
     } catch (error) {
+      onProgress?.call(
+        MessageLensAttachmentRecoveryDonorQualificationStage
+            .structuralQualification,
+        completed: true,
+      );
       return IncompatibleMessageLensAttachmentRecoveryDonor(
         detail: 'The MessageLens archive marker could not be read: $error',
       );
     }
 
-    if (marker != null) {
-      return _qualifyMarkedArchive(
-        normalizedFolder: normalizedFolder,
-        marker: marker,
+    if (marker == null && !_hasHistoricalEnvelope(normalizedFolder)) {
+      onProgress?.call(
+        MessageLensAttachmentRecoveryDonorQualificationStage
+            .structuralQualification,
+        completed: true,
       );
+      return const InvalidMessageLensAttachmentRecoveryDonor();
     }
-    return _qualifyPreMarkerArchive(normalizedFolder);
+    onProgress?.call(
+      MessageLensAttachmentRecoveryDonorQualificationStage
+          .structuralQualification,
+      completed: true,
+    );
+    onProgress?.call(
+      MessageLensAttachmentRecoveryDonorQualificationStage
+          .compatibilityInspection,
+      completed: false,
+    );
+
+    final result = marker != null
+        ? await _qualifyMarkedArchive(
+            normalizedFolder: normalizedFolder,
+            marker: marker,
+          )
+        : await _qualifyPreMarkerArchive(normalizedFolder);
+    onProgress?.call(
+      MessageLensAttachmentRecoveryDonorQualificationStage
+          .compatibilityInspection,
+      completed: true,
+    );
+    return result;
   }
 
   Future<MessageLensAttachmentRecoveryDonorQualification>
@@ -114,15 +160,13 @@ final class SqliteMessageLensAttachmentRecoveryDonorQualifier
     );
     final payloadRoot = path.join(normalizedFolder, 'attachment_archive');
 
-    final hasHistoricalEnvelope =
-        _isRegularFile(sourceLedgerPath) &&
-        _isRegularFile(overlayPath) &&
-        _isRegularFile(graphPath) &&
-        FileSystemEntity.typeSync(payloadRoot, followLinks: false) ==
-            FileSystemEntityType.directory;
-    if (!hasHistoricalEnvelope) {
-      return const InvalidMessageLensAttachmentRecoveryDonor();
-    }
+    assert(
+      _isRegularFile(sourceLedgerPath) &&
+          _isRegularFile(overlayPath) &&
+          _isRegularFile(graphPath) &&
+          FileSystemEntity.typeSync(payloadRoot, followLinks: false) ==
+              FileSystemEntityType.directory,
+    );
 
     final compatibility = await _validateAttachmentEvidence(normalizedFolder);
     if (compatibility != null) {
@@ -130,20 +174,24 @@ final class SqliteMessageLensAttachmentRecoveryDonorQualifier
     }
 
     try {
-      final importVersion = _readUserVersion(sourceLedgerPath);
-      final overlayVersion = _readUserVersion(overlayPath);
-      final graphVersion = _readGraphVersionAndShape(graphPath);
+      final versions = await Isolate.run(
+        () => (
+          importVersion: _readUserVersion(sourceLedgerPath),
+          overlayVersion: _readUserVersion(overlayPath),
+          graphVersion: _readGraphVersionAndShape(graphPath),
+        ),
+      );
       final format = _historicalFormatFor(
-        importVersion: importVersion,
-        overlayVersion: overlayVersion,
-        graphVersion: graphVersion,
+        importVersion: versions.importVersion,
+        overlayVersion: versions.overlayVersion,
+        graphVersion: versions.graphVersion,
       );
       if (format == null) {
         return IncompatibleMessageLensAttachmentRecoveryDonor(
           detail:
               'Recognized pre-marker MessageLens databases use an unsupported '
-              'schema combination: import $importVersion, overlay '
-              '$overlayVersion, graph $graphVersion.',
+              'schema combination: import ${versions.importVersion}, overlay '
+              '${versions.overlayVersion}, graph ${versions.graphVersion}.',
         );
       }
       return SupportedMessageLensAttachmentRecoveryDonor(
@@ -211,7 +259,6 @@ final class SqliteMessageLensAttachmentRecoveryDonorQualifier
   static int _readUserVersion(String databasePath) {
     final database = _openReadOnly(databasePath);
     try {
-      _requireHealthyDatabase(database);
       return _readUserVersionValue(database);
     } finally {
       database.dispose();
@@ -221,7 +268,6 @@ final class SqliteMessageLensAttachmentRecoveryDonorQualifier
   static int _readGraphVersionAndShape(String databasePath) {
     final database = _openReadOnly(databasePath);
     try {
-      _requireHealthyDatabase(database);
       _requireColumns(database, 'messages', const <String>{'ss_id'});
       _requireColumns(database, 'attachments', const <String>{'ss_id'});
       _requireColumns(database, 'message_to_attachment', const <String>{
@@ -249,28 +295,6 @@ final class SqliteMessageLensAttachmentRecoveryDonorQualifier
       throw StateError('Donor database has an invalid schema version.');
     }
     return value;
-  }
-
-  static void _requireHealthyDatabase(Database database) {
-    const quickCheckSql = 'PRAGMA quick_check';
-    const integrityCheckSql = 'PRAGMA integrity_check';
-    assertReadOnlySql(
-      quickCheckSql,
-      boundary: 'MessageLens donor format qualification',
-    );
-    assertReadOnlySql(
-      integrityCheckSql,
-      boundary: 'MessageLens donor format qualification',
-    );
-    final quickCheck = database.select(quickCheckSql).single.values.first;
-    final integrityCheck = database
-        .select(integrityCheckSql)
-        .single
-        .values
-        .first;
-    if (quickCheck != 'ok' || integrityCheck != 'ok') {
-      throw StateError('Donor database integrity checks failed.');
-    }
   }
 
   static void _requireColumns(
@@ -312,5 +336,22 @@ final class SqliteMessageLensAttachmentRecoveryDonorQualifier
   static bool _isRegularFile(String candidatePath) {
     return FileSystemEntity.typeSync(candidatePath, followLinks: false) ==
         FileSystemEntityType.file;
+  }
+
+  static bool _hasHistoricalEnvelope(String normalizedFolder) {
+    return _isRegularFile(
+          _databasePath(normalizedFolder, AppDatabaseFile.sourceScopedImport),
+        ) &&
+        _isRegularFile(
+          _databasePath(normalizedFolder, AppDatabaseFile.overlay),
+        ) &&
+        _isRegularFile(
+          _databasePath(normalizedFolder, AppDatabaseFile.conversationGraph),
+        ) &&
+        FileSystemEntity.typeSync(
+              path.join(normalizedFolder, 'attachment_archive'),
+              followLinks: false,
+            ) ==
+            FileSystemEntityType.directory;
   }
 }

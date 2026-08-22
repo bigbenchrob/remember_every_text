@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
@@ -31,35 +32,57 @@ class SqliteMessageLensAttachmentDonorEvidenceReader
   final MessageLensAttachmentIdentityEvidenceFactory _evidenceFactory;
 
   @override
-  Future<void> validateCompatibility() async {
-    final importDatabase = _openDonorDatabase(
-      donorSourceScopedImportDatabasePath,
-    );
-    try {
-      _requireHealthyDatabase(importDatabase);
-      _requireImportLedgerShape(importDatabase);
-      _readLiveSourceId(importDatabase);
-    } finally {
-      importDatabase.dispose();
-    }
+  Future<void> validateCompatibility() {
+    return Isolate.run(() {
+      final importDatabase = _openDonorDatabase(
+        donorSourceScopedImportDatabasePath,
+      );
+      try {
+        _requireImportLedgerShape(importDatabase);
+        _readLiveSourceId(importDatabase);
+      } finally {
+        importDatabase.dispose();
+      }
 
-    final overlayDatabase = _openDonorDatabase(donorOverlayDatabasePath);
-    try {
-      _requireHealthyDatabase(overlayDatabase);
-      _requireArchiveMetadataShape(overlayDatabase);
-    } finally {
-      overlayDatabase.dispose();
-    }
+      final overlayDatabase = _openDonorDatabase(donorOverlayDatabasePath);
+      try {
+        _requireArchiveMetadataShape(overlayDatabase);
+      } finally {
+        overlayDatabase.dispose();
+      }
+    });
+  }
+
+  @override
+  Future<void> validateExecutionIntegrity() {
+    return Isolate.run(() {
+      final importDatabase = _openDonorDatabase(
+        donorSourceScopedImportDatabasePath,
+      );
+      try {
+        _requireHealthyDatabase(importDatabase);
+      } finally {
+        importDatabase.dispose();
+      }
+
+      final overlayDatabase = _openDonorDatabase(donorOverlayDatabasePath);
+      try {
+        _requireHealthyDatabase(overlayDatabase);
+      } finally {
+        overlayDatabase.dispose();
+      }
+    });
   }
 
   @override
   Future<List<MessageLensAttachmentRelationshipEvidence>>
-  readLiveSourceRelationships() async {
-    final database = _openDonorDatabase(donorSourceScopedImportDatabasePath);
-    try {
-      _requireImportLedgerShape(database);
-      final sourceId = _readLiveSourceId(database);
-      const sql = '''
+  readLiveSourceRelationships() {
+    return Isolate.run(() {
+      final database = _openDonorDatabase(donorSourceScopedImportDatabasePath);
+      try {
+        _requireImportLedgerShape(database);
+        final sourceId = _readLiveSourceId(database);
+        const sql = '''
         SELECT
           m.ss_id AS message_ss_id,
           m.source_id AS message_source_id,
@@ -80,22 +103,26 @@ class SqliteMessageLensAttachmentDonorEvidenceReader
         WHERE ma.message_source_id = ?
           AND ma.attachment_source_id = ?
         ORDER BY ma.source_message_rowid, ma.source_attachment_rowid
-      ''';
-      assertReadOnlySql(sql, boundary: 'MessageLens donor attachment evidence');
-      final rows = database.select(sql, <Object?>[sourceId, sourceId]);
-      return _relationshipEvidence(rows);
-    } finally {
-      database.dispose();
-    }
+        ''';
+        assertReadOnlySql(
+          sql,
+          boundary: 'MessageLens donor attachment evidence',
+        );
+        final rows = database.select(sql, <Object?>[sourceId, sourceId]);
+        return _relationshipEvidence(rows);
+      } finally {
+        database.dispose();
+      }
+    });
   }
 
   @override
-  Future<List<MessageLensArchivedPayloadClaim>>
-  readArchivedPayloadClaims() async {
-    final database = _openDonorDatabase(donorOverlayDatabasePath);
-    try {
-      _requireArchiveMetadataShape(database);
-      const sql = '''
+  Future<List<MessageLensArchivedPayloadClaim>> readArchivedPayloadClaims() {
+    return Isolate.run(() {
+      final database = _openDonorDatabase(donorOverlayDatabasePath);
+      try {
+        _requireArchiveMetadataShape(database);
+        const sql = '''
         SELECT
           message_guid,
           import_attachment_id,
@@ -104,25 +131,26 @@ class SqliteMessageLensAttachmentDonorEvidenceReader
           content_hash
         FROM archived_attachments
         ORDER BY message_guid, import_attachment_id
-      ''';
-      assertReadOnlySql(sql, boundary: 'MessageLens donor payload evidence');
-      return <MessageLensArchivedPayloadClaim>[
-        for (final row in database.select(sql))
-          MessageLensArchivedPayloadClaim(
-            archiveCompatibilityKey: ArchiveCompatibilityKey.fromStoredTuple(
-              messageGuid: row['message_guid'] as String,
-              importAttachmentId: row['import_attachment_id'] as int,
+        ''';
+        assertReadOnlySql(sql, boundary: 'MessageLens donor payload evidence');
+        return <MessageLensArchivedPayloadClaim>[
+          for (final row in database.select(sql))
+            MessageLensArchivedPayloadClaim(
+              archiveCompatibilityKey: ArchiveCompatibilityKey.fromStoredTuple(
+                messageGuid: row['message_guid'] as String,
+                importAttachmentId: row['import_attachment_id'] as int,
+              ),
+              payload: MessageLensArchivedPayloadEvidence(
+                archiveRelativePath: row['archive_relative_path'] as String,
+                recordedSizeBytes: row['file_size_bytes'] as int,
+                recordedSha256: row['content_hash'] as String?,
+              ),
             ),
-            payload: MessageLensArchivedPayloadEvidence(
-              archiveRelativePath: row['archive_relative_path'] as String,
-              recordedSizeBytes: row['file_size_bytes'] as int,
-              recordedSha256: row['content_hash'] as String?,
-            ),
-          ),
-      ];
-    } finally {
-      database.dispose();
-    }
+        ];
+      } finally {
+        database.dispose();
+      }
+    });
   }
 
   @override
@@ -130,12 +158,13 @@ class SqliteMessageLensAttachmentDonorEvidenceReader
     required int sourceId,
     required int originalMessageRowId,
     required int originalAttachmentRowId,
-  }) async {
-    final database = _openDonorDatabase(donorSourceScopedImportDatabasePath);
-    try {
-      _requireImportLedgerShape(database);
+  }) {
+    return Isolate.run(() {
+      final database = _openDonorDatabase(donorSourceScopedImportDatabasePath);
+      try {
+        _requireImportLedgerShape(database);
 
-      const sql = '''
+        const sql = '''
         SELECT
           m.ss_id AS message_ss_id,
           m.source_id AS message_source_id,
@@ -158,52 +187,58 @@ class SqliteMessageLensAttachmentDonorEvidenceReader
           AND ma.attachment_source_id = ?
           AND ma.source_attachment_rowid = ?
       ''';
-      assertReadOnlySql(sql, boundary: 'MessageLens donor attachment evidence');
-      final rows = database.select(sql, <Object?>[
-        sourceId,
-        originalMessageRowId,
-        sourceId,
-        originalAttachmentRowId,
-      ]);
-      return _relationshipEvidence(rows);
-    } finally {
-      database.dispose();
-    }
+        assertReadOnlySql(
+          sql,
+          boundary: 'MessageLens donor attachment evidence',
+        );
+        final rows = database.select(sql, <Object?>[
+          sourceId,
+          originalMessageRowId,
+          sourceId,
+          originalAttachmentRowId,
+        ]);
+        return _relationshipEvidence(rows);
+      } finally {
+        database.dispose();
+      }
+    });
   }
 
   @override
   Future<MessageLensArchivedPayloadEvidence?> readArchivedPayload(
     ArchiveCompatibilityKey archiveKey,
-  ) async {
-    final database = _openDonorDatabase(donorOverlayDatabasePath);
-    try {
-      _requireArchiveMetadataShape(database);
-      const sql = '''
+  ) {
+    return Isolate.run(() {
+      final database = _openDonorDatabase(donorOverlayDatabasePath);
+      try {
+        _requireArchiveMetadataShape(database);
+        const sql = '''
         SELECT archive_relative_path, file_size_bytes, content_hash
         FROM archived_attachments
         WHERE message_guid = ? AND import_attachment_id = ?
         LIMIT 2
       ''';
-      assertReadOnlySql(sql, boundary: 'MessageLens donor payload evidence');
-      final rows = database.select(sql, <Object?>[
-        archiveKey.messageGuid,
-        archiveKey.archiveCompatibilityAttachmentId,
-      ]);
-      if (rows.isEmpty) {
-        return null;
+        assertReadOnlySql(sql, boundary: 'MessageLens donor payload evidence');
+        final rows = database.select(sql, <Object?>[
+          archiveKey.messageGuid,
+          archiveKey.archiveCompatibilityAttachmentId,
+        ]);
+        if (rows.isEmpty) {
+          return null;
+        }
+        if (rows.length != 1) {
+          throw StateError('Donor attachment archive evidence is ambiguous.');
+        }
+        final row = rows.single;
+        return MessageLensArchivedPayloadEvidence(
+          archiveRelativePath: row['archive_relative_path'] as String,
+          recordedSizeBytes: row['file_size_bytes'] as int,
+          recordedSha256: row['content_hash'] as String?,
+        );
+      } finally {
+        database.dispose();
       }
-      if (rows.length != 1) {
-        throw StateError('Donor attachment archive evidence is ambiguous.');
-      }
-      final row = rows.single;
-      return MessageLensArchivedPayloadEvidence(
-        archiveRelativePath: row['archive_relative_path'] as String,
-        recordedSizeBytes: row['file_size_bytes'] as int,
-        recordedSha256: row['content_hash'] as String?,
-      );
-    } finally {
-      database.dispose();
-    }
+    });
   }
 
   Database _openDonorDatabase(String databasePath) {

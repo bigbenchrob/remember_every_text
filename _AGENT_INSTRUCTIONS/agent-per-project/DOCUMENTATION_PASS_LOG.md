@@ -5372,3 +5372,17 @@ production preservation authority mechanically enforceable.
 - Recorded the supported pre-marker schema tuples, mandatory lineage and
   per-attachment gates, repeated-selection semantics, and prohibition on donor
   registration, cartouches, synthetic identity, marker creation, and writes.
+
+## 2026-08-22 - MessageLens attachment preflight performance
+
+- Added Feature 26 implementation record
+  `53-MESSAGELENS-ATTACHMENT-PREFLIGHT-PERFORMANCE-AND-OBSERVABILITY-IMPLEMENTATION.md`.
+- Recorded the controlled representative-donor improvement from 210.505
+  seconds to 7.455 seconds, including exact phase timings and the original
+  manual run's additional approximately 40 GB hash burden.
+- Codified the preflight-versus-execution proof boundary in the canonical
+  attachment archive guide: preflight inventories metadata, paths, presence,
+  and size; future execution performs exhaustive database integrity and fresh
+  payload SHA-256 validation immediately before no-overwrite installation.
+- Updated the Feature 26 index with the final Directed Instrumentation,
+  completed-work batching, first-paint, cancellation, and safety invariants.

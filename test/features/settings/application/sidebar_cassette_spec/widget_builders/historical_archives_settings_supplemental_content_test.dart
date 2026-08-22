@@ -934,7 +934,9 @@ class _TestHistoricalArchivesWorkflow extends HistoricalArchivesWorkflow {
   }
 
   @override
-  Future<void> chooseMessageLensFolder() async {
+  Future<void> chooseMessageLensFolder({
+    Future<void> Function()? waitForInspectionPresentation,
+  }) async {
     chooseMessageLensFolderCallCount += 1;
   }
 

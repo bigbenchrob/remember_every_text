@@ -620,10 +620,12 @@ final class HistoricalArchivesMessageLensInspectingState
   const HistoricalArchivesMessageLensInspectingState({
     required this.folderPath,
     required this.inspectionOccurrence,
+    this.progress,
   });
 
   final String folderPath;
   final int inspectionOccurrence;
+  final MessageLensHistoricalArchivePreflightProgress? progress;
 
   @override
   HistoricalArchivesPresentationData? get data => null;
@@ -1319,7 +1321,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     );
   }
 
-  Future<void> chooseMessageLensFolder() async {
+  Future<void> chooseMessageLensFolder({
+    Future<void> Function()? waitForInspectionPresentation,
+  }) async {
     if (state.sourceType !=
         HistoricalArchiveSourceType.messageLensDataFolders) {
       return;
@@ -1336,6 +1340,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
     await loadMessageLensFolder(
       folderPath: folderPath,
       presentationSessionOccurrence: presentationSessionOccurrence,
+      waitForInspectionPresentation: waitForInspectionPresentation,
     );
   }
 
@@ -1349,6 +1354,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   Future<void> loadMessageLensFolder({
     required String folderPath,
     int? presentationSessionOccurrence,
+    Future<void> Function()? waitForInspectionPresentation,
   }) async {
     if (state.sourceType !=
         HistoricalArchiveSourceType.messageLensDataFolders) {
@@ -1362,15 +1368,51 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       presentation: HistoricalArchivesMessageLensInspectingState(
         folderPath: folderPath,
         inspectionOccurrence: inspectionOccurrence,
+        progress: const MessageLensHistoricalArchivePreflightProgress(
+          phase: MessageLensHistoricalArchivePreflightPhase
+              .structuralQualification,
+          completedUnits: 0,
+          totalUnits: 1,
+        ),
       ),
     );
+    if (waitForInspectionPresentation != null) {
+      await waitForInspectionPresentation();
+      if (!_ownsMessageLensInspection(
+        presentationSessionOccurrence: expectedSession,
+        inspectionOccurrence: inspectionOccurrence,
+      )) {
+        return;
+      }
+    }
 
     final MessageLensHistoricalArchivePreflightResult result;
     try {
       final preflight = await ref.read(
         messageLensHistoricalArchivePreflightProvider.future,
       );
-      result = await preflight.inspect(folderPath: folderPath);
+      result = await preflight.inspect(
+        folderPath: folderPath,
+        onProgress: (progress) {
+          if (!_ownsMessageLensInspection(
+            presentationSessionOccurrence: expectedSession,
+            inspectionOccurrence: inspectionOccurrence,
+          )) {
+            return;
+          }
+          state = HistoricalArchivesWorkflowState(
+            presentation: HistoricalArchivesMessageLensInspectingState(
+              folderPath: folderPath,
+              inspectionOccurrence: inspectionOccurrence,
+              progress: progress,
+            ),
+          );
+        },
+        isCancelled: () => !_ownsMessageLensInspection(
+          presentationSessionOccurrence: expectedSession,
+          inspectionOccurrence: inspectionOccurrence,
+        ),
+      );
     } catch (error, stackTrace) {
       _logHistoricalArchivesWarning(
         ref,
@@ -1415,6 +1457,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               ? HistoricalArchivesMessageLensNoticeKind.contradictoryLineage
               : HistoricalArchivesMessageLensNoticeKind.insufficientLineage,
         );
+      case MessageLensHistoricalArchivePreflightCancelled():
+        return;
       case MessageLensHistoricalArchiveReady(:final attachmentPreflight):
         if (attachmentPreflight.recoverableCount == 0) {
           _showMessageLensNotice(
@@ -3083,19 +3127,15 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
         ),
         retryInspectionEnabled: false,
       ),
-    HistoricalArchivesMessageLensInspectingState(:final folderPath) =>
+    HistoricalArchivesMessageLensInspectingState(
+      :final folderPath,
+      :final progress,
+    ) =>
       HistoricalArchivesNarratorPresentationViewModel(
         kind: HistoricalArchivesNarratorPresentationKind
             .inspectingMessageLensSource,
-        narratorText:
-            'I’ll check this MessageLens folder for attachments that are missing here.',
-        instrumentationRows: const [
-          HistoricalArchivesInstrumentationRowViewModel(
-            label: 'Inspecting MessageLens recovery source',
-            value: 'Working',
-            status: HistoricalArchivesInstrumentationStatus.working,
-          ),
-        ],
+        narratorText: _messageLensPreflightNarrator(progress),
+        instrumentationRows: _messageLensPreflightInstrumentationRows(progress),
         detailsLines: [
           'Folder: $folderPath',
           'No donor data is being changed.',
@@ -3167,6 +3207,8 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
           'Conflicts: ${_formattedCount(evidence.attachmentPreflight.conflictCount)}',
           'Ambiguous: ${_formattedCount(evidence.attachmentPreflight.ambiguousCount)}',
           'Unsafe donor paths: ${_formattedCount(evidence.attachmentPreflight.unsafeDonorPathCount)}',
+          for (final timing in evidence.phaseTimings)
+            '${_messageLensPreflightPhaseLabel(timing.phase)}: ${timing.elapsed.inMilliseconds} ms',
           'Recovery is not authorized in this read-only slice.',
         ],
         retryInspectionEnabled: false,
@@ -3176,6 +3218,139 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
     HistoricalArchivesImportFailedState() ||
     HistoricalArchivesRemovingState() ||
     HistoricalArchivesRemovalFailedState() => null,
+  };
+}
+
+String _messageLensPreflightNarrator(
+  MessageLensHistoricalArchivePreflightProgress? progress,
+) {
+  if (progress != null &&
+      progress.phase.index >
+          MessageLensHistoricalArchivePreflightPhase.lineageAdmission.index) {
+    return 'This folder matches your Messages history. Now I’m checking which attachments are missing here.';
+  }
+  return 'I’ll check this MessageLens folder for attachments that are missing here.';
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel>
+_messageLensPreflightInstrumentationRows(
+  MessageLensHistoricalArchivePreflightProgress? progress,
+) {
+  const stages =
+      <({String label, MessageLensHistoricalArchivePreflightPhase finalPhase})>[
+        (
+          label: 'Verifying this MessageLens folder',
+          finalPhase:
+              MessageLensHistoricalArchivePreflightPhase.lineageAdmission,
+        ),
+        (
+          label: 'Reading attachment records',
+          finalPhase:
+              MessageLensHistoricalArchivePreflightPhase.donorPayloadEvidence,
+        ),
+        (
+          label: 'Matching attachments',
+          finalPhase:
+              MessageLensHistoricalArchivePreflightPhase.relationshipMatching,
+        ),
+        (
+          label: 'Checking current attachment files',
+          finalPhase:
+              MessageLensHistoricalArchivePreflightPhase.currentPayloadPresence,
+        ),
+        (
+          label: 'Checking donor attachment files',
+          finalPhase:
+              MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence,
+        ),
+        (
+          label: 'Calculating recovery summary',
+          finalPhase: MessageLensHistoricalArchivePreflightPhase.classification,
+        ),
+      ];
+  final current = progress?.phase.index ?? 0;
+  return [
+    for (final stage in stages)
+      HistoricalArchivesInstrumentationRowViewModel(
+        label: stage.label,
+        value: current > stage.finalPhase.index
+            ? 'Done'
+            : current <= stage.finalPhase.index &&
+                  _stageContainsPhase(stage.finalPhase, progress?.phase)
+            ? _messageLensPreflightProgressValue(progress)
+            : 'Waiting',
+        status: current > stage.finalPhase.index
+            ? HistoricalArchivesInstrumentationStatus.resolved
+            : _stageContainsPhase(stage.finalPhase, progress?.phase)
+            ? HistoricalArchivesInstrumentationStatus.working
+            : HistoricalArchivesInstrumentationStatus.waiting,
+      ),
+  ];
+}
+
+bool _stageContainsPhase(
+  MessageLensHistoricalArchivePreflightPhase finalPhase,
+  MessageLensHistoricalArchivePreflightPhase? currentPhase,
+) {
+  if (currentPhase == null) {
+    return finalPhase ==
+        MessageLensHistoricalArchivePreflightPhase.lineageAdmission;
+  }
+  final startIndex = switch (finalPhase) {
+    MessageLensHistoricalArchivePreflightPhase.lineageAdmission => 0,
+    MessageLensHistoricalArchivePreflightPhase.donorPayloadEvidence =>
+      MessageLensHistoricalArchivePreflightPhase.donorAttachmentEvidence.index,
+    MessageLensHistoricalArchivePreflightPhase.relationshipMatching =>
+      MessageLensHistoricalArchivePreflightPhase.relationshipMatching.index,
+    MessageLensHistoricalArchivePreflightPhase.currentPayloadPresence =>
+      MessageLensHistoricalArchivePreflightPhase.currentPayloadPresence.index,
+    MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence =>
+      MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence.index,
+    MessageLensHistoricalArchivePreflightPhase.classification =>
+      MessageLensHistoricalArchivePreflightPhase.classification.index,
+    _ => finalPhase.index,
+  };
+  return currentPhase.index >= startIndex &&
+      currentPhase.index <= finalPhase.index;
+}
+
+String _messageLensPreflightProgressValue(
+  MessageLensHistoricalArchivePreflightProgress? progress,
+) {
+  if (progress == null || progress.totalUnits == null) {
+    return 'Working';
+  }
+  if (progress.totalUnits == 1 && progress.completedUnits == 0) {
+    return 'Working';
+  }
+  return '${_formattedCount(progress.completedUnits)} / '
+      '${_formattedCount(progress.totalUnits)}';
+}
+
+String _messageLensPreflightPhaseLabel(
+  MessageLensHistoricalArchivePreflightPhase phase,
+) {
+  return switch (phase) {
+    MessageLensHistoricalArchivePreflightPhase.structuralQualification =>
+      'Structural qualification',
+    MessageLensHistoricalArchivePreflightPhase.compatibilityInspection =>
+      'Compatibility inspection',
+    MessageLensHistoricalArchivePreflightPhase.lineageAdmission =>
+      'Messages lineage admission',
+    MessageLensHistoricalArchivePreflightPhase.donorAttachmentEvidence =>
+      'Donor attachment evidence',
+    MessageLensHistoricalArchivePreflightPhase.currentAttachmentEvidence =>
+      'Current attachment evidence',
+    MessageLensHistoricalArchivePreflightPhase.donorPayloadEvidence =>
+      'Donor payload evidence',
+    MessageLensHistoricalArchivePreflightPhase.relationshipMatching =>
+      'Attachment relationship matching',
+    MessageLensHistoricalArchivePreflightPhase.currentPayloadPresence =>
+      'Current payload presence',
+    MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence =>
+      'Donor payload presence',
+    MessageLensHistoricalArchivePreflightPhase.classification =>
+      'Classification and aggregation',
   };
 }
 

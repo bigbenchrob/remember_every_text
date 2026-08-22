@@ -9,7 +9,6 @@ import 'package:remember_this_text/essentials/db/infrastructure/data_sources/loc
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/message_lens_attachment_recovery.dart';
-import 'package:remember_this_text/features/attachments/infrastructure/repositories/filesystem_attachment_archive_file_store.dart';
 import 'package:remember_this_text/features/attachments/infrastructure/repositories/import_ledger_message_lens_attachment_evidence_reader.dart';
 import 'package:remember_this_text/features/attachments/infrastructure/repositories/overlay_attachment_archive_read_store.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -44,7 +43,6 @@ void main() {
         overlayDb: overlayDatabase,
         archiveDirectory: archiveDirectory.path,
       ),
-      archiveFileStore: const FilesystemAttachmentArchiveFileStore(),
       archiveDirectoryPath: archiveDirectory.path,
     );
     await _insertRelationship(importDatabase);
@@ -79,7 +77,7 @@ void main() {
         importAttachmentId: 22,
       );
       expect(
-        await reader.readPayloadStatus(archiveKey),
+        (await reader.readPayloadStatuses(const [archiveKey]))[archiveKey],
         CurrentAttachmentPayloadStatus.missing,
       );
 
@@ -106,17 +104,48 @@ void main() {
         ],
       );
 
+      final progress = <(int, int)>[];
+      final presentStatuses = await reader.readPayloadStatuses(
+        const [archiveKey],
+        onProgress: (completed, total) {
+          progress.add((completed, total));
+        },
+      );
       expect(
-        await reader.readPayloadStatus(archiveKey),
+        presentStatuses[archiveKey],
         CurrentAttachmentPayloadStatus.presentValid,
+      );
+      expect(progress, const [(1, 1)]);
+      await file.writeAsBytes(List<int>.filled(bytes.length, 120));
+      expect(
+        (await reader.readPayloadStatuses(const [archiveKey]))[archiveKey],
+        CurrentAttachmentPayloadStatus.presentValid,
+        reason: 'preflight defers byte hashing to installation revalidation',
       );
       await file.writeAsString('conflicting bytes');
       expect(
-        await reader.readPayloadStatus(archiveKey),
+        (await reader.readPayloadStatuses(const [archiveKey]))[archiveKey],
         CurrentAttachmentPayloadStatus.presentConflict,
       );
     },
   );
+
+  test('resolves missing metadata without per-item archive queries', () async {
+    const archiveKey = ArchiveCompatibilityKey(
+      messageGuid: 'message-guid',
+      importAttachmentId: 22,
+    );
+    final progress = <(int, int)>[];
+
+    await reader.readPayloadStatuses(
+      List<ArchiveCompatibilityKey>.filled(501, archiveKey),
+      onProgress: (completed, total) {
+        progress.add((completed, total));
+      },
+    );
+
+    expect(progress, const [(501, 501)]);
+  });
 }
 
 Future<void> _insertRelationship(ImportDatabase database) async {

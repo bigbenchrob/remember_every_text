@@ -1153,6 +1153,100 @@ void main() {
     });
 
     test(
+      'MessageLens inspection paints truthful state before preflight starts',
+      () async {
+        final preflight = _FakeMessageLensHistoricalArchivePreflight(
+          _messageLensReady(recoverableCount: 3, recoverableBytes: 8192),
+        );
+        final frameBarrier = Completer<void>();
+        final container = ProviderContainer(
+          overrides: [
+            messageLensHistoricalArchivePreflightProvider.overrideWith(
+              (ref) async => preflight,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        workflow.selectSourceType(
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+
+        final inspection = workflow.loadMessageLensFolder(
+          folderPath: '/tmp/donor',
+          waitForInspectionPresentation: () => frameBarrier.future,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        final beforeFrame = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          beforeFrame.presentation,
+          isA<HistoricalArchivesMessageLensInspectingState>(),
+        );
+        expect(preflight.inspectedFolders, isEmpty);
+
+        frameBarrier.complete();
+        await inspection;
+
+        expect(preflight.inspectedFolders, const ['/tmp/donor']);
+      },
+    );
+
+    test(
+      'MessageLens progress projects real numerator and denominator',
+      () async {
+        final releaseAfterProgress = Completer<void>();
+        final preflight = _FakeMessageLensHistoricalArchivePreflight(
+          _messageLensReady(recoverableCount: 3, recoverableBytes: 8192),
+          progress: const MessageLensHistoricalArchivePreflightProgress(
+            phase:
+                MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence,
+            completedUnits: 250,
+            totalUnits: 1000,
+          ),
+          releaseAfterProgress: releaseAfterProgress,
+        );
+        final container = ProviderContainer(
+          overrides: [
+            messageLensHistoricalArchivePreflightProvider.overrideWith(
+              (ref) async => preflight,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        workflow.selectSourceType(
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+
+        final inspection = workflow.loadMessageLensFolder(
+          folderPath: '/tmp/donor',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        final model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: container.read(historicalArchivesWorkflowProvider),
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          model.narratorPresentation?.instrumentationRows.map(
+            (row) => (row.label, row.value),
+          ),
+          contains(('Checking donor attachment files', '250 / 1,000')),
+        );
+
+        releaseAfterProgress.complete();
+        await inspection;
+      },
+    );
+
+    test(
       'legacy MessageLens ready evidence does not require archive identity',
       () async {
         final container = ProviderContainer(
@@ -3401,16 +3495,28 @@ MessageLensHistoricalArchiveReady _messageLensReady({
 
 final class _FakeMessageLensHistoricalArchivePreflight
     implements MessageLensHistoricalArchivePreflight {
-  _FakeMessageLensHistoricalArchivePreflight(this.result);
+  _FakeMessageLensHistoricalArchivePreflight(
+    this.result, {
+    this.progress,
+    this.releaseAfterProgress,
+  });
 
   final MessageLensHistoricalArchivePreflightResult result;
+  final MessageLensHistoricalArchivePreflightProgress? progress;
+  final Completer<void>? releaseAfterProgress;
   final List<String> inspectedFolders = [];
 
   @override
   Future<MessageLensHistoricalArchivePreflightResult> inspect({
     required String folderPath,
+    MessageLensHistoricalArchivePreflightProgressObserver? onProgress,
+    bool Function()? isCancelled,
   }) async {
     inspectedFolders.add(folderPath);
+    if (progress case final progress?) {
+      onProgress?.call(progress);
+      await releaseAfterProgress?.future;
+    }
     return result;
   }
 }
