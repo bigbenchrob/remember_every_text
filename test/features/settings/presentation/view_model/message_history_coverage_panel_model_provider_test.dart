@@ -11,7 +11,6 @@ void main() {
         _report(conversation: 115, recovered: 5, unaccounted: 0),
       );
 
-      expect(model.statusLabel, 'Complete');
       expect(model.headline, 'All messages on this Mac are accounted for');
       expect(
         model.summaryText,
@@ -21,7 +20,9 @@ void main() {
       expect(model.totalCount, 120);
       expect(model.accountedCount, 120);
       expect(model.unaccountedCount, 0);
-      expect(model.detailLines, contains('Recovered Messages: 5'));
+      expect(model.detailLines, contains('Total accounted for: 120'));
+      expect(model.detailLines, isNot(contains('Recovered Messages: 5')));
+      expect(model.detailLines, isNot(contains('Unaccounted: 0')));
     });
 
     test('names the exact incomplete exception and full denominator', () {
@@ -30,7 +31,6 @@ void main() {
       );
 
       expect(model.status, MessageHistoryCoverageStatus.incomplete);
-      expect(model.statusLabel, 'Review needed');
       expect(model.headline, '10 messages could not be accounted for');
       expect(
         model.summaryText,
@@ -53,10 +53,8 @@ void main() {
         ),
       );
 
-      expect(unavailable.statusLabel, 'Temporarily unavailable');
       expect(unavailable.totalCount, isNull);
       expect(unavailable.detailLines, contains('Maintenance is active.'));
-      expect(failed.statusLabel, 'Check failed');
       expect(failed.headline, 'Message history coverage could not be checked');
       expect(failed.detailLines, contains('Evidence read failed.'));
     });

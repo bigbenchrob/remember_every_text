@@ -5482,3 +5482,16 @@ production preservation authority mechanically enforceable.
   no longer manufacture dashboard rows or cards merely to satisfy a template.
 - Updated the Feature 27 and feature-planning indexes, changelog, and release
   version for the user-facing Settings refinement.
+
+## 2026-08-22 - Message History Coverage final conformance
+
+- Added the final Feature 27 state and layout conformance implementation
+  record and classified the feature as ready.
+- Recorded the root cause of the A2 title misalignment and the shared
+  Settings-owned horizontal content-column contract used by both Track and
+  native-flow presentation.
+- Recorded the icon-plus-headline status decision, additive Details content,
+  all-state accessibility review, unchanged count surface, and preserved
+  Prompt 02 semantic invariants.
+- Updated the Feature 27 index, changelog, and release version for the final
+  user-facing layout refinement.

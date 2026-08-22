@@ -9,6 +9,7 @@ import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
 import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../application/sidebar_cassette_spec/actions/message_history_coverage_report_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
+import '../layout/message_history_coverage_track_occupants.dart';
 import '../view_model/message_history_coverage_panel_model_provider.dart';
 
 class MessageHistoryCoverageReportPanel extends ConsumerWidget {
@@ -18,6 +19,8 @@ class MessageHistoryCoverageReportPanel extends ConsumerWidget {
   static const detailsToggleKey = Key(
     'message-history-coverage-details-toggle',
   );
+  static const headlineKey = Key('message-history-coverage-headline');
+  static const reportBodyKey = Key('message-history-coverage-report-body');
   static const retryButtonKey = Key('message-history-coverage-retry-button');
 
   @override
@@ -88,33 +91,19 @@ class _CoveragePanelScaffold extends StatelessWidget {
               )
             else
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xl,
-                  AppSpacing.lg,
-                  AppSpacing.xl,
-                  0,
-                ),
-                child: Text(
-                  'Message History Coverage',
+                padding: const EdgeInsets.only(top: AppSpacing.lg),
+                child: MessageHistoryCoverageTitle(
                   style: typography.title1.copyWith(
                     color: colors.content.textPrimary,
                   ),
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xl,
-                AppSpacing.lg,
-                AppSpacing.xl,
-                AppSpacing.xl,
+              padding: const EdgeInsets.only(
+                top: AppSpacing.lg,
+                bottom: AppSpacing.xl,
               ),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: child,
-                ),
-              ),
+              child: MessageHistoryCoverageCenterColumn(child: child),
             ),
           ],
         ),
@@ -166,10 +155,11 @@ class _CoverageResult extends ConsumerWidget {
     final statusColor = _statusColor(panelModel.status, colors: colors);
 
     return Column(
+      key: MessageHistoryCoverageReportPanel.reportBodyKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Semantics(
-          label: '${panelModel.statusLabel}. ${panelModel.headline}',
+          label: panelModel.headline,
           header: true,
           excludeSemantics: true,
           child: Row(
@@ -185,21 +175,12 @@ class _CoverageResult extends ConsumerWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      panelModel.statusLabel,
-                      style: typography.caption.copyWith(color: statusColor),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      panelModel.headline,
-                      style: typography.title2.copyWith(
-                        color: colors.content.textPrimary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  panelModel.headline,
+                  key: MessageHistoryCoverageReportPanel.headlineKey,
+                  style: typography.title2.copyWith(
+                    color: colors.content.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -438,7 +419,6 @@ class _CoverageUnexpectedFailure extends StatelessWidget {
       panelModel: const MessageCoveragePanelViewModel(
         title: 'Message History Coverage',
         status: MessageHistoryCoverageStatus.failed,
-        statusLabel: 'Check failed',
         headline: 'Message history coverage could not be checked',
         summaryText:
             'MessageLens could not safely compare the messages on this Mac with its current message accounting.',

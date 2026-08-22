@@ -4,7 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/config/theme/widgets/layout/cross_column_track_plan.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/page_track_layout_matrix.dart';
+import 'package:remember_this_text/config/theme/widgets/layout/resolved_track_layout_matrix.dart';
+import 'package:remember_this_text/essentials/navigation/presentation/layout/message_history_coverage_page_track_plan.dart';
 import 'package:remember_this_text/features/settings/application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
+import 'package:remember_this_text/features/settings/presentation/layout/message_history_coverage_track_occupants.dart';
 import 'package:remember_this_text/features/settings/presentation/view/message_history_coverage_report_panel.dart';
 import 'package:remember_this_text/features/settings/presentation/view_model/message_history_coverage_panel_model_provider.dart';
 
@@ -39,10 +44,9 @@ void main() {
       expect(find.text('0'), findsOneWidget);
       expect(find.text('View Recovered Messages'), findsNothing);
       expect(find.text('Review unaccounted messages'), findsNothing);
+      expect(find.text('Complete'), findsNothing);
       expect(
-        find.bySemanticsLabel(
-          'Complete. All messages on this Mac are accounted for',
-        ),
+        find.bySemanticsLabel('All messages on this Mac are accounted for'),
         findsOneWidget,
       );
     });
@@ -68,11 +72,10 @@ void main() {
         findsNothing,
       );
       expect(
-        find.bySemanticsLabel(
-          'Review needed. 10 messages could not be accounted for',
-        ),
+        find.bySemanticsLabel('10 messages could not be accounted for'),
         findsOneWidget,
       );
+      expect(find.text('Review needed'), findsNothing);
     });
 
     testWidgets('presents maintenance as temporarily unavailable', (
@@ -90,6 +93,12 @@ void main() {
 
       expect(
         find.text('Message history coverage is temporarily unavailable'),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(
+          'Message history coverage is temporarily unavailable',
+        ),
         findsOneWidget,
       );
       expect(
@@ -117,6 +126,10 @@ void main() {
         findsOneWidget,
       );
       expect(
+        find.bySemanticsLabel('Message history coverage could not be checked'),
+        findsOneWidget,
+      );
+      expect(
         find.byKey(MessageHistoryCoverageReportPanel.retryButtonKey),
         findsOneWidget,
       );
@@ -126,6 +139,68 @@ void main() {
       await tester.pump();
       expect(find.text('Evidence read failed.'), findsOneWidget);
     });
+
+    testWidgets('Details adds evidence without repeating primary count rows', (
+      tester,
+    ) async {
+      await _pumpModel(
+        tester,
+        buildMessageCoveragePanelViewModel(
+          _report(conversation: 115, recovered: 5, unaccounted: 0),
+        ),
+      );
+
+      await tester.tap(
+        find.byKey(MessageHistoryCoverageReportPanel.detailsToggleKey),
+      );
+      await tester.pump();
+
+      expect(find.text('Total accounted for: 120'), findsOneWidget);
+      expect(
+        find.byKey(
+          const ValueKey<String>(
+            'message-history-coverage-detail-Recovered Messages: 5',
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.textContaining('Imported Historical Archives are outside'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'Track title and report body share canonical inset at narrow and wide widths',
+      (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(1200, 800);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.view.resetPhysicalSize);
+
+        for (final width in <double>[520, 1000]) {
+          await _pumpTrackedAlignmentFixture(tester, width: width);
+
+          final titleLeft = tester
+              .getTopLeft(find.byKey(messageHistoryCoverageTitleKey))
+              .dx;
+          final bodyLeft = tester
+              .getTopLeft(
+                find.byKey(MessageHistoryCoverageReportPanel.reportBodyKey),
+              )
+              .dx;
+          expect(titleLeft, bodyLeft);
+          expect(
+            titleLeft,
+            MessageHistoryCoverageCenterColumnGeometry.horizontalInset,
+          );
+          expect(
+            find.bySemanticsLabel('Message History Coverage'),
+            findsOneWidget,
+          );
+        }
+      },
+    );
 
     testWidgets('loading and result share one stable report skeleton', (
       tester,
@@ -179,6 +254,61 @@ void main() {
       );
     });
   });
+}
+
+Future<void> _pumpTrackedAlignmentFixture(
+  WidgetTester tester, {
+  required double width,
+}) async {
+  await tester.pumpWidget(
+    CupertinoApp(
+      home: Align(
+        alignment: Alignment.topLeft,
+        child: SizedBox(
+          width: width,
+          height: 700,
+          child: Builder(
+            builder: (context) {
+              final matrix = buildMessageHistoryCoveragePageTrackLayoutMatrix(
+                sidebarSettingsMenu: const FixedHeightTrackOccupant(height: 40),
+                centerTitle: messageHistoryCoverageTitleTrackOccupant(
+                  style: const TextStyle(fontSize: 20),
+                ),
+              );
+              final resolvedMatrix = ResolvedTrackLayoutMatrix.resolve(
+                matrix: matrix,
+                constraints: PresentationConstraints.fromBuildContext(
+                  context,
+                  availableWidth: width,
+                ),
+              );
+              return ResolvedTrackLayoutMatrixScope(
+                matrix: resolvedMatrix,
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TrackCellView(
+                      cellId: CellId(
+                        trackId: TrackId.trackA,
+                        columnId: TrackColumnId.column2,
+                      ),
+                    ),
+                    MessageHistoryCoverageCenterColumn(
+                      child: SizedBox(
+                        key: MessageHistoryCoverageReportPanel.reportBodyKey,
+                        height: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
 }
 
 Future<void> _pumpModel(

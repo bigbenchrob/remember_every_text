@@ -11,7 +11,6 @@ final class MessageCoveragePanelViewModel {
   const MessageCoveragePanelViewModel({
     required this.title,
     required this.status,
-    required this.statusLabel,
     required this.headline,
     required this.summaryText,
     required this.totalCount,
@@ -31,7 +30,6 @@ final class MessageCoveragePanelViewModel {
 
   final String title;
   final MessageHistoryCoverageStatus status;
-  final String statusLabel;
   final String headline;
   final String summaryText;
   final int? totalCount;
@@ -70,7 +68,6 @@ MessageCoveragePanelViewModel buildMessageCoveragePanelViewModel(
   return MessageCoveragePanelViewModel(
     title: 'Message History Coverage',
     status: report.status,
-    statusLabel: _statusLabel(report.status),
     headline: _headline(report),
     summaryText: _summaryText(report),
     totalCount: report.totalCurrentMessages,
@@ -90,16 +87,6 @@ MessageCoveragePanelViewModel buildMessageCoveragePanelViewModel(
     generatedAtLabel: _formatDateTime(report.generatedAt),
     detailLines: List<String>.unmodifiable(_detailLines(report)),
   );
-}
-
-String _statusLabel(MessageHistoryCoverageStatus status) {
-  return switch (status) {
-    MessageHistoryCoverageStatus.complete => 'Complete',
-    MessageHistoryCoverageStatus.incomplete => 'Review needed',
-    MessageHistoryCoverageStatus.temporarilyUnavailable =>
-      'Temporarily unavailable',
-    MessageHistoryCoverageStatus.failed => 'Check failed',
-  };
 }
 
 String _headline(MessageHistoryCoverageReport report) {
@@ -162,18 +149,6 @@ String _completeSummary({
 
 List<String> _detailLines(MessageHistoryCoverageReport report) {
   final lines = <String>[];
-  if (report.totalCurrentMessages case final total?) {
-    lines.add('Messages currently on this Mac: ${_formatCount(total)}');
-  }
-  if (report.accountedInConversations case final count?) {
-    lines.add('In conversations: ${_formatCount(count)}');
-  }
-  if (report.recoveredUnlinked case final count?) {
-    lines.add('Recovered Messages: ${_formatCount(count)}');
-  }
-  if (report.unaccounted case final count?) {
-    lines.add('Unaccounted: ${_formatCount(count)}');
-  }
   if (report.totalAccounted case final count?) {
     lines.add('Total accounted for: ${_formatCount(count)}');
   }

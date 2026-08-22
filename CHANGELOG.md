@@ -10,6 +10,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Message History Coverage now aligns its shared Track title with the report's
+  canonical center content column at every supported width. Its status icon and
+  explicit headline replace the redundant status eyebrow, while Details now
+  adds supporting evidence without repeating the primary count surface.
+
 - Message History Coverage now presents its corrected current-Mac accounting
   as a calm Settings report: one precise conclusion, one compact exact-count
   surface, quiet recovered-message evidence, warning treatment only for real
