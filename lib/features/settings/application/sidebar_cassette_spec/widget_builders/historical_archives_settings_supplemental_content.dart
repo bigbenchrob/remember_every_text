@@ -131,25 +131,34 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          AppSecondaryButton(
-            onPressed: workflowState.sourceTypeSwitchEnabled
-                ? () async {
-                    await ref
-                        .read(
-                          historicalArchivesWorkflowActionsProvider.notifier,
-                        )
-                        .chooseMessageLensFolder(
-                          waitForInspectionPresentation: () =>
-                              SchedulerBinding.instance.endOfFrame,
-                        );
-                  }
-                : null,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Text(
-                'Choose MessageLens Folder…',
-                style: typography.controlValue.copyWith(
-                  color: colors.accents.primary,
+          Semantics(
+            button: true,
+            enabled: workflowState.sourceTypeSwitchEnabled,
+            label: 'Choose MessageLens Folder',
+            excludeSemantics: true,
+            child: AppSecondaryButton(
+              onPressed: workflowState.sourceTypeSwitchEnabled
+                  ? () async {
+                      await ref
+                          .read(
+                            historicalArchivesWorkflowActionsProvider.notifier,
+                          )
+                          .chooseMessageLensFolder(
+                            waitForInspectionPresentation: () =>
+                                SchedulerBinding.instance.endOfFrame,
+                          );
+                    }
+                  : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: Text(
+                  'Choose MessageLens Folder…',
+                  style: typography.controlValue.copyWith(
+                    color: colors.accents.primary,
+                  ),
                 ),
               ),
             ),
@@ -233,18 +242,27 @@ class HistoricalArchivesSettingsSupplementalContent extends ConsumerWidget {
             ),
             height: AppSpacing.xl,
           ),
-          AppSecondaryButton(
-            onPressed: () async {
-              await ref
-                  .read(historicalArchivesWorkflowActionsProvider.notifier)
-                  .chooseMessagesFolder();
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Text(
-                'Choose a Messages Folder to add...',
-                style: typography.controlValue.copyWith(
-                  color: colors.accents.primary,
+          Semantics(
+            button: true,
+            enabled: true,
+            label: 'Choose a Messages Folder to add',
+            excludeSemantics: true,
+            child: AppSecondaryButton(
+              onPressed: () async {
+                await ref
+                    .read(historicalArchivesWorkflowActionsProvider.notifier)
+                    .chooseMessagesFolder();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: Text(
+                  'Choose a Messages Folder to add...',
+                  style: typography.controlValue.copyWith(
+                    color: colors.accents.primary,
+                  ),
                 ),
               ),
             ),

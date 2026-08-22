@@ -10,8 +10,6 @@ import '../../../../config/theme/theme_typography.dart';
 import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
 import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
 import '../../../../config/theme/widgets/theme_widgets.dart';
-import '../../../../essentials/debug/feature_level_providers.dart'
-    show DeveloperModeValue, developerModeProvider;
 import '../../../../essentials/source_scoped_import/domain/messages_lineage_admission.dart'
     show MessagesLineageAdmissionStatus;
 import '../../application/historical_archives_workflow_actions_provider.dart';
@@ -168,13 +166,7 @@ class _HistoricalArchivesPanelState
         });
       },
     );
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
     final panelModel = ref.watch(historicalArchivesWorkflowPanelModelProvider);
-    final developerMode = ref.watch(developerModeProvider);
-    final showDeveloperControls =
-        developerMode.valueOrNull == DeveloperModeValue.developer;
     final narratorPresentation = panelModel.narratorPresentation;
     final existingSourcePresentation = panelModel.existingSourcePresentation;
 
@@ -198,300 +190,8 @@ class _HistoricalArchivesPanelState
       );
     }
 
-    return ColoredBox(
-      color: colors.surfaces.canvas,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 920),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _ShellHeroCard(
-                  statusLabel: panelModel.statusLabel,
-                  summaryText: panelModel.summaryText,
-                  executionGate: panelModel.executionGate,
-                  preflight: panelModel.preflight,
-                ),
-                const SizedBox(height: 20),
-                _ShellSectionCard(
-                  title: 'Choose Messages Folder',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _HistoricalArchiveActionButton(
-                            label: 'Choose Messages Folder...',
-                            enabled: true,
-                            onPressed: () {
-                              ref
-                                  .read(
-                                    historicalArchivesWorkflowActionsProvider
-                                        .notifier,
-                                  )
-                                  .chooseMessagesFolder();
-                            },
-                          ),
-                          _HistoricalArchiveActionButton(
-                            label: 'Clear Selected Folder',
-                            enabled: panelModel.selectedFolderPath != null,
-                            onPressed: panelModel.selectedFolderPath == null
-                                ? null
-                                : () {
-                                    ref
-                                        .read(
-                                          historicalArchivesWorkflowActionsProvider
-                                              .notifier,
-                                        )
-                                        .clearSelection();
-                                  },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'This only clears the currently selected folder from the workflow UI. It does not delete imported archive records or reset MessageLens data.',
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _MetadataLine(
-                        label: 'Folder path',
-                        value:
-                            panelModel.selectedFolderPath ??
-                            'No folder selected yet',
-                      ),
-                      _MetadataLine(
-                        label: 'chat.db',
-                        value: panelModel.chatDbStatusLabel,
-                      ),
-                      _MetadataLine(
-                        label: 'Attachments/',
-                        value: panelModel.attachmentsStatusLabel,
-                      ),
-                      _MetadataLine(
-                        label: 'Source label',
-                        value: panelModel.sourceLabel,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _ShellSectionCard(
-                  title: 'Preflight Summary',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _StatusCallout(
-                        title: 'Preflight State',
-                        statusLabel: panelModel.preflight.statusLabel,
-                        detail: panelModel.preflight.detail,
-                        tone: _preflightTone(
-                          panelModel.preflight.status,
-                          colors: colors,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      for (final line in panelModel.preflightSummaryLines) ...[
-                        Text(
-                          line,
-                          style: typography.body.copyWith(
-                            color: colors.content.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      const SizedBox(height: 8),
-                      Text(
-                        'Dry Run Summary',
-                        style: typography.controlValue.copyWith(
-                          color: colors.content.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      for (final line in panelModel.dryRunSummaryLines) ...[
-                        Text(
-                          line,
-                          style: typography.body.copyWith(
-                            color: colors.content.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _ShellSectionCard(
-                  title: 'Begin Import',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _HistoricalArchiveActionButton(
-                        label: 'Begin Import',
-                        enabled: panelModel.importButtonEnabled,
-                        onPressed: panelModel.importButtonEnabled
-                            ? () {
-                                ref
-                                    .read(
-                                      historicalArchivesWorkflowActionsProvider
-                                          .notifier,
-                                    )
-                                    .beginImportForSelectedSource(
-                                      waitForOperationPresentation:
-                                          _waitForHistoricalArchiveOperationFrame,
-                                    );
-                              }
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        panelModel.importButtonDetail,
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Import safety',
-                        style: typography.controlValue.copyWith(
-                          color: colors.content.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      for (final line
-                          in panelModel.importSafetySummaryLines) ...[
-                        Text(
-                          line,
-                          style: typography.body.copyWith(
-                            color: colors.content.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                  ),
-                ),
-                if (showDeveloperControls) ...[
-                  const SizedBox(height: 16),
-                  _ShellSectionCard(
-                    title: 'Developer Testing Controls',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _HistoricalArchiveActionButton(
-                          label: 'Clear Imported Archive Data for This Source',
-                          enabled: panelModel.removeImportedArchiveDataEnabled,
-                          onPressed: panelModel.removeImportedArchiveDataEnabled
-                              ? () {
-                                  _showRemoveImportedArchiveDataConfirmationDialog(
-                                    context: context,
-                                    ref: ref,
-                                    panelModel: panelModel,
-                                  );
-                                }
-                              : null,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Developer/testing only. This deletes source-scoped import rows from MessageLens for the selected archive source, then reprojects the conversation graph.',
-                          style: typography.body.copyWith(
-                            color: colors.content.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'It does not delete or modify the source archive folder. It does not reset overlay or user-intent data. Live current_mac data must remain untouched.',
-                          style: typography.body.copyWith(
-                            color: colors.content.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        for (final line
-                            in panelModel.archiveManagementSummaryLines) ...[
-                          Text(
-                            line,
-                            style: typography.body.copyWith(
-                              color: colors.content.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        const SizedBox(height: 4),
-                        Text(
-                          panelModel.removeImportedArchiveDataDetail,
-                          style: typography.body.copyWith(
-                            color: colors.content.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                _ShellSectionCard(
-                  title: 'Activity Log',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (
-                        var index = 0;
-                        index < panelModel.activityLog.length;
-                        index++
-                      ) ...[
-                        _LogRow(entry: panelModel.activityLog[index]),
-                        if (index < panelModel.activityLog.length - 1)
-                          const SizedBox(height: 10),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _ShellSectionCard(
-                  title: 'Progress',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (
-                        var index = 0;
-                        index < panelModel.phases.length;
-                        index++
-                      ) ...[
-                        _PhaseRow(phase: panelModel.phases[index]),
-                        if (index < panelModel.phases.length - 1)
-                          const SizedBox(height: 12),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _ShellSectionCard(
-                  title: 'Result Summary',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (final line in panelModel.resultSummaryLines) ...[
-                        Text(
-                          line,
-                          style: typography.body.copyWith(
-                            color: colors.content.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    throw StateError(
+      'Historical Archives presentation has no canonical center projection.',
     );
   }
 
@@ -1137,7 +837,7 @@ class _NarratorDecision extends ConsumerWidget {
               onPressed: actions.retrySelectedFolderInspection,
             ),
           _HistoricalArchiveActionButton(
-            label: 'Choose Another Folder',
+            label: 'Choose a Messages Folder to add...',
             enabled: true,
             onPressed: actions.chooseMessagesFolder,
           ),
@@ -1189,7 +889,7 @@ class _NarratorDecision extends ConsumerWidget {
       ),
       HistoricalArchivesNarratorPresentationKind.messageLensRecoveryFailed =>
         _HistoricalArchiveActionButton(
-          label: 'Choose Another Folder',
+          label: 'Choose MessageLens Folder…',
           enabled: true,
           onPressed: () {
             actions.chooseMessageLensFolder(
@@ -1214,7 +914,7 @@ class _NarratorDecision extends ConsumerWidget {
               },
             ),
           _HistoricalArchiveActionButton(
-            label: 'Choose Another Folder',
+            label: 'Choose a Messages Folder to add...',
             enabled: true,
             onPressed: actions.chooseMessagesFolder,
           ),
@@ -1258,33 +958,39 @@ class _HistoricalArchivesDetailsDisclosureState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            key: const Key('historical-archives-details-toggle'),
-            onTap: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _isExpanded
-                      ? CupertinoIcons.chevron_down
-                      : CupertinoIcons.chevron_right,
-                  size: 14,
-                  color: colors.content.textSecondary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  widget.label,
-                  style: typography.controlValue.copyWith(
+        Semantics(
+          button: true,
+          expanded: _isExpanded,
+          label: widget.label,
+          excludeSemantics: true,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              key: const Key('historical-archives-details-toggle'),
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isExpanded
+                        ? CupertinoIcons.chevron_down
+                        : CupertinoIcons.chevron_right,
+                    size: 14,
                     color: colors.content.textSecondary,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.label,
+                    style: typography.controlValue.copyWith(
+                      color: colors.content.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1363,150 +1069,6 @@ Future<void> _showRemoveImportedArchiveDataConfirmationDialog({
   }
 }
 
-class _ShellHeroCard extends ConsumerWidget {
-  const _ShellHeroCard({
-    required this.statusLabel,
-    required this.summaryText,
-    required this.executionGate,
-    required this.preflight,
-  });
-
-  final String statusLabel;
-  final String summaryText;
-  final HistoricalArchivesExecutionGateViewModel executionGate;
-  final HistoricalArchivesPreflightViewModel preflight;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.surfaceRaised,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Historical Archives',
-              style: typography.caption.copyWith(
-                color: colors.content.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: colors.accents.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: colors.accents.primary.withValues(alpha: 0.25),
-                  width: 0.8,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: Text(
-                  statusLabel,
-                  style: typography.caption.copyWith(
-                    color: colors.accents.primary,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Import historical Messages folders without replacing current message data.',
-              style: typography.title1.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              summaryText,
-              style: typography.body.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _StatusSummaryTile(
-                    title: 'Execution Gate',
-                    statusLabel: executionGate.statusLabel,
-                    detail: executionGate.detail,
-                    tone: _executionGateTone(
-                      executionGate.status,
-                      colors: colors,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatusSummaryTile(
-                    title: 'Preflight',
-                    statusLabel: preflight.statusLabel,
-                    detail: preflight.detail,
-                    tone: _preflightTone(preflight.status, colors: colors),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ShellSectionCard extends ConsumerWidget {
-  const _ShellSectionCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.surfaceRaised,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: typography.title3.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 14),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _HistoricalArchiveActionButton extends ConsumerWidget {
   const _HistoricalArchiveActionButton({
     required this.label,
@@ -1537,309 +1099,50 @@ class _HistoricalArchiveActionButton extends ConsumerWidget {
       );
     }
 
-    return MouseRegion(
-      cursor: isInteractive
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
-      child: GestureDetector(
-        onTap: isInteractive ? onPressed : null,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: destructive
-                ? colors.surfaces.control
-                : enabled
-                ? colors.accents.primary.withValues(alpha: 0.10)
-                : colors.surfaces.control,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
+    return Semantics(
+      button: true,
+      enabled: isInteractive,
+      label: label,
+      excludeSemantics: true,
+      child: MouseRegion(
+        cursor: isInteractive
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        child: GestureDetector(
+          onTap: isInteractive ? onPressed : null,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
               color: destructive
-                  ? colors.buttons.destructiveBorder
+                  ? colors.surfaces.control
                   : enabled
-                  ? colors.accents.primary.withValues(alpha: 0.25)
-                  : colors.lines.borderSubtle,
-              width: 0.8,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Text(
-              label,
-              style: typography.controlValue.copyWith(
+                  ? colors.accents.primary.withValues(alpha: 0.10)
+                  : colors.surfaces.control,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
                 color: destructive
-                    ? colors.buttons.destructiveForeground
+                    ? colors.buttons.destructiveBorder
                     : enabled
-                    ? colors.accents.primary
-                    : colors.content.textTertiary,
+                    ? colors.accents.primary.withValues(alpha: 0.25)
+                    : colors.lines.borderSubtle,
+                width: 0.8,
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MetadataLine extends ConsumerWidget {
-  const _MetadataLine({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        '$label: $value',
-        style: typography.body.copyWith(color: colors.content.textSecondary),
-      ),
-    );
-  }
-}
-
-class _StatusSummaryTile extends ConsumerWidget {
-  const _StatusSummaryTile({
-    required this.title,
-    required this.statusLabel,
-    required this.detail,
-    required this.tone,
-  });
-
-  final String title;
-  final String statusLabel;
-  final String detail;
-  final Color tone;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.control,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: typography.caption.copyWith(
-                color: colors.content.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              statusLabel,
-              style: typography.controlValue.copyWith(color: tone),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              detail,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusCallout extends ConsumerWidget {
-  const _StatusCallout({
-    required this.title,
-    required this.statusLabel,
-    required this.detail,
-    required this.tone,
-  });
-
-  final String title;
-  final String statusLabel;
-  final String detail;
-  final Color tone;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: tone.withValues(alpha: 0.22), width: 0.8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: typography.caption.copyWith(
-                color: colors.content.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              statusLabel,
-              style: typography.controlValue.copyWith(color: tone),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              detail,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LogRow extends ConsumerWidget {
-  const _LogRow({required this.entry});
-
-  final HistoricalArchivesLogEntryViewModel entry;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.control,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              entry.label,
-              style: typography.controlValue.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              entry.message,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PhaseRow extends ConsumerWidget {
-  const _PhaseRow({required this.phase});
-
-  final HistoricalArchivesWorkflowPhaseViewModel phase;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.surfaces.control,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            child: Text(
-              _statusLabel(phase.status),
-              style: typography.caption.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                phase.label,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Text(
+                label,
                 style: typography.controlValue.copyWith(
-                  color: colors.content.textPrimary,
+                  color: destructive
+                      ? colors.buttons.destructiveForeground
+                      : enabled
+                      ? colors.accents.primary
+                      : colors.content.textTertiary,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                phase.detail,
-                style: typography.caption1.copyWith(
-                  color: colors.content.textSecondary,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
-
-  String _statusLabel(HistoricalArchivesWorkflowPhaseStatus status) {
-    return switch (status) {
-      HistoricalArchivesWorkflowPhaseStatus.waiting => 'Waiting',
-      HistoricalArchivesWorkflowPhaseStatus.running => 'Running',
-      HistoricalArchivesWorkflowPhaseStatus.succeeded => 'Succeeded',
-      HistoricalArchivesWorkflowPhaseStatus.failed => 'Failed',
-      HistoricalArchivesWorkflowPhaseStatus.skipped => 'Skipped',
-    };
-  }
-}
-
-Color _executionGateTone(
-  HistoricalArchivesExecutionGateStatus status, {
-  required ThemeColors colors,
-}) {
-  return switch (status) {
-    HistoricalArchivesExecutionGateStatus.available => colors.status.success,
-    HistoricalArchivesExecutionGateStatus.busy => colors.status.warning,
-    HistoricalArchivesExecutionGateStatus.blocked => colors.status.error,
-  };
-}
-
-Color _preflightTone(
-  HistoricalArchivesPreflightStatus status, {
-  required ThemeColors colors,
-}) {
-  return switch (status) {
-    HistoricalArchivesPreflightStatus.waitingForFolder =>
-      colors.content.textTertiary,
-    HistoricalArchivesPreflightStatus.running => colors.status.warning,
-    HistoricalArchivesPreflightStatus.completeReadyToImport =>
-      colors.status.success,
-    HistoricalArchivesPreflightStatus.failed => colors.status.error,
-  };
 }

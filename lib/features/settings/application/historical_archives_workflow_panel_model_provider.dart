@@ -1928,6 +1928,13 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       return;
     }
 
+    if (!_ownsCandidateInspection(
+      presentationSessionOccurrence: expectedPresentationSessionOccurrence,
+      inspectionOccurrence: inspectionOccurrence,
+    )) {
+      return;
+    }
+
     await _persistHistoricalArchiveSourceIfEligible(
       archiveSources: archiveSources,
       result: result,
@@ -2598,6 +2605,12 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       await Future<void>.delayed(Duration.zero);
     }
 
+    if (!_ownsCurrentImportPresentation(
+      presentationSessionOccurrence: importPresentationSessionOccurrence,
+    )) {
+      return;
+    }
+
     try {
       await ref
           .read(archiveMutationCoordinatorProvider.notifier)
@@ -2614,7 +2627,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
               final archiveResult = await archiveGraphImportService
                   .importAndProject(
                     folderPath: selectedFolderPath,
-                    sourceLabel: state.sourceLabel,
+                    sourceLabel: candidateData.sourceLabel,
                     onObservation: (observation) {
                       _applyImportObservation(
                         observation: observation,
@@ -2751,9 +2764,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
             identity: _requireReadableSourceIdentity(evidence.sourceIdentity),
             sourceChatDb: selectedChatDbPath,
             folderPath: selectedFolderPath,
-            sourceLabel: state.sourceLabel,
-            chatDbStatusLabel: state.chatDbStatusLabel,
-            attachmentsStatusLabel: state.attachmentsStatusLabel,
+            sourceLabel: candidateData.sourceLabel,
+            chatDbStatusLabel: candidateData.chatDbStatusLabel,
+            attachmentsStatusLabel: candidateData.attachmentsStatusLabel,
             preflightStatusLabel: 'Import incomplete',
             preflightDetail: detail,
             totalMessages: evidence.totalMessages,

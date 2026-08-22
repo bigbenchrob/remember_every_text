@@ -5425,3 +5425,18 @@ production preservation authority mechanically enforceable.
 - Updated the canonical attachment archive guide and Feature 26 index with a
   concise reference while preserving the test's bounded evidence scope.
 - Kept the machine-specific controlled-loss manifest outside the repository.
+
+## 2026-08-22 - Feature 26 final release readiness
+
+- Added
+  `57-FEATURE-26-FINAL-RELEASE-READINESS-AND-CONFORMANCE.md` with the final
+  two-arm product contract, invariant checklist, audit findings, bounded
+  corrections, verification evidence, and closure decision.
+- Classified Historical Archives as ready with two deferred non-blockers: the
+  unused generated legacy Drift write surface and an optional future split of
+  the large but correctly owned workflow coordinator.
+- Recorded removal of the unreachable generic control panel, stale-session
+  admission and persistence guards, captured operational evidence, and
+  feature-local accessibility semantics.
+- Updated the Feature 26 start document from temporarily reopened to complete.
+- Confirmed that the prompt folder contains no byte-identical duplicate files.

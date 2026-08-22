@@ -11,6 +11,9 @@ void main() {
   const trackPlanPath =
       'lib/essentials/navigation/presentation/layout/'
       'historical_archives_page_track_plan.dart';
+  const sidebarSupplementalPath =
+      'lib/features/settings/application/sidebar_cassette_spec/'
+      'widget_builders/historical_archives_settings_supplemental_content.dart';
 
   test('Historical Archives models presentation as sealed typed variants', () {
     final source = File(providerPath).readAsStringSync();
@@ -21,8 +24,14 @@ void main() {
     );
     for (final variant in const <String>[
       'HistoricalArchivesHubState',
+      'HistoricalArchivesMessageLensNoticeState',
+      'HistoricalArchivesMessageLensInspectingState',
+      'HistoricalArchivesMessageLensReadyState',
+      'HistoricalArchivesMessageLensRecoveringState',
+      'HistoricalArchivesMessageLensRecoveryFailedState',
       'HistoricalArchivesDuplicateNoticeState',
       'HistoricalArchivesInvalidNoticeState',
+      'HistoricalArchivesLineageNoticeState',
       'HistoricalArchivesImportSuccessNoticeState',
       'HistoricalArchivesKnownSourceReferenceState',
       'HistoricalArchivesInspectingCandidateState',
@@ -170,6 +179,49 @@ void main() {
       contains("'historical-archives-center-track-skeleton'"),
     );
   });
+
+  test('superseded generic control panel cannot return to ordinary UI', () {
+    final panelSource = File(panelPath).readAsStringSync();
+
+    for (final obsoleteText in const <String>[
+      'Execution Gate',
+      'Preflight Summary',
+      'Dry Run Summary',
+      'Clear Selected Folder',
+      'Developer Testing Controls',
+      'Activity Log',
+      'Result Summary',
+      'Choose Another Folder',
+    ]) {
+      expect(panelSource, isNot(contains(obsoleteText)));
+    }
+    expect(panelSource, isNot(contains('class _ShellHeroCard')));
+    expect(panelSource, isNot(contains('class _ShellSectionCard')));
+    expect(panelSource, isNot(contains('developerModeProvider')));
+    expect(
+      panelSource,
+      contains(
+        'Historical Archives presentation has no canonical center projection.',
+      ),
+    );
+  });
+
+  test(
+    'custom Historical Archives controls expose accessibility semantics',
+    () {
+      final panelSource = File(panelPath).readAsStringSync();
+      final sidebarSource = File(sidebarSupplementalPath).readAsStringSync();
+
+      expect(panelSource, contains('expanded: _isExpanded'));
+      expect(panelSource, contains('enabled: isInteractive'));
+      expect(panelSource, contains('label: label'));
+      expect(sidebarSource, contains("label: 'Choose MessageLens Folder'"));
+      expect(
+        sidebarSource,
+        contains("label: 'Choose a Messages Folder to add'"),
+      );
+    },
+  );
 }
 
 String _classSource(String source, String startMarker, String endMarker) {

@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Historical Archives now rejects abandoned folder inspections and imports at
+  their asynchronous presentation boundaries, keeps admitted work bound to
+  captured source evidence, and removes the superseded generic control-panel
+  fallback. Existing chooser and disclosure controls now expose explicit
+  accessibility semantics.
+
 - Historical Archives can now recover a preflight-approved batch of missing
   attachment payloads from an admitted same-lineage MessageLens data folder.
   Recovery streams execution-time hashes and real byte progress, installs only

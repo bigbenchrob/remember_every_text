@@ -1835,6 +1835,69 @@ void main() {
     );
 
     test(
+      'abandoned import presentation cannot enter mutation authority after frame wait',
+      () async {
+        final frameBarrier = Completer<void>();
+        final coordinator = _ImmediateArchiveMutationCoordinator();
+        final graphImportService = _ControlledArchiveGraphImportService((
+          observer,
+        ) async {
+          return _successfulArchiveGraphImportResult(
+            sourceKey: 'historical-messages-archive:/tmp/archive/chat.db',
+          );
+        });
+        final container = ProviderContainer(
+          overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => const _SameLineageAuthority(),
+            ),
+            archiveMutationCoordinatorProvider.overrideWith(() => coordinator),
+            sourceScopedArchiveGraphImportServiceProvider.overrideWith(
+              (ref) async => graphImportService,
+            ),
+            historicalArchiveFolderChooserProvider.overrideWith(
+              (ref) => const _FakeFolderChooser('/tmp/archive'),
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => const _FakeHistoricalArchiveSources(),
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        await workflow.chooseMessagesFolder();
+
+        final import = workflow.beginImportForSelectedSource(
+          waitForOperationPresentation: () => frameBarrier.future,
+        );
+        expect(
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesImportingState>(),
+        );
+
+        workflow.clearSelection();
+        frameBarrier.complete();
+        await import;
+
+        expect(coordinator.runCallCount, 0);
+        expect(graphImportService.callCount, 0);
+        expect(
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesHubState>(),
+        );
+      },
+    );
+
+    test(
       'an older success dwell cannot clear a newer ready candidate',
       () async {
         const sourceKey = 'historical-messages-archive:/tmp/archive/chat.db';
@@ -3217,6 +3280,46 @@ void main() {
     );
 
     test(
+      'abandoned lineage verification cannot persist candidate metadata',
+      () async {
+        final lineageAuthority = _CompletingLineageAuthority();
+        final archiveSources = _RecordingHistoricalArchiveSources();
+        final container = ProviderContainer(
+          overrides: [
+            messagesLineageAdmissionAuthorityProvider.overrideWith(
+              (ref) async => lineageAuthority,
+            ),
+            archiveSourceInspectorProvider.overrideWith(
+              (ref) async => const _ImmediateArchiveSourceInspector(),
+            ),
+            historicalArchiveSourcesProvider.overrideWith(
+              (ref) async => archiveSources,
+            ),
+            historicalArchiveImportedSourceLookupProvider.overrideWith(
+              (ref) async => _FakeImportedSourceLookup(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+
+        final inspection = workflow.loadFolder(folderPath: '/tmp/archive');
+        await _waitUntil(() => lineageAuthority.macVerificationCallCount == 1);
+        workflow.clearSelection();
+        lineageAuthority.complete(_testSameLineageAdmission());
+        await inspection;
+
+        expect(archiveSources.upsertCallCount, 0);
+        expect(
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesHubState>(),
+        );
+      },
+    );
+
+    test(
       'older same-session inspection cannot replace a newer candidate',
       () async {
         final inspector = _PerFolderArchiveSourceInspector();
@@ -3490,6 +3593,29 @@ final class _SameLineageAuthority implements MessagesLineageAdmissionAuthority {
   Future<MessagesLineageAdmission> verifyMacMessagesCandidate({
     required String candidateChatDatabasePath,
   }) async => _testSameLineageAdmission();
+
+  @override
+  Future<MessagesLineageAdmission> verifyMessageLensCandidate({
+    required String candidateImportLedgerPath,
+  }) async => _testSameLineageAdmission();
+}
+
+final class _CompletingLineageAuthority
+    implements MessagesLineageAdmissionAuthority {
+  final _macVerification = Completer<MessagesLineageAdmission>();
+  var macVerificationCallCount = 0;
+
+  void complete(MessagesLineageAdmission admission) {
+    _macVerification.complete(admission);
+  }
+
+  @override
+  Future<MessagesLineageAdmission> verifyMacMessagesCandidate({
+    required String candidateChatDatabasePath,
+  }) {
+    macVerificationCallCount += 1;
+    return _macVerification.future;
+  }
 
   @override
   Future<MessagesLineageAdmission> verifyMessageLensCandidate({

@@ -21,7 +21,12 @@ tests: []
 
 ## Status
 
-**Temporarily reopened for a separate historical-message recovery task.**
+**Complete. Ready with deferred non-blockers.**
+
+The final architecture, cleanup, accessibility, and release-verification pass
+is recorded in:
+
+- [Feature 26 Final Release Readiness And Conformance](responses/57-FEATURE-26-FINAL-RELEASE-READINESS-AND-CONFORMANCE.md)
 
 The direct relational bridge accounts for 33,011 of 33,018 checkpointed donor
 relationships (99.9788%). A final private, local-only manifest reproduces the
