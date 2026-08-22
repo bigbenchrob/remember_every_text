@@ -1,0 +1,177 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'message_lens_attachment_recovery_batch_executor_provider.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+String _$messageLensAttachmentRecoveryBatchExecutorHash() =>
+    r'153384956c57d40b73d81ede80b6f4222723d1e6';
+
+/// Copied from Dart SDK
+class _SystemHash {
+  _SystemHash._();
+
+  static int combine(int hash, int value) {
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + value);
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+    return hash ^ (hash >> 6);
+  }
+
+  static int finish(int hash) {
+    // ignore: parameter_assignments
+    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+    // ignore: parameter_assignments
+    hash = hash ^ (hash >> 11);
+    return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+  }
+}
+
+/// See also [messageLensAttachmentRecoveryBatchExecutor].
+@ProviderFor(messageLensAttachmentRecoveryBatchExecutor)
+const messageLensAttachmentRecoveryBatchExecutorProvider =
+    MessageLensAttachmentRecoveryBatchExecutorFamily();
+
+/// See also [messageLensAttachmentRecoveryBatchExecutor].
+class MessageLensAttachmentRecoveryBatchExecutorFamily
+    extends Family<AsyncValue<MessageLensAttachmentRecoveryBatchRunner>> {
+  /// See also [messageLensAttachmentRecoveryBatchExecutor].
+  const MessageLensAttachmentRecoveryBatchExecutorFamily();
+
+  /// See also [messageLensAttachmentRecoveryBatchExecutor].
+  MessageLensAttachmentRecoveryBatchExecutorProvider call({
+    required String donorArchiveRoot,
+  }) {
+    return MessageLensAttachmentRecoveryBatchExecutorProvider(
+      donorArchiveRoot: donorArchiveRoot,
+    );
+  }
+
+  @override
+  MessageLensAttachmentRecoveryBatchExecutorProvider getProviderOverride(
+    covariant MessageLensAttachmentRecoveryBatchExecutorProvider provider,
+  ) {
+    return call(donorArchiveRoot: provider.donorArchiveRoot);
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'messageLensAttachmentRecoveryBatchExecutorProvider';
+}
+
+/// See also [messageLensAttachmentRecoveryBatchExecutor].
+class MessageLensAttachmentRecoveryBatchExecutorProvider
+    extends
+        AutoDisposeFutureProvider<MessageLensAttachmentRecoveryBatchRunner> {
+  /// See also [messageLensAttachmentRecoveryBatchExecutor].
+  MessageLensAttachmentRecoveryBatchExecutorProvider({
+    required String donorArchiveRoot,
+  }) : this._internal(
+         (ref) => messageLensAttachmentRecoveryBatchExecutor(
+           ref as MessageLensAttachmentRecoveryBatchExecutorRef,
+           donorArchiveRoot: donorArchiveRoot,
+         ),
+         from: messageLensAttachmentRecoveryBatchExecutorProvider,
+         name: r'messageLensAttachmentRecoveryBatchExecutorProvider',
+         debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+             ? null
+             : _$messageLensAttachmentRecoveryBatchExecutorHash,
+         dependencies:
+             MessageLensAttachmentRecoveryBatchExecutorFamily._dependencies,
+         allTransitiveDependencies:
+             MessageLensAttachmentRecoveryBatchExecutorFamily
+                 ._allTransitiveDependencies,
+         donorArchiveRoot: donorArchiveRoot,
+       );
+
+  MessageLensAttachmentRecoveryBatchExecutorProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.donorArchiveRoot,
+  }) : super.internal();
+
+  final String donorArchiveRoot;
+
+  @override
+  Override overrideWith(
+    FutureOr<MessageLensAttachmentRecoveryBatchRunner> Function(
+      MessageLensAttachmentRecoveryBatchExecutorRef provider,
+    )
+    create,
+  ) {
+    return ProviderOverride(
+      origin: this,
+      override: MessageLensAttachmentRecoveryBatchExecutorProvider._internal(
+        (ref) => create(ref as MessageLensAttachmentRecoveryBatchExecutorRef),
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        donorArchiveRoot: donorArchiveRoot,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeFutureProviderElement<MessageLensAttachmentRecoveryBatchRunner>
+  createElement() {
+    return _MessageLensAttachmentRecoveryBatchExecutorProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MessageLensAttachmentRecoveryBatchExecutorProvider &&
+        other.donorArchiveRoot == donorArchiveRoot;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, donorArchiveRoot.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+mixin MessageLensAttachmentRecoveryBatchExecutorRef
+    on AutoDisposeFutureProviderRef<MessageLensAttachmentRecoveryBatchRunner> {
+  /// The parameter `donorArchiveRoot` of this provider.
+  String get donorArchiveRoot;
+}
+
+class _MessageLensAttachmentRecoveryBatchExecutorProviderElement
+    extends
+        AutoDisposeFutureProviderElement<
+          MessageLensAttachmentRecoveryBatchRunner
+        >
+    with MessageLensAttachmentRecoveryBatchExecutorRef {
+  _MessageLensAttachmentRecoveryBatchExecutorProviderElement(super.provider);
+
+  @override
+  String get donorArchiveRoot =>
+      (origin as MessageLensAttachmentRecoveryBatchExecutorProvider)
+          .donorArchiveRoot;
+}
+
+// ignore_for_file: type=lint
+// ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

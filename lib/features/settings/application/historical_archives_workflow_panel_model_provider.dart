@@ -38,7 +38,15 @@ import '../../../essentials/source_scoped_import/domain/messages_lineage_admissi
 import '../../../essentials/source_scoped_import/feature_level_providers.dart'
     show messagesLineageAdmissionAuthorityProvider;
 import '../../attachments/domain/entities/message_lens_attachment_recovery.dart'
-    show MessageLensAttachmentRecoveryPreflight;
+    show
+        MessageLensAttachmentRecoveryClassification,
+        MessageLensAttachmentRecoveryPreflight;
+import '../../attachments/feature_level_providers.dart'
+    show
+        MessageLensAttachmentRecoveryBatchProgress,
+        MessageLensAttachmentRecoveryBatchResult,
+        MessageLensAttachmentRecoveryBatchStage,
+        messageLensAttachmentRecoveryBatchExecutorProvider;
 import '../../sidebar_utilities/domain/sidebar_utilities_constants.dart'
     show SettingsMenuActionId;
 import 'archive_source_inspection.dart';
@@ -220,6 +228,8 @@ enum HistoricalArchivesMessageLensNoticeKind {
   contradictoryLineage,
   insufficientLineage,
   nothingRecoverable,
+  recoveryComplete,
+  recoveryFinished,
 }
 
 final class HistoricalArchivesMessageLensNotice
@@ -229,12 +239,16 @@ final class HistoricalArchivesMessageLensNotice
     required this.noticeOccurrence,
     required this.presentationSessionOccurrence,
     this.detail,
+    this.recoveredCount,
+    this.couldNotRecoverCount,
   });
 
   final HistoricalArchivesMessageLensNoticeKind kind;
   final int noticeOccurrence;
   final int presentationSessionOccurrence;
   final String? detail;
+  final int? recoveredCount;
+  final int? couldNotRecoverCount;
 }
 
 const historicalArchivesReferenceFadeInDuration = Duration(milliseconds: 750);
@@ -296,6 +310,8 @@ enum HistoricalArchivesNarratorPresentationKind {
   inspectionFailed,
   readyForImport,
   messageLensReady,
+  recoveringMessageLensAttachments,
+  messageLensRecoveryFailed,
   knownSource,
   importingArchive,
   importFailed,
@@ -678,6 +694,38 @@ final class HistoricalArchivesMessageLensReadyState
   HistoricalArchivesPresentationData? get data => null;
 }
 
+final class HistoricalArchivesMessageLensRecoveringState
+    extends HistoricalArchivesPresentationState {
+  const HistoricalArchivesMessageLensRecoveringState({
+    required this.evidence,
+    required this.operationOccurrence,
+    required this.progress,
+  });
+
+  final MessageLensHistoricalArchiveReady evidence;
+  final int operationOccurrence;
+  final MessageLensAttachmentRecoveryBatchProgress progress;
+
+  @override
+  HistoricalArchivesPresentationData? get data => null;
+}
+
+final class HistoricalArchivesMessageLensRecoveryFailedState
+    extends HistoricalArchivesPresentationState {
+  const HistoricalArchivesMessageLensRecoveryFailedState({
+    required this.evidence,
+    required this.progress,
+    required this.failureDetail,
+  });
+
+  final MessageLensHistoricalArchiveReady evidence;
+  final MessageLensAttachmentRecoveryBatchProgress progress;
+  final String failureDetail;
+
+  @override
+  HistoricalArchivesPresentationData? get data => null;
+}
+
 final class HistoricalArchivesDuplicateNoticeState
     extends HistoricalArchivesPresentationState {
   const HistoricalArchivesDuplicateNoticeState({required this.notice});
@@ -880,14 +928,17 @@ final class HistoricalArchivesWorkflowState {
     HistoricalArchivesHubState(:final sourceType) => sourceType,
     HistoricalArchivesMessageLensNoticeState() ||
     HistoricalArchivesMessageLensInspectingState() ||
-    HistoricalArchivesMessageLensReadyState() =>
+    HistoricalArchivesMessageLensReadyState() ||
+    HistoricalArchivesMessageLensRecoveringState() ||
+    HistoricalArchivesMessageLensRecoveryFailedState() =>
       HistoricalArchiveSourceType.messageLensDataFolders,
     _ => HistoricalArchiveSourceType.messagesFolders,
   };
 
   bool get sourceTypeSwitchEnabled =>
       presentation is! HistoricalArchivesImportingState &&
-      presentation is! HistoricalArchivesRemovingState;
+      presentation is! HistoricalArchivesRemovingState &&
+      presentation is! HistoricalArchivesMessageLensRecoveringState;
 
   HistoricalArchivesPresentationData get _data =>
       presentation.data ?? _historicalArchivesHubPresentationData;
@@ -898,6 +949,10 @@ final class HistoricalArchivesWorkflowState {
       folderPath,
     HistoricalArchivesMessageLensReadyState(:final evidence) =>
       evidence.donor.rootPath,
+    HistoricalArchivesMessageLensRecoveringState(:final evidence) ||
+    HistoricalArchivesMessageLensRecoveryFailedState(
+      :final evidence,
+    ) => evidence.donor.rootPath,
     _ => presentation.data?.selectedFolderPath,
   };
   String? get archiveRemovalTargetChatDbPath =>
@@ -924,6 +979,8 @@ final class HistoricalArchivesWorkflowState {
         HistoricalArchivesMessageLensNoticeState() ||
         HistoricalArchivesMessageLensInspectingState() ||
         HistoricalArchivesMessageLensReadyState() ||
+        HistoricalArchivesMessageLensRecoveringState() ||
+        HistoricalArchivesMessageLensRecoveryFailedState() ||
         HistoricalArchivesDuplicateNoticeState() ||
         HistoricalArchivesInvalidNoticeState() ||
         HistoricalArchivesLineageNoticeState() ||
@@ -1032,6 +1089,8 @@ HistoricalArchivesPresentationState _withPresentationData(
     HistoricalArchivesMessageLensNoticeState() => presentation,
     HistoricalArchivesMessageLensInspectingState() => presentation,
     HistoricalArchivesMessageLensReadyState() => presentation,
+    HistoricalArchivesMessageLensRecoveringState() => presentation,
+    HistoricalArchivesMessageLensRecoveryFailedState() => presentation,
     HistoricalArchivesDuplicateNoticeState() => presentation,
     HistoricalArchivesInvalidNoticeState() => presentation,
     HistoricalArchivesLineageNoticeState() => presentation,
@@ -1318,6 +1377,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
   var _nextLineageNoticeOccurrence = 0;
   var _nextImportSuccessNoticeOccurrence = 0;
   var _nextMessageLensNoticeOccurrence = 0;
+  var _nextMessageLensRecoveryOccurrence = 0;
   var _presentationSessionOccurrence = 0;
   Timer? _referenceClearTimer;
 
@@ -1522,9 +1582,150 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         presentation.inspectionOccurrence == inspectionOccurrence;
   }
 
+  Future<void> recoverMessageLensAttachments({
+    Future<void> Function()? waitForOperationPresentation,
+  }) async {
+    final ready = state.presentation;
+    if (ready is! HistoricalArchivesMessageLensReadyState) {
+      return;
+    }
+    final recoverableCandidates = ready.evidence.attachmentPreflight.candidates
+        .where(
+          (candidate) =>
+              candidate.classification ==
+              MessageLensAttachmentRecoveryClassification.recoverable,
+        )
+        .toList(growable: false);
+    if (recoverableCandidates.isEmpty) {
+      return;
+    }
+
+    final presentationSessionOccurrence = _presentationSessionOccurrence;
+    _nextMessageLensRecoveryOccurrence += 1;
+    final operationOccurrence = _nextMessageLensRecoveryOccurrence;
+    var progress = MessageLensAttachmentRecoveryBatchProgress(
+      stage: MessageLensAttachmentRecoveryBatchStage.verifyingDonorPayloads,
+      totalAttachments: recoverableCandidates.length,
+      verifiedAttachments: 0,
+      processedAttachments: 0,
+      recoveredAttachments: 0,
+      totalBytes: ready.evidence.attachmentPreflight.recoverableBytes,
+      verifiedBytes: 0,
+      copiedBytes: 0,
+      terminallyVerifiedAttachments: 0,
+    );
+    state = HistoricalArchivesWorkflowState(
+      presentation: HistoricalArchivesMessageLensRecoveringState(
+        evidence: ready.evidence,
+        operationOccurrence: operationOccurrence,
+        progress: progress,
+      ),
+    );
+    if (waitForOperationPresentation != null) {
+      await waitForOperationPresentation();
+      if (!_ownsMessageLensRecovery(
+        presentationSessionOccurrence: presentationSessionOccurrence,
+        operationOccurrence: operationOccurrence,
+      )) {
+        return;
+      }
+    }
+
+    try {
+      final executor = await ref.read(
+        messageLensAttachmentRecoveryBatchExecutorProvider(
+          donorArchiveRoot: ready.evidence.donor.rootPath,
+        ).future,
+      );
+      final result = await ref
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .runWithCapability<MessageLensAttachmentRecoveryBatchResult>(
+            operation: ArchiveMutationOperation.attachmentReconciliation,
+            ownerLabel: 'historical-archives-attachment-recovery',
+            action: (capability) => executor.execute(
+              mutationCapability: capability,
+              donor: ready.evidence.donor,
+              lineageAdmission: ready.evidence.lineageAdmission,
+              preflight: ready.evidence.attachmentPreflight,
+              preflightApprovedCandidates: recoverableCandidates,
+              onProgress: (nextProgress) {
+                progress = nextProgress;
+                if (!_ownsMessageLensRecovery(
+                  presentationSessionOccurrence: presentationSessionOccurrence,
+                  operationOccurrence: operationOccurrence,
+                )) {
+                  return;
+                }
+                state = HistoricalArchivesWorkflowState(
+                  presentation: HistoricalArchivesMessageLensRecoveringState(
+                    evidence: ready.evidence,
+                    operationOccurrence: operationOccurrence,
+                    progress: nextProgress,
+                  ),
+                );
+              },
+            ),
+          );
+      if (!_ownsMessageLensRecovery(
+        presentationSessionOccurrence: presentationSessionOccurrence,
+        operationOccurrence: operationOccurrence,
+      )) {
+        return;
+      }
+      await Future<void>.delayed(
+        historicalArchivesTerminalCompletedDwellDuration,
+      );
+      if (!_ownsMessageLensRecovery(
+        presentationSessionOccurrence: presentationSessionOccurrence,
+        operationOccurrence: operationOccurrence,
+      )) {
+        return;
+      }
+      _showMessageLensNotice(
+        kind: result.fullyRecovered
+            ? HistoricalArchivesMessageLensNoticeKind.recoveryComplete
+            : HistoricalArchivesMessageLensNoticeKind.recoveryFinished,
+        recoveredCount: result.recoveredCount,
+        couldNotRecoverCount: result.couldNotRecoverCount,
+      );
+    } catch (error, stackTrace) {
+      _logHistoricalArchivesWarning(
+        ref,
+        message: 'MessageLens attachment recovery could not be completed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!_ownsMessageLensRecovery(
+        presentationSessionOccurrence: presentationSessionOccurrence,
+        operationOccurrence: operationOccurrence,
+      )) {
+        return;
+      }
+      state = HistoricalArchivesWorkflowState(
+        presentation: HistoricalArchivesMessageLensRecoveryFailedState(
+          evidence: ready.evidence,
+          progress: progress,
+          failureDetail: error.toString(),
+        ),
+      );
+    }
+  }
+
+  bool _ownsMessageLensRecovery({
+    required int presentationSessionOccurrence,
+    required int operationOccurrence,
+  }) {
+    final presentation = state.presentation;
+    return presentationSessionOccurrence == _presentationSessionOccurrence &&
+        presentation is HistoricalArchivesMessageLensRecoveringState &&
+        presentation.operationOccurrence == operationOccurrence;
+  }
+
   void _showMessageLensNotice({
     required HistoricalArchivesMessageLensNoticeKind kind,
     String? detail,
+    int? recoveredCount,
+    int? couldNotRecoverCount,
   }) {
     _nextMessageLensNoticeOccurrence += 1;
     state = HistoricalArchivesWorkflowState(
@@ -1534,6 +1735,8 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
           noticeOccurrence: _nextMessageLensNoticeOccurrence,
           presentationSessionOccurrence: _presentationSessionOccurrence,
           detail: detail,
+          recoveredCount: recoveredCount,
+          couldNotRecoverCount: couldNotRecoverCount,
         ),
       ),
     );
@@ -1813,7 +2016,9 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
         state.presentation is! HistoricalArchivesInspectionFailedState &&
         state.presentation is! HistoricalArchivesReadyToAddState &&
         state.presentation is! HistoricalArchivesMessageLensInspectingState &&
-        state.presentation is! HistoricalArchivesMessageLensReadyState) {
+        state.presentation is! HistoricalArchivesMessageLensReadyState &&
+        state.presentation
+            is! HistoricalArchivesMessageLensRecoveryFailedState) {
       return;
     }
     resetPresentationContext();
@@ -2984,6 +3189,8 @@ buildHistoricalArchivesWorkflowPanelModel({
       HistoricalArchivesInspectingCandidateState() ||
       HistoricalArchivesMessageLensInspectingState() ||
       HistoricalArchivesMessageLensReadyState() ||
+      HistoricalArchivesMessageLensRecoveringState() ||
+      HistoricalArchivesMessageLensRecoveryFailedState() ||
       HistoricalArchivesInspectionFailedState() ||
       HistoricalArchivesReadyToAddState() ||
       HistoricalArchivesImportingState() ||
@@ -3130,6 +3337,41 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
     );
   }
 
+  if (presentation is HistoricalArchivesMessageLensRecoveringState ||
+      presentation is HistoricalArchivesMessageLensRecoveryFailedState) {
+    final failed =
+        presentation is HistoricalArchivesMessageLensRecoveryFailedState;
+    final progress = failed
+        ? presentation.progress
+        : (presentation as HistoricalArchivesMessageLensRecoveringState)
+              .progress;
+    final evidence =
+        presentation is HistoricalArchivesMessageLensRecoveryFailedState
+        ? presentation.evidence
+        : (presentation as HistoricalArchivesMessageLensRecoveringState)
+              .evidence;
+    return HistoricalArchivesNarratorPresentationViewModel(
+      kind: failed
+          ? HistoricalArchivesNarratorPresentationKind.messageLensRecoveryFailed
+          : HistoricalArchivesNarratorPresentationKind
+                .recoveringMessageLensAttachments,
+      narratorText: failed
+          ? "MessageLens couldn't finish recovering these attachments."
+          : 'Recovering missing attachments from this MessageLens folder.',
+      instrumentationRows: _messageLensRecoveryInstrumentationRows(
+        progress,
+        failed: failed,
+      ),
+      detailsLines: [
+        'Folder: ${evidence.donor.rootPath}',
+        'The donor folder remains read-only.',
+        if (presentation is HistoricalArchivesMessageLensRecoveryFailedState)
+          presentation.failureDetail,
+      ],
+      retryInspectionEnabled: false,
+    );
+  }
+
   return switch (presentation) {
     HistoricalArchivesHubState() ||
     HistoricalArchivesMessageLensNoticeState() ||
@@ -3255,7 +3497,7 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
         'Classification counts reconcile: ${evidence.attachmentPreflight.classificationCountsReconcile ? 'Yes' : 'No'}',
         for (final timing in evidence.phaseTimings)
           '${_messageLensPreflightPhaseLabel(timing.phase)}: ${timing.elapsed.inMilliseconds} ms',
-        'Recovery is not authorized in this read-only slice.',
+        'Recovery requires an explicit user command and attachment-reconciliation authority.',
       ],
       retryInspectionEnabled: false,
     ),
@@ -3263,8 +3505,71 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
     HistoricalArchivesImportingState() ||
     HistoricalArchivesImportFailedState() ||
     HistoricalArchivesRemovingState() ||
-    HistoricalArchivesRemovalFailedState() => null,
+    HistoricalArchivesRemovalFailedState() ||
+    HistoricalArchivesMessageLensRecoveringState() ||
+    HistoricalArchivesMessageLensRecoveryFailedState() => null,
   };
+}
+
+List<HistoricalArchivesInstrumentationRowViewModel>
+_messageLensRecoveryInstrumentationRows(
+  MessageLensAttachmentRecoveryBatchProgress progress, {
+  bool failed = false,
+}) {
+  final verifyingStatus = switch (progress.stage) {
+    MessageLensAttachmentRecoveryBatchStage.verifyingDonorPayloads =>
+      failed
+          ? HistoricalArchivesInstrumentationStatus.failed
+          : HistoricalArchivesInstrumentationStatus.working,
+    _ => HistoricalArchivesInstrumentationStatus.resolved,
+  };
+  final recoveringStatus = switch (progress.stage) {
+    MessageLensAttachmentRecoveryBatchStage.verifyingDonorPayloads =>
+      HistoricalArchivesInstrumentationStatus.waiting,
+    MessageLensAttachmentRecoveryBatchStage.installingPayloads =>
+      failed
+          ? HistoricalArchivesInstrumentationStatus.failed
+          : HistoricalArchivesInstrumentationStatus.working,
+    MessageLensAttachmentRecoveryBatchStage.finalVerification ||
+    MessageLensAttachmentRecoveryBatchStage.complete =>
+      HistoricalArchivesInstrumentationStatus.resolved,
+  };
+  final finalStatus = switch (progress.stage) {
+    MessageLensAttachmentRecoveryBatchStage.finalVerification =>
+      failed
+          ? HistoricalArchivesInstrumentationStatus.failed
+          : HistoricalArchivesInstrumentationStatus.working,
+    MessageLensAttachmentRecoveryBatchStage.complete =>
+      HistoricalArchivesInstrumentationStatus.resolved,
+    _ => HistoricalArchivesInstrumentationStatus.waiting,
+  };
+  return [
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Verifying attachment files',
+      value:
+          '${_formattedCount(progress.verifiedAttachments)} / '
+          '${_formattedCount(progress.totalAttachments)}'
+          ' · ${_formattedByteCount(progress.verifiedBytes)} / '
+          '${_formattedByteCount(progress.totalBytes)}',
+      status: verifyingStatus,
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Recovering attachment files',
+      value:
+          '${_formattedCount(progress.recoveredAttachments)} / '
+          '${_formattedCount(progress.totalAttachments)}'
+          ' · ${_formattedByteCount(progress.copiedBytes)} / '
+          '${_formattedByteCount(progress.totalBytes)}',
+      status: recoveringStatus,
+    ),
+    HistoricalArchivesInstrumentationRowViewModel(
+      label: 'Checking that recovery finished',
+      value:
+          '${_formattedCount(progress.terminallyVerifiedAttachments)} / '
+          '${_formattedCount(progress.totalAttachments)}',
+      status: finalStatus,
+    ),
+  ];
 }
 
 String _messageLensPreflightNarrator(

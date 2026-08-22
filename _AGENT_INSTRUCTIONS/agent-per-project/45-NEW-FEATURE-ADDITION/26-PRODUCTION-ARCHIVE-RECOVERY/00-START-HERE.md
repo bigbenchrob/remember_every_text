@@ -87,18 +87,22 @@ panel. See:
 - [Ephemeral MessageLens Recovery Donors](responses/52-EPHEMERAL-MESSAGELENS-RECOVERY-DONORS-IMPLEMENTATION.md)
 - [MessageLens Attachment Preflight Performance And Observability](responses/53-MESSAGELENS-ATTACHMENT-PREFLIGHT-PERFORMANCE-AND-OBSERVABILITY-IMPLEMENTATION.md)
 - [Forensic Validation Of Zero Recoverable Attachments](responses/54-FORENSIC-VALIDATION-OF-ZERO-RECOVERABLE-ATTACHMENTS.md)
+- [Batch Attachment Recovery And Controlled-Loss Validation](responses/55-BATCH-ATTACHMENT-RECOVERY-AND-CONTROLLED-LOSS-END-TO-END-VALIDATION.md)
 
-The MessageLens-folder arm is now enabled through a safe read-only ready state
-under a deliberately narrow product contract: recover attachment payloads only
+The MessageLens-folder arm is now enabled through preservation-safe batch
+recovery under a deliberately narrow product contract: recover attachment
+payloads only
 from an older snapshot of the same continuing local Mac Messages lineage.
 General donor source-fact, graph, source-registry, overlay, and Presence
 ingestion is excluded. MessageLens donors are ephemeral recovery candidates,
 not durable Historical Archives sources: the arm recognizes supported current
 and pre-marker formats, proves same Messages lineage, and reports exact
 recoverable attachment count and bytes. A modern marker UUID is optional
-diagnostic evidence, not recovery authority. No donor source is persisted and
-no recovery mutation is offered yet because aggregate batch execution and
-terminal outcome ownership remain intentionally unimplemented.
+diagnostic evidence, not recovery authority. No donor source is persisted.
+The exact preflight set can be recovered through the canonical no-overwrite
+writer under caller-specific `attachmentReconciliation` authority, with real
+count/byte progress, typed item outcomes, final evidence verification, and
+idempotent retry.
 
 Representative donor profiling then corrected the arm's read-only preflight
 from a multi-minute, hash-heavy operation to a 7.455-second bounded comparison.

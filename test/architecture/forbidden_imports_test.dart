@@ -143,6 +143,7 @@ const Set<String> _appDatabaseFileHelperAllowedFiles = {
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
   'lib/features/attachments/infrastructure/repositories/sqlite_message_lens_attachment_recovery_donor_qualifier.dart',
+  'lib/features/attachments/infrastructure/repositories/sqlite_message_lens_attachment_donor_evidence_reader.dart',
   'lib/features/settings/infrastructure/repositories/message_lens_historical_archive_preflight_service.dart',
 };
 

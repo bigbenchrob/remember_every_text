@@ -4,12 +4,15 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:remember_this_text/essentials/archive_compatibility/domain/archive_compatibility_key.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain.dart'
     show ArchiveMutationOperation;
 import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
     show
         ArchiveMutationCoordinator,
         ArchiveMutationCoordinatorState,
+        ArchiveMutationCapability,
+        admittedArchiveAccessAuthorityProvider,
         archiveMutationCoordinatorProvider;
 import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_import_service.dart';
 import 'package:remember_this_text/essentials/conversation_graph/application/archives/source_scoped_archive_graph_projection_observation.dart';
@@ -45,6 +48,8 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/m
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages_lineage_admission_authority_provider.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/messages_lineage_admission.dart';
+import 'package:remember_this_text/features/attachments/application/message_lens_attachment_recovery_batch_executor.dart';
+import 'package:remember_this_text/features/attachments/application/message_lens_attachment_recovery_batch_executor_provider.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/message_lens_attachment_recovery.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/message_lens_attachment_recovery_donor.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
@@ -59,6 +64,8 @@ import 'package:remember_this_text/features/settings/application/message_lens_hi
 import 'package:remember_this_text/features/settings/infrastructure/repositories/archive_source_inspection_repository.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:sqlite3/sqlite3.dart';
+
+import '../../../test_support/test_archive_fixture.dart';
 
 void main() {
   const currentMessagesDatabasePath = '/Users/test/Library/Messages/chat.db';
@@ -1151,6 +1158,131 @@ void main() {
       );
       expect(preflight.inspectedFolders, const ['/tmp/donor']);
     });
+
+    test(
+      'MessageLens recovery paints first, reports real stages, dwells, and returns to hub after acknowledgement',
+      () async {
+        final archiveFixture = await TestArchiveFixture.create(
+          prefix: 'historical_archives_message_lens_recovery_test_',
+        );
+        addTearDown(archiveFixture.dispose);
+        final ready = _messageLensReady(
+          recoverableCount: 3,
+          recoverableBytes: 60,
+        );
+        final runner = _ControlledMessageLensAttachmentRecoveryBatchRunner();
+        final container = ProviderContainer(
+          overrides: [
+            admittedArchiveAccessAuthorityProvider.overrideWithValue(
+              archiveFixture.authority,
+            ),
+            messageLensHistoricalArchivePreflightProvider.overrideWith(
+              (ref) async => _FakeMessageLensHistoricalArchivePreflight(ready),
+            ),
+            messageLensAttachmentRecoveryBatchExecutorProvider(
+              donorArchiveRoot: '/tmp/donor',
+            ).overrideWith((ref) async => runner),
+          ],
+        );
+        addTearDown(container.dispose);
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        workflow.selectSourceType(
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+        await workflow.loadMessageLensFolder(folderPath: '/tmp/donor');
+
+        final frameBarrier = Completer<void>();
+        final recovery = workflow.recoverMessageLensAttachments(
+          waitForOperationPresentation: () => frameBarrier.future,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        var state = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          state.presentation,
+          isA<HistoricalArchivesMessageLensRecoveringState>(),
+        );
+        expect(runner.callCount, 0);
+
+        frameBarrier.complete();
+        await _waitUntil(() => runner.callCount == 1);
+        state = container.read(historicalArchivesWorkflowProvider);
+        final active = state.presentation;
+        expect(active, isA<HistoricalArchivesMessageLensRecoveringState>());
+        expect(
+          (active as HistoricalArchivesMessageLensRecoveringState)
+              .progress
+              .stage,
+          MessageLensAttachmentRecoveryBatchStage.installingPayloads,
+        );
+        var model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: container.read(
+            archiveMutationCoordinatorProvider,
+          ),
+          isMaintenanceLocked: false,
+          workflowState: state,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          model.narratorPresentation?.instrumentationRows.map(
+            (row) => (row.label, row.status),
+          ),
+          contains(const (
+            'Recovering attachment files',
+            HistoricalArchivesInstrumentationStatus.working,
+          )),
+        );
+
+        runner.release.complete();
+        await _waitUntil(() {
+          final presentation = container
+              .read(historicalArchivesWorkflowProvider)
+              .presentation;
+          return presentation is HistoricalArchivesMessageLensRecoveringState &&
+              presentation.progress.stage ==
+                  MessageLensAttachmentRecoveryBatchStage.complete;
+        });
+        state = container.read(historicalArchivesWorkflowProvider);
+        model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: container.read(
+            archiveMutationCoordinatorProvider,
+          ),
+          isMaintenanceLocked: false,
+          workflowState: state,
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        expect(
+          model.narratorPresentation?.instrumentationRows,
+          everyElement(
+            isA<HistoricalArchivesInstrumentationRowViewModel>().having(
+              (row) => row.status,
+              'status',
+              HistoricalArchivesInstrumentationStatus.resolved,
+            ),
+          ),
+        );
+        expect(state.messageLensNotice, isNull);
+
+        await recovery;
+        state = container.read(historicalArchivesWorkflowProvider);
+        expect(
+          state.messageLensNotice?.kind,
+          HistoricalArchivesMessageLensNoticeKind.recoveryComplete,
+        );
+        expect(state.messageLensNotice?.recoveredCount, 3);
+        final notice = state.messageLensNotice!;
+        workflow.dismissMessageLensNotice(
+          noticeOccurrence: notice.noticeOccurrence,
+          presentationSessionOccurrence: notice.presentationSessionOccurrence,
+        );
+        expect(
+          container.read(historicalArchivesWorkflowProvider).presentation,
+          isA<HistoricalArchivesHubState>(),
+        );
+      },
+    );
 
     test(
       'MessageLens inspection paints truthful state before preflight starts',
@@ -3470,6 +3602,21 @@ MessageLensHistoricalArchiveReady _messageLensReady({
       MessageLensAttachmentRecoveryDonorFormat.currentMarkerV1,
   String? archiveInstanceId = '123e4567-e89b-42d3-a456-426614174000',
 }) {
+  final candidates = <MessageLensAttachmentRecoveryCandidate>[
+    for (var index = 0; index < recoverableCount; index++)
+      MessageLensAttachmentRecoveryCandidate(
+        archiveCompatibilityKey: ArchiveCompatibilityKey(
+          messageGuid: 'message-lens-recovery-message-$index',
+          importAttachmentId: index + 1,
+        ),
+        classification: MessageLensAttachmentRecoveryClassification.recoverable,
+        recoverableBytes:
+            recoverableBytes ~/ recoverableCount +
+            (index < recoverableBytes % recoverableCount ? 1 : 0),
+        donorArchiveRelativePath: 'donor/$index.bin',
+        donorPayloadSha256: null,
+      ),
+  ];
   return MessageLensHistoricalArchiveReady(
     donor: MessageLensAttachmentRecoveryDonor(
       rootPath: '/tmp/donor',
@@ -3478,7 +3625,7 @@ MessageLensHistoricalArchiveReady _messageLensReady({
     ),
     lineageAdmission: _testSameLineageAdmission(),
     attachmentPreflight: MessageLensAttachmentRecoveryPreflight(
-      candidates: const [],
+      candidates: candidates,
       funnel: MessageLensAttachmentRecoveryFunnel(
         donorPayloadClaimCount: recoverableCount,
         donorRelationshipEvidenceCount: recoverableCount,
@@ -3502,6 +3649,73 @@ MessageLensHistoricalArchiveReady _messageLensReady({
       unsafeDonorPathCount: 0,
     ),
   );
+}
+
+final class _ControlledMessageLensAttachmentRecoveryBatchRunner
+    implements MessageLensAttachmentRecoveryBatchRunner {
+  final Completer<void> release = Completer<void>();
+  var callCount = 0;
+
+  @override
+  Future<MessageLensAttachmentRecoveryBatchResult> execute({
+    required ArchiveMutationCapability mutationCapability,
+    required MessageLensAttachmentRecoveryDonor donor,
+    required SameMessagesLineageAdmission lineageAdmission,
+    required MessageLensAttachmentRecoveryPreflight preflight,
+    required List<MessageLensAttachmentRecoveryCandidate>
+    preflightApprovedCandidates,
+    MessageLensAttachmentRecoveryBatchProgressObserver? onProgress,
+  }) async {
+    mutationCapability.requireOperation(
+      ArchiveMutationOperation.attachmentReconciliation,
+    );
+    callCount += 1;
+    onProgress?.call(
+      MessageLensAttachmentRecoveryBatchProgress(
+        stage: MessageLensAttachmentRecoveryBatchStage.installingPayloads,
+        totalAttachments: preflightApprovedCandidates.length,
+        verifiedAttachments: preflightApprovedCandidates.length,
+        processedAttachments: 1,
+        recoveredAttachments: 1,
+        totalBytes: preflight.recoverableBytes,
+        verifiedBytes: preflight.recoverableBytes,
+        copiedBytes: preflightApprovedCandidates.first.recoverableBytes,
+        terminallyVerifiedAttachments: 0,
+      ),
+    );
+    await release.future;
+    onProgress?.call(
+      MessageLensAttachmentRecoveryBatchProgress(
+        stage: MessageLensAttachmentRecoveryBatchStage.complete,
+        totalAttachments: preflightApprovedCandidates.length,
+        verifiedAttachments: preflightApprovedCandidates.length,
+        processedAttachments: preflightApprovedCandidates.length,
+        recoveredAttachments: preflightApprovedCandidates.length,
+        totalBytes: preflight.recoverableBytes,
+        verifiedBytes: preflight.recoverableBytes,
+        copiedBytes: preflight.recoverableBytes,
+        terminallyVerifiedAttachments: preflightApprovedCandidates.length,
+      ),
+    );
+    return MessageLensAttachmentRecoveryBatchResult(
+      outcomes: [
+        for (final candidate in preflightApprovedCandidates)
+          MessageLensAttachmentRecoveryItemOutcome(
+            candidate: candidate,
+            status: MessageLensAttachmentRecoveryItemStatus.installed,
+            installedBytes: candidate.recoverableBytes,
+            archiveRelativePath:
+                'installed/${candidate.archiveCompatibilityKey.storageKeySegment}',
+          ),
+      ],
+      recoveredCount: preflightApprovedCandidates.length,
+      recoveredBytes: preflight.recoverableBytes,
+      alreadyPresentCount: 0,
+      couldNotRecoverCount: 0,
+      terminallyVerifiedCount: preflightApprovedCandidates.length,
+      remainingRecoverableCount: 0,
+    );
+  }
 }
 
 final class _FakeMessageLensHistoricalArchivePreflight

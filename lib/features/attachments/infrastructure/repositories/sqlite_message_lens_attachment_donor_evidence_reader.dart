@@ -5,6 +5,7 @@ import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
 import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../../../essentials/db/app_database_files.dart';
 import '../../../../essentials/db/application/read_only_sql_guard.dart';
 import '../../application/message_lens_attachment_evidence_reader.dart';
 import '../../domain/entities/message_lens_attachment_recovery.dart';
@@ -25,6 +26,22 @@ class SqliteMessageLensAttachmentDonorEvidenceReader
     MessageLensAttachmentIdentityEvidenceFactory evidenceFactory =
         const MessageLensAttachmentIdentityEvidenceFactory(),
   }) : _evidenceFactory = evidenceFactory;
+
+  factory SqliteMessageLensAttachmentDonorEvidenceReader.forArchiveRoot({
+    required String donorArchiveRoot,
+  }) {
+    return SqliteMessageLensAttachmentDonorEvidenceReader(
+      donorArchiveRoot: donorArchiveRoot,
+      donorSourceScopedImportDatabasePath: appDatabasePath(
+        AppDatabaseFile.sourceScopedImport,
+        databaseDirectory: donorArchiveRoot,
+      ),
+      donorOverlayDatabasePath: appDatabasePath(
+        AppDatabaseFile.overlay,
+        databaseDirectory: donorArchiveRoot,
+      ),
+    );
+  }
 
   final String donorArchiveRoot;
   final String donorSourceScopedImportDatabasePath;

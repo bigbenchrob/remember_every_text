@@ -66,6 +66,28 @@ final currentAttachmentSnapshotLookupProvider =
 // ignore: unused_element
 typedef CurrentAttachmentSnapshotLookupRef =
     AutoDisposeFutureProviderRef<CurrentAttachmentSnapshotLookup>;
+String _$messageLensAttachmentCurrentEvidenceReaderHash() =>
+    r'43406dae3c8f2a953fd17fca5c2f643771beaeb2';
+
+/// See also [messageLensAttachmentCurrentEvidenceReader].
+@ProviderFor(messageLensAttachmentCurrentEvidenceReader)
+final messageLensAttachmentCurrentEvidenceReaderProvider =
+    AutoDisposeFutureProvider<
+      CurrentMessageLensAttachmentEvidenceReader
+    >.internal(
+      messageLensAttachmentCurrentEvidenceReader,
+      name: r'messageLensAttachmentCurrentEvidenceReaderProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$messageLensAttachmentCurrentEvidenceReaderHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef MessageLensAttachmentCurrentEvidenceReaderRef =
+    AutoDisposeFutureProviderRef<CurrentMessageLensAttachmentEvidenceReader>;
 String _$currentMessagesAttachmentPathLookupHash() =>
     r'3ee6e167f064f318cc7b95a6d91fe48328f87e0a';
 

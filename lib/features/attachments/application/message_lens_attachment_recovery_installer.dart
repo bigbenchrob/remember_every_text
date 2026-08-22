@@ -66,11 +66,13 @@ class MessageLensAttachmentRecoveryInstaller {
         MessageLensAttachmentRecoveryClassification.recoverable) {
       return _result(MessageLensAttachmentInstallationStatus.unsafeSource);
     }
+    final preflightHash = candidate.donorPayloadSha256?.trim().toLowerCase();
     if (candidate.donorArchiveRelativePath !=
             donorPayload.archiveRelativePath ||
         candidate.recoverableBytes != donorPayload.expectedSizeBytes ||
-        candidate.donorPayloadSha256?.toLowerCase() !=
-            donorPayload.expectedSha256.toLowerCase()) {
+        (preflightHash != null &&
+            preflightHash.isNotEmpty &&
+            preflightHash != donorPayload.expectedSha256.toLowerCase())) {
       return _result(MessageLensAttachmentInstallationStatus.donorChanged);
     }
 

@@ -9,14 +9,17 @@ import '../../../essentials/paths/feature_level_providers.dart'
     show pathsHelperProvider;
 import '../../../essentials/source_scoped_import/feature_level_providers.dart'
     show sourceDatabaseOpenerProvider, sourceScopedImportLedgerProvider;
+import '../infrastructure/repositories/import_ledger_message_lens_attachment_evidence_reader.dart';
 import '../infrastructure/repositories/overlay_archive_compatibility_lookup.dart';
 import '../infrastructure/repositories/source_database_attachment_path_lookup.dart';
 import '../infrastructure/repositories/source_scoped_attachment_snapshot_lookup.dart';
 import '../infrastructure/repositories/sqlite_graph_attachment_archive_candidate_reader.dart';
+import 'attachment_archive_store_providers.dart';
 import 'current_attachment_snapshot_lookup.dart';
 import 'current_messages_attachment_path_lookup.dart';
 import 'graph_attachment_archive_candidate_reader.dart';
 import 'graph_attachment_archive_lookup.dart';
+import 'message_lens_attachment_evidence_reader.dart';
 
 part 'graph_attachment_archive_providers.g.dart';
 
@@ -56,6 +59,20 @@ Future<CurrentAttachmentSnapshotLookup> currentAttachmentSnapshotLookup(
 ) async {
   final importLedger = await ref.watch(sourceScopedImportLedgerProvider.future);
   return SourceScopedAttachmentSnapshotLookup(importLedger: importLedger);
+}
+
+@riverpod
+Future<CurrentMessageLensAttachmentEvidenceReader>
+messageLensAttachmentCurrentEvidenceReader(
+  MessageLensAttachmentCurrentEvidenceReaderRef ref,
+) async {
+  return ImportLedgerMessageLensAttachmentEvidenceReader(
+    importLedger: await ref.watch(sourceScopedImportLedgerProvider.future),
+    archiveReadStore: await ref.watch(
+      attachmentArchiveReadStoreProvider.future,
+    ),
+    archiveDirectoryPath: ref.watch(attachmentArchiveDirectoryProvider),
+  );
 }
 
 @riverpod

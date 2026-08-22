@@ -433,7 +433,7 @@ void main() {
     });
 
     testWidgets(
-      'MessageLens ready state reports exact evidence without a recovery command',
+      'MessageLens ready state reports exact evidence with recovery and cancel',
       (tester) async {
         await _pumpPanel(
           tester,
@@ -467,8 +467,92 @@ void main() {
         expect(find.text('Recoverable size'), findsOneWidget);
         expect(find.text('19.2 GB'), findsOneWidget);
         expect(find.text('Cancel'), findsOneWidget);
-        expect(find.text('Recover Attachments'), findsNothing);
+        expect(find.text('Recover Attachments'), findsOneWidget);
         expect(find.text('Add Messages to MessageLens'), findsNothing);
+      },
+    );
+
+    testWidgets('recovery completion is acknowledged before returning to hub', (
+      tester,
+    ) async {
+      final workflow = _MessageLensNoticeHistoricalArchivesWorkflow();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+            historicalArchivesWorkflowPanelModelProvider.overrideWith(
+              (ref) => _narratorPanelModel(
+                isHub: true,
+                presentation: null,
+                sourceType: HistoricalArchiveSourceType.messageLensDataFolders,
+              ),
+            ),
+            developerModeProvider.overrideWith(
+              () => _FakeDeveloperMode(DeveloperModeValue.user),
+            ),
+          ],
+          child: const CupertinoApp(home: HistoricalArchivesPanel()),
+        ),
+      );
+      await tester.pump();
+
+      workflow.emitNotice(
+        HistoricalArchivesMessageLensNoticeKind.recoveryComplete,
+        recoveredCount: 7,
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Attachment recovery complete'), findsOneWidget);
+      expect(
+        find.text(
+          'MessageLens recovered 7 missing attachments from the folder you selected.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(workflow.dismissCallCount, 1);
+      expect(workflow.state.presentation, isA<HistoricalArchivesHubState>());
+    });
+
+    testWidgets(
+      'partial recovery acknowledgement reports both exact outcomes',
+      (tester) async {
+        final workflow = _MessageLensNoticeHistoricalArchivesWorkflow();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              historicalArchivesWorkflowProvider.overrideWith(() => workflow),
+              historicalArchivesWorkflowPanelModelProvider.overrideWith(
+                (ref) => _narratorPanelModel(
+                  isHub: true,
+                  presentation: null,
+                  sourceType:
+                      HistoricalArchiveSourceType.messageLensDataFolders,
+                ),
+              ),
+              developerModeProvider.overrideWith(
+                () => _FakeDeveloperMode(DeveloperModeValue.user),
+              ),
+            ],
+            child: const CupertinoApp(home: HistoricalArchivesPanel()),
+          ),
+        );
+        await tester.pump();
+
+        workflow.emitNotice(
+          HistoricalArchivesMessageLensNoticeKind.recoveryFinished,
+          recoveredCount: 5,
+          couldNotRecoverCount: 2,
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Attachment recovery finished'), findsOneWidget);
+        expect(find.text('Recovered: 5\nCould not recover: 2'), findsOneWidget);
       },
     );
 
@@ -1738,7 +1822,11 @@ final class _MessageLensNoticeHistoricalArchivesWorkflow
         sourceType: HistoricalArchiveSourceType.messageLensDataFolders,
       );
 
-  void emitNotice(HistoricalArchivesMessageLensNoticeKind kind) {
+  void emitNotice(
+    HistoricalArchivesMessageLensNoticeKind kind, {
+    int? recoveredCount,
+    int? couldNotRecoverCount,
+  }) {
     _noticeOccurrence += 1;
     state = HistoricalArchivesWorkflowState(
       presentation: HistoricalArchivesMessageLensNoticeState(
@@ -1746,6 +1834,8 @@ final class _MessageLensNoticeHistoricalArchivesWorkflow
           kind: kind,
           noticeOccurrence: _noticeOccurrence,
           presentationSessionOccurrence: 0,
+          recoveredCount: recoveredCount,
+          couldNotRecoverCount: couldNotRecoverCount,
         ),
       ),
     );

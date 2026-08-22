@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Historical Archives can now recover a preflight-approved batch of missing
+  attachment payloads from an admitted same-lineage MessageLens data folder.
+  Recovery streams execution-time hashes and real byte progress, installs only
+  through the atomic no-overwrite preservation writer under exact mutation
+  authority, verifies final physical and metadata truth, and remains safe to
+  retry after partial completion.
 - MessageLens attachment-recovery preflight now exposes a reconciled forensic
   funnel in development Details, including relationship, identity-match, and
   physical-presence counts. Read-only comparison confirmed that the
@@ -30,12 +36,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   structurally qualified, admitted through the shared Messages-lineage
   authority, and compared with current attachment evidence before exact
   recoverable counts and bytes are shown. Modern marker identity remains
-  optional diagnostic evidence. Attachment mutation remains intentionally
-  unavailable pending a batch executor.
-- Attachment preservation now has a dormant, atomic no-overwrite installation
+  optional diagnostic evidence. Recovery now proceeds only from that exact
+  typed result through the canonical batch executor.
+- Attachment preservation now has an atomic no-overwrite installation
   boundary for verified MessageLens archive payloads, mechanically gated by an
-  exact-scope archive-mutation capability. The recovery UI remains disabled
-  while the infrastructure is exercised in isolated tests.
+  exact-scope archive-mutation capability.
 - Historical Archives now proves that a selected Mac Messages folder belongs
   to the current Messages history before registering it or offering import.
   Foreign and unverifiable folders fail closed with distinct explanations.

@@ -37,6 +37,10 @@ void main() {
   test(
     'recovery installation stays inside attachment ownership boundaries',
     () {
+      final batchExecutor = File(
+        'lib/features/attachments/application/'
+        'message_lens_attachment_recovery_batch_executor.dart',
+      ).readAsStringSync();
       final installer = File(
         'lib/features/attachments/application/'
         'message_lens_attachment_recovery_installer.dart',
@@ -61,6 +65,19 @@ void main() {
         contains('ArchiveMutationOperation.attachmentReconciliation'),
       );
       expect(installer, contains('mutationCapability.requireOperation'));
+      expect(batchExecutor, contains('MessageLensAttachmentRecoveryInstaller'));
+      expect(batchExecutor, contains('ArchiveMutationCapability'));
+      expect(
+        batchExecutor,
+        contains('ArchiveMutationOperation.attachmentReconciliation'),
+      );
+      expect(batchExecutor, contains('_requireExactApprovedSet'));
+      expect(batchExecutor, isNot(contains('installVerifiedArchiveEntry')));
+      expect(
+        batchExecutor,
+        isNot(contains('SourceScopedArchiveImportService')),
+      );
+      expect(batchExecutor, isNot(contains('ConversationGraphDatabase')));
       expect(installer, isNot(contains('ImportLedger')));
       expect(installer, isNot(contains('ConversationGraphDatabase')));
       expect(installer, isNot(contains('HistoricalArchives')));
@@ -85,7 +102,7 @@ void main() {
   );
 
   test(
-    'Historical Archives MessageLens arm remains read-only through ready',
+    'Historical Archives delegates recovery without importing donor content',
     () {
       final service = File(
         'lib/features/settings/infrastructure/repositories/'
@@ -107,6 +124,10 @@ void main() {
         'lib/features/attachments/infrastructure/repositories/'
         'sqlite_message_lens_attachment_recovery_donor_qualifier.dart',
       ).readAsStringSync();
+      final panel = File(
+        'lib/features/settings/presentation/view/'
+        'historical_archives_panel.dart',
+      ).readAsStringSync();
 
       expect(service, contains('verifyMessageLensCandidate'));
       expect(service, contains('MessageLensAttachmentRecoveryMatcher'));
@@ -125,7 +146,23 @@ void main() {
         isNot(contains('HistoricalMessagesArchiveSourceRegistrar')),
       );
       expect(workflow, contains('HistoricalArchivesMessageLensReadyState'));
-      expect(workflow, isNot(contains('Recover Attachments')));
+      expect(
+        workflow,
+        contains('messageLensAttachmentRecoveryBatchExecutorProvider'),
+      );
+      expect(
+        workflow,
+        contains('ArchiveMutationOperation.attachmentReconciliation'),
+      );
+      expect(
+        workflow,
+        isNot(contains('MessageLensAttachmentRecoveryInstaller')),
+      );
+      expect(workflow, isNot(contains('installVerifiedArchiveEntry')));
+      expect(workflow, isNot(contains('SourceScopedArchiveImportService')));
+      expect(workflow, isNot(contains('ConversationGraphDatabase')));
+      expect(panel, contains('Recover Attachments'));
+      expect(panel, isNot(contains('installVerifiedArchiveEntry')));
       expect(identity, isNot(contains('messageLensFromArchiveInstanceId')));
       expect(identity, isNot(contains('message-lens-recovery-archive:')));
       expect(qualifier, contains('OpenMode.readOnly'));
@@ -190,7 +227,8 @@ void main() {
     expect(preflightInspection, isNot(contains('sha256.bind')));
     expect(preflightInspection, isNot(contains('openRead()')));
     expect(payloadInspector, contains('inspectVerified'));
-    expect(payloadInspector, contains('sha256.bind'));
+    expect(payloadInspector, contains('sha256.startChunkedConversion'));
+    expect(payloadInspector, contains('file.openRead()'));
     expect(donorAdapter, contains('validateExecutionIntegrity'));
     expect(donorAdapter, contains('PRAGMA integrity_check'));
     expect(qualifier, isNot(contains('validateExecutionIntegrity')));
@@ -202,5 +240,20 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('controlled-loss manifest helper is read-only and external', () {
+    final helper = File(
+      'tool/generate_message_lens_attachment_recovery_controlled_loss_manifest.dart',
+    ).readAsStringSync();
+
+    expect(helper, contains('OpenMode.readOnly'));
+    expect(helper, contains("environment.serializedName != 'development'"));
+    expect(helper, contains('outside both archives'));
+    expect(helper, isNot(contains('.delete(')));
+    expect(helper, isNot(contains('DELETE FROM')));
+    expect(helper, isNot(contains('UPDATE ')));
+    expect(helper, isNot(contains('INSERT INTO')));
+    expect(helper, isNot(contains('ArchiveMutationCoordinator')));
   });
 }

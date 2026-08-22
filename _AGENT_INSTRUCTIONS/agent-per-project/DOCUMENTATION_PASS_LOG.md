@@ -5398,3 +5398,18 @@ production preservation authority mechanically enforceable.
 - Documented filesystem authority for payload presence, canonical source-ID
   decoding, Prompt 53 semantic parity, classification reconciliation, and the
   bounded development diagnostics correction.
+
+## 2026-08-22 - Batch attachment recovery and controlled-loss validation
+
+- Added Feature 26 implementation record
+  `55-BATCH-ATTACHMENT-RECOVERY-AND-CONTROLLED-LOSS-END-TO-END-VALIDATION.md`.
+- Codified the exact preflight-set to execution-revalidation to canonical
+  no-overwrite installer chain under caller-specific
+  `attachmentReconciliation` authority.
+- Recorded real count/byte progress, typed item-versus-systemic failure policy,
+  final evidence verification, and journal-free idempotent retry semantics.
+- Updated the canonical attachment archive guide and Feature 26 index from the
+  prior dormant/read-only boundary to the implemented batch operation.
+- Documented the read-only controlled-loss manifest helper, mandatory human
+  deletion timing, and end-to-end rehearsal sequence without adding any
+  product deletion path.

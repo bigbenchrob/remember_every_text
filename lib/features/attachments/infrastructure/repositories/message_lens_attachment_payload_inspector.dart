@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../../essentials/archive_compatibility/domain/archive_compatibility_key.dart';
+import '../../application/message_lens_attachment_recovery_batch_executor.dart';
 import '../../application/verified_donor_attachment_payload.dart';
 import '../../domain/entities/message_lens_attachment_recovery.dart';
 
@@ -35,19 +36,10 @@ class _FilesystemVerifiedDonorAttachmentPayload
   Stream<List<int>> openRead() => File(_absolutePath).openRead();
 }
 
-class VerifiedDonorAttachmentPayloadResult {
-  const VerifiedDonorAttachmentPayloadResult({
-    required this.inspection,
-    required this.payload,
-  });
-
-  final AttachmentPayloadInspection inspection;
-  final VerifiedDonorAttachmentPayload? payload;
-}
-
 /// Read-only validation of a payload recorded inside a donor MessageLens
 /// archive. It does not create directories, normalize the donor, or copy data.
-class MessageLensAttachmentPayloadInspector {
+class MessageLensAttachmentPayloadInspector
+    implements MessageLensAttachmentRecoveryPayloadVerifier {
   const MessageLensAttachmentPayloadInspector();
 
   /// Inspects all preflight claims in one read-only directory traversal.
@@ -189,6 +181,7 @@ class MessageLensAttachmentPayloadInspector {
   /// This deliberately validates path containment, regular-file presence, and
   /// recorded size without reading payload bytes. [inspectVerified] repeats
   /// these checks and verifies SHA-256 immediately before installation.
+  @override
   Future<AttachmentPayloadInspection> inspect({
     required String donorArchiveRoot,
     required MessageLensArchivedPayloadEvidence payload,
@@ -240,9 +233,11 @@ class MessageLensAttachmentPayloadInspector {
     }
   }
 
+  @override
   Future<VerifiedDonorAttachmentPayloadResult> inspectVerified({
     required String donorArchiveRoot,
     required MessageLensArchivedPayloadEvidence payload,
+    void Function(int bytesProcessed)? onBytesProcessed,
   }) async {
     if (!_lexicalPathIsSafe(
       donorArchiveRoot: donorArchiveRoot,
@@ -310,7 +305,26 @@ class MessageLensAttachmentPayloadInspector {
     final file = File(candidatePath);
     try {
       final actualSize = await file.length();
-      final actualHash = (await sha256.bind(file.openRead()).first).toString();
+      final digestSink = _DigestSink();
+      final hashSink = sha256.startChunkedConversion(digestSink);
+      var processedBytes = 0;
+      await for (final chunk in file.openRead()) {
+        hashSink.add(chunk);
+        processedBytes += chunk.length;
+        onBytesProcessed?.call(processedBytes);
+      }
+      hashSink.close();
+      final actualHash = digestSink.value?.toString();
+      if (actualHash == null) {
+        return VerifiedDonorAttachmentPayloadResult(
+          inspection: AttachmentPayloadInspection(
+            status: AttachmentPayloadInspectionStatus.invalid,
+            actualSizeBytes: actualSize,
+            actualSha256: null,
+          ),
+          payload: null,
+        );
+      }
       final expectedHash = payload.recordedSha256?.trim().toLowerCase();
       final sizeMatches = actualSize == payload.recordedSizeBytes;
       final hashMatches =
@@ -376,6 +390,18 @@ class MessageLensAttachmentPayloadInspector {
     return FileSystemEntity.typeSync(candidatePath, followLinks: false) ==
         FileSystemEntityType.link;
   }
+}
+
+final class _DigestSink implements Sink<Digest> {
+  Digest? value;
+
+  @override
+  void add(Digest data) {
+    value = data;
+  }
+
+  @override
+  void close() {}
 }
 
 final class MessageLensAttachmentInspectionCancelled implements Exception {

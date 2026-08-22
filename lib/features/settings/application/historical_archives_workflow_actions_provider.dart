@@ -43,6 +43,16 @@ class HistoricalArchivesWorkflowActions
     ref.read(historicalArchivesWorkflowProvider.notifier).cancelAddArchive();
   }
 
+  Future<void> recoverMessageLensAttachments({
+    Future<void> Function()? waitForOperationPresentation,
+  }) async {
+    await ref
+        .read(historicalArchivesWorkflowProvider.notifier)
+        .recoverMessageLensAttachments(
+          waitForOperationPresentation: waitForOperationPresentation,
+        );
+  }
+
   void dismissDuplicateFolderNotice({
     required int noticeOccurrence,
     required int presentationSessionOccurrence,

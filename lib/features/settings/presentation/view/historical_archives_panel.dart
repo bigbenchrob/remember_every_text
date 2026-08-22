@@ -662,6 +662,14 @@ class _HistoricalArchivesPanelState
         'No missing attachments were found.',
         'There are no missing attachments in this folder that MessageLens can safely recover.',
       ),
+      HistoricalArchivesMessageLensNoticeKind.recoveryComplete => (
+        'Attachment recovery complete',
+        'MessageLens recovered ${notice.recoveredCount ?? 0} missing attachments from the folder you selected.',
+      ),
+      HistoricalArchivesMessageLensNoticeKind.recoveryFinished => (
+        'Attachment recovery finished',
+        'Recovered: ${notice.recoveredCount ?? 0}\nCould not recover: ${notice.couldNotRecoverCount ?? 0}',
+      ),
     };
     await showCupertinoDialog<void>(
       context: context,
@@ -979,11 +987,14 @@ bool _hasNarratorDecision(HistoricalArchivesNarratorPresentationKind kind) {
     HistoricalArchivesNarratorPresentationKind.inspectingSource ||
     HistoricalArchivesNarratorPresentationKind.inspectingMessageLensSource ||
     HistoricalArchivesNarratorPresentationKind.importingArchive ||
+    HistoricalArchivesNarratorPresentationKind
+        .recoveringMessageLensAttachments ||
     HistoricalArchivesNarratorPresentationKind.removingSource ||
     HistoricalArchivesNarratorPresentationKind.removalFailed => false,
     HistoricalArchivesNarratorPresentationKind.inspectionFailed ||
     HistoricalArchivesNarratorPresentationKind.readyForImport ||
     HistoricalArchivesNarratorPresentationKind.messageLensReady ||
+    HistoricalArchivesNarratorPresentationKind.messageLensRecoveryFailed ||
     HistoricalArchivesNarratorPresentationKind.importFailed ||
     HistoricalArchivesNarratorPresentationKind.knownSource => true,
   };
@@ -1109,6 +1120,9 @@ class _NarratorDecision extends ConsumerWidget {
         const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.importingArchive =>
         const SizedBox.shrink(),
+      HistoricalArchivesNarratorPresentationKind
+          .recoveringMessageLensAttachments =>
+        const SizedBox.shrink(),
       HistoricalArchivesNarratorPresentationKind.removingSource ||
       HistoricalArchivesNarratorPresentationKind.removalFailed =>
         const SizedBox.shrink(),
@@ -1156,12 +1170,34 @@ class _NarratorDecision extends ConsumerWidget {
         runSpacing: 10,
         children: [
           _HistoricalArchiveActionButton(
+            label: 'Recover Attachments',
+            enabled: true,
+            primary: true,
+            onPressed: () {
+              actions.recoverMessageLensAttachments(
+                waitForOperationPresentation:
+                    _waitForHistoricalArchiveOperationFrame,
+              );
+            },
+          ),
+          _HistoricalArchiveActionButton(
             label: 'Cancel',
             enabled: true,
             onPressed: actions.cancelAddArchive,
           ),
         ],
       ),
+      HistoricalArchivesNarratorPresentationKind.messageLensRecoveryFailed =>
+        _HistoricalArchiveActionButton(
+          label: 'Choose Another Folder',
+          enabled: true,
+          onPressed: () {
+            actions.chooseMessageLensFolder(
+              waitForInspectionPresentation:
+                  _waitForHistoricalArchiveOperationFrame,
+            );
+          },
+        ),
       HistoricalArchivesNarratorPresentationKind.importFailed => Wrap(
         spacing: 10,
         runSpacing: 10,

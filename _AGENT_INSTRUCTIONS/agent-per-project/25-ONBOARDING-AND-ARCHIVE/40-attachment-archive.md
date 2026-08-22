@@ -192,7 +192,7 @@ reconciles metadata without copying or overwriting.
 > canonical preservation-safe attachment writer. Do not copy directly into
 > managed attachment storage.
 
-The dormant MessageLens recovery installer additionally requires an active,
+The MessageLens recovery installer additionally requires an active,
 caller-specific `ArchiveMutationCapability` for
 `attachmentReconciliation`. The mutation coordinator alone mints that proof.
 It is valid only in its exact admitted async scope and cannot be retained for a
@@ -208,8 +208,8 @@ regular-file presence, and recorded size. It reads donor/current metadata in
 snapshots and inventories payload directories once. It does not stream payload
 bytes, recompute SHA-256, or run exhaustive whole-database integrity scans.
 
-Future execution must revalidate before mutation. It must run exhaustive donor
-database integrity checks, reread the exact relationship evidence, and call
+Execution revalidates before mutation. It runs exhaustive donor
+database integrity checks, rereads the exact relationship evidence, and calls
 `inspectVerified()` for each authorized payload. That method recomputes exact
 size and SHA-256 immediately before the canonical no-overwrite installer
 receives a read-only payload capability.
@@ -217,6 +217,38 @@ receives a read-only payload capability.
 This lifecycle split avoids doing mutation-time work twice while preserving
 the safety boundary: stored hashes support preflight comparison; freshly
 computed hashes authorize installation.
+
+### MessageLens Recovery Batch
+
+The canonical batch executor accepts only the exact `recoverable` set from one
+completed, same-lineage-admitted preflight. It does not discover files from
+paths or broaden the preflight result. It requires the same live, caller-
+specific `attachmentReconciliation` capability as the single installer and
+rechecks that capability throughout execution.
+
+Execution has four typed stages:
+
+1. verify donor payloads;
+2. install payloads;
+3. verify final state;
+4. complete.
+
+Only candidates that remain recoverable are streamed through SHA-256. Files
+that became `alreadyPresent` after preflight are neither hashed nor copied.
+Progress reports actual attachment counts plus actual verified and copied
+bytes; no timer estimates work.
+
+Expected item-level failures are retained as typed outcomes and do not erase
+earlier successful preservation. A systemic donor-integrity, storage, or
+authority failure stops the batch. Final completion is not inferred from the
+copy counter: current archive metadata and physical payload integrity are
+reread, and the approved candidates are reclassified to prove none remain
+recoverable.
+
+The operation requires no recovery journal. Atomic no-overwrite installation
+and metadata-after-payload ordering provide convergence from physical truth:
+an interrupted retry sees completed payloads as `alreadyPresent`, reconciles
+missing metadata where necessary, and installs only what remains absent.
 
 ### Ongoing Archiving
 
@@ -252,7 +284,8 @@ boundary unless current code introduces one.
 |------|------|
 | `lib/features/attachments/application/attachment_archive_service_provider.dart` | Archive orchestration, progress, and policy flow |
 | `lib/features/attachments/application/attachment_archive_file_store.dart` | File-copy, hash, home-expansion, and archive integrity file boundary |
-| `lib/features/attachments/application/message_lens_attachment_recovery_installer.dart` | Dormant typed payload-install and metadata-reconciliation orchestration |
+| `lib/features/attachments/application/message_lens_attachment_recovery_batch_executor.dart` | Exact-set batch verification, progress, outcome, retry, and terminal-verification orchestration |
+| `lib/features/attachments/application/message_lens_attachment_recovery_installer.dart` | Typed single-payload installation and metadata-reconciliation orchestration |
 | `lib/features/attachments/application/verified_donor_attachment_payload.dart` | Read-only capability consumed instead of donor path strings |
 | `lib/features/attachments/application/attachment_archive_write_store.dart` | Archive record, recovery hint, and integrity-row persistence boundary |
 | `lib/features/attachments/application/graph_attachment_archive_candidate_reader.dart` | Graph attachment candidate selection boundary |
@@ -292,6 +325,13 @@ boundary unless current code introduces one.
     active exact-scope `attachmentReconciliation` capability minted by the
     archive mutation coordinator.
 12. MessageLens recovery preflight must not hash payload bytes or run
-    exhaustive database integrity scans. A future recovery execution must run
+    exhaustive database integrity scans. Recovery execution must run
     exhaustive donor integrity checks and recompute payload size/SHA-256 before
     installation.
+13. Batch recovery may install only the exact recoverable set produced by its
+    completed preflight. It must not rediscover or add candidates.
+14. Batch completion requires authoritative final metadata and physical-file
+    verification plus reclassification proving no approved candidate remains
+    recoverable.
+15. MessageLens recovery donors remain read-only and ephemeral. Recovery writes
+    no donor facts, source registration, graph data, or cartouche membership.

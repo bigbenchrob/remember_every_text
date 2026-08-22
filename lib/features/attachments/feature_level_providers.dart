@@ -12,5 +12,7 @@ export 'application/deterministic_recovery_runtime_providers.dart';
 export 'application/graph_attachment_archive_candidate_reader.dart';
 export 'application/graph_attachment_archive_lookup.dart';
 export 'application/graph_attachment_archive_providers.dart';
+export 'application/message_lens_attachment_recovery_batch_executor.dart';
+export 'application/message_lens_attachment_recovery_batch_executor_provider.dart';
 export 'application/video_thumbnail_cache.dart';
 export 'application/video_thumbnail_cache_provider.dart';
