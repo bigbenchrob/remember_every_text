@@ -17,10 +17,42 @@ class MessageLensAttachmentRecoveryMatcher {
     );
 
     final classified = inputs.map(_classify).toList(growable: false);
-    final candidates = _rejectDuplicateDestinationClaims(classified);
+    final candidates = _rejectDuplicateDestinationClaims(
+      classified.map((item) => item.candidate).toList(growable: false),
+    );
 
     return MessageLensAttachmentRecoveryPreflight(
       candidates: candidates,
+      funnel: MessageLensAttachmentRecoveryFunnel(
+        donorPayloadClaimCount: inputs.length,
+        donorRelationshipEvidenceCount: inputs.length,
+        currentRelationshipEvidenceCount: inputs.fold(
+          0,
+          (sum, input) => sum + input.currentRelationshipCandidates.length,
+        ),
+        donorRelationshipUnmatchedCount: 0,
+        messageMatchedCount: classified
+            .where((item) => item.messageIdentityMatched)
+            .length,
+        attachmentMatchedCount: classified
+            .where((item) => item.attachmentIdentityMatched)
+            .length,
+        donorPayloadPresentCount: inputs
+            .where(
+              (input) =>
+                  input.donorPayloadInspection.status ==
+                  AttachmentPayloadInspectionStatus.valid,
+            )
+            .length,
+        currentPayloadPresentCount: inputs
+            .where(
+              (input) =>
+                  input.currentPayloadStatus ==
+                  CurrentAttachmentPayloadStatus.presentValid,
+            )
+            .length,
+        duplicateClaimsCollapsedCount: classified.length - candidates.length,
+      ),
       examinedCount: inputs.length,
       recoverableCount: _count(
         candidates,
@@ -64,11 +96,13 @@ class MessageLensAttachmentRecoveryMatcher {
     );
   }
 
-  MessageLensAttachmentRecoveryCandidate _classify(
+  _ClassifiedAttachmentRecoveryInput _classify(
     MessageLensAttachmentRecoveryInput input,
   ) {
     final donor = input.donorRelationship;
     var classification = MessageLensAttachmentRecoveryClassification.ambiguous;
+    var messageIdentityMatched = false;
+    var attachmentIdentityMatched = false;
 
     if (!_identityIsInternallyCoherent(donor) ||
         donor.relationshipOccurrenceCount != 1) {
@@ -96,6 +130,7 @@ class MessageLensAttachmentRecoveryMatcher {
           classification =
               MessageLensAttachmentRecoveryClassification.messageMismatch;
         } else {
+          messageIdentityMatched = true;
           final attachmentCandidates = messageCandidates
               .where(
                 (candidate) =>
@@ -118,6 +153,7 @@ class MessageLensAttachmentRecoveryMatcher {
             classification =
                 MessageLensAttachmentRecoveryClassification.attachmentMismatch;
           } else {
+            attachmentIdentityMatched = true;
             classification = _classifyPayload(input);
           }
         }
@@ -125,16 +161,20 @@ class MessageLensAttachmentRecoveryMatcher {
     }
 
     final inspection = input.donorPayloadInspection;
-    return MessageLensAttachmentRecoveryCandidate(
-      archiveCompatibilityKey: donor.archiveCompatibilityKey,
-      classification: classification,
-      recoverableBytes:
-          classification ==
-              MessageLensAttachmentRecoveryClassification.recoverable
-          ? inspection.actualSizeBytes ?? 0
-          : 0,
-      donorArchiveRelativePath: input.donorPayload.archiveRelativePath,
-      donorPayloadSha256: inspection.actualSha256,
+    return _ClassifiedAttachmentRecoveryInput(
+      candidate: MessageLensAttachmentRecoveryCandidate(
+        archiveCompatibilityKey: donor.archiveCompatibilityKey,
+        classification: classification,
+        recoverableBytes:
+            classification ==
+                MessageLensAttachmentRecoveryClassification.recoverable
+            ? inspection.actualSizeBytes ?? 0
+            : 0,
+        donorArchiveRelativePath: input.donorPayload.archiveRelativePath,
+        donorPayloadSha256: inspection.actualSha256,
+      ),
+      messageIdentityMatched: messageIdentityMatched,
+      attachmentIdentityMatched: attachmentIdentityMatched,
     );
   }
 
@@ -242,4 +282,16 @@ class MessageLensAttachmentRecoveryMatcher {
   }
 
   static String _normalized(String? value) => value?.trim() ?? '';
+}
+
+final class _ClassifiedAttachmentRecoveryInput {
+  const _ClassifiedAttachmentRecoveryInput({
+    required this.candidate,
+    required this.messageIdentityMatched,
+    required this.attachmentIdentityMatched,
+  });
+
+  final MessageLensAttachmentRecoveryCandidate candidate;
+  final bool messageIdentityMatched;
+  final bool attachmentIdentityMatched;
 }

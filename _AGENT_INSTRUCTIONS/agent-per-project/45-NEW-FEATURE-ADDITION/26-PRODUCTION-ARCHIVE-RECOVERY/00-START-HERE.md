@@ -86,6 +86,7 @@ panel. See:
 - [Backward-Compatible MessageLens Archive Qualification Audit](responses/51-BACKWARD-COMPATIBLE-MESSAGELENS-ARCHIVE-QUALIFICATION-AUDIT.md)
 - [Ephemeral MessageLens Recovery Donors](responses/52-EPHEMERAL-MESSAGELENS-RECOVERY-DONORS-IMPLEMENTATION.md)
 - [MessageLens Attachment Preflight Performance And Observability](responses/53-MESSAGELENS-ATTACHMENT-PREFLIGHT-PERFORMANCE-AND-OBSERVABILITY-IMPLEMENTATION.md)
+- [Forensic Validation Of Zero Recoverable Attachments](responses/54-FORENSIC-VALIDATION-OF-ZERO-RECOVERABLE-ATTACHMENTS.md)
 
 The MessageLens-folder arm is now enabled through a safe read-only ready state
 under a deliberately narrow product contract: recover attachment payloads only
@@ -107,6 +108,14 @@ and current/donor payload presence uses one symlink-aware filesystem inventory
 with real count progress. Exhaustive database integrity and payload hashing
 remain mandatory at the future recovery execution boundary rather than being
 duplicated during preflight.
+
+Read-only forensic comparison then proved that the representative donor's zero
+recoverable result is correct. All 33,399 donor metadata identities exist in
+the current archive, no donor managed path is absent from current storage,
+33,392 exactly admitted claims are physically present, one claim is a shared
+metadata/size conflict, and six claims remain fail-closed because the donor
+lacks one exact relationship. The preflight now exposes this full funnel in
+development Details and mechanically reconciles all terminal classifications.
 
 Read-only compatibility review confirmed that pre-July 2026 MessageLens
 archives can retain healthy, readable attachment evidence while predating the

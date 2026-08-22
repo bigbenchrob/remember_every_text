@@ -37,6 +37,8 @@ import '../../../essentials/source_scoped_import/domain/historical_archive_sourc
 import '../../../essentials/source_scoped_import/domain/messages_lineage_admission.dart';
 import '../../../essentials/source_scoped_import/feature_level_providers.dart'
     show messagesLineageAdmissionAuthorityProvider;
+import '../../attachments/domain/entities/message_lens_attachment_recovery.dart'
+    show MessageLensAttachmentRecoveryPreflight;
 import '../../sidebar_utilities/domain/sidebar_utilities_constants.dart'
     show SettingsMenuActionId;
 import 'archive_source_inspection.dart';
@@ -65,6 +67,41 @@ void _logHistoricalArchivesWarning(
         context: {
           'error': error.toString(),
           'stack': stackTrace.toString().split('\n').take(5).join('\n'),
+        },
+      );
+}
+
+void _logMessageLensAttachmentPreflight(
+  Ref ref,
+  MessageLensAttachmentRecoveryPreflight preflight,
+) {
+  final funnel = preflight.funnel;
+  ref
+      .read(appLoggerProvider.notifier)
+      .info(
+        'MessageLens attachment-recovery preflight completed',
+        source: 'HistoricalArchivesWorkflow',
+        context: {
+          'donorPayloadClaims': funnel.donorPayloadClaimCount,
+          'donorRelationshipEvidence': funnel.donorRelationshipEvidenceCount,
+          'currentRelationshipEvidence':
+              funnel.currentRelationshipEvidenceCount,
+          'donorRelationshipUnmatched': funnel.donorRelationshipUnmatchedCount,
+          'messageIdentitiesMatched': funnel.messageMatchedCount,
+          'attachmentIdentitiesMatched': funnel.attachmentMatchedCount,
+          'donorPayloadsPhysicallyValid': funnel.donorPayloadPresentCount,
+          'currentPayloadsPhysicallyValid': funnel.currentPayloadPresentCount,
+          'recoverable': preflight.recoverableCount,
+          'alreadyPresent': preflight.alreadyPresentCount,
+          'donorMissing': preflight.donorMissingCount,
+          'messageMismatch': preflight.messageMismatchCount,
+          'attachmentMismatch': preflight.attachmentMismatchCount,
+          'conflict': preflight.conflictCount,
+          'ambiguous': preflight.ambiguousCount,
+          'unsafeDonorPath': preflight.unsafeDonorPathCount,
+          'duplicateClaimsCollapsed': funnel.duplicateClaimsCollapsedCount,
+          'terminalClassifications': preflight.terminalClassificationCount,
+          'countsReconcile': preflight.classificationCountsReconcile,
         },
       );
 }
@@ -1460,6 +1497,7 @@ class HistoricalArchivesWorkflow extends _$HistoricalArchivesWorkflow {
       case MessageLensHistoricalArchivePreflightCancelled():
         return;
       case MessageLensHistoricalArchiveReady(:final attachmentPreflight):
+        _logMessageLensAttachmentPreflight(ref, attachmentPreflight);
         if (attachmentPreflight.recoverableCount == 0) {
           _showMessageLensNotice(
             kind: HistoricalArchivesMessageLensNoticeKind.nothingRecoverable,
@@ -3173,46 +3211,54 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
         ),
         retryInspectionEnabled: false,
       ),
-    HistoricalArchivesMessageLensReadyState(:final evidence) =>
-      HistoricalArchivesNarratorPresentationViewModel(
-        kind: HistoricalArchivesNarratorPresentationKind.messageLensReady,
-        narratorText:
-            'This folder comes from the same Messages history. I found attachments that are missing from MessageLens.',
-        instrumentationRows: [
-          HistoricalArchivesInstrumentationRowViewModel(
-            label: 'Recoverable attachments',
-            value: _formattedCount(
-              evidence.attachmentPreflight.recoverableCount,
-            ),
-            status: HistoricalArchivesInstrumentationStatus.resolved,
+    HistoricalArchivesMessageLensReadyState(:final evidence) => HistoricalArchivesNarratorPresentationViewModel(
+      kind: HistoricalArchivesNarratorPresentationKind.messageLensReady,
+      narratorText:
+          'This folder comes from the same Messages history. I found attachments that are missing from MessageLens.',
+      instrumentationRows: [
+        HistoricalArchivesInstrumentationRowViewModel(
+          label: 'Recoverable attachments',
+          value: _formattedCount(evidence.attachmentPreflight.recoverableCount),
+          status: HistoricalArchivesInstrumentationStatus.resolved,
+        ),
+        HistoricalArchivesInstrumentationRowViewModel(
+          label: 'Recoverable size',
+          value: _formattedByteCount(
+            evidence.attachmentPreflight.recoverableBytes,
           ),
-          HistoricalArchivesInstrumentationRowViewModel(
-            label: 'Recoverable size',
-            value: _formattedByteCount(
-              evidence.attachmentPreflight.recoverableBytes,
-            ),
-            status: HistoricalArchivesInstrumentationStatus.resolved,
-          ),
-        ],
-        detailsLines: [
-          'Folder: ${evidence.donor.rootPath}',
-          'Donor format: ${evidence.donor.format.diagnosticLabel}',
-          if (evidence.donor.archiveInstanceId case final archiveInstanceId?)
-            'Archive instance: $archiveInstanceId',
-          'Relationships examined: ${_formattedCount(evidence.attachmentPreflight.examinedCount)}',
-          'Already present: ${_formattedCount(evidence.attachmentPreflight.alreadyPresentCount)}',
-          'Donor payload missing: ${_formattedCount(evidence.attachmentPreflight.donorMissingCount)}',
-          'Message mismatches: ${_formattedCount(evidence.attachmentPreflight.messageMismatchCount)}',
-          'Attachment mismatches: ${_formattedCount(evidence.attachmentPreflight.attachmentMismatchCount)}',
-          'Conflicts: ${_formattedCount(evidence.attachmentPreflight.conflictCount)}',
-          'Ambiguous: ${_formattedCount(evidence.attachmentPreflight.ambiguousCount)}',
-          'Unsafe donor paths: ${_formattedCount(evidence.attachmentPreflight.unsafeDonorPathCount)}',
-          for (final timing in evidence.phaseTimings)
-            '${_messageLensPreflightPhaseLabel(timing.phase)}: ${timing.elapsed.inMilliseconds} ms',
-          'Recovery is not authorized in this read-only slice.',
-        ],
-        retryInspectionEnabled: false,
-      ),
+          status: HistoricalArchivesInstrumentationStatus.resolved,
+        ),
+      ],
+      detailsLines: [
+        'Folder: ${evidence.donor.rootPath}',
+        'Donor format: ${evidence.donor.format.diagnosticLabel}',
+        if (evidence.donor.archiveInstanceId case final archiveInstanceId?)
+          'Archive instance: $archiveInstanceId',
+        'Donor payload claims: ${_formattedCount(evidence.attachmentPreflight.funnel.donorPayloadClaimCount)}',
+        'Donor relationship evidence: ${_formattedCount(evidence.attachmentPreflight.funnel.donorRelationshipEvidenceCount)}',
+        'Current relationship evidence: ${_formattedCount(evidence.attachmentPreflight.funnel.currentRelationshipEvidenceCount)}',
+        'Claims without one donor relationship: ${_formattedCount(evidence.attachmentPreflight.funnel.donorRelationshipUnmatchedCount)}',
+        'Message identities matched: ${_formattedCount(evidence.attachmentPreflight.funnel.messageMatchedCount)}',
+        'Attachment identities matched: ${_formattedCount(evidence.attachmentPreflight.funnel.attachmentMatchedCount)}',
+        'Donor payloads physically valid: ${_formattedCount(evidence.attachmentPreflight.funnel.donorPayloadPresentCount)}',
+        'Current matched payloads physically valid: ${_formattedCount(evidence.attachmentPreflight.funnel.currentPayloadPresentCount)}',
+        'Relationships examined: ${_formattedCount(evidence.attachmentPreflight.examinedCount)}',
+        'Already present: ${_formattedCount(evidence.attachmentPreflight.alreadyPresentCount)}',
+        'Donor payload missing: ${_formattedCount(evidence.attachmentPreflight.donorMissingCount)}',
+        'Message mismatches: ${_formattedCount(evidence.attachmentPreflight.messageMismatchCount)}',
+        'Attachment mismatches: ${_formattedCount(evidence.attachmentPreflight.attachmentMismatchCount)}',
+        'Conflicts: ${_formattedCount(evidence.attachmentPreflight.conflictCount)}',
+        'Ambiguous: ${_formattedCount(evidence.attachmentPreflight.ambiguousCount)}',
+        'Unsafe donor paths: ${_formattedCount(evidence.attachmentPreflight.unsafeDonorPathCount)}',
+        'Duplicate claims collapsed: ${_formattedCount(evidence.attachmentPreflight.funnel.duplicateClaimsCollapsedCount)}',
+        'Terminal classifications: ${_formattedCount(evidence.attachmentPreflight.terminalClassificationCount)}',
+        'Classification counts reconcile: ${evidence.attachmentPreflight.classificationCountsReconcile ? 'Yes' : 'No'}',
+        for (final timing in evidence.phaseTimings)
+          '${_messageLensPreflightPhaseLabel(timing.phase)}: ${timing.elapsed.inMilliseconds} ms',
+        'Recovery is not authorized in this read-only slice.',
+      ],
+      retryInspectionEnabled: false,
+    ),
     HistoricalArchivesExistingSourceState() ||
     HistoricalArchivesImportingState() ||
     HistoricalArchivesImportFailedState() ||

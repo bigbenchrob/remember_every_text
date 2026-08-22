@@ -3479,6 +3479,17 @@ MessageLensHistoricalArchiveReady _messageLensReady({
     lineageAdmission: _testSameLineageAdmission(),
     attachmentPreflight: MessageLensAttachmentRecoveryPreflight(
       candidates: const [],
+      funnel: MessageLensAttachmentRecoveryFunnel(
+        donorPayloadClaimCount: recoverableCount,
+        donorRelationshipEvidenceCount: recoverableCount,
+        currentRelationshipEvidenceCount: recoverableCount,
+        donorRelationshipUnmatchedCount: 0,
+        messageMatchedCount: recoverableCount,
+        attachmentMatchedCount: recoverableCount,
+        donorPayloadPresentCount: recoverableCount,
+        currentPayloadPresentCount: 0,
+        duplicateClaimsCollapsedCount: 0,
+      ),
       examinedCount: recoverableCount,
       recoverableCount: recoverableCount,
       recoverableBytes: recoverableBytes,

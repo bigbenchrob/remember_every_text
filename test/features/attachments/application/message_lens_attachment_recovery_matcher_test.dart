@@ -16,6 +16,11 @@ void main() {
 
     expect(result.recoverableCount, 1);
     expect(result.recoverableBytes, 3);
+    expect(result.funnel.messageMatchedCount, 1);
+    expect(result.funnel.attachmentMatchedCount, 1);
+    expect(result.funnel.donorPayloadPresentCount, 1);
+    expect(result.funnel.currentPayloadPresentCount, 0);
+    expect(result.classificationCountsReconcile, isTrue);
     expect(
       result.candidates.single.classification,
       MessageLensAttachmentRecoveryClassification.recoverable,
@@ -154,6 +159,8 @@ void main() {
 
     expect(result.candidates, hasLength(1));
     expect(result.examinedCount, 2);
+    expect(result.funnel.duplicateClaimsCollapsedCount, 1);
+    expect(result.classificationCountsReconcile, isTrue);
     expect(result.recoverableCount, 1);
     expect(result.recoverableBytes, 3);
   });
@@ -185,11 +192,53 @@ void main() {
     expect(result.conflictCount, 1);
     expect(result.unsafeDonorPathCount, 1);
     expect(result.recoverableBytes, 3);
+    expect(result.terminalClassificationCount, 4);
+    expect(result.classificationCountsReconcile, isTrue);
+  });
+
+  test('source-scoped identities decode before cross-scope matching', () {
+    final result = matcher.inspect(
+      lineageAdmission: _sameLineageAdmission(),
+      inputs: [
+        _input(
+          donorRelationship: _relationship(sourceId: 7),
+          currentRelationships: [_relationship(sourceId: 1)],
+        ),
+      ],
+    );
+
+    expect(result.recoverableCount, 1);
+    expect(result.messageMismatchCount, 0);
+    expect(result.attachmentMismatchCount, 0);
+    expect(result.funnel.messageMatchedCount, 1);
+    expect(result.funnel.attachmentMatchedCount, 1);
+  });
+
+  test('all physically present matched payloads produce truthful zero', () {
+    final result = matcher.inspect(
+      lineageAdmission: _sameLineageAdmission(),
+      inputs: [
+        _input(
+          attachmentRowId: 42,
+          currentPayloadStatus: CurrentAttachmentPayloadStatus.presentValid,
+        ),
+        _input(
+          attachmentRowId: 43,
+          currentPayloadStatus: CurrentAttachmentPayloadStatus.presentValid,
+        ),
+      ],
+    );
+
+    expect(result.recoverableCount, 0);
+    expect(result.alreadyPresentCount, 2);
+    expect(result.funnel.currentPayloadPresentCount, 2);
+    expect(result.classificationCountsReconcile, isTrue);
   });
 }
 
 MessageLensAttachmentRecoveryInput _input({
   int attachmentRowId = 42,
+  MessageLensAttachmentRelationshipEvidence? donorRelationship,
   List<MessageLensAttachmentRelationshipEvidence>? currentRelationships,
   MessageLensArchivedPayloadEvidence donorPayload =
       const MessageLensArchivedPayloadEvidence(
@@ -207,7 +256,8 @@ MessageLensAttachmentRecoveryInput _input({
       CurrentAttachmentPayloadStatus.missing,
 }) {
   return MessageLensAttachmentRecoveryInput(
-    donorRelationship: _relationship(attachmentRowId: attachmentRowId),
+    donorRelationship:
+        donorRelationship ?? _relationship(attachmentRowId: attachmentRowId),
     currentRelationshipCandidates:
         currentRelationships ??
         [_relationship(attachmentRowId: attachmentRowId)],
@@ -218,6 +268,7 @@ MessageLensAttachmentRecoveryInput _input({
 }
 
 MessageLensAttachmentRelationshipEvidence _relationship({
+  int sourceId = 1,
   int messageRowId = 41,
   String messageGuid = 'message-guid',
   int attachmentRowId = 42,
@@ -226,17 +277,17 @@ MessageLensAttachmentRelationshipEvidence _relationship({
 }) {
   return const MessageLensAttachmentIdentityEvidenceFactory().create(
     messageSsId: SourceScopedRowKey.pack(
-      sourceId: 1,
+      sourceId: sourceId,
       sourceRowId: messageRowId,
     ),
-    messageSourceId: 1,
+    messageSourceId: sourceId,
     originalMessageRowId: messageRowId,
     messageGuid: messageGuid,
     attachmentSsId: SourceScopedRowKey.pack(
-      sourceId: 1,
+      sourceId: sourceId,
       sourceRowId: attachmentRowId,
     ),
-    attachmentSourceId: 1,
+    attachmentSourceId: sourceId,
     originalAttachmentRowId: attachmentRowId,
     attachmentGuid: attachmentGuid,
     relationshipOccurrenceCount: 1,

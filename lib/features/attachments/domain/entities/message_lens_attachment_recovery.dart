@@ -144,9 +144,39 @@ class MessageLensAttachmentRecoveryCandidate {
   final String? donorPayloadSha256;
 }
 
+/// Read-only evidence funnel behind one attachment-recovery preflight.
+///
+/// These counts explain where claims stop progressing without changing any
+/// matching or recovery authority. The terminal classifications remain the
+/// product decision; this object is diagnostic evidence only.
+class MessageLensAttachmentRecoveryFunnel {
+  const MessageLensAttachmentRecoveryFunnel({
+    required this.donorPayloadClaimCount,
+    required this.donorRelationshipEvidenceCount,
+    required this.currentRelationshipEvidenceCount,
+    required this.donorRelationshipUnmatchedCount,
+    required this.messageMatchedCount,
+    required this.attachmentMatchedCount,
+    required this.donorPayloadPresentCount,
+    required this.currentPayloadPresentCount,
+    required this.duplicateClaimsCollapsedCount,
+  });
+
+  final int donorPayloadClaimCount;
+  final int donorRelationshipEvidenceCount;
+  final int currentRelationshipEvidenceCount;
+  final int donorRelationshipUnmatchedCount;
+  final int messageMatchedCount;
+  final int attachmentMatchedCount;
+  final int donorPayloadPresentCount;
+  final int currentPayloadPresentCount;
+  final int duplicateClaimsCollapsedCount;
+}
+
 class MessageLensAttachmentRecoveryPreflight {
   const MessageLensAttachmentRecoveryPreflight({
     required this.candidates,
+    required this.funnel,
     required this.examinedCount,
     required this.recoverableCount,
     required this.recoverableBytes,
@@ -160,6 +190,7 @@ class MessageLensAttachmentRecoveryPreflight {
   });
 
   final List<MessageLensAttachmentRecoveryCandidate> candidates;
+  final MessageLensAttachmentRecoveryFunnel funnel;
   final int examinedCount;
   final int recoverableCount;
   final int recoverableBytes;
@@ -170,4 +201,20 @@ class MessageLensAttachmentRecoveryPreflight {
   final int conflictCount;
   final int ambiguousCount;
   final int unsafeDonorPathCount;
+
+  int get terminalClassificationCount {
+    return recoverableCount +
+        alreadyPresentCount +
+        donorMissingCount +
+        messageMismatchCount +
+        attachmentMismatchCount +
+        conflictCount +
+        ambiguousCount +
+        unsafeDonorPathCount;
+  }
+
+  bool get classificationCountsReconcile {
+    return terminalClassificationCount + funnel.duplicateClaimsCollapsedCount ==
+        examinedCount;
+  }
 }

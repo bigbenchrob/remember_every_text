@@ -10,6 +10,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- MessageLens attachment-recovery preflight now exposes a reconciled forensic
+  funnel in development Details, including relationship, identity-match, and
+  physical-presence counts. Read-only comparison confirmed that the
+  representative donor's zero-recoverable result is correct; normal user
+  messaging and recovery authority are unchanged.
 - MessageLens attachment-recovery preflight now paints truthful inspection
   state before work begins, compares indexed evidence in bounded batches, and
   reports real phase counts. It no longer hashes every donor payload or repeats

@@ -5386,3 +5386,15 @@ production preservation authority mechanically enforceable.
   payload SHA-256 validation immediately before no-overwrite installation.
 - Updated the Feature 26 index with the final Directed Instrumentation,
   completed-work batching, first-paint, cancellation, and safety invariants.
+
+## 2026-08-22 - Zero-recoverable attachment forensic validation
+
+- Added Feature 26 response
+  `54-FORENSIC-VALIDATION-OF-ZERO-RECOVERABLE-ATTACHMENTS.md` with the complete
+  real donor/current evidence funnel and representative traces.
+- Recorded that all donor archive identities and managed paths are represented
+  in the current archive; zero recoverable is correct and matching semantics
+  were not weakened.
+- Documented filesystem authority for payload presence, canonical source-ID
+  decoding, Prompt 53 semantic parity, classification reconciliation, and the
+  bounded development diagnostics correction.

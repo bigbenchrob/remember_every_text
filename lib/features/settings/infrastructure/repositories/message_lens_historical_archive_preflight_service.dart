@@ -282,14 +282,14 @@ final class MessageLensHistoricalArchivePreflightService
 
     profiler.begin(
       MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence,
-      totalUnits: matchedClaims.length,
+      totalUnits: payloadClaims.length,
     );
     final Map<ArchiveCompatibilityKey, AttachmentPayloadInspection>
     donorPayloadInspections;
     try {
       donorPayloadInspections = await payloadInspector.inspectClaims(
         archiveDirectoryPath: '$donorRoot/attachment_archive',
-        claims: [for (final matched in matchedClaims) matched.claim],
+        claims: payloadClaims,
         onProgress: (completed, total) {
           profiler.update(
             MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence,
@@ -329,8 +329,8 @@ final class MessageLensHistoricalArchivePreflightService
     }
     profiler.complete(
       MessageLensHistoricalArchivePreflightPhase.donorPayloadPresence,
-      completedUnits: matchedClaims.length,
-      totalUnits: matchedClaims.length,
+      completedUnits: payloadClaims.length,
+      totalUnits: payloadClaims.length,
     );
 
     profiler.begin(
@@ -346,11 +346,25 @@ final class MessageLensHistoricalArchivePreflightService
       completedUnits: inputs.length,
       totalUnits: inputs.length,
     );
-    if (unmatchedPayloadClaims == 0) {
-      return matched;
-    }
     return MessageLensAttachmentRecoveryPreflight(
       candidates: matched.candidates,
+      funnel: MessageLensAttachmentRecoveryFunnel(
+        donorPayloadClaimCount: payloadClaims.length,
+        donorRelationshipEvidenceCount: donorRelationships.length,
+        currentRelationshipEvidenceCount: currentRelationships.length,
+        donorRelationshipUnmatchedCount: unmatchedPayloadClaims,
+        messageMatchedCount: matched.funnel.messageMatchedCount,
+        attachmentMatchedCount: matched.funnel.attachmentMatchedCount,
+        donorPayloadPresentCount: donorPayloadInspections.values
+            .where(
+              (inspection) =>
+                  inspection.status == AttachmentPayloadInspectionStatus.valid,
+            )
+            .length,
+        currentPayloadPresentCount: matched.funnel.currentPayloadPresentCount,
+        duplicateClaimsCollapsedCount:
+            matched.funnel.duplicateClaimsCollapsedCount,
+      ),
       examinedCount: matched.examinedCount + unmatchedPayloadClaims,
       recoverableCount: matched.recoverableCount,
       recoverableBytes: matched.recoverableBytes,

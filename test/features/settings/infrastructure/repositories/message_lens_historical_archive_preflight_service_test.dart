@@ -202,6 +202,19 @@ void main() {
       expect(ready.attachmentPreflight.recoverableCount, 1);
       expect(ready.attachmentPreflight.recoverableBytes, 3);
       expect(ready.attachmentPreflight.alreadyPresentCount, 0);
+      expect(ready.attachmentPreflight.funnel.donorPayloadClaimCount, 1);
+      expect(
+        ready.attachmentPreflight.funnel.donorRelationshipEvidenceCount,
+        1,
+      );
+      expect(
+        ready.attachmentPreflight.funnel.currentRelationshipEvidenceCount,
+        1,
+      );
+      expect(ready.attachmentPreflight.funnel.messageMatchedCount, 1);
+      expect(ready.attachmentPreflight.funnel.attachmentMatchedCount, 1);
+      expect(ready.attachmentPreflight.funnel.donorPayloadPresentCount, 1);
+      expect(ready.attachmentPreflight.classificationCountsReconcile, isTrue);
       expect(currentEvidenceReader.liveRelationshipReadCount, 1);
       expect(currentEvidenceReader.payloadStatusReadCount, 1);
       expect(ready.phaseTimings, isNotEmpty);
@@ -277,6 +290,107 @@ void main() {
     expect(lineageAuthority.messageLensCandidatePaths, hasLength(2));
     expect(currentEvidenceReader.liveRelationshipReadCount, 2);
   });
+
+  test('physically present current payload produces truthful zero', () async {
+    await _createCompatibleDonor(donorRoot);
+    currentEvidenceReader.payloadStatus =
+        CurrentAttachmentPayloadStatus.presentValid;
+
+    final result = await service().inspect(folderPath: donorRoot.path);
+
+    final ready = result as MessageLensHistoricalArchiveReady;
+    expect(ready.attachmentPreflight.recoverableCount, 0);
+    expect(ready.attachmentPreflight.alreadyPresentCount, 1);
+    expect(ready.attachmentPreflight.funnel.currentPayloadPresentCount, 1);
+    expect(ready.attachmentPreflight.classificationCountsReconcile, isTrue);
+  });
+
+  test('missing donor file remains a terminal donor-missing claim', () async {
+    await _createCompatibleDonor(donorRoot);
+    File(
+      path.join(donorRoot.path, 'attachment_archive', 'ab', 'payload.bin'),
+    ).deleteSync();
+
+    final result = await service().inspect(folderPath: donorRoot.path);
+
+    final ready = result as MessageLensHistoricalArchiveReady;
+    expect(ready.attachmentPreflight.recoverableCount, 0);
+    expect(ready.attachmentPreflight.donorMissingCount, 1);
+    expect(ready.attachmentPreflight.funnel.donorPayloadPresentCount, 0);
+    expect(ready.attachmentPreflight.classificationCountsReconcile, isTrue);
+  });
+
+  test(
+    'claim without one donor relationship remains visible as ambiguous',
+    () async {
+      await _createCompatibleDonor(donorRoot);
+      final extraBytes = <int>[4, 5, 6];
+      File(
+        path.join(donorRoot.path, 'attachment_archive', 'ab', 'extra.bin'),
+      ).writeAsBytesSync(extraBytes);
+      final overlay = sqlite3.open(
+        path.join(donorRoot.path, 'user_overlays.db'),
+      );
+      overlay.execute(
+        'INSERT INTO archived_attachments VALUES (?, ?, ?, ?, ?)',
+        <Object?>[
+          'unrelated-message-guid',
+          99,
+          'ab/extra.bin',
+          extraBytes.length,
+          sha256.convert(extraBytes).toString(),
+        ],
+      );
+      overlay.dispose();
+
+      final result = await service().inspect(folderPath: donorRoot.path);
+
+      final ready = result as MessageLensHistoricalArchiveReady;
+      expect(ready.attachmentPreflight.examinedCount, 2);
+      expect(ready.attachmentPreflight.ambiguousCount, 1);
+      expect(
+        ready.attachmentPreflight.funnel.donorRelationshipUnmatchedCount,
+        1,
+      );
+      expect(ready.attachmentPreflight.funnel.donorPayloadPresentCount, 2);
+      expect(ready.attachmentPreflight.classificationCountsReconcile, isTrue);
+    },
+  );
+
+  test(
+    'indexed service matching preserves direct matcher classifications',
+    () async {
+      await _createCompatibleDonor(donorRoot);
+      await _appendDonorEvidence(
+        donorRoot,
+        messageRowId: 43,
+        attachmentRowId: 44,
+        messageGuid: 'second-message-guid',
+        attachmentGuid: 'second-attachment-guid',
+        relativePath: 'cd/second.bin',
+      );
+      currentEvidenceReader.relationships =
+          <MessageLensAttachmentRelationshipEvidence>[
+            _relationshipEvidence(),
+            _relationshipEvidence(
+              messageRowId: 43,
+              attachmentRowId: 44,
+              messageGuid: 'second-message-guid',
+              attachmentGuid: 'second-attachment-guid',
+            ),
+          ];
+
+      final indexedResult = await service().inspect(folderPath: donorRoot.path);
+
+      final ready = indexedResult as MessageLensHistoricalArchiveReady;
+      expect(ready.attachmentPreflight.recoverableCount, 2);
+      expect(ready.attachmentPreflight.messageMismatchCount, 0);
+      expect(ready.attachmentPreflight.attachmentMismatchCount, 0);
+      expect(ready.attachmentPreflight.funnel.messageMatchedCount, 2);
+      expect(ready.attachmentPreflight.funnel.attachmentMatchedCount, 2);
+      expect(ready.attachmentPreflight.classificationCountsReconcile, isTrue);
+    },
+  );
 }
 
 const _donorArchiveInstanceId = '123e4567-e89b-42d3-a456-426614174000';
@@ -413,6 +527,68 @@ Future<void> _createCompatibleDonor(
   graphDatabase.dispose();
 }
 
+Future<void> _appendDonorEvidence(
+  Directory donorRoot, {
+  required int messageRowId,
+  required int attachmentRowId,
+  required String messageGuid,
+  required String attachmentGuid,
+  required String relativePath,
+}) async {
+  final bytes = <int>[7, 8, 9];
+  final payload = File(
+    path.join(donorRoot.path, 'attachment_archive', relativePath),
+  );
+  payload.parent.createSync(recursive: true);
+  payload.writeAsBytesSync(bytes);
+  final importDatabase = sqlite3.open(
+    path.join(donorRoot.path, 'macos_import_ss.db'),
+  );
+  final messageSsId = SourceScopedRowKey.pack(
+    sourceId: 1,
+    sourceRowId: messageRowId,
+  );
+  final attachmentSsId = SourceScopedRowKey.pack(
+    sourceId: 1,
+    sourceRowId: attachmentRowId,
+  );
+  importDatabase.execute('INSERT INTO messages VALUES (?, 1, ?, ?)', <Object?>[
+    messageSsId,
+    messageRowId,
+    messageGuid,
+  ]);
+  importDatabase.execute(
+    'INSERT INTO attachments VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?)',
+    <Object?>[
+      attachmentSsId,
+      attachmentRowId,
+      attachmentGuid,
+      '~/Library/Messages/Attachments/$relativePath',
+      path.basename(relativePath),
+      'application/octet-stream',
+      'public.data',
+      bytes.length,
+    ],
+  );
+  importDatabase.execute(
+    'INSERT INTO message_to_attachment VALUES (1, 1, ?, ?, ?, ?)',
+    <Object?>[messageRowId, attachmentRowId, messageSsId, attachmentSsId],
+  );
+  importDatabase.dispose();
+  final overlay = sqlite3.open(path.join(donorRoot.path, 'user_overlays.db'));
+  overlay.execute(
+    'INSERT INTO archived_attachments VALUES (?, ?, ?, ?, ?)',
+    <Object?>[
+      messageGuid,
+      attachmentRowId,
+      relativePath,
+      bytes.length,
+      sha256.convert(bytes).toString(),
+    ],
+  );
+  overlay.dispose();
+}
+
 final class _RecordingLineageAuthority
     implements MessagesLineageAdmissionAuthority {
   _RecordingLineageAuthority(this.result);
@@ -440,12 +616,16 @@ final class _FakeCurrentEvidenceReader
     implements CurrentMessageLensAttachmentEvidenceReader {
   var liveRelationshipReadCount = 0;
   var payloadStatusReadCount = 0;
+  var payloadStatus = CurrentAttachmentPayloadStatus.missing;
+  var relationships = <MessageLensAttachmentRelationshipEvidence>[
+    _relationshipEvidence(),
+  ];
 
   @override
   Future<List<MessageLensAttachmentRelationshipEvidence>>
   readLiveSourceRelationships() async {
     liveRelationshipReadCount += 1;
-    return [_relationshipEvidence()];
+    return relationships;
   }
 
   @override
@@ -457,8 +637,7 @@ final class _FakeCurrentEvidenceReader
     payloadStatusReadCount += 1;
     onProgress?.call(archiveKeys.length, archiveKeys.length);
     return <ArchiveCompatibilityKey, CurrentAttachmentPayloadStatus>{
-      for (final archiveKey in archiveKeys)
-        archiveKey: CurrentAttachmentPayloadStatus.missing,
+      for (final archiveKey in archiveKeys) archiveKey: payloadStatus,
     };
   }
 
@@ -472,16 +651,27 @@ final class _FakeCurrentEvidenceReader
   }
 }
 
-MessageLensAttachmentRelationshipEvidence _relationshipEvidence() {
+MessageLensAttachmentRelationshipEvidence _relationshipEvidence({
+  int messageRowId = 41,
+  int attachmentRowId = 42,
+  String messageGuid = 'message-guid',
+  String attachmentGuid = 'attachment-guid',
+}) {
   return const MessageLensAttachmentIdentityEvidenceFactory().create(
-    messageSsId: SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 41),
+    messageSsId: SourceScopedRowKey.pack(
+      sourceId: 1,
+      sourceRowId: messageRowId,
+    ),
     messageSourceId: 1,
-    originalMessageRowId: 41,
-    messageGuid: 'message-guid',
-    attachmentSsId: SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 42),
+    originalMessageRowId: messageRowId,
+    messageGuid: messageGuid,
+    attachmentSsId: SourceScopedRowKey.pack(
+      sourceId: 1,
+      sourceRowId: attachmentRowId,
+    ),
     attachmentSourceId: 1,
-    originalAttachmentRowId: 42,
-    attachmentGuid: 'attachment-guid',
+    originalAttachmentRowId: attachmentRowId,
+    attachmentGuid: attachmentGuid,
     relationshipOccurrenceCount: 1,
     filename: '~/Library/Messages/Attachments/payload.bin',
     transferName: 'payload.bin',

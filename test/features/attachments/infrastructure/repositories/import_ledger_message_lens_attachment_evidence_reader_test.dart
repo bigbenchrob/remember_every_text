@@ -127,6 +127,12 @@ void main() {
         (await reader.readPayloadStatuses(const [archiveKey]))[archiveKey],
         CurrentAttachmentPayloadStatus.presentConflict,
       );
+      await file.delete();
+      expect(
+        (await reader.readPayloadStatuses(const [archiveKey]))[archiveKey],
+        CurrentAttachmentPayloadStatus.missing,
+        reason: 'overlay metadata alone cannot prove physical presence',
+      );
     },
   );
 
