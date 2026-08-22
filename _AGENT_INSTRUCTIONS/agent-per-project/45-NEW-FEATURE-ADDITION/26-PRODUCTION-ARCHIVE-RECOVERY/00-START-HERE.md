@@ -88,6 +88,7 @@ panel. See:
 - [MessageLens Attachment Preflight Performance And Observability](responses/53-MESSAGELENS-ATTACHMENT-PREFLIGHT-PERFORMANCE-AND-OBSERVABILITY-IMPLEMENTATION.md)
 - [Forensic Validation Of Zero Recoverable Attachments](responses/54-FORENSIC-VALIDATION-OF-ZERO-RECOVERABLE-ATTACHMENTS.md)
 - [Batch Attachment Recovery And Controlled-Loss Validation](responses/55-BATCH-ATTACHMENT-RECOVERY-AND-CONTROLLED-LOSS-END-TO-END-VALIDATION.md)
+- [Controlled-Loss MessageLens Attachment Recovery Validation](responses/56-CONTROLLED-LOSS-MESSAGELENS-ATTACHMENT-RECOVERY-VALIDATION.md)
 
 The MessageLens-folder arm is now enabled through preservation-safe batch
 recovery under a deliberately narrow product contract: recover attachment
@@ -103,6 +104,13 @@ The exact preflight set can be recovered through the canonical no-overwrite
 writer under caller-specific `attachmentReconciliation` authority, with real
 count/byte progress, typed item outcomes, final evidence verification, and
 idempotent retry.
+
+A human-controlled test then removed exactly seven manifest-selected payloads
+(918,067 bytes) from a disposable development archive. Preflight found exactly
+those seven files and bytes, recovery restored all seven through the product
+path, independent size and SHA-256 checks passed for every payload, and repeat
+preflight reported zero recoverable. This validates the supported same-lineage
+happy path against realistic archive data without changing the donor.
 
 Representative donor profiling then corrected the arm's read-only preflight
 from a multi-minute, hash-heavy operation to a 7.455-second bounded comparison.

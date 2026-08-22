@@ -5413,3 +5413,15 @@ production preservation authority mechanically enforceable.
 - Documented the read-only controlled-loss manifest helper, mandatory human
   deletion timing, and end-to-end rehearsal sequence without adding any
   product deletion path.
+
+## 2026-08-22 - Controlled-loss attachment recovery validation
+
+- Added Feature 26 validation record
+  `56-CONTROLLED-LOSS-MESSAGELENS-ATTACHMENT-RECOVERY-VALIDATION.md` documenting
+  the human-controlled seven-file, 918,067-byte end-to-end recovery result.
+- Recorded exact preflight agreement, real recovery presentation, independent
+  post-recovery size/SHA-256 verification, unchanged donor evidence, and the
+  zero-recoverable idempotency rescan.
+- Updated the canonical attachment archive guide and Feature 26 index with a
+  concise reference while preserving the test's bounded evidence scope.
+- Kept the machine-specific controlled-loss manifest outside the repository.

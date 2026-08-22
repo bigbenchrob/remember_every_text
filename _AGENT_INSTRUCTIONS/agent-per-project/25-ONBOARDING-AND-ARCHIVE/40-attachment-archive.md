@@ -250,6 +250,22 @@ and metadata-after-payload ordering provide convergence from physical truth:
 an interrupted retry sees completed payloads as `alreadyPresent`, reconciles
 missing metadata where necessary, and installs only what remains absent.
 
+### Controlled-Loss End-To-End Validation
+
+The supported MessageLens recovery path has been validated against a
+deliberately damaged disposable development archive. A separately preserved
+manifest identified seven JPEG/PNG payloads totaling 918,067 bytes. After only
+those managed payload files were removed, read-only preflight reported exactly
+seven recoverable attachments and the exact byte total. Product recovery
+restored all seven; independent size and SHA-256 verification passed for every
+file; and repeat preflight reported zero recoverable.
+
+This proves the intended same-lineage happy path against realistic archive
+data. It does not replace automated coverage for interruption, authority,
+conflict, unsupported schema, or concurrent filesystem conditions. The full
+validation record is
+[`56-CONTROLLED-LOSS-MESSAGELENS-ATTACHMENT-RECOVERY-VALIDATION.md`](../45-NEW-FEATURE-ADDITION/26-PRODUCTION-ARCHIVE-RECOVERY/responses/56-CONTROLLED-LOSS-MESSAGELENS-ATTACHMENT-RECOVERY-VALIDATION.md).
+
 ### Ongoing Archiving
 
 The `ChatDbChangeMonitor` auto-sync cycle archives newly imported live graph
