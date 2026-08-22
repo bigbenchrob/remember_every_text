@@ -37,6 +37,7 @@ import '../../application/sidebar_mode_provider.dart';
 import '../../domain/sidebar_mode.dart';
 import '../layout/contacts_page_track_plan.dart';
 import '../layout/historical_archives_page_track_plan.dart';
+import '../layout/message_history_coverage_page_track_plan.dart';
 import '../layout/recovered_messages_page_track_plan.dart';
 import '../layout/search_page_conversation_track_occupants.dart';
 import '../layout/search_page_track_plan.dart';
@@ -159,6 +160,10 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         activeMode == SidebarMode.settings &&
         sidebarFlowState.persistentSettingsContext ==
             SettingsMenuActionId.historicalArchives;
+    final useMessageHistoryCoverageTrackPlan =
+        activeMode == SidebarMode.settings &&
+        sidebarFlowState.persistentSettingsContext ==
+            SettingsMenuActionId.messageHistoryCoverage;
     final SearchPageTrackComposition? searchPageTrackComposition;
     final UnfamiliarSourcesPageTrackComposition?
     unfamiliarSourcesTrackComposition;
@@ -309,10 +314,31 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       historicalArchivesTrackComposition = null;
     }
 
+    final MessageHistoryCoveragePageTrackComposition?
+    messageHistoryCoverageTrackComposition;
+    if (useMessageHistoryCoverageTrackPlan) {
+      final typography = ref.watch(themeTypographyProvider);
+      messageHistoryCoverageTrackComposition =
+          composeMessageHistoryCoveragePageTrackLayout(
+            presentationConstraints: PresentationConstraints.fromBuildContext(
+              context,
+              availableWidth: MediaQuery.sizeOf(context).width,
+            ),
+            typography: typography,
+          );
+    } else {
+      messageHistoryCoverageTrackComposition = null;
+    }
+
     Widget settingsWorkspace = const WorkspaceLayout(
       mode: SidebarMode.settings,
     );
     if (historicalArchivesTrackComposition case final composition?) {
+      settingsWorkspace = ResolvedTrackLayoutMatrixScope(
+        matrix: composition.resolvedMatrix,
+        child: settingsWorkspace,
+      );
+    } else if (messageHistoryCoverageTrackComposition case final composition?) {
       settingsWorkspace = ResolvedTrackLayoutMatrixScope(
         matrix: composition.resolvedMatrix,
         child: settingsWorkspace,

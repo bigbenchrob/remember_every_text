@@ -25,12 +25,14 @@ void main() {
 
       expect(overview, isA<StaticFeatureInfoSidebarCassettePayload>());
       expect(overview.title, 'Message History Coverage');
-      expect(overview.bodyText, contains('chat.db'));
+      expect(overview.bodyText, contains('currently stored by Messages'));
+      expect(overview.bodyText, isNot(contains('chat.db')));
       expect(howTo.title, 'How to read this report');
       expect(howTo.topSpacing, 10);
-      expect(howTo.bodyText, contains('recovered but not linked'));
+      expect(howTo.bodyText, contains('Recovered Messages'));
       expect(olderMessages.title, 'About older messages');
       expect(olderMessages.topSpacing, 16);
+      expect(olderMessages.bodyText, contains('Historical Archives'));
     });
 
     test('reconciles exact current-source identities', () async {

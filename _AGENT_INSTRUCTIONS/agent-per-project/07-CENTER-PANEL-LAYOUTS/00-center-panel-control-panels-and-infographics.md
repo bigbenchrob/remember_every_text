@@ -2,7 +2,7 @@
 tier: project
 scope: center-panel-layout
 owner: @rob
-last_reviewed: 2026-04-26
+last_reviewed: 2026-08-22
 source_of_truth: doc
 links:
   - ./README.md
@@ -20,6 +20,11 @@ The immediate reference case is Message History Coverage, but these rules are in
 ## Core idea
 
 The center panel is not a pile of unrelated cards.
+
+The amount of presentation should be proportional to uncertainty and required
+action. A healthy report may need only one conclusion and a compact evidence
+summary. Exceptions may earn more explanation and action. Do not force every
+report into a dashboard simply because richer report primitives exist.
 
 It should read as a single explained surface:
 
@@ -55,9 +60,11 @@ Do not let individual panels declare themselves half-width or full-width indepen
 
 This prevents accidental orphan cards, ragged empty space, and layout drift between reports.
 
-### 2. Rows should be explicit, not implied by styling
+### 2. Rows should be explicit when a multi-section report earns them
 
-Center-panel report surfaces should declare a row model up front.
+Multi-section center-panel report surfaces should declare a row model up front.
+A concise report with one evidence surface does not need to manufacture rows
+or cards merely to satisfy a template.
 
 Good:
 
@@ -216,7 +223,7 @@ This folder answers a narrower question:
 
 How should a center-panel report be composed once the app has decided to show it?
 
-## Baseline pattern for report surfaces
+## Baseline pattern for substantial report surfaces
 
 When a center-panel feature is report-like, start from this pattern:
 
@@ -226,19 +233,26 @@ When a center-panel feature is report-like, start from this pattern:
 4. Full-width exception or special-case row
 5. Compact full-width notes row
 
-Do not treat this as a strict template for every feature, but it is the default shape the feature should justify deviating from.
+Do not treat this as a strict template for every feature. First ask how much
+uncertainty and action the result contains. A calm result can legitimately use
+only a headline, one summary, one compact evidence group, and disclosed
+details.
 
 ## Message History Coverage as the current reference
 
-Message History Coverage currently illustrates this pattern well:
+Message History Coverage is the reference for uncertainty-proportional report
+presentation:
 
-1. Full-width hero/status row
-2. Full-width message accounting row
-3. Equal-height two-column reconciliation + timeline row
-4. Full-width recovered messages row
-5. Compact full-width notes row
+1. one semantic status and precise headline;
+2. one short conclusion;
+3. one compact exact-count surface;
+4. supporting evidence under Details.
 
-This report should be treated as the first reference implementation for future center-panel report surfaces.
+Its complete state remains deliberately calm. Its incomplete state elevates the
+exact exception without turning the page into a destructive-error dashboard.
+Recovered Messages remains accounted evidence, not a warning. Future reports
+should reuse this restraint when their truth and action budget are similarly
+small, not copy the exact widget arrangement mechanically.
 
 ## Future expansion
 

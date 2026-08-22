@@ -10,6 +10,7 @@ import '../../../features/messages/domain/spec_classes/messages_view_spec.dart';
 import '../../../features/messages/feature_level_providers.dart'
     as messages_feature
     show currentSearchInvestigationProvider, recoveredMessagesSidebarProvider;
+import '../../../features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import '../../../features/settings/domain/spec_classes/settings_view_spec.dart';
 import '../../../features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import '../../../features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
@@ -19,6 +20,7 @@ import '../../sidebar/application/cassette_widget_coordinator_provider.dart';
 import '../../sidebar/application/sidebar_cassette_render_router.dart';
 import '../../sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../sidebar/application/sidebar_flow_state_provider.dart';
+import '../../sidebar/domain/entities/cassette_spec.dart';
 import '../../sidebar/presentation/view/sidebar_grouped_control_section_surface.dart';
 import '../../sidebar/presentation/view/sidebar_primary_context_section_surface.dart';
 import '../../sidebar/presentation/view_model/sidebar_cassette_card_view_model.dart';
@@ -602,7 +604,21 @@ _SidebarContentSeamLayout? _contentSeamLayoutForRack({
   required SidebarMode mode,
   required CassetteRack rack,
 }) {
-  if (mode != SidebarMode.messages || rack.cassettes.isEmpty) {
+  if (rack.cassettes.isEmpty) {
+    return null;
+  }
+
+  if (mode == SidebarMode.settings) {
+    const coverageOverview = CassetteSpec.settings(
+      SettingsCassetteSpec.messageHistoryCoverageOverview(),
+    );
+    final hasCoverageOverview = rack.cassettes.contains(coverageOverview);
+    return hasCoverageOverview
+        ? const _SidebarContentSeamLayout(lastSharedTrackId: TrackId.trackA)
+        : null;
+  }
+
+  if (mode != SidebarMode.messages) {
     return null;
   }
 

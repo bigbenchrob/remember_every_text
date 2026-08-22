@@ -5470,3 +5470,15 @@ production preservation authority mechanically enforceable.
 - Recorded clean verification: 29 focused tests, 410 focused-plus-architecture
   tests, 201 broader database/Settings tests, the complete 1,951-test Flutter
   suite, analyzer, formatting, diff check, and macOS debug build.
+
+## 2026-08-22 - Message History Coverage product presentation
+
+- Added the Feature 27 product-presentation implementation record, including
+  the opening dense-dashboard audit and final copy for every typed report state.
+- Recorded the uncertainty-proportional hierarchy, recovered-message treatment,
+  exact-actionability boundary, no-Narrator decision, stable loading behavior,
+  accessibility contract, and A1/A2 Track mapping.
+- Updated the canonical center-panel report guidance so concise healthy reports
+  no longer manufacture dashboard rows or cards merely to satisfy a template.
+- Updated the Feature 27 and feature-planning indexes, changelog, and release
+  version for the user-facing Settings refinement.

@@ -1,27 +1,24 @@
-import 'dart:math' as math;
-
 import 'package:flutter/cupertino.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
+import '../../../../config/theme/spacing/app_spacing.dart';
 import '../../../../config/theme/theme_typography.dart';
-import '../../../../essentials/navigation/presentation/view/center_panel_report_layout.dart';
+import '../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
+import '../../../../config/theme/widgets/layout/page_track_layout_matrix.dart';
+import '../../../../config/theme/widgets/layout/resolved_track_layout_matrix.dart';
+import '../../application/sidebar_cassette_spec/actions/message_history_coverage_report_actions_provider.dart';
 import '../../application/sidebar_cassette_spec/entities/message_history_coverage_report.dart';
 import '../view_model/message_history_coverage_panel_model_provider.dart';
 
 class MessageHistoryCoverageReportPanel extends ConsumerWidget {
   const MessageHistoryCoverageReportPanel({super.key});
 
-  static const accountingBarKey = Key(
-    'message-history-coverage-accounting-bar',
+  static const loadingBodyKey = Key('message-history-coverage-loading-body');
+  static const detailsToggleKey = Key(
+    'message-history-coverage-details-toggle',
   );
-  static const zeroMissingBadgeKey = Key(
-    'message-history-coverage-zero-missing-badge',
-  );
-
-  static Key segmentKey(CoverageSegmentId id) {
-    return Key('message-history-coverage-segment-${id.name}');
-  }
+  static const retryButtonKey = Key('message-history-coverage-retry-button');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,447 +27,94 @@ class MessageHistoryCoverageReportPanel extends ConsumerWidget {
     final typography = ref.watch(themeTypographyProvider);
     final panelModelAsync = ref.watch(messageHistoryCoveragePanelModelProvider);
 
-    return panelModelAsync.when(
-      data: (panelModel) {
-        return ColoredBox(
-          color: colors.surfaces.canvas,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 820),
-                child:
-                    CenterPanelReportLayout<MessageCoveragePanelSectionChild>(
-                      sections: panelModel.sections,
-                      sectionSpacing: 20,
-                      columnSpacing: 16,
-                      childBuilder: (context, layoutStyle, child) {
-                        return _buildSectionChild(
-                          panelModel: panelModel,
-                          colors: colors,
-                          typography: typography,
-                          layoutStyle: layoutStyle,
-                          child: child,
-                        );
-                      },
-                    ),
-              ),
-            ),
-          ),
-        );
-      },
-      loading: () {
-        return ColoredBox(
-          color: colors.surfaces.canvas,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'Loading Message History Coverage…',
-                style: typography.body.copyWith(
-                  color: colors.content.textSecondary,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-      error: (error, _) {
-        return ColoredBox(
-          color: colors.surfaces.canvas,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'MessageLens could not build the Message History Coverage panel: $error',
-                style: typography.body.copyWith(
-                  color: colors.buttons.destructiveForeground,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSectionChild({
-    required MessageCoveragePanelViewModel panelModel,
-    required ThemeColors colors,
-    required ThemeTypography typography,
-    required PanelSectionLayoutStyle layoutStyle,
-    required MessageCoveragePanelSectionChild child,
-  }) {
-    return switch (child) {
-      MessageCoveragePanelSectionChild.hero => _HeroCard(
+    final body = panelModelAsync.when(
+      data: (panelModel) => _CoverageResult(
         panelModel: panelModel,
-        colors: colors,
-        typography: typography,
+        onRetry: panelModel.status == MessageHistoryCoverageStatus.failed
+            ? () {
+                ref
+                    .read(messageHistoryCoverageReportActionsProvider.notifier)
+                    .retry();
+              }
+            : null,
       ),
-      MessageCoveragePanelSectionChild.accounting => _SectionCard(
-        style: _SectionCardStyle.emphasized,
-        colors: colors,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Message Accounting',
-              style: typography.title3.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'All messages on this Mac are accounted for as:',
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _AccountingBar(
-              panelModel: panelModel,
-              colors: colors,
-              typography: typography,
-            ),
-          ],
-        ),
+      loading: () => const _CoverageLoadingState(),
+      error: (_, __) => _CoverageUnexpectedFailure(
+        onRetry: () {
+          ref
+              .read(messageHistoryCoverageReportActionsProvider.notifier)
+              .retry();
+        },
       ),
-      MessageCoveragePanelSectionChild.reconciliation => _SectionCard(
-        colors: colors,
-        child: _ReconciliationSummary(
-          panelModel: panelModel,
-          colors: colors,
-          typography: typography,
-        ),
-      ),
-      MessageCoveragePanelSectionChild.timelineCoverage => _SectionCard(
-        colors: colors,
-        child: _TimelineCoverageSummary(
-          panelModel: panelModel,
-          colors: colors,
-          typography: typography,
-        ),
-      ),
-      MessageCoveragePanelSectionChild.recoveredMessages => _SectionCard(
-        colors: colors,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Recovered Messages',
-              style: typography.title3.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              panelModel.recoveredExplanation,
-              style: typography.body.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-      MessageCoveragePanelSectionChild.notes => _SectionCard(
-        style: layoutStyle == PanelSectionLayoutStyle.compactFullWidth
-            ? _SectionCardStyle.compact
-            : _SectionCardStyle.standard,
-        colors: colors,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Notes',
-              style: typography.title3.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            for (var index = 0; index < panelModel.notes.length; index++) ...[
-              Text(
-                panelModel.notes[index],
-                style: typography.body.copyWith(
-                  color: colors.content.textSecondary,
-                ),
-              ),
-              if (index < panelModel.notes.length - 1)
-                const SizedBox(height: 10),
-            ],
-          ],
-        ),
-      ),
-    };
+    );
+
+    return _CoveragePanelScaffold(
+      colors: colors,
+      typography: typography,
+      child: body,
+    );
   }
 }
 
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({
-    required this.panelModel,
+class _CoveragePanelScaffold extends StatelessWidget {
+  const _CoveragePanelScaffold({
     required this.colors,
     required this.typography,
+    required this.child,
   });
 
-  final MessageCoveragePanelViewModel panelModel;
   final ThemeColors colors;
   final ThemeTypography typography;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final badgeBackground = _statusTint(colors).withValues(alpha: 0.12);
+    final hasResolvedTracks =
+        ResolvedTrackLayoutMatrixScope.maybeOf(context) != null;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.surfaceRaised,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
+    return ColoredBox(
+      color: colors.surfaces.canvas,
+      child: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          key: const Key('message-history-coverage-track-skeleton'),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              panelModel.title,
-              style: typography.caption.copyWith(
-                color: colors.content.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: badgeBackground,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(
-                  color: _statusTint(colors).withValues(alpha: 0.30),
-                  width: 0.8,
+            if (hasResolvedTracks)
+              const TrackCellView(
+                cellId: CellId(
+                  trackId: TrackId.trackA,
+                  columnId: TrackColumnId.column2,
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                  0,
                 ),
                 child: Text(
-                  panelModel.statusLabel,
-                  style: typography.caption.copyWith(
-                    color: _statusTint(colors),
+                  'Message History Coverage',
+                  style: typography.title1.copyWith(
+                    color: colors.content.textPrimary,
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              panelModel.headline,
-              style: typography.heroTitle.copyWith(
-                color: colors.content.textPrimary,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xl,
+                AppSpacing.lg,
+                AppSpacing.xl,
+                AppSpacing.xl,
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              panelModel.summaryText,
-              style: typography.body.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-            if (panelModel.generatedAtLabel != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Generated ${panelModel.generatedAtLabel}',
-                style: typography.caption1.copyWith(
-                  color: colors.content.textTertiary,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: child,
                 ),
               ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _statusTint(ThemeColors colors) {
-    return switch (panelModel.status) {
-      MessageHistoryCoverageStatus.complete => colors.accents.primary,
-      MessageHistoryCoverageStatus.incomplete =>
-        colors.buttons.destructiveForeground,
-      MessageHistoryCoverageStatus.temporarilyUnavailable =>
-        colors.content.textSecondary,
-      MessageHistoryCoverageStatus.failed =>
-        colors.buttons.destructiveForeground,
-    };
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.colors,
-    required this.child,
-    this.style = _SectionCardStyle.standard,
-  });
-
-  final ThemeColors colors;
-  final Widget child;
-  final _SectionCardStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    final (
-      backgroundColor,
-      borderColor,
-      borderWidth,
-      padding,
-    ) = switch (style) {
-      _SectionCardStyle.standard => (
-        colors.surfaces.surface,
-        colors.lines.borderSubtle,
-        0.8,
-        const EdgeInsets.all(20),
-      ),
-      _SectionCardStyle.emphasized => (
-        colors.surfaces.surfaceRaised,
-        colors.accents.primary.withValues(alpha: 0.16),
-        1.0,
-        const EdgeInsets.all(20),
-      ),
-      _SectionCardStyle.compact => (
-        colors.surfaces.surface,
-        colors.lines.borderSubtle,
-        0.8,
-        const EdgeInsets.all(16),
-      ),
-    };
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: borderWidth),
-      ),
-      child: Padding(padding: padding, child: child),
-    );
-  }
-}
-
-enum _SectionCardStyle { standard, emphasized, compact }
-
-class _AccountingBar extends StatelessWidget {
-  const _AccountingBar({
-    required this.panelModel,
-    required this.colors,
-    required this.typography,
-  });
-
-  final MessageCoveragePanelViewModel panelModel;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    final segments = panelModel.segments;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: SizedBox(
-            key: MessageHistoryCoverageReportPanel.accountingBarKey,
-            height: 18,
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: colors.surfaces.control),
-              child: Row(
-                children: [
-                  for (final segment in segments)
-                    Expanded(
-                      flex: math.max(1, (segment.fraction * 1000).round()),
-                      child: ColoredBox(
-                        key: MessageHistoryCoverageReportPanel.segmentKey(
-                          segment.id,
-                        ),
-                        color: _segmentColor(segment.semanticKind),
-                        child: const SizedBox.expand(),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 12,
-          runSpacing: 10,
-          children: [
-            for (final segment in segments)
-              _LegendChip(
-                label: '${segment.label}: ${segment.count}',
-                color: _segmentColor(segment.semanticKind),
-                colors: colors,
-                typography: typography,
-              ),
-            if (panelModel.missingCount == 0)
-              _LegendChip(
-                key: MessageHistoryCoverageReportPanel.zeroMissingBadgeKey,
-                label: '0 missing',
-                color: colors.content.textSecondary,
-                colors: colors,
-                typography: typography,
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Color _segmentColor(CoverageSegmentSemanticKind kind) {
-    return switch (kind) {
-      CoverageSegmentSemanticKind.visible => colors.accents.primary,
-      CoverageSegmentSemanticKind.recovered => colors.accents.secondary,
-      CoverageSegmentSemanticKind.missing =>
-        colors.buttons.destructiveForeground,
-    };
-  }
-}
-
-class _LegendChip extends StatelessWidget {
-  const _LegendChip({
-    super.key,
-    required this.label,
-    required this.color,
-    required this.colors,
-    required this.typography,
-  });
-
-  final String label;
-  final Color color;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surfaces.control,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.7),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const SizedBox(width: 8, height: 8),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
-              ),
             ),
           ],
         ),
@@ -479,115 +123,27 @@ class _LegendChip extends StatelessWidget {
   }
 }
 
-class _ReconciliationSummary extends StatelessWidget {
-  const _ReconciliationSummary({
-    required this.panelModel,
-    required this.colors,
-    required this.typography,
-  });
-
-  final MessageCoveragePanelViewModel panelModel;
-  final ThemeColors colors;
-  final ThemeTypography typography;
+class _CoverageLoadingState extends ConsumerWidget {
+  const _CoverageLoadingState();
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Reconciliation',
-          style: typography.title3.copyWith(color: colors.content.textPrimary),
-        ),
-        const SizedBox(height: 12),
-        _MetricLine(
-          label: 'Messages in chat.db',
-          value: panelModel.chatDbTotalLabel,
-          colors: colors,
-          typography: typography,
-        ),
-        _MetricLine(
-          label: 'Visible in timelines',
-          value: panelModel.visibleCountLabel,
-          colors: colors,
-          typography: typography,
-        ),
-        _MetricLine(
-          label: 'Recovered / unlinked',
-          value: panelModel.recoveredCountLabel,
-          colors: colors,
-          typography: typography,
-        ),
-        _MetricLine(
-          label: 'Accounted for',
-          value: panelModel.accountedCountLabel,
-          colors: colors,
-          typography: typography,
-        ),
-        _MetricLine(
-          label: 'Missing',
-          value: panelModel.missingCountLabel,
-          colors: colors,
-          typography: typography,
-          emphasize:
-              panelModel.missingCount != null && panelModel.missingCount! > 0,
-        ),
-        const SizedBox(height: 14),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.messagePanels.supportSurface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(
-              panelModel.reconciliationResultLabel,
-              style: typography.body.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
 
-class _MetricLine extends StatelessWidget {
-  const _MetricLine({
-    required this.label,
-    required this.value,
-    required this.colors,
-    required this.typography,
-    this.emphasize = false,
-  });
-
-  final String label;
-  final String value;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-  final bool emphasize;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+    return Semantics(
+      label: 'Checking message history coverage',
       child: Row(
+        key: MessageHistoryCoverageReportPanel.loadingBodyKey,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
-              ),
-            ),
-          ),
+          const CupertinoActivityIndicator(radius: 7),
+          const SizedBox(width: AppSpacing.sm),
           Text(
-            value,
+            'Checking messages on this Mac…',
             style: typography.body.copyWith(
-              color: emphasize
-                  ? colors.buttons.destructiveForeground
-                  : colors.content.textPrimary,
+              color: colors.content.textSecondary,
             ),
           ),
         ],
@@ -596,96 +152,336 @@ class _MetricLine extends StatelessWidget {
   }
 }
 
-class _TimelineCoverageSummary extends StatelessWidget {
-  const _TimelineCoverageSummary({
-    required this.panelModel,
-    required this.colors,
-    required this.typography,
-  });
+class _CoverageResult extends ConsumerWidget {
+  const _CoverageResult({required this.panelModel, required this.onRetry});
 
   final MessageCoveragePanelViewModel panelModel;
-  final ThemeColors colors;
-  final ThemeTypography typography;
+  final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+    final statusColor = _statusColor(panelModel.status, colors: colors);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Timeline Coverage',
-          style: typography.title3.copyWith(color: colors.content.textPrimary),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          panelModel.timelineCoverageLabel,
-          style: typography.caption1.copyWith(
-            color: colors.content.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Text(
-              panelModel.earliestLabel,
-              style: typography.caption1.copyWith(
-                color: colors.content.textSecondary,
+        Semantics(
+          label: '${panelModel.statusLabel}. ${panelModel.headline}',
+          header: true,
+          excludeSemantics: true,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.xs),
+                child: Icon(
+                  _statusIcon(panelModel.status),
+                  size: 20,
+                  color: statusColor,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SizedBox(
-                height: 14,
-                child: Stack(
-                  alignment: Alignment.center,
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      height: 4,
-                      child: ColoredBox(color: colors.lines.borderSubtle),
+                    Text(
+                      panelModel.statusLabel,
+                      style: typography.caption.copyWith(color: statusColor),
                     ),
-                    Positioned(
-                      left: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colors.accents.primary,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const SizedBox(width: 12, height: 12),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      panelModel.headline,
+                      style: typography.title2.copyWith(
+                        color: colors.content.textPrimary,
                       ),
                     ),
-                    Positioned(
-                      right: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colors.accents.secondary,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const SizedBox(width: 12, height: 12),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          panelModel.summaryText,
+          style: typography.body.copyWith(color: colors.content.textSecondary),
+        ),
+        if (panelModel.hasCoverageCounts) ...[
+          const SizedBox(height: AppSpacing.lg),
+          _CoverageCountSummary(panelModel: panelModel),
+        ],
+        if (onRetry case final retry?) ...[
+          const SizedBox(height: AppSpacing.lg),
+          CupertinoButton(
+            key: MessageHistoryCoverageReportPanel.retryButtonKey,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            color: colors.surfaces.control,
+            onPressed: retry,
+            child: Text(
+              'Try Again',
+              style: typography.controlValue.copyWith(
+                color: colors.accents.primary,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        _CoverageDetails(lines: panelModel.detailLines),
+      ],
+    );
+  }
+}
+
+class _CoverageCountSummary extends ConsumerWidget {
+  const _CoverageCountSummary({required this.panelModel});
+
+  final MessageCoveragePanelViewModel panelModel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+
+    return Semantics(
+      label:
+          '${panelModel.totalCountLabel} messages on this Mac. '
+          '${panelModel.conversationCountLabel} in conversations. '
+          '${panelModel.recoveredCountLabel} in Recovered Messages. '
+          '${panelModel.unaccountedCountLabel} unaccounted.',
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surfaces.control,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colors.lines.borderSubtle),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _CoverageCountRow(
+                label: 'Messages on this Mac',
+                value: panelModel.totalCountLabel,
+                emphasized: true,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ColoredBox(
+                color: colors.lines.dividerQuiet,
+                child: const SizedBox(height: 1),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _CoverageCountRow(
+                label: 'In conversations',
+                value: panelModel.conversationCountLabel,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _CoverageCountRow(
+                label: 'Recovered Messages',
+                value: panelModel.recoveredCountLabel,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _CoverageCountRow(
+                label: 'Unaccounted',
+                value: panelModel.unaccountedCountLabel,
+                valueColor: panelModel.unaccountedCount == 0
+                    ? colors.content.textTertiary
+                    : colors.status.warning,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CoverageCountRow extends ConsumerWidget {
+  const _CoverageCountRow({
+    required this.label,
+    required this.value,
+    this.emphasized = false,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final bool emphasized;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+    final style = emphasized ? typography.headline : typography.body;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: style.copyWith(
+              color: emphasized
+                  ? colors.content.textPrimary
+                  : colors.content.textSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Text(
+          value,
+          style: style.copyWith(
+            color: valueColor ?? colors.content.textPrimary,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CoverageDetails extends ConsumerStatefulWidget {
+  const _CoverageDetails({required this.lines});
+
+  final List<String> lines;
+
+  @override
+  ConsumerState<_CoverageDetails> createState() => _CoverageDetailsState();
+}
+
+class _CoverageDetailsState extends ConsumerState<_CoverageDetails> {
+  var _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _isExpanded,
+          label: 'Details',
+          excludeSemantics: true,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              key: MessageHistoryCoverageReportPanel.detailsToggleKey,
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isExpanded
+                          ? CupertinoIcons.chevron_down
+                          : CupertinoIcons.chevron_right,
+                      size: 14,
+                      color: colors.content.textSecondary,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Details',
+                      style: typography.controlValue.copyWith(
+                        color: colors.content.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+          ),
+        ),
+        if (_isExpanded) ...[
+          const SizedBox(height: AppSpacing.sm),
+          for (final line in widget.lines) ...[
             Text(
-              panelModel.latestLabel,
+              line,
+              key: ValueKey<String>('message-history-coverage-detail-$line'),
               style: typography.caption1.copyWith(
                 color: colors.content.textSecondary,
               ),
             ),
+            const SizedBox(height: AppSpacing.sm),
           ],
-        ),
-        if (panelModel.timelineCoverageDetail != null) ...[
-          const SizedBox(height: 12),
-          Text(
-            panelModel.timelineCoverageDetail!,
-            style: typography.caption1.copyWith(
-              color: colors.content.textSecondary,
-            ),
-          ),
         ],
       ],
     );
   }
+}
+
+class _CoverageUnexpectedFailure extends StatelessWidget {
+  const _CoverageUnexpectedFailure({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CoverageResult(
+      panelModel: const MessageCoveragePanelViewModel(
+        title: 'Message History Coverage',
+        status: MessageHistoryCoverageStatus.failed,
+        statusLabel: 'Check failed',
+        headline: 'Message history coverage could not be checked',
+        summaryText:
+            'MessageLens could not safely compare the messages on this Mac with its current message accounting.',
+        totalCount: null,
+        totalCountLabel: 'Unknown',
+        conversationCount: null,
+        conversationCountLabel: 'Unknown',
+        recoveredCount: null,
+        recoveredCountLabel: 'Unknown',
+        accountedCount: null,
+        accountedCountLabel: 'Unknown',
+        unaccountedCount: null,
+        unaccountedCountLabel: 'Unknown',
+        dateRangeLabel: 'Unavailable',
+        generatedAtLabel: null,
+        detailLines: ['The report could not be prepared. Try again.'],
+      ),
+      onRetry: onRetry,
+    );
+  }
+}
+
+IconData _statusIcon(MessageHistoryCoverageStatus status) {
+  return switch (status) {
+    MessageHistoryCoverageStatus.complete =>
+      CupertinoIcons.check_mark_circled_solid,
+    MessageHistoryCoverageStatus.incomplete =>
+      CupertinoIcons.exclamationmark_circle_fill,
+    MessageHistoryCoverageStatus.temporarilyUnavailable =>
+      CupertinoIcons.clock_fill,
+    MessageHistoryCoverageStatus.failed => CupertinoIcons.xmark_circle_fill,
+  };
+}
+
+Color _statusColor(
+  MessageHistoryCoverageStatus status, {
+  required ThemeColors colors,
+}) {
+  return switch (status) {
+    MessageHistoryCoverageStatus.complete => colors.status.success,
+    MessageHistoryCoverageStatus.incomplete => colors.status.warning,
+    MessageHistoryCoverageStatus.temporarilyUnavailable =>
+      colors.content.textSecondary,
+    MessageHistoryCoverageStatus.failed => colors.status.error,
+  };
 }

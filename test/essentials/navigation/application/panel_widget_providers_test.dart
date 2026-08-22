@@ -32,6 +32,7 @@ import 'package:remember_this_text/features/messages/domain/search_investigation
 import 'package:remember_this_text/features/messages/domain/spec_classes/messages_view_spec.dart';
 import 'package:remember_this_text/features/settings/application/view_spec/coordinators/view_spec_coordinator.dart'
     as settings_view_spec;
+import 'package:remember_this_text/features/settings/domain/spec_classes/settings_cassette_spec.dart';
 import 'package:remember_this_text/features/settings/domain/spec_classes/settings_view_spec.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/sidebar_utilities_constants.dart';
 import 'package:remember_this_text/features/sidebar_utilities/domain/spec_classes/sidebar_utility_cassette_spec.dart';
@@ -477,6 +478,98 @@ void main() {
             .dy;
         final infoTop = tester.getTopLeft(find.byType(SidebarInfoCard)).dy;
         expect(infoTop - trackABottom, 24);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        resolutionSubscription.close();
+        rackSubscription.close();
+        await tester.idle();
+        container.dispose();
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'Message History Coverage uses A1 then resumes Settings cassette flow',
+      (tester) async {
+        const topMenuSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.settingsMenu(),
+        );
+        const overviewSpec = CassetteSpec.settings(
+          SettingsCassetteSpec.messageHistoryCoverageOverview(),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            ...cassetteRackTestHarnessOverrides(),
+            sidebarCassetteResolutionStateProvider(
+              SidebarMode.settings,
+            ).overrideWith((ref) {
+              return ref.watch(_testSidebarResolutionStateProvider);
+            }),
+          ],
+        );
+        final rackSubscription = container.listen(
+          cassetteRackStateProvider(SidebarMode.settings),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        final resolutionSubscription = container.listen(
+          sidebarCassetteResolutionStateProvider(SidebarMode.settings),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        container
+            .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
+            .setRackForTesting([topMenuSpec, overviewSpec]);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'legacy-settings-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: overviewSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'coverage-overview',
+              ),
+              topSpacing: 24,
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: ResolvedTrackLayoutMatrixScope(
+                matrix: _testMessageHistoryCoverageSidebarMatrix(),
+                child: const SizedBox(
+                  width: 320,
+                  height: 600,
+                  child: LeftPanelHost(mode: SidebarMode.settings),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('matrix-settings-menu'), findsOneWidget);
+        expect(find.text('legacy-settings-menu'), findsNothing);
+        expect(find.text('coverage-overview'), findsOneWidget);
+        expect(_renderedTrackCellIds(tester), const [
+          CellId(trackId: TrackId.trackA, columnId: TrackColumnId.column1),
+        ]);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -2005,6 +2098,31 @@ ResolvedTrackLayoutMatrix _testRecoveredMessagesSidebarMatrix() {
         cellId: CellId(trackId: TrackId.trackA, columnId: columnId),
         occupant: TextTrackOccupant(
           text: 'matrix-top-menu',
+          style: TextStyle(fontSize: 14),
+        ),
+      ),
+    ],
+  );
+  return ResolvedTrackLayoutMatrix.resolve(
+    matrix: matrix,
+    constraints: const PresentationConstraints(
+      availableWidth: 288,
+      textScaler: TextScaler.noScaling,
+      textDirection: TextDirection.ltr,
+    ),
+  );
+}
+
+ResolvedTrackLayoutMatrix _testMessageHistoryCoverageSidebarMatrix() {
+  const columnId = TrackColumnId.column1;
+  final matrix = PageTrackLayoutMatrix<TrackOccupant>(
+    trackIds: const [TrackId.trackA],
+    columnIds: const [columnId],
+    cells: const [
+      MatrixCell<TrackOccupant>.occupied(
+        cellId: CellId(trackId: TrackId.trackA, columnId: columnId),
+        occupant: TextTrackOccupant(
+          text: 'matrix-settings-menu',
           style: TextStyle(fontSize: 14),
         ),
       ),

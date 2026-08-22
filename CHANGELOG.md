@@ -10,6 +10,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Message History Coverage now presents its corrected current-Mac accounting
+  as a calm Settings report: one precise conclusion, one compact exact-count
+  surface, quiet recovered-message evidence, warning treatment only for real
+  unaccounted exceptions, and secondary diagnostics under Details. Its
+  Settings menu and center title now share Track A without constraining the
+  expanded menu.
+
 - Message History Coverage now reconciles every current Mac `chat.db` row by
   exact source identity against source-1 conversation-graph evidence. Imported
   historical archives no longer contaminate the report, impossible arithmetic

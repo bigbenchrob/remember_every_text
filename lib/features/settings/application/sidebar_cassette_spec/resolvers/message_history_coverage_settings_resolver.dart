@@ -16,19 +16,17 @@ import '../entities/message_history_coverage_report_logic.dart';
 part 'message_history_coverage_settings_resolver.g.dart';
 
 const _messageHistoryCoverageOverviewBody =
-    "MessageLens compares the messages stored in your Mac's Messages database (chat.db) with the messages it has imported and organized.\n\n"
-    'This report shows whether everything on this Mac has been accounted for.';
+    'MessageLens checks whether every message currently stored by Messages on '
+    'this Mac has a known place in the app.';
 
 const _messageHistoryCoverageHowToReadBody =
-    'Messages on this Mac are grouped into:\n\n'
-    '• Messages visible in your chat timelines\n'
-    '• Messages recovered but not linked to a conversation\n'
-    '• Messages that could not be accounted for\n\n'
-    'If no messages are missing, then MessageLens has successfully accounted for everything available on this Mac.';
+    'Messages may be accounted for in conversations or in Recovered Messages. '
+    'Anything in neither group is reported as unaccounted.';
 
 const _messageHistoryCoverageOlderMessagesBody =
-    'This report only reflects the messages stored on this Mac.\n\n'
-    'If you expected to see older messages, they may exist on another device or in iCloud but are not present here.';
+    'This report checks only messages currently stored on this Mac. Imported '
+    'Historical Archives are not added to this total unless they are also '
+    'present here.';
 
 @riverpod
 Future<MessageHistoryCoverageReport> messageHistoryCoverageReport(

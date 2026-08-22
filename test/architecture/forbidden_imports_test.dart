@@ -299,6 +299,7 @@ const Set<String> _providerInvalidationAllowedFiles = {
   'lib/features/handles/application/settings_cassette_spec/resolver_tools/spam_management_provider.dart',
   'lib/features/handles/application/source_review/handle_source_review_actions_provider.dart',
   'lib/features/messages/application/sidebar_cassette_spec/resolver_tools/message_heatmap_refresh_actions_provider.dart',
+  'lib/features/settings/application/sidebar_cassette_spec/actions/message_history_coverage_report_actions_provider.dart',
   'lib/features/settings/application/historical_archives_workflow_panel_model_provider.dart',
 };
 

@@ -7,20 +7,98 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../config/theme/colors/theme_colors.dart';
 import '../../../../../config/theme/theme_typography.dart';
+import '../../../../../config/theme/widgets/layout/cross_column_track_plan.dart';
 import '../../../../../essentials/sidebar/application/sidebar_cassette_sectioning.dart';
 import '../../../../../essentials/sidebar/presentation/view/sidebar_menu_section_header.dart';
 import '../../../domain/settings_top_menu_row.dart';
 import '../payloads/settings_top_menu_cassette_payload.dart';
 import '../resolver_tools/sidebar_top_menu_actions_provider.dart';
 
-class SettingsTopMenuWidget extends HookConsumerWidget {
-  const SettingsTopMenuWidget({super.key, required this.payload});
+abstract final class SettingsTopMenuPresentationMetrics {
+  const SettingsTopMenuPresentationMetrics._();
+
+  static const triggerPadding = EdgeInsets.only(
+    left: 12,
+    right: 16,
+    top: 10,
+    bottom: 10,
+  );
+  static const double trailingIconSize = 12;
+  static const double chevronPadding = 4;
+
+  static double naturalTriggerHeight({
+    required String selectedLabel,
+    required TextStyle selectedValueStyle,
+    required PresentationConstraints constraints,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: selectedLabel, style: selectedValueStyle),
+      maxLines: 1,
+      textDirection: constraints.textDirection,
+      textScaler: constraints.textScaler,
+      locale: constraints.locale,
+    )..layout(maxWidth: constraints.availableWidth);
+    const chevronHeight = trailingIconSize + chevronPadding * 2;
+    final contentHeight = math.max(painter.height, chevronHeight);
+    return triggerPadding.vertical + contentHeight;
+  }
+}
+
+enum SettingsTopMenuPanelPresentation { inline, anchoredOverlay }
+
+final class SettingsTopMenuTrackOccupant implements TrackOccupant {
+  const SettingsTopMenuTrackOccupant({
+    required this.payload,
+    required this.selectedValueStyle,
+  });
 
   final SettingsTopMenuCassettePayload payload;
+  final TextStyle selectedValueStyle;
+
+  @override
+  OccupantDimensionalClaim dimensionalClaim(
+    PresentationConstraints constraints,
+  ) {
+    return OccupantDimensionalClaim(
+      naturalHeight: SettingsTopMenuPresentationMetrics.naturalTriggerHeight(
+        selectedLabel:
+            payload.persistentContextActionId?.label ?? payload.promptLabel,
+        selectedValueStyle: selectedValueStyle,
+        constraints: constraints,
+      ),
+    );
+  }
+
+  @override
+  Widget buildPresentation(
+    BuildContext context,
+    ResolvedTrackAllocation allocation,
+  ) {
+    return SettingsTopMenuWidget(
+      payload: payload,
+      panelPresentation: SettingsTopMenuPanelPresentation.anchoredOverlay,
+    );
+  }
+}
+
+class SettingsTopMenuWidget extends HookConsumerWidget {
+  const SettingsTopMenuWidget({
+    super.key,
+    required this.payload,
+    this.panelPresentation = SettingsTopMenuPanelPresentation.inline,
+  });
+
+  final SettingsTopMenuCassettePayload payload;
+  final SettingsTopMenuPanelPresentation panelPresentation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOpen = useState(payload.persistentContextActionId == null);
+    final isOpen = useState(
+      payload.persistentContextActionId == null &&
+          panelPresentation == SettingsTopMenuPanelPresentation.inline,
+    );
+    final overlayController = useMemoized(OverlayPortalController.new);
+    final layerLink = useMemoized(LayerLink.new);
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
@@ -30,15 +108,32 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
     final hasSelection = payload.persistentContextActionId != null;
 
     useEffect(() {
-      if (!hasSelection) {
+      if (!hasSelection &&
+          panelPresentation == SettingsTopMenuPanelPresentation.inline) {
         isOpen.value = true;
       }
 
       return null;
-    }, [hasSelection]);
+    }, [hasSelection, panelPresentation]);
+
+    void setOpen({required bool value}) {
+      if (isOpen.value == value) {
+        return;
+      }
+
+      isOpen.value = value;
+      if (panelPresentation ==
+          SettingsTopMenuPanelPresentation.anchoredOverlay) {
+        if (value) {
+          overlayController.show();
+        } else {
+          overlayController.hide();
+        }
+      }
+    }
 
     Future<void> handleActionSelected(SettingsTopMenuActionRow row) async {
-      isOpen.value = false;
+      setOpen(value: false);
 
       await ref
           .read(sidebarTopMenuActionsProvider.notifier)
@@ -48,99 +143,132 @@ class SettingsTopMenuWidget extends HookConsumerWidget {
           );
     }
 
+    final trigger = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        setOpen(value: !isOpen.value);
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surfaces.control,
+          borderRadius: borderRadius,
+        ),
+        child: Padding(
+          padding: SettingsTopMenuPresentationMetrics.triggerPadding,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  selectedLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.controlValue.copyWith(
+                    color: hasSelection
+                        ? colors.content.textPrimary
+                        : colors.content.textTertiary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.dropdownMenu(DropdownMenu.chevronBg),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    isOpen.value
+                        ? CupertinoIcons.chevron_up
+                        : CupertinoIcons.chevron_down,
+                    size: SettingsTopMenuPresentationMetrics.trailingIconSize,
+                    color: colors.dropdownMenu(DropdownMenu.chevronIcon),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    final panel = _DropdownPanelDecoration(
+      borderRadius: borderRadius,
+      backgroundColor: colors.surfaces.surfaceRaised,
+      borderLayers: colors.lines.dropdown,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final entry in payload.rows.asMap().entries)
+              switch (entry.value) {
+                SettingsTopMenuGroupHeaderRow(:final label) =>
+                  SidebarMenuSectionHeader(
+                    label: label,
+                    isFirstInMenu: entry.key == 0,
+                  ),
+                SettingsTopMenuActionRow() => (() {
+                  final row = entry.value as SettingsTopMenuActionRow;
+
+                  return _SettingsTopMenuActionRowWidget(
+                    row: row,
+                    isSelected:
+                        row.isPersistentContext &&
+                        payload.persistentContextActionId == row.actionId,
+                    onSelected: () {
+                      return handleActionSelected(row);
+                    },
+                  );
+                })(),
+              },
+          ],
+        ),
+      ),
+    );
+
+    if (panelPresentation == SettingsTopMenuPanelPresentation.anchoredOverlay) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return OverlayPortal(
+            controller: overlayController,
+            overlayChildBuilder: (context) {
+              return Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () {
+                        setOpen(value: false);
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    width: constraints.maxWidth,
+                    child: CompositedTransformFollower(
+                      link: layerLink,
+                      showWhenUnlinked: false,
+                      targetAnchor: Alignment.bottomLeft,
+                      followerAnchor: Alignment.topLeft,
+                      offset: const Offset(0, 8),
+                      child: panel,
+                    ),
+                  ),
+                ],
+              );
+            },
+            child: CompositedTransformTarget(link: layerLink, child: trigger),
+          );
+        },
+      );
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            isOpen.value = !isOpen.value;
-          },
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.surfaces.control,
-              borderRadius: borderRadius,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(
-                left: 12,
-                right: 16,
-                top: 10,
-                bottom: 10,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      selectedLabel,
-                      style: typography.controlValue.copyWith(
-                        color: hasSelection
-                            ? colors.content.textPrimary
-                            : colors.content.textTertiary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colors.dropdownMenu(DropdownMenu.chevronBg),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        isOpen.value
-                            ? CupertinoIcons.chevron_up
-                            : CupertinoIcons.chevron_down,
-                        size: 12,
-                        color: colors.dropdownMenu(DropdownMenu.chevronIcon),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (isOpen.value) ...[
-          const SizedBox(height: 8),
-          _DropdownPanelDecoration(
-            borderRadius: borderRadius,
-            backgroundColor: colors.surfaces.surfaceRaised,
-            borderLayers: colors.lines.dropdown,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final entry in payload.rows.asMap().entries)
-                    switch (entry.value) {
-                      SettingsTopMenuGroupHeaderRow(:final label) =>
-                        SidebarMenuSectionHeader(
-                          label: label,
-                          isFirstInMenu: entry.key == 0,
-                        ),
-                      SettingsTopMenuActionRow() => (() {
-                        final row = entry.value as SettingsTopMenuActionRow;
-
-                        return _SettingsTopMenuActionRowWidget(
-                          row: row,
-                          isSelected:
-                              row.isPersistentContext &&
-                              payload.persistentContextActionId == row.actionId,
-                          onSelected: () {
-                            return handleActionSelected(row);
-                          },
-                        );
-                      })(),
-                    },
-                ],
-              ),
-            ),
-          ),
-        ],
+        trigger,
+        if (isOpen.value) ...[const SizedBox(height: 8), panel],
       ],
     );
   }
