@@ -10,6 +10,7 @@ import '../../../essentials/source_scoped_import/feature_level_providers.dart'
         sourceScopedImportLedgerProvider;
 import '../../attachments/application/attachment_archive_store_providers.dart';
 import '../../attachments/infrastructure/repositories/import_ledger_message_lens_attachment_evidence_reader.dart';
+import '../../attachments/infrastructure/repositories/sqlite_message_lens_attachment_recovery_donor_qualifier.dart';
 import '../infrastructure/repositories/message_lens_historical_archive_preflight_service.dart';
 import 'message_lens_historical_archive_preflight.dart';
 
@@ -30,9 +31,11 @@ messageLensHistoricalArchivePreflight(
     archiveDirectoryPath: ref.watch(attachmentArchiveDirectoryProvider),
   );
   return MessageLensHistoricalArchivePreflightService(
-    currentArchiveRoot: authority.rootPath,
-    currentArchiveInstanceId: authority.identity.archiveInstanceId.value,
-    currentArchiveEnvironment: authority.identity.environment,
+    donorQualifier: SqliteMessageLensAttachmentRecoveryDonorQualifier(
+      currentArchiveRoot: authority.rootPath,
+      currentArchiveInstanceId: authority.identity.archiveInstanceId.value,
+      currentArchiveEnvironment: authority.identity.environment,
+    ),
     lineageAdmissionAuthority: await ref.watch(
       messagesLineageAdmissionAuthorityProvider.future,
     ),

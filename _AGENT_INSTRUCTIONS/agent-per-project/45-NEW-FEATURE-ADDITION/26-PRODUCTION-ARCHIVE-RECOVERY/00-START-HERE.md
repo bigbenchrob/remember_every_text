@@ -84,23 +84,26 @@ panel. See:
 - [Preservation-Safe Attachment Recovery Infrastructure](responses/48-PRESERVATION-SAFE-ATTACHMENT-RECOVERY-INFRASTRUCTURE.md)
 - [MessageLens Historical Archives Ready-State Implementation](responses/50-ENABLE-MESSAGELENS-HISTORICAL-ARCHIVES-THROUGH-READY-STATE.md)
 - [Backward-Compatible MessageLens Archive Qualification Audit](responses/51-BACKWARD-COMPATIBLE-MESSAGELENS-ARCHIVE-QUALIFICATION-AUDIT.md)
+- [Ephemeral MessageLens Recovery Donors](responses/52-EPHEMERAL-MESSAGELENS-RECOVERY-DONORS-IMPLEMENTATION.md)
 
 The MessageLens-folder arm is now enabled through a safe read-only ready state
 under a deliberately narrow product contract: recover attachment payloads only
 from an older snapshot of the same continuing local Mac Messages lineage.
 General donor source-fact, graph, source-registry, overlay, and Presence
-ingestion is excluded. The arm qualifies a MessageLens archive, uses archive
-instance identity, proves same Messages lineage, and reports exact recoverable
-attachment count and bytes. No donor source is persisted and no recovery
-mutation is offered yet because aggregate batch execution and terminal outcome
-ownership remain intentionally unimplemented.
+ingestion is excluded. MessageLens donors are ephemeral recovery candidates,
+not durable Historical Archives sources: the arm recognizes supported current
+and pre-marker formats, proves same Messages lineage, and reports exact
+recoverable attachment count and bytes. A modern marker UUID is optional
+diagnostic evidence, not recovery authority. No donor source is persisted and
+no recovery mutation is offered yet because aggregate batch execution and
+terminal outcome ownership remain intentionally unimplemented.
 
-Read-only compatibility review subsequently confirmed that pre-July 2026
-MessageLens archives can retain healthy, readable attachment evidence while
-predating the archive marker entirely. They contain no documented durable
-archive identifier, so they remain recognizable but unsupported recovery
-donors. MessageLens must not manufacture identity from paths, familiar files,
-timestamps, or content hashes merely to admit them.
+Read-only compatibility review confirmed that pre-July 2026 MessageLens
+archives can retain healthy, readable attachment evidence while predating the
+archive marker entirely. Prompt 52 clarified that these donors never become
+durable sources, so documented legacy formats can proceed without a durable
+identity after exact lineage and attachment proof. MessageLens still must not
+manufacture identity from paths, familiar files, timestamps, or content hashes.
 
 ## Original Emergency Objective
 

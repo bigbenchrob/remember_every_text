@@ -71,31 +71,11 @@ void main() {
       expect(afterRemoval, beforeRemoval);
     });
 
-    test(
-      'MessageLens donor identity is canonical archive identity, not path',
-      () {
-        final identity =
-            HistoricalArchiveSourceIdentity.messageLensFromArchiveInstanceId(
-              '123E4567-E89B-42D3-A456-426614174000',
-            );
-
-        expect(identity.kind, HistoricalArchiveSourceKind.messageLens);
-        expect(identity.canonicalSourcePath, isEmpty);
-        expect(
-          identity.value,
-          'message-lens-recovery-archive:123e4567-e89b-42d3-a456-426614174000',
-        );
-        expect(
-          HistoricalArchiveSourceIdentity.fromPersistedValue(identity.value),
-          identity,
-        );
-      },
-    );
-
-    test('MessageLens donor identity rejects a noncanonical archive ID', () {
+    test('MessageLens recovery key is not a durable source identity', () {
       expect(
-        () => HistoricalArchiveSourceIdentity.messageLensFromArchiveInstanceId(
-          '/Volumes/Archive/MessageLens',
+        () => HistoricalArchiveSourceIdentity.fromPersistedValue(
+          'message-lens-recovery-archive:'
+          '123e4567-e89b-42d3-a456-426614174000',
         ),
         throwsFormatException,
       );

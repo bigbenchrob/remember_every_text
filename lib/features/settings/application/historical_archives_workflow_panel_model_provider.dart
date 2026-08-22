@@ -858,7 +858,7 @@ final class HistoricalArchivesWorkflowState {
     HistoricalArchivesMessageLensInspectingState(:final folderPath) =>
       folderPath,
     HistoricalArchivesMessageLensReadyState(:final evidence) =>
-      evidence.folderPath,
+      evidence.donor.rootPath,
     _ => presentation.data?.selectedFolderPath,
   };
   String? get archiveRemovalTargetChatDbPath =>
@@ -3155,8 +3155,10 @@ HistoricalArchivesNarratorPresentationViewModel? _buildNarratorPresentation({
           ),
         ],
         detailsLines: [
-          'Folder: ${evidence.folderPath}',
-          'Archive instance: ${evidence.archiveInstanceId}',
+          'Folder: ${evidence.donor.rootPath}',
+          'Donor format: ${evidence.donor.format.diagnosticLabel}',
+          if (evidence.donor.archiveInstanceId case final archiveInstanceId?)
+            'Archive instance: $archiveInstanceId',
           'Relationships examined: ${_formattedCount(evidence.attachmentPreflight.examinedCount)}',
           'Already present: ${_formattedCount(evidence.attachmentPreflight.alreadyPresentCount)}',
           'Donor payload missing: ${_formattedCount(evidence.attachmentPreflight.donorMissingCount)}',

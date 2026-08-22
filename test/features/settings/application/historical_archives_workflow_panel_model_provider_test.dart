@@ -46,6 +46,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/m
 import 'package:remember_this_text/essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/messages_lineage_admission.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/message_lens_attachment_recovery.dart';
+import 'package:remember_this_text/features/attachments/domain/entities/message_lens_attachment_recovery_donor.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspection.dart';
 import 'package:remember_this_text/features/settings/application/archive_source_inspector_provider.dart';
 import 'package:remember_this_text/features/settings/application/historical_archive_folder_chooser.dart';
@@ -1150,6 +1151,52 @@ void main() {
       );
       expect(preflight.inspectedFolders, const ['/tmp/donor']);
     });
+
+    test(
+      'legacy MessageLens ready evidence does not require archive identity',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            messageLensHistoricalArchivePreflightProvider.overrideWith(
+              (ref) async => _FakeMessageLensHistoricalArchivePreflight(
+                _messageLensReady(
+                  recoverableCount: 3,
+                  recoverableBytes: 8192,
+                  format:
+                      MessageLensAttachmentRecoveryDonorFormat.importSchemaV8,
+                  archiveInstanceId: null,
+                ),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        final workflow = container.read(
+          historicalArchivesWorkflowProvider.notifier,
+        );
+        workflow.selectSourceType(
+          HistoricalArchiveSourceType.messageLensDataFolders,
+        );
+
+        await workflow.loadMessageLensFolder(folderPath: '/tmp/donor');
+
+        final model = buildHistoricalArchivesWorkflowPanelModel(
+          executionGateState: const ArchiveMutationCoordinatorState(),
+          isMaintenanceLocked: false,
+          workflowState: container.read(historicalArchivesWorkflowProvider),
+          currentMessagesDatabasePath: currentMessagesDatabasePath,
+        );
+        final details = model.narratorPresentation!.detailsLines;
+        expect(
+          details,
+          contains('Donor format: Historical MessageLens import schema 8'),
+        );
+        expect(
+          details.where((line) => line.startsWith('Archive instance:')),
+          isEmpty,
+        );
+      },
+    );
 
     test(
       'zero recoverable attachments is an informational hub notice',
@@ -3325,13 +3372,16 @@ HistoricalArchivesImportedSourceFacts _testImportedSourceFacts() {
 MessageLensHistoricalArchiveReady _messageLensReady({
   required int recoverableCount,
   required int recoverableBytes,
+  MessageLensAttachmentRecoveryDonorFormat format =
+      MessageLensAttachmentRecoveryDonorFormat.currentMarkerV1,
+  String? archiveInstanceId = '123e4567-e89b-42d3-a456-426614174000',
 }) {
   return MessageLensHistoricalArchiveReady(
-    folderPath: '/tmp/donor',
-    identity: HistoricalArchiveSourceIdentity.messageLensFromArchiveInstanceId(
-      '123e4567-e89b-42d3-a456-426614174000',
+    donor: MessageLensAttachmentRecoveryDonor(
+      rootPath: '/tmp/donor',
+      format: format,
+      archiveInstanceId: archiveInstanceId,
     ),
-    archiveInstanceId: '123e4567-e89b-42d3-a456-426614174000',
     lineageAdmission: _testSameLineageAdmission(),
     attachmentPreflight: MessageLensAttachmentRecoveryPreflight(
       candidates: const [],

@@ -103,6 +103,10 @@ void main() {
         'lib/features/settings/presentation/layout/'
         'historical_archives_track_occupants.dart',
       ).readAsStringSync();
+      final qualifier = File(
+        'lib/features/attachments/infrastructure/repositories/'
+        'sqlite_message_lens_attachment_recovery_donor_qualifier.dart',
+      ).readAsStringSync();
 
       expect(service, contains('verifyMessageLensCandidate'));
       expect(service, contains('MessageLensAttachmentRecoveryMatcher'));
@@ -114,9 +118,27 @@ void main() {
       expect(service, isNot(contains('ConversationGraphDatabase')));
       expect(service, isNot(contains('overlayDatabaseProvider')));
       expect(service, isNot(contains('AttachmentArchiveWriteStore')));
+      expect(service, contains('donorQualifier.qualify'));
+      expect(service, isNot(contains('HistoricalArchiveSourceIdentity')));
+      expect(
+        service,
+        isNot(contains('HistoricalMessagesArchiveSourceRegistrar')),
+      );
       expect(workflow, contains('HistoricalArchivesMessageLensReadyState'));
       expect(workflow, isNot(contains('Recover Attachments')));
-      expect(identity, contains('messageLensFromArchiveInstanceId'));
+      expect(identity, isNot(contains('messageLensFromArchiveInstanceId')));
+      expect(identity, isNot(contains('message-lens-recovery-archive:')));
+      expect(qualifier, contains('OpenMode.readOnly'));
+      expect(qualifier, contains('(8, 5, 1)'));
+      expect(qualifier, contains('(9, 5, 1)'));
+      expect(qualifier, contains('(10, 1, 2)'));
+      expect(qualifier, isNot(contains('buildSourceKey')));
+      expect(qualifier, isNot(contains('SourceRegistrar')));
+      expect(qualifier, isNot(contains('ArchiveInstanceId(')));
+      expect(qualifier, isNot(contains('.write')));
+      expect(qualifier, isNot(contains('INSERT')));
+      expect(qualifier, isNot(contains('UPDATE')));
+      expect(qualifier, isNot(contains('DELETE')));
       expect(trackOccupants, contains('HistoricalArchivesSourceTypeControl'));
       expect(trackOccupants, contains('messageLensDataFolders'));
     },

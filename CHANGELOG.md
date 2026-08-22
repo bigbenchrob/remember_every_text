@@ -10,12 +10,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Historical Archives now treats selected MessageLens data folders as
+  ephemeral attachment-recovery donors rather than durable sources. Documented
+  pre-marker formats can reach the same read-only ready state as modern marked
+  archives after exact Messages-lineage and per-attachment proof; no donor
+  membership, synthetic identity, or source cartouche is created.
 - Historical Archives now enables its MessageLens arm for safe, read-only
   attachment recovery inspection. A selected older MessageLens data folder is
-  structurally qualified, identified by archive instance, admitted through the
-  shared Messages-lineage authority, and compared with current attachment
-  evidence before exact recoverable counts and bytes are shown. Attachment
-  mutation remains intentionally unavailable pending a batch executor.
+  structurally qualified, admitted through the shared Messages-lineage
+  authority, and compared with current attachment evidence before exact
+  recoverable counts and bytes are shown. Modern marker identity remains
+  optional diagnostic evidence. Attachment mutation remains intentionally
+  unavailable pending a batch executor.
 - Attachment preservation now has a dormant, atomic no-overwrite installation
   boundary for verified MessageLens archive payloads, mechanically gated by an
   exact-scope archive-mutation capability. The recovery UI remains disabled

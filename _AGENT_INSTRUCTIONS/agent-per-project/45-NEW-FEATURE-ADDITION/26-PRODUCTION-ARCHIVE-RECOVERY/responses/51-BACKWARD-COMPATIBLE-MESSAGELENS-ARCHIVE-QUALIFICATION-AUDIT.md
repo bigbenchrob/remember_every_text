@@ -4,7 +4,7 @@ scope: production-archive-recovery
 owner: agent-per-project
 last_reviewed: 2026-08-22
 source_of_truth: audit
-status: blocked-by-missing-legacy-identity-authority
+status: superseded-product-model
 links:
   - ../prompts/51-BACKWARD-COMPATIBLE-MESSAGELENS-ARCHIVE-QUALIFICATION.MD
   - ./50-ENABLE-MESSAGELENS-HISTORICAL-ARCHIVES-THROUGH-READY-STATE.md
@@ -14,6 +14,14 @@ tests: []
 ---
 
 # Backward-Compatible MessageLens Archive Qualification Audit
+
+> **Superseded conclusion:** this audit correctly established that pre-marker
+> archives have no durable identity. Prompt 52 subsequently clarified that a
+> MessageLens attachment-recovery donor is an ephemeral recovery candidate,
+> not a durable Historical Archives source. The forensic evidence below
+> remains authoritative; the conclusion that missing durable identity blocks
+> recovery admission does not. See the
+> [Prompt 52 implementation](52-EPHEMERAL-MESSAGELENS-RECOVERY-DONORS-IMPLEMENTATION.md).
 
 ## Decision
 

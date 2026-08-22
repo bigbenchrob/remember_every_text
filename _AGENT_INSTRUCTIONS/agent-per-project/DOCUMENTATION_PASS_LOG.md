@@ -5357,3 +5357,18 @@ production preservation authority mechanically enforceable.
 - Stopped without code, donor mutation, marker creation, lineage weakening, or
   attachment recovery because the prompt's legacy-identity stop condition was
   met.
+
+## 2026-08-22 - Ephemeral MessageLens recovery donors
+
+- Added Feature 26 response
+  `52-EPHEMERAL-MESSAGELENS-RECOVERY-DONORS-IMPLEMENTATION.md` documenting the
+  durable Mac Messages source versus ephemeral MessageLens recovery-donor
+  boundary.
+- Corrected the canonical historical source-identity guide: MessageLens donors
+  no longer require or produce `HistoricalArchiveSourceIdentity`; marker UUIDs
+  are optional diagnostic evidence only.
+- Marked the Prompt 51 missing-identity stop conclusion as superseded while
+  preserving its read-only historical-format evidence.
+- Recorded the supported pre-marker schema tuples, mandatory lineage and
+  per-attachment gates, repeated-selection semantics, and prohibition on donor
+  registration, cartouches, synthetic identity, marker creation, and writes.

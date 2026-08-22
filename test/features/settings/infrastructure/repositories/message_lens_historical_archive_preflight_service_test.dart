@@ -15,6 +15,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/domain/source
 import 'package:remember_this_text/features/attachments/application/message_lens_attachment_evidence_reader.dart';
 import 'package:remember_this_text/features/attachments/domain/entities/message_lens_attachment_recovery.dart';
 import 'package:remember_this_text/features/attachments/infrastructure/repositories/message_lens_attachment_identity_evidence_factory.dart';
+import 'package:remember_this_text/features/attachments/infrastructure/repositories/sqlite_message_lens_attachment_recovery_donor_qualifier.dart';
 import 'package:remember_this_text/features/settings/application/message_lens_historical_archive_preflight.dart';
 import 'package:remember_this_text/features/settings/infrastructure/repositories/message_lens_historical_archive_preflight_service.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -42,9 +43,11 @@ void main() {
 
   MessageLensHistoricalArchivePreflightService service() {
     return MessageLensHistoricalArchivePreflightService(
-      currentArchiveRoot: path.join(temporaryRoot.path, 'current'),
-      currentArchiveInstanceId: '123e4567-e89b-42d3-a456-426614174001',
-      currentArchiveEnvironment: ArchiveEnvironment.development,
+      donorQualifier: SqliteMessageLensAttachmentRecoveryDonorQualifier(
+        currentArchiveRoot: path.join(temporaryRoot.path, 'current'),
+        currentArchiveInstanceId: '123e4567-e89b-42d3-a456-426614174001',
+        currentArchiveEnvironment: ArchiveEnvironment.development,
+      ),
       lineageAdmissionAuthority: lineageAuthority,
       currentEvidenceReader: currentEvidenceReader,
     );
@@ -80,6 +83,75 @@ void main() {
     },
   );
 
+  test('copied filenames without MessageLens schemas cannot qualify', () async {
+    Directory(path.join(donorRoot.path, 'attachment_archive')).createSync();
+    for (final databaseName in const <String>[
+      'macos_import_ss.db',
+      'user_overlays.db',
+      'working_ss.db',
+    ]) {
+      File(path.join(donorRoot.path, databaseName)).writeAsBytesSync(const []);
+    }
+
+    final result = await service().inspect(folderPath: donorRoot.path);
+
+    expect(result, isA<MessageLensHistoricalArchiveIncompatible>());
+    expect(lineageAuthority.messageLensCandidatePaths, isEmpty);
+  });
+
+  for (final fixture in const <({int import, int overlay, int graph})>[
+    (import: 8, overlay: 5, graph: 1),
+    (import: 9, overlay: 5, graph: 1),
+    (import: 10, overlay: 1, graph: 2),
+  ]) {
+    test(
+      'supported legacy ${fixture.import}/${fixture.overlay}/${fixture.graph} '
+      'donor reaches attachment preflight without durable identity',
+      () async {
+        await _createCompatibleDonor(
+          donorRoot,
+          includeMarker: false,
+          importVersion: fixture.import,
+          overlayVersion: fixture.overlay,
+          graphVersion: fixture.graph,
+        );
+
+        final result = await service().inspect(folderPath: donorRoot.path);
+
+        expect(result, isA<MessageLensHistoricalArchiveReady>());
+        final ready = result as MessageLensHistoricalArchiveReady;
+        expect(ready.donor.archiveInstanceId, isNull);
+        expect(ready.donor.format.name, 'importSchemaV${fixture.import}');
+        expect(ready.attachmentPreflight.recoverableCount, 1);
+        expect(
+          File(
+            path.join(
+              donorRoot.path,
+              FileSystemArchiveMarkerStore.markerFileName,
+            ),
+          ).existsSync(),
+          isFalse,
+        );
+        expect(lineageAuthority.messageLensCandidatePaths, hasLength(1));
+      },
+    );
+  }
+
+  test('unrecognized legacy schema tuple is incompatible', () async {
+    await _createCompatibleDonor(
+      donorRoot,
+      includeMarker: false,
+      importVersion: 7,
+      overlayVersion: 5,
+      graphVersion: 1,
+    );
+
+    final result = await service().inspect(folderPath: donorRoot.path);
+
+    expect(result, isA<MessageLensHistoricalArchiveIncompatible>());
+    expect(lineageAuthority.messageLensCandidatePaths, isEmpty);
+  });
+
   test('lineage rejection occurs before attachment matching', () async {
     await _createCompatibleDonor(donorRoot);
     lineageAuthority.result = _contradictoryLineageAdmission();
@@ -91,6 +163,25 @@ void main() {
     expect(currentEvidenceReader.liveRelationshipReadCount, 0);
     expect(currentEvidenceReader.payloadStatusReadCount, 0);
   });
+
+  test(
+    'insufficient lineage evidence occurs before attachment matching',
+    () async {
+      await _createCompatibleDonor(donorRoot, includeMarker: false);
+      lineageAuthority.result = _insufficientLineageAdmission();
+
+      final result = await service().inspect(folderPath: donorRoot.path);
+
+      expect(result, isA<MessageLensHistoricalArchiveLineageRejected>());
+      expect(
+        (result as MessageLensHistoricalArchiveLineageRejected).admission,
+        isA<InsufficientMessagesLineageAdmission>(),
+      );
+      expect(lineageAuthority.messageLensCandidatePaths, hasLength(1));
+      expect(currentEvidenceReader.liveRelationshipReadCount, 0);
+      expect(currentEvidenceReader.payloadStatusReadCount, 0);
+    },
+  );
 
   test(
     'same-lineage donor produces exact read-only recovery evidence',
@@ -105,11 +196,8 @@ void main() {
 
       expect(result, isA<MessageLensHistoricalArchiveReady>());
       final ready = result as MessageLensHistoricalArchiveReady;
-      expect(ready.archiveInstanceId, _donorArchiveInstanceId);
-      expect(
-        ready.identity.value,
-        'message-lens-recovery-archive:$_donorArchiveInstanceId',
-      );
+      expect(ready.donor.archiveInstanceId, _donorArchiveInstanceId);
+      expect(ready.donor.format.name, 'currentMarkerV1');
       expect(ready.attachmentPreflight.examinedCount, 1);
       expect(ready.attachmentPreflight.recoverableCount, 1);
       expect(ready.attachmentPreflight.recoverableBytes, 3);
@@ -122,6 +210,18 @@ void main() {
       expect(File('$overlayPath-wal').existsSync(), isFalse);
     },
   );
+
+  test('reselecting an ephemeral donor recomputes preflight', () async {
+    await _createCompatibleDonor(donorRoot, includeMarker: false);
+
+    final first = await service().inspect(folderPath: donorRoot.path);
+    final second = await service().inspect(folderPath: donorRoot.path);
+
+    expect(first, isA<MessageLensHistoricalArchiveReady>());
+    expect(second, isA<MessageLensHistoricalArchiveReady>());
+    expect(lineageAuthority.messageLensCandidatePaths, hasLength(2));
+    expect(currentEvidenceReader.liveRelationshipReadCount, 2);
+  });
 }
 
 const _donorArchiveInstanceId = '123e4567-e89b-42d3-a456-426614174000';
@@ -135,8 +235,16 @@ Future<void> _writeMarker(Directory donorRoot) async {
   );
 }
 
-Future<void> _createCompatibleDonor(Directory donorRoot) async {
-  await _writeMarker(donorRoot);
+Future<void> _createCompatibleDonor(
+  Directory donorRoot, {
+  bool includeMarker = true,
+  int importVersion = 10,
+  int overlayVersion = 1,
+  int graphVersion = 2,
+}) async {
+  if (includeMarker) {
+    await _writeMarker(donorRoot);
+  }
   final payloadDirectory = Directory(
     path.join(donorRoot.path, 'attachment_archive', 'ab'),
   )..createSync(recursive: true);
@@ -147,6 +255,7 @@ Future<void> _createCompatibleDonor(Directory donorRoot) async {
   final importDatabase = sqlite3.open(
     path.join(donorRoot.path, 'macos_import_ss.db'),
   );
+  importDatabase.execute('PRAGMA user_version = $importVersion');
   importDatabase.execute('''
     CREATE TABLE source_registry (
       source_id INTEGER PRIMARY KEY,
@@ -212,6 +321,7 @@ Future<void> _createCompatibleDonor(Directory donorRoot) async {
   final overlayDatabase = sqlite3.open(
     path.join(donorRoot.path, 'user_overlays.db'),
   );
+  overlayDatabase.execute('PRAGMA user_version = $overlayVersion');
   overlayDatabase.execute('''
     CREATE TABLE archived_attachments (
       message_guid TEXT NOT NULL,
@@ -232,6 +342,20 @@ Future<void> _createCompatibleDonor(Directory donorRoot) async {
     ],
   );
   overlayDatabase.dispose();
+
+  final graphDatabase = sqlite3.open(
+    path.join(donorRoot.path, 'working_ss.db'),
+  );
+  graphDatabase.execute('PRAGMA user_version = $graphVersion');
+  graphDatabase.execute('CREATE TABLE messages (ss_id INTEGER PRIMARY KEY)');
+  graphDatabase.execute('CREATE TABLE attachments (ss_id INTEGER PRIMARY KEY)');
+  graphDatabase.execute('''
+    CREATE TABLE message_to_attachment (
+      message_ss_id INTEGER NOT NULL,
+      attachment_ss_id INTEGER NOT NULL
+    )
+  ''');
+  graphDatabase.dispose();
 }
 
 final class _RecordingLineageAuthority
@@ -318,7 +442,18 @@ ContradictoryMessagesLineageAdmission _contradictoryLineageAdmission() {
       as ContradictoryMessagesLineageAdmission;
 }
 
-MessagesLineageEvidence _lineageEvidence({int contradictionCount = 0}) {
+InsufficientMessagesLineageAdmission _insufficientLineageAdmission() {
+  return MessagesLineageAdmission.fromEvidence(
+        _lineageEvidence(matchingCount: 10, matchingRowIdBandCount: 1),
+      )
+      as InsufficientMessagesLineageAdmission;
+}
+
+MessagesLineageEvidence _lineageEvidence({
+  int contradictionCount = 0,
+  int? matchingCount,
+  int matchingRowIdBandCount = 4,
+}) {
   return MessagesLineageEvidence(
     candidateRecordCount: 80,
     usableCandidateIdentityCount: 80,
@@ -327,11 +462,11 @@ MessagesLineageEvidence _lineageEvidence({int contradictionCount = 0}) {
     duplicateCandidateRowIdCount: 0,
     currentRowsInCandidateRangeCount: 80,
     comparableCount: 80,
-    matchingCount: 80 - contradictionCount,
+    matchingCount: matchingCount ?? 80 - contradictionCount,
     contradictionCount: contradictionCount,
     missingCurrentRowCount: 0,
     unusableCurrentGuidCount: 0,
-    matchingRowIdBandCount: 4,
+    matchingRowIdBandCount: matchingRowIdBandCount,
     candidateSourceShapeIsCoherent: true,
     currentSourceShapeIsCoherent: true,
   );

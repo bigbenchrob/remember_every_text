@@ -1,6 +1,6 @@
-import '../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import '../../../essentials/source_scoped_import/domain/messages_lineage_admission.dart';
 import '../../attachments/domain/entities/message_lens_attachment_recovery.dart';
+import '../../attachments/domain/entities/message_lens_attachment_recovery_donor.dart';
 
 sealed class MessageLensHistoricalArchivePreflightResult {
   const MessageLensHistoricalArchivePreflightResult();
@@ -28,16 +28,12 @@ final class MessageLensHistoricalArchiveLineageRejected
 final class MessageLensHistoricalArchiveReady
     extends MessageLensHistoricalArchivePreflightResult {
   const MessageLensHistoricalArchiveReady({
-    required this.folderPath,
-    required this.identity,
-    required this.archiveInstanceId,
+    required this.donor,
     required this.lineageAdmission,
     required this.attachmentPreflight,
   });
 
-  final String folderPath;
-  final HistoricalArchiveSourceIdentity identity;
-  final String archiveInstanceId;
+  final MessageLensAttachmentRecoveryDonor donor;
   final SameMessagesLineageAdmission lineageAdmission;
   final MessageLensAttachmentRecoveryPreflight attachmentPreflight;
 }

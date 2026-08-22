@@ -1,17 +1,11 @@
-import 'dart:io';
-
-import 'package:path/path.dart' as path;
-
-import '../../../../essentials/archive_environment/domain/archive_environment.dart';
-import '../../../../essentials/archive_environment/domain/archive_marker.dart';
-import '../../../../essentials/archive_environment/infrastructure/file_system_archive_marker_store.dart';
 import '../../../../essentials/db/app_database_files.dart';
 import '../../../../essentials/source_scoped_import/application/messages_lineage_admission_authority.dart';
-import '../../../../essentials/source_scoped_import/domain/historical_archive_source_identity.dart';
 import '../../../../essentials/source_scoped_import/domain/messages_lineage_admission.dart';
 import '../../../attachments/application/message_lens_attachment_evidence_reader.dart';
+import '../../../attachments/application/message_lens_attachment_recovery_donor_qualifier.dart';
 import '../../../attachments/application/message_lens_attachment_recovery_matcher.dart';
 import '../../../attachments/domain/entities/message_lens_attachment_recovery.dart';
+import '../../../attachments/domain/entities/message_lens_attachment_recovery_donor.dart';
 import '../../../attachments/infrastructure/repositories/message_lens_attachment_payload_inspector.dart';
 import '../../../attachments/infrastructure/repositories/sqlite_message_lens_attachment_donor_evidence_reader.dart';
 import '../../application/message_lens_historical_archive_preflight.dart';
@@ -19,18 +13,14 @@ import '../../application/message_lens_historical_archive_preflight.dart';
 final class MessageLensHistoricalArchivePreflightService
     implements MessageLensHistoricalArchivePreflight {
   const MessageLensHistoricalArchivePreflightService({
-    required this.currentArchiveRoot,
-    required this.currentArchiveInstanceId,
-    required this.currentArchiveEnvironment,
+    required this.donorQualifier,
     required this.lineageAdmissionAuthority,
     required this.currentEvidenceReader,
     this.matcher = const MessageLensAttachmentRecoveryMatcher(),
     this.payloadInspector = const MessageLensAttachmentPayloadInspector(),
   });
 
-  final String currentArchiveRoot;
-  final String currentArchiveInstanceId;
-  final ArchiveEnvironment currentArchiveEnvironment;
+  final MessageLensAttachmentRecoveryDonorQualifier donorQualifier;
   final MessagesLineageAdmissionAuthority lineageAdmissionAuthority;
   final CurrentMessageLensAttachmentEvidenceReader currentEvidenceReader;
   final MessageLensAttachmentRecoveryMatcher matcher;
@@ -40,45 +30,21 @@ final class MessageLensHistoricalArchivePreflightService
   Future<MessageLensHistoricalArchivePreflightResult> inspect({
     required String folderPath,
   }) async {
-    final normalizedFolder = path.normalize(path.absolute(folderPath));
-    if (FileSystemEntity.typeSync(normalizedFolder, followLinks: false) !=
-        FileSystemEntityType.directory) {
-      return const MessageLensHistoricalArchiveInvalidFolder();
+    final qualification = await donorQualifier.qualify(folderPath: folderPath);
+    switch (qualification) {
+      case InvalidMessageLensAttachmentRecoveryDonor():
+        return const MessageLensHistoricalArchiveInvalidFolder();
+      case IncompatibleMessageLensAttachmentRecoveryDonor(:final detail):
+        return MessageLensHistoricalArchiveIncompatible(detail: detail);
+      case SupportedMessageLensAttachmentRecoveryDonor(:final donor):
+        return _inspectQualifiedDonor(donor);
     }
+  }
 
-    final ArchiveMarker? marker;
-    try {
-      marker = await FileSystemArchiveMarkerStore(
-        rootPath: normalizedFolder,
-      ).read();
-    } catch (error) {
-      return MessageLensHistoricalArchiveIncompatible(
-        detail: 'The MessageLens archive marker could not be read: $error',
-      );
-    }
-    if (marker == null) {
-      return const MessageLensHistoricalArchiveInvalidFolder();
-    }
-    if (marker.formatVersion != ArchiveMarker.currentFormatVersion) {
-      return MessageLensHistoricalArchiveIncompatible(
-        detail:
-            'Archive marker format ${marker.formatVersion} is not supported.',
-      );
-    }
-    if (marker.archiveInstanceId.value == currentArchiveInstanceId ||
-        path.equals(normalizedFolder, path.normalize(currentArchiveRoot))) {
-      return const MessageLensHistoricalArchiveIncompatible(
-        detail: 'The active MessageLens data folder cannot be its own donor.',
-      );
-    }
-    if (currentArchiveEnvironment == ArchiveEnvironment.production &&
-        marker.environment != ArchiveEnvironment.production) {
-      return const MessageLensHistoricalArchiveIncompatible(
-        detail:
-            'Production MessageLens accepts only production archive donors.',
-      );
-    }
-
+  Future<MessageLensHistoricalArchivePreflightResult> _inspectQualifiedDonor(
+    MessageLensAttachmentRecoveryDonor donor,
+  ) async {
+    final normalizedFolder = donor.rootPath;
     final sourceLedgerPath = appDatabasePath(
       AppDatabaseFile.sourceScopedImport,
       databaseDirectory: normalizedFolder,
@@ -87,26 +53,11 @@ final class MessageLensHistoricalArchivePreflightService
       AppDatabaseFile.overlay,
       databaseDirectory: normalizedFolder,
     );
-    if (!_isRegularFile(sourceLedgerPath) || !_isRegularFile(overlayPath)) {
-      return const MessageLensHistoricalArchiveIncompatible(
-        detail:
-            'The folder is a MessageLens archive but does not contain the supported attachment evidence stores.',
-      );
-    }
-
     final donorReader = SqliteMessageLensAttachmentDonorEvidenceReader(
       donorArchiveRoot: normalizedFolder,
       donorSourceScopedImportDatabasePath: sourceLedgerPath,
       donorOverlayDatabasePath: overlayPath,
     );
-    try {
-      await donorReader.validateCompatibility();
-    } catch (error) {
-      return MessageLensHistoricalArchiveIncompatible(
-        detail: 'This MessageLens archive cannot be inspected safely: $error',
-      );
-    }
-
     final MessagesLineageAdmission admission;
     try {
       admission = await lineageAdmissionAuthority.verifyMessageLensCandidate(
@@ -128,12 +79,7 @@ final class MessageLensHistoricalArchivePreflightService
         lineageAdmission: admission,
       );
       return MessageLensHistoricalArchiveReady(
-        folderPath: normalizedFolder,
-        identity:
-            HistoricalArchiveSourceIdentity.messageLensFromArchiveInstanceId(
-              marker.archiveInstanceId.value,
-            ),
-        archiveInstanceId: marker.archiveInstanceId.value,
+        donor: donor,
         lineageAdmission: admission,
         attachmentPreflight: attachmentPreflight,
       );
@@ -230,10 +176,5 @@ final class MessageLensHistoricalArchivePreflightService
       ambiguousCount: matched.ambiguousCount + unmatchedPayloadClaims,
       unsafeDonorPathCount: matched.unsafeDonorPathCount,
     );
-  }
-
-  static bool _isRegularFile(String candidatePath) {
-    return FileSystemEntity.typeSync(candidatePath, followLinks: false) ==
-        FileSystemEntityType.file;
   }
 }
