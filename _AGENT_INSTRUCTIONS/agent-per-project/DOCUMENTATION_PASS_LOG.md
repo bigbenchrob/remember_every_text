@@ -5339,3 +5339,21 @@ production preservation authority mechanically enforceable.
   boundary. The archive mutation coordinator now mints an opaque capability
   valid only in the exact admitted async scope, and the installer rejects
   stale or wrong-operation capabilities before any payload or metadata access.
+
+## 2026-08-22 - Pre-marker MessageLens archive qualification audit
+
+- Added Feature 26 response
+  `51-BACKWARD-COMPATIBLE-MESSAGELENS-ARCHIVE-QUALIFICATION-AUDIT.md` recording
+  the exact missing-marker rejection and its current invalid-folder modal.
+- Verified read-only that representative May, June, and July 2026 pre-marker
+  archives are genuine, healthy MessageLens formats whose existing attachment
+  evidence schemas remain compatible with the current donor adapter.
+- Recorded the blocking identity finding: those generations persisted no
+  `archiveInstanceId` or equivalent durable archive identifier, and later
+  production adoption minted a new UUID rather than recovering one.
+- Updated the canonical historical source-identity rule and Feature 26 index so
+  future work cannot derive legacy identity from paths, filenames, timestamps,
+  filesystem metadata, or an invented content hash.
+- Stopped without code, donor mutation, marker creation, lineage weakening, or
+  attachment recovery because the prompt's legacy-identity stop condition was
+  met.

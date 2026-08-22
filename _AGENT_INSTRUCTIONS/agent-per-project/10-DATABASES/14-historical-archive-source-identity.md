@@ -130,5 +130,28 @@ The MessageLens ready-state slice does not persist recovery donors as content
 sources or create sidebar cartouches. Re-selecting a donor is a fresh,
 idempotent inspection of its current attachment evidence.
 
+### Pre-Marker MessageLens Archives
+
+MessageLens archives created before the July 2026 archive-environment work do
+not contain `.messagelens-archive.json`, an `archiveInstanceId`, or another
+documented durable archive identifier. Their canonical Application Support
+folder was an operational location, not persisted identity. The later adoption
+operation minted a new archive instance ID rather than recovering one from
+legacy databases.
+
+These folders may be recognizable as genuine historical MessageLens formats,
+and their evidence schemas may remain readable. Recognition and schema
+compatibility do not establish `HistoricalArchiveSourceIdentity`.
+
+Therefore a pre-marker folder is not currently an admissible MessageLens
+attachment-recovery donor. Do not derive identity from its path, basename,
+familiar filenames, database timestamps, filesystem metadata, or an invented
+content hash. Supporting it requires a separately approved canonical legacy
+identity contract; donor mutation or marker creation is not an acceptable
+compatibility mechanism.
+
+See the
+[backward-compatible qualification audit](../45-NEW-FEATURE-ADDITION/26-PRODUCTION-ARCHIVE-RECOVERY/responses/51-BACKWARD-COMPATIBLE-MESSAGELENS-ARCHIVE-QUALIFICATION-AUDIT.md).
+
 Adding another source kind requires its own evidence and canonical rule. It
 must not reuse or silently alter either established identity rule.

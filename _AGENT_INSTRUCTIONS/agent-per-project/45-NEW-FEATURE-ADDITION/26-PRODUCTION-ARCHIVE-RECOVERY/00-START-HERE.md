@@ -83,6 +83,7 @@ panel. See:
 - [MessageLens Attachment Matching And Safe Recovery](responses/47-MESSAGELENS-ATTACHMENT-MATCHING-AND-PRESERVATION-SAFE-RECOVERY.md)
 - [Preservation-Safe Attachment Recovery Infrastructure](responses/48-PRESERVATION-SAFE-ATTACHMENT-RECOVERY-INFRASTRUCTURE.md)
 - [MessageLens Historical Archives Ready-State Implementation](responses/50-ENABLE-MESSAGELENS-HISTORICAL-ARCHIVES-THROUGH-READY-STATE.md)
+- [Backward-Compatible MessageLens Archive Qualification Audit](responses/51-BACKWARD-COMPATIBLE-MESSAGELENS-ARCHIVE-QUALIFICATION-AUDIT.md)
 
 The MessageLens-folder arm is now enabled through a safe read-only ready state
 under a deliberately narrow product contract: recover attachment payloads only
@@ -93,6 +94,13 @@ instance identity, proves same Messages lineage, and reports exact recoverable
 attachment count and bytes. No donor source is persisted and no recovery
 mutation is offered yet because aggregate batch execution and terminal outcome
 ownership remain intentionally unimplemented.
+
+Read-only compatibility review subsequently confirmed that pre-July 2026
+MessageLens archives can retain healthy, readable attachment evidence while
+predating the archive marker entirely. They contain no documented durable
+archive identifier, so they remain recognizable but unsupported recovery
+donors. MessageLens must not manufacture identity from paths, familiar files,
+timestamps, or content hashes merely to admit them.
 
 ## Original Emergency Objective
 
