@@ -51,17 +51,18 @@ OnboardingGate.startImportAndGraphBuild()
 
 ## Progress Reporting
 
-Onboarding progress is graph-lifecycle progress. Retired database files may
+Onboarding progress is a durable projection of typed facts supplied by the
+source-import and Conversation Graph services. Retired database files may
 still be reset or inspected by diagnostics, but onboarding does not consume
-`DbImportControlViewModel`, `runImportAndMigration()`, or retired
-projection paths.
+`DbImportControlViewModel`, `runImportAndMigration()`, or retired projection
+paths.
 
-The graph build lifecycle reports enough status for onboarding to show:
-
-- Current table name and phase (validating/copying/verifying)
-- Row counts per table
-- Duration per table
-- Overall progress percentage
+Enumerable import, rich-text, and row-oriented projection work reports exact
+completed and total units at bounded cadence. Fast set-based projectors,
+derived-store reset, and final readiness probes report typed coarse substages
+without a fabricated percentage. Presentation consumes
+`OnboardingOperationSnapshot`; it does not calculate work by inspecting
+repositories.
 
 The app-facing setup path is `MessageDataResetService` for cleanup/reset plus
 `ConversationGraphBuildController` for source-scoped graph build/rebuild.

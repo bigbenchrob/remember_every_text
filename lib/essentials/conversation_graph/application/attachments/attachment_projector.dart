@@ -13,10 +13,12 @@ class AttachmentProjector {
   Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
     required int sourceId,
     required int startedAfterSourceRowId,
+    GraphProjectionWorkObserver? onProgress,
   }) {
     return repository.projectAttachmentsAfterSourceRowId(
       sourceId: sourceId,
       startedAfterSourceRowId: startedAfterSourceRowId,
+      onProgress: onProgress,
     );
   }
 }

@@ -18,5 +18,6 @@ abstract interface class MessageProjectionRepository {
   Future<MessageProjectionResult> projectMessagesAfterSourceRowId({
     required int sourceId,
     required int startedAfterSourceRowId,
+    GraphProjectionWorkObserver? onProgress,
   });
 }

@@ -2,6 +2,7 @@ import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
+import '../source_import_work_progress.dart';
 
 class ChatMessageJoinImportResult {
   const ChatMessageJoinImportResult({
@@ -26,22 +27,31 @@ class ChatMessageJoinImporter {
   final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
-  Future<ChatMessageJoinImportResult> importJoins() async {
-    return _importJoinsWhere(whereClause: null, whereArgs: const <Object?>[]);
+  Future<ChatMessageJoinImportResult> importJoins({
+    SourceImportWorkObserver? onProgress,
+  }) async {
+    return _importJoinsWhere(
+      whereClause: null,
+      whereArgs: const <Object?>[],
+      onProgress: onProgress,
+    );
   }
 
   Future<ChatMessageJoinImportResult> importJoinsAfterSourceMessageRowId({
     required int startedAfterSourceRowId,
+    SourceImportWorkObserver? onProgress,
   }) {
     return _importJoinsWhere(
       whereClause: 'WHERE message_id > ?',
       whereArgs: <Object?>[startedAfterSourceRowId],
+      onProgress: onProgress,
     );
   }
 
   Future<ChatMessageJoinImportResult> _importJoinsWhere({
     required String? whereClause,
     required List<Object?> whereArgs,
+    required SourceImportWorkObserver? onProgress,
   }) async {
     final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
@@ -55,6 +65,13 @@ class ChatMessageJoinImporter {
       );
 
       var insertedJoinCount = 0;
+      var completedJoinCount = 0;
+      publishSourceImportProgress(
+        observer: onProgress,
+        unit: SourceImportWorkUnit.chatMessageRelationships,
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
@@ -83,6 +100,14 @@ class ChatMessageJoinImporter {
           if (insertedId != 0) {
             insertedJoinCount += 1;
           }
+          completedJoinCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.chatMessageRelationships,
+            completedWorkCount: completedJoinCount,
+            totalWorkCount: rows.length,
+            lastCompletedSourceRowId: sourceRowId,
+          );
         }
       });
 

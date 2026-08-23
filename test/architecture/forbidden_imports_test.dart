@@ -7436,6 +7436,53 @@ void main() {
         );
       },
     );
+
+    test('Onboarding progress remains typed and service-owned', () async {
+      final sourceContract = await File(
+        'lib/essentials/source_scoped_import/application/'
+        'source_import_work_progress.dart',
+      ).readAsString();
+      final graphContract = await File(
+        'lib/essentials/conversation_graph/application/'
+        'conversation_graph_build_observation.dart',
+      ).readAsString();
+      final onboardingSnapshot = await File(
+        'lib/essentials/onboarding/domain/onboarding_operation_snapshot.dart',
+      ).readAsString();
+      final onboardingPresentation = await File(
+        'lib/essentials/onboarding/presentation/onboarding_overlay.dart',
+      ).readAsString();
+      final onboardingGate = await File(
+        'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+      ).readAsString();
+
+      for (final contract in <String>[sourceContract, graphContract]) {
+        expect(contract, isNot(contains('package:flutter/')));
+        expect(contract, isNot(contains('hooks_riverpod')));
+        expect(contract, isNot(contains('flutter_riverpod')));
+        expect(contract, isNot(contains('Timer.periodic')));
+      }
+      expect(sourceContract, contains('SourceImportWorkUnit'));
+      expect(sourceContract, contains('completedWorkCount'));
+      expect(sourceContract, contains('totalWorkCount'));
+      expect(sourceContract, contains('ObservationStride = 1000'));
+      expect(graphContract, contains('ConversationGraphBuildSuboperation'));
+      expect(onboardingSnapshot, contains('OnboardingOperationSubstage'));
+      expect(onboardingSnapshot, isNot(contains('Timer.periodic')));
+      expect(onboardingGate, isNot(contains('Timer.periodic')));
+      expect(
+        onboardingPresentation,
+        contains('onboardingOperationSnapshotProvider'),
+      );
+      expect(
+        onboardingPresentation,
+        isNot(contains('SourceImportWorkProgress')),
+      );
+      expect(
+        onboardingPresentation,
+        isNot(contains('ConversationGraphBuildObservation')),
+      );
+    });
   });
 }
 

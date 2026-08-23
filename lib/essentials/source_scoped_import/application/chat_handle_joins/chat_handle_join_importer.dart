@@ -2,6 +2,7 @@ import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
+import '../source_import_work_progress.dart';
 
 class ChatHandleJoinImportResult {
   const ChatHandleJoinImportResult({
@@ -26,7 +27,9 @@ class ChatHandleJoinImporter {
   final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
-  Future<ChatHandleJoinImportResult> importJoins() async {
+  Future<ChatHandleJoinImportResult> importJoins({
+    SourceImportWorkObserver? onProgress,
+  }) async {
     final batchId = await importLedger.insertImportBatch(
       sourceId: sourceId,
       startedAtUtc: DateTime.now().toUtc().toIso8601String(),
@@ -40,6 +43,13 @@ class ChatHandleJoinImporter {
       );
 
       var insertedJoinCount = 0;
+      var completedJoinCount = 0;
+      publishSourceImportProgress(
+        observer: onProgress,
+        unit: SourceImportWorkUnit.chatHandleRelationships,
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceChatRowId = _requiredInt(row, 'chat_id');
@@ -63,6 +73,14 @@ class ChatHandleJoinImporter {
           if (insertedId != 0) {
             insertedJoinCount += 1;
           }
+          completedJoinCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.chatHandleRelationships,
+            completedWorkCount: completedJoinCount,
+            totalWorkCount: rows.length,
+            lastCompletedSourceRowId: sourceHandleRowId,
+          );
         }
       });
 

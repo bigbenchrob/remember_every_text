@@ -10,6 +10,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Onboarding now reports typed, real completed-work progress while importing
+  source records, decoding rich text, and projecting row-oriented Conversation
+  Graph data. Progress is persisted at bounded cadence and rendered from the
+  durable operation snapshot; coarse operations remain honestly indeterminate.
+
 - Onboarding now persists one typed operation snapshot for initial import,
   reimport, and automatic recovery. Relaunch distinguishes interrupted work
   from active work, top-level failures become terminal typed state, and

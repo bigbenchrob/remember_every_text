@@ -5,6 +5,7 @@ import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
+import '../source_import_work_progress.dart';
 
 class MessageImportResult {
   const MessageImportResult({
@@ -31,7 +32,9 @@ class MessageImporter {
   final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
-  Future<MessageImportResult> importNewMessages() async {
+  Future<MessageImportResult> importNewMessages({
+    SourceImportWorkObserver? onProgress,
+  }) async {
     final startedAfterSourceRowId =
         await importLedger.maxMessageSourceRowIdForSource(sourceId) ?? 0;
 
@@ -45,6 +48,12 @@ class MessageImporter {
       );
 
       if (rows.isEmpty) {
+        publishSourceImportProgress(
+          observer: onProgress,
+          unit: SourceImportWorkUnit.messages,
+          completedWorkCount: 0,
+          totalWorkCount: 0,
+        );
         return MessageImportResult(
           startedAfterSourceRowId: startedAfterSourceRowId,
           insertedMessageCount: 0,
@@ -58,19 +67,32 @@ class MessageImporter {
       );
 
       var insertedMessageCount = 0;
+      var completedMessageCount = 0;
       int? lastImportedSourceRowId;
 
+      publishSourceImportProgress(
+        observer: onProgress,
+        unit: SourceImportWorkUnit.messages,
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
-          final sourceRowId = _requiredInt(row, 'source_rowid');
-          lastImportedSourceRowId = sourceRowId;
-          final attributedBody = _nullableBlob(row, 'attributedBody');
-          final messageSummaryInfo = _nullableBlob(row, 'message_summary_info');
-          final payloadData = _nullableBlob(row, 'payload_data');
+          int? sourceRowId;
+          try {
+            sourceRowId = _requiredInt(row, 'source_rowid');
+            lastImportedSourceRowId = sourceRowId;
+            final attributedBody = _nullableBlob(row, 'attributedBody');
+            final messageSummaryInfo = _nullableBlob(
+              row,
+              'message_summary_info',
+            );
+            final payloadData = _nullableBlob(row, 'payload_data');
 
-          final insertedId = await txn.insertIgnore(
-            'messages',
-            <String, Object?>{
+            final insertedId = await txn.insertIgnore('messages', <
+              String,
+              Object?
+            >{
               'ss_id': SourceScopedRowKey.pack(
                 sourceId: sourceId,
                 sourceRowId: sourceRowId,
@@ -106,12 +128,26 @@ class MessageImporter {
               'has_message_summary_info': messageSummaryInfo == null ? 0 : 1,
               'has_payload_data_source': payloadData == null ? 0 : 1,
               'batch_id': batchId,
-            },
-          );
+            });
 
-          if (insertedId != 0) {
-            insertedMessageCount += 1;
+            if (insertedId != 0) {
+              insertedMessageCount += 1;
+            }
+          } on StateError catch (error) {
+            throw SourceImportRecordException(
+              unit: SourceImportWorkUnit.messages,
+              sourceRowId: sourceRowId,
+              reason: error.message,
+            );
           }
+          completedMessageCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.messages,
+            completedWorkCount: completedMessageCount,
+            totalWorkCount: rows.length,
+            lastCompletedSourceRowId: sourceRowId,
+          );
         }
       });
 

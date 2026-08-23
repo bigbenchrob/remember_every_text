@@ -78,6 +78,7 @@ final class OnboardingProgressReporter {
     required this.operationId,
     required Future<void> Function({
       required OnboardingOperationId operationId,
+      OnboardingOperationSubstage? substage,
       required OnboardingOperationProgress? progress,
     })
     report,
@@ -86,11 +87,17 @@ final class OnboardingProgressReporter {
   final OnboardingOperationId operationId;
   final Future<void> Function({
     required OnboardingOperationId operationId,
+    OnboardingOperationSubstage? substage,
     required OnboardingOperationProgress? progress,
   })
   _report;
 
-  Future<void> observe({int? completedWorkUnits, int? totalWorkUnits}) async {
+  Future<void> observe({
+    required OnboardingOperationSubstage substage,
+    int? completedWorkUnits,
+    int? totalWorkUnits,
+    int? lastCompletedSourceRowId,
+  }) async {
     if ((completedWorkUnits == null) != (totalWorkUnits == null)) {
       throw ArgumentError(
         'Completed and total work units must be supplied together.',
@@ -98,11 +105,13 @@ final class OnboardingProgressReporter {
     }
     await _report(
       operationId: operationId,
+      substage: substage,
       progress: completedWorkUnits == null
           ? null
           : OnboardingOperationProgress(
               completedWorkUnits: completedWorkUnits,
               totalWorkUnits: totalWorkUnits!,
+              lastCompletedSourceRowId: lastCompletedSourceRowId,
             ),
     );
   }
@@ -186,12 +195,19 @@ final class OnboardingOperationSnapshotController {
 
   Future<void> reportProgress({
     required OnboardingOperationId operationId,
+    OnboardingOperationSubstage? substage,
     required OnboardingOperationProgress? progress,
   }) async {
     _requireCurrent(operationId);
-    await _publish(
-      _current.observeProgress(observedAtUtc: _now(), progress: progress),
+    final next = _current.observeProgress(
+      observedAtUtc: _now(),
+      substage: substage,
+      progress: progress,
     );
+    if (identical(next, _current)) {
+      return;
+    }
+    await _publish(next);
   }
 
   Future<T> runStage<T>({

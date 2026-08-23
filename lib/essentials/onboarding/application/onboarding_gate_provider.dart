@@ -8,6 +8,7 @@ import '../../archive_environment/domain.dart'
     show ArchiveMutationDeniedException, ArchiveMutationOperation;
 import '../../archive_environment/feature_level_providers.dart'
     show archiveAccessAuthorityProvider, archiveMutationCoordinatorProvider;
+import '../../conversation_graph/application/conversation_graph_build_observation.dart';
 import '../../conversation_graph/feature_level_providers.dart'
     show conversationGraphBuildControllerProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
@@ -273,7 +274,12 @@ class OnboardingGate extends _$OnboardingGate {
         stage: OnboardingOperationStage.environmentPreparation,
         failureCategory:
             OnboardingOperationFailureCategory.environmentPreparation,
-        action: (_) => _prepareForFreshStartIfNeeded(),
+        action: (progress) async {
+          await progress.observe(
+            substage: OnboardingOperationSubstage.preparingEnvironment,
+          );
+          await _prepareForFreshStartIfNeeded();
+        },
       );
     } catch (error, stackTrace) {
       _enterPreparationFailure(
@@ -292,8 +298,10 @@ class OnboardingGate extends _$OnboardingGate {
         operationId: operationId,
         stage: OnboardingOperationStage.messageDataBuild,
         failureCategory: OnboardingOperationFailureCategory.messageDataBuild,
-        action: (_) =>
-            _runConversationGraphBuild(owner: 'onboarding-first-run'),
+        action: (progress) => _runConversationGraphBuild(
+          owner: 'onboarding-first-run',
+          progress: progress,
+        ),
       );
     } catch (error) {
       await _recordConversationGraphBuildFailure(error);
@@ -388,8 +396,12 @@ class OnboardingGate extends _$OnboardingGate {
         stage: OnboardingOperationStage.environmentPreparation,
         failureCategory:
             OnboardingOperationFailureCategory.environmentPreparation,
-        action: (_) =>
-            ref.read(messageDataResetServiceProvider).resetDerivedData(),
+        action: (progress) async {
+          await progress.observe(
+            substage: OnboardingOperationSubstage.resettingDerivedData,
+          );
+          await ref.read(messageDataResetServiceProvider).resetDerivedData();
+        },
       );
     } catch (error, stackTrace) {
       _enterPreparationFailure(
@@ -410,7 +422,10 @@ class OnboardingGate extends _$OnboardingGate {
         operationId: operationId,
         stage: OnboardingOperationStage.messageDataBuild,
         failureCategory: OnboardingOperationFailureCategory.messageDataBuild,
-        action: (_) => _runConversationGraphBuild(owner: 'settings-reimport'),
+        action: (progress) => _runConversationGraphBuild(
+          owner: 'settings-reimport',
+          progress: progress,
+        ),
       );
     } catch (error) {
       await _recordConversationGraphBuildFailure(error);
@@ -537,8 +552,12 @@ class OnboardingGate extends _$OnboardingGate {
         stage: OnboardingOperationStage.automaticRecoveryReset,
         failureCategory:
             OnboardingOperationFailureCategory.environmentPreparation,
-        action: (_) =>
-            ref.read(messageDataResetServiceProvider).resetDerivedData(),
+        action: (progress) async {
+          await progress.observe(
+            substage: OnboardingOperationSubstage.resettingDerivedData,
+          );
+          await ref.read(messageDataResetServiceProvider).resetDerivedData();
+        },
       );
       await operationController.complete(
         operationId: operationId,
@@ -630,10 +649,32 @@ class OnboardingGate extends _$OnboardingGate {
     await ref.read(messageDataResetServiceProvider).resetDerivedData();
   }
 
-  Future<void> _runConversationGraphBuild({required String owner}) async {
-    await ref
-        .read(conversationGraphBuildControllerProvider.notifier)
-        .runOnce(owner: owner);
+  Future<void> _runConversationGraphBuild({
+    required String owner,
+    required OnboardingProgressReporter progress,
+  }) async {
+    var observationWriteTail = Future<void>.value();
+    void observeBuild(ConversationGraphBuildObservation observation) {
+      if (observation.kind == ConversationGraphBuildObservationKind.completed) {
+        return;
+      }
+      observationWriteTail = observationWriteTail.then((_) {
+        return progress.observe(
+          substage: _onboardingSubstage(observation.suboperation),
+          completedWorkUnits: observation.completedWorkCount,
+          totalWorkUnits: observation.totalWorkCount,
+          lastCompletedSourceRowId: observation.lastCompletedSourceRowId,
+        );
+      });
+    }
+
+    try {
+      await ref
+          .read(conversationGraphBuildControllerProvider.notifier)
+          .runOnce(owner: owner, onObservation: observeBuild);
+    } finally {
+      await observationWriteTail;
+    }
     await _clearConversationGraphBuildFailure();
   }
 
@@ -658,6 +699,11 @@ class OnboardingGate extends _$OnboardingGate {
       onboardingOperationControllerProvider.future,
     );
     try {
+      await operationController.reportProgress(
+        operationId: operationId,
+        substage: OnboardingOperationSubstage.verifyingDurableReadiness,
+        progress: null,
+      );
       final proof = await ref
           .read(onboardingDurableCompletionVerifierProvider)
           .verifyInstallationReady();
@@ -710,4 +756,51 @@ class OnboardingGate extends _$OnboardingGate {
     ref.invalidate(onboardingEnvironmentReportProvider);
     _setWorkflowOverride(OnboardingStatus.awaitingUserAction);
   }
+}
+
+OnboardingOperationSubstage _onboardingSubstage(
+  ConversationGraphBuildSuboperation suboperation,
+) {
+  return switch (suboperation) {
+    ConversationGraphBuildSuboperation.importChats =>
+      OnboardingOperationSubstage.importingChats,
+    ConversationGraphBuildSuboperation.importHandles =>
+      OnboardingOperationSubstage.importingHandles,
+    ConversationGraphBuildSuboperation.importContacts =>
+      OnboardingOperationSubstage.importingContacts,
+    ConversationGraphBuildSuboperation.importContactEmailChannels =>
+      OnboardingOperationSubstage.importingContactEmailChannels,
+    ConversationGraphBuildSuboperation.importContactPhoneChannels =>
+      OnboardingOperationSubstage.importingContactPhoneChannels,
+    ConversationGraphBuildSuboperation.importMessages =>
+      OnboardingOperationSubstage.importingMessages,
+    ConversationGraphBuildSuboperation.extractRichText =>
+      OnboardingOperationSubstage.extractingRichText,
+    ConversationGraphBuildSuboperation.persistRichText =>
+      OnboardingOperationSubstage.persistingRichText,
+    ConversationGraphBuildSuboperation.importAttachments =>
+      OnboardingOperationSubstage.importingAttachments,
+    ConversationGraphBuildSuboperation.importChatMessageRelationships =>
+      OnboardingOperationSubstage.importingChatMessageRelationships,
+    ConversationGraphBuildSuboperation.importChatHandleRelationships =>
+      OnboardingOperationSubstage.importingChatHandleRelationships,
+    ConversationGraphBuildSuboperation.importMessageAttachmentRelationships =>
+      OnboardingOperationSubstage.importingMessageAttachmentRelationships,
+    ConversationGraphBuildSuboperation.projectHandles =>
+      OnboardingOperationSubstage.projectingHandles,
+    ConversationGraphBuildSuboperation.projectContacts =>
+      OnboardingOperationSubstage.projectingContacts,
+    ConversationGraphBuildSuboperation.projectChatHandleRelationships =>
+      OnboardingOperationSubstage.projectingChatHandleRelationships,
+    ConversationGraphBuildSuboperation.projectConversations =>
+      OnboardingOperationSubstage.projectingConversations,
+    ConversationGraphBuildSuboperation.projectMessages =>
+      OnboardingOperationSubstage.projectingMessages,
+    ConversationGraphBuildSuboperation.projectAttachments =>
+      OnboardingOperationSubstage.projectingAttachments,
+    ConversationGraphBuildSuboperation.projectChatMessageRelationships =>
+      OnboardingOperationSubstage.projectingChatMessageRelationships,
+    ConversationGraphBuildSuboperation.projectMessageAttachmentRelationships =>
+      OnboardingOperationSubstage.projectingMessageAttachmentRelationships,
+  };
 }

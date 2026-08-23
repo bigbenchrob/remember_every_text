@@ -4,6 +4,7 @@ import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
+import '../source_import_work_progress.dart';
 
 class ContactImportResult {
   const ContactImportResult({
@@ -30,7 +31,9 @@ class ContactImporter {
   final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
-  Future<ContactImportResult> importContacts() async {
+  Future<ContactImportResult> importContacts({
+    SourceImportWorkObserver? onProgress,
+  }) async {
     final sourceDb = await sourceDatabaseOpener.openReadOnly(addressBookDbPath);
     final batchId = await importLedger.insertImportBatch(
       sourceId: sourceId,
@@ -53,11 +56,27 @@ class ContactImporter {
 
       var insertedContactCount = 0;
       var insertedChannelCount = 0;
+      var completedContactCount = 0;
+      var completedEmailCount = 0;
+      var completedPhoneCount = 0;
+      publishSourceImportProgress(
+        observer: onProgress,
+        unit: SourceImportWorkUnit.contacts,
+        completedWorkCount: 0,
+        totalWorkCount: contactRows.length,
+      );
       await importLedger.writeTransaction((txn) async {
         final validContactRowIds = <int>{};
         for (final row in contactRows) {
           final sourceRowId = _readNullableInt(row['Z_PK']);
           if (sourceRowId == null) {
+            completedContactCount += 1;
+            publishSourceImportProgress(
+              observer: onProgress,
+              unit: SourceImportWorkUnit.contacts,
+              completedWorkCount: completedContactCount,
+              totalWorkCount: contactRows.length,
+            );
             continue;
           }
           validContactRowIds.add(sourceRowId);
@@ -91,8 +110,22 @@ class ContactImporter {
           if (insertedId != 0) {
             insertedContactCount += 1;
           }
+          completedContactCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.contacts,
+            completedWorkCount: completedContactCount,
+            totalWorkCount: contactRows.length,
+            lastCompletedSourceRowId: sourceRowId,
+          );
         }
 
+        publishSourceImportProgress(
+          observer: onProgress,
+          unit: SourceImportWorkUnit.contactEmailChannels,
+          completedWorkCount: 0,
+          totalWorkCount: emailRows.length,
+        );
         for (final row in emailRows) {
           final owner = _readNullableInt(row['ZOWNER']);
           final address =
@@ -100,6 +133,14 @@ class ContactImporter {
           if (owner == null ||
               !validContactRowIds.contains(owner) ||
               address == null) {
+            completedEmailCount += 1;
+            publishSourceImportProgress(
+              observer: onProgress,
+              unit: SourceImportWorkUnit.contactEmailChannels,
+              completedWorkCount: completedEmailCount,
+              totalWorkCount: emailRows.length,
+              lastCompletedSourceRowId: owner,
+            );
             continue;
           }
           final insertedId = await _insertChannel(
@@ -113,14 +154,36 @@ class ContactImporter {
           if (insertedId != 0) {
             insertedChannelCount += 1;
           }
+          completedEmailCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.contactEmailChannels,
+            completedWorkCount: completedEmailCount,
+            totalWorkCount: emailRows.length,
+            lastCompletedSourceRowId: owner,
+          );
         }
 
+        publishSourceImportProgress(
+          observer: onProgress,
+          unit: SourceImportWorkUnit.contactPhoneChannels,
+          completedWorkCount: 0,
+          totalWorkCount: phoneRows.length,
+        );
         for (final row in phoneRows) {
           final owner = _readNullableInt(row['ZOWNER']);
           final rawNumber = _trim(row['ZFULLNUMBER']) ?? _trim(row['ZVALUE']);
           if (owner == null ||
               !validContactRowIds.contains(owner) ||
               rawNumber == null) {
+            completedPhoneCount += 1;
+            publishSourceImportProgress(
+              observer: onProgress,
+              unit: SourceImportWorkUnit.contactPhoneChannels,
+              completedWorkCount: completedPhoneCount,
+              totalWorkCount: phoneRows.length,
+              lastCompletedSourceRowId: owner,
+            );
             continue;
           }
           final insertedId = await _insertChannel(
@@ -134,6 +197,14 @@ class ContactImporter {
           if (insertedId != 0) {
             insertedChannelCount += 1;
           }
+          completedPhoneCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.contactPhoneChannels,
+            completedWorkCount: completedPhoneCount,
+            totalWorkCount: phoneRows.length,
+            lastCompletedSourceRowId: owner,
+          );
         }
       });
 

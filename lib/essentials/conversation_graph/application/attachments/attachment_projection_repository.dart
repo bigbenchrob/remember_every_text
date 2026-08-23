@@ -18,5 +18,6 @@ abstract interface class AttachmentProjectionRepository {
   Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
     required int sourceId,
     required int startedAfterSourceRowId,
+    GraphProjectionWorkObserver? onProgress,
   });
 }

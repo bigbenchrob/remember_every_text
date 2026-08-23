@@ -5,6 +5,7 @@ import '../../archive_environment/feature_level_providers.dart'
     show archiveMutationCoordinatorProvider;
 import '../../db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
+import 'conversation_graph_build_observation.dart';
 import 'conversation_graph_build_report.dart';
 import 'conversation_graph_build_service_provider.dart';
 import 'conversation_graph_build_state.dart';
@@ -23,6 +24,7 @@ class ConversationGraphBuildController
 
   Future<ConversationGraphBuildReport> runOnce({
     String owner = 'conversation-graph-build-controller',
+    ConversationGraphBuildObserver? onObservation,
   }) {
     final inFlight = _inFlight;
     if (inFlight != null) {
@@ -30,7 +32,7 @@ class ConversationGraphBuildController
     }
 
     late final Future<ConversationGraphBuildReport> future;
-    future = _runBuild(owner).whenComplete(() {
+    future = _runBuild(owner, onObservation).whenComplete(() {
       if (identical(_inFlight, future)) {
         _inFlight = null;
       }
@@ -39,17 +41,23 @@ class ConversationGraphBuildController
     return future;
   }
 
-  Future<ConversationGraphBuildReport> _runBuild(String owner) async {
+  Future<ConversationGraphBuildReport> _runBuild(
+    String owner,
+    ConversationGraphBuildObserver? onObservation,
+  ) async {
     return ref
         .read(archiveMutationCoordinatorProvider.notifier)
         .run(
           operation: ArchiveMutationOperation.graphBuild,
           ownerLabel: owner,
-          action: () => _runAdmittedBuild(owner),
+          action: () => _runAdmittedBuild(owner, onObservation),
         );
   }
 
-  Future<ConversationGraphBuildReport> _runAdmittedBuild(String owner) async {
+  Future<ConversationGraphBuildReport> _runAdmittedBuild(
+    String owner,
+    ConversationGraphBuildObserver? onObservation,
+  ) async {
     final startedAt = DateTime.now().toUtc();
     state = ConversationGraphBuildState(
       status: ConversationGraphBuildStatus.running,
@@ -61,7 +69,7 @@ class ConversationGraphBuildController
       final service = await ref.read(
         conversationGraphBuildServiceProvider.future,
       );
-      final report = await service.runOnce();
+      final report = await service.runOnce(onObservation: onObservation);
       ref.read(messageDataVersionProvider.notifier).bump();
       state = ConversationGraphBuildState(
         status: ConversationGraphBuildStatus.succeeded,

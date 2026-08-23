@@ -22,9 +22,11 @@ void main() {
     );
     snapshot = snapshot.observeProgress(
       observedAtUtc: startedAt.add(const Duration(seconds: 2)),
+      substage: OnboardingOperationSubstage.importingMessages,
       progress: const OnboardingOperationProgress(
         completedWorkUnits: 25,
         totalWorkUnits: 100,
+        lastCompletedSourceRowId: 912,
       ),
     );
 
@@ -36,6 +38,11 @@ void main() {
       OnboardingOperationStage.environmentPreparation,
     ]);
     expect(restored.progress?.completedWorkUnits, 25);
+    expect(
+      restored.currentSubstage,
+      OnboardingOperationSubstage.importingMessages,
+    );
+    expect(restored.progress?.lastCompletedSourceRowId, 912);
     expect(restored.progressRevision, 3);
     expect(restored.toJson().toString(), isNot(contains('Importing messages')));
   });

@@ -150,10 +150,10 @@ ConversationGraphBuildOrchestrator _orchestrator({
   }
 
   return ConversationGraphBuildOrchestrator(
-    importChats: importChats ?? step,
-    importHandles: step,
-    importContacts: step,
-    importMessages: () async {
+    importChats: (_) => (importChats ?? step)(),
+    importHandles: (_) => step(),
+    importContacts: (_) => step(),
+    importMessages: (_) async {
       await step();
       return report?.messageImportResult ??
           const MessageImportResult(
@@ -162,7 +162,7 @@ ConversationGraphBuildOrchestrator _orchestrator({
             lastImportedSourceRowId: null,
           );
     },
-    enrichMissingText: (messageImportResult) async {
+    enrichMissingText: (messageImportResult, _) async {
       await step();
       return report?.richTextEnrichmentResult ??
           const MessageRichTextEnrichmentResult(
@@ -172,7 +172,7 @@ ConversationGraphBuildOrchestrator _orchestrator({
             extractorAvailable: true,
           );
     },
-    importAttachments: () async {
+    importAttachments: (_) async {
       await step();
       return const AttachmentImportResult(
         startedAfterSourceRowId: 0,
@@ -181,11 +181,11 @@ ConversationGraphBuildOrchestrator _orchestrator({
         lastImportedSourceRowId: null,
       );
     },
-    importChatMessageJoins: (messageImportResult) async {
+    importChatMessageJoins: (messageImportResult, _) async {
       await step();
     },
-    importChatHandleJoins: step,
-    importMessageAttachmentJoins: (messageImportResult) async {
+    importChatHandleJoins: (_) => step(),
+    importMessageAttachmentJoins: (messageImportResult, _) async {
       await step();
     },
     projectHandles: step,
@@ -198,8 +198,8 @@ ConversationGraphBuildOrchestrator _orchestrator({
       );
     },
     projectChatHandleEdges: step,
-    projectChats: step,
-    projectMessages: (messageImportResult) async {
+    projectChats: (_) => step(),
+    projectMessages: (messageImportResult, _) async {
       await step();
       return report?.messageProjectionResult ??
           const MessageProjectionResult(
@@ -207,7 +207,7 @@ ConversationGraphBuildOrchestrator _orchestrator({
             insertedMessageCount: 0,
           );
     },
-    projectAttachments: (messageImportResult, attachmentImportResult) async {
+    projectAttachments: (messageImportResult, attachmentImportResult, _) async {
       await step();
     },
     projectChatMessageEdges: (messageImportResult) async {

@@ -14,8 +14,10 @@ import '../../logging/feature_level_providers.dart'
     show diagnosticReportExporterProvider;
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
+import '../application/onboarding_operation_snapshot_provider.dart';
 import '../application/onboarding_overlay_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
+import '../domain/onboarding_operation_snapshot.dart';
 import '../domain/onboarding_status.dart';
 
 /// Full-window blocking overlay for Onboarding-owned operational phases.
@@ -1023,16 +1025,23 @@ class _ProgressContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final graphBuildState = ref.watch(conversationGraphBuildControllerProvider);
+    final operationSnapshot = ref
+        .watch(onboardingOperationSnapshotProvider)
+        .valueOrNull;
     final statusMessage = _progressStatusMessage(
       graphBuildState: graphBuildState,
       isPreparingFirstRun: isPreparingFirstRun,
       isReimport: isReimport,
     );
+    final observedProgress = operationSnapshot?.progress;
     final progressValue =
-        !isPreparingFirstRun &&
-            graphBuildState.status == ConversationGraphBuildStatus.succeeded
+        observedProgress != null && observedProgress.totalWorkUnits > 0
+        ? observedProgress.completedWorkUnits / observedProgress.totalWorkUnits
+        : !isPreparingFirstRun &&
+              graphBuildState.status == ConversationGraphBuildStatus.succeeded
         ? 1.0
         : null;
+    final substage = operationSnapshot?.currentSubstage;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1044,6 +1053,15 @@ class _ProgressContent extends ConsumerWidget {
             color: colors.content.textPrimary,
           ),
         ),
+        if (substage != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            _onboardingSubstageLabel(substage, progress: observedProgress),
+            style: typography.body.copyWith(
+              color: colors.content.textSecondary,
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
@@ -1064,6 +1082,50 @@ class _ProgressContent extends ConsumerWidget {
       ],
     );
   }
+}
+
+String _onboardingSubstageLabel(
+  OnboardingOperationSubstage substage, {
+  required OnboardingOperationProgress? progress,
+}) {
+  final label = switch (substage) {
+    OnboardingOperationSubstage.preparingEnvironment => 'Preparing storage',
+    OnboardingOperationSubstage.resettingDerivedData =>
+      'Resetting rebuildable data',
+    OnboardingOperationSubstage.importingChats => 'Conversations',
+    OnboardingOperationSubstage.importingHandles => 'Participants',
+    OnboardingOperationSubstage.importingContacts => 'Contacts',
+    OnboardingOperationSubstage.importingContactEmailChannels =>
+      'Contact email addresses',
+    OnboardingOperationSubstage.importingContactPhoneChannels =>
+      'Contact phone numbers',
+    OnboardingOperationSubstage.importingMessages => 'Messages',
+    OnboardingOperationSubstage.extractingRichText => 'Message text',
+    OnboardingOperationSubstage.persistingRichText => 'Saving message text',
+    OnboardingOperationSubstage.importingAttachments => 'Attachments',
+    OnboardingOperationSubstage.importingChatMessageRelationships ||
+    OnboardingOperationSubstage.importingChatHandleRelationships ||
+    OnboardingOperationSubstage.importingMessageAttachmentRelationships =>
+      'Message relationships',
+    OnboardingOperationSubstage.projectingHandles => 'Preparing participants',
+    OnboardingOperationSubstage.projectingContacts => 'Preparing contacts',
+    OnboardingOperationSubstage.projectingChatHandleRelationships ||
+    OnboardingOperationSubstage.projectingChatMessageRelationships ||
+    OnboardingOperationSubstage.projectingMessageAttachmentRelationships =>
+      'Preparing relationships',
+    OnboardingOperationSubstage.projectingConversations =>
+      'Preparing conversations',
+    OnboardingOperationSubstage.projectingMessages => 'Preparing messages',
+    OnboardingOperationSubstage.projectingAttachments =>
+      'Preparing attachments',
+    OnboardingOperationSubstage.verifyingDurableReadiness =>
+      'Checking prepared data',
+  };
+  if (progress == null || progress.totalWorkUnits == 0) {
+    return label;
+  }
+  return '$label  ${progress.completedWorkUnits} / '
+      '${progress.totalWorkUnits}';
 }
 
 String _progressStatusMessage({

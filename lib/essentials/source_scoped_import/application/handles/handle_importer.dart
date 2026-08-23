@@ -3,6 +3,7 @@ import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
+import '../source_import_work_progress.dart';
 
 class HandleImportResult {
   const HandleImportResult({
@@ -92,7 +93,9 @@ class HandleImporter {
     }
   }
 
-  Future<HandleImportResult> importNewHandles() async {
+  Future<HandleImportResult> importNewHandles({
+    SourceImportWorkObserver? onProgress,
+  }) async {
     final startedAfterSourceRowId =
         await importLedger.maxHandleSourceRowIdForSource(sourceId) ?? 0;
     final batchId = await importLedger.insertImportBatch(
@@ -116,42 +119,66 @@ class HandleImporter {
         includeMessageFallback: hasNewSourceHandles,
       );
 
+      var completedHandleCount = 0;
+      publishSourceImportProgress(
+        observer: onProgress,
+        unit: SourceImportWorkUnit.handles,
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
-          final sourceRowId = _requiredInt(row, 'source_rowid');
-          if (sourceRowId > startedAfterSourceRowId) {
-            lastImportedSourceRowId = sourceRowId;
-          }
-          final rawIdentifier = _requiredString(row, 'id');
-          final isMe = localAccountHandleKeys.contains(
-            _handleGroupingKey(rawIdentifier),
-          );
-          final insertedId = await txn
-              .insertIgnore('handles', <String, Object?>{
-                'ss_id': SourceScopedRowKey.pack(
-                  sourceId: sourceId,
-                  sourceRowId: sourceRowId,
-                ),
-                'source_id': sourceId,
-                'source_rowid': sourceRowId,
-                'id': rawIdentifier,
-                'service': _nullableString(row, 'service'),
-                'is_me': isMe ? 1 : 0,
-                'batch_id': batchId,
-              });
+          int? sourceRowId;
+          try {
+            sourceRowId = _requiredInt(row, 'source_rowid');
+            if (sourceRowId > startedAfterSourceRowId) {
+              lastImportedSourceRowId = sourceRowId;
+            }
+            final rawIdentifier = _requiredString(row, 'id');
+            final isMe = localAccountHandleKeys.contains(
+              _handleGroupingKey(rawIdentifier),
+            );
+            final insertedId = await txn
+                .insertIgnore('handles', <String, Object?>{
+                  'ss_id': SourceScopedRowKey.pack(
+                    sourceId: sourceId,
+                    sourceRowId: sourceRowId,
+                  ),
+                  'source_id': sourceId,
+                  'source_rowid': sourceRowId,
+                  'id': rawIdentifier,
+                  'service': _nullableString(row, 'service'),
+                  'is_me': isMe ? 1 : 0,
+                  'batch_id': batchId,
+                });
 
-          if (insertedId == 0) {
-            await txn.update(
-              'handles',
-              <String, Object?>{'is_me': isMe ? 1 : 0},
-              where: 'source_id = ? AND source_rowid = ?',
-              whereArgs: <Object?>[sourceId, sourceRowId],
+            if (insertedId == 0) {
+              await txn.update(
+                'handles',
+                <String, Object?>{'is_me': isMe ? 1 : 0},
+                where: 'source_id = ? AND source_rowid = ?',
+                whereArgs: <Object?>[sourceId, sourceRowId],
+              );
+            }
+
+            if (insertedId != 0) {
+              insertedHandleCount += 1;
+            }
+          } on StateError catch (error) {
+            throw SourceImportRecordException(
+              unit: SourceImportWorkUnit.handles,
+              sourceRowId: sourceRowId,
+              reason: error.message,
             );
           }
-
-          if (insertedId != 0) {
-            insertedHandleCount += 1;
-          }
+          completedHandleCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.handles,
+            completedWorkCount: completedHandleCount,
+            totalWorkCount: rows.length,
+            lastCompletedSourceRowId: sourceRowId,
+          );
         }
       });
     } finally {

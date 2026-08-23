@@ -28,11 +28,12 @@ class SqliteAttachmentProjectionRepository
   Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
     required int sourceId,
     required int startedAfterSourceRowId,
+    GraphProjectionWorkObserver? onProgress,
   }) {
     return _projectAttachmentsWhere(
       whereClause: 'source_id = ? AND source_rowid > ?',
       whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
-      onProgress: null,
+      onProgress: onProgress,
     );
   }
 

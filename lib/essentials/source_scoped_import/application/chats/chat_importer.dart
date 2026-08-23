@@ -3,6 +3,7 @@ import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
+import '../source_import_work_progress.dart';
 
 class ChatImportResult {
   const ChatImportResult({
@@ -27,7 +28,9 @@ class ChatImporter {
   final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
-  Future<ChatImportResult> importChats() async {
+  Future<ChatImportResult> importChats({
+    SourceImportWorkObserver? onProgress,
+  }) async {
     final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
     try {
@@ -40,6 +43,13 @@ class ChatImporter {
       );
 
       var insertedChatCount = 0;
+      var completedChatCount = 0;
+      publishSourceImportProgress(
+        observer: onProgress,
+        unit: SourceImportWorkUnit.chats,
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
@@ -66,6 +76,14 @@ class ChatImporter {
           if (insertedId != 0) {
             insertedChatCount += 1;
           }
+          completedChatCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.chats,
+            completedWorkCount: completedChatCount,
+            totalWorkCount: rows.length,
+            lastCompletedSourceRowId: sourceRowId,
+          );
         }
       });
 

@@ -13,10 +13,12 @@ class MessageProjector {
   Future<MessageProjectionResult> projectMessagesAfterSourceRowId({
     required int sourceId,
     required int startedAfterSourceRowId,
+    GraphProjectionWorkObserver? onProgress,
   }) {
     return repository.projectMessagesAfterSourceRowId(
       sourceId: sourceId,
       startedAfterSourceRowId: startedAfterSourceRowId,
+      onProgress: onProgress,
     );
   }
 }

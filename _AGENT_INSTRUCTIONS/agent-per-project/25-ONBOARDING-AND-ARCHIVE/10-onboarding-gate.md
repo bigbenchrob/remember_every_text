@@ -53,9 +53,10 @@ not the durable authority for whether consequential Onboarding work is running,
 interrupted, failed, or complete.
 
 `OnboardingOperationSnapshot` is the canonical durable description of admitted
-Onboarding operations. It records a typed operation kind, typed stage, unique
-operation identity, originating process-session identity, completed stages,
-real progress observations, bounded failure evidence, and terminal status. It
+Onboarding operations. It records a typed operation kind, typed stage and
+substage, unique operation identity, originating process-session identity,
+completed stages, bounded real progress observations, optional safe source
+ROWID context, bounded failure evidence, and terminal status. It
 is persisted as format-versioned JSON in the existing overlay settings table;
 no Onboarding schema or second operation database exists.
 
@@ -226,6 +227,14 @@ for blocking workflow phases. It switches content based on the current status:
 | `reimportBuildingGraph` | Progress view |
 | `reimportComplete` | Summary, "Done" button |
 | `notNeeded` | Not rendered — overlay is absent |
+
+For enumerable source import, rich-text, and row-oriented graph work, the
+progress view projects the durable typed substage plus completed/total units.
+The owning import or graph service calculates those facts. The overlay never
+queries stores or invents a denominator. Source work is persisted at 1,000-row
+cadence and exact completion; repeated identical progress causes no snapshot
+write. Coarse reset, verification, and set-based graph operations remain
+indeterminate rather than presenting fabricated precision.
 
 Legacy note: `OnboardingOverlay` still contains branches for `awaitingFda` and
 `awaitingUserAction`, but the current app shell normally presents those states

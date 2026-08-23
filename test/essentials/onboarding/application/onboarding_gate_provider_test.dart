@@ -1588,10 +1588,10 @@ ConversationGraphBuildService _fakeGraphBuildService({
 
   return ConversationGraphBuildService(
     orchestrator: ConversationGraphBuildOrchestrator(
-      importChats: step,
-      importHandles: () async {},
-      importContacts: () async {},
-      importMessages: () async {
+      importChats: (_) => step(),
+      importHandles: (_) async {},
+      importContacts: (_) async {},
+      importMessages: (_) async {
         await step();
         return const MessageImportResult(
           startedAfterSourceRowId: 0,
@@ -1599,7 +1599,7 @@ ConversationGraphBuildService _fakeGraphBuildService({
           lastImportedSourceRowId: 1,
         );
       },
-      enrichMissingText: (_) async {
+      enrichMissingText: (_, _) async {
         return const MessageRichTextEnrichmentResult(
           candidateMessageCount: 0,
           enrichedMessageCount: 0,
@@ -1607,7 +1607,7 @@ ConversationGraphBuildService _fakeGraphBuildService({
           extractorAvailable: true,
         );
       },
-      importAttachments: () async {
+      importAttachments: (_) async {
         return const AttachmentImportResult(
           startedAfterSourceRowId: 0,
           examinedAttachmentCount: 0,
@@ -1615,9 +1615,9 @@ ConversationGraphBuildService _fakeGraphBuildService({
           lastImportedSourceRowId: null,
         );
       },
-      importChatMessageJoins: (_) async {},
-      importChatHandleJoins: () async {},
-      importMessageAttachmentJoins: (_) async {},
+      importChatMessageJoins: (_, _) async {},
+      importChatHandleJoins: (_) async {},
+      importMessageAttachmentJoins: (_, _) async {},
       projectHandles: () async {},
       projectContacts: () async {
         return const ContactProjectionResult(
@@ -1627,14 +1627,14 @@ ConversationGraphBuildService _fakeGraphBuildService({
         );
       },
       projectChatHandleEdges: () async {},
-      projectChats: () async {},
-      projectMessages: (_) async {
+      projectChats: (_) async {},
+      projectMessages: (_, _) async {
         return const MessageProjectionResult(
           examinedMessageCount: 1,
           insertedMessageCount: 1,
         );
       },
-      projectAttachments: (_, _) async {},
+      projectAttachments: (_, _, _) async {},
       projectChatMessageEdges: (_) async {},
       projectMessageAttachmentEdges: (_) async {},
     ),

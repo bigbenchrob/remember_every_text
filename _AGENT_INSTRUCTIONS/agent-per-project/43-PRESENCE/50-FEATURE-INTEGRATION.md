@@ -174,6 +174,12 @@ completion, stage, and observed progress. Presence consumes that evidence to
 derive interaction; it does not persist a competing operation state, infer
 completion from presentation, or acquire the feature's mutation authority.
 
+When the feature can count completed work, its operational services own the
+typed numerator, denominator, and suboperation. The feature may persist those
+facts at bounded cadence in its one operation snapshot. Presence and other
+renderers consume that projection; they do not inspect repositories, replay
+identical values as liveness, or turn animation/timers into progress.
+
 ### Validation Results
 
 Features may supply:

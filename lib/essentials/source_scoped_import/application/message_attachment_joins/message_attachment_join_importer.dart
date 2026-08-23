@@ -2,6 +2,7 @@ import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
+import '../source_import_work_progress.dart';
 
 class MessageAttachmentJoinImportResult {
   const MessageAttachmentJoinImportResult({
@@ -26,22 +27,31 @@ class MessageAttachmentJoinImporter {
   final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
-  Future<MessageAttachmentJoinImportResult> importJoins() async {
-    return _importJoinsWhere(whereClause: null, whereArgs: const <Object?>[]);
+  Future<MessageAttachmentJoinImportResult> importJoins({
+    SourceImportWorkObserver? onProgress,
+  }) async {
+    return _importJoinsWhere(
+      whereClause: null,
+      whereArgs: const <Object?>[],
+      onProgress: onProgress,
+    );
   }
 
   Future<MessageAttachmentJoinImportResult> importJoinsAfterSourceMessageRowId({
     required int startedAfterSourceRowId,
+    SourceImportWorkObserver? onProgress,
   }) {
     return _importJoinsWhere(
       whereClause: 'WHERE message_id > ?',
       whereArgs: <Object?>[startedAfterSourceRowId],
+      onProgress: onProgress,
     );
   }
 
   Future<MessageAttachmentJoinImportResult> _importJoinsWhere({
     required String? whereClause,
     required List<Object?> whereArgs,
+    required SourceImportWorkObserver? onProgress,
   }) async {
     final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
@@ -55,6 +65,12 @@ class MessageAttachmentJoinImporter {
       );
 
       if (rows.isEmpty) {
+        publishSourceImportProgress(
+          observer: onProgress,
+          unit: SourceImportWorkUnit.messageAttachmentRelationships,
+          completedWorkCount: 0,
+          totalWorkCount: 0,
+        );
         return const MessageAttachmentJoinImportResult(
           examinedJoinCount: 0,
           insertedJoinCount: 0,
@@ -67,6 +83,13 @@ class MessageAttachmentJoinImporter {
       );
 
       var insertedJoinCount = 0;
+      var completedJoinCount = 0;
+      publishSourceImportProgress(
+        observer: onProgress,
+        unit: SourceImportWorkUnit.messageAttachmentRelationships,
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceMessageRowId = _requiredInt(row, 'message_id');
@@ -91,6 +114,14 @@ class MessageAttachmentJoinImporter {
           if (insertedId != 0) {
             insertedJoinCount += 1;
           }
+          completedJoinCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.messageAttachmentRelationships,
+            completedWorkCount: completedJoinCount,
+            totalWorkCount: rows.length,
+            lastCompletedSourceRowId: sourceMessageRowId,
+          );
         }
       });
 

@@ -27,11 +27,12 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
   Future<MessageProjectionResult> projectMessagesAfterSourceRowId({
     required int sourceId,
     required int startedAfterSourceRowId,
+    GraphProjectionWorkObserver? onProgress,
   }) {
     return _projectMessagesWhere(
       whereClause: 'source_id = ? AND source_rowid > ?',
       whereArgs: <Object?>[sourceId, startedAfterSourceRowId],
-      onProgress: null,
+      onProgress: onProgress,
     );
   }
 

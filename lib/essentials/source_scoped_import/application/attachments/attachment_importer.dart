@@ -3,6 +3,7 @@ import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
 import '../../domain/source_scoped_row_key.dart';
+import '../source_import_work_progress.dart';
 
 class AttachmentImportResult {
   const AttachmentImportResult({
@@ -31,7 +32,9 @@ class AttachmentImporter {
   final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
 
-  Future<AttachmentImportResult> importAttachments() async {
+  Future<AttachmentImportResult> importAttachments({
+    SourceImportWorkObserver? onProgress,
+  }) async {
     final startedAfterSourceRowId =
         await importLedger.maxAttachmentSourceRowIdForSource(sourceId) ?? 0;
 
@@ -45,6 +48,12 @@ class AttachmentImporter {
       );
 
       if (rows.isEmpty) {
+        publishSourceImportProgress(
+          observer: onProgress,
+          unit: SourceImportWorkUnit.attachments,
+          completedWorkCount: 0,
+          totalWorkCount: 0,
+        );
         return AttachmentImportResult(
           startedAfterSourceRowId: startedAfterSourceRowId,
           examinedAttachmentCount: 0,
@@ -59,7 +68,14 @@ class AttachmentImporter {
       );
 
       var insertedAttachmentCount = 0;
+      var completedAttachmentCount = 0;
       int? lastImportedSourceRowId;
+      publishSourceImportProgress(
+        observer: onProgress,
+        unit: SourceImportWorkUnit.attachments,
+        completedWorkCount: 0,
+        totalWorkCount: rows.length,
+      );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
@@ -87,6 +103,14 @@ class AttachmentImporter {
           if (insertedId != 0) {
             insertedAttachmentCount += 1;
           }
+          completedAttachmentCount += 1;
+          publishSourceImportProgress(
+            observer: onProgress,
+            unit: SourceImportWorkUnit.attachments,
+            completedWorkCount: completedAttachmentCount,
+            totalWorkCount: rows.length,
+            lastCompletedSourceRowId: sourceRowId,
+          );
         }
       });
 

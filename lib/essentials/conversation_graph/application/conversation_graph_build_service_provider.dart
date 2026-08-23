@@ -19,6 +19,7 @@ import 'chat_handle_joins/chat_to_handle_projector_provider.dart';
 import 'chat_message_joins/chat_to_message_projector_provider.dart';
 import 'chats/chat_projector_provider.dart';
 import 'contacts/contact_projector_provider.dart';
+import 'conversation_graph_build_observation.dart';
 import 'conversation_graph_build_report.dart';
 import 'handles/handle_projector_provider.dart';
 import 'message_attachment_joins/message_to_attachment_projector_provider.dart';
@@ -40,8 +41,10 @@ class ConversationGraphBuildService {
   final Future<LocalAccountHandleIdentityReconciliationReport> Function()?
   _reconcileLocalAccountHandleIdentity;
 
-  Future<ConversationGraphBuildReport> runOnce() {
-    return _orchestrator.runOnce();
+  Future<ConversationGraphBuildReport> runOnce({
+    ConversationGraphBuildObserver? onObservation,
+  }) {
+    return _orchestrator.runOnce(onObservation: onObservation);
   }
 
   Future<LocalAccountHandleIdentityReconciliationReport>
@@ -139,44 +142,60 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
       );
     },
     orchestrator: ConversationGraphBuildOrchestrator(
-      importChats: () async {
-        await chatImporter.importChats();
+      importChats: (onProgress) async {
+        await chatImporter.importChats(onProgress: onProgress);
       },
-      importHandles: () async {
-        await handleImporter.importNewHandles();
+      importHandles: (onProgress) async {
+        await handleImporter.importNewHandles(onProgress: onProgress);
       },
-      importContacts: () async {
-        await contactImporter.importContacts();
+      importContacts: (onProgress) async {
+        await contactImporter.importContacts(onProgress: onProgress);
       },
-      importMessages: messageImporter.importNewMessages,
-      enrichMissingText: (messageImportResult) {
+      importMessages: (onProgress) {
+        return messageImporter.importNewMessages(onProgress: onProgress);
+      },
+      enrichMissingText: (messageImportResult, onProgress) {
         return runGraphBuildRichTextEnrichment(
           messageImportResult: messageImportResult,
-          enrichAllMissingText: richTextEnricher.enrichMissingText,
+          enrichAllMissingText: () {
+            return richTextEnricher.enrichMissingText(onProgress: onProgress);
+          },
           enrichMissingTextAfterSourceRowId:
-              richTextEnricher.enrichMissingTextAfterSourceRowId,
+              ({required sourceId, required startedAfterSourceRowId}) {
+                return richTextEnricher.enrichMissingTextAfterSourceRowId(
+                  sourceId: sourceId,
+                  startedAfterSourceRowId: startedAfterSourceRowId,
+                  onProgress: onProgress,
+                );
+              },
         );
       },
-      importAttachments: attachmentImporter.importAttachments,
-      importChatMessageJoins: (messageImportResult) async {
+      importAttachments: (onProgress) {
+        return attachmentImporter.importAttachments(onProgress: onProgress);
+      },
+      importChatMessageJoins: (messageImportResult, onProgress) async {
         if (messageImportResult.insertedMessageCount == 0) {
-          await chatMessageJoinImporter.importJoins();
+          await chatMessageJoinImporter.importJoins(onProgress: onProgress);
           return;
         }
         await chatMessageJoinImporter.importJoinsAfterSourceMessageRowId(
           startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+          onProgress: onProgress,
         );
       },
-      importChatHandleJoins: () async {
-        await chatHandleJoinImporter.importJoins();
+      importChatHandleJoins: (onProgress) async {
+        await chatHandleJoinImporter.importJoins(onProgress: onProgress);
       },
-      importMessageAttachmentJoins: (messageImportResult) async {
+      importMessageAttachmentJoins: (messageImportResult, onProgress) async {
         if (messageImportResult.insertedMessageCount == 0) {
-          await messageAttachmentJoinImporter.importJoins();
+          await messageAttachmentJoinImporter.importJoins(
+            onProgress: onProgress,
+          );
           return;
         }
         await messageAttachmentJoinImporter.importJoinsAfterSourceMessageRowId(
           startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+          onProgress: onProgress,
         );
       },
       projectHandles: () async {
@@ -186,32 +205,37 @@ Future<ConversationGraphBuildService> conversationGraphBuildService(
       projectChatHandleEdges: () async {
         await chatToHandleProjector.projectEdges();
       },
-      projectChats: () async {
-        await chatProjector.projectChats();
+      projectChats: (onProgress) async {
+        await chatProjector.projectChats(onProgress: onProgress);
       },
-      projectMessages: (messageImportResult) {
+      projectMessages: (messageImportResult, onProgress) {
         if (messageImportResult.insertedMessageCount == 0) {
-          return messageProjector.projectMessages();
+          return messageProjector.projectMessages(onProgress: onProgress);
         }
         return messageProjector.projectMessagesAfterSourceRowId(
           sourceId: liveChatDbSourceId,
           startedAfterSourceRowId: messageImportResult.startedAfterSourceRowId,
+          onProgress: onProgress,
         );
       },
-      projectAttachments: (messageImportResult, attachmentImportResult) async {
-        if (messageImportResult.insertedMessageCount == 0) {
-          await attachmentProjector.projectAttachments();
-          return;
-        }
-        if (attachmentImportResult.insertedAttachmentCount == 0) {
-          return;
-        }
-        await attachmentProjector.projectAttachmentsAfterSourceRowId(
-          sourceId: liveChatDbSourceId,
-          startedAfterSourceRowId:
-              attachmentImportResult.startedAfterSourceRowId,
-        );
-      },
+      projectAttachments:
+          (messageImportResult, attachmentImportResult, onProgress) async {
+            if (messageImportResult.insertedMessageCount == 0) {
+              await attachmentProjector.projectAttachments(
+                onProgress: onProgress,
+              );
+              return;
+            }
+            if (attachmentImportResult.insertedAttachmentCount == 0) {
+              return;
+            }
+            await attachmentProjector.projectAttachmentsAfterSourceRowId(
+              sourceId: liveChatDbSourceId,
+              startedAfterSourceRowId:
+                  attachmentImportResult.startedAfterSourceRowId,
+              onProgress: onProgress,
+            );
+          },
       projectChatMessageEdges: (messageImportResult) async {
         if (messageImportResult.insertedMessageCount == 0) {
           await chatToMessageProjector.projectEdges();

@@ -7,6 +7,7 @@ import 'package:remember_this_text/essentials/conversation_graph/infrastructure/
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/handle_projection_repository.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/chat_handle_joins/chat_handle_join_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/handles/handle_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
@@ -234,6 +235,49 @@ void main() {
     expect(second.insertedHandleCount, 0);
   });
 
+  test('handle import reports start and completed source row', () async {
+    await _insertSourceHandle(
+      chatDbPath,
+      rowId: 5,
+      id: '*city*',
+      service: 'SMS',
+    );
+    final observations = <SourceImportWorkProgress>[];
+
+    await HandleImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importNewHandles(onProgress: observations.add);
+
+    expect(observations, hasLength(2));
+    expect(observations.first.completedWorkCount, 0);
+    expect(observations.first.totalWorkCount, 1);
+    expect(observations.last.completedWorkCount, 1);
+    expect(observations.last.lastCompletedSourceRowId, 5);
+  });
+
+  test('malformed handle stops with bounded source row context', () async {
+    await _insertSourceHandle(chatDbPath, rowId: 19, id: null, service: 'SMS');
+    final observations = <SourceImportWorkProgress>[];
+
+    await expectLater(
+      HandleImporter(
+        chatDbPath: chatDbPath,
+        importLedger: importLedgerDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+      ).importNewHandles(onProgress: observations.add),
+      throwsA(
+        isA<SourceImportRecordException>()
+            .having((error) => error.unit, 'unit', SourceImportWorkUnit.handles)
+            .having((error) => error.sourceRowId, 'source ROWID', 19),
+      ),
+    );
+
+    expect(observations, hasLength(1));
+    expect(observations.single.completedWorkCount, 0);
+  });
+
   test('imports and projects chat-to-handle topology idempotently', () async {
     await _insertSourceChatHandle(chatDbPath, chatId: 7, handleId: 12);
 
@@ -281,7 +325,7 @@ Future<void> _createSourceTables(String chatDbPath) async {
   await db.execute('''
     CREATE TABLE handle (
       ROWID INTEGER PRIMARY KEY,
-      id TEXT NOT NULL,
+      id TEXT,
       service TEXT
     )
   ''');
@@ -328,7 +372,7 @@ Future<void> _insertSourceAccountEvidence(
 Future<void> _insertSourceHandle(
   String chatDbPath, {
   required int rowId,
-  required String id,
+  required String? id,
   required String service,
 }) async {
   final db = await openDatabase(chatDbPath);

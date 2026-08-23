@@ -115,6 +115,7 @@ void main() {
       action: (reporter) async {
         await for (final completed in progress.stream) {
           await reporter.observe(
+            substage: OnboardingOperationSubstage.importingMessages,
             completedWorkUnits: completed,
             totalWorkUnits: 10,
           );
@@ -128,6 +129,12 @@ void main() {
 
     await expectLater(result, throwsStateError);
     _expectMessageDataFailure(controller.current, 'stream failure');
+    expect(
+      controller.current.currentSubstage,
+      OnboardingOperationSubstage.importingMessages,
+    );
+    expect(controller.current.progress?.completedWorkUnits, 1);
+    expect(controller.current.status, isNot(OnboardingOperationStatus.running));
   });
 
   test('completion requires durable proof compatible with operation', () async {
@@ -250,6 +257,32 @@ void main() {
 
     expect(store.writeCount, 21);
     expect(store.writeCount, lessThan(1000));
+  });
+
+  test('identical substage progress is not persisted as new work', () async {
+    final operationId = await _begin(controller);
+    const progress = OnboardingOperationProgress(
+      completedWorkUnits: 1000,
+      totalWorkUnits: 2500,
+      lastCompletedSourceRowId: 4000,
+    );
+    await controller.reportProgress(
+      operationId: operationId,
+      substage: OnboardingOperationSubstage.importingMessages,
+      progress: progress,
+    );
+    final revisionAfterRealProgress = controller.current.progressRevision;
+    final writesAfterRealProgress = store.writeCount;
+
+    clock.advance();
+    await controller.reportProgress(
+      operationId: operationId,
+      substage: OnboardingOperationSubstage.importingMessages,
+      progress: progress,
+    );
+
+    expect(controller.current.progressRevision, revisionAfterRealProgress);
+    expect(store.writeCount, writesAfterRealProgress);
   });
 }
 

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/core/util/date_converter.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
@@ -229,6 +230,68 @@ void main() {
 
     expect(rows.single['sender_handle_ss_id'], isNull);
   });
+
+  test('reports truthful message progress after completed rows', () async {
+    await _insertSourceMessage(
+      chatDbPath,
+      rowId: 10,
+      guid: 'message-10',
+      handleId: 0,
+      isFromMe: 0,
+    );
+    await _insertSourceMessage(
+      chatDbPath,
+      rowId: 20,
+      guid: 'message-20',
+      handleId: 0,
+      isFromMe: 0,
+    );
+    final observations = <SourceImportWorkProgress>[];
+
+    await MessageImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importNewMessages(onProgress: observations.add);
+
+    expect(observations, hasLength(2));
+    expect(observations.first.completedWorkCount, 0);
+    expect(observations.first.totalWorkCount, 2);
+    expect(observations.last.completedWorkCount, 2);
+    expect(observations.last.lastCompletedSourceRowId, 20);
+  });
+
+  test('malformed message stops with bounded source row context', () async {
+    await _insertSourceMessage(
+      chatDbPath,
+      rowId: 77,
+      guid: null,
+      handleId: 0,
+      isFromMe: 0,
+    );
+    final observations = <SourceImportWorkProgress>[];
+
+    await expectLater(
+      MessageImporter(
+        chatDbPath: chatDbPath,
+        importLedger: importDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+      ).importNewMessages(onProgress: observations.add),
+      throwsA(
+        isA<SourceImportRecordException>()
+            .having(
+              (error) => error.unit,
+              'unit',
+              SourceImportWorkUnit.messages,
+            )
+            .having((error) => error.sourceRowId, 'source ROWID', 77),
+      ),
+    );
+
+    expect(observations, hasLength(1));
+    expect(observations.single.completedWorkCount, 0);
+    expect(await importDatabase.database.query('messages'), isEmpty);
+  });
 }
 
 Future<void> _createSourceMessageTable(String chatDbPath) async {
@@ -236,7 +299,7 @@ Future<void> _createSourceMessageTable(String chatDbPath) async {
   await db.execute('''
     CREATE TABLE message (
       ROWID INTEGER PRIMARY KEY,
-      guid TEXT NOT NULL,
+      guid TEXT,
       handle_id INTEGER,
       is_from_me INTEGER NOT NULL,
       date INTEGER,
@@ -260,7 +323,7 @@ Future<void> _createSourceMessageTable(String chatDbPath) async {
 Future<void> _insertSourceMessage(
   String chatDbPath, {
   required int rowId,
-  required String guid,
+  required String? guid,
   required int handleId,
   required int isFromMe,
   int? date,

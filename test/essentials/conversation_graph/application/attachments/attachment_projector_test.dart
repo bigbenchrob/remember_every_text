@@ -189,6 +189,7 @@ class _FakeAttachmentProjectionRepository
   Future<AttachmentProjectionResult> projectAttachmentsAfterSourceRowId({
     required int sourceId,
     required int startedAfterSourceRowId,
+    GraphProjectionWorkObserver? onProgress,
   }) async {
     boundedCallCount += 1;
     lastSourceId = sourceId;

@@ -11,6 +11,32 @@ enum OnboardingOperationStage {
   automaticRecoveryReset,
 }
 
+enum OnboardingOperationSubstage {
+  preparingEnvironment,
+  resettingDerivedData,
+  importingChats,
+  importingHandles,
+  importingContacts,
+  importingContactEmailChannels,
+  importingContactPhoneChannels,
+  importingMessages,
+  extractingRichText,
+  persistingRichText,
+  importingAttachments,
+  importingChatMessageRelationships,
+  importingChatHandleRelationships,
+  importingMessageAttachmentRelationships,
+  projectingHandles,
+  projectingContacts,
+  projectingChatHandleRelationships,
+  projectingConversations,
+  projectingMessages,
+  projectingAttachments,
+  projectingChatMessageRelationships,
+  projectingMessageAttachmentRelationships,
+  verifyingDurableReadiness,
+}
+
 enum OnboardingOperationFailureCategory {
   environmentPreparation,
   messageDataBuild,
@@ -98,17 +124,20 @@ final class OnboardingOperationProgress {
   const OnboardingOperationProgress({
     required this.completedWorkUnits,
     required this.totalWorkUnits,
+    this.lastCompletedSourceRowId,
   }) : assert(completedWorkUnits >= 0),
-       assert(totalWorkUnits > 0),
+       assert(totalWorkUnits >= 0),
        assert(completedWorkUnits <= totalWorkUnits);
 
   final int completedWorkUnits;
   final int totalWorkUnits;
+  final int? lastCompletedSourceRowId;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
       'completed_work_units': completedWorkUnits,
       'total_work_units': totalWorkUnits,
+      'last_completed_source_rowid': lastCompletedSourceRowId,
     };
   }
 
@@ -121,8 +150,21 @@ final class OnboardingOperationProgress {
     return OnboardingOperationProgress(
       completedWorkUnits: completedWorkUnits,
       totalWorkUnits: totalWorkUnits,
+      lastCompletedSourceRowId: json['last_completed_source_rowid'] as int?,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is OnboardingOperationProgress &&
+        other.completedWorkUnits == completedWorkUnits &&
+        other.totalWorkUnits == totalWorkUnits &&
+        other.lastCompletedSourceRowId == lastCompletedSourceRowId;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(completedWorkUnits, totalWorkUnits, lastCompletedSourceRowId);
 }
 
 @immutable
@@ -176,6 +218,7 @@ final class OnboardingOperationSnapshot {
     this.processSessionId,
     this.kind,
     this.currentStage,
+    this.currentSubstage,
     this.startedAtUtc,
     this.stageStartedAtUtc,
     this.lastProgressObservedAtUtc,
@@ -198,6 +241,7 @@ final class OnboardingOperationSnapshot {
   final OnboardingProcessSessionId? processSessionId;
   final OnboardingOperationKind? kind;
   final OnboardingOperationStage? currentStage;
+  final OnboardingOperationSubstage? currentSubstage;
   final List<OnboardingOperationStage> completedStages;
   final DateTime? startedAtUtc;
   final DateTime? stageStartedAtUtc;
@@ -263,16 +307,22 @@ final class OnboardingOperationSnapshot {
       stageStartedAtUtc: observedAtUtc,
       lastProgressObservedAtUtc: observedAtUtc,
       clearProgress: true,
+      clearSubstage: true,
       progressRevision: progressRevision + 1,
     );
   }
 
   OnboardingOperationSnapshot observeProgress({
     required DateTime observedAtUtc,
+    OnboardingOperationSubstage? substage,
     OnboardingOperationProgress? progress,
   }) {
     _requireRunning();
+    if (substage == currentSubstage && progress == this.progress) {
+      return this;
+    }
     return _copy(
+      currentSubstage: substage,
       lastProgressObservedAtUtc: observedAtUtc,
       progress: progress,
       clearProgress: progress == null,
@@ -329,6 +379,7 @@ final class OnboardingOperationSnapshot {
       'process_session_id': processSessionId?.value,
       'kind': kind?.name,
       'current_stage': currentStage?.name,
+      'current_substage': currentSubstage?.name,
       'completed_stages': completedStages.map((stage) => stage.name).toList(),
       'started_at_utc': startedAtUtc?.toIso8601String(),
       'stage_started_at_utc': stageStartedAtUtc?.toIso8601String(),
@@ -379,6 +430,11 @@ final class OnboardingOperationSnapshot {
         OnboardingOperationStage.values,
         json['current_stage'],
         'current stage',
+      ),
+      currentSubstage: _nullableEnumByName(
+        OnboardingOperationSubstage.values,
+        json['current_substage'],
+        'current substage',
       ),
       completedStages: List<OnboardingOperationStage>.unmodifiable(
         completedRaw.map(
@@ -436,6 +492,8 @@ final class OnboardingOperationSnapshot {
   OnboardingOperationSnapshot _copy({
     OnboardingOperationStatus? status,
     OnboardingOperationStage? currentStage,
+    OnboardingOperationSubstage? currentSubstage,
+    bool clearSubstage = false,
     List<OnboardingOperationStage>? completedStages,
     DateTime? stageStartedAtUtc,
     DateTime? lastProgressObservedAtUtc,
@@ -452,6 +510,9 @@ final class OnboardingOperationSnapshot {
       processSessionId: processSessionId,
       kind: kind,
       currentStage: currentStage ?? this.currentStage,
+      currentSubstage: clearSubstage
+          ? null
+          : currentSubstage ?? this.currentSubstage,
       completedStages: completedStages ?? this.completedStages,
       startedAtUtc: startedAtUtc,
       stageStartedAtUtc: stageStartedAtUtc ?? this.stageStartedAtUtc,

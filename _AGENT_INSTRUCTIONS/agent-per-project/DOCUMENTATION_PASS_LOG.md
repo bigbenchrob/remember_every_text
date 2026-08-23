@@ -5552,3 +5552,23 @@ production preservation authority mechanically enforceable.
   measurement plus a tested macOS execution-opportunity adapter.
 - Changed no application code, persistence format, presentation, timeout,
   retry, cancellation, or runtime behavior.
+
+## 2026-08-23 - Onboarding real-progress instrumentation
+
+- Added the Feature 28 implementation record for typed, service-owned source
+  import, rich-text, and Conversation Graph progress observations.
+- Documented the unchanged four-stage Onboarding model and the new typed
+  substage vocabulary, exact denominators, completed-work numerators, bounded
+  1,000-row durable cadence, same-value deduplication, and safe source-ROWID
+  failure context.
+- Updated canonical Onboarding, import-coordination, and Presence guidance so
+  presentation consumes the durable operation snapshot and never invents
+  progress by inspecting repositories or using timers.
+- Recorded the truthful coarse boundaries that remain for reset, preparation,
+  durable verification, and fast set-based graph work.
+- Preserved the liveness conclusion: production-shaped no-observation bounds
+  and trustworthy execution-opportunity evidence are still required before
+  any watchdog or stall threshold can be justified.
+- Recorded clean final verification: 85 focused progress tests, 382
+  architecture tripwires, 2,002 complete Flutter tests, clean analyzer and
+  formatting checks, and a successful macOS debug build.

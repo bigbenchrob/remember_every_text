@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
@@ -114,6 +115,24 @@ void main() {
     expect(result.startedAfterSourceRowId, 0);
     expect(result.insertedAttachmentCount, 1);
     expect(result.lastImportedSourceRowId, 5);
+  });
+
+  test('reports attachment start and exact completed count', () async {
+    await _insertSourceAttachment(chatDbPath, rowId: 3, guid: 'three');
+    await _insertSourceAttachment(chatDbPath, rowId: 8, guid: 'eight');
+    final observations = <SourceImportWorkProgress>[];
+
+    await AttachmentImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importAttachments(onProgress: observations.add);
+
+    expect(observations, hasLength(2));
+    expect(observations.first.completedWorkCount, 0);
+    expect(observations.first.totalWorkCount, 2);
+    expect(observations.last.completedWorkCount, 2);
+    expect(observations.last.lastCompletedSourceRowId, 8);
   });
 }
 

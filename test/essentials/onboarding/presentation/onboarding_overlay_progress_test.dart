@@ -8,7 +8,9 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
+import 'package:remember_this_text/essentials/onboarding/domain/onboarding_operation_snapshot.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
 import 'package:remember_this_text/essentials/onboarding/presentation/onboarding_overlay.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
@@ -84,6 +86,26 @@ void main() {
 
     expect(find.text('Rebuilding browsing data…'), findsOneWidget);
     _expectTruthfulActiveProgress(tester);
+  });
+
+  testWidgets('real durable work renders typed determinate progress', (
+    tester,
+  ) async {
+    await _pumpProgressOverlay(
+      tester,
+      status: OnboardingStatus.buildingGraph,
+      operationSnapshot: _runningSnapshot(
+        substage: OnboardingOperationSubstage.importingMessages,
+        completed: 42000,
+        total: 137000,
+      ),
+    );
+
+    expect(find.text('Messages  42000 / 137000'), findsOneWidget);
+    final progressIndicator = tester.widget<LinearProgressIndicator>(
+      find.byType(LinearProgressIndicator),
+    );
+    expect(progressIndicator.value, closeTo(42000 / 137000, 0.000001));
   });
 
   testWidgets('first-run active failure uses a bounded human headline', (
@@ -308,6 +330,7 @@ Future<void> _pumpProgressOverlay(
   required OnboardingStatus status,
   _FixedStatusOnboardingGate? gate,
   ConversationGraphBuildState? graphBuildState,
+  OnboardingOperationSnapshot? operationSnapshot,
 }) async {
   final resolvedGraphBuildState =
       graphBuildState ??
@@ -325,6 +348,11 @@ Future<void> _pumpProgressOverlay(
         conversationGraphBuildControllerProvider.overrideWith(
           () => _FixedConversationGraphBuildController(resolvedGraphBuildState),
         ),
+        onboardingOperationSnapshotProvider.overrideWith(
+          (ref) => Stream<OnboardingOperationSnapshot>.value(
+            operationSnapshot ?? const OnboardingOperationSnapshot.idle(),
+          ),
+        ),
         onboardingEnvironmentReportProvider.overrideWith((ref) {
           throw StateError('Progress presentation does not require a report.');
         }),
@@ -333,6 +361,30 @@ Future<void> _pumpProgressOverlay(
     ),
   );
   await tester.pump();
+}
+
+OnboardingOperationSnapshot _runningSnapshot({
+  required OnboardingOperationSubstage substage,
+  required int completed,
+  required int total,
+}) {
+  final observedAt = DateTime.utc(2026, 8, 23, 12);
+  return OnboardingOperationSnapshot.running(
+    operationId: OnboardingOperationId('123e4567-e89b-42d3-a456-426614174000'),
+    processSessionId: OnboardingProcessSessionId(
+      '123e4567-e89b-42d3-a456-426614174001',
+    ),
+    kind: OnboardingOperationKind.initialImport,
+    stage: OnboardingOperationStage.messageDataBuild,
+    observedAtUtc: observedAt,
+  ).observeProgress(
+    observedAtUtc: observedAt,
+    substage: substage,
+    progress: OnboardingOperationProgress(
+      completedWorkUnits: completed,
+      totalWorkUnits: total,
+    ),
+  );
 }
 
 Future<void> _pumpRecoveryOverlay(
