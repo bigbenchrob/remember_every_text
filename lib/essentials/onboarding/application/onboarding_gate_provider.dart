@@ -14,13 +14,17 @@ import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/feature_level_providers.dart'
     show SidebarMode, activeSidebarModeProvider;
 import '../domain/onboarding_environment_report.dart';
+import '../domain/onboarding_operation_snapshot.dart';
 import '../domain/onboarding_status.dart';
 import 'database_existence_checker.dart';
 import 'full_disk_access_provider.dart';
 import 'message_data_reset_service.dart';
 import 'onboarding_database_probe_reader_provider.dart';
+import 'onboarding_durable_completion_verifier_provider.dart';
 import 'onboarding_environment_report_provider.dart';
 import 'onboarding_failure_storage_provider.dart';
+import 'onboarding_operation_snapshot_controller.dart';
+import 'onboarding_operation_snapshot_provider.dart';
 
 part 'onboarding_gate_provider.g.dart';
 
@@ -214,16 +218,23 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
-    await ref
+    final operationId = await ref
         .read(archiveMutationCoordinatorProvider.notifier)
-        .run<void>(
+        .run<OnboardingOperationId?>(
           operation: ArchiveMutationOperation.onboardingImport,
           ownerLabel: 'onboarding-first-run',
           action: _startImportAndGraphBuild,
         );
+    if (operationId == null) {
+      return;
+    }
+    await _verifyAndCompleteInstallation(
+      operationId: operationId,
+      completionStatus: OnboardingStatus.complete,
+    );
   }
 
-  Future<void> _startImportAndGraphBuild() async {
+  Future<OnboardingOperationId?> _startImportAndGraphBuild() async {
     ref
         .read(appLoggerProvider.notifier)
         .info(
@@ -243,31 +254,51 @@ class OnboardingGate extends _$OnboardingGate {
           );
       _clearWorkflowOverride();
       state = OnboardingStatus.awaitingFda;
-      return;
+      return null;
     }
+
+    final operationController = await ref.read(
+      onboardingOperationControllerProvider.future,
+    );
+    final operationId = await operationController.begin(
+      kind: OnboardingOperationKind.initialImport,
+      initialStage: OnboardingOperationStage.environmentPreparation,
+    );
 
     _setWorkflowOverride(OnboardingStatus.importing);
     await _waitForEndOfFrame();
     try {
-      await _prepareForFreshStartIfNeeded();
+      await operationController.runStage<void>(
+        operationId: operationId,
+        stage: OnboardingOperationStage.environmentPreparation,
+        failureCategory:
+            OnboardingOperationFailureCategory.environmentPreparation,
+        action: (_) => _prepareForFreshStartIfNeeded(),
+      );
     } catch (error, stackTrace) {
       _enterPreparationFailure(
         error: error,
         stackTrace: stackTrace,
         logMessage: 'Fresh onboarding preparation failed',
       );
-      return;
+      return null;
     }
 
     // ── Graph build phase ──
     _setWorkflowOverride(OnboardingStatus.buildingGraph);
     await _waitForEndOfFrame();
     try {
-      await _runConversationGraphBuild(owner: 'onboarding-first-run');
+      await operationController.runStage<void>(
+        operationId: operationId,
+        stage: OnboardingOperationStage.messageDataBuild,
+        failureCategory: OnboardingOperationFailureCategory.messageDataBuild,
+        action: (_) =>
+            _runConversationGraphBuild(owner: 'onboarding-first-run'),
+      );
     } catch (error) {
       await _recordConversationGraphBuildFailure(error);
       _finishFirstRunWithFailure();
-      return;
+      return null;
     }
 
     ref
@@ -277,7 +308,11 @@ class OnboardingGate extends _$OnboardingGate {
           source: 'OnboardingGate',
         );
 
-    _setWorkflowOverride(OnboardingStatus.complete);
+    await operationController.enterStage(
+      operationId: operationId,
+      stage: OnboardingOperationStage.durableReadinessVerification,
+    );
+    return operationId;
   }
 
   /// Wait until the current frame has finished painting.
@@ -320,20 +355,50 @@ class OnboardingGate extends _$OnboardingGate {
       return;
     }
 
-    await ref
+    final operationId = await ref
         .read(archiveMutationCoordinatorProvider.notifier)
-        .run<void>(
+        .run<OnboardingOperationId?>(
           operation: ArchiveMutationOperation.onboardingImport,
           ownerLabel: 'settings-reimport',
           action: _startReimport,
         );
+    if (operationId == null) {
+      return;
+    }
+    await _verifyAndCompleteInstallation(
+      operationId: operationId,
+      completionStatus: OnboardingStatus.reimportComplete,
+    );
   }
 
-  Future<void> _startReimport() async {
+  Future<OnboardingOperationId?> _startReimport() async {
+    final operationController = await ref.read(
+      onboardingOperationControllerProvider.future,
+    );
+    final operationId = await operationController.begin(
+      kind: OnboardingOperationKind.reimport,
+      initialStage: OnboardingOperationStage.environmentPreparation,
+    );
     // Clean out previous derived graph/import data so the build reimports
     // everything from the live source while preserving overlays and archive
     // files.
-    await ref.read(messageDataResetServiceProvider).resetDerivedData();
+    try {
+      await operationController.runStage<void>(
+        operationId: operationId,
+        stage: OnboardingOperationStage.environmentPreparation,
+        failureCategory:
+            OnboardingOperationFailureCategory.environmentPreparation,
+        action: (_) =>
+            ref.read(messageDataResetServiceProvider).resetDerivedData(),
+      );
+    } catch (error, stackTrace) {
+      _enterPreparationFailure(
+        error: error,
+        stackTrace: stackTrace,
+        logMessage: 'Settings reimport preparation failed',
+      );
+      return null;
+    }
 
     // ── Graph rebuild phase ──
     _setWorkflowOverride(OnboardingStatus.reimporting);
@@ -341,14 +406,23 @@ class OnboardingGate extends _$OnboardingGate {
     _setWorkflowOverride(OnboardingStatus.reimportBuildingGraph);
     await _waitForEndOfFrame();
     try {
-      await _runConversationGraphBuild(owner: 'settings-reimport');
+      await operationController.runStage<void>(
+        operationId: operationId,
+        stage: OnboardingOperationStage.messageDataBuild,
+        failureCategory: OnboardingOperationFailureCategory.messageDataBuild,
+        action: (_) => _runConversationGraphBuild(owner: 'settings-reimport'),
+      );
     } catch (error) {
       await _recordConversationGraphBuildFailure(error);
       _finishReimportWithFailure();
-      return;
+      return null;
     }
 
-    _setWorkflowOverride(OnboardingStatus.reimportComplete);
+    await operationController.enterStage(
+      operationId: operationId,
+      stage: OnboardingOperationStage.durableReadinessVerification,
+    );
+    return operationId;
   }
 
   /// Dismiss the overlay and switch to the Messages sidebar.
@@ -442,6 +516,13 @@ class OnboardingGate extends _$OnboardingGate {
   Future<void> _runAdmittedAutomaticRecovery(
     OnboardingEnvironmentReport report,
   ) async {
+    final operationController = await ref.read(
+      onboardingOperationControllerProvider.future,
+    );
+    final operationId = await operationController.begin(
+      kind: OnboardingOperationKind.automaticRecovery,
+      initialStage: OnboardingOperationStage.automaticRecoveryReset,
+    );
     try {
       _setWorkflowOverride(OnboardingStatus.recoveringFailedAttempt);
       await _waitForEndOfFrame();
@@ -451,7 +532,20 @@ class OnboardingGate extends _$OnboardingGate {
             'Auto-resetting app databases before onboarding retry: ${report.resetAppDatabasesReason ?? 'no reason provided'}',
             source: 'OnboardingGate',
           );
-      await ref.read(messageDataResetServiceProvider).resetDerivedData();
+      await operationController.runStage<void>(
+        operationId: operationId,
+        stage: OnboardingOperationStage.automaticRecoveryReset,
+        failureCategory:
+            OnboardingOperationFailureCategory.environmentPreparation,
+        action: (_) =>
+            ref.read(messageDataResetServiceProvider).resetDerivedData(),
+      );
+      await operationController.complete(
+        operationId: operationId,
+        proof: OnboardingDerivedResetCompletedProof(
+          verifiedAtUtc: DateTime.now().toUtc(),
+        ),
+      );
     } catch (error, stackTrace) {
       _automaticRecoveryInFlight = false;
       _automaticRecoverySuppressed = true;
@@ -554,6 +648,43 @@ class OnboardingGate extends _$OnboardingGate {
   Future<void> _clearConversationGraphBuildFailure() async {
     final storage = ref.read(onboardingFailureStorageProvider);
     await storage.clearGraphProjectionFailure();
+  }
+
+  Future<void> _verifyAndCompleteInstallation({
+    required OnboardingOperationId operationId,
+    required OnboardingStatus completionStatus,
+  }) async {
+    final operationController = await ref.read(
+      onboardingOperationControllerProvider.future,
+    );
+    try {
+      final proof = await ref
+          .read(onboardingDurableCompletionVerifierProvider)
+          .verifyInstallationReady();
+      await operationController.complete(
+        operationId: operationId,
+        proof: proof,
+      );
+      _setWorkflowOverride(completionStatus);
+    } catch (error, stackTrace) {
+      if (operationController.current.status ==
+              OnboardingOperationStatus.running &&
+          operationController.current.operationId == operationId) {
+        await operationController.fail(
+          operationId: operationId,
+          category:
+              OnboardingOperationFailureCategory.durableReadinessVerification,
+          summary: error.toString(),
+          recoveryDisposition:
+              OnboardingOperationRecoveryDisposition.retryFromSafeBoundary,
+        );
+      }
+      _enterPreparationFailure(
+        error: error,
+        stackTrace: stackTrace,
+        logMessage: 'Durable onboarding completion verification failed',
+      );
+    }
   }
 
   void _finishFirstRunWithFailure() {

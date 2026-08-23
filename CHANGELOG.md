@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Onboarding now persists one typed operation snapshot for initial import,
+  reimport, and automatic recovery. Relaunch distinguishes interrupted work
+  from active work, top-level failures become terminal typed state, and
+  completion requires fresh durable import and graph evidence rather than UI
+  progress.
+
 - Message History Coverage now aligns its shared Track title with the report's
   canonical center content column at every supported width. Its status icon and
   explicit headline replace the redundant status eyebrow, while Details now

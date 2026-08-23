@@ -31,10 +31,14 @@ import 'package:remember_this_text/essentials/db/infrastructure/data_sources/loc
 import 'package:remember_this_text/essentials/navigation/feature_level_providers.dart'
     show SidebarMode, activeSidebarModeProvider;
 import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_durable_completion_verifier_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_failure_storage_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_controller.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
+import 'package:remember_this_text/essentials/onboarding/domain/onboarding_operation_snapshot.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
 import 'package:remember_this_text/essentials/onboarding/presentation/onboarding_overlay.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
@@ -393,6 +397,12 @@ void main() {
           container.read(onboardingGateProvider),
           OnboardingStatus.complete,
         );
+        expect(
+          (await container.read(
+            onboardingOperationControllerProvider.future,
+          )).current.status,
+          OnboardingOperationStatus.completed,
+        );
 
         final sidebarModeSubscription = container.listen<SidebarMode>(
           activeSidebarModeProvider,
@@ -519,6 +529,14 @@ void main() {
         expect(find.text('Try Again'), findsOneWidget);
         expect(find.text('Send Report To Developer'), findsOneWidget);
         expect(find.textContaining('synthetic reset failure'), findsNothing);
+        final failedOperation = (await container.read(
+          onboardingOperationControllerProvider.future,
+        )).current;
+        expect(failedOperation.status, OnboardingOperationStatus.failed);
+        expect(
+          failedOperation.failure?.category,
+          OnboardingOperationFailureCategory.environmentPreparation,
+        );
 
         resetService.resetError = null;
         await tester.tap(find.text('Try Again'));
@@ -661,6 +679,9 @@ void main() {
               ),
             ),
             messageDataResetServiceProvider.overrideWith((ref) => resetService),
+            onboardingDurableCompletionVerifierProvider.overrideWithValue(
+              const _FakeDurableCompletionVerifier(),
+            ),
           ],
         );
 
@@ -736,6 +757,9 @@ void main() {
               ),
             ),
             messageDataResetServiceProvider.overrideWith((ref) => resetService),
+            onboardingDurableCompletionVerifierProvider.overrideWithValue(
+              const _FakeDurableCompletionVerifier(),
+            ),
           ],
         );
 
@@ -769,10 +793,12 @@ void main() {
           ..onResetStarted = () {
             shouldReset = false;
           };
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
 
-        addTearDown(() {
+        addTearDown(() async {
           resetService.resetCompleter = null;
           resetService.onResetStarted = null;
+          await overlayDb.close();
         });
 
         container = ProviderContainer(
@@ -780,6 +806,7 @@ void main() {
             archiveAccessAuthorityProvider.overrideWithValue(
               archiveFixture.authority,
             ),
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingEnvironmentReportProvider.overrideWith((ref) async {
               return _report(
                 state: shouldReset
@@ -831,11 +858,14 @@ void main() {
     ) async {
       final resetService = _FakeMessageDataResetService()
         ..resetError = StateError('synthetic automatic reset failure');
+      final overlayDb = OverlayDatabase(NativeDatabase.memory());
+      addTearDown(overlayDb.close);
       container = ProviderContainer(
         overrides: [
           archiveAccessAuthorityProvider.overrideWithValue(
             archiveFixture.authority,
           ),
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _automaticRecoveryReport(),
           ),
@@ -970,14 +1000,17 @@ void main() {
         final resetCompleter = Completer<void>();
         final resetService = _FakeMessageDataResetService()
           ..resetCompleter = resetCompleter;
-        addTearDown(() {
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+        addTearDown(() async {
           resetService.resetCompleter = null;
+          await overlayDb.close();
         });
         container = ProviderContainer(
           overrides: [
             archiveAccessAuthorityProvider.overrideWithValue(
               archiveFixture.authority,
             ),
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
             onboardingEnvironmentReportProvider.overrideWith((ref) async {
               environmentEvaluationCount += 1;
               return _automaticRecoveryReport();
@@ -1225,6 +1258,14 @@ void main() {
           .read(onboardingFailureStorageProvider)
           .loadGraphProjectionFailure();
       expect(failure?.message, contains('synthetic graph failure'));
+      final failedOperation = (await container.read(
+        onboardingOperationControllerProvider.future,
+      )).current;
+      expect(failedOperation.status, OnboardingOperationStatus.failed);
+      expect(
+        failedOperation.failure?.category,
+        OnboardingOperationFailureCategory.messageDataBuild,
+      );
     });
   });
 }
@@ -1416,7 +1457,24 @@ List<Override> _firstRunOverrides({
       ),
     ),
     messageDataResetServiceProvider.overrideWith((ref) => resetService),
+    onboardingDurableCompletionVerifierProvider.overrideWithValue(
+      const _FakeDurableCompletionVerifier(),
+    ),
   ];
+}
+
+final class _FakeDurableCompletionVerifier
+    implements OnboardingDurableCompletionVerifier {
+  const _FakeDurableCompletionVerifier();
+
+  @override
+  Future<OnboardingInstallationReadyProof> verifyInstallationReady() async {
+    return OnboardingInstallationReadyProof(
+      verifiedAtUtc: DateTime.utc(2026, 8, 23),
+      sourceScopedImportRows: 100,
+      conversationGraphRows: 100,
+    );
+  }
 }
 
 final class _AdmissionErrorArchiveMutationCoordinator

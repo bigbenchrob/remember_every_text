@@ -46,6 +46,38 @@ and mounts the same real Onboarding Presence host for prerequisite interaction.
 - **Rule:** Onboarding coordinates and presents. It never owns source-scoped
   import/projection logic.
 
+## Durable Operation Snapshot
+
+`OnboardingStatus` remains the current presentation/workflow projection. It is
+not the durable authority for whether consequential Onboarding work is running,
+interrupted, failed, or complete.
+
+`OnboardingOperationSnapshot` is the canonical durable description of admitted
+Onboarding operations. It records a typed operation kind, typed stage, unique
+operation identity, originating process-session identity, completed stages,
+real progress observations, bounded failure evidence, and terminal status. It
+is persisted as format-versioned JSON in the existing overlay settings table;
+no Onboarding schema or second operation database exists.
+
+The authority chain is strict:
+
+```text
+ArchiveMutationCoordinator -> whether work may execute
+Onboarding operation snapshot -> what admitted work is doing or last did
+import and graph databases -> whether durable work actually completed
+```
+
+A snapshot never grants mutation authority and never substitutes for imported
+rows or Conversation Graph truth. Initial import and reimport become complete
+only after the admitted mutation releases maintenance and fresh canonical
+probes prove both derived stores are populated.
+
+On a new process, a persisted `running` snapshot from a different process
+session becomes `interrupted`. Environment Readiness then reconciles it as
+completed, resumable, inconsistent, or temporarily unavailable. During
+maintenance, reconciliation consumes the existing maintenance report and does
+not independently open protected stores.
+
 ## State Machine
 
 The gate tracks a single `OnboardingStatus` enum with 11 states:
@@ -216,24 +248,32 @@ Import and graph-projection failures are persisted as JSON in the overlay databa
 - Distinguishing "never tried" from "tried and failed"
 - Clearing on successful completion
 
-Pre-controller `preparationFailed` is deliberately not persisted. It records
-only the current process's operation outcome. Refresh or restart returns
-authority to current filesystem and environment probes; it is never written
-into the import or graph-projection failure buckets.
+The legacy import and graph failure buckets remain inputs to Environment
+Readiness. In addition, the operation snapshot persists a bounded typed failure
+for the current admitted operation. A top-level synchronous, Future, or stream
+failure therefore cannot leave canonical operation state saying that work is
+still running. Current filesystem and database probes remain the restart
+reconciliation authority.
 
 ## File Inventory
 
 | File | Role |
 |------|------|
 | `application/onboarding_gate_provider.dart` | State machine and orchestration |
+| `application/onboarding_operation_snapshot_controller.dart` | Typed operation transitions, progress observations, terminal failure, and reconciliation |
+| `application/onboarding_operation_snapshot_provider.dart` | Process-session identity and durable snapshot providers |
+| `application/onboarding_operation_reconciliation_provider.dart` | Reconciles interrupted operation history with Environment Readiness evidence |
+| `application/onboarding_durable_completion_verifier_provider.dart` | Proves post-mutation import and graph readiness before completion |
 | `application/onboarding_environment_report_provider.dart` | Environment evaluation |
 | `application/database_existence_checker.dart` | Filesystem DB presence check |
 | `application/fda_checker.dart` | Full Disk Access probe |
-| `domain/onboarding_status.dart` | Status enum (10 states) |
+| `domain/onboarding_status.dart` | Presentation status enum (11 states) |
 | `domain/onboarding_environment_report.dart` | Typed environment snapshot |
+| `domain/onboarding_operation_snapshot.dart` | Operation identity, typed stages/status, progress, and failure evidence |
 | `domain/import_spec.dart` | Retired import-control route tagging for diagnostics/compatibility |
 | `domain/spec_classes/onboarding_view_spec.dart` | Onboarding panel spec for dev/debug surfaces |
 | `infrastructure/overlay_onboarding_failure_storage.dart` | Failure persistence |
+| `infrastructure/persistence/overlay_onboarding_operation_snapshot_store.dart` | Snapshot persistence in existing overlay settings |
 | `application/required_sources_readiness_scheduler_provider.dart` | Production composition root for real Onboarding agents, Schedule installation, and Scheduler initialization |
 | `presentation/onboarding_presence_host.dart` | Production shell around the generic Presence runner and explicit FDA specialist |
 | `presentation/onboarding_overlay.dart` | Full-window operational overlay and shared FDA presentation |

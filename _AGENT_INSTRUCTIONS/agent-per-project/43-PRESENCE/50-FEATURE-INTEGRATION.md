@@ -167,6 +167,13 @@ Feature operations may supply:
 Operational evidence describes what is true. It does not prescribe an Episode,
 transition, message, or visual treatment.
 
+For long-running feature work, a feature may own one durable typed operation
+snapshot and expose a smaller Presence projection from it. The snapshot remains
+feature operational truth: it may describe running, interruption, failure,
+completion, stage, and observed progress. Presence consumes that evidence to
+derive interaction; it does not persist a competing operation state, infer
+completion from presentation, or acquire the feature's mutation authority.
+
 ### Validation Results
 
 Features may supply:

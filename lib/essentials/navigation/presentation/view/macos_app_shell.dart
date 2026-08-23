@@ -27,7 +27,7 @@ import '../../../debug/feature_level_providers.dart'
         developerModeProvider;
 import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/feature_level_providers.dart'
-    show onboardingGateProvider;
+    show onboardingGateProvider, onboardingOperationReconciliationProvider;
 import '../../../onboarding/presentation/onboarding_overlay.dart';
 import '../../../onboarding/presentation/onboarding_presence_host.dart';
 import '../../../sidebar/application/sidebar_flow_state_provider.dart';
@@ -123,6 +123,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
     });
 
     final onboardingStatus = ref.watch(onboardingGateProvider);
+    ref.watch(onboardingOperationReconciliationProvider);
     final showOnboardingOverlay = switch (onboardingStatus) {
       OnboardingStatus.recoveringFailedAttempt ||
       OnboardingStatus.preparationFailed ||

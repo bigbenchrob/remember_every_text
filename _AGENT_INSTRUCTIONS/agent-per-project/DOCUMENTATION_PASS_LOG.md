@@ -5495,3 +5495,44 @@ production preservation authority mechanically enforceable.
   Prompt 02 semantic invariants.
 - Updated the Feature 27 index, changelog, and release version for the final
   user-facing layout refinement.
+
+## 2026-08-23 - Feature 28 Onboarding opening audit
+
+- Created the Feature 28 Onboarding work package and preserved its opening
+  prompt as `seed.md`.
+- Added the comprehensive read-only Journey, failure, recovery, persistence,
+  performance, prerequisite, and Start Fresh audit.
+- Recorded the current archive-admission, Presence prerequisite, Gate,
+  source-import, Conversation Graph, reset, maintenance, completion, restart,
+  and attachment-preservation ownership boundaries.
+- Established the truthful iCloud boundary: MessageLens requires the desired
+  history to be locally present in the Mac's readable `chat.db`, but cannot
+  prove remote-device settings or synchronization completeness.
+- Classified the Option-launch no-op deletion promise, unbounded indeterminate
+  work, malformed-record whole-stage abort risk, and abandoned-installation
+  recovery gap as release blockers ahead of visual redesign.
+- Defined a preservation-safe Start Fresh contract that never deletes Apple
+  sources, overlay intent by accident, or `attachment_archive/`.
+- Recorded clean existing verification: 155 Onboarding/readiness tests, 32
+  focused source-import/graph-build tests, and 381 architecture tripwires.
+- Changed no application code, schema, database, source data, or runtime
+  behavior.
+
+## 2026-08-23 - Durable Onboarding operation snapshot foundation
+
+- Added the Feature 28 implementation record for the typed durable Onboarding
+  operation snapshot and liveness foundation.
+- Updated the canonical Onboarding Gate guide with the operation, mutation,
+  persistence, completion-proof, and restart-reconciliation authority chain.
+- Clarified the canonical Presence feature boundary: a feature may project one
+  durable typed operation snapshot into Presence without transferring
+  operational or mutation authority.
+- Recorded the four current typed stages, UUID operation/session semantics,
+  observation-driven progress evidence, bounded write cadence, top-level
+  failure routing, and no-schema overlay-settings persistence.
+- Preserved the next-slice boundary: execution-opportunity-aware stall/watchdog
+  classification remains unimplemented, as do Start Fresh and record-level
+  anomaly quarantine.
+- Recorded clean final verification: 1,991 complete Flutter tests, 406
+  architecture tests, 186 focused source-import/graph tests, clean analyzer and
+  formatting checks, and a successful macOS debug build.
