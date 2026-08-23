@@ -5536,3 +5536,19 @@ production preservation authority mechanically enforceable.
 - Recorded clean final verification: 1,991 complete Flutter tests, 406
   architecture tests, 186 focused source-import/graph tests, clean analyzer and
   formatting checks, and a successful macOS debug build.
+
+## 2026-08-23 - Onboarding stall-detection prerequisite audit
+
+- Recorded the Prompt 03 stage-by-stage liveness inventory and stopped before
+  adding a watchdog because its explicit safety prerequisites are absent.
+- Confirmed that Flutter's macOS lifecycle surface reports activation and
+  visibility, not system sleep/wake or process suspension.
+- Classified all four current typed Onboarding stages as
+  unobservable/unbounded for stall purposes; selected graph projection row
+  observers are real but are not yet a complete Onboarding progress contract.
+- Preserved the distinctions between typed failure, restart interruption,
+  prerequisite waiting, and a future evidence-backed stall conclusion.
+- Defined the next prerequisite as production-shaped progress/no-event
+  measurement plus a tested macOS execution-opportunity adapter.
+- Changed no application code, persistence format, presentation, timeout,
+  retry, cancellation, or runtime behavior.
