@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_operation_snapshot.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_import_anomaly_counts.dart';
 
 void main() {
   test('typed snapshot round-trips without display strings', () {
@@ -27,7 +28,10 @@ void main() {
         completedWorkUnits: 25,
         totalWorkUnits: 100,
         lastCompletedSourceRowId: 912,
-        preservedUnnormalizedCount: 2,
+        anomalyCounts: SourceImportAnomalyCounts(
+          preservedUnnormalizedHandleCount: 2,
+          recoveredUnlinkedMessageCount: 3,
+        ),
       ),
     );
 
@@ -46,6 +50,7 @@ void main() {
     expect(restored.progress?.lastCompletedSourceRowId, 912);
     expect(restored.progress?.preservedUnnormalizedCount, 2);
     expect(restored.preservedUnnormalizedHandleCount, 2);
+    expect(restored.sourceAnomalyCounts.recoveredUnlinkedMessageCount, 3);
     expect(restored.progressRevision, 3);
     expect(restored.toJson().toString(), isNot(contains('Importing messages')));
 
@@ -61,6 +66,7 @@ void main() {
         .complete(verifiedAtUtc: startedAt.add(const Duration(seconds: 5)));
     expect(completed.progress, isNull);
     expect(completed.preservedUnnormalizedHandleCount, 2);
+    expect(completed.sourceAnomalyCounts.recoveredUnlinkedMessageCount, 3);
   });
 
   test('interrupted and failed remain distinct durable states', () {

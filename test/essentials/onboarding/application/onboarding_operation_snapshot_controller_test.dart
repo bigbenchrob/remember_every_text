@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_controller.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_store.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_operation_snapshot.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_import_anomaly_counts.dart';
 
 void main() {
   late _MemorySnapshotStore store;
@@ -55,7 +56,9 @@ void main() {
       progress: const OnboardingOperationProgress(
         completedWorkUnits: 10,
         totalWorkUnits: 20,
-        preservedUnnormalizedCount: 1,
+        anomalyCounts: SourceImportAnomalyCounts(
+          preservedUnnormalizedHandleCount: 1,
+        ),
       ),
     );
 
@@ -147,7 +150,9 @@ void main() {
       progress: const OnboardingOperationProgress(
         completedWorkUnits: 1,
         totalWorkUnits: 1,
-        preservedUnnormalizedCount: 1,
+        anomalyCounts: SourceImportAnomalyCounts(
+          preservedUnnormalizedHandleCount: 1,
+        ),
       ),
     );
     await controller.enterStage(

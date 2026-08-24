@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/message_extractor_port.dart';
+import '../../domain/source_import_anomaly_counts.dart';
 import '../source_import_work_progress.dart';
 
 class MessageRichTextEnrichmentResult {
@@ -10,12 +11,14 @@ class MessageRichTextEnrichmentResult {
     required this.enrichedMessageCount,
     required this.missingExtractionCount,
     required this.extractorAvailable,
+    this.anomalyCounts = SourceImportAnomalyCounts.empty,
   });
 
   final int candidateMessageCount;
   final int enrichedMessageCount;
   final int missingExtractionCount;
   final bool extractorAvailable;
+  final SourceImportAnomalyCounts anomalyCounts;
 }
 
 class MessageRichTextEnricher {
@@ -91,11 +94,10 @@ class MessageRichTextEnricher {
 
     final extractorAvailable = await extractor.isBlobExtractionAvailable();
     if (!extractorAvailable) {
-      return MessageRichTextEnrichmentResult(
-        candidateMessageCount: candidates.length,
-        enrichedMessageCount: 0,
-        missingExtractionCount: candidates.length,
-        extractorAvailable: false,
+      throw const SourceImportSystemicException(
+        unit: SourceImportWorkUnit.richTextExtraction,
+        failureCode: 'typedstream_decoder_unavailable',
+        reason: 'Attributed-string decoding is unavailable for this run.',
       );
     }
 
@@ -149,6 +151,9 @@ class MessageRichTextEnricher {
             completedWorkCount: completedPersistenceCount,
             totalWorkCount: candidates.length,
             lastCompletedSourceRowId: candidate.sourceRowId,
+            anomalyCounts: SourceImportAnomalyCounts(
+              richTextDecodeUnavailableCount: missingExtractionCount,
+            ),
           );
           continue;
         }
@@ -168,6 +173,9 @@ class MessageRichTextEnricher {
           completedWorkCount: completedPersistenceCount,
           totalWorkCount: candidates.length,
           lastCompletedSourceRowId: candidate.sourceRowId,
+          anomalyCounts: SourceImportAnomalyCounts(
+            richTextDecodeUnavailableCount: missingExtractionCount,
+          ),
         );
       }
     });
@@ -177,6 +185,9 @@ class MessageRichTextEnricher {
       enrichedMessageCount: enrichedMessageCount,
       missingExtractionCount: missingExtractionCount,
       extractorAvailable: true,
+      anomalyCounts: SourceImportAnomalyCounts(
+        richTextDecodeUnavailableCount: missingExtractionCount,
+      ),
     );
   }
 }

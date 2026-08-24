@@ -3,6 +3,7 @@ import '../../../db/shared/handle_identifier_utils.dart';
 import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
+import '../../domain/source_import_anomaly_counts.dart';
 import '../../domain/source_scoped_row_key.dart';
 import '../source_import_work_progress.dart';
 
@@ -11,11 +12,13 @@ class ContactImportResult {
     required this.examinedContactCount,
     required this.insertedContactCount,
     required this.insertedChannelCount,
+    this.anomalyCounts = SourceImportAnomalyCounts.empty,
   });
 
   final int examinedContactCount;
   final int insertedContactCount;
   final int insertedChannelCount;
+  final SourceImportAnomalyCounts anomalyCounts;
 }
 
 class ContactImporter {
@@ -59,6 +62,9 @@ class ContactImporter {
       var completedContactCount = 0;
       var completedEmailCount = 0;
       var completedPhoneCount = 0;
+      var omittedContactRecordCount = 0;
+      var contactEnrichmentUnavailableCount = 0;
+      var omittedContactChannelCount = 0;
       publishSourceImportProgress(
         observer: onProgress,
         unit: SourceImportWorkUnit.contacts,
@@ -70,12 +76,16 @@ class ContactImporter {
         for (final row in contactRows) {
           final sourceRowId = _readNullableInt(row['Z_PK']);
           if (sourceRowId == null) {
+            omittedContactRecordCount += 1;
             completedContactCount += 1;
             publishSourceImportProgress(
               observer: onProgress,
               unit: SourceImportWorkUnit.contacts,
               completedWorkCount: completedContactCount,
               totalWorkCount: contactRows.length,
+              anomalyCounts: SourceImportAnomalyCounts(
+                omittedContactRecordCount: omittedContactRecordCount,
+              ),
             );
             continue;
           }
@@ -85,6 +95,15 @@ class ContactImporter {
           final middle = _trim(row['ZMIDDLENAME']);
           final last = _trim(row['ZLASTNAME']);
           final organization = _trim(row['ZORGANIZATION']);
+          final displayName = _buildContactDisplayName(
+            firstName: first,
+            middleName: middle,
+            lastName: last,
+            organization: organization,
+          );
+          if (displayName == null) {
+            contactEnrichmentUnavailableCount += 1;
+          }
           final insertedId = await txn
               .insertIgnore('contacts', <String, Object?>{
                 'ss_id': SourceScopedRowKey.pack(
@@ -93,12 +112,7 @@ class ContactImporter {
                 ),
                 'source_id': sourceId,
                 'source_rowid': sourceRowId,
-                'display_name': _buildContactDisplayName(
-                  firstName: first,
-                  middleName: middle,
-                  lastName: last,
-                  organization: organization,
-                ),
+                'display_name': displayName ?? 'Unknown Contact',
                 'first_name': first,
                 'last_name': last,
                 'organization': organization,
@@ -117,6 +131,11 @@ class ContactImporter {
             completedWorkCount: completedContactCount,
             totalWorkCount: contactRows.length,
             lastCompletedSourceRowId: sourceRowId,
+            anomalyCounts: SourceImportAnomalyCounts(
+              omittedContactRecordCount: omittedContactRecordCount,
+              contactEnrichmentUnavailableCount:
+                  contactEnrichmentUnavailableCount,
+            ),
           );
         }
 
@@ -133,6 +152,7 @@ class ContactImporter {
           if (owner == null ||
               !validContactRowIds.contains(owner) ||
               address == null) {
+            omittedContactChannelCount += 1;
             completedEmailCount += 1;
             publishSourceImportProgress(
               observer: onProgress,
@@ -140,6 +160,12 @@ class ContactImporter {
               completedWorkCount: completedEmailCount,
               totalWorkCount: emailRows.length,
               lastCompletedSourceRowId: owner,
+              anomalyCounts: SourceImportAnomalyCounts(
+                omittedContactRecordCount: omittedContactRecordCount,
+                contactEnrichmentUnavailableCount:
+                    contactEnrichmentUnavailableCount,
+                omittedContactChannelCount: omittedContactChannelCount,
+              ),
             );
             continue;
           }
@@ -161,6 +187,12 @@ class ContactImporter {
             completedWorkCount: completedEmailCount,
             totalWorkCount: emailRows.length,
             lastCompletedSourceRowId: owner,
+            anomalyCounts: SourceImportAnomalyCounts(
+              omittedContactRecordCount: omittedContactRecordCount,
+              contactEnrichmentUnavailableCount:
+                  contactEnrichmentUnavailableCount,
+              omittedContactChannelCount: omittedContactChannelCount,
+            ),
           );
         }
 
@@ -176,6 +208,7 @@ class ContactImporter {
           if (owner == null ||
               !validContactRowIds.contains(owner) ||
               rawNumber == null) {
+            omittedContactChannelCount += 1;
             completedPhoneCount += 1;
             publishSourceImportProgress(
               observer: onProgress,
@@ -183,6 +216,12 @@ class ContactImporter {
               completedWorkCount: completedPhoneCount,
               totalWorkCount: phoneRows.length,
               lastCompletedSourceRowId: owner,
+              anomalyCounts: SourceImportAnomalyCounts(
+                omittedContactRecordCount: omittedContactRecordCount,
+                contactEnrichmentUnavailableCount:
+                    contactEnrichmentUnavailableCount,
+                omittedContactChannelCount: omittedContactChannelCount,
+              ),
             );
             continue;
           }
@@ -204,6 +243,12 @@ class ContactImporter {
             completedWorkCount: completedPhoneCount,
             totalWorkCount: phoneRows.length,
             lastCompletedSourceRowId: owner,
+            anomalyCounts: SourceImportAnomalyCounts(
+              omittedContactRecordCount: omittedContactRecordCount,
+              contactEnrichmentUnavailableCount:
+                  contactEnrichmentUnavailableCount,
+              omittedContactChannelCount: omittedContactChannelCount,
+            ),
           );
         }
       });
@@ -212,6 +257,11 @@ class ContactImporter {
         examinedContactCount: contactRows.length,
         insertedContactCount: insertedContactCount,
         insertedChannelCount: insertedChannelCount,
+        anomalyCounts: SourceImportAnomalyCounts(
+          omittedContactRecordCount: omittedContactRecordCount,
+          contactEnrichmentUnavailableCount: contactEnrichmentUnavailableCount,
+          omittedContactChannelCount: omittedContactChannelCount,
+        ),
       );
     } finally {
       await sourceDb.close();
@@ -262,7 +312,7 @@ String? _trim(Object? value) {
   return null;
 }
 
-String _buildContactDisplayName({
+String? _buildContactDisplayName({
   String? firstName,
   String? middleName,
   String? lastName,
@@ -280,5 +330,5 @@ String _buildContactDisplayName({
   if (organization != null) {
     return organization;
   }
-  return 'Unknown Contact';
+  return null;
 }

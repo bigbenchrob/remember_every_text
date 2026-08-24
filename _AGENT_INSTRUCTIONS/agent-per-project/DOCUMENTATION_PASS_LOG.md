@@ -5609,3 +5609,19 @@ production preservation authority mechanically enforceable.
   false or structurally incomplete.
 - Recorded that no schema, user-facing anomaly surface, or policy for adjacent
   source domains was introduced.
+
+## 2026-08-24 - Dependency-aware source anomaly policy
+
+- Added the Feature 28 implementation record and dependency table for chats,
+  messages, rich text, attachments, reactions, Contacts, and relationship
+  edges.
+- Documented the fixed typed anomaly totals carried through source progress,
+  Conversation Graph observations, and the durable Onboarding operation
+  snapshot without source payload or per-record persistence.
+- Codified canonical recovered/unlinked ownership for structurally valid
+  messages without a chat edge, endpoint-validated child-edge omission, and
+  optional interpretation degradation without fabricated values.
+- Preserved fail-closed boundaries for required identity, message direction,
+  source database integrity, and unavailable run-wide rich-text decoding.
+- Updated the canonical Onboarding, import/graph, and data-fidelity guidance;
+  no schema, completion-state, watchdog, or presentation redesign was added.

@@ -49,6 +49,13 @@ These rules are **absolute constraints**. They apply to every agent, every sessi
 
 2. **Projection pipeline**: If a row exists in source-scoped import, it MUST appear in graph projection or a documented recovery/orphan graph path (subject only to documented, intentional JOIN semantics). A projector may add metadata columns to describe anomalies — but it MUST NOT filter the row out.
 
+Dependency-aware exception: an unusable child relationship or optional
+enrichment fact may be locally omitted only when both parent/source identity
+and resulting graph truth remain intact, and only with an explicit typed count.
+This is not permission to catch and skip arbitrary records. Required chat and
+message identity remains fail-closed; unlinked messages use the canonical
+Recovered Messages path.
+
 3. **Retired cleanup/diagnostic files**: Old retired `macos_import.db` / `working.db`
    pairs must remain interpretable for recovery, audit, and diagnostic tooling.
    Do not silently discard rows when writing explicit retired-file inspection

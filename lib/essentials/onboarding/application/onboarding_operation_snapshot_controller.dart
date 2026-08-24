@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:uuid/uuid.dart';
 
+import '../../source_scoped_import/domain/source_import_anomaly_counts.dart';
 import '../domain/onboarding_operation_snapshot.dart';
 import 'onboarding_operation_snapshot_store.dart';
 
@@ -97,6 +98,7 @@ final class OnboardingProgressReporter {
     int? completedWorkUnits,
     int? totalWorkUnits,
     int? lastCompletedSourceRowId,
+    SourceImportAnomalyCounts anomalyCounts = SourceImportAnomalyCounts.empty,
     int preservedUnnormalizedCount = 0,
   }) async {
     if ((completedWorkUnits == null) != (totalWorkUnits == null)) {
@@ -113,7 +115,9 @@ final class OnboardingProgressReporter {
               completedWorkUnits: completedWorkUnits,
               totalWorkUnits: totalWorkUnits!,
               lastCompletedSourceRowId: lastCompletedSourceRowId,
-              preservedUnnormalizedCount: preservedUnnormalizedCount,
+              anomalyCounts: SourceImportAnomalyCounts(
+                preservedUnnormalizedHandleCount: preservedUnnormalizedCount,
+              ).mergeMaximum(anomalyCounts),
             ),
     );
   }

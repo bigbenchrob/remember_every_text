@@ -1,5 +1,7 @@
 import 'package:meta/meta.dart';
 
+import '../../source_scoped_import/domain/source_import_anomaly_counts.dart';
+
 enum OnboardingOperationKind { initialImport, reimport, automaticRecovery }
 
 enum OnboardingOperationStatus { idle, running, interrupted, failed, completed }
@@ -125,17 +127,18 @@ final class OnboardingOperationProgress {
     required this.completedWorkUnits,
     required this.totalWorkUnits,
     this.lastCompletedSourceRowId,
-    this.preservedUnnormalizedCount = 0,
+    this.anomalyCounts = SourceImportAnomalyCounts.empty,
   }) : assert(completedWorkUnits >= 0),
        assert(totalWorkUnits >= 0),
-       assert(completedWorkUnits <= totalWorkUnits),
-       assert(preservedUnnormalizedCount >= 0),
-       assert(preservedUnnormalizedCount <= completedWorkUnits);
+       assert(completedWorkUnits <= totalWorkUnits);
 
   final int completedWorkUnits;
   final int totalWorkUnits;
   final int? lastCompletedSourceRowId;
-  final int preservedUnnormalizedCount;
+  final SourceImportAnomalyCounts anomalyCounts;
+
+  int get preservedUnnormalizedCount =>
+      anomalyCounts.preservedUnnormalizedHandleCount;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
@@ -143,6 +146,7 @@ final class OnboardingOperationProgress {
       'total_work_units': totalWorkUnits,
       'last_completed_source_rowid': lastCompletedSourceRowId,
       'preserved_unnormalized_count': preservedUnnormalizedCount,
+      'source_anomaly_counts': anomalyCounts.toJson(),
     };
   }
 
@@ -156,8 +160,17 @@ final class OnboardingOperationProgress {
       completedWorkUnits: completedWorkUnits,
       totalWorkUnits: totalWorkUnits,
       lastCompletedSourceRowId: json['last_completed_source_rowid'] as int?,
-      preservedUnnormalizedCount:
-          json['preserved_unnormalized_count'] as int? ?? 0,
+      anomalyCounts: json['source_anomaly_counts'] == null
+          ? SourceImportAnomalyCounts(
+              preservedUnnormalizedHandleCount:
+                  json['preserved_unnormalized_count'] as int? ?? 0,
+            )
+          : SourceImportAnomalyCounts.fromJson(
+              _requiredMap(
+                json['source_anomaly_counts'],
+                'source anomaly counts',
+              ),
+            ),
     );
   }
 
@@ -167,7 +180,7 @@ final class OnboardingOperationProgress {
         other.completedWorkUnits == completedWorkUnits &&
         other.totalWorkUnits == totalWorkUnits &&
         other.lastCompletedSourceRowId == lastCompletedSourceRowId &&
-        other.preservedUnnormalizedCount == preservedUnnormalizedCount;
+        other.anomalyCounts == anomalyCounts;
   }
 
   @override
@@ -175,7 +188,7 @@ final class OnboardingOperationProgress {
     completedWorkUnits,
     totalWorkUnits,
     lastCompletedSourceRowId,
-    preservedUnnormalizedCount,
+    anomalyCounts,
   );
 }
 
@@ -226,7 +239,7 @@ final class OnboardingOperationSnapshot {
     required this.status,
     required this.completedStages,
     required this.progressRevision,
-    this.preservedUnnormalizedHandleCount = 0,
+    this.sourceAnomalyCounts = SourceImportAnomalyCounts.empty,
     this.operationId,
     this.processSessionId,
     this.kind,
@@ -261,7 +274,10 @@ final class OnboardingOperationSnapshot {
   final DateTime? lastProgressObservedAtUtc;
   final OnboardingOperationProgress? progress;
   final int progressRevision;
-  final int preservedUnnormalizedHandleCount;
+  final SourceImportAnomalyCounts sourceAnomalyCounts;
+
+  int get preservedUnnormalizedHandleCount =>
+      sourceAnomalyCounts.preservedUnnormalizedHandleCount;
   final OnboardingOperationFailure? failure;
   final DateTime? finishedAtUtc;
 
@@ -335,17 +351,17 @@ final class OnboardingOperationSnapshot {
     if (substage == currentSubstage && progress == this.progress) {
       return this;
     }
-    final observedPreservedCount = progress?.preservedUnnormalizedCount ?? 0;
+    final observedAnomalyCounts =
+        progress?.anomalyCounts ?? SourceImportAnomalyCounts.empty;
     return _copy(
       currentSubstage: substage,
       lastProgressObservedAtUtc: observedAtUtc,
       progress: progress,
       clearProgress: progress == null,
       progressRevision: progressRevision + 1,
-      preservedUnnormalizedHandleCount:
-          observedPreservedCount > preservedUnnormalizedHandleCount
-          ? observedPreservedCount
-          : preservedUnnormalizedHandleCount,
+      sourceAnomalyCounts: sourceAnomalyCounts.mergeMaximum(
+        observedAnomalyCounts,
+      ),
     );
   }
 
@@ -407,6 +423,7 @@ final class OnboardingOperationSnapshot {
       'progress': progress?.toJson(),
       'progress_revision': progressRevision,
       'preserved_unnormalized_handle_count': preservedUnnormalizedHandleCount,
+      'source_anomaly_counts': sourceAnomalyCounts.toJson(),
       'failure': failure?.toJson(),
       'finished_at_utc': finishedAtUtc?.toIso8601String(),
     };
@@ -476,8 +493,17 @@ final class OnboardingOperationSnapshot {
               _requiredMap(progressRaw, 'progress'),
             ),
       progressRevision: json['progress_revision'] as int? ?? 0,
-      preservedUnnormalizedHandleCount:
-          json['preserved_unnormalized_handle_count'] as int? ?? 0,
+      sourceAnomalyCounts: json['source_anomaly_counts'] == null
+          ? SourceImportAnomalyCounts(
+              preservedUnnormalizedHandleCount:
+                  json['preserved_unnormalized_handle_count'] as int? ?? 0,
+            )
+          : SourceImportAnomalyCounts.fromJson(
+              _requiredMap(
+                json['source_anomaly_counts'],
+                'source anomaly counts',
+              ),
+            ),
       failure: failureRaw == null
           ? null
           : OnboardingOperationFailure.fromJson(
@@ -503,9 +529,6 @@ final class OnboardingOperationSnapshot {
     if (status == OnboardingOperationStatus.running && finishedAtUtc != null) {
       throw const FormatException('Running onboarding snapshot is finished.');
     }
-    if (preservedUnnormalizedHandleCount < 0) {
-      throw const FormatException('Invalid preserved handle count.');
-    }
   }
 
   void _requireRunning() {
@@ -525,7 +548,7 @@ final class OnboardingOperationSnapshot {
     OnboardingOperationProgress? progress,
     bool clearProgress = false,
     int? progressRevision,
-    int? preservedUnnormalizedHandleCount,
+    SourceImportAnomalyCounts? sourceAnomalyCounts,
     OnboardingOperationFailure? failure,
     bool clearFailure = false,
     DateTime? finishedAtUtc,
@@ -546,9 +569,7 @@ final class OnboardingOperationSnapshot {
           lastProgressObservedAtUtc ?? this.lastProgressObservedAtUtc,
       progress: clearProgress ? null : progress ?? this.progress,
       progressRevision: progressRevision ?? this.progressRevision,
-      preservedUnnormalizedHandleCount:
-          preservedUnnormalizedHandleCount ??
-          this.preservedUnnormalizedHandleCount,
+      sourceAnomalyCounts: sourceAnomalyCounts ?? this.sourceAnomalyCounts,
       failure: clearFailure ? null : failure ?? this.failure,
       finishedAtUtc: finishedAtUtc ?? this.finishedAtUtc,
     );

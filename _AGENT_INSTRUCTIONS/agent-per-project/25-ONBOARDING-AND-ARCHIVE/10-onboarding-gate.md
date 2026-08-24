@@ -77,9 +77,16 @@ Source-owned progress may include typed anomaly evidence that does not alter
 operation authority. The first implemented example is the count of handle rows
 preserved without phone/email normalization. Such a row is successful source
 intake when its source-scoped identity and relationships remain truthful; it is
-not a failed Onboarding operation. Structural source identity failure still
-routes through the typed stage-failure boundary. Presentation does not infer or
-reclassify either outcome.
+not a failed Onboarding operation. The same dependency-aware rule now applies
+across chats,
+messages, rich text, attachments, reactions, and Contacts: optional
+interpretation may degrade, canonical recovered ownership may preserve an
+unlinked message, and only proven child/enrichment facts may be omitted.
+`SourceImportAnomalyCounts` carries fixed non-PII totals through the canonical
+operation snapshot. It is not a generic catch-and-skip facility.
+Structural source identity failure still prevents completion and routes through
+the typed stage-failure boundary. Presentation does not infer or reclassify
+either outcome.
 
 On a new process, a persisted `running` snapshot from a different process
 session becomes `interrupted`. Environment Readiness then reconciles it as

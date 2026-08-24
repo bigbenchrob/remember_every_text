@@ -67,6 +67,13 @@ repositories.
 The app-facing setup path is `MessageDataResetService` for cleanup/reset plus
 `ConversationGraphBuildController` for source-scoped graph build/rebuild.
 
+Source import also publishes fixed, domain-owned anomaly totals. The
+orchestrator coalesces those totals with real progress, and Onboarding persists
+them in its existing operation snapshot. Source identity failures remain
+fatal. Optional interpretation may degrade only where the source domain has an
+explicit truthful representation; relationship importers validate both source
+endpoints before omitting and accounting for an invalid child edge.
+
 ## Failure Handling
 
 | Failure | Behavior |

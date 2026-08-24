@@ -123,4 +123,29 @@ void main() {
     expect(secondResult.insertedContactCount, 0);
     expect(secondResult.insertedChannelCount, 0);
   });
+
+  test(
+    'preserves source contact while accounting unavailable enrichment',
+    () async {
+      final sourceDb = await openDatabase(addressBookDbPath);
+      await sourceDb.insert('ZABCDRECORD', <String, Object?>{'Z_PK': 31});
+      await sourceDb.insert('ZABCDEMAILADDRESS', <String, Object?>{
+        'ZOWNER': 31,
+        'ZADDRESS': null,
+      });
+      await sourceDb.close();
+
+      final result = await ContactImporter(
+        addressBookDbPath: addressBookDbPath,
+        importLedger: importDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+      ).importContacts();
+
+      expect(result.insertedContactCount, 1);
+      expect(result.anomalyCounts.contactEnrichmentUnavailableCount, 1);
+      expect(result.anomalyCounts.omittedContactChannelCount, 1);
+      expect(await importDatabase.database.query('contacts'), hasLength(1));
+      expect(await importDatabase.database.query('contact_channels'), isEmpty);
+    },
+  );
 }

@@ -16,6 +16,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/c
 import 'package:remember_this_text/essentials/source_scoped_import/application/chat_message_joins/chat_message_join_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/chats/chat_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/handles/handle_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/infrastructure/import_database_provider.dart';
@@ -274,6 +275,29 @@ void main() {
     expect(rows.single['source_message_rowid'], 42);
   });
 
+  test('chat without structural GUID fails with bounded row context', () async {
+    final db = await openDatabase(chatDbPath);
+    await db.insert('chat', <String, Object?>{
+      'ROWID': 77,
+      'guid': null,
+      'service_name': 'unusual-service',
+    });
+    await db.close();
+
+    await expectLater(
+      ChatImporter(
+        chatDbPath: chatDbPath,
+        importLedger: importLedgerDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+      ).importChats(),
+      throwsA(
+        isA<SourceImportRecordException>()
+            .having((error) => error.unit, 'unit', SourceImportWorkUnit.chats)
+            .having((error) => error.sourceRowId, 'source ROWID', 77),
+      ),
+    );
+  });
+
   test('projects topology edges idempotently', () async {
     await importLedgerDatabase.database
         .insert('chat_to_message', <String, Object?>{
@@ -443,6 +467,7 @@ Future<void> _createSourceTables(String chatDbPath) async {
       message_id INTEGER NOT NULL
     )
   ''');
+  await db.execute('CREATE TABLE message (ROWID INTEGER PRIMARY KEY)');
   await db.close();
 }
 
@@ -502,6 +527,13 @@ Future<void> _insertSourceJoin(
   required int messageId,
 }) async {
   final db = await openDatabase(chatDbPath);
+  await db.insert('chat', <String, Object?>{
+    'ROWID': chatId,
+    'guid': 'chat-$chatId',
+  }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  await db.insert('message', <String, Object?>{
+    'ROWID': messageId,
+  }, conflictAlgorithm: ConflictAlgorithm.ignore);
   await db.insert('chat_message_join', <String, Object?>{
     'ROWID': rowId,
     'chat_id': chatId,

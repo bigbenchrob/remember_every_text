@@ -134,6 +134,20 @@ void main() {
     expect(observations.last.completedWorkCount, 2);
     expect(observations.last.lastCompletedSourceRowId, 8);
   });
+
+  test('preserves an attachment fact with degraded metadata', () async {
+    await _insertSourceAttachment(chatDbPath, rowId: 9, guid: null);
+
+    final result = await AttachmentImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importAttachments();
+
+    expect(result.insertedAttachmentCount, 1);
+    expect(result.anomalyCounts.attachmentMetadataDegradedCount, 1);
+    expect(await importDatabase.database.query('attachments'), hasLength(1));
+  });
 }
 
 Future<void> _createSourceAttachmentTable(String chatDbPath) async {
@@ -156,7 +170,7 @@ Future<void> _createSourceAttachmentTable(String chatDbPath) async {
 Future<void> _insertSourceAttachment(
   String chatDbPath, {
   required int rowId,
-  required String guid,
+  required String? guid,
   String? filename,
   String? transferName,
   String? uti,

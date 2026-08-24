@@ -2,6 +2,7 @@ import '../../../source_scoped_import/application/attachments/attachment_importe
 import '../../../source_scoped_import/application/messages/message_importer.dart';
 import '../../../source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import '../../../source_scoped_import/application/source_import_work_progress.dart';
+import '../../../source_scoped_import/domain/source_import_anomaly_counts.dart';
 import '../contacts/contact_projection_repository.dart';
 import '../conversation_graph_build_observation.dart';
 import '../conversation_graph_build_report.dart';
@@ -88,7 +89,7 @@ class ConversationGraphBuildOrchestrator {
     final startedAt = DateTime.now().toUtc();
     final completedStageNames = <String>[];
     final stageTimings = <ConversationGraphBuildStageTiming>[];
-    var preservedUnnormalizedCount = 0;
+    var anomalyCounts = SourceImportAnomalyCounts.empty;
 
     Future<void> runStage(
       String name,
@@ -151,9 +152,7 @@ class ConversationGraphBuildOrchestrator {
       ConversationGraphBuildSuboperation defaultSuboperation,
     ) {
       return (progress) {
-        if (progress.preservedUnnormalizedCount > preservedUnnormalizedCount) {
-          preservedUnnormalizedCount = progress.preservedUnnormalizedCount;
-        }
+        anomalyCounts = anomalyCounts.mergeMaximum(progress.anomalyCounts);
         final suboperation = _suboperationForSourceUnit(progress.unit);
         onObservation?.call(
           ConversationGraphBuildObservation(
@@ -162,7 +161,7 @@ class ConversationGraphBuildOrchestrator {
             completedWorkCount: progress.completedWorkCount,
             totalWorkCount: progress.totalWorkCount,
             lastCompletedSourceRowId: progress.lastCompletedSourceRowId,
-            preservedUnnormalizedCount: preservedUnnormalizedCount,
+            anomalyCounts: anomalyCounts,
           ),
         );
       };
@@ -182,7 +181,7 @@ class ConversationGraphBuildOrchestrator {
             kind: ConversationGraphBuildObservationKind.progress,
             completedWorkCount: progress.completedWorkCount,
             totalWorkCount: progress.totalWorkCount,
-            preservedUnnormalizedCount: preservedUnnormalizedCount,
+            anomalyCounts: anomalyCounts,
           ),
         );
       };

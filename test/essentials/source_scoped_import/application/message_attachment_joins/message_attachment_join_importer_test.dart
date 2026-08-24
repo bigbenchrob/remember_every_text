@@ -100,6 +100,29 @@ void main() {
     expect(rows.single['source_message_rowid'], 42);
     expect(rows.single['source_attachment_rowid'], 22);
   });
+
+  test('omits a broken child relationship and accounts for it', () async {
+    final db = await openDatabase(chatDbPath);
+    await db.insert('message_attachment_join', <String, Object?>{
+      'message_id': 99,
+      'attachment_id': 88,
+    });
+    await db.close();
+
+    final result = await MessageAttachmentJoinImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importJoins();
+
+    expect(result.examinedJoinCount, 1);
+    expect(result.insertedJoinCount, 0);
+    expect(result.omittedJoinCount, 1);
+    expect(
+      await importDatabase.database.query('message_to_attachment'),
+      isEmpty,
+    );
+  });
 }
 
 Future<void> _createSourceJoinTable(String chatDbPath) async {
@@ -110,6 +133,8 @@ Future<void> _createSourceJoinTable(String chatDbPath) async {
       attachment_id INTEGER NOT NULL
     )
   ''');
+  await db.execute('CREATE TABLE message (ROWID INTEGER PRIMARY KEY)');
+  await db.execute('CREATE TABLE attachment (ROWID INTEGER PRIMARY KEY)');
   await db.close();
 }
 
@@ -119,6 +144,12 @@ Future<void> _insertSourceJoin(
   required int attachmentId,
 }) async {
   final db = await openDatabase(chatDbPath);
+  await db.insert('message', <String, Object?>{
+    'ROWID': messageId,
+  }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  await db.insert('attachment', <String, Object?>{
+    'ROWID': attachmentId,
+  }, conflictAlgorithm: ConflictAlgorithm.ignore);
   await db.insert('message_attachment_join', <String, Object?>{
     'message_id': messageId,
     'attachment_id': attachmentId,

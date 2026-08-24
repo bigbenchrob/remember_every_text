@@ -8,6 +8,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/a
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_import_anomaly_counts.dart';
 
 void main() {
   test('runs conversation graph build stages in fixed order', () async {
@@ -30,7 +31,9 @@ void main() {
             completedWorkCount: 2,
             totalWorkCount: 2,
             lastCompletedSourceRowId: 12,
-            preservedUnnormalizedCount: 1,
+            anomalyCounts: SourceImportAnomalyCounts(
+              preservedUnnormalizedHandleCount: 1,
+            ),
           ),
         );
       },
@@ -121,6 +124,9 @@ void main() {
             completedWorkCount: 2,
             totalWorkCount: 2,
             lastCompletedSourceRowId: 12,
+            anomalyCounts: SourceImportAnomalyCounts(
+              richTextDecodeUnavailableCount: 1,
+            ),
           ),
         );
         return const MessageRichTextEnrichmentResult(
@@ -253,6 +259,12 @@ void main() {
           .preservedUnnormalizedCount,
       1,
     );
+    final finalProgress = observations
+        .where(
+          (item) => item.kind == ConversationGraphBuildObservationKind.progress,
+        )
+        .last;
+    expect(finalProgress.anomalyCounts.richTextDecodeUnavailableCount, 1);
     expect(
       observations
           .where(

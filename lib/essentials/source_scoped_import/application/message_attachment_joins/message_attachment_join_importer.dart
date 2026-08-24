@@ -1,6 +1,7 @@
 import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
+import '../../domain/source_import_anomaly_counts.dart';
 import '../../domain/source_scoped_row_key.dart';
 import '../source_import_work_progress.dart';
 
@@ -8,10 +9,12 @@ class MessageAttachmentJoinImportResult {
   const MessageAttachmentJoinImportResult({
     required this.examinedJoinCount,
     required this.insertedJoinCount,
+    this.omittedJoinCount = 0,
   });
 
   final int examinedJoinCount;
   final int insertedJoinCount;
+  final int omittedJoinCount;
 }
 
 class MessageAttachmentJoinImporter {
@@ -42,7 +45,7 @@ class MessageAttachmentJoinImporter {
     SourceImportWorkObserver? onProgress,
   }) {
     return _importJoinsWhere(
-      whereClause: 'WHERE message_id > ?',
+      whereClause: 'WHERE maj.message_id > ?',
       whereArgs: <Object?>[startedAfterSourceRowId],
       onProgress: onProgress,
     );
@@ -57,8 +60,12 @@ class MessageAttachmentJoinImporter {
 
     try {
       final rows = await sourceDb.rawQuery(
-        'SELECT message_id, attachment_id '
-        'FROM message_attachment_join '
+        'SELECT maj.ROWID AS source_rowid, maj.message_id, '
+        'maj.attachment_id, m.ROWID AS existing_message_rowid, '
+        'a.ROWID AS existing_attachment_rowid '
+        'FROM message_attachment_join maj '
+        'LEFT JOIN message m ON m.ROWID = maj.message_id '
+        'LEFT JOIN attachment a ON a.ROWID = maj.attachment_id '
         '${whereClause ?? ''} '
         'ORDER BY message_id ASC, attachment_id ASC',
         whereArgs,
@@ -84,6 +91,7 @@ class MessageAttachmentJoinImporter {
 
       var insertedJoinCount = 0;
       var completedJoinCount = 0;
+      var omittedJoinCount = 0;
       publishSourceImportProgress(
         observer: onProgress,
         unit: SourceImportWorkUnit.messageAttachmentRelationships,
@@ -92,8 +100,29 @@ class MessageAttachmentJoinImporter {
       );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
-          final sourceMessageRowId = _requiredInt(row, 'message_id');
-          final sourceAttachmentRowId = _requiredInt(row, 'attachment_id');
+          final sourceRowId = _requiredInt(row, 'source_rowid');
+          final sourceMessageRowId = _nullableInt(row, 'message_id');
+          final sourceAttachmentRowId = _nullableInt(row, 'attachment_id');
+          final hasEndpoints =
+              sourceMessageRowId != null &&
+              sourceAttachmentRowId != null &&
+              _nullableInt(row, 'existing_message_rowid') != null &&
+              _nullableInt(row, 'existing_attachment_rowid') != null;
+          if (!hasEndpoints) {
+            omittedJoinCount += 1;
+            completedJoinCount += 1;
+            publishSourceImportProgress(
+              observer: onProgress,
+              unit: SourceImportWorkUnit.messageAttachmentRelationships,
+              completedWorkCount: completedJoinCount,
+              totalWorkCount: rows.length,
+              lastCompletedSourceRowId: sourceRowId,
+              anomalyCounts: SourceImportAnomalyCounts(
+                omittedMessageAttachmentRelationshipCount: omittedJoinCount,
+              ),
+            );
+            continue;
+          }
           final insertedId = await txn
               .insertIgnore('message_to_attachment', <String, Object?>{
                 'message_source_id': sourceId,
@@ -120,7 +149,10 @@ class MessageAttachmentJoinImporter {
             unit: SourceImportWorkUnit.messageAttachmentRelationships,
             completedWorkCount: completedJoinCount,
             totalWorkCount: rows.length,
-            lastCompletedSourceRowId: sourceMessageRowId,
+            lastCompletedSourceRowId: sourceRowId,
+            anomalyCounts: SourceImportAnomalyCounts(
+              omittedMessageAttachmentRelationshipCount: omittedJoinCount,
+            ),
           );
         }
       });
@@ -128,6 +160,7 @@ class MessageAttachmentJoinImporter {
       return MessageAttachmentJoinImportResult(
         examinedJoinCount: rows.length,
         insertedJoinCount: insertedJoinCount,
+        omittedJoinCount: omittedJoinCount,
       );
     } finally {
       await sourceDb.close();
@@ -135,6 +168,14 @@ class MessageAttachmentJoinImporter {
   }
 
   static int _requiredInt(Map<String, Object?> row, String field) {
+    final value = _nullableInt(row, field);
+    if (value != null) {
+      return value;
+    }
+    throw StateError('message_attachment_join.$field is required');
+  }
+
+  static int? _nullableInt(Map<String, Object?> row, String field) {
     final value = row[field];
     if (value is int) {
       return value;
@@ -142,6 +183,6 @@ class MessageAttachmentJoinImporter {
     if (value is double) {
       return value.round();
     }
-    throw StateError('message_attachment_join.$field is required');
+    return null;
   }
 }

@@ -121,7 +121,26 @@ source-scoped graph/orphan message semantics.
 
 This is the practical implication of the current Apple data shape: source visibility in `chat.db.message` and thread visibility via `chat_message_join` are not the same thing.
 
-## 6. Debugging Checklist
+## 6. Dependency-Aware Anomaly Policy
+
+Source intake distinguishes optional interpretation from structural truth.
+Rows with valid required identity are preserved when timestamps, text
+interpretation, descriptive attachment metadata, contact enrichment, or
+reaction-target resolution are unavailable. Messages without a valid
+chat-message edge use the canonical recovered/unlinked graph path.
+
+An invalid child relationship or contact enrichment fact may be omitted only
+after its source endpoints are checked and only when omission cannot falsify
+the parent. Every approved degraded or omitted outcome contributes to the
+fixed, non-PII `SourceImportAnomalyCounts` carried by source progress and the
+durable Onboarding operation snapshot. This is not a generic catch-and-skip
+policy.
+
+Missing required chat/message identity, missing message direction, source
+database failures, and unavailable run-wide decoding capability remain fatal.
+All Apple timestamp conversion continues to use `DateConverter` exclusively.
+
+## 7. Debugging Checklist
 
 1. Prefer the graph status panel and source-scoped graph evidence first.
 2. For retired cleanup/diagnostic files, confirm whether the row exists in `db-import`
@@ -137,7 +156,7 @@ This is the practical implication of the current Apple data shape: source visibi
    diagnostics. Graph build status lives in the Conversation Graph status panel.
 7. If IDs differ at any step, halt - someone attempted to remap during historical migration.
 
-## 7. Related Documents
+## 8. Related Documents
 
 - `01-db-import.md` — Ledger details and provider access.
 - `02-db-working.md` — Projection schema and usage.

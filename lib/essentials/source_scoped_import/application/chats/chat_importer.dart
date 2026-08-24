@@ -52,26 +52,36 @@ class ChatImporter {
       );
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
-          final sourceRowId = _requiredInt(row, 'source_rowid');
-          final guid = _requiredString(row, 'guid');
-          final insertedId = await txn.insertIgnore('chats', <String, Object?>{
-            'ss_id': SourceScopedRowKey.pack(
-              sourceId: sourceId,
+          int? sourceRowId;
+          int insertedId;
+          try {
+            sourceRowId = _requiredInt(row, 'source_rowid');
+            final guid = _requiredString(row, 'guid');
+            insertedId = await txn.insertIgnore('chats', <String, Object?>{
+              'ss_id': SourceScopedRowKey.pack(
+                sourceId: sourceId,
+                sourceRowId: sourceRowId,
+              ),
+              'source_id': sourceId,
+              'source_rowid': sourceRowId,
+              'guid': guid,
+              'service':
+                  _nullableString(row, 'service_name') ??
+                  _nullableString(row, 'service'),
+              'group_id': _nullableString(row, 'group_id'),
+              'original_group_id': _nullableString(row, 'original_group_id'),
+              'last_read_message_at_utc': DateConverter.appleToIsoString(
+                row['last_read_message_timestamp'],
+              ),
+              'batch_id': batchId,
+            });
+          } on StateError catch (error) {
+            throw SourceImportRecordException(
+              unit: SourceImportWorkUnit.chats,
               sourceRowId: sourceRowId,
-            ),
-            'source_id': sourceId,
-            'source_rowid': sourceRowId,
-            'guid': guid,
-            'service':
-                _nullableString(row, 'service_name') ??
-                _nullableString(row, 'service'),
-            'group_id': _nullableString(row, 'group_id'),
-            'original_group_id': _nullableString(row, 'original_group_id'),
-            'last_read_message_at_utc': DateConverter.appleToIsoString(
-              row['last_read_message_timestamp'],
-            ),
-            'batch_id': batchId,
-          });
+              reason: error.message,
+            );
+          }
 
           if (insertedId != 0) {
             insertedChatCount += 1;

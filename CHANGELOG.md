@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Onboarding now applies dependency-aware anomaly handling across Messages and
+  Contacts source intake. Structurally valid evidence survives optional
+  interpretation failures, unlinked messages retain canonical recovered
+  ownership, invalid child edges are accounted without creating false
+  relationships, and structural failures still stop completion safely.
+
 - Onboarding now preserves unusual Messages handles under their authoritative
   source-scoped identity when phone/email normalization is unavailable. Their
   chats and messages remain usable, while opaque values cannot acquire false

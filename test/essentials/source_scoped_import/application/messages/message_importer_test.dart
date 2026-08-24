@@ -261,6 +261,30 @@ void main() {
     expect(observations.last.lastCompletedSourceRowId, 20);
   });
 
+  test('accounts for recovered, timestamp, and reaction degradation', () async {
+    await _insertSourceMessage(
+      chatDbPath,
+      rowId: 30,
+      guid: 'reaction-30',
+      handleId: 0,
+      isFromMe: 0,
+      associatedMessageGuid: 'missing-target',
+      associatedMessageType: 2000,
+    );
+
+    final result = await MessageImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importNewMessages();
+
+    expect(result.insertedMessageCount, 1);
+    expect(result.anomalyCounts.messageTimestampUnavailableCount, 1);
+    expect(result.anomalyCounts.recoveredUnlinkedMessageCount, 1);
+    expect(result.anomalyCounts.unresolvedReactionTargetCount, 1);
+    expect(await importDatabase.database.query('messages'), hasLength(1));
+  });
+
   test('malformed message stops with bounded source row context', () async {
     await _insertSourceMessage(
       chatDbPath,
@@ -315,6 +339,12 @@ Future<void> _createSourceMessageTable(String chatDbPath) async {
       is_system_message INTEGER,
       message_summary_info BLOB,
       payload_data BLOB
+    )
+  ''');
+  await db.execute('''
+    CREATE TABLE chat_message_join (
+      chat_id INTEGER,
+      message_id INTEGER
     )
   ''');
   await db.close();

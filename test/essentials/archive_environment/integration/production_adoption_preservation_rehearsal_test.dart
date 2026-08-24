@@ -278,6 +278,12 @@ Future<void> _createSourceMessageTable(String chatDbPath) async {
       payload_data BLOB
     )
   ''');
+  await database.execute('''
+    CREATE TABLE chat_message_join (
+      chat_id INTEGER NOT NULL,
+      message_id INTEGER NOT NULL
+    )
+  ''');
   await database.close();
 }
 

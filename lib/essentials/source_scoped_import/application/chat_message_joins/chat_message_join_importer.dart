@@ -1,6 +1,7 @@
 import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
+import '../../domain/source_import_anomaly_counts.dart';
 import '../../domain/source_scoped_row_key.dart';
 import '../source_import_work_progress.dart';
 
@@ -8,10 +9,12 @@ class ChatMessageJoinImportResult {
   const ChatMessageJoinImportResult({
     required this.examinedJoinCount,
     required this.insertedJoinCount,
+    this.omittedJoinCount = 0,
   });
 
   final int examinedJoinCount;
   final int insertedJoinCount;
+  final int omittedJoinCount;
 }
 
 class ChatMessageJoinImporter {
@@ -42,7 +45,7 @@ class ChatMessageJoinImporter {
     SourceImportWorkObserver? onProgress,
   }) {
     return _importJoinsWhere(
-      whereClause: 'WHERE message_id > ?',
+      whereClause: 'WHERE cmj.message_id > ?',
       whereArgs: <Object?>[startedAfterSourceRowId],
       onProgress: onProgress,
     );
@@ -57,15 +60,20 @@ class ChatMessageJoinImporter {
 
     try {
       final rows = await sourceDb.rawQuery(
-        'SELECT ROWID AS source_rowid, chat_id, message_id '
-        'FROM chat_message_join '
+        'SELECT cmj.ROWID AS source_rowid, cmj.chat_id, cmj.message_id, '
+        'c.ROWID AS existing_chat_rowid, '
+        'm.ROWID AS existing_message_rowid '
+        'FROM chat_message_join cmj '
+        'LEFT JOIN chat c ON c.ROWID = cmj.chat_id '
+        'LEFT JOIN message m ON m.ROWID = cmj.message_id '
         '${whereClause ?? ''} '
-        'ORDER BY ROWID ASC',
+        'ORDER BY cmj.ROWID ASC',
         whereArgs,
       );
 
       var insertedJoinCount = 0;
       var completedJoinCount = 0;
+      var omittedJoinCount = 0;
       publishSourceImportProgress(
         observer: onProgress,
         unit: SourceImportWorkUnit.chatMessageRelationships,
@@ -75,8 +83,28 @@ class ChatMessageJoinImporter {
       await importLedger.writeTransaction((txn) async {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
-          final sourceChatRowId = _requiredInt(row, 'chat_id');
-          final sourceMessageRowId = _requiredInt(row, 'message_id');
+          final sourceChatRowId = _nullableInt(row, 'chat_id');
+          final sourceMessageRowId = _nullableInt(row, 'message_id');
+          final hasEndpoints =
+              sourceChatRowId != null &&
+              sourceMessageRowId != null &&
+              _nullableInt(row, 'existing_chat_rowid') != null &&
+              _nullableInt(row, 'existing_message_rowid') != null;
+          if (!hasEndpoints) {
+            omittedJoinCount += 1;
+            completedJoinCount += 1;
+            publishSourceImportProgress(
+              observer: onProgress,
+              unit: SourceImportWorkUnit.chatMessageRelationships,
+              completedWorkCount: completedJoinCount,
+              totalWorkCount: rows.length,
+              lastCompletedSourceRowId: sourceRowId,
+              anomalyCounts: SourceImportAnomalyCounts(
+                omittedChatMessageRelationshipCount: omittedJoinCount,
+              ),
+            );
+            continue;
+          }
           final insertedId = await txn
               .insertIgnore('chat_to_message', <String, Object?>{
                 'ss_id': SourceScopedRowKey.pack(
@@ -107,6 +135,9 @@ class ChatMessageJoinImporter {
             completedWorkCount: completedJoinCount,
             totalWorkCount: rows.length,
             lastCompletedSourceRowId: sourceRowId,
+            anomalyCounts: SourceImportAnomalyCounts(
+              omittedChatMessageRelationshipCount: omittedJoinCount,
+            ),
           );
         }
       });
@@ -114,6 +145,7 @@ class ChatMessageJoinImporter {
       return ChatMessageJoinImportResult(
         examinedJoinCount: rows.length,
         insertedJoinCount: insertedJoinCount,
+        omittedJoinCount: omittedJoinCount,
       );
     } finally {
       await sourceDb.close();
@@ -121,6 +153,14 @@ class ChatMessageJoinImporter {
   }
 
   static int _requiredInt(Map<String, Object?> row, String field) {
+    final value = _nullableInt(row, field);
+    if (value != null) {
+      return value;
+    }
+    throw StateError('chat_message_join.$field is required');
+  }
+
+  static int? _nullableInt(Map<String, Object?> row, String field) {
     final value = row[field];
     if (value is int) {
       return value;
@@ -128,6 +168,6 @@ class ChatMessageJoinImporter {
     if (value is double) {
       return value.round();
     }
-    throw StateError('chat_message_join.$field is required');
+    return null;
   }
 }

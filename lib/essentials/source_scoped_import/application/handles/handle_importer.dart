@@ -2,6 +2,7 @@ import '../../../db/shared/handle_identifier_utils.dart';
 import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
+import '../../domain/source_import_anomaly_counts.dart';
 import '../../domain/source_scoped_row_key.dart';
 import '../source_import_work_progress.dart';
 
@@ -197,7 +198,10 @@ class HandleImporter {
             completedWorkCount: completedHandleCount,
             totalWorkCount: rows.length,
             lastCompletedSourceRowId: sourceRowId,
-            preservedUnnormalizedCount: preservedUnnormalizedHandleCount,
+            anomalyCounts: SourceImportAnomalyCounts(
+              preservedUnnormalizedHandleCount:
+                  preservedUnnormalizedHandleCount,
+            ),
           );
         }
       });

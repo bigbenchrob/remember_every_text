@@ -424,6 +424,7 @@ void main() {
       id: '*city*',
       service: 'SMS',
     );
+    await _insertSourceChat(chatDbPath, rowId: 7);
     await _insertSourceChatHandle(chatDbPath, chatId: 7, handleId: 12);
     await _insertSourceMessage(
       chatDbPath,
@@ -507,6 +508,13 @@ void main() {
   });
 
   test('imports and projects chat-to-handle topology idempotently', () async {
+    await _insertSourceChat(chatDbPath, rowId: 7);
+    await _insertSourceHandle(
+      chatDbPath,
+      rowId: 12,
+      id: '+15550000012',
+      service: 'iMessage',
+    );
     await _insertSourceChatHandle(chatDbPath, chatId: 7, handleId: 12);
 
     final importResult = await ChatHandleJoinImporter(
@@ -577,9 +585,23 @@ Future<void> _createSourceTables(String chatDbPath) async {
       is_from_me INTEGER NOT NULL,
       date INTEGER,
       text TEXT,
+      associated_message_guid TEXT,
+      associated_message_type INTEGER,
       destination_caller_id TEXT
     )
   ''');
+  await db.execute('''
+    CREATE TABLE chat_message_join (
+      chat_id INTEGER NOT NULL,
+      message_id INTEGER NOT NULL
+    )
+  ''');
+  await db.close();
+}
+
+Future<void> _insertSourceChat(String chatDbPath, {required int rowId}) async {
+  final db = await openDatabase(chatDbPath);
+  await db.insert('chat', <String, Object?>{'ROWID': rowId});
   await db.close();
 }
 

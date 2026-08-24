@@ -4,6 +4,7 @@ import '../../../../core/util/date_converter.dart';
 import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
+import '../../domain/source_import_anomaly_counts.dart';
 import '../../domain/source_scoped_row_key.dart';
 import '../source_import_work_progress.dart';
 
@@ -12,11 +13,13 @@ class MessageImportResult {
     required this.startedAfterSourceRowId,
     required this.insertedMessageCount,
     required this.lastImportedSourceRowId,
+    this.anomalyCounts = SourceImportAnomalyCounts.empty,
   });
 
   final int startedAfterSourceRowId;
   final int insertedMessageCount;
   final int? lastImportedSourceRowId;
+  final SourceImportAnomalyCounts anomalyCounts;
 }
 
 class MessageImporter {
@@ -42,8 +45,13 @@ class MessageImporter {
 
     try {
       final rows = await sourceDb.rawQuery(
-        'SELECT ROWID AS source_rowid, * FROM message '
-        'WHERE ROWID > ? ORDER BY ROWID ASC',
+        'SELECT m.ROWID AS source_rowid, m.*, '
+        'EXISTS(SELECT 1 FROM chat_message_join cmj '
+        'WHERE cmj.message_id = m.ROWID) AS has_chat_relationship, '
+        'EXISTS(SELECT 1 FROM message target '
+        'WHERE target.guid = m.associated_message_guid) '
+        'AS has_associated_target '
+        'FROM message m WHERE m.ROWID > ? ORDER BY m.ROWID ASC',
         <Object?>[startedAfterSourceRowId],
       );
 
@@ -68,6 +76,9 @@ class MessageImporter {
 
       var insertedMessageCount = 0;
       var completedMessageCount = 0;
+      var messageTimestampUnavailableCount = 0;
+      var recoveredUnlinkedMessageCount = 0;
+      var unresolvedReactionTargetCount = 0;
       int? lastImportedSourceRowId;
 
       publishSourceImportProgress(
@@ -89,6 +100,19 @@ class MessageImporter {
             );
             final payloadData = _nullableBlob(row, 'payload_data');
 
+            final dateUtc = DateConverter.appleToIsoString(row['date']);
+            if (dateUtc == null) {
+              messageTimestampUnavailableCount += 1;
+            }
+            if (_nullableInt(row, 'has_chat_relationship') != 1) {
+              recoveredUnlinkedMessageCount += 1;
+            }
+            if (_nullableInt(row, 'associated_message_type') != null &&
+                _nullableString(row, 'associated_message_guid') != null &&
+                _nullableInt(row, 'has_associated_target') != 1) {
+              unresolvedReactionTargetCount += 1;
+            }
+
             final insertedId = await txn.insertIgnore('messages', <
               String,
               Object?
@@ -102,7 +126,7 @@ class MessageImporter {
               'guid': _requiredString(row, 'guid'),
               'sender_handle_ss_id': _senderHandleSsId(row),
               'is_from_me': _boolInt(row, 'is_from_me'),
-              'date_utc': DateConverter.appleToIsoString(row['date']),
+              'date_utc': dateUtc,
               'date_read_utc': DateConverter.appleToIsoString(row['date_read']),
               'date_delivered_utc': DateConverter.appleToIsoString(
                 row['date_delivered'],
@@ -147,6 +171,12 @@ class MessageImporter {
             completedWorkCount: completedMessageCount,
             totalWorkCount: rows.length,
             lastCompletedSourceRowId: sourceRowId,
+            anomalyCounts: SourceImportAnomalyCounts(
+              messageTimestampUnavailableCount:
+                  messageTimestampUnavailableCount,
+              recoveredUnlinkedMessageCount: recoveredUnlinkedMessageCount,
+              unresolvedReactionTargetCount: unresolvedReactionTargetCount,
+            ),
           );
         }
       });
@@ -155,6 +185,11 @@ class MessageImporter {
         startedAfterSourceRowId: startedAfterSourceRowId,
         insertedMessageCount: insertedMessageCount,
         lastImportedSourceRowId: lastImportedSourceRowId,
+        anomalyCounts: SourceImportAnomalyCounts(
+          messageTimestampUnavailableCount: messageTimestampUnavailableCount,
+          recoveredUnlinkedMessageCount: recoveredUnlinkedMessageCount,
+          unresolvedReactionTargetCount: unresolvedReactionTargetCount,
+        ),
       );
     } finally {
       await sourceDb.close();

@@ -2,6 +2,7 @@ import '../../../../core/util/date_converter.dart';
 import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
+import '../../domain/source_import_anomaly_counts.dart';
 import '../../domain/source_scoped_row_key.dart';
 import '../source_import_work_progress.dart';
 
@@ -11,12 +12,14 @@ class AttachmentImportResult {
     required this.examinedAttachmentCount,
     required this.insertedAttachmentCount,
     required this.lastImportedSourceRowId,
+    this.anomalyCounts = SourceImportAnomalyCounts.empty,
   });
 
   final int startedAfterSourceRowId;
   final int examinedAttachmentCount;
   final int insertedAttachmentCount;
   final int? lastImportedSourceRowId;
+  final SourceImportAnomalyCounts anomalyCounts;
 }
 
 class AttachmentImporter {
@@ -69,6 +72,7 @@ class AttachmentImporter {
 
       var insertedAttachmentCount = 0;
       var completedAttachmentCount = 0;
+      var metadataDegradedCount = 0;
       int? lastImportedSourceRowId;
       publishSourceImportProgress(
         observer: onProgress,
@@ -80,6 +84,9 @@ class AttachmentImporter {
         for (final row in rows) {
           final sourceRowId = _requiredInt(row, 'source_rowid');
           lastImportedSourceRowId = sourceRowId;
+          if (_hasNoDescriptiveMetadata(row)) {
+            metadataDegradedCount += 1;
+          }
           final insertedId = await txn
               .insertIgnore('attachments', <String, Object?>{
                 'ss_id': SourceScopedRowKey.pack(
@@ -110,6 +117,9 @@ class AttachmentImporter {
             completedWorkCount: completedAttachmentCount,
             totalWorkCount: rows.length,
             lastCompletedSourceRowId: sourceRowId,
+            anomalyCounts: SourceImportAnomalyCounts(
+              attachmentMetadataDegradedCount: metadataDegradedCount,
+            ),
           );
         }
       });
@@ -119,6 +129,9 @@ class AttachmentImporter {
         examinedAttachmentCount: rows.length,
         insertedAttachmentCount: insertedAttachmentCount,
         lastImportedSourceRowId: lastImportedSourceRowId,
+        anomalyCounts: SourceImportAnomalyCounts(
+          attachmentMetadataDegradedCount: metadataDegradedCount,
+        ),
       );
     } finally {
       await sourceDb.close();
@@ -150,5 +163,13 @@ class AttachmentImporter {
       return value;
     }
     return null;
+  }
+
+  static bool _hasNoDescriptiveMetadata(Map<String, Object?> row) {
+    return _nullableString(row, 'guid') == null &&
+        _nullableString(row, 'filename') == null &&
+        _nullableString(row, 'transfer_name') == null &&
+        _nullableString(row, 'uti') == null &&
+        _nullableString(row, 'mime_type') == null;
   }
 }

@@ -45,6 +45,7 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/a
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/domain/source_import_anomaly_counts.dart';
 import 'package:remember_this_text/features/address_book_folders/application/address_book_folder_providers.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
@@ -1600,7 +1601,10 @@ ConversationGraphBuildService _fakeGraphBuildService({
             completedWorkCount: 1,
             totalWorkCount: 1,
             lastCompletedSourceRowId: 42,
-            preservedUnnormalizedCount: preservedUnnormalizedHandleCount,
+            anomalyCounts: SourceImportAnomalyCounts(
+              preservedUnnormalizedHandleCount:
+                  preservedUnnormalizedHandleCount,
+            ),
           ),
         );
       },

@@ -1,3 +1,5 @@
+import '../../source_scoped_import/domain/source_import_anomaly_counts.dart';
+
 enum ConversationGraphBuildSuboperation {
   importChats,
   importHandles,
@@ -30,7 +32,7 @@ final class ConversationGraphBuildObservation {
     this.completedWorkCount,
     this.totalWorkCount,
     this.lastCompletedSourceRowId,
-    this.preservedUnnormalizedCount = 0,
+    this.anomalyCounts = SourceImportAnomalyCounts.empty,
   }) : assert((completedWorkCount == null) == (totalWorkCount == null));
 
   final ConversationGraphBuildSuboperation suboperation;
@@ -38,7 +40,10 @@ final class ConversationGraphBuildObservation {
   final int? completedWorkCount;
   final int? totalWorkCount;
   final int? lastCompletedSourceRowId;
-  final int preservedUnnormalizedCount;
+  final SourceImportAnomalyCounts anomalyCounts;
+
+  int get preservedUnnormalizedCount =>
+      anomalyCounts.preservedUnnormalizedHandleCount;
 }
 
 typedef ConversationGraphBuildObserver =

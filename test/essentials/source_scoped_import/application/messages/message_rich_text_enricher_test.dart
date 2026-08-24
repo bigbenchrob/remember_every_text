@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/ports/message_extractor_port.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
@@ -136,7 +137,39 @@ void main() {
     },
   );
 
-  test('reports unavailable extractor without mutating rows', () async {
+  test(
+    'systemic extractor unavailability fails without mutating rows',
+    () async {
+      await _insertImportMessage(
+        importDatabase,
+        sourceRowId: 100,
+        text: null,
+        attributedBodyBlob: Uint8List.fromList(<int>[1, 2, 3]),
+      );
+
+      await expectLater(
+        MessageRichTextEnricher(
+          chatDbPath: '/fake/chat.db',
+          importLedger: importDatabase,
+          extractor: const _FakeExtractor(<int, String>{
+            100: 'decoded',
+          }, available: false),
+        ).enrichMissingText(),
+        throwsA(
+          isA<SourceImportSystemicException>().having(
+            (error) => error.failureCode,
+            'failure code',
+            'typedstream_decoder_unavailable',
+          ),
+        ),
+      );
+      final rows = await importDatabase.database.query('messages');
+
+      expect(rows.single['text'], isNull);
+    },
+  );
+
+  test('one undecodable attributed body is local and accounted', () async {
     await _insertImportMessage(
       importDatabase,
       sourceRowId: 100,
@@ -147,16 +180,17 @@ void main() {
     final result = await MessageRichTextEnricher(
       chatDbPath: '/fake/chat.db',
       importLedger: importDatabase,
-      extractor: const _FakeExtractor(<int, String>{
-        100: 'decoded',
-      }, available: false),
+      extractor: const _FakeExtractor(<int, String>{}),
     ).enrichMissingText();
-    final rows = await importDatabase.database.query('messages');
 
-    expect(result.extractorAvailable, isFalse);
     expect(result.candidateMessageCount, 1);
     expect(result.enrichedMessageCount, 0);
-    expect(rows.single['text'], isNull);
+    expect(result.missingExtractionCount, 1);
+    expect(result.anomalyCounts.richTextDecodeUnavailableCount, 1);
+    expect(
+      (await importDatabase.database.query('messages')).single['text'],
+      isNull,
+    );
   });
 }
 

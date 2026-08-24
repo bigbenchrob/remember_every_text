@@ -1,3 +1,5 @@
+import '../domain/source_import_anomaly_counts.dart';
+
 const sourceImportProgressObservationStride = 1000;
 
 enum SourceImportWorkUnit {
@@ -21,18 +23,19 @@ final class SourceImportWorkProgress {
     required this.completedWorkCount,
     required this.totalWorkCount,
     this.lastCompletedSourceRowId,
-    this.preservedUnnormalizedCount = 0,
+    this.anomalyCounts = SourceImportAnomalyCounts.empty,
   }) : assert(completedWorkCount >= 0),
        assert(totalWorkCount >= 0),
-       assert(completedWorkCount <= totalWorkCount),
-       assert(preservedUnnormalizedCount >= 0),
-       assert(preservedUnnormalizedCount <= completedWorkCount);
+       assert(completedWorkCount <= totalWorkCount);
 
   final SourceImportWorkUnit unit;
   final int completedWorkCount;
   final int totalWorkCount;
   final int? lastCompletedSourceRowId;
-  final int preservedUnnormalizedCount;
+  final SourceImportAnomalyCounts anomalyCounts;
+
+  int get preservedUnnormalizedCount =>
+      anomalyCounts.preservedUnnormalizedHandleCount;
 }
 
 typedef SourceImportWorkObserver =
@@ -63,6 +66,25 @@ final class SourceImportRecordException implements Exception {
   }
 }
 
+/// A source-import capability failure that makes local degradation unsafe.
+final class SourceImportSystemicException implements Exception {
+  const SourceImportSystemicException({
+    required this.unit,
+    required this.failureCode,
+    required this.reason,
+  });
+
+  final SourceImportWorkUnit unit;
+  final String failureCode;
+  final String reason;
+
+  @override
+  String toString() {
+    return 'Source import ${unit.name} failed systemically '
+        '($failureCode): $reason';
+  }
+}
+
 bool shouldPublishSourceImportProgress({
   required int completedWorkCount,
   required int totalWorkCount,
@@ -78,7 +100,7 @@ void publishSourceImportProgress({
   required int completedWorkCount,
   required int totalWorkCount,
   int? lastCompletedSourceRowId,
-  int preservedUnnormalizedCount = 0,
+  SourceImportAnomalyCounts anomalyCounts = SourceImportAnomalyCounts.empty,
 }) {
   if (observer == null ||
       !shouldPublishSourceImportProgress(
@@ -93,7 +115,7 @@ void publishSourceImportProgress({
       completedWorkCount: completedWorkCount,
       totalWorkCount: totalWorkCount,
       lastCompletedSourceRowId: lastCompletedSourceRowId,
-      preservedUnnormalizedCount: preservedUnnormalizedCount,
+      anomalyCounts: anomalyCounts,
     ),
   );
 }
