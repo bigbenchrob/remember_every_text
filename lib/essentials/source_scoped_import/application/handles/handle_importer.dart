@@ -10,11 +10,17 @@ class HandleImportResult {
     required this.startedAfterSourceRowId,
     required this.insertedHandleCount,
     required this.lastImportedSourceRowId,
+    this.examinedHandleCount = 0,
+    this.normalizedHandleCount = 0,
+    this.preservedUnnormalizedHandleCount = 0,
   });
 
   final int startedAfterSourceRowId;
   final int insertedHandleCount;
   final int? lastImportedSourceRowId;
+  final int examinedHandleCount;
+  final int normalizedHandleCount;
+  final int preservedUnnormalizedHandleCount;
 }
 
 class HandleIdentityReconciliationResult {
@@ -35,12 +41,14 @@ class HandleImporter {
     required this.importLedger,
     required this.sourceDatabaseOpener,
     this.sourceId = liveChatDbSourceId,
+    this.handleIdentifierInterpreter = interpretHandleIdentifier,
   });
 
   final String chatDbPath;
   final ImportLedger importLedger;
   final SourceDatabaseOpener sourceDatabaseOpener;
   final int sourceId;
+  final HandleIdentifierInterpreter handleIdentifierInterpreter;
 
   /// Reconciles local-account identity without importing source records.
   ///
@@ -105,12 +113,16 @@ class HandleImporter {
     final sourceDb = await sourceDatabaseOpener.openReadOnly(chatDbPath);
 
     var insertedHandleCount = 0;
+    var normalizedHandleCount = 0;
+    var preservedUnnormalizedHandleCount = 0;
+    var examinedHandleCount = 0;
     int? lastImportedSourceRowId;
     try {
       final rows = await sourceDb.rawQuery(
         'SELECT ROWID AS source_rowid, id, service '
         'FROM handle ORDER BY ROWID ASC',
       );
+      examinedHandleCount = rows.length;
       final hasNewSourceHandles = rows.any((row) {
         return _requiredInt(row, 'source_rowid') > startedAfterSourceRowId;
       });
@@ -135,6 +147,13 @@ class HandleImporter {
               lastImportedSourceRowId = sourceRowId;
             }
             final rawIdentifier = _requiredString(row, 'id');
+            final interpretation = _interpretIdentifier(rawIdentifier);
+            switch (interpretation) {
+              case NormalizedHandleIdentifier():
+                normalizedHandleCount += 1;
+              case PreservedUnnormalizedHandleIdentifier():
+                preservedUnnormalizedHandleCount += 1;
+            }
             final isMe = localAccountHandleKeys.contains(
               _handleGroupingKey(rawIdentifier),
             );
@@ -178,6 +197,7 @@ class HandleImporter {
             completedWorkCount: completedHandleCount,
             totalWorkCount: rows.length,
             lastCompletedSourceRowId: sourceRowId,
+            preservedUnnormalizedCount: preservedUnnormalizedHandleCount,
           );
         }
       });
@@ -189,7 +209,18 @@ class HandleImporter {
       startedAfterSourceRowId: startedAfterSourceRowId,
       insertedHandleCount: insertedHandleCount,
       lastImportedSourceRowId: lastImportedSourceRowId,
+      examinedHandleCount: examinedHandleCount,
+      normalizedHandleCount: normalizedHandleCount,
+      preservedUnnormalizedHandleCount: preservedUnnormalizedHandleCount,
     );
+  }
+
+  HandleIdentifierInterpretation _interpretIdentifier(String rawIdentifier) {
+    try {
+      return handleIdentifierInterpreter(rawIdentifier);
+    } on HandleIdentifierNormalizationException {
+      return const HandleIdentifierInterpretation.preservedUnnormalized();
+    }
   }
 
   Future<Set<String>> _readLocalAccountHandleKeys(
@@ -202,11 +233,14 @@ class HandleImporter {
       where: 'source_id = ? AND is_me = 1',
       whereArgs: <Object?>[sourceId],
     );
-    final keys = {
-      for (final row in existingRows)
-        if (_nullableString(row, 'id') case final String identifier)
-          _handleGroupingKey(identifier),
-    };
+    final keys = <String>{};
+    for (final row in existingRows) {
+      final identifier = _nullableString(row, 'id');
+      final key = identifier == null ? null : _handleGroupingKey(identifier);
+      if (key != null) {
+        keys.add(key);
+      }
+    }
     final needsInitialBackfill = keys.isEmpty;
     final chatColumns = await _columnNames(sourceDb, 'chat');
     if (chatColumns.contains('account_login')) {
@@ -217,8 +251,9 @@ class HandleImporter {
       );
       for (final row in rows) {
         final value = _nullableString(row, 'account_login');
-        if (value != null) {
-          keys.add(_handleGroupingKey(value));
+        final key = value == null ? null : _handleGroupingKey(value);
+        if (key != null) {
+          keys.add(key);
         }
       }
     }
@@ -239,8 +274,9 @@ class HandleImporter {
       );
       for (final row in rows) {
         final value = _nullableString(row, 'destination_caller_id');
-        if (value != null) {
-          keys.add(_handleGroupingKey(value));
+        final key = value == null ? null : _handleGroupingKey(value);
+        if (key != null) {
+          keys.add(key);
         }
       }
     }
@@ -285,11 +321,15 @@ class HandleImporter {
     return null;
   }
 
-  static String _handleGroupingKey(String value) {
+  static String? _handleGroupingKey(String value) {
     final trimmed = value.trim();
     final withoutAccountKind = RegExp(r'^[eEpP]:').hasMatch(trimmed)
         ? trimmed.substring(2)
         : trimmed;
-    return buildCanonicalHandleGroupingKey(rawIdentifier: withoutAccountKind);
+    return switch (interpretHandleIdentifier(withoutAccountKind)) {
+      NormalizedHandleIdentifier(:final normalizedIdentifier) =>
+        normalizedIdentifier,
+      PreservedUnnormalizedHandleIdentifier() => null,
+    };
   }
 }

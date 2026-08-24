@@ -2,7 +2,7 @@
 tier: project
 scope: inviolate-rules
 owner: 10-DATABASES
-last_reviewed: 2026-06-20
+last_reviewed: 2026-08-24
 source_of_truth: doc
 tests: []
 ---
@@ -58,6 +58,15 @@ These rules are **absolute constraints**. They apply to every agent, every sessi
 4. **UI / Presentation layer**: If a record exists in graph projection and falls within the user's current query scope, it MUST be rendered visibly. The widget may render it with a fallback appearance (e.g., a muted "no text content" indicator) — but it MUST NOT return `SizedBox.shrink()`, an empty container, zero-height box, or any construct that makes the record invisible.
 
 5. **Providers / data layer**: A provider may enrich, merge, or annotate records — but it MUST NOT silently exclude records that the underlying query returned.
+
+6. **Interpretation is not identity**: When source identity and required
+   relationships are intact, failure to semantically normalize an optional
+   value does not authorize dropping its source row or dependents. Preserve the
+   source-scoped identity and relationships without inventing semantic meaning.
+   Fail only when continuing would create false relationships, lose required
+   identity, or make durable graph truth untrustworthy. This rule does not
+   establish one generic fallback policy; each source domain requires its own
+   dependency proof.
 
 ### Forbidden Patterns
 

@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-07-19
+last_reviewed: 2026-08-24
 source_of_truth: doc
 links:
   - ./01-db-import.md
@@ -87,6 +87,29 @@ Import rules:
 - Do not assume every handle maps to a contact.
 - Do not assume every contact has a useful handle.
 - Do not treat display names as identity keys.
+
+### Source handle identity is not semantic normalization
+
+A handle's source identity is its source ROWID within an admitted source,
+represented in MessageLens by the canonical source-scoped row key. Phone/email
+normalization is optional semantic interpretation above that identity.
+
+When a nonempty source handle cannot be truthfully interpreted as a phone or
+email, import and graph projection preserve:
+
+- source ID and source ROWID;
+- source-scoped handle ID;
+- raw source value and service metadata;
+- chat membership and message sender relationships.
+
+That preserved unnormalized handle does not enter canonical alias grouping,
+normalization-based deduplication, or normalization-based contact matching. Two
+opaque source rows remain distinct even when their raw strings are equal. No
+raw-text hash or fallback grouping key may masquerade as canonical semantics.
+
+Structural identity failure remains fatal when source identity or required
+relationships cannot be represented truthfully. See the Feature 28 handle
+anomaly implementation record for the dependency audit and typed accounting.
 
 Identity resolution happens during source-scoped graph projection and overlay merge, not by mutating the source-derived import ledger.
 

@@ -27,6 +27,7 @@ void main() {
         completedWorkUnits: 25,
         totalWorkUnits: 100,
         lastCompletedSourceRowId: 912,
+        preservedUnnormalizedCount: 2,
       ),
     );
 
@@ -43,8 +44,23 @@ void main() {
       OnboardingOperationSubstage.importingMessages,
     );
     expect(restored.progress?.lastCompletedSourceRowId, 912);
+    expect(restored.progress?.preservedUnnormalizedCount, 2);
+    expect(restored.preservedUnnormalizedHandleCount, 2);
     expect(restored.progressRevision, 3);
     expect(restored.toJson().toString(), isNot(contains('Importing messages')));
+
+    final completed = restored
+        .transitionToStage(
+          stage: OnboardingOperationStage.durableReadinessVerification,
+          observedAtUtc: startedAt.add(const Duration(seconds: 3)),
+        )
+        .observeProgress(
+          observedAtUtc: startedAt.add(const Duration(seconds: 4)),
+          substage: OnboardingOperationSubstage.verifyingDurableReadiness,
+        )
+        .complete(verifiedAtUtc: startedAt.add(const Duration(seconds: 5)));
+    expect(completed.progress, isNull);
+    expect(completed.preservedUnnormalizedHandleCount, 2);
   });
 
   test('interrupted and failed remain distinct durable states', () {

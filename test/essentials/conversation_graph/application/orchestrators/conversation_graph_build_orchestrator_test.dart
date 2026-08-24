@@ -30,6 +30,7 @@ void main() {
             completedWorkCount: 2,
             totalWorkCount: 2,
             lastCompletedSourceRowId: 12,
+            preservedUnnormalizedCount: 1,
           ),
         );
       },
@@ -241,6 +242,17 @@ void main() {
     expect(finalHandleProgress.completedWorkCount, 2);
     expect(finalHandleProgress.totalWorkCount, 2);
     expect(finalHandleProgress.lastCompletedSourceRowId, 12);
+    expect(finalHandleProgress.preservedUnnormalizedCount, 1);
+    expect(
+      observations
+          .where(
+            (item) =>
+                item.kind == ConversationGraphBuildObservationKind.progress,
+          )
+          .last
+          .preservedUnnormalizedCount,
+      1,
+    );
     expect(
       observations
           .where(

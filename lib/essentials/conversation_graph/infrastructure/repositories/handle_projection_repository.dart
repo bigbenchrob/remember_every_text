@@ -7,10 +7,12 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
   const SqliteHandleProjectionRepository({
     required this.importLedgerDatabase,
     required this.graphDatabase,
+    this.handleIdentifierInterpreter = interpretHandleIdentifier,
   });
 
   final ImportLedger importLedgerDatabase;
   final ConversationGraphDatabase graphDatabase;
+  final HandleIdentifierInterpreter handleIdentifierInterpreter;
 
   @override
   Future<HandleProjectionResult> projectHandles() async {
@@ -21,7 +23,7 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
     );
 
     var insertedHandleCount = 0;
-    await graphDatabase.transaction(() async {
+    return graphDatabase.transaction(() async {
       for (final row in rows) {
         final isMe = row['is_me'] == 1;
         final insertedCount = await graphDatabase.executeAndReadChanges(
@@ -50,13 +52,18 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
           insertedHandleCount += 1;
         }
       }
-      await _rebuildHandleAliases();
-    });
+      final aliasResult = await _rebuildHandleAliases();
+      await _synchronizeMessageCanonicalHandles();
+      await _removeContactEdgesWithoutCanonicalHandle();
 
-    return HandleProjectionResult(
-      examinedHandleCount: rows.length,
-      insertedHandleCount: insertedHandleCount,
-    );
+      return HandleProjectionResult(
+        examinedHandleCount: rows.length,
+        insertedHandleCount: insertedHandleCount,
+        normalizedHandleCount: aliasResult.normalizedHandleCount,
+        preservedUnnormalizedHandleCount:
+            aliasResult.preservedUnnormalizedHandleCount,
+      );
+    });
   }
 
   @override
@@ -100,23 +107,35 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
     );
   }
 
-  Future<void> _rebuildHandleAliases() async {
+  Future<_HandleAliasRebuildResult> _rebuildHandleAliases() async {
     final rows = await graphDatabase.selectRows('''
       SELECT ss_id, id, service
       FROM handles
       ORDER BY ss_id ASC
       ''');
     final groups = <String, List<_ParsedHandle>>{};
+    var normalizedHandleCount = 0;
+    var preservedUnnormalizedHandleCount = 0;
     for (final row in rows) {
-      final parsed = _parseHandle(row);
-      if (parsed == null) {
-        continue;
+      final sourceHandle = _readSourceHandle(row);
+      final interpretation = _interpretIdentifier(sourceHandle.rawIdentifier);
+      switch (interpretation) {
+        case NormalizedHandleIdentifier(:final normalizedIdentifier):
+          normalizedHandleCount += 1;
+          final parsed = _ParsedHandle(
+            ssId: sourceHandle.ssId,
+            rawIdentifier: sourceHandle.rawIdentifier,
+            normalizedIdentifier: normalizedIdentifier,
+            service: sourceHandle.service,
+          );
+          final group = groups.putIfAbsent(
+            parsed.normalizedIdentifier,
+            () => <_ParsedHandle>[],
+          );
+          group.add(parsed);
+        case PreservedUnnormalizedHandleIdentifier():
+          preservedUnnormalizedHandleCount += 1;
       }
-      final group = groups.putIfAbsent(
-        parsed.normalizedIdentifier,
-        () => <_ParsedHandle>[],
-      );
-      group.add(parsed);
     }
 
     await graphDatabase.executeSql('DELETE FROM handle_aliases');
@@ -164,7 +183,64 @@ class SqliteHandleProjectionRepository implements HandleProjectionRepository {
         );
       }
     }
+
+    return _HandleAliasRebuildResult(
+      normalizedHandleCount: normalizedHandleCount,
+      preservedUnnormalizedHandleCount: preservedUnnormalizedHandleCount,
+    );
   }
+
+  HandleIdentifierInterpretation _interpretIdentifier(String rawIdentifier) {
+    try {
+      return handleIdentifierInterpreter(rawIdentifier);
+    } on HandleIdentifierNormalizationException {
+      return const HandleIdentifierInterpretation.preservedUnnormalized();
+    }
+  }
+
+  Future<void> _synchronizeMessageCanonicalHandles() {
+    return graphDatabase.executeSql('''
+      UPDATE messages
+      SET sender_canonical_handle_ss_id = (
+        SELECT ha.canonical_handle_ss_id
+        FROM handle_aliases ha
+        WHERE ha.handle_ss_id = messages.sender_handle_ss_id
+      )
+      WHERE sender_handle_ss_id IS NOT NULL
+      ''');
+  }
+
+  Future<void> _removeContactEdgesWithoutCanonicalHandle() {
+    return graphDatabase.executeSql('''
+      DELETE FROM contact_to_handle
+      WHERE handle_ss_id NOT IN (
+        SELECT canonical_handle_ss_id
+        FROM canonical_handles
+      )
+      ''');
+  }
+}
+
+class _HandleAliasRebuildResult {
+  const _HandleAliasRebuildResult({
+    required this.normalizedHandleCount,
+    required this.preservedUnnormalizedHandleCount,
+  });
+
+  final int normalizedHandleCount;
+  final int preservedUnnormalizedHandleCount;
+}
+
+class _SourceHandle {
+  const _SourceHandle({
+    required this.ssId,
+    required this.rawIdentifier,
+    required this.service,
+  });
+
+  final int ssId;
+  final String rawIdentifier;
+  final String? service;
 }
 
 class _ParsedHandle {
@@ -181,19 +257,15 @@ class _ParsedHandle {
   final String? service;
 }
 
-_ParsedHandle? _parseHandle(Map<String, Object?> row) {
+_SourceHandle _readSourceHandle(Map<String, Object?> row) {
   final ssId = row['ss_id'];
   final rawIdentifier = (row['id'] as String?)?.trim();
   if (ssId is! int || rawIdentifier == null || rawIdentifier.isEmpty) {
-    return null;
+    throw StateError('Projected handle source identity is incomplete.');
   }
-  final normalizedIdentifier = buildCanonicalHandleGroupingKey(
-    rawIdentifier: rawIdentifier,
-  );
-  return _ParsedHandle(
+  return _SourceHandle(
     ssId: ssId,
     rawIdentifier: rawIdentifier,
-    normalizedIdentifier: normalizedIdentifier,
     service: row['service'] as String?,
   );
 }

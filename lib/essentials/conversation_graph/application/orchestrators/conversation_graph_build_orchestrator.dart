@@ -88,6 +88,7 @@ class ConversationGraphBuildOrchestrator {
     final startedAt = DateTime.now().toUtc();
     final completedStageNames = <String>[];
     final stageTimings = <ConversationGraphBuildStageTiming>[];
+    var preservedUnnormalizedCount = 0;
 
     Future<void> runStage(
       String name,
@@ -150,6 +151,9 @@ class ConversationGraphBuildOrchestrator {
       ConversationGraphBuildSuboperation defaultSuboperation,
     ) {
       return (progress) {
+        if (progress.preservedUnnormalizedCount > preservedUnnormalizedCount) {
+          preservedUnnormalizedCount = progress.preservedUnnormalizedCount;
+        }
         final suboperation = _suboperationForSourceUnit(progress.unit);
         onObservation?.call(
           ConversationGraphBuildObservation(
@@ -158,6 +162,7 @@ class ConversationGraphBuildOrchestrator {
             completedWorkCount: progress.completedWorkCount,
             totalWorkCount: progress.totalWorkCount,
             lastCompletedSourceRowId: progress.lastCompletedSourceRowId,
+            preservedUnnormalizedCount: preservedUnnormalizedCount,
           ),
         );
       };
@@ -177,6 +182,7 @@ class ConversationGraphBuildOrchestrator {
             kind: ConversationGraphBuildObservationKind.progress,
             completedWorkCount: progress.completedWorkCount,
             totalWorkCount: progress.totalWorkCount,
+            preservedUnnormalizedCount: preservedUnnormalizedCount,
           ),
         );
       };

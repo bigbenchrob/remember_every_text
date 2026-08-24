@@ -22,13 +22,16 @@ Journey before further Onboarding implementation begins.
 3. [Stall-detection liveness inventory and implementation blocker](responses/03-ONBOARDING-STALL-DETECTION-AND-STAGE-SPECIFIC-LIVENESS-CONTRACTS-BLOCKER.md)
 4. [Stage observability and real progress instrumentation](responses/04-ONBOARDING-STAGE-OBSERVABILITY-AND-REAL-PROGRESS-INSTRUMENTATION-IMPLEMENTATION.md)
 5. [Production-shaped profiling and liveness evidence](responses/05-PRODUCTION-SHAPED-ONBOARDING-PROFILING-AND-LIVENESS-EVIDENCE.md)
+6. [Dependency-aware source anomaly handling: handles](responses/06-DEPENDENCY-AWARE-SOURCE-ANOMALY-HANDLING-STARTING-WITH-HANDLES-IMPLEMENTATION.md)
 
 ## Current Status
 
-**PRODUCTION-SHAPED LIVENESS MEASURED; WATCHDOG STILL DEFERRED.** A complete
+**HANDLE ANOMALY FALLBACK IMPLEMENTED; WATCHDOG STILL DEFERRED.** A complete
 137,360-message first import established subsecond healthy observation gaps for
 all enumerable work and identified one remaining 8.13-second coarse set-based
 projection. Environment Readiness no longer contends for derived-store reads
 during admitted Onboarding mutation. macOS execution opportunity and repeated
-healthy variance remain unknown, so no watchdog or stalled state exists. Start
-Fresh and record quarantine remain explicitly deferred.
+healthy variance remain unknown, so no watchdog or stalled state exists.
+Unnormalizable handles now retain source identity and downstream relationships
+without receiving false alias/contact semantics. Start Fresh and anomaly policy
+for other source domains remain explicitly deferred.

@@ -139,6 +139,37 @@ void main() {
       expect(edges, isEmpty);
     },
   );
+
+  test('does not contact-match an unnormalized raw handle value', () async {
+    final handleSsId = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 12);
+    await graphDatabase.database.insert('handles', <String, Object?>{
+      'ss_id': handleSsId,
+      'id': '*city*',
+      'service': 'SMS',
+    });
+    final contactSsId = await _insertImportContact(
+      importLedgerDatabase,
+      sourceRowId: 32,
+      displayName: 'Unrelated Contact',
+    );
+    await _insertImportContactChannel(
+      importLedgerDatabase,
+      contactSsId: contactSsId,
+      sourceContactRowId: 32,
+      value: '*city*',
+    );
+
+    final result = await ContactProjector(
+      repository: SqliteContactProjectionRepository(
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
+      ),
+    ).projectContacts();
+
+    expect(result.insertedContactCount, 1);
+    expect(result.insertedContactHandleEdgeCount, 0);
+    expect(await graphDatabase.database.query('contact_to_handle'), isEmpty);
+  });
 }
 
 Future<int> _insertImportContact(

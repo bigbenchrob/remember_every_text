@@ -5,8 +5,11 @@ import 'package:remember_this_text/essentials/conversation_graph/application/cha
 import 'package:remember_this_text/essentials/conversation_graph/application/handles/handle_projector.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/chat_to_handle_projection_repository.dart';
 import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/handle_projection_repository.dart';
+import 'package:remember_this_text/essentials/conversation_graph/infrastructure/repositories/message_projection_repository.dart';
+import 'package:remember_this_text/essentials/db/shared/handle_identifier_utils.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/chat_handle_joins/chat_handle_join_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/handles/handle_importer.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/known_sources.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/domain/source_scoped_row_key.dart';
@@ -77,6 +80,10 @@ void main() {
     expect(importResult.startedAfterSourceRowId, 0);
     expect(importResult.insertedHandleCount, 1);
     expect(projectionResult.insertedHandleCount, 1);
+    expect(importResult.normalizedHandleCount, 1);
+    expect(importResult.preservedUnnormalizedHandleCount, 0);
+    expect(projectionResult.normalizedHandleCount, 1);
+    expect(projectionResult.preservedUnnormalizedHandleCount, 0);
     expect(importRows.single['ss_id'], expectedSsId);
     expect(importRows.single['source_id'], liveChatDbSourceId);
     expect(importRows.single['source_rowid'], 12);
@@ -244,7 +251,7 @@ void main() {
     );
     final observations = <SourceImportWorkProgress>[];
 
-    await HandleImporter(
+    final result = await HandleImporter(
       chatDbPath: chatDbPath,
       importLedger: importLedgerDatabase,
       sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
@@ -255,6 +262,227 @@ void main() {
     expect(observations.first.totalWorkCount, 1);
     expect(observations.last.completedWorkCount, 1);
     expect(observations.last.lastCompletedSourceRowId, 5);
+    expect(observations.last.preservedUnnormalizedCount, 1);
+    expect(result.examinedHandleCount, 1);
+    expect(result.normalizedHandleCount, 0);
+    expect(result.preservedUnnormalizedHandleCount, 1);
+  });
+
+  test(
+    'preserves identical unnormalized handles as distinct identities',
+    () async {
+      await _insertSourceHandle(
+        chatDbPath,
+        rowId: 12,
+        id: '*city*',
+        service: 'SMS',
+      );
+      await _insertSourceHandle(
+        chatDbPath,
+        rowId: 13,
+        id: '*city*',
+        service: 'SMS',
+      );
+
+      final importResult = await HandleImporter(
+        chatDbPath: chatDbPath,
+        importLedger: importLedgerDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+      ).importNewHandles();
+      final projectionResult = await HandleProjector(
+        repository: SqliteHandleProjectionRepository(
+          importLedgerDatabase: importLedgerDatabase,
+          graphDatabase: graphDatabase,
+        ),
+      ).projectHandles();
+
+      final handles = await graphDatabase.database.query(
+        'handles',
+        orderBy: 'ss_id ASC',
+      );
+      final aliases = await graphDatabase.database.query('handle_aliases');
+      final canonicalHandles = await graphDatabase.database.query(
+        'canonical_handles',
+      );
+
+      expect(importResult.preservedUnnormalizedHandleCount, 2);
+      expect(projectionResult.preservedUnnormalizedHandleCount, 2);
+      expect(handles, hasLength(2));
+      expect(handles.map((row) => row['ss_id']).toSet(), hasLength(2));
+      expect(handles.map((row) => row['id']), everyElement('*city*'));
+      expect(aliases, isEmpty);
+      expect(canonicalHandles, isEmpty);
+    },
+  );
+
+  test(
+    'typed normalization rejection preserves usable source identity',
+    () async {
+      const rawIdentifier = 'private-service-token';
+      await _insertSourceHandle(
+        chatDbPath,
+        rowId: 27,
+        id: rawIdentifier,
+        service: 'iMessage',
+      );
+
+      final result = await HandleImporter(
+        chatDbPath: chatDbPath,
+        importLedger: importLedgerDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+        handleIdentifierInterpreter: (_) {
+          throw const HandleIdentifierNormalizationException('unsupported');
+        },
+      ).importNewHandles();
+
+      final rows = await importLedgerDatabase.database.query('handles');
+      expect(result.preservedUnnormalizedHandleCount, 1);
+      expect(
+        rows.single['ss_id'],
+        SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 27),
+      );
+      expect(rows.single['id'], rawIdentifier);
+      expect(result.toString(), isNot(contains(rawIdentifier)));
+    },
+  );
+
+  test(
+    'reprojection clears obsolete canonical semantics for opaque handle',
+    () async {
+      await _insertSourceHandle(
+        chatDbPath,
+        rowId: 12,
+        id: '*city*',
+        service: 'SMS',
+      );
+      await HandleImporter(
+        chatDbPath: chatDbPath,
+        importLedger: importLedgerDatabase,
+        sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+      ).importNewHandles();
+      final handleSsId = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 12);
+      await graphDatabase.database.insert('handles', <String, Object?>{
+        'ss_id': handleSsId,
+        'id': '*city*',
+        'service': 'SMS',
+      });
+      await graphDatabase.database
+          .insert('canonical_handles', <String, Object?>{
+            'canonical_handle_ss_id': handleSsId,
+            'display_handle': '*city*',
+            'normalized_identifier': '*city*',
+            'service': 'SMS',
+            'alias_count': 1,
+          });
+      await graphDatabase.database.insert('handle_aliases', <String, Object?>{
+        'handle_ss_id': handleSsId,
+        'canonical_handle_ss_id': handleSsId,
+        'raw_identifier': '*city*',
+        'normalized_identifier': '*city*',
+        'alias_kind': 'canonical',
+      });
+      await graphDatabase.database.insert('messages', <String, Object?>{
+        'ss_id': 101,
+        'guid': 'stale-canonical-message',
+        'sender_handle_ss_id': handleSsId,
+        'sender_canonical_handle_ss_id': handleSsId,
+        'is_from_me': 0,
+      });
+      await graphDatabase.database.insert('contacts', <String, Object?>{
+        'contact_id': 202,
+        'display_name': 'Stale Match',
+      });
+      await graphDatabase.database.insert(
+        'contact_to_handle',
+        <String, Object?>{
+          'contact_id': 202,
+          'handle_ss_id': handleSsId,
+          'handle_value': '*city*',
+        },
+      );
+
+      await HandleProjector(
+        repository: SqliteHandleProjectionRepository(
+          importLedgerDatabase: importLedgerDatabase,
+          graphDatabase: graphDatabase,
+        ),
+      ).projectHandles();
+
+      expect(await graphDatabase.database.query('handle_aliases'), isEmpty);
+      expect(await graphDatabase.database.query('canonical_handles'), isEmpty);
+      final messages = await graphDatabase.database.query('messages');
+      expect(messages.single['sender_handle_ss_id'], handleSsId);
+      expect(messages.single['sender_canonical_handle_ss_id'], isNull);
+      expect(await graphDatabase.database.query('contact_to_handle'), isEmpty);
+    },
+  );
+
+  test('opaque handle keeps chat and message relationships usable', () async {
+    await _insertSourceHandle(
+      chatDbPath,
+      rowId: 12,
+      id: '*city*',
+      service: 'SMS',
+    );
+    await _insertSourceChatHandle(chatDbPath, chatId: 7, handleId: 12);
+    await _insertSourceMessage(
+      chatDbPath,
+      rowId: 101,
+      guid: 'opaque-handle-message',
+      handleId: 12,
+      text: 'Message evidence remains available.',
+    );
+
+    final handleImporter = HandleImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    );
+    final handleImportResult = await handleImporter.importNewHandles();
+    final messageImportResult = await MessageImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importNewMessages();
+    await ChatHandleJoinImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importLedgerDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importJoins();
+
+    final handleSsId = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 12);
+    final chatSsId = SourceScopedRowKey.pack(sourceId: 1, sourceRowId: 7);
+    await graphDatabase.database.insert('chats', <String, Object?>{
+      'ss_id': chatSsId,
+      'guid': 'chat-7',
+      'is_group': 0,
+    });
+    await HandleProjector(
+      repository: SqliteHandleProjectionRepository(
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
+      ),
+    ).projectHandles();
+    await ChatToHandleProjector(
+      repository: SqliteChatToHandleProjectionRepository(
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
+      ),
+    ).projectEdges();
+    await SqliteMessageProjectionRepository(
+      importLedgerDatabase: importLedgerDatabase,
+      graphDatabase: graphDatabase,
+    ).projectMessages();
+
+    final edges = await graphDatabase.database.query('chat_to_handle');
+    final messages = await graphDatabase.database.query('messages');
+    expect(handleImportResult.preservedUnnormalizedHandleCount, 1);
+    expect(messageImportResult.insertedMessageCount, 1);
+    expect(edges.single['chat_ss_id'], chatSsId);
+    expect(edges.single['handle_ss_id'], handleSsId);
+    expect(messages.single['sender_handle_ss_id'], handleSsId);
+    expect(messages.single['sender_canonical_handle_ss_id'], isNull);
+    expect(messages.single['text'], 'Message evidence remains available.');
   });
 
   test('malformed handle stops with bounded source row context', () async {
@@ -344,10 +572,33 @@ Future<void> _createSourceTables(String chatDbPath) async {
   await db.execute('''
     CREATE TABLE message (
       ROWID INTEGER PRIMARY KEY,
+      guid TEXT,
+      handle_id INTEGER,
       is_from_me INTEGER NOT NULL,
+      date INTEGER,
+      text TEXT,
       destination_caller_id TEXT
     )
   ''');
+  await db.close();
+}
+
+Future<void> _insertSourceMessage(
+  String chatDbPath, {
+  required int rowId,
+  required String guid,
+  required int handleId,
+  required String text,
+}) async {
+  final db = await openDatabase(chatDbPath);
+  await db.insert('message', <String, Object?>{
+    'ROWID': rowId,
+    'guid': guid,
+    'handle_id': handleId,
+    'is_from_me': 0,
+    'date': 0,
+    'text': text,
+  });
   await db.close();
 }
 

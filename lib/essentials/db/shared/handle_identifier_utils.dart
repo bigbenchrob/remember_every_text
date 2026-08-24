@@ -6,6 +6,72 @@ String sanitizeHandleService(String? rawService) {
   return trimmed;
 }
 
+/// The semantic interpretation available for one preserved source handle.
+///
+/// Source identity does not depend on this interpretation. An unnormalized
+/// handle remains addressable through its source-scoped row identity, but it
+/// must not participate in alias grouping or normalization-based contact
+/// matching.
+sealed class HandleIdentifierInterpretation {
+  const HandleIdentifierInterpretation();
+
+  const factory HandleIdentifierInterpretation.normalized(
+    String normalizedIdentifier,
+  ) = NormalizedHandleIdentifier;
+
+  const factory HandleIdentifierInterpretation.preservedUnnormalized() =
+      PreservedUnnormalizedHandleIdentifier;
+}
+
+final class NormalizedHandleIdentifier extends HandleIdentifierInterpretation {
+  const NormalizedHandleIdentifier(this.normalizedIdentifier);
+
+  final String normalizedIdentifier;
+}
+
+final class PreservedUnnormalizedHandleIdentifier
+    extends HandleIdentifierInterpretation {
+  const PreservedUnnormalizedHandleIdentifier();
+}
+
+/// A typed semantic-normalization failure that leaves source identity intact.
+///
+/// Import and projection may preserve the source handle without normalization
+/// when this exception is raised. Other exception types remain fatal because
+/// they may represent structural or systemic failures.
+final class HandleIdentifierNormalizationException implements Exception {
+  const HandleIdentifierNormalizationException(this.reason);
+
+  final String reason;
+}
+
+typedef HandleIdentifierInterpreter =
+    HandleIdentifierInterpretation Function(String rawIdentifier);
+
+/// Interprets a raw handle without inventing canonical semantics.
+///
+/// Email-like identifiers and numeric telephone/service identifiers retain
+/// the established normalization rules. Other nonempty source values are
+/// preserved as unnormalized identities instead of being converted into a
+/// canonical alias key from their raw text.
+HandleIdentifierInterpretation interpretHandleIdentifier(String rawIdentifier) {
+  final trimmed = stripMeaninglessHandlePrefix(rawIdentifier)?.trim() ?? '';
+  if (trimmed.isEmpty) {
+    return const HandleIdentifierInterpretation.preservedUnnormalized();
+  }
+
+  final withoutScheme = _stripKnownSchemes(trimmed);
+  final normalized = normalizeHandleIdentifier(trimmed);
+  if (normalized == null || normalized.isEmpty) {
+    return const HandleIdentifierInterpretation.preservedUnnormalized();
+  }
+  if (!withoutScheme.contains('@') &&
+      RegExp(r'[a-zA-Z]').hasMatch(withoutScheme)) {
+    return const HandleIdentifierInterpretation.preservedUnnormalized();
+  }
+  return HandleIdentifierInterpretation.normalized(normalized);
+}
+
 String? normalizeHandleIdentifier(String? value) {
   if (value == null) {
     return null;
@@ -38,26 +104,6 @@ String? normalizeHandleIdentifier(String? value) {
     normalized = normalized.substring(1);
   }
   return normalized;
-}
-
-String buildCanonicalHandleGroupingKey({
-  String? normalizedIdentifier,
-  String? rawIdentifier,
-}) {
-  final normalized =
-      normalizeHandleIdentifier(normalizedIdentifier) ??
-      normalizeHandleIdentifier(rawIdentifier);
-  if (normalized != null && normalized.isNotEmpty) {
-    return normalized;
-  }
-
-  final fallback = _fallbackCompoundBase(rawIdentifier);
-  if (fallback != null && fallback.isNotEmpty) {
-    return fallback;
-  }
-
-  return stripMeaninglessHandlePrefix(rawIdentifier)?.trim().toLowerCase() ??
-      'unknown';
 }
 
 String? stripMeaninglessHandlePrefix(String? rawIdentifier) {

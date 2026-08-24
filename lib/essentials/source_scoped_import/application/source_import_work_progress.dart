@@ -21,14 +21,18 @@ final class SourceImportWorkProgress {
     required this.completedWorkCount,
     required this.totalWorkCount,
     this.lastCompletedSourceRowId,
+    this.preservedUnnormalizedCount = 0,
   }) : assert(completedWorkCount >= 0),
        assert(totalWorkCount >= 0),
-       assert(completedWorkCount <= totalWorkCount);
+       assert(completedWorkCount <= totalWorkCount),
+       assert(preservedUnnormalizedCount >= 0),
+       assert(preservedUnnormalizedCount <= completedWorkCount);
 
   final SourceImportWorkUnit unit;
   final int completedWorkCount;
   final int totalWorkCount;
   final int? lastCompletedSourceRowId;
+  final int preservedUnnormalizedCount;
 }
 
 typedef SourceImportWorkObserver =
@@ -74,6 +78,7 @@ void publishSourceImportProgress({
   required int completedWorkCount,
   required int totalWorkCount,
   int? lastCompletedSourceRowId,
+  int preservedUnnormalizedCount = 0,
 }) {
   if (observer == null ||
       !shouldPublishSourceImportProgress(
@@ -88,6 +93,7 @@ void publishSourceImportProgress({
       completedWorkCount: completedWorkCount,
       totalWorkCount: totalWorkCount,
       lastCompletedSourceRowId: lastCompletedSourceRowId,
+      preservedUnnormalizedCount: preservedUnnormalizedCount,
     ),
   );
 }

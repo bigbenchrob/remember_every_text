@@ -125,19 +125,24 @@ final class OnboardingOperationProgress {
     required this.completedWorkUnits,
     required this.totalWorkUnits,
     this.lastCompletedSourceRowId,
+    this.preservedUnnormalizedCount = 0,
   }) : assert(completedWorkUnits >= 0),
        assert(totalWorkUnits >= 0),
-       assert(completedWorkUnits <= totalWorkUnits);
+       assert(completedWorkUnits <= totalWorkUnits),
+       assert(preservedUnnormalizedCount >= 0),
+       assert(preservedUnnormalizedCount <= completedWorkUnits);
 
   final int completedWorkUnits;
   final int totalWorkUnits;
   final int? lastCompletedSourceRowId;
+  final int preservedUnnormalizedCount;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
       'completed_work_units': completedWorkUnits,
       'total_work_units': totalWorkUnits,
       'last_completed_source_rowid': lastCompletedSourceRowId,
+      'preserved_unnormalized_count': preservedUnnormalizedCount,
     };
   }
 
@@ -151,6 +156,8 @@ final class OnboardingOperationProgress {
       completedWorkUnits: completedWorkUnits,
       totalWorkUnits: totalWorkUnits,
       lastCompletedSourceRowId: json['last_completed_source_rowid'] as int?,
+      preservedUnnormalizedCount:
+          json['preserved_unnormalized_count'] as int? ?? 0,
     );
   }
 
@@ -159,12 +166,17 @@ final class OnboardingOperationProgress {
     return other is OnboardingOperationProgress &&
         other.completedWorkUnits == completedWorkUnits &&
         other.totalWorkUnits == totalWorkUnits &&
-        other.lastCompletedSourceRowId == lastCompletedSourceRowId;
+        other.lastCompletedSourceRowId == lastCompletedSourceRowId &&
+        other.preservedUnnormalizedCount == preservedUnnormalizedCount;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(completedWorkUnits, totalWorkUnits, lastCompletedSourceRowId);
+  int get hashCode => Object.hash(
+    completedWorkUnits,
+    totalWorkUnits,
+    lastCompletedSourceRowId,
+    preservedUnnormalizedCount,
+  );
 }
 
 @immutable
@@ -214,6 +226,7 @@ final class OnboardingOperationSnapshot {
     required this.status,
     required this.completedStages,
     required this.progressRevision,
+    this.preservedUnnormalizedHandleCount = 0,
     this.operationId,
     this.processSessionId,
     this.kind,
@@ -248,6 +261,7 @@ final class OnboardingOperationSnapshot {
   final DateTime? lastProgressObservedAtUtc;
   final OnboardingOperationProgress? progress;
   final int progressRevision;
+  final int preservedUnnormalizedHandleCount;
   final OnboardingOperationFailure? failure;
   final DateTime? finishedAtUtc;
 
@@ -321,12 +335,17 @@ final class OnboardingOperationSnapshot {
     if (substage == currentSubstage && progress == this.progress) {
       return this;
     }
+    final observedPreservedCount = progress?.preservedUnnormalizedCount ?? 0;
     return _copy(
       currentSubstage: substage,
       lastProgressObservedAtUtc: observedAtUtc,
       progress: progress,
       clearProgress: progress == null,
       progressRevision: progressRevision + 1,
+      preservedUnnormalizedHandleCount:
+          observedPreservedCount > preservedUnnormalizedHandleCount
+          ? observedPreservedCount
+          : preservedUnnormalizedHandleCount,
     );
   }
 
@@ -387,6 +406,7 @@ final class OnboardingOperationSnapshot {
           ?.toIso8601String(),
       'progress': progress?.toJson(),
       'progress_revision': progressRevision,
+      'preserved_unnormalized_handle_count': preservedUnnormalizedHandleCount,
       'failure': failure?.toJson(),
       'finished_at_utc': finishedAtUtc?.toIso8601String(),
     };
@@ -456,6 +476,8 @@ final class OnboardingOperationSnapshot {
               _requiredMap(progressRaw, 'progress'),
             ),
       progressRevision: json['progress_revision'] as int? ?? 0,
+      preservedUnnormalizedHandleCount:
+          json['preserved_unnormalized_handle_count'] as int? ?? 0,
       failure: failureRaw == null
           ? null
           : OnboardingOperationFailure.fromJson(
@@ -481,6 +503,9 @@ final class OnboardingOperationSnapshot {
     if (status == OnboardingOperationStatus.running && finishedAtUtc != null) {
       throw const FormatException('Running onboarding snapshot is finished.');
     }
+    if (preservedUnnormalizedHandleCount < 0) {
+      throw const FormatException('Invalid preserved handle count.');
+    }
   }
 
   void _requireRunning() {
@@ -500,6 +525,7 @@ final class OnboardingOperationSnapshot {
     OnboardingOperationProgress? progress,
     bool clearProgress = false,
     int? progressRevision,
+    int? preservedUnnormalizedHandleCount,
     OnboardingOperationFailure? failure,
     bool clearFailure = false,
     DateTime? finishedAtUtc,
@@ -520,6 +546,9 @@ final class OnboardingOperationSnapshot {
           lastProgressObservedAtUtc ?? this.lastProgressObservedAtUtc,
       progress: clearProgress ? null : progress ?? this.progress,
       progressRevision: progressRevision ?? this.progressRevision,
+      preservedUnnormalizedHandleCount:
+          preservedUnnormalizedHandleCount ??
+          this.preservedUnnormalizedHandleCount,
       failure: clearFailure ? null : failure ?? this.failure,
       finishedAtUtc: finishedAtUtc ?? this.finishedAtUtc,
     );

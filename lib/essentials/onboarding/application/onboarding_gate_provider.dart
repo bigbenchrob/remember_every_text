@@ -664,6 +664,7 @@ class OnboardingGate extends _$OnboardingGate {
           completedWorkUnits: observation.completedWorkCount,
           totalWorkUnits: observation.totalWorkCount,
           lastCompletedSourceRowId: observation.lastCompletedSourceRowId,
+          preservedUnnormalizedCount: observation.preservedUnnormalizedCount,
         );
       });
     }

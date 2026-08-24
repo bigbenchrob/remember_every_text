@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Onboarding now preserves unusual Messages handles under their authoritative
+  source-scoped identity when phone/email normalization is unavailable. Their
+  chats and messages remain usable, while opaque values cannot acquire false
+  alias grouping or contact matches; durable progress records the bounded
+  anomaly count without exposing raw identifiers.
+
 - Onboarding Environment Readiness now reports maintenance instead of opening
   derived stores while any archive mutation is admitted. This removes
   readiness-induced SQLite contention and multi-second UI stalls during a

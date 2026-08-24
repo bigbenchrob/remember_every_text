@@ -55,6 +55,7 @@ void main() {
       progress: const OnboardingOperationProgress(
         completedWorkUnits: 10,
         totalWorkUnits: 20,
+        preservedUnnormalizedCount: 1,
       ),
     );
 
@@ -63,6 +64,8 @@ void main() {
       OnboardingOperationStage.environmentPreparation,
     ]);
     expect(controller.current.progress?.completedWorkUnits, 10);
+    expect(controller.current.progress?.preservedUnnormalizedCount, 1);
+    expect(controller.current.preservedUnnormalizedHandleCount, 1);
     expect(controller.current.progressRevision, 3);
     expect(store.writeCount, 3);
   });
@@ -139,6 +142,14 @@ void main() {
 
   test('completion requires durable proof compatible with operation', () async {
     final operationId = await _begin(controller);
+    await controller.reportProgress(
+      operationId: operationId,
+      progress: const OnboardingOperationProgress(
+        completedWorkUnits: 1,
+        totalWorkUnits: 1,
+        preservedUnnormalizedCount: 1,
+      ),
+    );
     await controller.enterStage(
       operationId: operationId,
       stage: OnboardingOperationStage.durableReadinessVerification,
@@ -162,6 +173,7 @@ void main() {
     );
 
     expect(controller.current.status, OnboardingOperationStatus.completed);
+    expect(controller.current.preservedUnnormalizedHandleCount, 1);
     expect(
       controller.current.completedStages,
       contains(OnboardingOperationStage.durableReadinessVerification),

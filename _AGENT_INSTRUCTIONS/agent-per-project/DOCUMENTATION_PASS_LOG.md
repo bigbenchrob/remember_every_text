@@ -5592,3 +5592,20 @@ production preservation authority mechanically enforceable.
   truthful internal evidence first if automated liveness is pursued.
 - Recorded that the disposable import and graph stores agree exactly and pass
   SQLite quick checks, while no attachment payload was archived.
+
+## 2026-08-24 - Dependency-aware handle anomaly preservation
+
+- Added the Feature 28 dependency map for handles, chats, messages,
+  attachments, reactions, and contacts without creating a generic row-skipping
+  policy.
+- Codified the distinction between authoritative source-scoped handle identity
+  and optional phone/email normalization.
+- Documented deterministic opaque-handle preservation, exclusion from alias
+  grouping and contact matching, typed anomaly accounting, privacy boundaries,
+  and structural failure criteria.
+- Updated the canonical identity, data-fidelity, and Onboarding operation
+  guides with the rule: preserve source identity and relationships whenever
+  interpretation is optional; fail when continuing would make graph truth
+  false or structurally incomplete.
+- Recorded that no schema, user-facing anomaly surface, or policy for adjacent
+  source domains was introduced.

@@ -97,6 +97,7 @@ final class OnboardingProgressReporter {
     int? completedWorkUnits,
     int? totalWorkUnits,
     int? lastCompletedSourceRowId,
+    int preservedUnnormalizedCount = 0,
   }) async {
     if ((completedWorkUnits == null) != (totalWorkUnits == null)) {
       throw ArgumentError(
@@ -112,6 +113,7 @@ final class OnboardingProgressReporter {
               completedWorkUnits: completedWorkUnits,
               totalWorkUnits: totalWorkUnits!,
               lastCompletedSourceRowId: lastCompletedSourceRowId,
+              preservedUnnormalizedCount: preservedUnnormalizedCount,
             ),
     );
   }

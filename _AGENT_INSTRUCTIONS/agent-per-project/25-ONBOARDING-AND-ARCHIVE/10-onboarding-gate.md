@@ -73,6 +73,14 @@ rows or Conversation Graph truth. Initial import and reimport become complete
 only after the admitted mutation releases maintenance and fresh canonical
 probes prove both derived stores are populated.
 
+Source-owned progress may include typed anomaly evidence that does not alter
+operation authority. The first implemented example is the count of handle rows
+preserved without phone/email normalization. Such a row is successful source
+intake when its source-scoped identity and relationships remain truthful; it is
+not a failed Onboarding operation. Structural source identity failure still
+routes through the typed stage-failure boundary. Presentation does not infer or
+reclassify either outcome.
+
 On a new process, a persisted `running` snapshot from a different process
 session becomes `interrupted`. Environment Readiness then reconciles it as
 completed, resumable, inconsistent, or temporarily unavailable. During

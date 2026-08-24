@@ -44,6 +44,7 @@ import 'package:remember_this_text/essentials/onboarding/presentation/onboarding
 import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
+import 'package:remember_this_text/essentials/source_scoped_import/application/source_import_work_progress.dart';
 import 'package:remember_this_text/features/address_book_folders/application/address_book_folder_providers.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
@@ -324,7 +325,7 @@ void main() {
     });
 
     testWidgets(
-      'first-run preparation is visible while reset is pending and starts only once',
+      'first-run preparation completes with preserved handle anomaly evidence',
       (tester) async {
         final resetCompleter = Completer<void>();
         final resetService = _FakeMessageDataResetService()
@@ -347,6 +348,7 @@ void main() {
               graphBuildCallCount += 1;
             },
             graphBuildCompleter: graphBuildCompleter,
+            preservedUnnormalizedHandleCount: 1,
           ),
         );
 
@@ -397,12 +399,11 @@ void main() {
           container.read(onboardingGateProvider),
           OnboardingStatus.complete,
         );
-        expect(
-          (await container.read(
-            onboardingOperationControllerProvider.future,
-          )).current.status,
-          OnboardingOperationStatus.completed,
-        );
+        final completedOperation = (await container.read(
+          onboardingOperationControllerProvider.future,
+        )).current;
+        expect(completedOperation.status, OnboardingOperationStatus.completed);
+        expect(completedOperation.preservedUnnormalizedHandleCount, 1);
 
         final sidebarModeSubscription = container.listen<SidebarMode>(
           activeSidebarModeProvider,
@@ -1438,6 +1439,7 @@ List<Override> _firstRunOverrides({
   Completer<void>? graphBuildCompleter,
   Object? graphBuildError,
   bool hasFullDiskAccess = true,
+  int preservedUnnormalizedHandleCount = 0,
 }) {
   return [
     archiveAccessAuthorityProvider.overrideWithValue(archiveFixture.authority),
@@ -1454,6 +1456,7 @@ List<Override> _firstRunOverrides({
         error: graphBuildError,
         onBuild: onGraphBuild,
         buildCompleter: graphBuildCompleter,
+        preservedUnnormalizedHandleCount: preservedUnnormalizedHandleCount,
       ),
     ),
     messageDataResetServiceProvider.overrideWith((ref) => resetService),
@@ -1573,6 +1576,7 @@ ConversationGraphBuildService _fakeGraphBuildService({
   Object? error,
   void Function()? onBuild,
   Completer<void>? buildCompleter,
+  int preservedUnnormalizedHandleCount = 0,
 }) {
   var reportedBuildStart = false;
   Future<void> step() async {
@@ -1589,7 +1593,17 @@ ConversationGraphBuildService _fakeGraphBuildService({
   return ConversationGraphBuildService(
     orchestrator: ConversationGraphBuildOrchestrator(
       importChats: (_) => step(),
-      importHandles: (_) async {},
+      importHandles: (onProgress) async {
+        onProgress?.call(
+          SourceImportWorkProgress(
+            unit: SourceImportWorkUnit.handles,
+            completedWorkCount: 1,
+            totalWorkCount: 1,
+            lastCompletedSourceRowId: 42,
+            preservedUnnormalizedCount: preservedUnnormalizedHandleCount,
+          ),
+        );
+      },
       importContacts: (_) async {},
       importMessages: (_) async {
         await step();
