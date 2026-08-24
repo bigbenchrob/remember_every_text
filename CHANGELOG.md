@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Onboarding Environment Readiness now reports maintenance instead of opening
+  derived stores while any archive mutation is admitted. This removes
+  readiness-induced SQLite contention and multi-second UI stalls during a
+  production-shaped first import without weakening the importing operation's
+  graph access.
+
 - Onboarding now reports typed, real completed-work progress while importing
   source records, decoding rich text, and projecting row-oriented Conversation
   Graph data. Progress is persisted at bounded cadence and rendered from the

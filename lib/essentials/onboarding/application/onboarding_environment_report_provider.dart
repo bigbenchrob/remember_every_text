@@ -7,7 +7,7 @@ import '../../../features/address_book_folders/domain/failures/folder_retrieval_
 import '../../../features/address_book_folders/feature_level_providers.dart'
     show futureGetFolderAggregateProvider;
 import '../../archive_environment/feature_level_providers.dart'
-    show archiveAccessAuthorityProvider;
+    show archiveAccessAuthorityProvider, archiveMutationCoordinatorProvider;
 import '../../conversation_graph/feature_level_providers.dart'
     show
         ChatDbChangeMonitorState,
@@ -147,7 +147,15 @@ Future<OnboardingEnvironmentReport> onboardingEnvironmentReport(Ref ref) async {
     attachmentArchiveDirectoryPath: ref.watch(
       attachmentArchiveDirectoryProvider,
     ),
-    isMaintenanceLocked: ref.watch(dbMaintenanceLockProvider),
+    // Readiness is an unrelated observer of the derived stores. Suppress its
+    // database reads for every admitted archive mutation, including onboarding
+    // import, even when that operation does not globally block its own graph
+    // connection from reopening.
+    isMaintenanceLocked:
+        ref.watch(dbMaintenanceLockProvider) ||
+        ref.watch(
+          archiveMutationCoordinatorProvider.select((state) => state.isLocked),
+        ),
     graphBuildState: ref.watch(conversationGraphBuildControllerProvider),
     liveUpdateMonitorState: ref.watch(chatDbChangeMonitorProvider),
   );

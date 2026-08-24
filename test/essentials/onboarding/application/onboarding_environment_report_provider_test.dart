@@ -5,6 +5,11 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
+import 'package:remember_this_text/essentials/archive_environment/domain.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show
+        admittedArchiveAccessAuthorityProvider,
+        archiveMutationCoordinatorProvider;
 import 'package:remember_this_text/essentials/conversation_graph/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/db/application/conversation_graph_readiness.dart';
@@ -372,6 +377,104 @@ void main() {
           ),
         );
         expect(databaseProbeReader.graphReadinessPaths, isEmpty);
+      },
+    );
+
+    test(
+      'onboarding import suppresses unrelated derived-store readiness reads',
+      () async {
+        final messagesDbPath = _createMessagesDatabase(
+          tempDir.path,
+          messageCount: 120,
+        );
+        final addressBookPath = _createReadableFile(
+          tempDir.path,
+          'AddressBook-v22.abcddb',
+        );
+        _createNonEmptyDatabaseFile(
+          tempDir.path,
+          appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
+        );
+        _createGraphDatabase(tempDir.path, graphComplete: false);
+        final databaseProbeReader = _RecordingOnboardingDatabaseProbeReader();
+        final archiveAuthority = ArchiveAccessAuthority(
+          identity: ResolvedArchiveIdentity(
+            environment: ArchiveEnvironment.test,
+            buildIdentity: ArchiveBuildIdentity.testHarness,
+            archiveInstanceId: ArchiveInstanceId(
+              'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+            ),
+            canonicalRootPath: tempDir.path,
+            bundleIdentifier: 'com.bigbenchsoftware.MessageLens.tests',
+            productName: 'MessageLens Tests',
+          ),
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            ..._lifecycleOverrides(),
+            admittedArchiveAccessAuthorityProvider.overrideWithValue(
+              archiveAuthority,
+            ),
+            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+            onboardingDatabaseProbeReaderProvider.overrideWithValue(
+              databaseProbeReader,
+            ),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+            onboardingMessagesDatabasePathProvider.overrideWith(
+              (ref) => messagesDbPath,
+            ),
+            onboardingDatabaseDirectoryPathProvider.overrideWith(
+              (ref) => tempDir.path,
+            ),
+            attachmentArchiveDirectoryProvider.overrideWith(
+              (ref) => '${tempDir.path}/attachment_archive',
+            ),
+            futureGetFolderAggregateProvider.overrideWith(
+              (ref) async => right(_addressBookAggregate(addressBookPath)),
+            ),
+          ],
+        );
+
+        await container
+            .read(archiveMutationCoordinatorProvider.notifier)
+            .run<void>(
+              operation: ArchiveMutationOperation.onboardingImport,
+              ownerLabel: 'test-onboarding-import',
+              action: () async {
+                final report = await container.read(
+                  onboardingEnvironmentReportProvider.future,
+                );
+
+                expect(
+                  report.state,
+                  OnboardingEnvironmentState.maintenanceInProgress,
+                );
+                expect(
+                  databaseProbeReader.tableCountPaths,
+                  isNot(
+                    contains(
+                      appDatabasePath(
+                        AppDatabaseFile.sourceScopedImport,
+                        databaseDirectory: tempDir.path,
+                      ),
+                    ),
+                  ),
+                );
+                expect(
+                  databaseProbeReader.tableCountPaths,
+                  isNot(
+                    contains(
+                      appDatabasePath(
+                        AppDatabaseFile.conversationGraph,
+                        databaseDirectory: tempDir.path,
+                      ),
+                    ),
+                  ),
+                );
+                expect(databaseProbeReader.graphReadinessPaths, isEmpty);
+              },
+            );
       },
     );
 

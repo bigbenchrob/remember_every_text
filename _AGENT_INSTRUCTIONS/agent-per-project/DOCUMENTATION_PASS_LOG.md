@@ -5572,3 +5572,23 @@ production preservation authority mechanically enforceable.
 - Recorded clean final verification: 85 focused progress tests, 382
   architecture tripwires, 2,002 complete Flutter tests, clean analyzer and
   formatting checks, and a successful macOS debug build.
+
+## 2026-08-24 - Production-shaped Onboarding liveness evidence
+
+- Profiled a complete 137,360-message first import into a disposable admitted
+  development archive using the canonical read-only Messages and Contacts
+  source boundaries.
+- Recorded the full 48.94-second Journey, per-substage durations, first-progress
+  latency, healthy observation gaps, frame responsiveness, database counts,
+  snapshot-write volume, and the two remaining coarse relationship projections.
+- Documented and corrected unrelated Environment Readiness derived-store reads
+  during admitted Onboarding mutation. The correction removed two SQLite busy
+  waits, reduced completion from 57.32 to 48.94 seconds, and reduced the worst
+  observed frame from about 3.21 seconds to 0.43 seconds without changing graph
+  connection authority.
+- Preserved the no-watchdog conclusion: enumerable work is human-observable,
+  but execution opportunity and healthy variance remain insufficient for a
+  mechanical stall threshold; the 8.13-second set-based edge projection needs
+  truthful internal evidence first if automated liveness is pursued.
+- Recorded that the disposable import and graph stores agree exactly and pass
+  SQLite quick checks, while no attachment payload was archived.

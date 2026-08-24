@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding
 owner: agent-per-project
-last_reviewed: 2026-08-23
+last_reviewed: 2026-08-24
 source_of_truth: feature-work-package-index
 ---
 
@@ -21,13 +21,14 @@ Journey before further Onboarding implementation begins.
 2. [Durable typed operation snapshot and liveness foundation](responses/02-DURABLE-TYPED-ONBOARDING-OPERATION-SNAPSHOT-AND-LIVENESS-FOUNDATION-IMPLEMENTATION.md)
 3. [Stall-detection liveness inventory and implementation blocker](responses/03-ONBOARDING-STALL-DETECTION-AND-STAGE-SPECIFIC-LIVENESS-CONTRACTS-BLOCKER.md)
 4. [Stage observability and real progress instrumentation](responses/04-ONBOARDING-STAGE-OBSERVABILITY-AND-REAL-PROGRESS-INSTRUMENTATION-IMPLEMENTATION.md)
+5. [Production-shaped profiling and liveness evidence](responses/05-PRODUCTION-SHAPED-ONBOARDING-PROFILING-AND-LIVENESS-EVIDENCE.md)
 
 ## Current Status
 
-**REAL PROGRESS INSTRUMENTED; STALL INFERENCE STILL DEFERRED.** The typed
-durable operation snapshot now receives real source-import, rich-text, and
-row-oriented graph progress at bounded cadence. Preparation, reset,
-verification, and fast set-based graph work remain truthfully coarse.
-Production-sized no-observation bounds and a trustworthy macOS
-execution-opportunity signal are still absent, so no watchdog or stall status
-exists. Start Fresh and record quarantine remain explicitly deferred.
+**PRODUCTION-SHAPED LIVENESS MEASURED; WATCHDOG STILL DEFERRED.** A complete
+137,360-message first import established subsecond healthy observation gaps for
+all enumerable work and identified one remaining 8.13-second coarse set-based
+projection. Environment Readiness no longer contends for derived-store reads
+during admitted Onboarding mutation. macOS execution opportunity and repeated
+healthy variance remain unknown, so no watchdog or stalled state exists. Start
+Fresh and record quarantine remain explicitly deferred.
