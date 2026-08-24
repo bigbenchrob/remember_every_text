@@ -24,17 +24,16 @@ Journey before further Onboarding implementation begins.
 5. [Production-shaped profiling and liveness evidence](responses/05-PRODUCTION-SHAPED-ONBOARDING-PROFILING-AND-LIVENESS-EVIDENCE.md)
 6. [Dependency-aware source anomaly handling: handles](responses/06-DEPENDENCY-AWARE-SOURCE-ANOMALY-HANDLING-STARTING-WITH-HANDLES-IMPLEMENTATION.md)
 7. [Dependency-aware anomaly policy for remaining source domains](responses/07-DEPENDENCY-AWARE-ANOMALY-POLICY-FOR-REMAINING-ONBOARDING-DOMAINS-IMPLEMENTATION.md)
+8. [Production-shaped anomaly validation](responses/08-PRODUCTION-SHAPED-ONBOARDING-ANOMALY-VALIDATION.md)
 
 ## Current Status
 
-**DEPENDENCY-AWARE SOURCE ANOMALY POLICY IMPLEMENTED; WATCHDOG STILL
-DEFERRED.** A complete
-137,360-message first import established subsecond healthy observation gaps for
-all enumerable work and identified one remaining 8.13-second coarse set-based
-projection. Environment Readiness no longer contends for derived-store reads
-during admitted Onboarding mutation. macOS execution opportunity and repeated
-healthy variance remain unknown, so no watchdog or stalled state exists.
-Unnormalizable handles retain source identity without false alias/contact
-semantics. Remaining source domains now use explicit structural boundaries,
-canonical recovered-message ownership, safe child-edge omission, and durable
-typed anomaly totals. Start Fresh remains explicitly deferred.
+**PRODUCTION-SHAPED ANOMALY VALIDATION COMPLETE; ONE POST-CORRECTION RERUN
+REMAINS.** A complete 137,363-message first import reconciled exactly with the
+Conversation Graph and Feature 27 coverage: 116,623 conversation-linked,
+20,740 recovered, and zero unaccounted. The run exposed and bounded one
+systemic measurement defect in Apple `p:`/`bp:` associated-message reference
+interpretation; shared corrected semantics reduce the unresolved-reaction
+count from a false 6,032 to 7 without changing preserved evidence. Exact typed
+totals remain PII-free and bounded. A fresh corrected staging run must confirm
+the final durable count. Watchdog and Start Fresh work remain deferred.

@@ -285,6 +285,50 @@ void main() {
     expect(await importDatabase.database.query('messages'), hasLength(1));
   });
 
+  test('resolves Apple part and balloon reaction references', () async {
+    await _insertSourceMessage(
+      chatDbPath,
+      rowId: 31,
+      guid: 'target-31',
+      handleId: 0,
+      isFromMe: 0,
+    );
+
+    await MessageImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importNewMessages();
+
+    await _insertSourceMessage(
+      chatDbPath,
+      rowId: 32,
+      guid: 'reaction-32',
+      handleId: 0,
+      isFromMe: 0,
+      associatedMessageGuid: 'p:0/target-31',
+      associatedMessageType: 2000,
+    );
+    await _insertSourceMessage(
+      chatDbPath,
+      rowId: 33,
+      guid: 'reaction-33',
+      handleId: 0,
+      isFromMe: 0,
+      associatedMessageGuid: 'bp:target-31',
+      associatedMessageType: 2001,
+    );
+
+    final result = await MessageImporter(
+      chatDbPath: chatDbPath,
+      importLedger: importDatabase,
+      sourceDatabaseOpener: const SqfliteSourceDatabaseOpener(),
+    ).importNewMessages();
+
+    expect(result.insertedMessageCount, 2);
+    expect(result.anomalyCounts.unresolvedReactionTargetCount, 0);
+  });
+
   test('malformed message stops with bounded source row context', () async {
     await _insertSourceMessage(
       chatDbPath,

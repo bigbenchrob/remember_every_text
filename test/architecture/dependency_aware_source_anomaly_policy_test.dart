@@ -71,4 +71,25 @@ void main() {
     expect(enricher, contains('SourceImportSystemicException'));
     expect(enricher, contains('typedstream_decoder_unavailable'));
   });
+
+  test(
+    'reaction accounting and projection share Apple reference semantics',
+    () {
+      final importer = File(
+        'lib/essentials/source_scoped_import/application/messages/'
+        'message_importer.dart',
+      ).readAsStringSync();
+      final projector = File(
+        'lib/essentials/conversation_graph/infrastructure/repositories/'
+        'message_projection_repository.dart',
+      ).readAsStringSync();
+
+      expect(importer, contains('appleAssociatedMessageTargetGuid'));
+      expect(projector, contains('appleAssociatedMessageTargetGuid'));
+      expect(
+        importer,
+        isNot(contains('target.guid = m.associated_message_guid')),
+      );
+    },
+  );
 }

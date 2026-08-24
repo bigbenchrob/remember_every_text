@@ -232,6 +232,51 @@ void main() {
     },
   );
 
+  test('projects Apple part and balloon references to their target', () async {
+    final associatedSsId = SourceScopedRowKey.pack(
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 210,
+    );
+    await _insertImportMessage(
+      importLedgerDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 210,
+      guid: 'target-guid',
+    );
+    await _insertImportMessage(
+      importLedgerDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 211,
+      guid: 'part-reaction-guid',
+      associatedMessageGuid: 'p:0/target-guid',
+    );
+    await _insertImportMessage(
+      importLedgerDatabase,
+      sourceId: liveChatDbSourceId,
+      sourceRowId: 212,
+      guid: 'balloon-reaction-guid',
+      associatedMessageGuid: 'bp:target-guid',
+    );
+
+    await MessageProjector(
+      repository: SqliteMessageProjectionRepository(
+        importLedgerDatabase: importLedgerDatabase,
+        graphDatabase: graphDatabase,
+      ),
+    ).projectMessages();
+    final rows = await graphDatabase.database.query(
+      'messages',
+      where: 'guid IN (?, ?)',
+      whereArgs: <Object?>['part-reaction-guid', 'balloon-reaction-guid'],
+    );
+
+    expect(rows, hasLength(2));
+    expect(
+      rows.map((row) => row['associated_message_ss_id']),
+      everyElement(associatedSsId),
+    );
+  });
+
   test('associated message lookup remains source scoped', () async {
     await _insertSource(importLedgerDatabase, sourceId: 3);
     final liveTargetSsId = SourceScopedRowKey.pack(

@@ -5625,3 +5625,22 @@ production preservation authority mechanically enforceable.
   source database integrity, and unavailable run-wide rich-text decoding.
 - Updated the canonical Onboarding, import/graph, and data-fidelity guidance;
   no schema, completion-state, watchdog, or presentation redesign was added.
+
+## 2026-08-24 - Production-shaped Onboarding anomaly validation
+
+- Recorded a complete 137,363-message disposable first import with exact
+  source/graph reconciliation, PII-safe representative evidence, SQLite
+  integrity checks, and Feature 27 coverage of 116,623 conversation-linked,
+  20,740 recovered, and zero unaccounted messages.
+- Classified the observed typed anomaly totals by rate and consequence. Opaque
+  handles and unavailable Contacts enrichment were recurrent but structurally
+  contained; rich-text and corrected unresolved-reaction outcomes were rare;
+  attachment, timestamp, relationship-omission, and fatal counts were zero.
+- Documented and corrected a systemic measurement defect caused by comparing
+  Apple's `p:` and `bp:` associated-message envelopes as raw GUIDs. Import and
+  graph projection now share one source-owned interpretation without changing
+  source identity, persistence schema, or completion authority.
+- Recorded 45.52-second completion, bounded durable diagnostics, the
+  recommendation to keep ordinary success calm while exposing exact totals
+  under Details, and one remaining release check: a fresh corrected staging run
+  must persist the corrected unresolved-reaction count of 7.

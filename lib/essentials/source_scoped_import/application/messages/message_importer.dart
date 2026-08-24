@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../../../../core/util/date_converter.dart';
+import '../../domain/apple_associated_message_reference.dart';
 import '../../domain/known_sources.dart';
 import '../../domain/ports/import_ledger_port.dart';
 import '../../domain/ports/source_database_port.dart';
@@ -47,10 +48,7 @@ class MessageImporter {
       final rows = await sourceDb.rawQuery(
         'SELECT m.ROWID AS source_rowid, m.*, '
         'EXISTS(SELECT 1 FROM chat_message_join cmj '
-        'WHERE cmj.message_id = m.ROWID) AS has_chat_relationship, '
-        'EXISTS(SELECT 1 FROM message target '
-        'WHERE target.guid = m.associated_message_guid) '
-        'AS has_associated_target '
+        'WHERE cmj.message_id = m.ROWID) AS has_chat_relationship '
         'FROM message m WHERE m.ROWID > ? ORDER BY m.ROWID ASC',
         <Object?>[startedAfterSourceRowId],
       );
@@ -80,6 +78,17 @@ class MessageImporter {
       var recoveredUnlinkedMessageCount = 0;
       var unresolvedReactionTargetCount = 0;
       int? lastImportedSourceRowId;
+      final associatedTargetGuids = <String>{
+        for (final row in rows)
+          if (_nullableInt(row, 'associated_message_type') != null)
+            if (_nullableString(row, 'associated_message_guid')
+                case final String reference)
+              appleAssociatedMessageTargetGuid(reference),
+      };
+      final resolvedAssociatedTargetGuids = await _sourceMessageGuidsMatching(
+        sourceDb,
+        associatedTargetGuids,
+      );
 
       publishSourceImportProgress(
         observer: onProgress,
@@ -107,9 +116,15 @@ class MessageImporter {
             if (_nullableInt(row, 'has_chat_relationship') != 1) {
               recoveredUnlinkedMessageCount += 1;
             }
+            final associatedMessageReference = _nullableString(
+              row,
+              'associated_message_guid',
+            );
             if (_nullableInt(row, 'associated_message_type') != null &&
-                _nullableString(row, 'associated_message_guid') != null &&
-                _nullableInt(row, 'has_associated_target') != 1) {
+                associatedMessageReference != null &&
+                !resolvedAssociatedTargetGuids.contains(
+                  appleAssociatedMessageTargetGuid(associatedMessageReference),
+                )) {
               unresolvedReactionTargetCount += 1;
             }
 
@@ -194,6 +209,33 @@ class MessageImporter {
     } finally {
       await sourceDb.close();
     }
+  }
+
+  static Future<Set<String>> _sourceMessageGuidsMatching(
+    ReadOnlySourceDatabase sourceDb,
+    Set<String> targetGuids,
+  ) async {
+    const queryChunkSize = 500;
+    final targets = targetGuids.toList(growable: false);
+    final matches = <String>{};
+
+    for (var start = 0; start < targets.length; start += queryChunkSize) {
+      final chunkEnd = start + queryChunkSize;
+      final end = chunkEnd < targets.length ? chunkEnd : targets.length;
+      final chunk = targets.sublist(start, end);
+      final placeholders = List<String>.filled(chunk.length, '?').join(', ');
+      final rows = await sourceDb.rawQuery(
+        'SELECT guid FROM message WHERE guid IN ($placeholders)',
+        chunk.cast<Object?>(),
+      );
+      for (final row in rows) {
+        if (_nullableString(row, 'guid') case final String guid) {
+          matches.add(guid);
+        }
+      }
+    }
+
+    return matches;
   }
 
   int? _senderHandleSsId(Map<String, Object?> row) {

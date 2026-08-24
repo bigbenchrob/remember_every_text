@@ -1,4 +1,5 @@
 import '../../../db/infrastructure/data_sources/local/conversation_graph/conversation_graph_database.dart';
+import '../../../source_scoped_import/domain/apple_associated_message_reference.dart';
 import '../../../source_scoped_import/domain/ports/import_ledger_port.dart';
 import '../../application/messages/message_projection_repository.dart';
 import '../../application/projection_work_progress.dart';
@@ -220,7 +221,10 @@ class SqliteMessageProjectionRepository implements MessageProjectionRepository {
       'messages',
       columns: <String>['ss_id'],
       where: 'source_id = ? AND guid = ?',
-      whereArgs: <Object?>[sourceId, associatedGuid],
+      whereArgs: <Object?>[
+        sourceId,
+        appleAssociatedMessageTargetGuid(associatedGuid),
+      ],
       limit: 1,
     );
 

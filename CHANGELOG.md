@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Production-shaped Onboarding validation now interprets Apple's `p:` and
+  `bp:` associated-message reference envelopes through one shared,
+  source-scoped rule. This removes thousands of false unresolved-reaction
+  anomalies while preserving every carrier message and maintaining exact
+  current-source coverage.
+
 - Onboarding now applies dependency-aware anomaly handling across Messages and
   Contacts source intake. Structurally valid evidence survives optional
   interpretation failures, unlinked messages retain canonical recovered
