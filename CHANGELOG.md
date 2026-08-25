@@ -10,6 +10,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Advanced Start Fresh now resets the required-sources Presence run through
+  Onboarding's executable repository composition, preserving its concrete Test
+  Agent bindings. Completed installations no longer fail before derived-data
+  reset with a missing `onboarding.messages-source-readable` Agent binding.
+
 - Settings > Reset Message Data now delegates to the preservation-safe Start
   Fresh workflow instead of the retired direct database-reset path. The
   advanced action reclassifies the completed installation, requires explicit

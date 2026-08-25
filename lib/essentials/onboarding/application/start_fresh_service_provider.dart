@@ -4,8 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../archive_environment/domain.dart' show ArchiveMutationOperation;
 import '../../archive_environment/feature_level_providers.dart'
     show archiveAccessAuthorityProvider, archiveMutationCoordinatorProvider;
-import '../../presence/feature_level_providers.dart'
-    show presenceScheduleMaintenanceRepositoryProvider;
+import '../../presence/domain/repositories/presence_schedule_run_maintenance.dart';
 import '../infrastructure/persistence/sqlite_message_lens_installation_evidence_reader.dart';
 import 'message_data_reset_service.dart';
 import 'message_lens_installation_state_classifier.dart';
@@ -25,9 +24,16 @@ Future<StartFreshService> startFreshService(Ref ref) async {
   final operationController = await ref.watch(
     onboardingOperationControllerProvider.future,
   );
-  final presenceRepository = await ref.watch(
-    presenceScheduleMaintenanceRepositoryProvider.future,
+  final executablePresenceRepository = await ref.watch(
+    requiredSourcesReadinessRepositoryProvider.future,
   );
+  if (executablePresenceRepository is! PresenceScheduleRunMaintenance) {
+    throw StateError(
+      'The required-sources repository does not support run maintenance.',
+    );
+  }
+  final presenceRepository =
+      executablePresenceRepository as PresenceScheduleRunMaintenance;
   final authority = ref.watch(archiveAccessAuthorityProvider);
 
   return StartFreshServiceImpl(

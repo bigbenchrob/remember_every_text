@@ -70,4 +70,19 @@ void main() {
     expect(action, contains('await waitForPresentationFrame()'));
     expect(shell, contains('AdvancedStartFreshOverlayHost'));
   });
+
+  test('Start Fresh reuses the executable Onboarding Presence composition', () {
+    final provider = File(
+      'lib/essentials/onboarding/application/start_fresh_service_provider.dart',
+    ).readAsStringSync();
+
+    expect(
+      provider,
+      contains('requiredSourcesReadinessRepositoryProvider.future'),
+    );
+    expect(
+      provider,
+      isNot(contains('presenceScheduleMaintenanceRepositoryProvider.future')),
+    );
+  });
 }
