@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding
 owner: agent-per-project
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 source_of_truth: feature-work-package-index
 ---
 
@@ -28,12 +28,11 @@ Journey before further Onboarding implementation begins.
 
 ## Current Status
 
-**PRODUCTION-SHAPED ANOMALY VALIDATION COMPLETE; ONE POST-CORRECTION RERUN
-REMAINS.** A complete 137,363-message first import reconciled exactly with the
-Conversation Graph and Feature 27 coverage: 116,623 conversation-linked,
-20,740 recovered, and zero unaccounted. The run exposed and bounded one
-systemic measurement defect in Apple `p:`/`bp:` associated-message reference
-interpretation; shared corrected semantics reduce the unresolved-reaction
-count from a false 6,032 to 7 without changing preserved evidence. Exact typed
-totals remain PII-free and bounded. A fresh corrected staging run must confirm
-the final durable count. Watchdog and Start Fresh work remain deferred.
+**PRODUCTION-SHAPED ANOMALY VALIDATION COMPLETE.** A fresh corrected
+137,373-message first import reconciled exactly with the Conversation Graph
+and Feature 27 coverage: 116,633 conversation-linked, 20,740 recovered, and
+zero unaccounted. The completed durable snapshot records exactly 7 unresolved
+reaction targets after shared Apple `p:`/`bp:` reference interpretation, down
+from the false pre-correction count of 6,032 without changing preserved
+evidence. Exact typed totals remain PII-free and bounded. Watchdog, Start
+Fresh, and user-facing anomaly presentation remain deferred.

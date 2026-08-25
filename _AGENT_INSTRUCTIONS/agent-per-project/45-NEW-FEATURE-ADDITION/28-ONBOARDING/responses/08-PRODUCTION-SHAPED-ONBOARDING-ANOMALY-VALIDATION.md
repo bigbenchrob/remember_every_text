@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding-source-anomalies
 owner: 28-ONBOARDING
-last_reviewed: 2026-08-24
+last_reviewed: 2026-08-25
 source_of_truth: validation-record
 ---
 
@@ -10,12 +10,14 @@ source_of_truth: validation-record
 
 ## Result
 
-A complete first import ran against a disposable admitted development archive
-using the canonical read-only Apple Messages and Contacts source boundaries.
-The operation completed durably with no fatal failure and produced exactly
-137,363 import-ledger messages and 137,363 Conversation Graph messages.
+A fresh post-correction first import ran against a disposable admitted
+development archive using the canonical read-only Apple Messages and Contacts
+source boundaries. The operation completed durably with no fatal failure and
+produced exactly 137,373 import-ledger messages and 137,373 Conversation Graph
+messages.
 
-The run exposed one systemic **measurement** defect rather than source loss.
+The original validation run exposed one systemic **measurement** defect rather
+than source loss.
 Apple associated-message references commonly wrap their target GUID in `p:` or
 `bp:` envelopes. Exact comparison of the raw reference against a message GUID
 misclassified 6,032 of 6,041 reaction carriers as unresolved. Canonical
@@ -31,51 +33,73 @@ Apple associated-message reference
 ```
 
 It changes neither source identity nor imported records. Malformed or unknown
-reference forms remain unchanged rather than acquiring invented identity.
+reference forms remain unchanged rather than acquiring invented identity. The
+fresh completed durable snapshot records exactly 7 unresolved reaction targets,
+confirming the correction end to end.
 
 ## Validation Environment
 
 - App identity: `com.bigbenchsoftware.MessageLens.development`
-- Build mode: profile
+- Build mode: debug
 - Archive: disposable development archive on `WD_ELEMENTS`
 - Messages source: live `chat.db`, opened through the established read-only
   source boundary
 - Contacts source: live selected AddressBook store, opened read-only
 - Production MessageLens archive: not used or modified
-- Live source maximum message ROWID: 153,536
-- Importable source messages: 137,363
-- Operation ID: `8fe89b76-6b74-49a4-ba8f-c99ae7098ff9`
+- Live source maximum message ROWID: 153,546
+- Importable source messages: 137,373
+- Operation ID: `0587f6bc-e6af-4c59-b1d0-d4427b7ee1d9`
 - Status: `completed`
 
 The application was stopped before database verification. All four staging
 SQLite stores passed both `quick_check` and `integrity_check`.
 
+## Post-Correction Durable Confirmation
+
+The corrected Debug binary completed the fresh operation on 2026-08-25. Its
+1,184-byte durable snapshot records:
+
+- status `completed`;
+- kind `initialImport`;
+- all three typed stages completed;
+- current terminal stage `durableReadinessVerification`;
+- progress revision 809;
+- failure `null`;
+- `unresolved_reaction_target_count: 7`.
+
+The run started at `2026-08-25T13:23:11.918079Z` and finished at
+`2026-08-25T13:24:01.057564Z`, a total of 49.14 seconds. The live source had
+advanced by 10 importable messages since the first validation run. That
+ordinary source growth explains the corresponding message, chat, attachment,
+and relationship count changes below; the typed anomaly totals remained
+stable.
+
 ## Exact Distribution
 
 The names below are the persisted `SourceImportAnomalyCounts` fields. The
-reaction row shows both the value emitted by the pre-correction validation
-binary and the corrected result derived from the same immutable imported
-evidence.
+reaction rows preserve the value emitted by the pre-correction validation
+binary and the corrected value persisted by the fresh run. The carrier
+denominator remained stable across both runs.
 
 | Outcome | Count | Denominator | Rate | Classification |
 | --- | ---: | ---: | ---: | --- |
 | Normalized handles | 244 | 257 | 94.9416% | Ordinary |
 | `preservedUnnormalizedHandleCount` | 13 | 257 | 5.0584% | Recurrent but explainable |
-| `messageTimestampUnavailableCount` | 0 | 137,363 | 0% | None observed |
-| `recoveredUnlinkedMessageCount` | 20,740 | 137,363 | 15.0987% | Recurrent canonical topology |
-| `richTextDecodeUnavailableCount` | 35 | 136,714 attributed-body candidates | 0.0256% | Rare/local |
-| `attachmentMetadataDegradedCount` | 0 | 40,232 | 0% | None observed |
+| `messageTimestampUnavailableCount` | 0 | 137,373 | 0% | None observed |
+| `recoveredUnlinkedMessageCount` | 20,740 | 137,373 | 15.0976% | Recurrent canonical topology |
+| `richTextDecodeUnavailableCount` | 35 | 136,724 attributed-body candidates | 0.0256% | Rare/local |
+| `attachmentMetadataDegradedCount` | 0 | 40,240 | 0% | None observed |
 | `unresolvedReactionTargetCount`, raw pre-fix snapshot | 6,032 | 6,041 | 99.8510% | Systemic implementation defect |
 | `unresolvedReactionTargetCount`, corrected semantics | 7 | 6,041 | 0.1159% | Rare/local |
 | `omittedContactRecordCount` | 0 | 113 | 0% | None observed |
 | `contactEnrichmentUnavailableCount` | 16 | 113 | 14.1593% | Recurrent but explainable enrichment |
 | `omittedContactChannelCount` | 0 | 157 | 0% | None observed |
-| `omittedChatMessageRelationshipCount` | 0 | 116,624 | 0% | None observed |
-| `omittedChatHandleRelationshipCount` | 0 | 324 | 0% | None observed |
-| `omittedMessageAttachmentRelationshipCount` | 0 | 39,616 | 0% | None observed |
+| `omittedChatMessageRelationshipCount` | 0 | 116,634 | 0% | None observed |
+| `omittedChatHandleRelationshipCount` | 0 | 325 | 0% | None observed |
+| `omittedMessageAttachmentRelationshipCount` | 0 | 39,624 | 0% | None observed |
 | Fatal anomalies | 0 | one complete operation | 0% | None observed |
 
-There is no separate persisted chat-degradation counter. All 239 structurally
+There is no separate persisted chat-degradation counter. All 240 structurally
 valid chats were imported and projected. Nullable descriptive chat metadata is
 not counted as omission, while the typed chat relationship omission counters
 were both zero.
@@ -99,32 +123,32 @@ None acquired a canonical alias or contact match.
 ### Chats
 
 ```text
-239 imported = 239 projected
-324 imported chat-handle edges = 324 projected + 0 omitted
+240 imported = 240 projected
+325 imported chat-handle edges = 325 projected + 0 omitted
 ```
 
 ### Messages and Coverage
 
 ```text
-137,363 imported = 137,363 projected
-137,363 total = 116,623 conversation-linked + 20,740 recovered + 0 unaccounted
+137,373 imported = 137,373 projected
+137,373 total = 116,633 conversation-linked + 20,740 recovered + 0 unaccounted
 ```
 
-The edge table contains 116,624 rows because one message has two valid chat
+The edge table contains 116,634 rows because one message has two valid chat
 edges. Feature 27 correctly uses distinct message identity and therefore
-reports 116,623 conversation-linked messages.
+reports 116,633 conversation-linked messages.
 
 Timestamp availability is a separate complete axis:
 
 ```text
-137,363 = 137,363 available + 0 unavailable
+137,373 = 137,373 available + 0 unavailable
 ```
 
 ### Rich Text
 
 ```text
-136,714 attributed-body candidates
-    = 136,679 with resulting text
+136,724 attributed-body candidates
+    = 136,689 with resulting text
     + 35 with content unavailable
 ```
 
@@ -134,8 +158,8 @@ evidence, and available relationships. None had a plain-text fallback.
 ### Attachments
 
 ```text
-40,232 processed = 40,232 with descriptive evidence + 0 degraded
-39,616 imported message-attachment edges = 39,616 projected + 0 omitted
+40,240 processed = 40,240 with descriptive evidence + 0 degraded
+39,624 imported message-attachment edges = 39,624 projected + 0 omitted
 ```
 
 Payload archival is a separate preservation concern. A normal post-completion
@@ -185,12 +209,12 @@ Import and graph counts agree exactly for every source-owned graph population:
 | Population | Import | Graph |
 | --- | ---: | ---: |
 | Handles | 257 | 257 |
-| Chats | 239 | 239 |
-| Messages | 137,363 | 137,363 |
-| Attachments | 40,232 | 40,232 |
-| Chat-handle edges | 324 | 324 |
-| Chat-message edges | 116,624 | 116,624 |
-| Message-attachment edges | 39,616 | 39,616 |
+| Chats | 240 | 240 |
+| Messages | 137,373 | 137,373 |
+| Attachments | 40,240 | 40,240 |
+| Chat-handle edges | 325 | 325 |
+| Chat-message edges | 116,634 | 116,634 |
+| Message-attachment edges | 39,624 | 39,624 |
 
 Contacts intentionally reconcile through enrichment policy: 113 source facts
 produce 97 graph contacts and 16 explicitly unavailable enrichments.
@@ -204,7 +228,7 @@ Messages source and one live AddressBook source.
 The operation reached `completed` only after:
 
 - all three typed stages completed;
-- the import ledger and graph both contained 137,363 messages;
+- the import ledger and graph both contained 137,373 messages;
 - all fatal paths remained absent;
 - the typed nonfatal totals were durably recorded;
 - durable readiness verification succeeded.
@@ -214,7 +238,7 @@ existing preserved evidence, not readiness or completion authority.
 
 ## Performance
 
-The durable operation timestamps establish:
+The original pre-correction profile run's durable timestamps established:
 
 | Major stage | Duration |
 | --- | ---: |
@@ -226,6 +250,10 @@ The durable operation timestamps establish:
 This is 3.42 seconds faster than the previous 48.94-second production-shaped
 run, about 7%. Run-to-run variance prevents assigning a precise negative
 overhead, but it rules out material anomaly-accounting cost.
+
+The fresh corrected Debug run completed in 49.14 seconds. That healthy
+run-to-run variance and its identical progress revision provide no evidence of
+material overhead from the correction.
 
 The snapshot reached progress revision 809 using the established bounded
 observation cadence. Import batch start boundaries remained consistent with
@@ -240,8 +268,8 @@ per message.
 
 ## Durable Diagnostics
 
-The completed operation occupies one `overlay_settings` row. Its JSON payload
-is 1,187 bytes and contains:
+The completed operation occupies one `overlay_settings` row. The fresh
+post-correction JSON payload is 1,184 bytes and contains:
 
 - operation and process-session identity;
 - typed status, stage, and completed-stage names;
@@ -253,11 +281,16 @@ Representative source ROWIDs remain transient forensic evidence. They were not
 added to durable metadata. Repeated progress observations replace the same
 bounded snapshot row rather than accumulating diagnostic records.
 
-The validation binary completed before the reaction correction was compiled,
-so its durable snapshot truthfully retains the observed pre-fix value 6,032.
-The corrected value 7 was recomputed from the immutable staging evidence using
-the same shared semantics now used by import and projection. A fresh
-post-correction run must confirm that 7 is persisted end to end.
+The first validation binary completed before the reaction correction was
+compiled, so its durable snapshot truthfully retained the observed pre-fix
+value 6,032. The fresh corrected run now persists 7 end to end. Its graph also
+reconciles the same evidence mechanically:
+
+```text
+6,041 associated-message carriers
+    = 6,034 graph messages with resolved associated targets
+    + 7 durably recorded unresolved targets
+```
 
 ## Presentation Recommendation
 
@@ -301,11 +334,13 @@ Final repository verification passed:
 - macOS debug build of `MessageLens Development.app`;
 - formatting and `git diff --check`.
 
-## Remaining Release Blocker
+## Validation Status
 
-Run one fresh production-shaped import with the corrected binary and verify
-that the durable snapshot itself records 7 unresolved reaction targets. No
-further schema, UI, completion, source identity, or graph change is indicated.
+**Complete.** The fresh production-shaped import with the corrected binary
+persisted exactly 7 unresolved reaction targets while preserving completion,
+source/graph reconciliation, full message coverage, zero dangling endpoints,
+and SQLite integrity. No further schema, UI, completion, source identity, or
+graph change is indicated by this slice.
 
 Start Fresh, watchdog thresholds, and user-facing anomaly presentation remain
 outside this slice.

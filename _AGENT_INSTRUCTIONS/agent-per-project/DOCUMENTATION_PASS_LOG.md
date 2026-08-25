@@ -5644,3 +5644,20 @@ production preservation authority mechanically enforceable.
   recommendation to keep ordinary success calm while exposing exact totals
   under Details, and one remaining release check: a fresh corrected staging run
   must persist the corrected unresolved-reaction count of 7.
+
+## 2026-08-25 - Corrected Onboarding anomaly validation confirmation
+
+- Recorded a fresh corrected 137,373-message first import in a disposable
+  admitted development archive.
+- Confirmed that the completed durable operation snapshot persists exactly 7
+  unresolved reaction targets with all three typed stages complete and no
+  failure.
+- Reconciled 137,373 import messages to 137,373 graph messages, including
+  116,633 conversation-linked and 20,740 recovered messages with zero
+  unaccounted.
+- Confirmed exact source/graph edge parity, zero dangling graph endpoints, two
+  singular live source registrations, and successful `quick_check` and
+  `integrity_check` results for all four archive databases.
+- Marked Feature 28 production-shaped anomaly validation complete without
+  broadening into Start Fresh, watchdog thresholds, or user-facing anomaly
+  presentation.
