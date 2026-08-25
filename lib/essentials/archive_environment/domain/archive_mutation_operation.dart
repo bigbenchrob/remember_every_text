@@ -4,6 +4,7 @@ enum ArchiveMutationOperation {
   graphBuild,
   onboardingImport,
   automaticRecovery,
+  startFresh,
   messageDataReset,
   historicalArchiveDryRun,
   historicalArchiveImport,
@@ -33,6 +34,7 @@ extension ArchiveMutationOperationPolicy on ArchiveMutationOperation {
   bool get blocksDatabaseReopen {
     return switch (this) {
       ArchiveMutationOperation.messageDataReset ||
+      ArchiveMutationOperation.startFresh ||
       ArchiveMutationOperation.historicalArchiveImport ||
       ArchiveMutationOperation.historicalArchiveRemoval ||
       ArchiveMutationOperation.destructiveMaintenance => true,

@@ -5661,3 +5661,17 @@ production preservation authority mechanically enforceable.
 - Marked Feature 28 production-shaped anomaly validation complete without
   broadening into Start Fresh, watchdog thresholds, or user-facing anomaly
   presentation.
+
+## 2026-08-25 - Installation classification and preservation-safe Start Fresh
+
+- Added the typed virgin, resumable, completed, abandoned, and
+  remediation-required installation classifier, with durable database truth
+  taking precedence over stale operation snapshots.
+- Recorded the exhaustive persistent-artifact ownership policy and the
+  decision to reset only enumerated rebuildable stores inside the admitted
+  root rather than invent archive-root rotation.
+- Codified preservation of overlays, Presence history, logs, preferences,
+  archive identity, and archived attachment payloads.
+- Replaced the option-launch reset no-op with classifier-driven startup,
+  explicit authorization, mutation admission, and post-reset virgin-state
+  verification.

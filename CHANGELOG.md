@@ -10,6 +10,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Onboarding now recognizes virgin, resumable, completed, abandoned, and
+  inconsistent MessageLens installations from durable evidence. Abandoned
+  setups can explicitly Start Fresh by resetting only rebuildable import and
+  conversation data; Apple sources, customizations, Presence history,
+  diagnostics, archive identity, and archived attachments remain preserved.
+  The former option-launch reset control no longer silently does nothing.
+
 - Production-shaped Onboarding validation now interprets Apple's `p:` and
   `bp:` associated-message reference envelopes through one shared,
   source-scoped rule. This removes thousands of false unresolved-reaction

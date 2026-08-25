@@ -10,12 +10,13 @@ import '../../domain/entities/test_agent_id.dart';
 import '../../domain/entities/trip.dart';
 import '../../domain/entities/trip_definition_id.dart';
 import '../../domain/repositories/presence_schedule_repository.dart';
+import '../../domain/repositories/presence_schedule_run_maintenance.dart';
 import '../../domain/services/fda_settings_opening_authority.dart';
 import '../../domain/services/test_agent_resolver.dart';
 import '../data_sources/local/presence_database.dart';
 
 final class DriftPresenceScheduleRepository
-    implements PresenceScheduleRepository {
+    implements PresenceScheduleRepository, PresenceScheduleRunMaintenance {
   const DriftPresenceScheduleRepository({
     required PresenceDatabase database,
     TestAgentResolver testAgentResolver = const _MissingTestAgentResolver(),
@@ -550,6 +551,43 @@ final class DriftPresenceScheduleRepository
         throw StateError(
           'Schedule $scheduleDefinitionId already has an active run.',
         );
+      }
+
+      final runId = await _database
+          .into(_database.scheduleRuns)
+          .insert(
+            ScheduleRunsCompanion.insert(
+              scheduleDefinitionId: scheduleDefinitionId,
+              currentTripOccurrenceId: Value<int?>(firstOccurrence.id),
+            ),
+          );
+      await _appendTraceEvent(
+        scheduleRunId: runId,
+        type: ExecutionTraceEventType.scheduleRunStarted,
+      );
+      return _loadRun(runId);
+    });
+  }
+
+  @override
+  Future<ScheduleRun> supersedeRunFromBeginning(
+    int scheduleDefinitionId,
+  ) async {
+    await loadDefinition(scheduleDefinitionId);
+    return _database.transaction(() async {
+      final firstOccurrence =
+          await (_database.select(_database.scheduleTripOccurrences)
+                ..where(
+                  (table) =>
+                      table.scheduleDefinitionId.equals(scheduleDefinitionId),
+                )
+                ..orderBy(<OrderClauseGenerator<ScheduleTripOccurrences>>[
+                  (table) => OrderingTerm.asc(table.position),
+                ])
+                ..limit(1))
+              .getSingleOrNull();
+      if (firstOccurrence == null) {
+        throw StateError('Schedule $scheduleDefinitionId has no Trips.');
       }
 
       final runId = await _database

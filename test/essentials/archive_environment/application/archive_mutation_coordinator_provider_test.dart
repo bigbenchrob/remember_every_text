@@ -193,6 +193,35 @@ void main() {
   );
 
   test(
+    'Start Fresh blocks unrelated archive mutation and database reopen',
+    () async {
+      final harness = await _CoordinatorHarness.create();
+      addTearDown(harness.dispose);
+      final release = Completer<void>();
+
+      final startFresh = harness.coordinator.run<void>(
+        operation: ArchiveMutationOperation.startFresh,
+        ownerLabel: 'start-fresh',
+        action: () => release.future,
+      );
+      expect(harness.state.blocksDatabaseReopen, isTrue);
+
+      await expectLater(
+        harness.coordinator.run<void>(
+          operation: ArchiveMutationOperation.historicalArchiveImport,
+          ownerLabel: 'historical-import',
+          action: () async {},
+        ),
+        throwsA(isA<ArchiveMutationDeniedException>()),
+      );
+
+      release.complete();
+      await startFresh;
+      expect(harness.state.blocksDatabaseReopen, isFalse);
+    },
+  );
+
+  test(
     'resource admission uses the requesting caller operation scope',
     () async {
       final harness = await _CoordinatorHarness.create();

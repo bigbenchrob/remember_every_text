@@ -184,6 +184,11 @@ final class OnboardingOperationSnapshotController {
     return operationId;
   }
 
+  /// Clears only Onboarding operation evidence after an authorized fresh start.
+  Future<void> resetToIdle() async {
+    await _publish(const OnboardingOperationSnapshot.idle());
+  }
+
   Future<void> enterStage({
     required OnboardingOperationId operationId,
     required OnboardingOperationStage stage,

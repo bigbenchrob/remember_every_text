@@ -25,14 +25,15 @@ Journey before further Onboarding implementation begins.
 6. [Dependency-aware source anomaly handling: handles](responses/06-DEPENDENCY-AWARE-SOURCE-ANOMALY-HANDLING-STARTING-WITH-HANDLES-IMPLEMENTATION.md)
 7. [Dependency-aware anomaly policy for remaining source domains](responses/07-DEPENDENCY-AWARE-ANOMALY-POLICY-FOR-REMAINING-ONBOARDING-DOMAINS-IMPLEMENTATION.md)
 8. [Production-shaped anomaly validation](responses/08-PRODUCTION-SHAPED-ONBOARDING-ANOMALY-VALIDATION.md)
+9. [Installation state and preservation-safe Start Fresh](responses/09-INSTALLATION-STATE-CLASSIFICATION-AND-PRESERVATION-SAFE-START-FRESH-IMPLEMENTATION.md)
 
 ## Current Status
 
-**PRODUCTION-SHAPED ANOMALY VALIDATION COMPLETE.** A fresh corrected
-137,373-message first import reconciled exactly with the Conversation Graph
-and Feature 27 coverage: 116,633 conversation-linked, 20,740 recovered, and
-zero unaccounted. The completed durable snapshot records exactly 7 unresolved
-reaction targets after shared Apple `p:`/`bp:` reference interpretation, down
-from the false pre-correction count of 6,032 without changing preserved
-evidence. Exact typed totals remain PII-free and bounded. Watchdog, Start
-Fresh, and user-facing anomaly presentation remain deferred.
+**PRESERVATION-SAFE START FRESH IMPLEMENTED FOR LOCAL VALIDATION.** Startup now
+classifies admitted installations as virgin, resumable, completed, abandoned,
+or remediation-required from durable evidence. Abandoned installs can reset
+only the canonical rebuildable import/graph allow-list under mutation
+authority; overlays, Presence history, archive identity, logs, preferences,
+and attachment payloads remain preserved. The old option-launch reset no-op is
+gone. External tester use remains blocked pending disposable-archive manual
+validation.

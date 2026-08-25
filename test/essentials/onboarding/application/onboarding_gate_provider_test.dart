@@ -9,6 +9,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 
 import 'package:remember_this_text/domain_driven_development/value_objects.dart';
+import 'package:remember_this_text/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart'
+    show ArchiveMutationCapability;
 import 'package:remember_this_text/essentials/archive_environment/domain.dart'
     show ArchiveMutationDeniedException, ArchiveMutationOperation;
 import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
@@ -1424,6 +1426,13 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
       throw error;
     }
     await resetCompleter?.future;
+  }
+
+  @override
+  Future<void> resetDerivedDataForStartFresh(
+    ArchiveMutationCapability capability,
+  ) async {
+    await resetDerivedData();
   }
 
   @override

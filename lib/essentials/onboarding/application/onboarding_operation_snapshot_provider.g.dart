@@ -26,7 +26,7 @@ final onboardingProcessSessionIdProvider =
 // ignore: unused_element
 typedef OnboardingProcessSessionIdRef = ProviderRef<OnboardingProcessSessionId>;
 String _$onboardingOperationControllerHash() =>
-    r'057fb273e5a5d6d4f7a1b1bc7fb1ecd3a0f2f9ac';
+    r'977b2180928a646a0c6775655aadfc95e2a07a12';
 
 /// See also [onboardingOperationController].
 @ProviderFor(onboardingOperationController)

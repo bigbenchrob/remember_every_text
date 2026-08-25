@@ -94,6 +94,28 @@ completed, resumable, inconsistent, or temporarily unavailable. During
 maintenance, reconciliation consumes the existing maintenance report and does
 not independently open protected stores.
 
+## Installation Classification And Start Fresh
+
+Before ordinary startup, `MessageLensInstallationStateClassifier` reconciles
+the durable operation snapshot with read-only evidence from the admitted
+archive. It distinguishes virgin, resumable, completed, abandoned, and
+remediation-required installations. Durable import/graph reconciliation
+outranks stale snapshot state; snapshot completion cannot override missing,
+unsupported, or contradictory stores.
+
+An abandoned installation may enter **Start Fresh** only after explicit human
+authorization. The operation runs as `ArchiveMutationOperation.startFresh`,
+closes canonical import/graph providers, and deletes only the established
+rebuildable database allow-list. It preserves overlay/user intent,
+`presence.db`, archived attachment payloads, preferences, logs, and archive
+identity. Existing Historical Archive source evidence or an unreadable
+preservation store routes to remediation instead of automatic reset.
+
+Start Fresh appends a new latest Onboarding Presence run while retaining prior
+append-only run evidence. It rereads the admitted archive afterward and must
+prove the typed virgin-state contract before ordinary Onboarding begins. It
+never navigates first and assumes cleanup succeeded.
+
 ## State Machine
 
 The gate tracks a single `OnboardingStatus` enum with 11 states:

@@ -1,30 +1,30 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'message_data_reset_service.dart';
+part of 'message_lens_installation_state_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$messageDataResetServiceHash() =>
-    r'3ed318d99227538b8e075813e5c7dcb4565e9de5';
+String _$messageLensInstallationStateHash() =>
+    r'dccb1c59694a1ac736269baa614f90077d20c067';
 
-/// See also [messageDataResetService].
-@ProviderFor(messageDataResetService)
-final messageDataResetServiceProvider =
-    AutoDisposeProvider<MessageDataResetService>.internal(
-      messageDataResetService,
-      name: r'messageDataResetServiceProvider',
+/// See also [messageLensInstallationState].
+@ProviderFor(messageLensInstallationState)
+final messageLensInstallationStateProvider =
+    FutureProvider<MessageLensInstallationState>.internal(
+      messageLensInstallationState,
+      name: r'messageLensInstallationStateProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$messageDataResetServiceHash,
+          : _$messageLensInstallationStateHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef MessageDataResetServiceRef =
-    AutoDisposeProviderRef<MessageDataResetService>;
+typedef MessageLensInstallationStateRef =
+    FutureProviderRef<MessageLensInstallationState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

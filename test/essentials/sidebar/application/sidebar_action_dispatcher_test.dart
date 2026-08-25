@@ -3,6 +3,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart'
+    show ArchiveMutationCapability;
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
@@ -1180,6 +1182,13 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
   @override
   Future<void> resetDerivedData() async {
     resetDerivedDataCalls += 1;
+  }
+
+  @override
+  Future<void> resetDerivedDataForStartFresh(
+    ArchiveMutationCapability capability,
+  ) async {
+    await resetDerivedData();
   }
 
   @override

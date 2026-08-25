@@ -121,6 +121,29 @@ void main() {
     );
   });
 
+  test('superseding an incomplete run preserves prior run evidence', () async {
+    final opened = await openDatabase();
+    final repository = DriftPresenceScheduleRepository(database: opened);
+    await repository.insertDefinition(_linearDefinition());
+    final original = await repository.startOrLoadRun(1);
+
+    final replacement = await repository.supersedeRunFromBeginning(1);
+    final runs =
+        await (opened.select(opened.scheduleRuns)
+              ..orderBy(<OrderClauseGenerator<ScheduleRuns>>[
+                (table) => OrderingTerm.asc(table.id),
+              ]))
+            .get();
+
+    expect(replacement.id, isNot(original.id));
+    expect(replacement.currentTripOccurrenceId, 1010);
+    expect(runs.map((run) => run.id), <int>[original.id, replacement.id]);
+    expect(
+      (await repository.loadRun(original.id)).currentTripOccurrenceId,
+      original.currentTripOccurrenceId,
+    );
+  });
+
   test('allows one canonical Trip in different Schedules', () async {
     final opened = await openDatabase();
     final repository = DriftPresenceScheduleRepository(database: opened);

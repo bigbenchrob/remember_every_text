@@ -87,6 +87,14 @@ maintenance workflows enter one reentrant archive-scoped mutation
 coordinator. `DbMaintenanceLock` is a derived readiness/UI signal, not a second
 authority.
 
+Onboarding **Start Fresh** is an archive mutation within the already admitted
+root, not archive-root rotation. It blocks database reopen, closes canonical
+derived database providers, and deletes only enumerated rebuildable database
+base files. Archive identity, overlays, Presence history, logs, preferences,
+and `attachment_archive/` remain in the same admitted root. The operation does
+not create an active-root pointer or infer deletion authority from directory
+ownership.
+
 High-risk production operations require a verified checkpoint receipt tied to
 the same archive identity. Checkpoints are offline, complete inventories with
 hashes and SQLite integrity evidence. Restore verification always targets a new

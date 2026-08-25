@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/filesystem_derived_message_data_file_store.dart';
@@ -95,6 +96,45 @@ void main() {
         store.deleteDatabaseBaseFiles([r'..\working_ss.db']),
         throwsArgumentError,
       );
+    });
+
+    test('leaves external source and donor fingerprints unchanged', () async {
+      final externalSources = await Directory.systemTemp.createTemp(
+        'start_fresh_external_sources_test',
+      );
+      addTearDown(() async {
+        if (externalSources.existsSync()) {
+          await externalSources.delete(recursive: true);
+        }
+      });
+      final sourceFiles = <File>[
+        File(path.join(externalSources.path, 'chat.db')),
+        File(path.join(externalSources.path, 'AddressBook-v22.abcddb')),
+        File(path.join(externalSources.path, 'historical-donor-chat.db')),
+      ];
+      for (var index = 0; index < sourceFiles.length; index += 1) {
+        await sourceFiles[index].writeAsBytes(<int>[index, 17, 93, 201, 255]);
+      }
+      final fingerprintsBefore = <String, String>{
+        for (final file in sourceFiles)
+          file.path: sha256.convert(await file.readAsBytes()).toString(),
+      };
+      final rebuildable = File(path.join(tempDir.path, 'working_ss.db'));
+      await rebuildable.writeAsString('discard me');
+      final store = FilesystemDerivedMessageDataFileStore(
+        databaseDirectory: tempDir.path,
+      );
+
+      await store.deleteDatabaseBaseFiles(const <String>['working_ss.db']);
+
+      expect(rebuildable.existsSync(), isFalse);
+      for (final file in sourceFiles) {
+        expect(file.existsSync(), isTrue);
+        expect(
+          sha256.convert(await file.readAsBytes()).toString(),
+          fingerprintsBefore[file.path],
+        );
+      }
     });
 
     test(

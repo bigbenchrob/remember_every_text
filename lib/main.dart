@@ -36,6 +36,9 @@ import 'essentials/logging/application/flutter_framework_error_reporter.dart';
 import 'essentials/logging/feature_level_providers.dart'
     show appLoggerProvider, diagnosticReportExporterProvider;
 import 'essentials/navigation/application/router.dart';
+import 'essentials/onboarding/domain/message_lens_installation_state.dart';
+import 'essentials/onboarding/feature_level_providers.dart'
+    show messageLensInstallationStateProvider, startFreshServiceProvider;
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart'
     show windowStateServiceProvider;
@@ -311,13 +314,7 @@ class StartupApp extends ConsumerStatefulWidget {
 }
 
 class _StartupAppState extends ConsumerState<StartupApp> {
-  late bool _startupChoiceResolved;
-
-  @override
-  void initState() {
-    super.initState();
-    _startupChoiceResolved = !widget.startupFlags.optionLaunchResetRequested;
-  }
+  bool _startupChoiceResolved = false;
 
   void _continueStartup() {
     if (!mounted || _startupChoiceResolved) {
@@ -336,21 +333,66 @@ class _StartupAppState extends ConsumerState<StartupApp> {
     }
 
     final themeMode = ref.watch(switchableDarkModeProvider);
+    final installationState = ref.watch(messageLensInstallationStateProvider);
 
+    return installationState.when(
+      data: (state) {
+        final mustPauseStartup =
+            widget.startupFlags.optionLaunchResetRequested ||
+            state.requiresStartupAttention;
+        if (!mustPauseStartup) {
+          return const App();
+        }
+
+        return MacosApp(
+          title: 'remember_that_text',
+          theme: MacosThemeData.light().copyWith(),
+          darkTheme: MacosThemeData.dark().copyWith(),
+          themeMode: themeMode,
+          debugShowCheckedModeBanner: false,
+          home: _StartupDialogHost(
+            installationState: state,
+            onChoiceHandled: _continueStartup,
+          ),
+        );
+      },
+      loading: () {
+        return _startupMacosApp(
+          themeMode: themeMode,
+          child: const Center(child: ProgressCircle()),
+        );
+      },
+      error: (error, _) {
+        return _startupMacosApp(
+          themeMode: themeMode,
+          child: _StartupClassificationFailure(error: error),
+        );
+      },
+    );
+  }
+
+  MacosApp _startupMacosApp({
+    required ThemeMode themeMode,
+    required Widget child,
+  }) {
     return MacosApp(
       title: 'remember_that_text',
       theme: MacosThemeData.light().copyWith(),
       darkTheme: MacosThemeData.dark().copyWith(),
       themeMode: themeMode,
       debugShowCheckedModeBanner: false,
-      home: _StartupDialogHost(onChoiceHandled: _continueStartup),
+      home: child,
     );
   }
 }
 
 class _StartupDialogHost extends ConsumerStatefulWidget {
-  const _StartupDialogHost({required this.onChoiceHandled});
+  const _StartupDialogHost({
+    required this.installationState,
+    required this.onChoiceHandled,
+  });
 
+  final MessageLensInstallationState installationState;
   final VoidCallback onChoiceHandled;
 
   @override
@@ -359,6 +401,7 @@ class _StartupDialogHost extends ConsumerStatefulWidget {
 
 class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
   bool _dialogShown = false;
+  bool _isStartingFresh = false;
 
   @override
   void initState() {
@@ -378,7 +421,9 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
       context: context,
       barrierDismissible: false,
       builder: (_) {
-        return const _StartupResetConfirmationDialog();
+        return _StartupResetConfirmationDialog(
+          installationState: widget.installationState,
+        );
       },
     );
 
@@ -387,16 +432,90 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
     }
 
     final logger = ref.read(appLoggerProvider.notifier);
-    switch (action ?? _StartupDialogAction.cancel) {
-      case _StartupDialogAction.cancel:
-        logger.info('Startup dialog canceled', source: 'StartupDialog');
-      case _StartupDialogAction.deleteMessageLensAppData:
-        logger.warn('Delete requested', source: 'StartupDialog');
+    switch (action ?? _StartupDialogAction.quit) {
+      case _StartupDialogAction.continueStartup:
+        logger.info('Startup continued', source: 'StartupDialog');
+        widget.onChoiceHandled();
+        return;
+      case _StartupDialogAction.startFresh:
+        await _confirmAndStartFresh();
+        return;
       case _StartupDialogAction.exportLogs:
         logger.info('Export Logs clicked', source: 'StartupDialog');
+        return;
+      case _StartupDialogAction.quit:
+        logger.info('Startup stopped by user', source: 'StartupDialog');
+        exit(0);
+    }
+  }
+
+  Future<void> _confirmAndStartFresh() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return const _StartFreshAuthorizationDialog();
+      },
+    );
+    if (!mounted) {
+      return;
+    }
+    if (confirmed != true) {
+      _dialogShown = false;
+      await _showStartupDialog();
+      return;
     }
 
-    widget.onChoiceHandled();
+    setState(() {
+      _isStartingFresh = true;
+    });
+
+    try {
+      final service = await ref.read(startFreshServiceProvider.future);
+      await service.startFresh();
+      if (!mounted) {
+        return;
+      }
+      widget.onChoiceHandled();
+    } catch (error, stackTrace) {
+      ref
+          .read(appLoggerProvider.notifier)
+          .error(
+            'Start Fresh failed: $error',
+            source: 'StartupDialog',
+            context: {'stack': stackTrace.toString()},
+          );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isStartingFresh = false;
+      });
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text("MessageLens couldn't start fresh"),
+            content: const Text(
+              'Your Apple Messages, Contacts, customizations, and archived '
+              'attachments were not targeted. You can try again or export '
+              'logs for diagnosis.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+      _dialogShown = false;
+      await _showStartupDialog();
+    }
   }
 
   @override
@@ -406,15 +525,31 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
 
     return ColoredBox(
       color: colors.surfaces.canvas,
-      child: const SizedBox.expand(),
+      child: _isStartingFresh
+          ? const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ProgressCircle(),
+                  SizedBox(height: 16),
+                  Text(
+                    "I'm preparing a clean MessageLens setup. Your Messages "
+                    "and Contacts won't be changed.",
+                  ),
+                ],
+              ),
+            )
+          : const SizedBox.expand(),
     );
   }
 }
 
-enum _StartupDialogAction { cancel, exportLogs, deleteMessageLensAppData }
+enum _StartupDialogAction { continueStartup, exportLogs, startFresh, quit }
 
 class _StartupResetConfirmationDialog extends ConsumerStatefulWidget {
-  const _StartupResetConfirmationDialog();
+  const _StartupResetConfirmationDialog({required this.installationState});
+
+  final MessageLensInstallationState installationState;
 
   @override
   ConsumerState<_StartupResetConfirmationDialog> createState() =>
@@ -479,6 +614,34 @@ class _StartupResetConfirmationDialogState
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
 
+    final title = switch (widget.installationState.kind) {
+      MessageLensInstallationStateKind.virgin => 'No setup to reset',
+      MessageLensInstallationStateKind.resumable =>
+        'MessageLens setup can continue',
+      MessageLensInstallationStateKind.completed =>
+        'MessageLens setup is complete',
+      MessageLensInstallationStateKind.abandoned =>
+        "This MessageLens setup wasn't completed",
+      MessageLensInstallationStateKind.remediationRequired =>
+        'This MessageLens setup needs attention',
+    };
+    final message = switch (widget.installationState.kind) {
+      MessageLensInstallationStateKind.virgin =>
+        'MessageLens has not begun importing data. Continue to start setup.',
+      MessageLensInstallationStateKind.resumable =>
+        'MessageLens can continue from a safe boundary. You may also start '
+            'again with a clean import and conversation index.',
+      MessageLensInstallationStateKind.completed =>
+        'The imported messages and conversation data reconcile. No reset is '
+            'needed.',
+      MessageLensInstallationStateKind.abandoned =>
+        'You can start again with this version. Your Messages and Contacts on '
+            "this Mac won't be changed.",
+      MessageLensInstallationStateKind.remediationRequired =>
+        'MessageLens found inconsistent or unreadable installation evidence. '
+            'It will not continue or remove preserved data automatically.',
+    };
+
     return PopScope(
       canPop: false,
       child: Dialog(
@@ -496,7 +659,7 @@ class _StartupResetConfirmationDialogState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Start Over?',
+                title,
                 style: typography.title2.copyWith(
                   color: colors.content.textPrimary,
                 ),
@@ -504,30 +667,34 @@ class _StartupResetConfirmationDialogState
               ),
               const SizedBox(height: 16),
               Text(
-                "MessageLens can delete its local app data and rebuild everything from scratch.\n\nThis deletes only MessageLens's own local data folder, including imported databases, caches, indexes, graph build state, and other generated app data. It does not delete your system Library folder or other applications' data.",
+                message,
                 style: typography.body.copyWith(
                   color: colors.content.textSecondary,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              OutlinedButton(
-                onPressed: _isExporting
-                    ? null
-                    : () {
-                        Navigator.of(context).pop(_StartupDialogAction.cancel);
-                      },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.content.textPrimary,
-                  side: BorderSide(color: colors.lines.borderSubtle),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              if (widget.installationState.mayContinue) ...[
+                OutlinedButton(
+                  onPressed: _isExporting
+                      ? null
+                      : () {
+                          Navigator.of(
+                            context,
+                          ).pop(_StartupDialogAction.continueStartup);
+                        },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.content.textPrimary,
+                    side: BorderSide(color: colors.lines.borderSubtle),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
+                  child: const Text('Continue'),
                 ),
-                child: const Text('Cancel'),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
+              ],
               OutlinedButton(
                 onPressed: _isExporting ? null : _exportLogs,
                 style: OutlinedButton.styleFrom(
@@ -541,24 +708,36 @@ class _StartupResetConfirmationDialogState
                 child: Text(_isExporting ? 'Exporting Logs...' : 'Export Logs'),
               ),
               const SizedBox(height: 12),
-              FilledButton(
-                onPressed: _isExporting
-                    ? null
-                    : () {
-                        Navigator.of(
-                          context,
-                        ).pop(_StartupDialogAction.deleteMessageLensAppData);
-                      },
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors.buttons.primaryBackground,
-                  foregroundColor: colors.buttons.primaryForeground,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              if (widget.installationState.mayStartFresh)
+                FilledButton(
+                  onPressed: _isExporting
+                      ? null
+                      : () {
+                          Navigator.of(
+                            context,
+                          ).pop(_StartupDialogAction.startFresh);
+                        },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.buttons.primaryBackground,
+                    foregroundColor: colors.buttons.primaryForeground,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
+                  child: const Text('Start Fresh'),
                 ),
-                child: const Text('Delete MessageLens App Data'),
-              ),
+              if (!widget.installationState.mayContinue) ...[
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: _isExporting
+                      ? null
+                      : () {
+                          Navigator.of(context).pop(_StartupDialogAction.quit);
+                        },
+                  child: const Text('Quit MessageLens'),
+                ),
+              ],
               if (_feedbackMessage != null) ...[
                 const SizedBox(height: 16),
                 Text(
@@ -572,6 +751,72 @@ class _StartupResetConfirmationDialogState
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StartFreshAuthorizationDialog extends ConsumerWidget {
+  const _StartFreshAuthorizationDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return AlertDialog(
+      title: const Text('Start with a clean MessageLens setup?'),
+      content: Text(
+        'MessageLens will remove its rebuildable imported-message and '
+        'conversation-index data, then restart Onboarding.\n\n'
+        'Your Apple Messages and Contacts will not be changed. MessageLens '
+        'customizations, archived attachment payloads, diagnostics, and '
+        'archive identity will be preserved. Historical Archive source '
+        'folders and recovery donors will not be changed.',
+        style: typography.body.copyWith(color: colors.content.textSecondary),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(false);
+          },
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.of(context).pop(true);
+          },
+          child: const Text('Start Fresh'),
+        ),
+      ],
+    );
+  }
+}
+
+class _StartupClassificationFailure extends ConsumerWidget {
+  const _StartupClassificationFailure({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(themeColorsProvider);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final typography = ref.watch(themeTypographyProvider);
+
+    return ColoredBox(
+      color: colors.surfaces.canvas,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Text(
+            "MessageLens couldn't determine whether this installation is "
+            'safe to open. No data was changed.\n\n$error',
+            style: typography.body.copyWith(color: colors.content.textPrimary),
+            textAlign: TextAlign.center,
           ),
         ),
       ),

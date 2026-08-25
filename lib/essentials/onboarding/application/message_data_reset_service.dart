@@ -3,9 +3,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../archive_environment/domain.dart' show ArchiveMutationOperation;
+import '../../archive_environment/domain/archive_mutation_operation.dart';
 import '../../archive_environment/feature_level_providers.dart'
-    show archiveMutationCoordinatorProvider;
+    show ArchiveMutationCapability, archiveMutationCoordinatorProvider;
 import '../../db/app_database_files.dart';
 import '../../db/feature_level_providers.dart'
     show
@@ -52,6 +52,10 @@ List<String> get _messageDataResetPostCleanupCheckBaseNames =>
 abstract interface class MessageDataResetService {
   Future<void> resetDerivedData();
 
+  Future<void> resetDerivedDataForStartFresh(
+    ArchiveMutationCapability capability,
+  );
+
   Future<void> confirmResetAndPrepareReimport();
 }
 
@@ -62,10 +66,27 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
 
   @override
   Future<void> resetDerivedData() {
-    return _dependencies.runWithMutationAuthority(_resetDerivedData);
+    return _dependencies.runWithMutationAuthority(
+      operation: ArchiveMutationOperation.messageDataReset,
+      action: _resetDerivedData,
+    );
   }
 
-  Future<void> _resetDerivedData() async {
+  @override
+  Future<void> resetDerivedDataForStartFresh(
+    ArchiveMutationCapability capability,
+  ) {
+    capability.requireOperation(ArchiveMutationOperation.startFresh);
+    return _resetDerivedData(capability);
+  }
+
+  Future<void> _resetDerivedData(ArchiveMutationCapability capability) async {
+    final operation = capability.operation;
+    if (operation != ArchiveMutationOperation.messageDataReset &&
+        operation != ArchiveMutationOperation.startFresh) {
+      throw StateError('$operation cannot reset derived message data.');
+    }
+    capability.requireOperation(operation);
     final logger = _dependencies.logger;
     logger.warn(
       'Reset Message Data requested',
@@ -381,7 +402,10 @@ final class _MessageDataResetDependencies {
 
   final _MessageDataResetLogSink logger;
   final DerivedMessageDataFileStore fileStore;
-  final Future<void> Function(Future<void> Function() action)
+  final Future<void> Function({
+    required ArchiveMutationOperation operation,
+    required Future<void> Function(ArchiveMutationCapability capability) action,
+  })
   runWithMutationAuthority;
   final VoidCallback bumpMessageDataVersion;
   final void Function({
@@ -437,11 +461,11 @@ MessageDataResetService messageDataResetService(Ref ref) {
         error: logger.error,
       ),
       fileStore: ref.read(derivedMessageDataFileStoreProvider),
-      runWithMutationAuthority: (action) {
+      runWithMutationAuthority: ({required operation, required action}) {
         return ref
             .read(archiveMutationCoordinatorProvider.notifier)
-            .run(
-              operation: ArchiveMutationOperation.messageDataReset,
+            .runWithCapability(
+              operation: operation,
               ownerLabel: 'message-data-reset',
               action: action,
             );
