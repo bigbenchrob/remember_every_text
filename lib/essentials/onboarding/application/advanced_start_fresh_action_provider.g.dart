@@ -1,30 +1,29 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'message_data_reset_service.dart';
+part of 'advanced_start_fresh_action_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$messageDataResetServiceHash() =>
-    r'6189a1a3adb2eb127a08001ef7061e783396d500';
+String _$advancedStartFreshActionHash() =>
+    r'e141553b130b1e76339cdb2b585c56f3d056acdf';
 
-/// See also [messageDataResetService].
-@ProviderFor(messageDataResetService)
-final messageDataResetServiceProvider =
-    AutoDisposeProvider<MessageDataResetService>.internal(
-      messageDataResetService,
-      name: r'messageDataResetServiceProvider',
+/// See also [advancedStartFreshAction].
+@ProviderFor(advancedStartFreshAction)
+final advancedStartFreshActionProvider =
+    Provider<AdvancedStartFreshAction>.internal(
+      advancedStartFreshAction,
+      name: r'advancedStartFreshActionProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$messageDataResetServiceHash,
+          : _$advancedStartFreshActionHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef MessageDataResetServiceRef =
-    AutoDisposeProviderRef<MessageDataResetService>;
+typedef AdvancedStartFreshActionRef = ProviderRef<AdvancedStartFreshAction>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

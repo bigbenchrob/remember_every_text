@@ -1412,7 +1412,6 @@ OnboardingEnvironmentReport _readyToImportReport() {
 
 final class _FakeMessageDataResetService implements MessageDataResetService {
   int resetDerivedDataCallCount = 0;
-  int confirmResetAndPrepareReimportCallCount = 0;
   Completer<void>? resetCompleter;
   Object? resetError;
   void Function()? onResetStarted;
@@ -1433,11 +1432,6 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
     ArchiveMutationCapability capability,
   ) async {
     await resetDerivedData();
-  }
-
-  @override
-  Future<void> confirmResetAndPrepareReimport() async {
-    confirmResetAndPrepareReimportCallCount += 1;
   }
 }
 

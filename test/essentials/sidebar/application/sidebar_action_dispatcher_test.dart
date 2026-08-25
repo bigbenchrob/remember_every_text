@@ -3,8 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'package:remember_this_text/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart'
-    show ArchiveMutationCapability;
 import 'package:remember_this_text/essentials/db/feature_level_providers.dart'
     show overlayDatabaseProvider;
 import 'package:remember_this_text/essentials/db/feature_level_providers/conversation_graph_readiness_provider.dart';
@@ -14,7 +12,8 @@ import 'package:remember_this_text/essentials/navigation/application/panels_view
 import 'package:remember_this_text/essentials/navigation/domain/entities/view_spec.dart';
 import 'package:remember_this_text/essentials/navigation/domain/navigation_constants.dart';
 import 'package:remember_this_text/essentials/navigation/domain/sidebar_mode.dart';
-import 'package:remember_this_text/essentials/onboarding/application/message_data_reset_service.dart';
+import 'package:remember_this_text/essentials/onboarding/application/advanced_start_fresh_action.dart';
+import 'package:remember_this_text/essentials/onboarding/application/advanced_start_fresh_action_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/cassette_rack_state_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/ephemeral_cassette_projection_provider.dart';
 import 'package:remember_this_text/essentials/sidebar/application/sidebar_action_dispatcher.dart';
@@ -38,11 +37,11 @@ void main() {
   group('sidebarActionDispatcherProvider', () {
     late ProviderContainer container;
     late SidebarActionDispatcher dispatcher;
-    late _FakeMessageDataResetService resetService;
+    late _FakeAdvancedStartFreshAction startFreshAction;
     late OverlayDatabase overlayDb;
 
     setUp(() {
-      resetService = _FakeMessageDataResetService();
+      startFreshAction = _FakeAdvancedStartFreshAction();
       overlayDb = OverlayDatabase(NativeDatabase.memory());
       container = ProviderContainer(
         overrides: [
@@ -50,7 +49,9 @@ void main() {
             _AlwaysPopulatedGraph.new,
           ),
           overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-          messageDataResetServiceProvider.overrideWith((ref) => resetService),
+          advancedStartFreshActionProvider.overrideWith(
+            (ref) => startFreshAction,
+          ),
           ...cassetteRackTestHarnessOverrides(),
         ],
       );
@@ -410,17 +411,20 @@ void main() {
       );
     });
 
-    test('dispatches reset message data through reset service', () async {
-      await dispatcher.dispatch(
-        intent: const ResetMessageDataRequested(),
-        context: const SidebarActionDispatchContext(
-          sidebarMode: SidebarMode.settings,
-          cassetteIndex: 1,
-        ),
-      );
+    test(
+      'dispatches reset message data through advanced Start Fresh',
+      () async {
+        await dispatcher.dispatch(
+          intent: const ResetMessageDataRequested(),
+          context: const SidebarActionDispatchContext(
+            sidebarMode: SidebarMode.settings,
+            cassetteIndex: 1,
+          ),
+        );
 
-      expect(resetService.confirmResetAndPrepareReimportCalls, 1);
-    });
+        expect(startFreshAction.requestCalls, 1);
+      },
+    );
 
     test(
       'dispatches persistent settings selection to flow state and child cascade',
@@ -1175,24 +1179,22 @@ class _AlwaysPopulatedGraph extends ConversationGraphPopulated {
   }
 }
 
-final class _FakeMessageDataResetService implements MessageDataResetService {
-  int resetDerivedDataCalls = 0;
-  int confirmResetAndPrepareReimportCalls = 0;
+final class _FakeAdvancedStartFreshAction implements AdvancedStartFreshAction {
+  int requestCalls = 0;
 
   @override
-  Future<void> resetDerivedData() async {
-    resetDerivedDataCalls += 1;
+  Future<AdvancedStartFreshActionResult> request() async {
+    requestCalls += 1;
+    return AdvancedStartFreshActionResult.startedFresh;
   }
 
   @override
-  Future<void> resetDerivedDataForStartFresh(
-    ArchiveMutationCapability capability,
-  ) async {
-    await resetDerivedData();
-  }
+  void dismissFailure({required int occurrence}) {}
 
   @override
-  Future<void> confirmResetAndPrepareReimport() async {
-    confirmResetAndPrepareReimportCalls += 1;
+  Future<AdvancedStartFreshActionResult> retry({
+    required int occurrence,
+  }) async {
+    return AdvancedStartFreshActionResult.startedFresh;
   }
 }

@@ -10,6 +10,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Settings > Reset Message Data now delegates to the preservation-safe Start
+  Fresh workflow instead of the retired direct database-reset path. The
+  advanced action reclassifies the completed installation, requires explicit
+  authorization, preserves preferences, setup history, overlays, and archived
+  attachments, runs under Start Fresh mutation authority, and verifies virgin
+  state before restarting Onboarding. Once authorization is accepted, a
+  process-local operation surface now takes visible ownership before mutation;
+  typed failures remain visible with retry or recovery actions, and stale
+  asynchronous completions cannot affect a newer Start Fresh occurrence.
+
 - Onboarding now recognizes virgin, resumable, completed, abandoned, and
   inconsistent MessageLens installations from durable evidence. Abandoned
   setups can explicitly Start Fresh by resetting only rebuildable import and

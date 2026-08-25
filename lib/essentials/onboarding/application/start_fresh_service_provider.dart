@@ -34,6 +34,7 @@ Future<StartFreshService> startFreshService(Ref ref) async {
     archiveRootPath: authority.rootPath,
     requiredSourcesScheduleId: requiredSourcesReadinessScheduleId,
     readCurrentState: () {
+      ref.invalidate(messageLensInstallationStateProvider);
       return ref.read(messageLensInstallationStateProvider.future);
     },
     runWithMutationAuthority: (action) {

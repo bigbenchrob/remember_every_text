@@ -93,6 +93,13 @@ typed abandoned/resumable state
   -> enter ordinary Onboarding
 ```
 
+A completed installation may enter the same workflow only through the
+explicitly named advanced Settings entry point. That entry point reclassifies
+the installation as `completed`, obtains the same preservation-aware human
+authorization, and requests
+`completedInstallationAdvancedReset`. The ordinary startup entry point still
+rejects completed installations.
+
 `startFresh` blocks database reopen and cannot overlap an unrelated import,
 graph build, Historical Archives mutation, attachment recovery, or other
 archive mutation. It does not require a production checkpoint because it
@@ -126,9 +133,17 @@ classifier now drives both ordinary startup interception and option-launch:
 - remediation-required installations cannot continue or Start Fresh
   automatically.
 
-The confirmation explicitly states that Apple Messages and Contacts,
-Historical Archive sources, recovery donors, archived attachments, MessageLens
-customizations, diagnostics, and archive identity are preserved.
+Completed installations remain intentionally eligible through the advanced
+**Settings > Reset Message Data** surface. That surface is not startup
+recovery: it requires a fresh confirmation and delegates to the canonical
+Start Fresh workflow. It does not call the retired direct
+`messageDataReset` confirmation path.
+
+The confirmation states that rebuildable imported-message and
+conversation-index data will be removed and Onboarding restarted. It states
+that Apple Messages and Contacts, preferences, MessageLens customizations,
+setup history, archived attachment payloads, diagnostics, archive identity,
+Historical Archive source folders, and recovery donors remain unchanged.
 
 ## Local Validation Boundary
 

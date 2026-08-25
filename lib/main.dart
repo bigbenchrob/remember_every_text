@@ -39,6 +39,7 @@ import 'essentials/navigation/application/router.dart';
 import 'essentials/onboarding/domain/message_lens_installation_state.dart';
 import 'essentials/onboarding/feature_level_providers.dart'
     show messageLensInstallationStateProvider, startFreshServiceProvider;
+import 'essentials/onboarding/presentation/start_fresh_authorization_dialog.dart';
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart'
     show windowStateServiceProvider;
@@ -450,17 +451,11 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
   }
 
   Future<void> _confirmAndStartFresh() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return const _StartFreshAuthorizationDialog();
-      },
-    );
+    final confirmed = await showStartFreshAuthorizationDialog(context);
     if (!mounted) {
       return;
     }
-    if (confirmed != true) {
+    if (!confirmed) {
       _dialogShown = false;
       await _showStartupDialog();
       return;
@@ -754,44 +749,6 @@ class _StartupResetConfirmationDialogState
           ),
         ),
       ),
-    );
-  }
-}
-
-class _StartFreshAuthorizationDialog extends ConsumerWidget {
-  const _StartFreshAuthorizationDialog();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-
-    return AlertDialog(
-      title: const Text('Start with a clean MessageLens setup?'),
-      content: Text(
-        'MessageLens will remove its rebuildable imported-message and '
-        'conversation-index data, then restart Onboarding.\n\n'
-        'Your Apple Messages and Contacts will not be changed. MessageLens '
-        'customizations, archived attachment payloads, diagnostics, and '
-        'archive identity will be preserved. Historical Archive source '
-        'folders and recovery donors will not be changed.',
-        style: typography.body.copyWith(color: colors.content.textSecondary),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop(false);
-          },
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            Navigator.of(context).pop(true);
-          },
-          child: const Text('Start Fresh'),
-        ),
-      ],
     );
   }
 }

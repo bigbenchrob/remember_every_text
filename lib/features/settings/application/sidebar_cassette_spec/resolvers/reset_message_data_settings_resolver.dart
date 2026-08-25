@@ -16,7 +16,13 @@ class ResetMessageDataSettingsResolver
       cassetteIndex: cassetteIndex,
       title: 'Reset Message Data',
       bodyText:
-          'Use this if the messages or contacts shown in MessageLens do not match what you see in Messages or Contacts on your Mac. Selecting Reset message data opens a confirmation dialog before anything is deleted. Resetting clears only MessageLens databases, keeps your preferences, and re-imports from your Mac the next time you open the app.',
+          'Use this advanced action if the messages or contacts shown in '
+          'MessageLens do not match what you see in Messages or Contacts on '
+          'your Mac. After confirmation, Start Fresh removes only rebuildable '
+          'imported-message and conversation-index data. It preserves your '
+          'preferences, MessageLens customizations, setup history, and '
+          'archived attachments, verifies a clean state, then restarts '
+          'Onboarding.',
       actions: const [
         SidebarActionDescriptor(
           label: 'Reset message data…',

@@ -116,6 +116,13 @@ append-only run evidence. It rereads the admitted archive afterward and must
 prove the typed virgin-state contract before ordinary Onboarding begins. It
 never navigates first and assumes cleanup succeeded.
 
+Healthy completed installations bypass Start Fresh during ordinary startup.
+They may reach the same authority only through the advanced **Settings > Reset
+Message Data** action. That action requires completed-state classification and
+a fresh preservation-aware confirmation before requesting the separately named
+completed-installation entry point. The reset still runs only as
+`ArchiveMutationOperation.startFresh` and must prove virgin state afterward.
+
 ## State Machine
 
 The gate tracks a single `OnboardingStatus` enum with 11 states:

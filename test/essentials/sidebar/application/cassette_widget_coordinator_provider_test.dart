@@ -276,7 +276,7 @@ void main() {
 
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
         expect(payload.role, SidebarCassetteRole.action);
-        expect(payload.bodyText, contains('confirmation dialog'));
+        expect(payload.bodyText, contains('Start Fresh'));
         expect(payload.actions, hasLength(1));
         expect(payload.actions.single.label, 'Reset message data…');
         expect(payload.title, 'Reset Message Data');

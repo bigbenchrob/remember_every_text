@@ -15,8 +15,28 @@ final class StartFreshResult {
   final MessageLensInstallationState verifiedState;
 }
 
+final class StartFreshVirginVerificationException implements Exception {
+  const StartFreshVirginVerificationException({required this.verifiedState});
+
+  final MessageLensInstallationState verifiedState;
+
+  @override
+  String toString() {
+    return 'Start Fresh did not establish the virgin installation contract: '
+        '${verifiedState.kind.name} (${verifiedState.reason})';
+  }
+}
+
+enum StartFreshEntryPoint {
+  incompleteInstallation,
+  completedInstallationAdvancedReset,
+}
+
 abstract interface class StartFreshService {
-  Future<StartFreshResult> startFresh();
+  Future<StartFreshResult> startFresh({
+    StartFreshEntryPoint entryPoint =
+        StartFreshEntryPoint.incompleteInstallation,
+  });
 }
 
 final class StartFreshServiceImpl implements StartFreshService {
@@ -51,11 +71,15 @@ final class StartFreshServiceImpl implements StartFreshService {
   final void Function() refreshAfterReset;
 
   @override
-  Future<StartFreshResult> startFresh() async {
+  Future<StartFreshResult> startFresh({
+    StartFreshEntryPoint entryPoint =
+        StartFreshEntryPoint.incompleteInstallation,
+  }) async {
     final currentState = await readCurrentState();
-    if (!currentState.mayStartFresh) {
+    if (!_isEligible(currentState: currentState, entryPoint: entryPoint)) {
       throw StateError(
-        'Start Fresh is unavailable for ${currentState.kind.name}: '
+        'Start Fresh through ${entryPoint.name} is unavailable for '
+        '${currentState.kind.name}: '
         '${currentState.reason}',
       );
     }
@@ -87,14 +111,24 @@ final class StartFreshServiceImpl implements StartFreshService {
         ),
       );
       if (verifiedState.kind != MessageLensInstallationStateKind.virgin) {
-        throw StateError(
-          'Start Fresh did not establish the virgin installation contract: '
-          '${verifiedState.kind.name} (${verifiedState.reason})',
+        throw StartFreshVirginVerificationException(
+          verifiedState: verifiedState,
         );
       }
 
       refreshAfterReset();
       return StartFreshResult(verifiedState: verifiedState);
     });
+  }
+
+  bool _isEligible({
+    required MessageLensInstallationState currentState,
+    required StartFreshEntryPoint entryPoint,
+  }) {
+    return switch (entryPoint) {
+      StartFreshEntryPoint.incompleteInstallation => currentState.mayStartFresh,
+      StartFreshEntryPoint.completedInstallationAdvancedReset =>
+        currentState.kind == MessageLensInstallationStateKind.completed,
+    };
   }
 }

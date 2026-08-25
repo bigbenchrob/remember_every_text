@@ -161,7 +161,7 @@ The allow-list excludes:
 | First-run preparation | Safe because it delegates to the explicit reset allow-list | `OnboardingGate._prepareForFreshStartIfNeeded()` calls `MessageDataResetService.resetDerivedData()` |
 | Direct reimport | Safe because it delegates to the explicit reset allow-list | `OnboardingGate._startReimport()` calls the same reset service |
 | Automatic recovery | Safe because it delegates to the explicit reset allow-list | `_runAdmittedAutomaticRecovery()` calls the same reset service |
-| **Reset Message Data** | Explicitly safe within current semantics | Confirmation leads to the same reset service; only enumerated derived database files are removed |
+| **Reset Message Data** | Explicitly safe advanced entry into Start Fresh | A completed installation is reclassified, explicitly authorized, and delegated to canonical Start Fresh under `startFresh` mutation authority; only enumerated derived database files are removed |
 | **Start Fresh** | Explicitly safe within current semantics | Typed installation classification and explicit authorization lead to the same allow-list reset under `startFresh` mutation authority; payloads and overlay/Presence stores remain |
 | Development reset action | Safe within its temporary/development authority | Delegates to the same reset service |
 | Retired-database cleanup | Safe because targets are named base files in the reset allow-list | No directory or pattern deletion |

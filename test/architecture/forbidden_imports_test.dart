@@ -292,6 +292,7 @@ const Set<String> _unawaitedAllowedFiles = {
 
 const Set<String> _providerInvalidationAllowedFiles = {
   'lib/essentials/conversation_graph/application/status/conversation_graph_status_sheet_actions_provider.dart',
+  'lib/essentials/onboarding/application/advanced_start_fresh_action_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
   'lib/essentials/onboarding/application/start_fresh_service_provider.dart',
@@ -448,6 +449,7 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/essentials/onboarding/application/onboarding_database_probe_reader_provider.dart',
   'lib/essentials/onboarding/application/onboarding_failure_storage_provider.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/onboarding/presentation/advanced_start_fresh_overlay.dart',
   'lib/essentials/presence/presentation/presence_runner.dart',
   'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
   'lib/features/settings/presentation/view/historical_archives_panel.dart',

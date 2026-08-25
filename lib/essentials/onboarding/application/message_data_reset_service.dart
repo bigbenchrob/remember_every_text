@@ -1,6 +1,4 @@
-import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:macos_ui/macos_ui.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../archive_environment/domain/archive_mutation_operation.dart';
@@ -15,17 +13,10 @@ import '../../db/feature_level_providers.dart'
 import '../../db/feature_level_providers/message_data_version_provider.dart'
     show messageDataVersionProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
-import '../../navigation/application/app_navigator_key.dart';
-import '../domain/onboarding_environment_report.dart';
-import '../domain/onboarding_status.dart';
 import 'derived_message_data_file_store.dart';
 import 'derived_message_data_file_store_provider.dart';
-import 'onboarding_environment_report_provider.dart';
-import 'onboarding_gate_provider.dart';
 
 part 'message_data_reset_service.g.dart';
-
-const _resetCompletionDialogExitDelay = Duration(milliseconds: 140);
 
 const _retiredDatabaseCleanupFiles = <AppDatabaseFile>[
   AppDatabaseFile.retiredMacosImport,
@@ -55,8 +46,6 @@ abstract interface class MessageDataResetService {
   Future<void> resetDerivedDataForStartFresh(
     ArchiveMutationCapability capability,
   );
-
-  Future<void> confirmResetAndPrepareReimport();
 }
 
 final class MessageDataResetServiceImpl implements MessageDataResetService {
@@ -181,101 +170,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
     }
   }
 
-  @override
-  Future<void> confirmResetAndPrepareReimport() async {
-    final logger = _dependencies.logger;
-    final proceedDialogContext = appNavigatorKey.currentContext;
-
-    if (proceedDialogContext == null || !proceedDialogContext.mounted) {
-      logger.error(
-        'Reset requested without a navigator context; aborting destructive action',
-        source: 'MessageDataResetService',
-      );
-      return;
-    }
-
-    bool shouldProceed;
-    try {
-      shouldProceed = await _showResetProceedDialog(proceedDialogContext);
-    } catch (error, stackTrace) {
-      logger.error(
-        'Failed to show reset confirmation dialog',
-        source: 'MessageDataResetService',
-        context: {
-          'error': error.toString(),
-          'stack': stackTrace.toString().split('\n').take(10).join('\n'),
-        },
-      );
-      return;
-    }
-
-    if (!shouldProceed) {
-      logger.warn(
-        'Reset Message Data canceled before deletion',
-        source: 'MessageDataResetService',
-      );
-      return;
-    }
-
-    await resetDerivedData();
-
-    final onboardingStatusBeforeDialog = _dependencies.readOnboardingStatus();
-    final environmentReportAsync = _dependencies.readEnvironmentReport();
-    final environmentReport = environmentReportAsync.valueOrNull;
-
-    logger.info(
-      'Reset flow snapshot before completion dialog',
-      source: 'MessageDataResetService',
-      context: {
-        'onboardingStatus': onboardingStatusBeforeDialog.name,
-        'environmentReportLoading': environmentReportAsync.isLoading,
-        'environmentState': environmentReport?.state.name,
-        'environmentBlocker': environmentReport?.blockerKind.name,
-        'hasPopulatedAppDatabases': environmentReport?.hasPopulatedAppDatabases,
-        'sourceScopedImportDbExists':
-            environmentReport?.sourceScopedImportDatabase.exists,
-        'sourceScopedImportDbRowCount':
-            environmentReport?.sourceScopedImportDatabase.rowCount,
-        'conversationGraphExists': environmentReport?.conversationGraph.exists,
-        'conversationGraphRowCount':
-            environmentReport?.conversationGraph.rowCount,
-      },
-    );
-
-    logger.info(
-      'Showing reset completion dialog before onboarding reimport flow',
-      source: 'MessageDataResetService',
-    );
-    final completionDialogContext = appNavigatorKey.currentContext;
-    if (completionDialogContext == null || !completionDialogContext.mounted) {
-      logger.warn(
-        'Reset completion dialog skipped because navigator context is no longer mounted',
-        source: 'MessageDataResetService',
-      );
-    } else {
-      try {
-        await _showResetCompletionDialog(completionDialogContext);
-      } catch (error, stackTrace) {
-        logger.error(
-          'Failed to show reset completion dialog',
-          source: 'MessageDataResetService',
-          context: {
-            'error': error.toString(),
-            'stack': stackTrace.toString().split('\n').take(10).join('\n'),
-          },
-        );
-      }
-    }
-
-    await Future<void>.delayed(_resetCompletionDialogExitDelay);
-
-    logger.info(
-      'Refreshing onboarding environment after message data reset',
-      source: 'MessageDataResetService',
-    );
-    _dependencies.refreshOnboardingEnvironment();
-  }
-
   Future<bool> _closeSourceScopedImportDatabase() async {
     final fileStore = _dependencies.fileStore;
     if (!fileStore.databaseBaseFileExists(
@@ -329,61 +223,6 @@ final class MessageDataResetServiceImpl implements MessageDataResetService {
       },
     );
   }
-
-  Future<bool> _showResetProceedDialog(BuildContext context) async {
-    final result = await showMacosAlertDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return MacosAlertDialog(
-          appIcon: const FlutterLogo(size: 64),
-          title: const Text('Reset MessageLens Databases?'),
-          message: const Text(
-            'Clicking Proceed will delete the database files belonging to MessageLens but will not touch the original macOS databases. No Messages or Contacts data will be lost; this only returns MessageLens to a clean import state. Your preference settings, including contact favourites, will be preserved. Any recovered image files that were already archived will also be left intact.\n\nClick Proceed to continue or Cancel to abort.',
-          ),
-          primaryButton: PushButton(
-            controlSize: ControlSize.large,
-            onPressed: () {
-              Navigator.of(dialogContext, rootNavigator: true).pop(true);
-            },
-            child: const Text('Proceed'),
-          ),
-          secondaryButton: PushButton(
-            controlSize: ControlSize.large,
-            onPressed: () {
-              Navigator.of(dialogContext, rootNavigator: true).pop(false);
-            },
-            child: const Text('Cancel'),
-          ),
-        );
-      },
-    );
-
-    return result ?? false;
-  }
-
-  Future<void> _showResetCompletionDialog(BuildContext context) async {
-    await showMacosAlertDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) {
-        return MacosAlertDialog(
-          appIcon: const FlutterLogo(size: 64),
-          title: const Text('MessageLens Databases Cleared'),
-          message: const Text(
-            'Your MessageLens databases have been cleared. You will now be guided through reimporting your data.',
-          ),
-          primaryButton: PushButton(
-            controlSize: ControlSize.large,
-            onPressed: () {
-              Navigator.of(dialogContext, rootNavigator: true).pop();
-            },
-            child: const Text('OK'),
-          ),
-        );
-      },
-    );
-  }
 }
 
 final class _MessageDataResetDependencies {
@@ -395,9 +234,6 @@ final class _MessageDataResetDependencies {
     required this.invalidateDerivedMessageDataProviders,
     required this.closeSourceScopedImportDatabase,
     required this.closeConversationGraphDatabase,
-    required this.readOnboardingStatus,
-    required this.readEnvironmentReport,
-    required this.refreshOnboardingEnvironment,
   });
 
   final _MessageDataResetLogSink logger;
@@ -407,7 +243,7 @@ final class _MessageDataResetDependencies {
     required Future<void> Function(ArchiveMutationCapability capability) action,
   })
   runWithMutationAuthority;
-  final VoidCallback bumpMessageDataVersion;
+  final void Function() bumpMessageDataVersion;
   final void Function({
     required bool invalidateSourceScopedImport,
     required bool invalidateConversationGraph,
@@ -415,10 +251,6 @@ final class _MessageDataResetDependencies {
   invalidateDerivedMessageDataProviders;
   final Future<void> Function() closeSourceScopedImportDatabase;
   final Future<bool> Function() closeConversationGraphDatabase;
-  final OnboardingStatus Function() readOnboardingStatus;
-  final AsyncValue<OnboardingEnvironmentReport> Function()
-  readEnvironmentReport;
-  final VoidCallback refreshOnboardingEnvironment;
 }
 
 final class _MessageDataResetLogSink {
@@ -495,15 +327,6 @@ MessageDataResetService messageDataResetService(Ref ref) {
         return ref
             .read(conversationGraphConnectionLifecycleProvider)
             .closeIfActive();
-      },
-      readOnboardingStatus: () {
-        return ref.read(onboardingGateProvider);
-      },
-      readEnvironmentReport: () {
-        return ref.read(onboardingEnvironmentReportProvider);
-      },
-      refreshOnboardingEnvironment: () {
-        ref.read(onboardingGateProvider.notifier).refreshEnvironment();
       },
     ),
   );

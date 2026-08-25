@@ -52,4 +52,22 @@ void main() {
     expect(operationPolicy, contains('ArchiveMutationOperation.startFresh'));
     expect(operationPolicy, contains('blocksDatabaseReopen'));
   });
+
+  test('advanced Start Fresh owns presentation before mutation', () {
+    final actionProvider = File(
+      'lib/essentials/onboarding/application/'
+      'advanced_start_fresh_action_provider.dart',
+    ).readAsStringSync();
+    final action = File(
+      'lib/essentials/onboarding/application/advanced_start_fresh_action.dart',
+    ).readAsStringSync();
+    final shell = File(
+      'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+    ).readAsStringSync();
+
+    expect(actionProvider, contains('@Riverpod(keepAlive: true)'));
+    expect(action, contains('presentation.beginPreparing()'));
+    expect(action, contains('await waitForPresentationFrame()'));
+    expect(shell, contains('AdvancedStartFreshOverlayHost'));
+  });
 }

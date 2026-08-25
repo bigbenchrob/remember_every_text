@@ -130,6 +130,70 @@ void main() {
   });
 
   test(
+    'completed installation can invoke only the advanced reset entry point',
+    () async {
+      final fixture = await TestArchiveFixture.create(
+        prefix: 'advanced_start_fresh_service_test_',
+      );
+      addTearDown(fixture.dispose);
+      final container = ProviderContainer(
+        overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(
+            fixture.authority,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final operationController = OnboardingOperationSnapshotController(
+        store: _MemorySnapshotStore(),
+        processSessionId: OnboardingProcessSessionId(
+          '123e4567-e89b-42d3-a456-426614174025',
+        ),
+      );
+      await operationController.initialize();
+      addTearDown(operationController.dispose);
+      final resetService = _FakeResetService();
+
+      final service = StartFreshServiceImpl(
+        archiveRootPath: fixture.root.path,
+        requiredSourcesScheduleId: 42,
+        readCurrentState: () async {
+          return const MessageLensInstallationState(
+            kind: MessageLensInstallationStateKind.completed,
+            reason: 'healthy completed installation',
+          );
+        },
+        runWithMutationAuthority: (action) {
+          return container
+              .read(archiveMutationCoordinatorProvider.notifier)
+              .runWithCapability<StartFreshResult>(
+                operation: ArchiveMutationOperation.startFresh,
+                ownerLabel: 'test-advanced-start-fresh',
+                action: action,
+              );
+        },
+        messageDataResetService: resetService,
+        operationController: operationController,
+        failureStore: _FakeFailureStore(),
+        presenceRepository: const _MissingDefinitionMaintenance(),
+        evidenceReader: const _VirginEvidenceReader(),
+        classifier: const MessageLensInstallationStateClassifier(),
+        refreshAfterReset: () {},
+      );
+
+      final result = await service.startFresh(
+        entryPoint: StartFreshEntryPoint.completedInstallationAdvancedReset,
+      );
+
+      expect(
+        result.verifiedState.kind,
+        MessageLensInstallationStateKind.virgin,
+      );
+      expect(resetService.callCount, 1);
+    },
+  );
+
+  test(
     'failed derived reset releases authority and remains retryable',
     () async {
       final fixture = await TestArchiveFixture.create(
@@ -228,11 +292,6 @@ final class _FakeResetService implements MessageDataResetService {
 
   @override
   Future<void> resetDerivedData() async {
-    throw UnsupportedError('not used');
-  }
-
-  @override
-  Future<void> confirmResetAndPrepareReimport() async {
     throw UnsupportedError('not used');
   }
 }

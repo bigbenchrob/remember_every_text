@@ -26,7 +26,8 @@ void main() {
 
         expect(payload, isA<SettingsInfoActionsCassettePayload>());
         expect(payload.title, 'Reset Message Data');
-        expect(payload.bodyText, contains('confirmation dialog'));
+        expect(payload.bodyText, contains('Start Fresh'));
+        expect(payload.bodyText, contains('archived attachments'));
         expect(payload.actions, hasLength(1));
         expect(payload.actions.single.label, 'Reset message data…');
         expect(payload.actions.single.intent, isA<ResetMessageDataRequested>());
