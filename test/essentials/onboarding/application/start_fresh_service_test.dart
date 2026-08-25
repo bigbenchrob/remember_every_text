@@ -22,6 +22,7 @@ import '../../../test_support/test_archive_fixture.dart';
 
 void main() {
   test('Start Fresh runs under authority and verifies virgin state', () async {
+    final trace = <String>[];
     final fixture = await TestArchiveFixture.create(
       prefix: 'start_fresh_service_test_',
     );
@@ -44,7 +45,11 @@ void main() {
     );
     await operationController.initialize();
     addTearDown(operationController.dispose);
-    final resetService = _FakeResetService();
+    final resetService = _FakeResetService(
+      onReset: () {
+        trace.add('reset-began');
+      },
+    );
     final failureStore = _FakeFailureStore();
     const evidenceReader = _VirginEvidenceReader();
     var refreshCount = 0;
@@ -53,18 +58,23 @@ void main() {
       archiveRootPath: fixture.root.path,
       requiredSourcesScheduleId: 42,
       readCurrentState: () async {
+        trace.add('installation-state-read');
         return const MessageLensInstallationState(
           kind: MessageLensInstallationStateKind.abandoned,
           reason: 'test abandoned state',
         );
       },
       runWithMutationAuthority: (action) {
+        trace.add('mutation-admission-requested');
         return container
             .read(archiveMutationCoordinatorProvider.notifier)
             .runWithCapability<StartFreshResult>(
               operation: ArchiveMutationOperation.startFresh,
               ownerLabel: 'test-start-fresh',
-              action: action,
+              action: (capability) async {
+                trace.add('mutation-admitted');
+                return action(capability);
+              },
             );
       },
       messageDataResetService: resetService,
@@ -74,6 +84,7 @@ void main() {
       evidenceReader: evidenceReader,
       classifier: const MessageLensInstallationStateClassifier(),
       refreshAfterReset: () {
+        trace.add('onboarding-refresh-requested');
         refreshCount += 1;
       },
     );
@@ -86,6 +97,13 @@ void main() {
     expect(failureStore.graphClearCount, 1);
     expect(snapshotStore.saved.single.status, OnboardingOperationStatus.idle);
     expect(refreshCount, 1);
+    expect(trace, [
+      'installation-state-read',
+      'mutation-admission-requested',
+      'mutation-admitted',
+      'reset-began',
+      'onboarding-refresh-requested',
+    ]);
     expect(
       container.read(archiveMutationCoordinatorProvider).isLocked,
       isFalse,
@@ -275,6 +293,9 @@ final class _MemorySnapshotStore implements OnboardingOperationSnapshotStore {
 }
 
 final class _FakeResetService implements MessageDataResetService {
+  _FakeResetService({this.onReset});
+
+  final void Function()? onReset;
   int callCount = 0;
   Object? failure;
 
@@ -284,6 +305,7 @@ final class _FakeResetService implements MessageDataResetService {
   ) async {
     capability.requireOperation(ArchiveMutationOperation.startFresh);
     callCount += 1;
+    onReset?.call();
     final currentFailure = failure;
     if (currentFailure != null) {
       throw currentFailure;
