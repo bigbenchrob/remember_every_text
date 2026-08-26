@@ -105,7 +105,7 @@ final class StartFreshServiceImpl implements StartFreshService {
       await messageDataResetService.resetDerivedDataForStartFresh(capability);
 
       final verifiedState = classifier.classify(
-        evidenceReader.read(
+        await evidenceReader.read(
           archiveRootPath: archiveRootPath,
           operationSnapshot: operationController.current,
         ),

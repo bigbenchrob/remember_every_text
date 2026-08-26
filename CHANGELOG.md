@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Installation-state integrity and topology inspection now runs outside the
+  Flutter UI isolate. Startup can render progress while inspecting a large
+  archive, and Settings can show Start Fresh confirmation immediately from the
+  already-established completed state; the service still performs a fresh
+  authoritative classification before mutation.
+
 - Advanced Start Fresh now resets the required-sources Presence run through
   Onboarding's executable repository composition, preserving its concrete Test
   Agent bindings. Completed installations no longer fail before derived-data

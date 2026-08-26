@@ -371,10 +371,10 @@ final class _VirginEvidenceReader
   const _VirginEvidenceReader();
 
   @override
-  MessageLensInstallationEvidence read({
+  Future<MessageLensInstallationEvidence> read({
     required String archiveRootPath,
     required OnboardingOperationSnapshot operationSnapshot,
-  }) {
+  }) async {
     return MessageLensInstallationEvidence(
       sourceScopedImport: const InstallationDatabaseEvidence.absent(),
       conversationGraph: const InstallationDatabaseEvidence.absent(),

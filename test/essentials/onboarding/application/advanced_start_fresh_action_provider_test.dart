@@ -23,11 +23,18 @@ void main() {
     'Settings confirmation visibly owns presentation before reset begins',
     (tester) async {
       final trace = <String>[];
+      var installationStateReadCount = 0;
       final service = _RecordingStartFreshService(trace: trace);
       late ProviderContainer container;
       await tester.pumpWidget(
         ProviderScope(
-          overrides: _overrides(service: service, trace: trace),
+          overrides: _overrides(
+            service: service,
+            trace: trace,
+            onInstallationStateRead: () {
+              installationStateReadCount += 1;
+            },
+          ),
           child: Builder(
             builder: (context) {
               container = ProviderScope.containerOf(context);
@@ -47,6 +54,8 @@ void main() {
         ),
       );
 
+      await container.read(messageLensInstallationStateProvider.future);
+      expect(installationStateReadCount, 1);
       expect(container.exists(advancedStartFreshActionProvider), isFalse);
       await _openAndAcceptAuthorization(tester);
 
@@ -68,6 +77,7 @@ void main() {
       expect(service.entryPoints, [
         StartFreshEntryPoint.completedInstallationAdvancedReset,
       ]);
+      expect(installationStateReadCount, 1);
       expect(trace, [
         'preparing-host-built',
         'service-resolved',
@@ -153,9 +163,11 @@ void main() {
 List<Override> _overrides({
   required _RecordingStartFreshService service,
   List<String>? trace,
+  VoidCallback? onInstallationStateRead,
 }) {
   return [
     messageLensInstallationStateProvider.overrideWith((ref) async {
+      onInstallationStateRead?.call();
       return _completedState;
     }),
     startFreshServiceProvider.overrideWith((ref) async {

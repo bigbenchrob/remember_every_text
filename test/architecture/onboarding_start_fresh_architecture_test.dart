@@ -71,6 +71,28 @@ void main() {
     expect(shell, contains('AdvancedStartFreshOverlayHost'));
   });
 
+  test('installation evidence inspection cannot block the Flutter isolate', () {
+    final contract = File(
+      'lib/essentials/onboarding/application/'
+      'message_lens_installation_evidence_reader.dart',
+    ).readAsStringSync();
+    final reader = File(
+      'lib/essentials/onboarding/infrastructure/persistence/'
+      'sqlite_message_lens_installation_evidence_reader.dart',
+    ).readAsStringSync();
+    final advancedActionProvider = File(
+      'lib/essentials/onboarding/application/'
+      'advanced_start_fresh_action_provider.dart',
+    ).readAsStringSync();
+
+    expect(contract, contains('Future<MessageLensInstallationEvidence> read'));
+    expect(reader, contains('Isolate.run'));
+    expect(
+      advancedActionProvider,
+      isNot(contains('ref.invalidate(messageLensInstallationStateProvider)')),
+    );
+  });
+
   test('Start Fresh reuses the executable Onboarding Presence composition', () {
     final provider = File(
       'lib/essentials/onboarding/application/start_fresh_service_provider.dart',

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +8,7 @@ import 'package:remember_this_text/essentials/onboarding/infrastructure/persiste
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
-  test('reads completion evidence without mutating canonical stores', () {
+  test('reads completion evidence without mutating canonical stores', () async {
     final root = Directory.systemTemp.createTempSync(
       'messagelens-installation-evidence-',
     );
@@ -35,7 +36,7 @@ void main() {
     );
 
     const reader = SqliteMessageLensInstallationEvidenceReader();
-    final evidence = reader.read(
+    final evidence = await reader.read(
       archiveRootPath: root.path,
       operationSnapshot: const OnboardingOperationSnapshot.idle(),
     );
@@ -51,26 +52,81 @@ void main() {
     expect(evidence.presence.isUsable, isTrue);
   });
 
-  test('reports unsupported or malformed preservation store as unusable', () {
-    final root = Directory.systemTemp.createTempSync(
-      'messagelens-installation-evidence-bad-',
-    );
-    addTearDown(() {
-      root.deleteSync(recursive: true);
-    });
-    File(
-      appDatabasePath(AppDatabaseFile.overlay, databaseDirectory: root.path),
-    ).writeAsStringSync('not sqlite');
+  test(
+    'reports unsupported or malformed preservation store as unusable',
+    () async {
+      final root = Directory.systemTemp.createTempSync(
+        'messagelens-installation-evidence-bad-',
+      );
+      addTearDown(() {
+        root.deleteSync(recursive: true);
+      });
+      File(
+        appDatabasePath(AppDatabaseFile.overlay, databaseDirectory: root.path),
+      ).writeAsStringSync('not sqlite');
 
-    final evidence = const SqliteMessageLensInstallationEvidenceReader().read(
-      archiveRootPath: root.path,
-      operationSnapshot: const OnboardingOperationSnapshot.idle(),
-    );
+      final evidence = await const SqliteMessageLensInstallationEvidenceReader()
+          .read(
+            archiveRootPath: root.path,
+            operationSnapshot: const OnboardingOperationSnapshot.idle(),
+          );
 
-    expect(evidence.overlay.exists, isTrue);
-    expect(evidence.overlay.isUsable, isFalse);
-    expect(evidence.overlay.failure, isNotNull);
-  });
+      expect(evidence.overlay.exists, isTrue);
+      expect(evidence.overlay.isUsable, isFalse);
+      expect(evidence.overlay.failure, isNotNull);
+    },
+  );
+
+  test(
+    'keeps the caller event loop responsive during SQLite contention',
+    () async {
+      final root = Directory.systemTemp.createTempSync(
+        'messagelens-installation-evidence-contention-',
+      );
+      addTearDown(() {
+        root.deleteSync(recursive: true);
+      });
+
+      _createImportDatabase(
+        appDatabasePath(
+          AppDatabaseFile.sourceScopedImport,
+          databaseDirectory: root.path,
+        ),
+      );
+      final graphPath = appDatabasePath(
+        AppDatabaseFile.conversationGraph,
+        databaseDirectory: root.path,
+      );
+      _createGraphDatabase(graphPath);
+      _createOverlayDatabase(
+        appDatabasePath(AppDatabaseFile.overlay, databaseDirectory: root.path),
+      );
+      _createPresenceDatabase(
+        appDatabasePath(AppDatabaseFile.presence, databaseDirectory: root.path),
+      );
+
+      final blocker = sqlite3.open(graphPath);
+      addTearDown(blocker.dispose);
+      blocker.execute('BEGIN EXCLUSIVE;');
+
+      final lockReleased = Completer<void>();
+      Timer(const Duration(milliseconds: 100), () {
+        blocker.execute('ROLLBACK;');
+        lockReleased.complete();
+      });
+
+      final evidenceFuture = const SqliteMessageLensInstallationEvidenceReader()
+          .read(
+            archiveRootPath: root.path,
+            operationSnapshot: const OnboardingOperationSnapshot.idle(),
+          );
+
+      await lockReleased.future.timeout(const Duration(seconds: 1));
+      final evidence = await evidenceFuture;
+
+      expect(evidence.conversationGraph.isUsable, isTrue);
+    },
+  );
 }
 
 void _createImportDatabase(String path) {

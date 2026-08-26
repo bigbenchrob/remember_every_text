@@ -16,7 +16,10 @@ part 'advanced_start_fresh_action_provider.g.dart';
 AdvancedStartFreshAction advancedStartFreshAction(Ref ref) {
   return AdvancedStartFreshActionImpl(
     readInstallationState: () {
-      ref.invalidate(messageLensInstallationStateProvider);
+      // Startup already established completed-installation eligibility. Reuse
+      // that result so opening the confirmation cannot repeat the full archive
+      // inspection. StartFreshService performs the fresh authoritative read
+      // immediately before requesting mutation admission.
       return ref.read(messageLensInstallationStateProvider.future);
     },
     requestAuthorization: () async {

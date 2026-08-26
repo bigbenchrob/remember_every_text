@@ -292,7 +292,6 @@ const Set<String> _unawaitedAllowedFiles = {
 
 const Set<String> _providerInvalidationAllowedFiles = {
   'lib/essentials/conversation_graph/application/status/conversation_graph_status_sheet_actions_provider.dart',
-  'lib/essentials/onboarding/application/advanced_start_fresh_action_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
   'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
   'lib/essentials/onboarding/application/start_fresh_service_provider.dart',

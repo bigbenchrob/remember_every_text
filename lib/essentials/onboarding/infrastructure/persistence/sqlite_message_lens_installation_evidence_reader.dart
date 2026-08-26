@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:sqlite3/sqlite3.dart';
 
@@ -19,7 +20,19 @@ final class SqliteMessageLensInstallationEvidenceReader
   static const int _currentPresenceSchemaVersion = 9;
 
   @override
-  MessageLensInstallationEvidence read({
+  Future<MessageLensInstallationEvidence> read({
+    required String archiveRootPath,
+    required OnboardingOperationSnapshot operationSnapshot,
+  }) {
+    return Isolate.run(
+      () => _readSynchronously(
+        archiveRootPath: archiveRootPath,
+        operationSnapshot: operationSnapshot,
+      ),
+    );
+  }
+
+  MessageLensInstallationEvidence _readSynchronously({
     required String archiveRootPath,
     required OnboardingOperationSnapshot operationSnapshot,
   }) {
