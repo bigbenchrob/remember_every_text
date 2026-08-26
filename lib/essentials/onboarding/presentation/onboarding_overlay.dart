@@ -14,11 +14,13 @@ import '../../logging/feature_level_providers.dart'
     show diagnosticReportExporterProvider;
 import '../application/onboarding_environment_report_provider.dart';
 import '../application/onboarding_gate_provider.dart';
+import '../application/onboarding_journey_coordinator_provider.dart';
 import '../application/onboarding_operation_snapshot_provider.dart';
 import '../application/onboarding_overlay_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
 import '../domain/onboarding_operation_snapshot.dart';
 import '../domain/onboarding_status.dart';
+import 'onboarding_journey_path.dart';
 
 /// Full-window blocking overlay for Onboarding-owned operational phases.
 ///
@@ -36,6 +38,7 @@ class OnboardingOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(onboardingGateProvider);
+    final journey = ref.watch(onboardingJourneyCoordinatorProvider);
     final report = ref.watch(onboardingEnvironmentReportProvider).valueOrNull;
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
@@ -70,65 +73,69 @@ class OnboardingOverlay extends ConsumerWidget {
                   ),
                 ],
               ),
-              child: switch (status) {
-                OnboardingStatus.recoveringFailedAttempt => _RecoveryContent(
-                  colors: colors,
-                  typography: typography,
-                ),
-                OnboardingStatus.preparationFailed => _WelcomeContent(
-                  report: report,
-                  colors: colors,
-                  typography: typography,
-                  presentationOverride: _preparationFailurePresentation,
-                  showEnvironmentSummary: false,
-                ),
-                OnboardingStatus.awaitingFda => OnboardingFdaContent(
-                  report: report,
-                  colors: colors,
-                  typography: typography,
-                  openSettings: () async {
-                    await ref
-                        .read(onboardingOverlayActionsProvider.notifier)
-                        .openFullDiskAccessSettings();
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  OnboardingJourneyPath(journey: journey),
+                  switch (status) {
+                    OnboardingStatus.recoveringFailedAttempt =>
+                      _RecoveryContent(colors: colors, typography: typography),
+                    OnboardingStatus.preparationFailed => _WelcomeContent(
+                      report: report,
+                      colors: colors,
+                      typography: typography,
+                      presentationOverride: _preparationFailurePresentation,
+                      showEnvironmentSummary: false,
+                    ),
+                    OnboardingStatus.awaitingFda => OnboardingFdaContent(
+                      report: report,
+                      colors: colors,
+                      typography: typography,
+                      openSettings: () async {
+                        await ref
+                            .read(onboardingOverlayActionsProvider.notifier)
+                            .openFullDiskAccessSettings();
+                      },
+                      recheckEnvironment: () {
+                        ref
+                            .read(onboardingOverlayActionsProvider.notifier)
+                            .recheckEnvironment();
+                      },
+                    ),
+                    OnboardingStatus.awaitingUserAction => _WelcomeContent(
+                      report: report,
+                      colors: colors,
+                      typography: typography,
+                    ),
+                    OnboardingStatus.importing ||
+                    OnboardingStatus.buildingGraph ||
+                    OnboardingStatus.reimporting ||
+                    OnboardingStatus.reimportBuildingGraph => _ProgressContent(
+                      colors: colors,
+                      typography: typography,
+                      isPreparingFirstRun: status == OnboardingStatus.importing,
+                      isReimport:
+                          status == OnboardingStatus.reimporting ||
+                          status == OnboardingStatus.reimportBuildingGraph,
+                    ),
+                    OnboardingStatus.complete => _CompleteContent(
+                      colors: colors,
+                      typography: typography,
+                      title: 'You’re ready to start',
+                      body: 'Your local MessageLens browsing data is prepared.',
+                      dismissLabel: 'OK',
+                    ),
+                    OnboardingStatus.reimportComplete => _CompleteContent(
+                      colors: colors,
+                      typography: typography,
+                      title: 'MessageLens is ready',
+                      body: 'Your local browsing data is prepared.',
+                      dismissLabel: 'Done',
+                    ),
+                    OnboardingStatus.notNeeded => const SizedBox.shrink(),
                   },
-                  recheckEnvironment: () {
-                    ref
-                        .read(onboardingOverlayActionsProvider.notifier)
-                        .recheckEnvironment();
-                  },
-                ),
-                OnboardingStatus.awaitingUserAction => _WelcomeContent(
-                  report: report,
-                  colors: colors,
-                  typography: typography,
-                ),
-                OnboardingStatus.importing ||
-                OnboardingStatus.buildingGraph ||
-                OnboardingStatus.reimporting ||
-                OnboardingStatus.reimportBuildingGraph => _ProgressContent(
-                  colors: colors,
-                  typography: typography,
-                  isPreparingFirstRun: status == OnboardingStatus.importing,
-                  isReimport:
-                      status == OnboardingStatus.reimporting ||
-                      status == OnboardingStatus.reimportBuildingGraph,
-                ),
-                OnboardingStatus.complete => _CompleteContent(
-                  colors: colors,
-                  typography: typography,
-                  title: 'You’re ready to start',
-                  body: 'Your local MessageLens browsing data is prepared.',
-                  dismissLabel: 'OK',
-                ),
-                OnboardingStatus.reimportComplete => _CompleteContent(
-                  colors: colors,
-                  typography: typography,
-                  title: 'MessageLens is ready',
-                  body: 'Your local browsing data is prepared.',
-                  dismissLabel: 'Done',
-                ),
-                OnboardingStatus.notNeeded => const SizedBox.shrink(),
-              },
+                ],
+              ),
             ),
           ),
         ),

@@ -25,4 +25,35 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Start Fresh'), findsOneWidget);
   });
+
+  testWidgets('uses the caller-supplied onboarding canvas as its barrier', (
+    tester,
+  ) async {
+    const barrierColor = Color(0xFFE7EAEC);
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) {
+              return TextButton(
+                onPressed: () {
+                  showStartFreshAuthorizationDialog(
+                    context,
+                    barrierColor: barrierColor,
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    final barriers = tester.widgetList<ModalBarrier>(find.byType(ModalBarrier));
+    expect(barriers.any((barrier) => barrier.color == barrierColor), isTrue);
+  });
 }

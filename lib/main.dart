@@ -418,9 +418,11 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
     }
 
     _dialogShown = true;
+    final colors = ref.read(themeColorsProvider.notifier);
     final action = await showDialog<_StartupDialogAction>(
       context: context,
       barrierDismissible: false,
+      barrierColor: colors.surfaces.canvas,
       builder: (_) {
         return _StartupResetConfirmationDialog(
           installationState: widget.installationState,
@@ -451,7 +453,11 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
   }
 
   Future<void> _confirmAndStartFresh() async {
-    final confirmed = await showStartFreshAuthorizationDialog(context);
+    final colors = ref.read(themeColorsProvider.notifier);
+    final confirmed = await showStartFreshAuthorizationDialog(
+      context,
+      barrierColor: colors.surfaces.canvas,
+    );
     if (!mounted) {
       return;
     }

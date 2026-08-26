@@ -11,6 +11,7 @@ import '../../../../essentials/logging/feature_level_providers.dart'
 import '../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
 import '../../../../essentials/onboarding/feature_level_providers.dart'
     show onboardingDevOverridesProvider, onboardingJourneyCoordinatorProvider;
+import '../../../../essentials/onboarding/presentation/onboarding_journey_path.dart';
 import '../../application/environment_readiness_actions_provider.dart';
 import '../../application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import '../../domain/entities/environment_readiness_surface_view_model.dart';
@@ -32,33 +33,29 @@ class _EnvironmentReadinessPanelViewState
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final report = ref
-        .watch(onboardingJourneyCoordinatorProvider)
-        .evidence
-        ?.report;
+    final journey = ref.watch(onboardingJourneyCoordinatorProvider);
+    final report = journey.evidence?.report;
     final surface = ref.watch(environmentReadinessSurfaceProvider);
 
     return ColoredBox(
       color: colors.surfaces.canvas,
       child: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Expanded(
-                        child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  OnboardingJourneyPath(journey: journey),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, contentConstraints) {
+                        return SingleChildScrollView(
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
-                              minHeight: (constraints.maxHeight - 56).clamp(
-                                0,
-                                double.infinity,
-                              ),
+                              minHeight: contentConstraints.maxHeight,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -88,14 +85,14 @@ class _EnvironmentReadinessPanelViewState
                               ],
                             ),
                           ),
-                        ),
-                      ),
-                    ],
+                        );
+                      },
+                    ),
                   ),
-                ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );

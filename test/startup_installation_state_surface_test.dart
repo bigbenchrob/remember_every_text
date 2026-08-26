@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/message_lens_installation_state.dart';
 import 'package:remember_this_text/essentials/onboarding/feature_level_providers.dart'
     show messageLensInstallationStateProvider;
@@ -29,6 +31,15 @@ void main() {
     expect(find.text("This MessageLens setup wasn't completed"), findsOne);
     expect(find.text('Start Fresh'), findsOne);
     expect(find.text('Delete MessageLens App Data'), findsNothing);
+    final context = tester.element(find.byType(StartupApp));
+    final colors = ProviderScope.containerOf(
+      context,
+    ).read(themeColorsProvider.notifier);
+    final barriers = tester.widgetList<ModalBarrier>(find.byType(ModalBarrier));
+    expect(
+      barriers.any((barrier) => barrier.color == colors.surfaces.canvas),
+      isTrue,
+    );
   });
 
   testWidgets('completed installation option surface does not offer reset', (

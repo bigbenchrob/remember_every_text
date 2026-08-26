@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'package:remember_this_text/essentials/archive_environment/domain.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart';
@@ -131,6 +134,71 @@ void main() {
       );
     });
 
+    testWidgets(
+      'import presentation owns the Journey before mutation admission',
+      (tester) async {
+        final reports = _MutableReportSource(
+          _report(
+            state: OnboardingEnvironmentState.readyToImport,
+            blockerKind: OnboardingBlockerKind.none,
+          ),
+        );
+        final mutationCoordinator = _HeldArchiveMutationCoordinator();
+        final container = ProviderContainer(
+          overrides: <Override>[
+            onboardingEnvironmentReportProvider.overrideWith(
+              (ref) async => reports.current,
+            ),
+            archiveMutationCoordinatorProvider.overrideWith(
+              () => mutationCoordinator,
+            ),
+            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+          ],
+        );
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const SizedBox(),
+          ),
+        );
+        await container.read(onboardingEnvironmentReportProvider.future);
+        container.read(onboardingJourneyCoordinatorProvider);
+        await tester.pump();
+
+        final seenStatuses = <OnboardingStatus>[];
+        final subscription = container.listen<OnboardingStatus>(
+          onboardingJourneyCoordinatorProvider.select(
+            (journey) => journey.compatibilityStatus,
+          ),
+          (_, next) {
+            seenStatuses.add(next);
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        final import = container
+            .read(onboardingJourneyCoordinatorProvider.notifier)
+            .startImportAndGraphBuild();
+
+        expect(
+          container.read(onboardingJourneyCoordinatorProvider),
+          isA<OnboardingPreparingImport>(),
+        );
+        expect(mutationCoordinator.admissionRequested, isFalse);
+        expect(seenStatuses, <OnboardingStatus>[
+          OnboardingStatus.awaitingUserAction,
+          OnboardingStatus.importing,
+        ]);
+
+        await tester.pump();
+        expect(mutationCoordinator.admissionRequested, isTrue);
+        mutationCoordinator.releaseAdmission.complete();
+        await import;
+      },
+    );
+
     test(
       'invalidated stale evidence cannot replace a newer observation',
       () async {
@@ -253,6 +321,27 @@ final class _MutableReportSource {
   _MutableReportSource(this.current);
 
   OnboardingEnvironmentReport current;
+}
+
+final class _HeldArchiveMutationCoordinator extends ArchiveMutationCoordinator {
+  bool admissionRequested = false;
+  final releaseAdmission = Completer<void>();
+
+  @override
+  ArchiveMutationCoordinatorState build() {
+    return const ArchiveMutationCoordinatorState();
+  }
+
+  @override
+  Future<T> run<T>({
+    required ArchiveMutationOperation operation,
+    required String ownerLabel,
+    required Future<T> Function() action,
+  }) async {
+    admissionRequested = true;
+    await releaseAdmission.future;
+    throw StateError('test admission released without starting mutation');
+  }
 }
 
 OnboardingEnvironmentReport _report({

@@ -30,6 +30,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Everything is ready'), findsOneWidget);
+    expect(
+      find.byKey(
+        const ValueKey<String>('onboarding-journey-node-ready-current'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Import My Messages'), findsOneWidget);
     expect(
       tester.getBottomLeft(find.text('Import My Messages')).dy,

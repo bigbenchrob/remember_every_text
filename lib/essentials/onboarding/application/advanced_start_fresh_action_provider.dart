@@ -2,6 +2,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../config/theme/colors/theme_colors.dart';
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../navigation/application/app_navigator_key.dart';
 import '../presentation/start_fresh_authorization_dialog.dart';
@@ -29,7 +30,11 @@ AdvancedStartFreshAction advancedStartFreshAction(Ref ref) {
           'Start Fresh authorization requires an active navigator context.',
         );
       }
-      return showStartFreshAuthorizationDialog(context);
+      final colors = ref.read(themeColorsProvider.notifier);
+      return showStartFreshAuthorizationDialog(
+        context,
+        barrierColor: colors.surfaces.canvas,
+      );
     },
     readStartFreshService: () {
       return ref.read(startFreshServiceProvider.future);

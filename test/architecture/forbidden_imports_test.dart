@@ -1231,6 +1231,35 @@ void main() {
       },
     );
 
+    test(
+      'Onboarding Journey path is a terminal coordinator projection',
+      () async {
+        final path = await File(
+          'lib/essentials/onboarding/presentation/'
+          'onboarding_journey_path.dart',
+        ).readAsString();
+        final readinessView = await File(
+          'lib/features/environment_readiness/presentation/view/'
+          'environment_readiness_panel_view.dart',
+        ).readAsString();
+        final overlay = await File(
+          'lib/essentials/onboarding/presentation/onboarding_overlay.dart',
+        ).readAsString();
+
+        expect(path, contains('OnboardingJourneyState journey'));
+        expect(path, contains('projectOnboardingJourneyPath(journey)'));
+        expect(path, isNot(contains('onboardingGateProvider')));
+        expect(path, isNot(contains('onboardingOperationSnapshotProvider')));
+        expect(path, isNot(contains('onboardingEnvironmentReportProvider')));
+        expect(path, isNot(contains('StatefulWidget')));
+        expect(
+          readinessView,
+          contains('OnboardingJourneyPath(journey: journey)'),
+        );
+        expect(overlay, contains('OnboardingJourneyPath(journey: journey)'));
+      },
+    );
+
     test('permanent Presence runner remains workflow agnostic', () async {
       final source = await File(
         'lib/essentials/presence/presentation/presence_runner.dart',

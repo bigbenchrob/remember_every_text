@@ -5706,3 +5706,14 @@ production preservation authority mechanically enforceable.
   and the read-only Gate compatibility seam.
 - Updated the canonical Onboarding and Environment Readiness guides and the
   Feature 28 index.
+
+## 2026-08-26 - Live Onboarding Journey path
+
+- Recorded the seven-node Messages, History, Contacts, Ready, Import, Verify,
+  and Start projection of the typed Onboarding Journey.
+- Codified coordinator-only authority, truthful backward movement, import-node
+  stability, terminal disappearance, accessible narration, and reduced-motion
+  behavior.
+- Documented the Track audit: full-window Onboarding has no peer columns, so
+  its shallow fixed path is a native presentation region rather than a
+  semantically false `PageTrackLayoutMatrix`.

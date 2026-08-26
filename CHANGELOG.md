@@ -10,6 +10,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- First-run setup now includes a compact live Journey path for Messages,
+  history, Contacts, readiness, import, verification, and handoff. It follows
+  only the typed Onboarding coordinator, moves backward when prerequisite
+  evidence regresses, remains stable during record-level import progress, and
+  disappears before normal navigation is revealed.
+
+- First-run import now takes visible Journey and sidebar ownership before
+  requesting archive-mutation admission, preventing the normal sidebar from
+  briefly reopening as maintenance begins. Startup recovery and Start Fresh
+  authorization dialogs now use the same light canvas as the subsequent
+  onboarding journey instead of a dark surrounding field.
+
 - Onboarding now derives exactly one typed prerequisite, operation, or terminal
   Episode through `OnboardingJourneyCoordinator`. Returning from System
   Settings, dismissing a dialog, or rebuilding a provider cannot independently

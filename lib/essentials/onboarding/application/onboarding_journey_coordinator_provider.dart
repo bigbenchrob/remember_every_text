@@ -343,13 +343,41 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
       return;
     }
 
-    final operationId = await ref
-        .read(archiveMutationCoordinatorProvider.notifier)
-        .run<OnboardingOperationId?>(
-          operation: ArchiveMutationOperation.onboardingImport,
-          ownerLabel: 'onboarding-first-run',
-          action: _startImportAndGraphBuild,
-        );
+    // A known missing source permission is a prerequisite Episode, not import
+    // preparation. The admitted action repeats this proof to cover revocation
+    // after the presentation frame but before source access.
+    if (!ref.read(onboardingFullDiskAccessProvider)) {
+      _clearWorkflowOverride();
+      _publishStatus(
+        OnboardingStatus.awaitingFda,
+        reason: 'Messages source proof failed before import presentation',
+      );
+      return;
+    }
+
+    // First-run presentation ownership must be established before mutation
+    // admission activates maintenance state. Otherwise readiness can briefly
+    // project normal-application state and reveal the normal sidebar.
+    _setWorkflowOverride(OnboardingStatus.importing);
+    await _waitForEndOfFrame();
+
+    final OnboardingOperationId? operationId;
+    try {
+      operationId = await ref
+          .read(archiveMutationCoordinatorProvider.notifier)
+          .run<OnboardingOperationId?>(
+            operation: ArchiveMutationOperation.onboardingImport,
+            ownerLabel: 'onboarding-first-run',
+            action: _startImportAndGraphBuild,
+          );
+    } catch (error, stackTrace) {
+      _enterPreparationFailure(
+        error: error,
+        stackTrace: stackTrace,
+        logMessage: 'Fresh onboarding mutation admission failed',
+      );
+      return;
+    }
     if (operationId == null) {
       return;
     }
@@ -393,8 +421,6 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
       initialStage: OnboardingOperationStage.environmentPreparation,
     );
 
-    _setWorkflowOverride(OnboardingStatus.importing);
-    await _waitForEndOfFrame();
     try {
       await operationController.runStage<void>(
         operationId: operationId,

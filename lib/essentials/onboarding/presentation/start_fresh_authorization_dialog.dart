@@ -4,10 +4,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../config/theme/colors/theme_colors.dart';
 import '../../../config/theme/theme_typography.dart';
 
-Future<bool> showStartFreshAuthorizationDialog(BuildContext context) async {
+Future<bool> showStartFreshAuthorizationDialog(
+  BuildContext context, {
+  required Color barrierColor,
+}) async {
   final result = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
+    barrierColor: barrierColor,
     builder: (_) {
       return const StartFreshAuthorizationDialog();
     },

@@ -8,8 +8,10 @@ import 'package:remember_this_text/essentials/conversation_graph/application/con
 import 'package:remember_this_text/essentials/conversation_graph/application/messages/message_projection_repository.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
+import 'package:remember_this_text/essentials/onboarding/domain/onboarding_journey_state.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_operation_snapshot.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
 import 'package:remember_this_text/essentials/onboarding/presentation/onboarding_overlay.dart';
@@ -188,6 +190,12 @@ void main() {
     );
 
     expect(find.text('Preparing setup…'), findsOneWidget);
+    expect(
+      find.byKey(
+        const ValueKey<String>('onboarding-journey-node-import-current'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Browsing data ready'), findsNothing);
     _expectTruthfulActiveProgress(tester);
   });
@@ -215,11 +223,18 @@ void main() {
   testWidgets('first-run completion presents a calm readiness handoff', (
     tester,
   ) async {
-    final gate = _FixedStatusOnboardingGate(OnboardingStatus.complete);
+    final journeyCoordinator = _FixedJourneyCoordinator(
+      const OnboardingReadyToStart(occurrence: 1),
+    );
+    final gate = _FixedStatusOnboardingGate(
+      OnboardingStatus.complete,
+      onDismiss: journeyCoordinator.releaseFirstRunOwnership,
+    );
     await _pumpProgressOverlay(
       tester,
       status: OnboardingStatus.complete,
       gate: gate,
+      journeyCoordinator: journeyCoordinator,
       graphBuildState: _successfulGraphBuildState(),
     );
 
@@ -228,10 +243,18 @@ void main() {
       body: 'Your local MessageLens browsing data is prepared.',
       actionLabel: 'OK',
     );
+    expect(
+      find.byKey(
+        const ValueKey<String>('onboarding-journey-node-start-current'),
+      ),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('OK'));
+    await tester.pump();
 
     expect(gate.dismissCallCount, 1);
+    expect(find.byKey(const Key('onboarding-journey-path')), findsNothing);
   });
 
   testWidgets('direct reimport completion reuses the calm readiness handoff', (
@@ -250,6 +273,7 @@ void main() {
       body: 'Your local browsing data is prepared.',
       actionLabel: 'Done',
     );
+    expect(find.byKey(const Key('onboarding-journey-path')), findsNothing);
 
     await tester.tap(find.text('Done'));
 
@@ -341,6 +365,7 @@ Future<void> _pumpProgressOverlay(
   WidgetTester tester, {
   required OnboardingStatus status,
   _FixedStatusOnboardingGate? gate,
+  _FixedJourneyCoordinator? journeyCoordinator,
   ConversationGraphBuildState? graphBuildState,
   OnboardingOperationSnapshot? operationSnapshot,
 }) async {
@@ -356,6 +381,11 @@ Future<void> _pumpProgressOverlay(
       overrides: <Override>[
         onboardingGateProvider.overrideWith(
           () => gate ?? _FixedStatusOnboardingGate(status),
+        ),
+        onboardingJourneyCoordinatorProvider.overrideWith(
+          () =>
+              journeyCoordinator ??
+              _FixedJourneyCoordinator(_journeyForStatus(status)),
         ),
         conversationGraphBuildControllerProvider.overrideWith(
           () => _FixedConversationGraphBuildController(resolvedGraphBuildState),
@@ -409,6 +439,11 @@ Future<void> _pumpRecoveryOverlay(
         onboardingGateProvider.overrideWith(
           () => _FixedStatusOnboardingGate(
             OnboardingStatus.recoveringFailedAttempt,
+          ),
+        ),
+        onboardingJourneyCoordinatorProvider.overrideWith(
+          () => _FixedJourneyCoordinator(
+            const OnboardingRecoveringDerivedData(occurrence: 1),
           ),
         ),
         onboardingEnvironmentReportProvider.overrideWith(
@@ -517,9 +552,10 @@ void _expectNoCancellationControl() {
 }
 
 final class _FixedStatusOnboardingGate extends OnboardingGate {
-  _FixedStatusOnboardingGate(this.status);
+  _FixedStatusOnboardingGate(this.status, {this.onDismiss});
 
   final OnboardingStatus status;
+  final VoidCallback? onDismiss;
   int dismissCallCount = 0;
 
   @override
@@ -530,7 +566,52 @@ final class _FixedStatusOnboardingGate extends OnboardingGate {
   @override
   void dismiss() {
     dismissCallCount += 1;
+    onDismiss?.call();
   }
+}
+
+final class _FixedJourneyCoordinator extends OnboardingJourneyCoordinator {
+  _FixedJourneyCoordinator(this.journey);
+
+  final OnboardingJourneyState journey;
+
+  @override
+  OnboardingJourneyState build() {
+    return journey;
+  }
+
+  void releaseFirstRunOwnership() {
+    state = const OnboardingNormalApplication(occurrence: 2);
+  }
+}
+
+OnboardingJourneyState _journeyForStatus(OnboardingStatus status) {
+  return switch (status) {
+    OnboardingStatus.recoveringFailedAttempt =>
+      const OnboardingRecoveringDerivedData(occurrence: 1),
+    OnboardingStatus.preparationFailed => const OnboardingOperationFailed(
+      occurrence: 1,
+      summary: 'Operation failed.',
+      compatibilityStatus: OnboardingStatus.preparationFailed,
+    ),
+    OnboardingStatus.awaitingFda || OnboardingStatus.awaitingUserAction =>
+      const OnboardingCheckingPrerequisites(occurrence: 1),
+    OnboardingStatus.importing => const OnboardingPreparingImport(
+      occurrence: 1,
+    ),
+    OnboardingStatus.buildingGraph => const OnboardingBuildingLocalData(
+      occurrence: 1,
+    ),
+    OnboardingStatus.complete => const OnboardingReadyToStart(occurrence: 1),
+    OnboardingStatus.notNeeded => const OnboardingNormalApplication(
+      occurrence: 1,
+    ),
+    OnboardingStatus.reimporting || OnboardingStatus.reimportBuildingGraph =>
+      OnboardingReimporting(occurrence: 1, status: status),
+    OnboardingStatus.reimportComplete => const OnboardingReimportReady(
+      occurrence: 1,
+    ),
+  };
 }
 
 final class _FixedConversationGraphBuildController
