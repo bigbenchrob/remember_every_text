@@ -70,9 +70,9 @@ void main() {
       );
       await container.read(onboardingEnvironmentReportProvider.future);
       var surface = container.read(environmentReadinessSurfaceProvider);
-      expect(surface.detail.title, 'Ready To Import');
+      expect(surface.title, 'Everything is ready');
       expect(
-        surface.detail.actions.map((action) => action.kind),
+        surface.actions.map((action) => action.kind),
         contains(EnvironmentReadinessActionKind.startImport),
       );
       container.dispose();
@@ -88,9 +88,9 @@ void main() {
       );
       await container.read(onboardingEnvironmentReportProvider.future);
       surface = container.read(environmentReadinessSurfaceProvider);
-      expect(surface.detail.title, 'Ready To Import');
+      expect(surface.title, 'Everything is ready');
       expect(
-        surface.detail.actions.map((action) => action.kind),
+        surface.actions.map((action) => action.kind),
         contains(EnvironmentReadinessActionKind.startImport),
       );
       container.dispose();
@@ -110,9 +110,9 @@ void main() {
     await container.read(onboardingEnvironmentReportProvider.future);
     final surface = container.read(environmentReadinessSurfaceProvider);
 
-    expect(surface.detail.title, 'Confirm Local Messages History');
+    expect(surface.title, 'Your local Messages history looks incomplete');
     expect(
-      surface.detail.actions.map((action) => action.kind),
+      surface.actions.map((action) => action.kind),
       isNot(contains(EnvironmentReadinessActionKind.startImport)),
     );
   });
@@ -133,9 +133,9 @@ void main() {
       await container.read(onboardingEnvironmentReportProvider.future);
       final surface = container.read(environmentReadinessSurfaceProvider);
 
-      expect(surface.detail.title, 'Ready To Import');
+      expect(surface.title, 'Everything is ready');
       expect(
-        surface.detail.actions.first.kind,
+        surface.actions.first.kind,
         EnvironmentReadinessActionKind.startImport,
       );
     },

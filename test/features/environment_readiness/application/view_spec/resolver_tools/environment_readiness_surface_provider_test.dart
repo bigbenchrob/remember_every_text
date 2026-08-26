@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -18,202 +20,228 @@ void main() {
       container.dispose();
     });
 
+    test('projects provider loading as a calm checking episode', () {
+      container = ProviderContainer(
+        overrides: <Override>[
+          _requiredSourcesAccepted(false),
+          onboardingEnvironmentReportProvider.overrideWith(
+            (ref) => Completer<OnboardingEnvironmentReport>().future,
+          ),
+        ],
+      );
+
+      final surface = container.read(environmentReadinessSurfaceProvider);
+
+      expect(surface.kind, EnvironmentReadinessEpisodeKind.checking);
+      expect(surface.title, 'Checking what MessageLens needs');
+      expect(surface.actions, isEmpty);
+    });
+
+    test('makes Full Disk Access the one prioritized blocker', () async {
+      container = _containerFor(
+        _report(
+          state: OnboardingEnvironmentState.permissionBlocked,
+          blockerKind: OnboardingBlockerKind.fullDiskAccessMissing,
+          hasFullDiskAccess: false,
+        ),
+      );
+
+      final surface = await _surface(container);
+
+      expect(surface.kind, EnvironmentReadinessEpisodeKind.blocked);
+      expect(surface.title, 'MessageLens needs Full Disk Access');
+      expect(surface.instructions, hasLength(3));
+      expect(
+        surface.primaryAction?.kind,
+        EnvironmentReadinessActionKind.openSettings,
+      );
+      expect(
+        surface.evidence.map((item) => item.label),
+        containsAll(<String>['Full Disk Access', 'Messages database']),
+      );
+    });
+
     test(
-      'activates full disk access step when permission is blocked',
+      'prioritizes required Contacts source after earlier checks pass',
       () async {
-        container = ProviderContainer(
-          overrides: [
-            _requiredSourcesAccepted(false),
-            onboardingEnvironmentReportProvider.overrideWith(
-              (ref) async => _report(
-                state: OnboardingEnvironmentState.permissionBlocked,
-                blockerKind: OnboardingBlockerKind.fullDiskAccessMissing,
-                hasFullDiskAccess: false,
-              ),
-            ),
-          ],
+        container = _containerFor(
+          _report(
+            state: OnboardingEnvironmentState.sourceUnavailable,
+            blockerKind: OnboardingBlockerKind.addressBookUnavailable,
+          ),
         );
 
-        await container.read(onboardingEnvironmentReportProvider.future);
-        final surface = container.read(environmentReadinessSurfaceProvider);
+        final surface = await _surface(container);
 
+        expect(surface.kind, EnvironmentReadinessEpisodeKind.blocked);
+        expect(surface.title, 'MessageLens needs local Contacts data');
+        expect(surface.body, contains('current import pipeline'));
         expect(
-          surface.detail.stepKey,
-          EnvironmentReadinessStepKey.fullDiskAccess,
-        );
-        expect(
-          surface.steps.first.status,
-          EnvironmentReadinessStepStatus.active,
-        );
-        expect(
-          surface.detail.actions.first.kind,
-          EnvironmentReadinessActionKind.openSettings,
+          surface.primaryAction?.kind,
+          EnvironmentReadinessActionKind.recheck,
         );
       },
     );
 
-    test('advances to contacts step when earlier checks are healthy', () async {
-      container = ProviderContainer(
-        overrides: [
-          _requiredSourcesAccepted(false),
-          onboardingEnvironmentReportProvider.overrideWith(
-            (ref) async => _report(
-              state: OnboardingEnvironmentState.sourceUnavailable,
-              blockerKind: OnboardingBlockerKind.addressBookUnavailable,
-            ),
+    test(
+      'ready state has one dominant import action and concise evidence',
+      () async {
+        container = _containerFor(
+          _report(
+            state: OnboardingEnvironmentState.readyToImport,
+            blockerKind: OnboardingBlockerKind.none,
+            messageCount: 137373,
           ),
-        ],
-      );
+        );
 
-      await container.read(onboardingEnvironmentReportProvider.future);
-      final surface = container.read(environmentReadinessSurfaceProvider);
+        final surface = await _surface(container);
 
-      expect(
-        surface.detail.stepKey,
-        EnvironmentReadinessStepKey.contactsDatabase,
-      );
-      expect(surface.steps[0].status, EnvironmentReadinessStepStatus.success);
-      expect(surface.steps[1].status, EnvironmentReadinessStepStatus.success);
-      expect(surface.steps[2].status, EnvironmentReadinessStepStatus.active);
-      expect(surface.steps[3].status, EnvironmentReadinessStepStatus.pending);
-    });
+        expect(surface.kind, EnvironmentReadinessEpisodeKind.ready);
+        expect(surface.title, 'Everything is ready');
+        expect(
+          surface.sanityEvidence,
+          'I found 137,373 messages stored on this Mac.',
+        );
+        expect(surface.primaryAction?.label, 'Import My Messages');
+        expect(surface.secondaryActions, isEmpty);
+        expect(
+          surface.actions.map((action) => action.kind),
+          isNot(contains(EnvironmentReadinessActionKind.recheck)),
+        );
+      },
+    );
 
-    test('uses retry copy when import has failed', () async {
-      container = ProviderContainer(
-        overrides: [
-          _requiredSourcesAccepted(false),
-          onboardingEnvironmentReportProvider.overrideWith(
-            (ref) async => _report(
-              state: OnboardingEnvironmentState.importFailed,
-              blockerKind: OnboardingBlockerKind.importFailed,
-            ),
+    test(
+      'accepted sparse-history decision exposes the same import action',
+      () async {
+        container = _containerFor(
+          _report(
+            state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
+            blockerKind: OnboardingBlockerKind.sourceDataSparseOrUnsynced,
           ),
-        ],
-      );
+          requiredSourcesAccepted: true,
+        );
 
-      await container.read(onboardingEnvironmentReportProvider.future);
-      final surface = container.read(environmentReadinessSurfaceProvider);
+        final surface = await _surface(container);
 
-      expect(
-        surface.detail.stepKey,
-        EnvironmentReadinessStepKey.importReadiness,
-      );
-      expect(surface.detail.title, 'Retry Setup');
-      expect(surface.detail.actions.first.label, 'Try Import Again');
-      expect(surface.detail.actions.map((action) => action.kind), [
-        EnvironmentReadinessActionKind.startImport,
-        EnvironmentReadinessActionKind.sendReport,
-        EnvironmentReadinessActionKind.recheck,
-      ]);
-      expect(surface.detail.tone, EnvironmentReadinessTone.warning);
-    });
+        expect(surface.kind, EnvironmentReadinessEpisodeKind.ready);
+        expect(
+          surface.primaryAction?.kind,
+          EnvironmentReadinessActionKind.startImport,
+        );
+      },
+    );
 
-    test('shows normal-use readiness when graph is already ready', () async {
-      container = ProviderContainer(
-        overrides: [
-          _requiredSourcesAccepted(false),
-          onboardingEnvironmentReportProvider.overrideWith(
-            (ref) async => _report(
-              state: OnboardingEnvironmentState.ready,
-              blockerKind: OnboardingBlockerKind.none,
-            ),
+    test(
+      'unaccepted sparse history is honest guidance rather than a claim',
+      () async {
+        container = _containerFor(
+          _report(
+            state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
+            blockerKind: OnboardingBlockerKind.sourceDataSparseOrUnsynced,
           ),
-        ],
-      );
+        );
 
-      await container.read(onboardingEnvironmentReportProvider.future);
-      final surface = container.read(environmentReadinessSurfaceProvider);
+        final surface = await _surface(container);
 
-      expect(
-        surface.detail.stepKey,
-        EnvironmentReadinessStepKey.importReadiness,
-      );
-      expect(surface.detail.title, 'Ready To Use');
-      expect(surface.detail.actions.map((action) => action.kind), [
-        EnvironmentReadinessActionKind.recheck,
-      ]);
-      expect(surface.steps.map((step) => step.status).toSet(), {
-        EnvironmentReadinessStepStatus.success,
-      });
-    });
+        expect(surface.kind, EnvironmentReadinessEpisodeKind.blocked);
+        expect(surface.title, 'Your local Messages history looks incomplete');
+        expect(surface.body, contains('If messages you expect are missing'));
+        expect(
+          surface.body,
+          isNot(contains('MessageLens checked your iPhone')),
+        );
+        expect(
+          surface.actions.map((action) => action.kind),
+          isNot(contains(EnvironmentReadinessActionKind.startImport)),
+        );
+      },
+    );
 
-    test('offers import when sparse source readiness was accepted', () async {
-      container = ProviderContainer(
-        overrides: [
-          _requiredSourcesAccepted(true),
-          onboardingEnvironmentReportProvider.overrideWith(
-            (ref) async => _report(
-              state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
-              blockerKind: OnboardingBlockerKind.sourceDataSparseOrUnsynced,
-            ),
+    test(
+      'inspection failure is distinct from a blocked prerequisite',
+      () async {
+        container = _containerFor(
+          _report(
+            state: OnboardingEnvironmentState.sourceUnavailable,
+            blockerKind: OnboardingBlockerKind.messagesDatabaseMissing,
+            messagesReadable: false,
+            messagesFailure: 'SQLite inspection failed',
           ),
-        ],
-      );
+        );
 
-      await container.read(onboardingEnvironmentReportProvider.future);
-      await container.read(requiredSourcesReadinessAcceptedProvider.future);
-      final surface = container.read(environmentReadinessSurfaceProvider);
+        final surface = await _surface(container);
 
-      expect(
-        surface.activeStepKey,
-        EnvironmentReadinessStepKey.importReadiness,
-      );
-      expect(surface.detail.title, 'Ready To Import');
-      expect(surface.detail.body, contains('limited local Messages history'));
-      expect(surface.detail.actions.map((action) => action.kind), [
-        EnvironmentReadinessActionKind.startImport,
-        EnvironmentReadinessActionKind.recheck,
-      ]);
-    });
+        expect(surface.kind, EnvironmentReadinessEpisodeKind.failed);
+        expect(
+          surface.title,
+          'MessageLens couldn’t check the Messages database',
+        );
+        expect(surface.primaryAction?.label, 'Try Again');
+        expect(
+          surface.actions.map((action) => action.kind),
+          contains(EnvironmentReadinessActionKind.sendReport),
+        );
+      },
+    );
 
-    test('keeps sparse unaccepted source at confirmation', () async {
-      container = ProviderContainer(
-        overrides: [
-          _requiredSourcesAccepted(false),
-          onboardingEnvironmentReportProvider.overrideWith(
-            (ref) async => _report(
-              state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
-              blockerKind: OnboardingBlockerKind.sourceDataSparseOrUnsynced,
-            ),
+    test(
+      'completed installation does not offer another first-run import',
+      () async {
+        container = _containerFor(
+          _report(
+            state: OnboardingEnvironmentState.ready,
+            blockerKind: OnboardingBlockerKind.none,
           ),
-        ],
-      );
+        );
 
-      await container.read(onboardingEnvironmentReportProvider.future);
-      await container.read(requiredSourcesReadinessAcceptedProvider.future);
-      final surface = container.read(environmentReadinessSurfaceProvider);
+        final surface = await _surface(container);
 
-      expect(
-        surface.activeStepKey,
-        EnvironmentReadinessStepKey.messagesDatabase,
-      );
-      expect(surface.detail.title, 'Confirm Local Messages History');
-      expect(surface.detail.actions.map((action) => action.kind), [
-        EnvironmentReadinessActionKind.recheck,
-      ]);
-    });
+        expect(surface.kind, EnvironmentReadinessEpisodeKind.ready);
+        expect(surface.title, 'MessageLens is ready');
+        expect(surface.actions, isEmpty);
+      },
+    );
 
-    test('accepted readiness does not override import failure', () async {
-      container = ProviderContainer(
-        overrides: [
-          _requiredSourcesAccepted(true),
-          onboardingEnvironmentReportProvider.overrideWith(
-            (ref) async => _report(
-              state: OnboardingEnvironmentState.importFailed,
-              blockerKind: OnboardingBlockerKind.importFailed,
-            ),
+    test(
+      'import failure remains retryable even after source acceptance',
+      () async {
+        container = _containerFor(
+          _report(
+            state: OnboardingEnvironmentState.importFailed,
+            blockerKind: OnboardingBlockerKind.importFailed,
           ),
-        ],
-      );
+          requiredSourcesAccepted: true,
+        );
 
-      await container.read(onboardingEnvironmentReportProvider.future);
-      await container.read(requiredSourcesReadinessAcceptedProvider.future);
-      final surface = container.read(environmentReadinessSurfaceProvider);
+        final surface = await _surface(container);
 
-      expect(surface.detail.title, 'Retry Setup');
-      expect(surface.detail.actions.first.label, 'Try Import Again');
-    });
+        expect(surface.kind, EnvironmentReadinessEpisodeKind.failed);
+        expect(surface.title, 'Setup needs another try');
+        expect(surface.primaryAction?.label, 'Try Import Again');
+      },
+    );
   });
+}
+
+ProviderContainer _containerFor(
+  OnboardingEnvironmentReport report, {
+  bool requiredSourcesAccepted = false,
+}) {
+  return ProviderContainer(
+    overrides: <Override>[
+      _requiredSourcesAccepted(requiredSourcesAccepted),
+      onboardingEnvironmentReportProvider.overrideWith((ref) async => report),
+    ],
+  );
+}
+
+Future<EnvironmentReadinessSurfaceViewModel> _surface(
+  ProviderContainer container,
+) async {
+  await container.read(onboardingEnvironmentReportProvider.future);
+  await container.read(requiredSourcesReadinessAcceptedProvider.future);
+  return container.read(environmentReadinessSurfaceProvider);
 }
 
 Override _requiredSourcesAccepted(bool accepted) {
@@ -226,16 +254,20 @@ OnboardingEnvironmentReport _report({
   required OnboardingEnvironmentState state,
   required OnboardingBlockerKind blockerKind,
   bool hasFullDiskAccess = true,
+  bool messagesReadable = true,
+  String? messagesFailure,
+  int messageCount = 100,
 }) {
   return OnboardingEnvironmentReport(
     state: state,
     blockerKind: blockerKind,
     syncPlausibility: OnboardingSyncPlausibility.unknown,
-    messagesDatabase: const OnboardingDatabaseProbe(
+    messagesDatabase: OnboardingDatabaseProbe(
       path: 'messages.db',
       exists: true,
-      readable: true,
-      rowCount: 100,
+      readable: messagesReadable,
+      rowCount: messageCount,
+      failureMessage: messagesFailure,
     ),
     addressBookDatabase: const OnboardingDatabaseProbe(
       path: 'addressbook.db',

@@ -171,7 +171,7 @@ App Start
   │       └─ existing import action → startImportAndGraphBuild()
   │           ├─ importing (source-scoped import/projection begins)
   │           ├─ buildingGraph (conversation graph build running)
-  │           └─ complete (show summary, "Get Started" button)
+  │           └─ complete (verified terminal Episode, "OK" action)
   │
   ├─ environment report → incomplete partial app DBs?
   │   └─ request automatic-recovery mutation authority
@@ -236,6 +236,18 @@ mutation contention remains process-local and silent. The Gate observes the
 coordinator's locked-to-idle transition, invalidates the environment report,
 and consumes only the completed fresh result; it never replays the denied
 report or persists a pending recovery command.
+
+### Normal Sidebar Handoff
+
+First-run Onboarding temporarily closes the canonical `MacosWindow.sidebar`
+through prerequisite checks, import, graph preparation, verification, and the
+terminal `complete` state. This is process/presentation ownership, not a saved
+sidebar preference and not Track geometry.
+
+After durable readiness has already been verified, terminal **OK** changes the
+Gate to `notNeeded`. Navigation then opens the existing sidebar with the native
+`macos_ui` animation and moves focus to the normal mode control. No progress
+percentage, timer, or animation callback can release the sidebar early.
 
 ### Accepted-Readiness Handoff
 

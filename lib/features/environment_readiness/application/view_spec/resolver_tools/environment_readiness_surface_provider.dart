@@ -2,11 +2,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
-import '../../../../../essentials/onboarding/domain/onboarding_status.dart';
 import '../../../../../essentials/onboarding/feature_level_providers.dart'
     show
         onboardingEnvironmentReportProvider,
-        onboardingGateProvider,
         requiredSourcesReadinessAcceptedProvider;
 import '../../../domain/entities/environment_readiness_surface_view_model.dart';
 
@@ -14,251 +12,339 @@ part 'environment_readiness_surface_provider.g.dart';
 
 @riverpod
 EnvironmentReadinessSurfaceViewModel environmentReadinessSurface(Ref ref) {
-  final status = ref.watch(onboardingGateProvider);
-  final report = ref.watch(onboardingEnvironmentReportProvider).valueOrNull;
-  final requiredSourcesAccepted = ref
-      .watch(requiredSourcesReadinessAcceptedProvider)
-      .valueOrNull;
-  final activeStep = _activeStepFor(
-    status: status,
-    report: report,
-    requiredSourcesAccepted: requiredSourcesAccepted ?? false,
+  final reportAsync = ref.watch(onboardingEnvironmentReportProvider);
+  final requiredSourcesAccepted =
+      ref.watch(requiredSourcesReadinessAcceptedProvider).valueOrNull ?? false;
+
+  return reportAsync.when(
+    loading: _checkingSurface,
+    error: (error, _) => _failedSurface(error),
+    data: (report) => _surfaceForReport(
+      report,
+      requiredSourcesAccepted: requiredSourcesAccepted,
+    ),
   );
-  final isReady = report?.state == OnboardingEnvironmentState.ready;
-  final detailsByStep = {
-    for (final step in EnvironmentReadinessStepKey.values)
-      step: _detailFor(
-        activeStep: step,
-        report: report,
-        requiredSourcesAccepted: requiredSourcesAccepted ?? false,
+}
+
+EnvironmentReadinessSurfaceViewModel _checkingSurface() {
+  return const EnvironmentReadinessSurfaceViewModel(
+    kind: EnvironmentReadinessEpisodeKind.checking,
+    title: 'Checking what MessageLens needs',
+    body:
+        'I’m checking the local permissions and data sources needed to prepare your Messages history.',
+    tone: EnvironmentReadinessTone.primary,
+    actions: <EnvironmentReadinessAction>[],
+    evidence: <EnvironmentReadinessEvidence>[],
+  );
+}
+
+EnvironmentReadinessSurfaceViewModel _failedSurface(Object error) {
+  return EnvironmentReadinessSurfaceViewModel(
+    kind: EnvironmentReadinessEpisodeKind.failed,
+    title: 'MessageLens couldn’t check readiness',
+    body:
+        'The readiness inspection did not finish. Nothing has been imported, and you can try the check again.',
+    tone: EnvironmentReadinessTone.failure,
+    actions: const <EnvironmentReadinessAction>[
+      EnvironmentReadinessAction(
+        kind: EnvironmentReadinessActionKind.recheck,
+        label: 'Try Again',
       ),
+    ],
+    evidence: <EnvironmentReadinessEvidence>[
+      EnvironmentReadinessEvidence(
+        label: 'Readiness inspection',
+        value: 'Failed: $error',
+      ),
+    ],
+  );
+}
+
+EnvironmentReadinessSurfaceViewModel _surfaceForReport(
+  OnboardingEnvironmentReport report, {
+  required bool requiredSourcesAccepted,
+}) {
+  final evidence = _evidenceFor(report);
+  if (_isMessagesInspectionFailure(report)) {
+    return EnvironmentReadinessSurfaceViewModel(
+      kind: EnvironmentReadinessEpisodeKind.failed,
+      title: 'MessageLens couldn’t check the Messages database',
+      body:
+          'The local Messages database is present, but this readiness check could not read it reliably.',
+      tone: EnvironmentReadinessTone.failure,
+      actions: const <EnvironmentReadinessAction>[
+        EnvironmentReadinessAction(
+          kind: EnvironmentReadinessActionKind.recheck,
+          label: 'Try Again',
+        ),
+        EnvironmentReadinessAction(
+          kind: EnvironmentReadinessActionKind.sendReport,
+          label: 'Send Report To Developer',
+        ),
+      ],
+      evidence: evidence,
+    );
+  }
+
+  return switch (report.state) {
+    OnboardingEnvironmentState.maintenanceInProgress =>
+      EnvironmentReadinessSurfaceViewModel(
+        kind: EnvironmentReadinessEpisodeKind.checking,
+        title: 'Preparing MessageLens',
+        body:
+            'Message data maintenance is in progress. I’ll continue when the current operation finishes.',
+        tone: EnvironmentReadinessTone.primary,
+        actions: const <EnvironmentReadinessAction>[],
+        evidence: evidence,
+      ),
+    OnboardingEnvironmentState.permissionBlocked => _fdaBlockedSurface(
+      evidence,
+    ),
+    OnboardingEnvironmentState.sourceUnavailable => _sourceBlockedSurface(
+      report,
+      evidence,
+    ),
+    OnboardingEnvironmentState.sourceSparseOrUnsynced =>
+      requiredSourcesAccepted
+          ? _readySurface(report, evidence)
+          : _sparseMessagesSurface(report, evidence),
+    OnboardingEnvironmentState.importFailed ||
+    OnboardingEnvironmentState.graphProjectionFailed => _retrySurface(
+      report,
+      evidence,
+    ),
+    OnboardingEnvironmentState.readyToImport => _readySurface(report, evidence),
+    OnboardingEnvironmentState.ready => _completedInstallationSurface(evidence),
   };
+}
+
+EnvironmentReadinessSurfaceViewModel _fdaBlockedSurface(
+  List<EnvironmentReadinessEvidence> evidence,
+) {
+  return EnvironmentReadinessSurfaceViewModel(
+    kind: EnvironmentReadinessEpisodeKind.blocked,
+    title: 'MessageLens needs Full Disk Access',
+    body:
+        'macOS protects the local Messages and Contacts databases. Grant access in System Settings, then relaunch MessageLens when macOS asks.',
+    tone: EnvironmentReadinessTone.warning,
+    instructions: const <String>[
+      'Open Full Disk Access in System Settings.',
+      'Add or enable MessageLens.',
+      'Quit and reopen MessageLens when macOS asks.',
+    ],
+    actions: const <EnvironmentReadinessAction>[
+      EnvironmentReadinessAction(
+        kind: EnvironmentReadinessActionKind.openSettings,
+        label: 'Open System Settings',
+      ),
+      EnvironmentReadinessAction(
+        kind: EnvironmentReadinessActionKind.recheck,
+        label: 'Re-check',
+      ),
+    ],
+    evidence: evidence,
+  );
+}
+
+EnvironmentReadinessSurfaceViewModel _sourceBlockedSurface(
+  OnboardingEnvironmentReport report,
+  List<EnvironmentReadinessEvidence> evidence,
+) {
+  if (report.blockerKind == OnboardingBlockerKind.addressBookUnavailable) {
+    return EnvironmentReadinessSurfaceViewModel(
+      kind: EnvironmentReadinessEpisodeKind.blocked,
+      title: 'MessageLens needs local Contacts data',
+      body:
+          'The current import pipeline uses local Contacts data to prepare names and relationship context. Open Contacts and allow its local data to finish loading, then check again.',
+      tone: EnvironmentReadinessTone.warning,
+      actions: const <EnvironmentReadinessAction>[
+        EnvironmentReadinessAction(
+          kind: EnvironmentReadinessActionKind.recheck,
+          label: 'Re-check',
+        ),
+      ],
+      evidence: evidence,
+    );
+  }
 
   return EnvironmentReadinessSurfaceViewModel(
-    activeStepKey: activeStep,
-    steps: _buildSteps(activeStep, allSucceeded: isReady),
-    detailsByStep: detailsByStep,
-    detail: detailsByStep[activeStep]!,
+    kind: EnvironmentReadinessEpisodeKind.blocked,
+    title: 'MessageLens can’t find local Messages data',
+    body:
+        'MessageLens imports the Messages history stored on this Mac. Open Messages and confirm that the history you expect is available locally, then check again.',
+    tone: EnvironmentReadinessTone.warning,
+    actions: const <EnvironmentReadinessAction>[
+      EnvironmentReadinessAction(
+        kind: EnvironmentReadinessActionKind.recheck,
+        label: 'Re-check',
+      ),
+    ],
+    evidence: evidence,
   );
 }
 
-EnvironmentReadinessStepKey _activeStepFor({
-  required OnboardingStatus status,
-  required OnboardingEnvironmentReport? report,
-  required bool requiredSourcesAccepted,
-}) {
-  if (status == OnboardingStatus.awaitingFda) {
-    return EnvironmentReadinessStepKey.fullDiskAccess;
-  }
-
-  if (report == null) {
-    return EnvironmentReadinessStepKey.importReadiness;
-  }
-
-  return switch (report.blockerKind) {
-    OnboardingBlockerKind.fullDiskAccessMissing =>
-      EnvironmentReadinessStepKey.fullDiskAccess,
-    OnboardingBlockerKind.messagesDatabaseMissing =>
-      EnvironmentReadinessStepKey.messagesDatabase,
-    OnboardingBlockerKind.sourceDataSparseOrUnsynced =>
-      requiredSourcesAccepted
-          ? EnvironmentReadinessStepKey.importReadiness
-          : EnvironmentReadinessStepKey.messagesDatabase,
-    OnboardingBlockerKind.addressBookUnavailable =>
-      EnvironmentReadinessStepKey.contactsDatabase,
-    _ => EnvironmentReadinessStepKey.importReadiness,
-  };
+EnvironmentReadinessSurfaceViewModel _sparseMessagesSurface(
+  OnboardingEnvironmentReport report,
+  List<EnvironmentReadinessEvidence> evidence,
+) {
+  return EnvironmentReadinessSurfaceViewModel(
+    kind: EnvironmentReadinessEpisodeKind.blocked,
+    title: 'Your local Messages history looks incomplete',
+    body:
+        'MessageLens imports only the history stored on this Mac. If messages you expect are missing here, make sure Messages in iCloud is enabled and has finished syncing on your devices before continuing.',
+    sanityEvidence: _messageCountEvidence(report),
+    tone: EnvironmentReadinessTone.warning,
+    actions: const <EnvironmentReadinessAction>[
+      EnvironmentReadinessAction(
+        kind: EnvironmentReadinessActionKind.recheck,
+        label: 'Re-check',
+      ),
+    ],
+    evidence: evidence,
+  );
 }
 
-List<EnvironmentReadinessStepViewModel> _buildSteps(
-  EnvironmentReadinessStepKey activeStep, {
-  required bool allSucceeded,
-}) {
-  const orderedKeys = EnvironmentReadinessStepKey.values;
-  final activeIndex = orderedKeys.indexOf(activeStep);
-
-  return orderedKeys.indexed.map((entry) {
-    final index = entry.$1;
-    final key = entry.$2;
-    final status = allSucceeded
-        ? EnvironmentReadinessStepStatus.success
-        : index < activeIndex
-        ? EnvironmentReadinessStepStatus.success
-        : index == activeIndex
-        ? EnvironmentReadinessStepStatus.active
-        : EnvironmentReadinessStepStatus.pending;
-
-    return switch (key) {
-      EnvironmentReadinessStepKey.fullDiskAccess =>
-        EnvironmentReadinessStepViewModel(
-          key: key,
-          title: 'Full Disk Access',
-          subtitle: 'Permission to read protected macOS databases',
-          status: status,
-        ),
-      EnvironmentReadinessStepKey.messagesDatabase =>
-        EnvironmentReadinessStepViewModel(
-          key: key,
-          title: 'Messages Database',
-          subtitle: 'Local Messages history must be present on this Mac',
-          status: status,
-        ),
-      EnvironmentReadinessStepKey.contactsDatabase =>
-        EnvironmentReadinessStepViewModel(
-          key: key,
-          title: 'Contacts Database',
-          subtitle: 'Names and contact details improve message context',
-          status: status,
-        ),
-      EnvironmentReadinessStepKey.importReadiness =>
-        EnvironmentReadinessStepViewModel(
-          key: key,
-          title: 'Import Readiness',
-          subtitle: 'App storage and pipeline setup are ready for import',
-          status: status,
-        ),
-    };
-  }).toList();
+EnvironmentReadinessSurfaceViewModel _retrySurface(
+  OnboardingEnvironmentReport report,
+  List<EnvironmentReadinessEvidence> evidence,
+) {
+  final graphFailed =
+      report.state == OnboardingEnvironmentState.graphProjectionFailed;
+  return EnvironmentReadinessSurfaceViewModel(
+    kind: EnvironmentReadinessEpisodeKind.failed,
+    title: 'Setup needs another try',
+    body: graphFailed
+        ? 'MessageLens imported local data, but could not finish preparing it for browsing.'
+        : 'MessageLens could not finish making its local copy of your Messages history.',
+    tone: EnvironmentReadinessTone.failure,
+    actions: <EnvironmentReadinessAction>[
+      EnvironmentReadinessAction(
+        kind: EnvironmentReadinessActionKind.startImport,
+        label: graphFailed
+            ? 'Retry Import and Graph Build'
+            : 'Try Import Again',
+      ),
+      const EnvironmentReadinessAction(
+        kind: EnvironmentReadinessActionKind.sendReport,
+        label: 'Send Report To Developer',
+      ),
+    ],
+    evidence: evidence,
+  );
 }
 
-EnvironmentReadinessDetailViewModel _detailFor({
-  required EnvironmentReadinessStepKey activeStep,
-  required OnboardingEnvironmentReport? report,
-  required bool requiredSourcesAccepted,
-}) {
-  switch (activeStep) {
-    case EnvironmentReadinessStepKey.fullDiskAccess:
-      return const EnvironmentReadinessDetailViewModel(
-        stepKey: EnvironmentReadinessStepKey.fullDiskAccess,
-        title: 'Grant Full Disk Access',
-        body:
-            "MessageLens needs permission to read your Messages and Contacts databases so it can import your history into the app. It cannot modify Apple's databases, and your data stays on this Mac.",
-        instructions: [
-          'Click Open System Settings below.',
-          'Add MessageLens to Full Disk Access, or turn it on if it is already listed.',
-          'When macOS asks, quit and reopen the app.',
-          'Come back here and re-check the environment.',
-        ],
-        actions: [
-          EnvironmentReadinessAction(
-            kind: EnvironmentReadinessActionKind.openSettings,
-            label: 'Open System Settings',
-          ),
-          EnvironmentReadinessAction(
-            kind: EnvironmentReadinessActionKind.recheck,
-            label: 'Re-check',
-          ),
-        ],
-        tone: EnvironmentReadinessTone.warning,
-      );
-    case EnvironmentReadinessStepKey.messagesDatabase:
-      return EnvironmentReadinessDetailViewModel(
-        stepKey: EnvironmentReadinessStepKey.messagesDatabase,
-        title: 'Confirm Local Messages History',
-        body:
-            'MessageLens can only import what is stored locally on this Mac. If Messages history has not been downloaded here yet, setup cannot continue even though the app itself is working normally.',
-        instructions: [
-          'Open Apple Messages on this Mac and leave it running for a moment.',
-          'Confirm you are signed into the expected Apple Account and that your history is appearing locally.',
-          'If this Mac has little or no history, wait for Messages to sync, then re-check here.',
-        ],
-        actions: const [
-          EnvironmentReadinessAction(
-            kind: EnvironmentReadinessActionKind.recheck,
-            label: 'Re-check',
-          ),
-        ],
-        tone:
-            report?.blockerKind == OnboardingBlockerKind.messagesDatabaseMissing
-            ? EnvironmentReadinessTone.warning
-            : EnvironmentReadinessTone.primary,
-      );
-    case EnvironmentReadinessStepKey.contactsDatabase:
-      return const EnvironmentReadinessDetailViewModel(
-        stepKey: EnvironmentReadinessStepKey.contactsDatabase,
-        title: 'Confirm Contacts Data',
-        body:
-            'MessageLens reads local Contacts data to show names and relationship context more clearly. This improves navigation and understanding, but the data remains on this Mac.',
-        instructions: [
-          'Make sure Contacts data is present on this Mac.',
-          'If you recently changed privacy or sync settings, wait a moment for local data to settle.',
-          'Use Re-check once Contacts appears available again.',
-        ],
-        actions: [
-          EnvironmentReadinessAction(
-            kind: EnvironmentReadinessActionKind.recheck,
-            label: 'Re-check',
-          ),
-        ],
-        tone: EnvironmentReadinessTone.warning,
-      );
-    case EnvironmentReadinessStepKey.importReadiness:
-      final isReady = report?.state == OnboardingEnvironmentState.ready;
-      final isAcceptedSparseSource =
-          requiredSourcesAccepted &&
-          report?.state == OnboardingEnvironmentState.sourceSparseOrUnsynced;
-      final isGraphProjectionRetry =
-          report?.state == OnboardingEnvironmentState.graphProjectionFailed ||
-          report?.blockerKind == OnboardingBlockerKind.graphProjectionFailed;
-      final isImportRetry =
-          report?.state == OnboardingEnvironmentState.importFailed ||
-          report?.blockerKind == OnboardingBlockerKind.importFailed;
-      final isRetry = isImportRetry || isGraphProjectionRetry;
-      final label = isGraphProjectionRetry
-          ? 'Retry Import and Graph Build'
-          : isImportRetry
-          ? 'Try Import Again'
-          : 'Import My Messages';
+EnvironmentReadinessSurfaceViewModel _readySurface(
+  OnboardingEnvironmentReport report,
+  List<EnvironmentReadinessEvidence> evidence,
+) {
+  return EnvironmentReadinessSurfaceViewModel(
+    kind: EnvironmentReadinessEpisodeKind.ready,
+    title: 'Everything is ready',
+    body:
+        'MessageLens can read the Messages and Contacts available on this Mac. I’m ready to make a local copy for browsing.',
+    sanityEvidence: _messageCountEvidence(report),
+    tone: EnvironmentReadinessTone.success,
+    actions: const <EnvironmentReadinessAction>[
+      EnvironmentReadinessAction(
+        kind: EnvironmentReadinessActionKind.startImport,
+        label: 'Import My Messages',
+      ),
+    ],
+    evidence: evidence,
+  );
+}
 
-      return EnvironmentReadinessDetailViewModel(
-        stepKey: EnvironmentReadinessStepKey.importReadiness,
-        title: isReady
-            ? 'Ready To Use'
-            : isRetry
-            ? 'Retry Setup'
-            : 'Ready To Import',
-        body: isReady
-            ? 'MessageLens can read the required local sources and its conversation browsing data is ready.'
-            : isRetry
-            ? 'MessageLens reached the import pipeline, but the last setup attempt did not finish cleanly. You can retry from here or send a report to the developer with diagnostic logs.'
-            : isAcceptedSparseSource
-            ? 'MessageLens found limited local Messages history, and you chose to continue with what is currently available on this Mac.'
-            : 'The required local permissions and sources appear ready. The next step is importing your Messages and Contacts data into the app.',
-        instructions: isReady
-            ? [
-                'Continue using MessageLens normally.',
-                'If new messages do not appear, re-check this panel and then use the status panel for live-update details.',
-              ]
-            : isRetry
-            ? [
-                'Review the machine view below to confirm the local sources still look healthy.',
-                'Start setup again to retry import and browsing-data preparation.',
-                'If the problem repeats, use Send Report To Developer to have MessageLens prepare an email with the diagnostic report attached when possible.',
-              ]
-            : [
-                'Start the import when you are ready.',
-                'MessageLens will copy local Messages and Contacts data into its own app databases.',
-                'When setup finishes, the app will move into the normal browsing experience.',
-              ],
-        actions: [
-          if (!isReady)
-            EnvironmentReadinessAction(
-              kind: EnvironmentReadinessActionKind.startImport,
-              label: label,
-            ),
-          if (isRetry)
-            const EnvironmentReadinessAction(
-              kind: EnvironmentReadinessActionKind.sendReport,
-              label: 'Send Report To Developer',
-            ),
-          const EnvironmentReadinessAction(
-            kind: EnvironmentReadinessActionKind.recheck,
-            label: 'Re-check',
-          ),
-        ],
-        tone: isRetry
-            ? EnvironmentReadinessTone.warning
-            : EnvironmentReadinessTone.success,
-      );
+EnvironmentReadinessSurfaceViewModel _completedInstallationSurface(
+  List<EnvironmentReadinessEvidence> evidence,
+) {
+  return EnvironmentReadinessSurfaceViewModel(
+    kind: EnvironmentReadinessEpisodeKind.ready,
+    title: 'MessageLens is ready',
+    body:
+        'The required local sources are available, and MessageLens browsing data is prepared.',
+    tone: EnvironmentReadinessTone.success,
+    actions: const <EnvironmentReadinessAction>[],
+    evidence: evidence,
+  );
+}
+
+bool _isMessagesInspectionFailure(OnboardingEnvironmentReport report) {
+  return report.hasFullDiskAccess &&
+      report.messagesDatabase.exists &&
+      !report.messagesDatabase.readable &&
+      report.messagesDatabase.failureMessage != null;
+}
+
+String? _messageCountEvidence(OnboardingEnvironmentReport report) {
+  final count = report.messagesDatabase.rowCount;
+  if (count == null) {
+    return null;
   }
+  return 'I found ${_formatCount(count)} messages stored on this Mac.';
+}
+
+String _formatCount(int count) {
+  final digits = count.toString();
+  final buffer = StringBuffer();
+  for (var index = 0; index < digits.length; index++) {
+    if (index > 0 && (digits.length - index) % 3 == 0) {
+      buffer.write(',');
+    }
+    buffer.write(digits[index]);
+  }
+  return buffer.toString();
+}
+
+List<EnvironmentReadinessEvidence> _evidenceFor(
+  OnboardingEnvironmentReport report,
+) {
+  final messageCount = report.messagesDatabase.rowCount;
+  return <EnvironmentReadinessEvidence>[
+    EnvironmentReadinessEvidence(
+      label: 'Full Disk Access',
+      value: report.hasFullDiskAccess ? 'Available' : 'Required',
+    ),
+    EnvironmentReadinessEvidence(
+      label: 'Messages database',
+      value: report.messagesDatabase.readable
+          ? messageCount == null
+                ? 'Available'
+                : 'Available (${_formatCount(messageCount)} messages)'
+          : report.messagesDatabase.exists
+          ? 'Present but unreadable'
+          : 'Not found',
+    ),
+    EnvironmentReadinessEvidence(
+      label: 'Contacts database',
+      value: report.addressBookDatabase?.readable == true
+          ? 'Available'
+          : report.addressBookDatabase == null
+          ? 'Not found'
+          : 'Present but unreadable',
+    ),
+    EnvironmentReadinessEvidence(
+      label: 'Import storage',
+      value: report.sourceScopedImportDatabase.hasData
+          ? 'Prepared'
+          : report.sourceScopedImportDatabase.exists
+          ? 'Ready'
+          : 'Will be prepared during import',
+    ),
+    EnvironmentReadinessEvidence(
+      label: 'Conversation browsing data',
+      value: report.conversationGraph.hasData
+          ? 'Prepared'
+          : report.conversationGraph.exists
+          ? 'Ready'
+          : 'Will be prepared during import',
+    ),
+    EnvironmentReadinessEvidence(
+      label: 'Attachment archive',
+      value: report.attachmentArchiveDirectory.readable
+          ? 'Available'
+          : report.attachmentArchiveDirectory.exists
+          ? 'Present but unreadable'
+          : 'Not created yet',
+    ),
+  ];
 }

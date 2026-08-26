@@ -7,29 +7,36 @@ import '../../application/panel_widget_providers.dart';
 import '../../domain/sidebar_mode.dart';
 import 'sidebar_parked_overlay.dart';
 
-class WorkspaceLayout extends ConsumerWidget {
-  const WorkspaceLayout({super.key, required this.mode});
+abstract final class WorkspaceLayout {
+  static const double navigationColumnWidth = 320;
+}
+
+/// The normal application navigation surface hosted by [MacosWindow.sidebar].
+class WorkspaceSidebar extends ConsumerWidget {
+  const WorkspaceSidebar({super.key, required this.mode});
 
   final SidebarMode mode;
-
-  static const double navigationColumnWidth = 320;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isParked = ref.watch(isSidebarParkedProvider(mode));
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SidebarPlane(
-          width: navigationColumnWidth,
-          child: isParked
-              ? SidebarParkedOverlay(mode: mode)
-              : LeftPanelHost(mode: mode),
-        ),
-        Expanded(
-          child: ContentPlane(child: CenterPanelHost(mode: mode)),
-        ),
-      ],
+    return SidebarPlane(
+      showDivider: false,
+      child: isParked
+          ? SidebarParkedOverlay(mode: mode)
+          : LeftPanelHost(mode: mode),
     );
+  }
+}
+
+/// The primary content surface that continues independently of the sidebar.
+class WorkspaceContent extends ConsumerWidget {
+  const WorkspaceContent({super.key, required this.mode});
+
+  final SidebarMode mode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ContentPlane(child: CenterPanelHost(mode: mode));
   }
 }

@@ -444,6 +444,7 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
   'lib/essentials/navigation/presentation/view/panel_stack_surface.dart',
   'lib/essentials/navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart',
+  'lib/essentials/navigation/presentation/widgets/onboarding_sidebar_visibility_owner.dart',
   'lib/essentials/onboarding/application/full_disk_access_provider.dart',
   'lib/essentials/onboarding/application/onboarding_database_probe_reader_provider.dart',
   'lib/essentials/onboarding/application/onboarding_failure_storage_provider.dart',
@@ -6894,6 +6895,44 @@ void main() {
             'boundary.\n'
             'Actual offenders:\n${offenders.join('\n')}',
       );
+    });
+
+    test('Onboarding owns only canonical sidebar visibility', () async {
+      final shell = await File(
+        'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+      ).readAsString();
+      final visibilityOwner = await File(
+        'lib/essentials/navigation/presentation/widgets/'
+        'onboarding_sidebar_visibility_owner.dart',
+      ).readAsString();
+      final workspace = await File(
+        'lib/essentials/navigation/presentation/view/workspace_layout.dart',
+      ).readAsString();
+
+      expect(shell, contains('sidebar: Sidebar('));
+      expect(shell, contains('OnboardingSidebarVisibilityOwner('));
+      expect(visibilityOwner, contains('scope.toggleSidebar()'));
+      expect(visibilityOwner, isNot(contains('SharedPreferences')));
+      expect(workspace, isNot(contains('Row(')));
+      expect(workspace, isNot(contains('AnimatedPositioned')));
+    });
+
+    test('readiness presentation derives from typed report truth', () async {
+      final resolver = await File(
+        'lib/features/environment_readiness/application/view_spec/'
+        'resolver_tools/environment_readiness_surface_provider.dart',
+      ).readAsString();
+      final view = await File(
+        'lib/features/environment_readiness/presentation/view/'
+        'environment_readiness_panel_view.dart',
+      ).readAsString();
+
+      expect(resolver, contains('onboardingEnvironmentReportProvider'));
+      expect(resolver, contains('EnvironmentReadinessEpisodeKind'));
+      expect(resolver, isNot(contains('checked your iPhone')));
+      expect(view, contains("const Text('Details')"));
+      expect(view, isNot(contains('Current machine view')));
+      expect(view, isNot(contains('What to do')));
     });
 
     test(

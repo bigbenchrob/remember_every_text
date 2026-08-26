@@ -45,6 +45,7 @@ import '../layout/search_page_track_plan.dart';
 import '../layout/unfamiliar_sources_page_track_plan.dart';
 import '../widgets/app_mode_toggle.dart';
 import '../widgets/onboarding_center_panel_sync_observer.dart';
+import '../widgets/onboarding_sidebar_visibility_owner.dart';
 import 'workspace_layout.dart';
 
 /// macOS window with a fixed navigation column and primary content canvas.
@@ -64,6 +65,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       ConversationSignatureCardPresentationMetrics.canonicalWidth +
       (_endSidebarContentHorizontalInset * 2);
   Timer? _windowFrameDebounce;
+  final FocusNode _normalSidebarFocusNode = FocusNode(
+    debugLabel: 'normal-application-sidebar',
+  );
   DateTime _lastFrameSave = DateTime.fromMillisecondsSinceEpoch(0);
   bool _pendingTrailingFrameSave = false;
 
@@ -75,6 +79,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
   @override
   void dispose() {
     _windowFrameDebounce?.cancel();
+    _normalSidebarFocusNode.dispose();
     super.dispose();
   }
 
@@ -332,22 +337,39 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
       messageHistoryCoverageTrackComposition = null;
     }
 
-    Widget settingsWorkspace = const WorkspaceLayout(
-      mode: SidebarMode.settings,
-    );
-    if (historicalArchivesTrackComposition case final composition?) {
-      settingsWorkspace = ResolvedTrackLayoutMatrixScope(
-        matrix: composition.resolvedMatrix,
-        child: settingsWorkspace,
-      );
-    } else if (messageHistoryCoverageTrackComposition case final composition?) {
-      settingsWorkspace = ResolvedTrackLayoutMatrixScope(
-        matrix: composition.resolvedMatrix,
-        child: settingsWorkspace,
-      );
-    }
+    final onboardingOwnsSidebar = onboardingOwnsNormalSidebar(onboardingStatus);
 
     Widget window = MacosWindow(
+      sidebar: Sidebar(
+        key: const ValueKey<String>('normal-application-sidebar'),
+        startWidth: WorkspaceLayout.navigationColumnWidth,
+        minWidth: WorkspaceLayout.navigationColumnWidth,
+        maxWidth: 400,
+        windowBreakpoint: 0,
+        shownByDefault: !onboardingOwnsSidebar,
+        topOffset: 0,
+        top: SizedBox(
+          // macos_ui contributes 12 px before a non-null top widget. Keeping
+          // this at 39 px makes native sidebar content begin at the 51 px
+          // toolbar boundary without a second layout offset.
+          height: 39,
+          child: Center(
+            child: Focus(
+              focusNode: _normalSidebarFocusNode,
+              child: const AppModeToggle(),
+            ),
+          ),
+        ),
+        builder: (context, scrollController) {
+          return IndexedStack(
+            index: activeMode == SidebarMode.messages ? 0 : 1,
+            children: const <Widget>[
+              WorkspaceSidebar(mode: SidebarMode.messages),
+              WorkspaceSidebar(mode: SidebarMode.settings),
+            ],
+          );
+        },
+      ),
       endSidebar: Sidebar(
         key: ValueKey<String>('end-sidebar-${activeMode.name}'),
         startWidth: _defaultEndSidebarWidth,
@@ -369,7 +391,6 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
           ),
           title: const _ToolbarTitle(),
           centerTitle: true,
-          leading: const AppModeToggle(),
           actions: [
             if (kDebugMode)
               ToolBarIconButton(
@@ -458,10 +479,16 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
                 children: [
                   IndexedStack(
                     index: activeMode == SidebarMode.messages ? 0 : 1,
-                    children: [
-                      const WorkspaceLayout(mode: SidebarMode.messages),
-                      settingsWorkspace,
+                    children: const <Widget>[
+                      WorkspaceContent(mode: SidebarMode.messages),
+                      WorkspaceContent(mode: SidebarMode.settings),
                     ],
+                  ),
+                  OnboardingSidebarVisibilityOwner(
+                    status: onboardingStatus,
+                    onNormalApplicationRevealed: () {
+                      _normalSidebarFocusNode.requestFocus();
+                    },
                   ),
                   const OnboardingCenterPanelSyncObserver(),
                   _EndSidebarSyncObserver(mode: activeMode),
@@ -476,7 +503,9 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         searchPageTrackComposition?.resolvedMatrix ??
         unfamiliarSourcesTrackComposition?.resolvedMatrix ??
         recoveredMessagesTrackComposition?.resolvedMatrix ??
-        contactsPageTrackComposition?.resolvedMatrix;
+        contactsPageTrackComposition?.resolvedMatrix ??
+        historicalArchivesTrackComposition?.resolvedMatrix ??
+        messageHistoryCoverageTrackComposition?.resolvedMatrix;
     if (resolvedTrackMatrix != null) {
       window = ResolvedTrackLayoutMatrixScope(
         matrix: resolvedTrackMatrix,

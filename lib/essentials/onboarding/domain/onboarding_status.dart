@@ -28,7 +28,7 @@ enum OnboardingStatus {
   /// Conversation graph build is running.
   buildingGraph,
 
-  /// Import and graph build succeeded — show summary with "Get Started" or "Done".
+  /// Import and graph build succeeded — wait for the human's terminal handoff.
   complete,
 
   /// Reimport triggered from settings — skip welcome, go straight to import.

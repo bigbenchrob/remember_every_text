@@ -116,11 +116,15 @@ class OnboardingOverlay extends ConsumerWidget {
                 OnboardingStatus.complete => _CompleteContent(
                   colors: colors,
                   typography: typography,
-                  dismissLabel: 'Get Started',
+                  title: 'You’re ready to start',
+                  body: 'Your local MessageLens browsing data is prepared.',
+                  dismissLabel: 'OK',
                 ),
                 OnboardingStatus.reimportComplete => _CompleteContent(
                   colors: colors,
                   typography: typography,
+                  title: 'MessageLens is ready',
+                  body: 'Your local browsing data is prepared.',
                   dismissLabel: 'Done',
                 ),
                 OnboardingStatus.notNeeded => const SizedBox.shrink(),
@@ -1149,16 +1153,20 @@ String _progressStatusMessage({
   };
 }
 
-/// Success panel: summary metrics + dismiss button.
+/// Terminal first-run or maintenance completion handoff.
 class _CompleteContent extends ConsumerWidget {
   const _CompleteContent({
     required this.colors,
     required this.typography,
+    required this.title,
+    required this.body,
     required this.dismissLabel,
   });
 
   final ThemeColors colors;
   final ThemeTypography typography;
+  final String title;
+  final String body;
   final String dismissLabel;
 
   @override
@@ -1173,7 +1181,7 @@ class _CompleteContent extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'MessageLens is ready',
+          title,
           style: typography.headline.copyWith(
             color: colors.content.textPrimary,
           ),
@@ -1181,7 +1189,7 @@ class _CompleteContent extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Your local browsing data is prepared.',
+          body,
           style: typography.body.copyWith(color: colors.content.textSecondary),
           textAlign: TextAlign.center,
         ),

@@ -1,6 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:macos_ui/macos_ui.dart';
 
 import '../../../../config/theme/colors/theme_colors.dart';
 import '../../../../config/theme/theme_typography.dart';
@@ -25,7 +25,7 @@ class EnvironmentReadinessPanelView extends ConsumerStatefulWidget {
 
 class _EnvironmentReadinessPanelViewState
     extends ConsumerState<EnvironmentReadinessPanelView> {
-  EnvironmentReadinessStepKey? _selectedStepKey;
+  bool _detailsExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -34,166 +34,178 @@ class _EnvironmentReadinessPanelViewState
     final typography = ref.watch(themeTypographyProvider);
     final report = ref.watch(onboardingEnvironmentReportProvider).valueOrNull;
     final surface = ref.watch(environmentReadinessSurfaceProvider);
-    final selectedStepKey = _selectedStepKey ?? surface.activeStepKey;
-    final detail = surface.detailsByStep[selectedStepKey] ?? surface.detail;
 
     return ColoredBox(
       color: colors.surfaces.canvas,
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isStacked = constraints.maxWidth < 980;
-
-              if (isStacked) {
-                return SingleChildScrollView(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 28),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _Header(colors: colors, typography: typography),
-                      const SizedBox(height: 24),
-                      _SummaryRail(
-                        steps: surface.steps,
-                        selectedStepKey: selectedStepKey,
-                        colors: colors,
-                        typography: typography,
-                        onStepPressed: (stepKey) {
-                          setState(() {
-                            _selectedStepKey = stepKey;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      _DetailPane(
-                        detail: detail,
-                        report: report,
-                        colors: colors,
-                        typography: typography,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: (constraints.maxHeight - 56).clamp(
+                                0,
+                                double.infinity,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                _Episode(
+                                  surface: surface,
+                                  report: report,
+                                  colors: colors,
+                                  typography: typography,
+                                ),
+                                if (surface.evidence.isNotEmpty) ...<Widget>[
+                                  const SizedBox(height: 28),
+                                  _DetailsDisclosure(
+                                    surface: surface,
+                                    report: report,
+                                    expanded: _detailsExpanded,
+                                    onPressed: () {
+                                      setState(() {
+                                        _detailsExpanded = !_detailsExpanded;
+                                      });
+                                    },
+                                    colors: colors,
+                                    typography: typography,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Header(colors: colors, typography: typography),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          width: 280,
-                          child: _SummaryRail(
-                            steps: surface.steps,
-                            selectedStepKey: selectedStepKey,
-                            colors: colors,
-                            typography: typography,
-                            onStepPressed: (stepKey) {
-                              setState(() {
-                                _selectedStepKey = stepKey;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        Expanded(
-                          child: _DetailPane(
-                            detail: detail,
-                            report: report,
-                            colors: colors,
-                            typography: typography,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.colors, required this.typography});
-
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Environment Readiness',
-          style: typography.headline.copyWith(
-            color: colors.content.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          "MessageLens is checking the local permissions and data sources it needs before import. Your Messages and Contacts data stays on this Mac, and MessageLens only reads Apple's databases during setup.",
-          style: typography.body.copyWith(color: colors.content.textSecondary),
-        ),
-      ],
-    );
-  }
-}
-
-class _SummaryRail extends StatelessWidget {
-  const _SummaryRail({
-    required this.steps,
-    required this.selectedStepKey,
+class _Episode extends ConsumerWidget {
+  const _Episode({
+    required this.surface,
+    required this.report,
     required this.colors,
     required this.typography,
-    required this.onStepPressed,
   });
 
-  final List<EnvironmentReadinessStepViewModel> steps;
-  final EnvironmentReadinessStepKey selectedStepKey;
+  final EnvironmentReadinessSurfaceViewModel surface;
+  final OnboardingEnvironmentReport? report;
   final ThemeColors colors;
   final ThemeTypography typography;
-  final ValueChanged<EnvironmentReadinessStepKey> onStepPressed;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.surfaces.surfaceRaised,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accent = _accentFor(surface.tone, colors);
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: surface.title,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
+          if (surface.kind == EnvironmentReadinessEpisodeKind.checking) ...[
+            const ProgressCircle(radius: 12),
+            const SizedBox(height: 24),
+          ] else ...[
+            Icon(_iconFor(surface.kind), size: 38, color: accent),
+            const SizedBox(height: 20),
+          ],
           Text(
-            'Checks',
-            style: typography.body.copyWith(
+            surface.title,
+            style: typography.title1.copyWith(
               color: colors.content.textPrimary,
-              fontWeight: FontWeight.w600,
+              fontSize: 28,
             ),
           ),
-          const SizedBox(height: 16),
-          for (final step in steps) ...[
-            _StepTile(
-              step: step,
-              isSelected: step.key == selectedStepKey,
-              colors: colors,
-              typography: typography,
-              onPressed: () {
-                onStepPressed(step.key);
-              },
+          const SizedBox(height: 14),
+          Text(
+            surface.body,
+            style: typography.body.copyWith(
+              color: colors.content.textSecondary,
+              fontSize: 16,
+              height: 1.45,
             ),
-            if (step != steps.last) const SizedBox(height: 12),
+          ),
+          if (surface.sanityEvidence case final evidence?) ...<Widget>[
+            const SizedBox(height: 18),
+            Text(
+              evidence,
+              style: typography.body.copyWith(
+                color: colors.content.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if (surface.instructions.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 22),
+            for (final (index, instruction) in surface.instructions.indexed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        '${index + 1}.',
+                        style: typography.body.copyWith(
+                          color: accent,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        instruction,
+                        style: typography.body.copyWith(
+                          color: colors.content.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (surface.primaryAction case final action?) ...<Widget>[
+            const SizedBox(height: 28),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: <Widget>[
+                _ReadinessActionButton(
+                  action: action,
+                  report: report,
+                  primary: true,
+                  colors: colors,
+                ),
+                for (final secondaryAction in surface.secondaryActions)
+                  _ReadinessActionButton(
+                    action: secondaryAction,
+                    report: report,
+                    primary: false,
+                    colors: colors,
+                  ),
+              ],
+            ),
           ],
         ],
       ),
@@ -201,331 +213,206 @@ class _SummaryRail extends StatelessWidget {
   }
 }
 
-class _StepTile extends StatelessWidget {
-  const _StepTile({
-    required this.step,
-    required this.isSelected,
+class _ReadinessActionButton extends ConsumerWidget {
+  const _ReadinessActionButton({
+    required this.action,
+    required this.report,
+    required this.primary,
     required this.colors,
-    required this.typography,
-    required this.onPressed,
   });
 
-  final EnvironmentReadinessStepViewModel step;
-  final bool isSelected;
+  final EnvironmentReadinessAction action;
+  final OnboardingEnvironmentReport? report;
+  final bool primary;
   final ThemeColors colors;
-  final ThemeTypography typography;
-  final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
-    final background = switch (step.status) {
-      EnvironmentReadinessStepStatus.success =>
-        colors.status.success.withValues(alpha: 0.12),
-      EnvironmentReadinessStepStatus.active =>
-        colors.accents.primary.withValues(alpha: 0.14),
-      EnvironmentReadinessStepStatus.pending => colors.surfaces.control,
-    };
-    final foreground = switch (step.status) {
-      EnvironmentReadinessStepStatus.success => colors.status.success,
-      EnvironmentReadinessStepStatus.active => colors.accents.primary,
-      EnvironmentReadinessStepStatus.pending => colors.content.textTertiary,
-    };
-    final borderColor = isSelected
-        ? colors.accents.primary
-        : step.status == EnvironmentReadinessStepStatus.pending
-        ? colors.lines.borderSubtle
-        : foreground.withValues(alpha: 0.35);
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onPressed,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: borderColor, width: isSelected ? 1 : 0.5),
-          ),
-          child: Row(
-            children: [
-              Icon(_iconFor(step.key), color: foreground, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      step.title,
-                      style: typography.body.copyWith(
-                        color:
-                            step.status ==
-                                EnvironmentReadinessStepStatus.pending
-                            ? colors.content.textSecondary
-                            : colors.content.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      step.subtitle,
-                      style: typography.caption.copyWith(
-                        color: colors.content.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final onPressed = _actionCallback(context, ref);
+    if (primary) {
+      return FilledButton(
+        autofocus: true,
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: colors.buttons.primaryBackground,
+          foregroundColor: colors.buttons.primaryForeground,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
         ),
+        child: Text(action.label),
+      );
+    }
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: colors.content.textPrimary,
+        side: BorderSide(color: colors.lines.borderSubtle),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
       ),
+      child: Text(action.label),
     );
+  }
+
+  VoidCallback? _actionCallback(BuildContext context, WidgetRef ref) {
+    return switch (action.kind) {
+      EnvironmentReadinessActionKind.openSettings => () {
+        ref
+            .read(environmentReadinessActionsProvider.notifier)
+            .openFdaSettings();
+      },
+      EnvironmentReadinessActionKind.recheck => () {
+        ref
+            .read(environmentReadinessActionsProvider.notifier)
+            .refreshEnvironment();
+      },
+      EnvironmentReadinessActionKind.startImport => () {
+        ref
+            .read(environmentReadinessActionsProvider.notifier)
+            .startImportAndGraphBuild();
+      },
+      EnvironmentReadinessActionKind.sendReport =>
+        report == null
+            ? null
+            : () async {
+                final exporter = await ref.read(
+                  diagnosticReportExporterProvider.future,
+                );
+                final result = await exportOnboardingFailureDiagnosticReport(
+                  exporter,
+                  report: report!,
+                );
+                if (!context.mounted) {
+                  return;
+                }
+                _showDiagnosticReportSnackBar(context, result: result);
+              },
+    };
   }
 }
 
-class _DetailPane extends ConsumerWidget {
-  const _DetailPane({
-    required this.detail,
+class _DetailsDisclosure extends ConsumerWidget {
+  const _DetailsDisclosure({
+    required this.surface,
     required this.report,
+    required this.expanded,
+    required this.onPressed,
     required this.colors,
     required this.typography,
   });
 
-  final EnvironmentReadinessDetailViewModel detail;
+  final EnvironmentReadinessSurfaceViewModel surface;
   final OnboardingEnvironmentReport? report;
+  final bool expanded;
+  final VoidCallback onPressed;
   final ThemeColors colors;
   final ThemeTypography typography;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final devOverrides = ref.watch(onboardingDevOverridesProvider);
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colors.surfaces.surfaceRaised,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _accentColorFor(
-                      detail.tone,
-                      colors: colors,
-                    ).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    _iconFor(detail.stepKey),
-                    color: _accentColorFor(detail.tone, colors: colors),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        detail.title,
-                        style: typography.headline.copyWith(
-                          color: colors.content.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        detail.body,
-                        style: typography.body.copyWith(
-                          color: colors.content.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Container(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        TextButton.icon(
+          onPressed: onPressed,
+          icon: Icon(
+            expanded ? Icons.expand_less : Icons.chevron_right,
+            size: 20,
+          ),
+          label: const Text('Details'),
+          style: TextButton.styleFrom(
+            foregroundColor: colors.content.textSecondary,
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+          ),
+        ),
+        if (expanded)
+          Semantics(
+            container: true,
+            label: 'Environment readiness details',
+            child: Container(
               width: double.infinity,
+              constraints: const BoxConstraints(maxHeight: 240),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: colors.surfaces.control,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: colors.lines.borderSubtle,
-                  width: 0.5,
-                ),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: colors.lines.borderSubtle),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'What to do',
-                    style: typography.body.copyWith(
-                      color: colors.content.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  for (
-                    var index = 0;
-                    index < detail.instructions.length;
-                    index++
-                  ) ...[
-                    _InstructionRow(
-                      number: index + 1,
-                      text: detail.instructions[index],
-                      colors: colors,
-                      typography: typography,
-                    ),
-                    if (index < detail.instructions.length - 1)
-                      const SizedBox(height: 10),
-                  ],
-                ],
-              ),
-            ),
-            if (report != null) ...[
-              const SizedBox(height: 18),
-              _EvidenceCard(
-                report: report!,
-                colors: colors,
-                typography: typography,
-              ),
-            ],
-            if (devOverrides.hasAnyOverride) ...[
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: colors.accents.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: colors.accents.primary.withValues(alpha: 0.25),
-                    width: 0.5,
-                  ),
-                ),
+              child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Developer simulation is active',
-                      style: typography.body.copyWith(
-                        color: colors.content.textPrimary,
-                        fontWeight: FontWeight.w600,
+                  children: <Widget>[
+                    for (final evidence in surface.evidence)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 9),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            SizedBox(
+                              width: 190,
+                              child: Text(
+                                evidence.label,
+                                style: typography.caption.copyWith(
+                                  color: colors.content.textSecondary,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                evidence.value,
+                                style: typography.caption1.copyWith(
+                                  color: colors.content.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Re-check will keep showing this blocker until you clear the active simulation in the dev panel or with the button below.',
-                      style: typography.caption.copyWith(
-                        color: colors.content.textSecondary,
+                    if (devOverrides.hasAnyOverride) ...<Widget>[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Developer simulation is active.',
+                        style: typography.caption.copyWith(
+                          color: colors.content.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () {
-                        ref
-                            .read(environmentReadinessActionsProvider.notifier)
-                            .clearSimulationsAndRefresh();
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.content.textPrimary,
-                        side: BorderSide(color: colors.lines.borderSubtle),
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        onPressed: () {
+                          ref
+                              .read(
+                                environmentReadinessActionsProvider.notifier,
+                              )
+                              .clearSimulationsAndRefresh();
+                        },
+                        child: const Text('Clear Simulations'),
                       ),
-                      child: const Text('Clear Simulations'),
-                    ),
+                    ],
                   ],
                 ),
               ),
-            ],
-            const SizedBox(height: 24),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final action in detail.actions)
-                  switch (action.kind) {
-                    EnvironmentReadinessActionKind.openSettings => FilledButton(
-                      onPressed: () {
-                        ref
-                            .read(environmentReadinessActionsProvider.notifier)
-                            .openFdaSettings();
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colors.buttons.primaryBackground,
-                        foregroundColor: colors.buttons.primaryForeground,
-                      ),
-                      child: Text(action.label),
-                    ),
-                    EnvironmentReadinessActionKind.recheck => OutlinedButton(
-                      onPressed: () {
-                        ref
-                            .read(environmentReadinessActionsProvider.notifier)
-                            .refreshEnvironment();
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.content.textPrimary,
-                        side: BorderSide(color: colors.lines.borderSubtle),
-                      ),
-                      child: Text(action.label),
-                    ),
-                    EnvironmentReadinessActionKind.startImport => FilledButton(
-                      onPressed: () {
-                        ref
-                            .read(environmentReadinessActionsProvider.notifier)
-                            .startImportAndGraphBuild();
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: colors.buttons.primaryBackground,
-                        foregroundColor: colors.buttons.primaryForeground,
-                      ),
-                      child: Text(action.label),
-                    ),
-                    EnvironmentReadinessActionKind.sendReport => OutlinedButton(
-                      onPressed: report == null
-                          ? null
-                          : () async {
-                              final diagnosticReportExporter = await ref.read(
-                                diagnosticReportExporterProvider.future,
-                              );
-                              final result =
-                                  await exportOnboardingFailureDiagnosticReport(
-                                    diagnosticReportExporter,
-                                    report: report!,
-                                  );
-                              if (!context.mounted) {
-                                return;
-                              }
-                              _showDiagnosticReportSnackBar(
-                                context,
-                                result: result,
-                              );
-                            },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.content.textPrimary,
-                        side: BorderSide(color: colors.lines.borderSubtle),
-                      ),
-                      child: Text(action.label),
-                    ),
-                  },
-              ],
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
+}
+
+IconData _iconFor(EnvironmentReadinessEpisodeKind kind) {
+  return switch (kind) {
+    EnvironmentReadinessEpisodeKind.checking => Icons.hourglass_empty,
+    EnvironmentReadinessEpisodeKind.blocked => Icons.lock_outline_rounded,
+    EnvironmentReadinessEpisodeKind.ready => Icons.check_circle_outline_rounded,
+    EnvironmentReadinessEpisodeKind.failed => Icons.error_outline_rounded,
+  };
+}
+
+Color _accentFor(EnvironmentReadinessTone tone, ThemeColors colors) {
+  return switch (tone) {
+    EnvironmentReadinessTone.primary => colors.accents.primary,
+    EnvironmentReadinessTone.warning => colors.status.warning,
+    EnvironmentReadinessTone.success => colors.status.success,
+    EnvironmentReadinessTone.failure => colors.status.error,
+  };
 }
 
 void _showDiagnosticReportSnackBar(
@@ -536,308 +423,10 @@ void _showDiagnosticReportSnackBar(
   if (messenger == null) {
     return;
   }
-
   final message = result.exportPath == null
       ? 'MessageLens could not prepare a diagnostic report right now.'
       : result.attachedToMailDraft
       ? 'Email draft prepared with the support bundle attached.'
-      : 'Support bundle prepared. It was opened in Finder so it can be attached manually.';
-
+      : 'Support bundle prepared and opened in Finder.';
   messenger.showSnackBar(SnackBar(content: Text(message)));
-}
-
-class _InstructionRow extends StatelessWidget {
-  const _InstructionRow({
-    required this.number,
-    required this.text,
-    required this.colors,
-    required this.typography,
-  });
-
-  final int number;
-  final String text;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: colors.accents.primary,
-            shape: BoxShape.circle,
-          ),
-          child: Text(
-            '$number',
-            style: typography.caption.copyWith(
-              color: colors.buttons.primaryForeground,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              text,
-              style: typography.body.copyWith(
-                color: colors.content.textPrimary,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EvidenceCard extends StatelessWidget {
-  const _EvidenceCard({
-    required this.report,
-    required this.colors,
-    required this.typography,
-  });
-
-  final OnboardingEnvironmentReport report;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: colors.surfaces.control,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.lines.borderSubtle, width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Current machine view',
-            style: typography.body.copyWith(
-              color: colors.content.textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _EvidenceRow(
-            label: 'MessageLens status',
-            value: _messageLensStatusValue(report),
-            colors: colors,
-            typography: typography,
-          ),
-          const SizedBox(height: 6),
-          _EvidenceRow(
-            label: 'Full Disk Access',
-            value: report.hasFullDiskAccess
-                ? 'Available'
-                : 'Missing or blocked',
-            colors: colors,
-            typography: typography,
-          ),
-          _EvidenceRow(
-            label: 'Messages database',
-            value: report.messagesDatabase.readable
-                ? 'Readable'
-                : report.messagesDatabase.exists
-                ? 'Present but blocked'
-                : 'Missing',
-            colors: colors,
-            typography: typography,
-          ),
-          _EvidenceRow(
-            label: 'Contacts database',
-            value: report.addressBookDatabase?.readable == true
-                ? 'Readable'
-                : report.addressBookDatabase == null
-                ? 'Unavailable'
-                : 'Present but blocked',
-            colors: colors,
-            typography: typography,
-          ),
-          _EvidenceRow(
-            label: 'Imported message data',
-            value: report.sourceScopedImportDatabase.hasData
-                ? 'Ready'
-                : 'Not prepared yet',
-            colors: colors,
-            typography: typography,
-          ),
-          _EvidenceRow(
-            label: 'User settings and archive metadata',
-            value: report.overlayDatabase.readable
-                ? 'Available'
-                : report.overlayDatabase.exists
-                ? 'Present but blocked'
-                : 'Not created yet',
-            colors: colors,
-            typography: typography,
-          ),
-          _EvidenceRow(
-            label: 'Conversation browsing data',
-            value: report.conversationGraph.hasData
-                ? 'Ready'
-                : 'Not prepared yet',
-            colors: colors,
-            typography: typography,
-          ),
-          _EvidenceRow(
-            label: 'Last graph build',
-            value: _graphBuildValue(report),
-            colors: colors,
-            typography: typography,
-          ),
-          _EvidenceRow(
-            label: 'Live message updates',
-            value: _liveUpdateValue(report),
-            colors: colors,
-            typography: typography,
-          ),
-          _EvidenceRow(
-            label: 'Attachment archive',
-            value: report.attachmentArchiveDirectory.readable
-                ? 'Available'
-                : report.attachmentArchiveDirectory.exists
-                ? 'Present but blocked'
-                : 'Not created yet',
-            colors: colors,
-            typography: typography,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String _messageLensStatusValue(OnboardingEnvironmentReport report) {
-  return switch (report.state) {
-    OnboardingEnvironmentState.ready =>
-      'Ready to use; ordinary browsing can run from local app data',
-    OnboardingEnvironmentState.maintenanceInProgress =>
-      'Message data maintenance is in progress',
-    OnboardingEnvironmentState.readyToImport =>
-      'Ready to import; setup has the required local access',
-    OnboardingEnvironmentState.permissionBlocked =>
-      'Blocked until Full Disk Access is granted',
-    OnboardingEnvironmentState.sourceUnavailable =>
-      'Blocked until local Messages or Contacts data is available',
-    OnboardingEnvironmentState.sourceSparseOrUnsynced =>
-      'Waiting for local Messages history to sync',
-    OnboardingEnvironmentState.importFailed ||
-    OnboardingEnvironmentState.graphProjectionFailed =>
-      'Setup needs retry; the last import or browsing-data build failed',
-  };
-}
-
-String _graphBuildValue(OnboardingEnvironmentReport report) {
-  final error = report.graphBuildLastError;
-  if (error != null && error.isNotEmpty) {
-    return 'Error: $error';
-  }
-
-  final finishedAt = report.graphBuildFinishedAt;
-  if (finishedAt != null) {
-    return '${report.graphBuildStatusLabel} at ${_formatReadinessTimestamp(finishedAt)}';
-  }
-
-  return report.graphBuildStatusLabel;
-}
-
-String _liveUpdateValue(OnboardingEnvironmentReport report) {
-  final error = report.liveUpdateLastError;
-  if (error != null && error.isNotEmpty) {
-    return 'Error: $error';
-  }
-
-  final lastChangeDetected = report.liveUpdateLastChangeDetectedAt;
-  if (lastChangeDetected != null) {
-    return 'Last change ${_formatReadinessTimestamp(lastChangeDetected)}';
-  }
-
-  final cursorRowId = report.liveUpdateCursorRowId;
-  if (cursorRowId != null) {
-    return 'Watching source row $cursorRowId';
-  }
-
-  return 'Waiting for source changes';
-}
-
-String _formatReadinessTimestamp(DateTime timestamp) {
-  final local = timestamp.toLocal();
-  final year = local.year.toString().padLeft(4, '0');
-  final month = local.month.toString().padLeft(2, '0');
-  final day = local.day.toString().padLeft(2, '0');
-  final hour = local.hour.toString().padLeft(2, '0');
-  final minute = local.minute.toString().padLeft(2, '0');
-  return '$year-$month-$day $hour:$minute';
-}
-
-class _EvidenceRow extends StatelessWidget {
-  const _EvidenceRow({
-    required this.label,
-    required this.value,
-    required this.colors,
-    required this.typography,
-  });
-
-  final String label;
-  final String value;
-  final ThemeColors colors;
-  final ThemeTypography typography;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: RichText(
-        text: TextSpan(
-          style: typography.caption.copyWith(
-            color: colors.content.textSecondary,
-          ),
-          children: [
-            TextSpan(
-              text: '$label: ',
-              style: typography.caption.copyWith(
-                color: colors.content.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            TextSpan(text: value),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-IconData _iconFor(EnvironmentReadinessStepKey stepKey) {
-  return switch (stepKey) {
-    EnvironmentReadinessStepKey.fullDiskAccess => CupertinoIcons.lock_shield,
-    EnvironmentReadinessStepKey.messagesDatabase =>
-      CupertinoIcons.chat_bubble_text,
-    EnvironmentReadinessStepKey.contactsDatabase =>
-      CupertinoIcons.person_crop_circle_badge_checkmark,
-    EnvironmentReadinessStepKey.importReadiness =>
-      CupertinoIcons.check_mark_circled,
-  };
-}
-
-Color _accentColorFor(
-  EnvironmentReadinessTone tone, {
-  required ThemeColors colors,
-}) {
-  return switch (tone) {
-    EnvironmentReadinessTone.primary => colors.accents.primary,
-    EnvironmentReadinessTone.warning => colors.status.warning,
-    EnvironmentReadinessTone.success => colors.status.success,
-  };
 }

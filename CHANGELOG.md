@@ -10,6 +10,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Environment Readiness now presents one guided checking, blocker, ready, or
+  failed episode instead of a diagnostics dashboard. Successful evidence is
+  disclosed under Details, the import action remains above the fold, and
+  verified first-run completion now yields through a single OK action to the
+  canonical animated application sidebar without persisting a forced sidebar
+  preference.
+
 - Installation-state integrity and topology inspection now runs outside the
   Flutter UI isolate. Startup can render progress while inspecting a large
   archive, and Settings can show Start Fresh confirmation immediately from the

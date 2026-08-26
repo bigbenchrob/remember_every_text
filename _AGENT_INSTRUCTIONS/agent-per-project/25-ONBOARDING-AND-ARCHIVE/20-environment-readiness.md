@@ -160,6 +160,23 @@ Import and graph-build progress are `OnboardingStatus` workflow states, not
 This makes readiness a first-class panel surface. It is not an overlay-only
 flow.
 
+The panel is a guided Episode projection, not a diagnostics dashboard. Typed
+report truth is mapped to `checking`, `blocked`, `ready`, or `failed`. One
+blocker owns the primary presentation; successful checks and machine evidence
+recede under a bounded Details disclosure. Ready-to-import presents one
+dominant `Import My Messages` action above the fold. A completed installation
+may report that MessageLens is ready, but it does not offer another first-run
+import.
+
+Contacts remains required by the current pipeline because Contacts import and
+projection are unconditional. The presentation must not describe it as
+optional until operational architecture makes it optional. Import-storage and
+graph readiness are internal gates, not separate human tasks.
+
+MessageLens can inspect only local Messages evidence. Guidance may recommend
+Messages in iCloud when expected history is absent, but must not claim to have
+inspected an iPhone or proved synchronization completeness.
+
 ## Design Principles
 
 ### Conservative Diagnosis

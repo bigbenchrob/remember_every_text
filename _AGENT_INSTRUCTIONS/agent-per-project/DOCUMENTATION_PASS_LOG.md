@@ -5675,3 +5675,17 @@ production preservation authority mechanically enforceable.
 - Replaced the option-launch reset no-op with classifier-driven startup,
   explicit authorization, mutation admission, and post-reset virgin-state
   verification.
+
+## 2026-08-26 - Guided Environment Readiness and Onboarding handoff
+
+- Replaced the readiness dashboard contract with a typed checking, blocked,
+  ready, or failed Episode projection and bounded Details evidence.
+- Recorded current Contacts-required pipeline truth and honest local-only
+  Messages/iCloud guidance.
+- Made first-run Onboarding the temporary owner of canonical sidebar
+  visibility without storing or overriding normal user preference.
+- Defined verified terminal **OK** as the human handoff that releases Presence,
+  opens normal navigation with native animation, and moves focus to the normal
+  mode control.
+- Clarified in the Track contract that temporary window/sidebar visibility is
+  not Track geometry and does not alter page matrices.

@@ -1,13 +1,6 @@
-enum EnvironmentReadinessStepKey {
-  fullDiskAccess,
-  messagesDatabase,
-  contactsDatabase,
-  importReadiness,
-}
+enum EnvironmentReadinessEpisodeKind { checking, blocked, ready, failed }
 
-enum EnvironmentReadinessStepStatus { pending, active, success }
-
-enum EnvironmentReadinessTone { primary, warning, success }
+enum EnvironmentReadinessTone { primary, warning, success, failure }
 
 enum EnvironmentReadinessActionKind {
   openSettings,
@@ -23,49 +16,48 @@ class EnvironmentReadinessAction {
   final String label;
 }
 
-class EnvironmentReadinessStepViewModel {
-  const EnvironmentReadinessStepViewModel({
-    required this.key,
-    required this.title,
-    required this.subtitle,
-    required this.status,
+class EnvironmentReadinessEvidence {
+  const EnvironmentReadinessEvidence({
+    required this.label,
+    required this.value,
   });
 
-  final EnvironmentReadinessStepKey key;
-  final String title;
-  final String subtitle;
-  final EnvironmentReadinessStepStatus status;
-}
-
-class EnvironmentReadinessDetailViewModel {
-  const EnvironmentReadinessDetailViewModel({
-    required this.stepKey,
-    required this.title,
-    required this.body,
-    required this.instructions,
-    required this.actions,
-    required this.tone,
-  });
-
-  final EnvironmentReadinessStepKey stepKey;
-  final String title;
-  final String body;
-  final List<String> instructions;
-  final List<EnvironmentReadinessAction> actions;
-  final EnvironmentReadinessTone tone;
+  final String label;
+  final String value;
 }
 
 class EnvironmentReadinessSurfaceViewModel {
   const EnvironmentReadinessSurfaceViewModel({
-    required this.activeStepKey,
-    required this.steps,
-    required this.detailsByStep,
-    required this.detail,
+    required this.kind,
+    required this.title,
+    required this.body,
+    required this.tone,
+    required this.actions,
+    required this.evidence,
+    this.sanityEvidence,
+    this.instructions = const <String>[],
   });
 
-  final EnvironmentReadinessStepKey activeStepKey;
-  final List<EnvironmentReadinessStepViewModel> steps;
-  final Map<EnvironmentReadinessStepKey, EnvironmentReadinessDetailViewModel>
-  detailsByStep;
-  final EnvironmentReadinessDetailViewModel detail;
+  final EnvironmentReadinessEpisodeKind kind;
+  final String title;
+  final String body;
+  final String? sanityEvidence;
+  final EnvironmentReadinessTone tone;
+  final List<String> instructions;
+  final List<EnvironmentReadinessAction> actions;
+  final List<EnvironmentReadinessEvidence> evidence;
+
+  EnvironmentReadinessAction? get primaryAction {
+    if (actions.isEmpty) {
+      return null;
+    }
+    return actions.first;
+  }
+
+  List<EnvironmentReadinessAction> get secondaryActions {
+    if (actions.length < 2) {
+      return const <EnvironmentReadinessAction>[];
+    }
+    return actions.sublist(1);
+  }
 }

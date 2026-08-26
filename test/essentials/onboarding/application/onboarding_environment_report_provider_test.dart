@@ -28,6 +28,7 @@ import 'package:remember_this_text/essentials/onboarding/infrastructure/persiste
 import 'package:remember_this_text/features/address_book_folders/application/address_book_folder_providers.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_aggregate.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/entities/address_book_folder_entity.dart';
+import 'package:remember_this_text/features/address_book_folders/domain/failures/folder_retrieval_failure.dart';
 import 'package:remember_this_text/features/address_book_folders/domain/value_objects/value_objects.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -109,51 +110,45 @@ void main() {
       },
     );
 
-    test(
-      'simulated full disk access override forces permission blocked',
-      () async {
-        final messagesDbPath = _createMessagesDatabase(
-          tempDir.path,
-          messageCount: 11,
-        );
-        final addressBookPath = _createReadableFile(
-          tempDir.path,
-          'AddressBook-v22.abcddb',
-        );
-
-        container = ProviderContainer(
-          overrides: [
-            ..._lifecycleOverrides(),
-            overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
-            onboardingFullDiskAccessProvider.overrideWith((ref) => true),
-            onboardingMessagesDatabasePathProvider.overrideWith(
-              (ref) => messagesDbPath,
+    test('full disk access wins when Contacts is also unavailable', () async {
+      final messagesDbPath = _createMessagesDatabase(
+        tempDir.path,
+        messageCount: 11,
+      );
+      container = ProviderContainer(
+        overrides: [
+          ..._lifecycleOverrides(),
+          overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
+          onboardingFullDiskAccessProvider.overrideWith((ref) => true),
+          onboardingMessagesDatabasePathProvider.overrideWith(
+            (ref) => messagesDbPath,
+          ),
+          onboardingDatabaseDirectoryPathProvider.overrideWith(
+            (ref) => tempDir.path,
+          ),
+          attachmentArchiveDirectoryProvider.overrideWith(
+            (ref) => '${tempDir.path}/attachment_archive',
+          ),
+          futureGetFolderAggregateProvider.overrideWith(
+            (ref) async => left(
+              const FolderRetrievalFailure(message: 'Contacts unavailable'),
             ),
-            onboardingDatabaseDirectoryPathProvider.overrideWith(
-              (ref) => tempDir.path,
-            ),
-            attachmentArchiveDirectoryProvider.overrideWith(
-              (ref) => '${tempDir.path}/attachment_archive',
-            ),
-            futureGetFolderAggregateProvider.overrideWith(
-              (ref) async => right(_addressBookAggregate(addressBookPath)),
-            ),
-          ],
-        );
+          ),
+        ],
+      );
 
-        container
-            .read(onboardingDevOverridesProvider.notifier)
-            .setFullDiskAccessBlocked(enabled: true);
+      container
+          .read(onboardingDevOverridesProvider.notifier)
+          .setFullDiskAccessBlocked(enabled: true);
 
-        final report = await container.refresh(
-          onboardingEnvironmentReportProvider.future,
-        );
+      final report = await container.refresh(
+        onboardingEnvironmentReportProvider.future,
+      );
 
-        expect(report.state, OnboardingEnvironmentState.permissionBlocked);
-        expect(report.blockerKind, OnboardingBlockerKind.fullDiskAccessMissing);
-        expect(report.hasFullDiskAccess, isFalse);
-      },
-    );
+      expect(report.state, OnboardingEnvironmentState.permissionBlocked);
+      expect(report.blockerKind, OnboardingBlockerKind.fullDiskAccessMissing);
+      expect(report.hasFullDiskAccess, isFalse);
+    });
 
     test('simulated import failure overrides ready app state', () async {
       final messagesDbPath = _createMessagesDatabase(

@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding
 owner: agent-per-project
-last_reviewed: 2026-08-25
+last_reviewed: 2026-08-26
 source_of_truth: feature-work-package-index
 ---
 
@@ -26,14 +26,13 @@ Journey before further Onboarding implementation begins.
 7. [Dependency-aware anomaly policy for remaining source domains](responses/07-DEPENDENCY-AWARE-ANOMALY-POLICY-FOR-REMAINING-ONBOARDING-DOMAINS-IMPLEMENTATION.md)
 8. [Production-shaped anomaly validation](responses/08-PRODUCTION-SHAPED-ONBOARDING-ANOMALY-VALIDATION.md)
 9. [Installation state and preservation-safe Start Fresh](responses/09-INSTALLATION-STATE-CLASSIFICATION-AND-PRESERVATION-SAFE-START-FRESH-IMPLEMENTATION.md)
+10. [Environment Readiness guided Episode and application handoff](responses/11-ENVIRONMENT-READINESS-AS-GUIDED-PRESENCE-EPISODE-AND-ONBOARDING-HANDOFF-IMPLEMENTATION.md)
 
 ## Current Status
 
-**PRESERVATION-SAFE START FRESH IMPLEMENTED FOR LOCAL VALIDATION.** Startup now
-classifies admitted installations as virgin, resumable, completed, abandoned,
-or remediation-required from durable evidence. Abandoned installs can reset
-only the canonical rebuildable import/graph allow-list under mutation
-authority; overlays, Presence history, archive identity, logs, preferences,
-and attachment payloads remain preserved. The old option-launch reset no-op is
-gone. External tester use remains blocked pending disposable-archive manual
-validation.
+**GUIDED READINESS AND TERMINAL HANDOFF IMPLEMENTED.** Environment Readiness
+now projects typed truth into one checking, blocker, ready, or failed Episode.
+Successful evidence recedes under Details. First-run Onboarding temporarily
+owns canonical sidebar visibility through terminal completion; verified OK
+releases normal application ownership and opens the native sidebar without
+persisting or overriding later user choices.

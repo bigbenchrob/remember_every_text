@@ -223,9 +223,13 @@ void main() {
       graphBuildState: _successfulGraphBuildState(),
     );
 
-    _expectCalmCompletion(actionLabel: 'Get Started');
+    _expectCalmCompletion(
+      title: 'You’re ready to start',
+      body: 'Your local MessageLens browsing data is prepared.',
+      actionLabel: 'OK',
+    );
 
-    await tester.tap(find.text('Get Started'));
+    await tester.tap(find.text('OK'));
 
     expect(gate.dismissCallCount, 1);
   });
@@ -241,7 +245,11 @@ void main() {
       graphBuildState: _successfulGraphBuildState(),
     );
 
-    _expectCalmCompletion(actionLabel: 'Done');
+    _expectCalmCompletion(
+      title: 'MessageLens is ready',
+      body: 'Your local browsing data is prepared.',
+      actionLabel: 'Done',
+    );
 
     await tester.tap(find.text('Done'));
 
@@ -249,10 +257,14 @@ void main() {
   });
 }
 
-void _expectCalmCompletion({required String actionLabel}) {
+void _expectCalmCompletion({
+  required String title,
+  required String body,
+  required String actionLabel,
+}) {
   expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-  expect(find.text('MessageLens is ready'), findsOneWidget);
-  expect(find.text('Your local browsing data is prepared.'), findsOneWidget);
+  expect(find.text(title), findsOneWidget);
+  expect(find.text(body), findsOneWidget);
   expect(find.text(actionLabel), findsOneWidget);
   expect(find.text('Import Complete!'), findsNothing);
 

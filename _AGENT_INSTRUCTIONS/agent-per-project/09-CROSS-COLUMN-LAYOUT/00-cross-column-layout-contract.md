@@ -69,6 +69,15 @@ concept. See
 That boundary exists to express truthful composition, not as a performance
 optimization.
 
+## Visibility Is Not Track Geometry
+
+Tracks coordinate geometry while participating application columns are
+present. A full-window Journey may temporarily withhold the normal navigation
+sidebar through the window's canonical visibility mechanism. That does not
+create an empty Track, a zero-width column, or a different Matrix. When normal
+application ownership resumes, the same feature trees consume the same
+page-owned matrix.
+
 ## Track Occupancy
 
 Each page composition decides which cells are occupied:

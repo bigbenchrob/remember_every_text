@@ -125,6 +125,14 @@ Presence never owns:
 
 Presence coordinates authoritative facts. It does not manufacture them.
 
+When a completed Journey yields to ordinary application interaction, the
+feature may define the normal application surface that becomes available. The
+handoff still follows durable truth: terminal human acknowledgment may release
+Presence foreground ownership, after which the application reveals its own
+controls. Presentation timing or animation cannot establish operational
+completion, and removing Presence cannot make the underlying feature state
+incorrect.
+
 ## Feature to Presence
 
 A feature may supply the facts and capabilities Presence needs to derive a

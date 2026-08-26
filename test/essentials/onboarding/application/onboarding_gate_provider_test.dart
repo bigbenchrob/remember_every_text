@@ -418,7 +418,7 @@ void main() {
             .read(activeSidebarModeProvider.notifier)
             .setMode(SidebarMode.settings);
 
-        await tester.tap(find.text('Get Started'));
+        await tester.tap(find.text('OK'));
         await tester.pump();
         await tester.pump();
 
