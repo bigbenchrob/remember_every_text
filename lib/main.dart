@@ -306,9 +306,14 @@ void main() async {
 }
 
 class StartupApp extends ConsumerStatefulWidget {
-  const StartupApp({required this.startupFlags, super.key});
+  const StartupApp({
+    required this.startupFlags,
+    this.admittedChild = const App(),
+    super.key,
+  });
 
   final StartupFlags startupFlags;
+  final Widget admittedChild;
 
   @override
   ConsumerState<StartupApp> createState() => _StartupAppState();
@@ -316,6 +321,7 @@ class StartupApp extends ConsumerStatefulWidget {
 
 class _StartupAppState extends ConsumerState<StartupApp> {
   bool _startupChoiceResolved = false;
+  bool _startupAdmissionScheduled = false;
 
   void _continueStartup() {
     if (!mounted || _startupChoiceResolved) {
@@ -330,7 +336,7 @@ class _StartupAppState extends ConsumerState<StartupApp> {
   @override
   Widget build(BuildContext context) {
     if (_startupChoiceResolved) {
-      return const App();
+      return widget.admittedChild;
     }
 
     final themeMode = ref.watch(switchableDarkModeProvider);
@@ -342,7 +348,13 @@ class _StartupAppState extends ConsumerState<StartupApp> {
             widget.startupFlags.optionLaunchResetRequested ||
             state.requiresStartupAttention;
         if (!mustPauseStartup) {
-          return const App();
+          if (!_startupAdmissionScheduled) {
+            _startupAdmissionScheduled = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _continueStartup();
+            });
+          }
+          return widget.admittedChild;
         }
 
         return MacosApp(

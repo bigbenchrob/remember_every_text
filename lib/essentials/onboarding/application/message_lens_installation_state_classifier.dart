@@ -69,13 +69,18 @@ final class MessageLensInstallationStateClassifier {
       );
     }
 
-    final hasDerivedArtifacts =
-        import.exists || graph.exists || evidence.hasRetiredDerivedArtifacts;
-    if (!hasDerivedArtifacts &&
+    final hasConsequentialDerivedData =
+        importRows > 0 ||
+        graphRows > 0 ||
+        (graph.chatCount ?? 0) > 0 ||
+        (graph.chatMessageEdgeCount ?? 0) > 0 ||
+        evidence.hasRetiredDerivedArtifacts;
+    if (!hasConsequentialDerivedData &&
         snapshot.status == OnboardingOperationStatus.idle) {
       return const MessageLensInstallationState(
         kind: MessageLensInstallationStateKind.virgin,
-        reason: 'No consequential MessageLens import has begun.',
+        reason:
+            'No consequential MessageLens import has begun; any derived stores are valid and empty.',
       );
     }
 

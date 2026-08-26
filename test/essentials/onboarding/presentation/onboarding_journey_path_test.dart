@@ -10,6 +10,17 @@ import 'package:remember_this_text/essentials/onboarding/presentation/onboarding
 
 void main() {
   group('Onboarding Journey path projection', () {
+    test('defines six human Episodes independently of internal states', () {
+      expect(OnboardingJourneyPathNode.values, <OnboardingJourneyPathNode>[
+        OnboardingJourneyPathNode.messages,
+        OnboardingJourneyPathNode.history,
+        OnboardingJourneyPathNode.contacts,
+        OnboardingJourneyPathNode.ready,
+        OnboardingJourneyPathNode.import,
+        OnboardingJourneyPathNode.start,
+      ]);
+    });
+
     test('maps every first-run Episode to the compact canonical topology', () {
       final evidence = _evidence();
       final cases = <OnboardingJourneyState, OnboardingJourneyPathNode>{
@@ -35,7 +46,7 @@ void main() {
         const OnboardingBuildingLocalData(occurrence: 8):
             OnboardingJourneyPathNode.import,
         const OnboardingVerifyingDurableReadiness(occurrence: 9):
-            OnboardingJourneyPathNode.verify,
+            OnboardingJourneyPathNode.import,
         const OnboardingOperationFailed(
           occurrence: 10,
           summary: 'Import did not finish.',
@@ -55,7 +66,7 @@ void main() {
     });
 
     test(
-      'derives completed and future nodes only around the current Episode',
+      'keeps the human path on Import during the internal verification gate',
       () {
         final projection = projectOnboardingJourneyPath(
           const OnboardingVerifyingDurableReadiness(occurrence: 1),
@@ -73,8 +84,6 @@ void main() {
             OnboardingJourneyPathNode.ready:
                 OnboardingJourneyPathNodeState.completed,
             OnboardingJourneyPathNode.import:
-                OnboardingJourneyPathNodeState.completed,
-            OnboardingJourneyPathNode.verify:
                 OnboardingJourneyPathNodeState.current,
             OnboardingJourneyPathNode.start:
                 OnboardingJourneyPathNodeState.future,
@@ -167,13 +176,14 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Messages'), findsOneWidget);
+      expect(find.text('Verify'), findsNothing);
       expect(find.text('Start'), findsOneWidget);
       expect(
         tester
             .getSemantics(find.byKey(const Key('onboarding-journey-path')))
             .label,
-        'Current setup step: Verifying. Messages access, Message history, '
-        'Contacts, Ready to import, and Importing are complete.',
+        'Current setup step: Importing. Messages access, Message history, '
+        'Contacts, and Ready to import are complete.',
       );
     },
   );

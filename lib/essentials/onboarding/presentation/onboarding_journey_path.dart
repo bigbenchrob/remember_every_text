@@ -11,7 +11,6 @@ enum OnboardingJourneyPathNode {
   contacts,
   ready,
   import,
-  verify,
   start,
 }
 
@@ -66,7 +65,9 @@ OnboardingJourneyPathProjection? projectOnboardingJourneyPath(
     OnboardingPreparingImport() ||
     OnboardingBuildingLocalData() ||
     OnboardingOperationFailed() => OnboardingJourneyPathNode.import,
-    OnboardingVerifyingDurableReadiness() => OnboardingJourneyPathNode.verify,
+    // Durable verification is a mandatory internal gate, not another human
+    // obligation. Import remains current until its proof makes Start truthful.
+    OnboardingVerifyingDurableReadiness() => OnboardingJourneyPathNode.import,
     OnboardingReadyToStart() => OnboardingJourneyPathNode.start,
     OnboardingNormalApplication() ||
     OnboardingReimporting() ||
@@ -320,7 +321,6 @@ String _visibleLabelFor(OnboardingJourneyPathNode node) {
     OnboardingJourneyPathNode.contacts => 'Contacts',
     OnboardingJourneyPathNode.ready => 'Ready',
     OnboardingJourneyPathNode.import => 'Import',
-    OnboardingJourneyPathNode.verify => 'Verify',
     OnboardingJourneyPathNode.start => 'Start',
   };
 }
@@ -332,7 +332,6 @@ String _semanticLabelFor(OnboardingJourneyPathNode node) {
     OnboardingJourneyPathNode.contacts => 'Contacts',
     OnboardingJourneyPathNode.ready => 'Ready to import',
     OnboardingJourneyPathNode.import => 'Importing',
-    OnboardingJourneyPathNode.verify => 'Verifying',
     OnboardingJourneyPathNode.start => 'Start',
   };
 }

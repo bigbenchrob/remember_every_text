@@ -172,8 +172,20 @@ Journey Coordinator         -> which Episode follows
 ```
 
 Operation completion alone cannot produce `readyToStart`. The coordinator
-publishes the verifying Episode, runs the canonical durable completion
+publishes the internal verifying state, runs the canonical durable completion
 verifier, records the proof, and only then publishes terminal readiness.
+
+The typed verifying state is a mandatory mechanical gate, not a separate
+human Journey node. The canonical human path is:
+
+```text
+Messages -> History -> Contacts -> Ready -> Import -> Start
+```
+
+While verification is active, the human path remains on Import and Start is
+future. Only successful durable proof completes Import and makes Start current.
+Verification failure remains an Onboarding-owned typed failure and cannot
+expose Start.
 
 Terminal readiness does not reveal the normal application. Human
 acknowledgement changes the Journey to normal application, after which the

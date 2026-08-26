@@ -10,8 +10,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- The first-run Journey path now represents six human-meaningful Episodes:
+  Messages, History, Contacts, Ready, Import, and Start. Durable verification
+  remains a mandatory typed coordinator gate; while it runs, Import stays
+  current and Start remains unavailable, with failures returning to the typed
+  Import failure presentation rather than creating a phantom Verify step.
+
+- Start Fresh now hands off to Onboarding without the startup integrity gate
+  later reclaiming the window during derived-store recreation. Startup
+  admission is latched for the process, while fresh launches still fail closed;
+  valid empty current-schema import and graph stores now count as a truthful
+  virgin installation rather than an abandoned setup. Its verified operation
+  surface also covers the one-frame native sidebar reconciliation, preventing
+  the previous Settings sidebar from flashing during the Onboarding handoff.
+
 - First-run setup now includes a compact live Journey path for Messages,
-  history, Contacts, readiness, import, verification, and handoff. It follows
+  history, Contacts, readiness, import, and handoff. It follows
   only the typed Onboarding coordinator, moves backward when prerequisite
   evidence regresses, remains stable during record-level import progress, and
   disappears before normal navigation is revealed.

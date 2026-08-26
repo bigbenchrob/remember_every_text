@@ -29,13 +29,22 @@ Journey before further Onboarding implementation begins.
 10. [Environment Readiness guided Episode and application handoff](responses/11-ENVIRONMENT-READINESS-AS-GUIDED-PRESENCE-EPISODE-AND-ONBOARDING-HANDOFF-IMPLEMENTATION.md)
 11. [Single-authority typed Onboarding Journey Coordinator](responses/12-SINGLE-AUTHORITY-TYPED-ONBOARDING-JOURNEY-COORDINATOR-IMPLEMENTATION.md)
 12. [Live Onboarding Journey path](responses/13-LIVE-ONBOARDING-JOURNEY-PATH-IMPLEMENTATION.md)
+13. [Start Fresh startup-admission correction](responses/14-START-FRESH-STARTUP-ADMISSION-CORRECTION.md)
+14. [Journey node semantics and verification gate](responses/14-ONBOARDING-JOURNEY-NODE-SEMANTICS-AND-VERIFICATION-GATE-IMPLEMENTATION.md)
 
 ## Current Status
 
 **LIVE SINGLE-AUTHORITY JOURNEY IMPLEMENTED.**
 `OnboardingJourneyCoordinator` selects the sole active typed Episode from
 coherent prerequisite evidence, durable operation truth, and explicit human
-intent. A compact live path now projects that state across prerequisite,
-operation, verification, and terminal surfaces without inferring progress from
-widgets or counters. First-run ownership continues through terminal OK, which
-removes the path and releases the normal application sidebar.
+intent. A compact six-node human path now projects meaningful prerequisite,
+authorization, operation, and terminal Episodes without mirroring the internal
+durable-verification gate or inferring progress from widgets and counters.
+First-run ownership continues through terminal OK, which removes the path and
+releases the normal application sidebar.
+
+Startup classification is a one-shot process admission decision. Once the
+application has been admitted, later installation-state refreshes cannot
+reclaim its presentation. Valid empty derived stores are classified as virgin
+from their durable contents rather than treated as consequential merely because
+their files exist.

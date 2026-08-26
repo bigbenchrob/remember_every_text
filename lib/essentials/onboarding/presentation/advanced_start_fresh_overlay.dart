@@ -38,15 +38,19 @@ class AdvancedStartFreshOverlayHost extends ConsumerWidget {
     if (presentation.phase ==
             AdvancedStartFreshPresentationPhase.verifiedVirgin &&
         onboardingOwnsPresentation) {
-      // Yield only after this verified occurrence has rendered or Onboarding
-      // has taken ownership. The occurrence guard prevents an old callback
-      // from clearing a newer Start Fresh presentation.
+      // Keep the operation surface for the ownership-reconciliation frame.
+      // The normal sidebar closes in that frame's post-frame callback, so
+      // revealing Onboarding immediately would expose the old open sidebar.
+      // The occurrence guard prevents an old callback from clearing a newer
+      // Start Fresh presentation.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(advancedStartFreshPresentationControllerProvider.notifier)
             .dismiss(expectedOccurrence: presentation.occurrence);
       });
-      return const SizedBox.shrink();
+      return Positioned.fill(
+        child: AdvancedStartFreshOverlay(presentation: presentation),
+      );
     }
 
     return Positioned.fill(

@@ -14,6 +14,66 @@ void main() {
     );
   });
 
+  test('valid empty derived stores are virgin', () {
+    expect(
+      classifier
+          .classify(
+            _evidence(
+              sourceScopedImport: _usableDatabase(
+                messageCount: 0,
+                nonLiveSourceCount: 0,
+              ),
+              conversationGraph: _usableDatabase(
+                messageCount: 0,
+                chatCount: 0,
+                chatMessageEdgeCount: 0,
+              ),
+            ),
+          )
+          .kind,
+      MessageLensInstallationStateKind.virgin,
+    );
+  });
+
+  test('one valid empty derived store is still virgin', () {
+    expect(
+      classifier
+          .classify(
+            _evidence(
+              sourceScopedImport: _usableDatabase(
+                messageCount: 0,
+                nonLiveSourceCount: 0,
+              ),
+            ),
+          )
+          .kind,
+      MessageLensInstallationStateKind.virgin,
+    );
+  });
+
+  test('post-reset empty stores with preserved stores are virgin', () {
+    expect(
+      classifier
+          .classify(
+            _evidence(
+              sourceScopedImport: _usableDatabase(
+                messageCount: 0,
+                nonLiveSourceCount: 0,
+              ),
+              conversationGraph: _usableDatabase(
+                messageCount: 0,
+                chatCount: 0,
+                chatMessageEdgeCount: 0,
+              ),
+              overlay: _usableDatabase(),
+              presence: _usableDatabase(),
+            ),
+          )
+          .kind,
+      MessageLensInstallationStateKind.virgin,
+    );
+  });
+
   test('running coherent operation is resumable', () {
     expect(
       classifier
@@ -55,13 +115,20 @@ void main() {
     );
   });
 
-  test('idle derived artifacts are abandoned', () {
+  test('idle consequential derived data is abandoned', () {
     expect(
       classifier
           .classify(
             _evidence(sourceScopedImport: _usableDatabase(messageCount: 12)),
           )
           .kind,
+      MessageLensInstallationStateKind.abandoned,
+    );
+  });
+
+  test('retired derived artifacts are consequential', () {
+    expect(
+      classifier.classify(_evidence(hasRetiredDerivedArtifacts: true)).kind,
       MessageLensInstallationStateKind.abandoned,
     );
   });
@@ -137,13 +204,14 @@ MessageLensInstallationEvidence _evidence({
       const InstallationDatabaseEvidence.absent(),
   OnboardingOperationSnapshot operationSnapshot =
       const OnboardingOperationSnapshot.idle(),
+  bool hasRetiredDerivedArtifacts = false,
 }) {
   return MessageLensInstallationEvidence(
     sourceScopedImport: sourceScopedImport,
     conversationGraph: conversationGraph,
     overlay: overlay,
     presence: presence,
-    hasRetiredDerivedArtifacts: false,
+    hasRetiredDerivedArtifacts: hasRetiredDerivedArtifacts,
     operationSnapshot: operationSnapshot,
   );
 }

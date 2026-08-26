@@ -25,13 +25,20 @@ Future<MessageLensInstallationState> messageLensInstallationState(
         archiveRootPath: authority.rootPath,
         operationSnapshot: operationController.current,
       );
+  final state = const MessageLensInstallationStateClassifier().classify(
+    evidence,
+  );
   stopwatch.stop();
   ref
       .read(appLoggerProvider.notifier)
       .info(
         'Installation evidence inspection completed',
         source: 'InstallationState',
-        context: {'durationMs': stopwatch.elapsedMilliseconds.toString()},
+        context: {
+          'durationMs': stopwatch.elapsedMilliseconds.toString(),
+          'kind': state.kind.name,
+          'reason': state.reason,
+        },
       );
-  return const MessageLensInstallationStateClassifier().classify(evidence);
+  return state;
 }

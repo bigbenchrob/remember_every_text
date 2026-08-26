@@ -84,6 +84,12 @@ truthful Episode
 An Episode is the current interaction derived from Journey truth and current
 feature facts.
 
+Not every internal Coordinator state or completion predicate is an Episode.
+A mechanical gate may be mandatory before the next Episode becomes truthful
+without creating a distinct human interaction. Such a gate remains part of
+coordination and completion authority; it does not require presentation merely
+to expose an implementation transition.
+
 A Journey may produce many Episodes over time. It does not store rendered
 Episodes as durable meaning.
 

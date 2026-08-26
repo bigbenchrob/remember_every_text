@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:macos_ui/macos_ui.dart';
 
+import 'package:remember_this_text/essentials/navigation/presentation/widgets/onboarding_sidebar_visibility_owner.dart';
 import 'package:remember_this_text/essentials/onboarding/application/advanced_start_fresh_presentation_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/advanced_start_fresh_presentation.dart';
@@ -116,6 +118,14 @@ void main() {
     (container.read(onboardingGateProvider.notifier) as _TestOnboardingGate)
         .setTestStatus(OnboardingStatus.awaitingUserAction);
     await tester.pump();
+
+    expect(
+      find.byKey(AdvancedStartFreshOverlay.surfaceKey),
+      findsOneWidget,
+      reason:
+          'the operation surface must cover the sidebar-reconciliation frame',
+    );
+
     await tester.pump();
 
     expect(find.byKey(AdvancedStartFreshOverlay.surfaceKey), findsNothing);
@@ -124,6 +134,52 @@ void main() {
       AdvancedStartFreshPresentationPhase.idle,
     );
   });
+
+  testWidgets(
+    'verified surface covers sidebar closure before Onboarding is revealed',
+    (tester) async {
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            onboardingGateProvider.overrideWith(_TestOnboardingGate.new),
+          ],
+          child: Builder(
+            builder: (context) {
+              container = ProviderScope.containerOf(context);
+              return const _SidebarHandoffHarness();
+            },
+          ),
+        ),
+      );
+
+      final presentation = container.read(
+        advancedStartFreshPresentationControllerProvider.notifier,
+      );
+      final occurrence = presentation.beginPreparing();
+      presentation.showVerifiedVirgin(expectedOccurrence: occurrence);
+      await tester.pump();
+
+      expect(find.text('sidebar shown'), findsOneWidget);
+      expect(find.byKey(AdvancedStartFreshOverlay.surfaceKey), findsOneWidget);
+
+      (container.read(onboardingGateProvider.notifier) as _TestOnboardingGate)
+          .setTestStatus(OnboardingStatus.awaitingUserAction);
+      await tester.pump();
+
+      expect(find.text('sidebar shown'), findsOneWidget);
+      expect(
+        find.byKey(AdvancedStartFreshOverlay.surfaceKey),
+        findsOneWidget,
+        reason: 'the still-open sidebar must remain covered',
+      );
+
+      await tester.pump();
+
+      expect(find.text('sidebar hidden'), findsOneWidget);
+      expect(find.byKey(AdvancedStartFreshOverlay.surfaceKey), findsNothing);
+    },
+  );
 }
 
 final class _TestOnboardingGate extends OnboardingGate {
@@ -132,5 +188,48 @@ final class _TestOnboardingGate extends OnboardingGate {
 
   void setTestStatus(OnboardingStatus status) {
     state = status;
+  }
+}
+
+class _SidebarHandoffHarness extends ConsumerStatefulWidget {
+  const _SidebarHandoffHarness();
+
+  @override
+  ConsumerState<_SidebarHandoffHarness> createState() =>
+      _SidebarHandoffHarnessState();
+}
+
+class _SidebarHandoffHarnessState
+    extends ConsumerState<_SidebarHandoffHarness> {
+  bool _sidebarShown = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = ref.watch(onboardingGateProvider);
+    return MaterialApp(
+      home: MacosWindowScope(
+        constraints: const BoxConstraints.tightFor(width: 900, height: 720),
+        isSidebarShown: _sidebarShown,
+        isEndSidebarShown: false,
+        sidebarToggler: () {
+          setState(() {
+            _sidebarShown = !_sidebarShown;
+          });
+        },
+        endSidebarToggler: () {},
+        child: Builder(
+          builder: (context) {
+            final scope = MacosWindowScope.of(context);
+            return Stack(
+              children: [
+                Text(scope.isSidebarShown ? 'sidebar shown' : 'sidebar hidden'),
+                OnboardingSidebarVisibilityOwner(status: status),
+                const AdvancedStartFreshOverlayHost(),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 }

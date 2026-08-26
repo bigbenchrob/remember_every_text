@@ -16,7 +16,12 @@ an estimate of operational progress.
 
 ## Topology And Labels
 
-The visible topology is:
+> **Current topology:** Feature 28's subsequent node-semantics audit removed
+> Verify from the human path while retaining durable verification as a
+> mandatory internal coordinator gate. See
+> [`14-ONBOARDING-JOURNEY-NODE-SEMANTICS-AND-VERIFICATION-GATE-IMPLEMENTATION.md`](14-ONBOARDING-JOURNEY-NODE-SEMANTICS-AND-VERIFICATION-GATE-IMPLEMENTATION.md).
+
+The topology introduced by this implementation slice was:
 
 ```text
 Messages -> History -> Contacts -> Ready -> Import -> Verify -> Start

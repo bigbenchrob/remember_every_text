@@ -10,6 +10,70 @@ import 'package:remember_this_text/essentials/services/startup_flags_service.dar
 import 'package:remember_this_text/main.dart' show StartupApp;
 
 void main() {
+  testWidgets(
+    'healthy startup admission cannot be reclaimed by later remediation',
+    (tester) async {
+      var state = const MessageLensInstallationState(
+        kind: MessageLensInstallationStateKind.completed,
+        reason: 'healthy',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          messageLensInstallationStateProvider.overrideWith((ref) async {
+            return state;
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const StartupApp(
+            startupFlags: StartupFlags.disabled(),
+            admittedChild: MaterialApp(home: Text('Admitted application')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Admitted application'), findsOne);
+
+      state = const MessageLensInstallationState(
+        kind: MessageLensInstallationStateKind.remediationRequired,
+        reason: 'later transient inspection failure',
+      );
+      container.invalidate(messageLensInstallationStateProvider);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Admitted application'), findsOne);
+      expect(find.text('This MessageLens setup needs attention'), findsNothing);
+    },
+  );
+
+  testWidgets('initial remediation still blocks startup', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          messageLensInstallationStateProvider.overrideWith((ref) async {
+            return const MessageLensInstallationState(
+              kind: MessageLensInstallationStateKind.remediationRequired,
+              reason: 'initial contradictory evidence',
+            );
+          }),
+        ],
+        child: const StartupApp(
+          startupFlags: StartupFlags.disabled(),
+          admittedChild: MaterialApp(home: Text('Admitted application')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('This MessageLens setup needs attention'), findsOne);
+    expect(find.text('Admitted application'), findsNothing);
+  });
+
   testWidgets('abandoned installation naturally offers Start Fresh', (
     tester,
   ) async {

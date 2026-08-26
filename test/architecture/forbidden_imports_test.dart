@@ -1238,6 +1238,10 @@ void main() {
           'lib/essentials/onboarding/presentation/'
           'onboarding_journey_path.dart',
         ).readAsString();
+        final coordinator = await File(
+          'lib/essentials/onboarding/application/'
+          'onboarding_journey_coordinator_provider.dart',
+        ).readAsString();
         final readinessView = await File(
           'lib/features/environment_readiness/presentation/view/'
           'environment_readiness_panel_view.dart',
@@ -1248,10 +1252,34 @@ void main() {
 
         expect(path, contains('OnboardingJourneyState journey'));
         expect(path, contains('projectOnboardingJourneyPath(journey)'));
+        expect(
+          path,
+          contains(
+            'OnboardingVerifyingDurableReadiness() => '
+            'OnboardingJourneyPathNode.import',
+          ),
+        );
+        expect(path, isNot(contains('OnboardingJourneyPathNode.verify')));
+        expect(path, isNot(contains('Future.delayed')));
+        expect(path, isNot(contains('Timer(')));
         expect(path, isNot(contains('onboardingGateProvider')));
         expect(path, isNot(contains('onboardingOperationSnapshotProvider')));
         expect(path, isNot(contains('onboardingEnvironmentReportProvider')));
         expect(path, isNot(contains('StatefulWidget')));
+        final verificationMethod = coordinator.substring(
+          coordinator.indexOf('Future<void> _verifyAndCompleteInstallation'),
+          coordinator.indexOf('void _finishFirstRunWithFailure'),
+        );
+        expect(
+          verificationMethod.indexOf('.verifyInstallationReady()'),
+          lessThan(verificationMethod.indexOf('operationController.complete')),
+        );
+        expect(
+          verificationMethod.indexOf('operationController.complete'),
+          lessThan(verificationMethod.indexOf('_setWorkflowOverride')),
+        );
+        expect(verificationMethod, isNot(contains('Future.delayed')));
+        expect(verificationMethod, isNot(contains('Timer(')));
         expect(
           readinessView,
           contains('OnboardingJourneyPath(journey: journey)'),

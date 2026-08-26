@@ -5717,3 +5717,28 @@ production preservation authority mechanically enforceable.
 - Documented the Track audit: full-window Onboarding has no peer columns, so
   its shallow fixed path is a native presentation region rather than a
   semantically false `PageTrackLayoutMatrix`.
+
+## 2026-08-26 - Start Fresh startup-admission correction
+
+- Recorded that startup installation classification is a one-shot process
+  admission decision rather than an ongoing application presentation authority.
+- Documented the observed post-reset race in which a later transient evidence
+  inspection reclaimed an already admitted application.
+- Corrected virgin-state terminology so valid empty derived stores are judged
+  by consequential durable contents rather than file existence.
+- Preserved initial fail-closed startup behavior, persistent-store protection,
+  and the existing Start Fresh deletion allow-list.
+- Recorded that the verified Start Fresh surface covers the post-frame sidebar
+  ownership reconciliation before yielding to the Onboarding presentation.
+
+## 2026-08-26 - Human Journey nodes and durable verification gate
+
+- Audited Messages, History, Contacts, Ready, Import, Verify, and Start against
+  the human-Episode criterion.
+- Reduced the visible and accessible path to Messages, History, Contacts,
+  Ready, Import, and Start while preserving
+  `OnboardingVerifyingDurableReadiness` as a mandatory typed internal gate.
+- Documented current production-shaped verifier work and timing, the failure
+  projection, and the invariant that Start cannot exist before durable proof.
+- Clarified in canonical Presence coordination that not every internal state or
+  completion predicate is a human Episode requiring presentation.

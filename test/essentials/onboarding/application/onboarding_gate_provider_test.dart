@@ -37,11 +37,14 @@ import 'package:remember_this_text/essentials/onboarding/application/onboarding_
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_failure_storage_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_controller.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
+import 'package:remember_this_text/essentials/onboarding/domain/onboarding_journey_state.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_operation_snapshot.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
+import 'package:remember_this_text/essentials/onboarding/presentation/onboarding_journey_path.dart';
 import 'package:remember_this_text/essentials/onboarding/presentation/onboarding_overlay.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/attachments/attachment_importer.dart';
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_importer.dart';
@@ -429,6 +432,109 @@ void main() {
         expect(container.read(activeSidebarModeProvider), SidebarMode.messages);
       },
     );
+
+    testWidgets(
+      'durable verification gates Start while the human path remains on Import',
+      (tester) async {
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+        final verifier = _HeldDurableCompletionVerifier();
+        addTearDown(overlayDb.close);
+
+        container = ProviderContainer(
+          overrides: _firstRunOverrides(
+            archiveFixture: archiveFixture,
+            overlayDb: overlayDb,
+            resetService: _FakeMessageDataResetService(),
+            onGraphBuild: () {},
+            durableCompletionVerifier: verifier,
+          ),
+        );
+
+        await _pumpGateOverlay(tester, container);
+        expect(
+          await _readGateStatus(container),
+          OnboardingStatus.awaitingUserAction,
+        );
+
+        final import = container
+            .read(onboardingGateProvider.notifier)
+            .startImportAndGraphBuild();
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        expect(verifier.started.isCompleted, isTrue);
+        final verifying = container.read(onboardingJourneyCoordinatorProvider);
+        expect(verifying, isA<OnboardingVerifyingDurableReadiness>());
+        final verifyingPath = projectOnboardingJourneyPath(verifying)!;
+        expect(verifyingPath.currentNode, OnboardingJourneyPathNode.import);
+        expect(
+          verifyingPath.nodeStates[OnboardingJourneyPathNode.start],
+          OnboardingJourneyPathNodeState.future,
+        );
+
+        verifier.completeSuccessfully();
+        await import;
+        await tester.pump();
+
+        final ready = container.read(onboardingJourneyCoordinatorProvider);
+        expect(ready, isA<OnboardingReadyToStart>());
+        final readyPath = projectOnboardingJourneyPath(ready)!;
+        expect(readyPath.currentNode, OnboardingJourneyPathNode.start);
+        expect(
+          readyPath.nodeStates[OnboardingJourneyPathNode.import],
+          OnboardingJourneyPathNodeState.completed,
+        );
+      },
+    );
+
+    testWidgets('durable verification failure never exposes Start', (
+      tester,
+    ) async {
+      final overlayDb = OverlayDatabase(NativeDatabase.memory());
+      addTearDown(overlayDb.close);
+
+      container = ProviderContainer(
+        overrides: _firstRunOverrides(
+          archiveFixture: archiveFixture,
+          overlayDb: overlayDb,
+          resetService: _FakeMessageDataResetService(),
+          onGraphBuild: () {},
+          durableCompletionVerifier: const _FailingDurableCompletionVerifier(),
+        ),
+      );
+
+      await _pumpGateOverlay(tester, container);
+      expect(
+        await _readGateStatus(container),
+        OnboardingStatus.awaitingUserAction,
+      );
+
+      final import = container
+          .read(onboardingGateProvider.notifier)
+          .startImportAndGraphBuild();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      await import;
+      await tester.pump();
+
+      final failed = container.read(onboardingJourneyCoordinatorProvider);
+      expect(failed, isA<OnboardingOperationFailed>());
+      final failedPath = projectOnboardingJourneyPath(failed)!;
+      expect(failedPath.currentNode, OnboardingJourneyPathNode.import);
+      expect(
+        failedPath.nodeStates[OnboardingJourneyPathNode.start],
+        OnboardingJourneyPathNodeState.future,
+      );
+      expect(find.text('Start'), findsOneWidget);
+      expect(
+        find.byKey(
+          const ValueKey<String>('onboarding-journey-node-start-current'),
+        ),
+        findsNothing,
+      );
+    });
 
     testWidgets('first-run FDA failure does not publish preparation', (
       tester,
@@ -1444,6 +1550,7 @@ List<Override> _firstRunOverrides({
   Object? graphBuildError,
   bool hasFullDiskAccess = true,
   int preservedUnnormalizedHandleCount = 0,
+  OnboardingDurableCompletionVerifier? durableCompletionVerifier,
 }) {
   return [
     archiveAccessAuthorityProvider.overrideWithValue(archiveFixture.authority),
@@ -1465,7 +1572,7 @@ List<Override> _firstRunOverrides({
     ),
     messageDataResetServiceProvider.overrideWith((ref) => resetService),
     onboardingDurableCompletionVerifierProvider.overrideWithValue(
-      const _FakeDurableCompletionVerifier(),
+      durableCompletionVerifier ?? const _FakeDurableCompletionVerifier(),
     ),
   ];
 }
@@ -1481,6 +1588,40 @@ final class _FakeDurableCompletionVerifier
       sourceScopedImportRows: 100,
       conversationGraphRows: 100,
     );
+  }
+}
+
+final class _HeldDurableCompletionVerifier
+    implements OnboardingDurableCompletionVerifier {
+  final started = Completer<void>();
+  final _result = Completer<OnboardingInstallationReadyProof>();
+
+  @override
+  Future<OnboardingInstallationReadyProof> verifyInstallationReady() {
+    if (!started.isCompleted) {
+      started.complete();
+    }
+    return _result.future;
+  }
+
+  void completeSuccessfully() {
+    _result.complete(
+      OnboardingInstallationReadyProof(
+        verifiedAtUtc: DateTime.utc(2026, 8, 26),
+        sourceScopedImportRows: 100,
+        conversationGraphRows: 100,
+      ),
+    );
+  }
+}
+
+final class _FailingDurableCompletionVerifier
+    implements OnboardingDurableCompletionVerifier {
+  const _FailingDurableCompletionVerifier();
+
+  @override
+  Future<OnboardingInstallationReadyProof> verifyInstallationReady() {
+    throw StateError('synthetic durable verification failure');
   }
 }
 
