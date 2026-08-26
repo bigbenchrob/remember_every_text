@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Onboarding now derives exactly one typed prerequisite, operation, or terminal
+  Episode through `OnboardingJourneyCoordinator`. Returning from System
+  Settings, dismissing a dialog, or rebuilding a provider cannot independently
+  advance setup; Environment Readiness consumes one coherent evidence revision,
+  and import remains gated through durable verification and terminal OK.
+
 - Environment Readiness now presents one guided checking, blocker, ready, or
   failed episode instead of a diagnostics dashboard. Successful evidence is
   disclosed under Details, the import action remains above the fold, and

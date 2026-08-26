@@ -1,346 +1,235 @@
-# Onboarding Gate — State Machine and Overlay
+# Onboarding Journey Coordinator
 
 ## Purpose
 
-The `OnboardingGate` is the top-level bootstrap coordinator. It evaluates
-whether the app is ready for normal use and coordinates the readiness,
-recovery, import, graph-build, and reimport lifecycle.
+`OnboardingJourneyCoordinator` is the single authority that selects the active
+Onboarding Episode. It combines coherent prerequisite evidence, durable
+operation truth, and explicit human intent into one typed Journey state.
 
-> **Safety:** Gate reset/recovery means resetting only enumerated rebuildable
-> derived stores. Archived attachment payloads are preservation data and are
-> outside every Gate reset. See
-> [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
+The filename is retained for stable documentation links. `OnboardingGate` is
+now only a read-only `OnboardingStatus` compatibility projection for established
+presentation and action seams. It cannot assign Journey state.
 
-Current surface split:
-
-- `awaitingFda` and `awaitingUserAction` mount the production Onboarding
-  Presence host. The generic Presence runner presents the active
-  required-source Schedule, while Onboarding supplies the explicit FDA
-  Settings specialist presentation.
-- `recoveringFailedAttempt`, import/graph-build progress, completion, and
-  reimport completion use the blocking `OnboardingOverlay`.
-
-This is a staged ownership boundary. Presence owns the required-source
-readiness interaction. The gate remains the operational authority for recovery,
-import, graph construction, completion, and reimport.
-
-### Messages Source Truthfulness
-
-The required-source Schedule no longer treats every failed Messages read as
-evidence of missing Full Disk Access. The Messages/Onboarding specialist
-classifies the protected read as `readable`, `accessDenied`, or `unavailable`.
-Only explicit filesystem permission denial warrants FDA guidance. Missing,
-invalid-schema, query, and ambiguous I/O failures receive bounded
-source-unavailable guidance instead.
-
-Onboarding projects that specialist result through generic Boolean TestAgents;
-Presence remains unaware of Messages, SQLite, or FDA meaning. Adjacent readable
-and access-denied Tests share one process-local observation, while every retry
-begins a fresh protected read. The Gate still owns only operational admission
-and mounts the same real Onboarding Presence host for prerequisite interaction.
+> **Invariant:** A probe, widget, dialog, focus callback, animation, Presence
+> Schedule, or operation snapshot may publish evidence or intent. None may
+> select or advance an Onboarding Episode.
 
 ## Ownership
 
-- **Location:** `lib/essentials/onboarding/`
-- **Owner:** Essentials layer (not a feature)
-- **Rule:** Onboarding coordinates and presents. It never owns source-scoped
-  import/projection logic.
+```text
+Environment and source probes
+        -> coherent prerequisite evidence
 
-## Durable Operation Snapshot
+Durable operation snapshot
+        -> admitted operation truth
 
-`OnboardingStatus` remains the current presentation/workflow projection. It is
-not the durable authority for whether consequential Onboarding work is running,
-interrupted, failed, or complete.
+Human actions
+        -> typed intent
 
-`OnboardingOperationSnapshot` is the canonical durable description of admitted
-Onboarding operations. It records a typed operation kind, typed stage and
-substage, unique operation identity, originating process-session identity,
-completed stages, bounded real progress observations, optional safe source
-ROWID context, bounded failure evidence, and terminal status. It
-is persisted as format-versioned JSON in the existing overlay settings table;
-no Onboarding schema or second operation database exists.
+OnboardingJourneyCoordinator
+        -> exactly one active OnboardingJourneyState
 
-The authority chain is strict:
+Environment Readiness / operation overlay / navigation
+        -> presentation of that state
+```
+
+The coordinator owns transition decisions. It does not own source import,
+Conversation Graph construction, preservation storage, or archive mutation
+admission. Those operations remain with their existing services and execute
+only under `ArchiveMutationCoordinator`.
+
+## Typed Episode Model
+
+The sealed Journey state has these Episodes:
+
+| Episode | Completion predicate |
+|---|---|
+| checking prerequisites | one current coherent evidence snapshot exists |
+| establishing Messages access | a fresh snapshot proves protected Messages access |
+| confirming local Message history | the user accepts the currently observed local history, or fresh evidence proves it sufficient |
+| establishing Contacts access | fresh evidence proves the required local Contacts source is readable |
+| ready to import | all prerequisite predicates in one evidence revision are satisfied |
+| recovering derived data | admitted reset of rebuildable stores completes |
+| preparing import | admitted import preparation completes |
+| building local data | source import and graph projection complete |
+| verifying durable readiness | canonical post-operation verification succeeds |
+| operation failed | a typed operation or readiness failure is observed |
+| ready to start | durable readiness has been proved; terminal acknowledgement remains |
+| normal application | the human acknowledges the terminal Episode |
+| reimporting | admitted reimport work is active |
+| reimport ready | reimport completion has been verified |
+
+`OnboardingStatus` remains a compatibility presentation vocabulary. It is not
+the Journey model and is never a second transition authority.
+
+## Coherent Evidence
+
+`OnboardingPrerequisiteEvidence` carries:
+
+- a monotonically increasing process-local revision;
+- an observation time;
+- one complete `OnboardingEnvironmentReport`.
+
+All blocker selection for an Episode comes from that one report. Presentation
+must not combine FDA from one observation with Contacts, history, or database
+readiness from another.
+
+Invalidating an old asynchronous inspection retires its provider occurrence.
+Late completion from that occurrence cannot replace the newer report. Journey
+occurrence and evidence revision are presentation/coordination identities, not
+durable source identity.
+
+## Blocker Priority
+
+The environment report applies actual dependency order before the coordinator
+selects an Episode:
+
+1. admitted maintenance;
+2. protected Messages access;
+3. local Messages source availability and history sufficiency;
+4. required local Contacts availability;
+5. app-owned import and graph readiness.
+
+Provider completion order never chooses the visible blocker.
+
+## Transition Rules
+
+Commanded workflow transitions pass through one explicit transition policy.
+The principal first-run path is:
 
 ```text
-ArchiveMutationCoordinator -> whether work may execute
-Onboarding operation snapshot -> what admitted work is doing or last did
-import and graph databases -> whether durable work actually completed
+checking
+  -> Messages access
+  -> local-history confirmation when needed
+  -> Contacts access when needed
+  -> ready to import
+  -> recovering derived data when needed
+  -> preparing import
+  -> building local data
+  -> verifying durable readiness
+  -> ready to start
+  -> normal application
 ```
 
-A snapshot never grants mutation authority and never substitutes for imported
-rows or Conversation Graph truth. Initial import and reimport become complete
-only after the admitted mutation releases maintenance and fresh canonical
-probes prove both derived stores are populated.
+Authoritative evidence may move backward before import. For example, revoking
+FDA invalidates `readyToImport` and returns to Messages access. A focus event or
+button press cannot make that transition without new evidence.
 
-Source-owned progress may include typed anomaly evidence that does not alter
-operation authority. The first implemented example is the count of handle rows
-preserved without phone/email normalization. Such a row is successful source
-intake when its source-scoped identity and relationships remain truthful; it is
-not a failed Onboarding operation. The same dependency-aware rule now applies
-across chats,
-messages, rich text, attachments, reactions, and Contacts: optional
-interpretation may degrade, canonical recovered ownership may preserve an
-unlinked message, and only proven child/enrichment facts may be omitted.
-`SourceImportAnomalyCounts` carries fixed non-PII totals through the canonical
-operation snapshot. It is not a generic catch-and-skip facility.
-Structural source identity failure still prevents completion and routes through
-the typed stage-failure boundary. Presentation does not infer or reclassify
-either outcome.
+Operation failure may move an active operation to the typed failed Episode.
+Retry begins only through an allowed human intent and normal mutation
+admission. Impossible shortcuts such as FDA blocker to completion, import to
+normal application, or terminal completion back to a prerequisite are rejected.
 
-On a new process, a persisted `running` snapshot from a different process
-session becomes `interrupted`. Environment Readiness then reconciles it as
-completed, resumable, inconsistent, or temporarily unavailable. During
-maintenance, reconciliation consumes the existing maintenance report and does
-not independently open protected stores.
+## Human Actions
 
-## Installation Classification And Start Fresh
+Widgets express intent through action providers. The coordinator validates the
+intent against the current typed state:
 
-Before ordinary startup, `MessageLensInstallationStateClassifier` reconciles
-the durable operation snapshot with read-only evidence from the admitted
-archive. It distinguishes virgin, resumable, completed, abandoned, and
-remediation-required installations. Durable import/graph reconciliation
-outranks stale snapshot state; snapshot completion cannot override missing,
-unsupported, or contradictory stores.
+- **Open System Settings** opens the FDA pane but does not advance.
+- **Re-check** requests fresh prerequisite evidence but does not advance by
+  itself.
+- **Use This Local History** is accepted only in the local-history Episode.
+- **Import My Messages** executes only from `OnboardingReadyToImport`.
+- terminal **OK** executes only after durable completion and releases normal
+  application ownership.
 
-An abandoned installation may enter **Start Fresh** only after explicit human
-authorization. The operation runs as `ArchiveMutationOperation.startFresh`,
-closes canonical import/graph providers, and deletes only the established
-rebuildable database allow-list. It preserves overlay/user intent,
-`presence.db`, archived attachment payloads, preferences, logs, and archive
-identity. Existing Historical Archive source evidence or an unreadable
-preservation store routes to remediation instead of automatic reset.
+Hiding an invalid control is presentation hygiene. The coordinator guard is
+the application-layer authority.
 
-Start Fresh appends a new latest Onboarding Presence run while retaining prior
-append-only run evidence. It rereads the admitted archive afterward and must
-prove the typed virgin-state contract before ordinary Onboarding begins. It
-never navigates first and assumes cleanup succeeded.
+## FDA And Lifecycle Semantics
 
-Healthy completed installations bypass Start Fresh during ordinary startup.
-They may reach the same authority only through the advanced **Settings > Reset
-Message Data** action. That action requires completed-state classification and
-a fresh preservation-aware confirmation before requesting the separately named
-completed-installation entry point. The reset still runs only as
-`ArchiveMutationOperation.startFresh` and must prove virgin state afterward.
+Opening System Settings, losing focus, regaining focus, relaunching, or
+dismissing a modal is not FDA proof. Those events may request a fresh check.
+Only a coherent report that can read the protected source completes the FDA
+Episode.
 
-## State Machine
+The old “Welcome back” progression and production prerequisite Presence host
+have been removed. The required-sources Schedule remains only as laboratory and
+historical fixture material; production startup does not mount or consult it.
 
-The gate tracks a single `OnboardingStatus` enum with 11 states:
+## Contacts And Local History
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     OnboardingStatus                        │
-├─────────────────────────────────────────────────────────────┤
-│ notNeeded               — App databases populated, skip     │
-│ recoveringFailedAttempt — Reset incomplete DBs before retry │
-│ preparationFailed       — Current preparation attempt failed│
-│ awaitingFda             — FDA not granted, show instructions│
-│ awaitingUserAction      — FDA OK, databases empty, show UI  │
-│ importing               — Import pipeline running           │
-│ buildingGraph           — Conversation graph build running  │
-│ complete                — First-run pipeline done           │
-│ reimporting             — User-triggered re-import running  │
-│ reimportBuildingGraph   — Re-import graph build phase       │
-│ reimportComplete        — Re-import finished                │
-└─────────────────────────────────────────────────────────────┘
+Contacts remains required because the current import pipeline unconditionally
+uses local Contacts data. Guidance states that operational fact. It does not
+claim that opening Contacts, waiting, or checking an iPhone completes the
+predicate.
+
+MessageLens can inspect only local Messages evidence. It may suggest checking
+Messages in iCloud when local history appears sparse, but cannot claim that
+iCloud synchronization is complete. A user may explicitly accept the observed
+local history for the current process Journey; this does not rewrite source
+facts.
+
+## Operation And Completion Authority
+
+The authority chain remains:
+
+```text
+ArchiveMutationCoordinator -> whether mutation may run
+OnboardingOperationSnapshot -> what admitted work is doing
+import/graph stores          -> what durable work completed
+Journey Coordinator         -> which Episode follows
 ```
 
-### Transition Flow (First Run)
+Operation completion alone cannot produce `readyToStart`. The coordinator
+publishes the verifying Episode, runs the canonical durable completion
+verifier, records the proof, and only then publishes terminal readiness.
 
-```
-App Start
-  │
-  ├─ environment report → databases populated?
-  │   └─ YES → notNeeded (overlay never shown)
-  │
-  ├─ environment report → FDA blocked?
-  │   └─ YES → awaitingFda
-  │       └─ Presence resumes the required-source readiness Schedule
-  │       └─ explicit Onboarding FDA specialist opens System Settings
-  │       └─ restart resumes the current Trip from Step 1
-  │           └─ generic TestStep performs a fresh source-readiness check
-  │
-  ├─ environment report → sources readable, DBs empty?
-  │   └─ YES → awaitingUserAction
-  │       └─ Presence presents and advances the required-source Schedule
-  │       └─ Schedule completion releases the blocking Presence surface
-  │       └─ Environment Readiness combines unchanged environment facts with
-  │          durable Schedule completion
-  │           ├─ sparse + incomplete → Re-check only
-  │           └─ sparse + complete → existing import action available
-  │       └─ existing import action → startImportAndGraphBuild()
-  │           ├─ importing (source-scoped import/projection begins)
-  │           ├─ buildingGraph (conversation graph build running)
-  │           └─ complete (verified terminal Episode, "OK" action)
-  │
-  ├─ environment report → incomplete partial app DBs?
-  │   └─ request automatic-recovery mutation authority
-  │       ├─ busy → defer silently until locked → idle
-  │       │   └─ fresh environment report still requires recovery?
-  │       │       ├─ NO → ordinary environment-derived state
-  │       │       └─ YES → request authority once again
-  │       └─ admitted → recoveringFailedAttempt
-  │           └─ reset rebuildable source-scoped import/graph DBs
-  │               ├─ success → awaitingUserAction
-  │               └─ failure → preparationFailed
-  │                   └─ Try Again → ordinary first-run entry point
-  │
-  └─ environment report → import/graph projection previously failed?
-      └─ awaitingUserAction (show failure details + retry)
-```
+Terminal readiness does not reveal the normal application. Human
+acknowledgement changes the Journey to normal application, after which the
+canonical sidebar is released.
 
-### Transition Flow (Re-Import)
+## Startup, Start Fresh, And Resume
 
-```
-Settings → "Re-scan & Import"
-  │
-  ├─ reimporting (skips FDA gate — already granted)
-  ├─ reimportBuildingGraph
-  └─ reimportComplete → "Done" button
-```
+Startup reaches Onboarding through the coordinator's read-only Gate projection.
+No startup widget independently selects readiness, import, or normal mode.
 
-## Key Provider
+Start Fresh owns preservation-safe reset execution. After it proves virgin
+installation state, it requests fresh prerequisite evidence. The coordinator
+selects the first truthful Episode; Start Fresh does not navigate directly to
+one.
 
-```dart
-// lib/essentials/onboarding/application/onboarding_gate_provider.dart
-@Riverpod(keepAlive: true)
-class OnboardingGate extends _$OnboardingGate {
-  @override
-  OnboardingStatus build() {
-    // Watches environment report provider
-    // Classifies into status via resolveBuildStatus()
-  }
+On a new process, durable operation reconciliation classifies interrupted work.
+The operation snapshot remains evidence and never becomes a Journey navigator.
 
-  void refreshEnvironment() { ... }
-  Future<void> startImportAndGraphBuild() async { ... }
-  Future<void> startReimport() async { ... }
-  Future<void> openFdaSettings() async { ... }
-}
-```
+## Presentation Ownership
 
-### Resolution Logic
+Environment Readiness renders prerequisite Episodes in the center panel.
+`OnboardingOverlay` renders admitted recovery, import, verification, failure,
+and terminal operation Episodes. Navigation synchronizes the coordinator's
+compatibility status with existing ViewSpecs and sidebar ownership.
 
-`resolveBuildStatus()` maps the environment report to a status:
+A pipeline-incident surface may not replace an active first-run Episode.
+Presence may render other Journeys, but it cannot assign Onboarding state or
+navigate production prerequisite progression.
 
-1. If `permissionBlocked` → `awaitingFda`
-2. If `ready` (both DBs populated) → `notNeeded`
-3. `importFailed`, `graphProjectionFailed`, `sourceUnavailable`,
-   `sourceSparseOrUnsynced`, and `readyToImport` → `awaitingUserAction`
+## Preservation Safety
 
-Workflow override states are preserved while recovery, import, graph build,
-completion, reimport, or process-local preparation failure is in progress. The
-environment report can also set
-`shouldResetAppDatabasesBeforeImport`, which triggers automatic recovery into
-`recoveringFailedAttempt` only after mutation authority is admitted. Ordinary
-mutation contention remains process-local and silent. The Gate observes the
-coordinator's locked-to-idle transition, invalidates the environment report,
-and consumes only the completed fresh result; it never replays the denied
-report or persists a pending recovery command.
+Every reset and recovery operation may delete only the explicit rebuildable
+derived-store allow-list. Overlay/user intent, Presence history, archive
+identity, preferences, diagnostics, and `attachment_archive/` remain outside
+that boundary. See
+[`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
 
-### Normal Sidebar Handoff
+## Diagnostics
 
-First-run Onboarding temporarily closes the canonical `MacosWindow.sidebar`
-through prerequisite checks, import, graph preparation, verification, and the
-terminal `complete` state. This is process/presentation ownership, not a saved
-sidebar preference and not Track geometry.
+The coordinator exposes a bounded non-PII diagnostic snapshot containing:
 
-After durable readiness has already been verified, terminal **OK** changes the
-Gate to `notNeeded`. Navigation then opens the existing sidebar with the native
-`macos_ui` animation and moves focus to the normal mode control. No progress
-percentage, timer, or animation callback can release the sidebar early.
+- active Episode and occurrence;
+- evidence revision, environment state, and blocker kind;
+- operation status;
+- supplied installation classification;
+- last transition reason.
 
-### Accepted-Readiness Handoff
+## Key Files
 
-`OnboardingEnvironmentReport` remains the authority for current machine facts.
-It may continue to report `sourceSparseOrUnsynced` after the human has knowingly
-chosen to continue. Completion of the canonical required-sources Presence
-Schedule is the separate durable acceptance authority.
-
-The Environment Readiness surface composes those facts. Sparse and incomplete
-continues to show **Confirm Local Messages History** with **Re-check**. Sparse
-and complete shows the existing **Ready To Import** presentation and **Import
-My Messages** action. Import and graph-build failures retain their existing
-retry behavior and are never overridden by Presence completion.
-
-The completion query reads the latest Schedule run checkpoint
-(`currentTripOccurrenceId == null`). It does not inspect trace or recover a
-Choice value, and it adds no second acceptance flag. The import action still
-delegates to `OnboardingGate.startImportAndGraphBuild()`.
-
-## Overlay Rendering
-
-`OnboardingOverlay` is a full-window widget rendered above the main app shell
-for blocking workflow phases. It switches content based on the current status:
-
-| Status | Overlay Content |
-|--------|-----------------|
-| `recoveringFailedAttempt` | Recovery/reset progress |
-| `preparationFailed` | Calm setup failure with **Try Again** and support actions |
-| `importing` | Progress view with row counts and duration per table |
-| `buildingGraph` | Progress view continuing from import |
-| `complete` | Summary (total counts, warnings, archive size), "Get Started" button |
-| `reimporting` | Progress view (no welcome preamble) |
-| `reimportBuildingGraph` | Progress view |
-| `reimportComplete` | Summary, "Done" button |
-| `notNeeded` | Not rendered — overlay is absent |
-
-For enumerable source import, rich-text, and row-oriented graph work, the
-progress view projects the durable typed substage plus completed/total units.
-The owning import or graph service calculates those facts. The overlay never
-queries stores or invents a denominator. Source work is persisted at 1,000-row
-cadence and exact completion; repeated identical progress causes no snapshot
-write. Coarse reset, verification, and set-based graph operations remain
-indeterminate rather than presenting fabricated precision.
-
-Legacy note: `OnboardingOverlay` still contains branches for `awaitingFda` and
-`awaitingUserAction`, but the current app shell normally presents those states
-through `OnboardingPresenceHost` instead of mounting the overlay. The extracted
-`OnboardingFdaContent` presentation is shared with the explicit specialist Step
-without moving platform authority into generic Presence.
-
-### Overlay Blocking
-
-The overlay renders a `ModalBarrier` that prevents interaction with the main
-app during blocking workflow states. When the shell does not mount the overlay,
-FDA and user-action states are handled by panel content and sidebar parking.
-
-## Failure Persistence
-
-Import and graph-projection failures are persisted as JSON in the overlay database's
-`OverlaySettings` table via `OverlayOnboardingFailureStorage`. This allows:
-
-- Showing the last failure on next launch without re-running the pipeline
-- Distinguishing "never tried" from "tried and failed"
-- Clearing on successful completion
-
-The legacy import and graph failure buckets remain inputs to Environment
-Readiness. In addition, the operation snapshot persists a bounded typed failure
-for the current admitted operation. A top-level synchronous, Future, or stream
-failure therefore cannot leave canonical operation state saying that work is
-still running. Current filesystem and database probes remain the restart
-reconciliation authority.
-
-## File Inventory
-
-| File | Role |
-|------|------|
-| `application/onboarding_gate_provider.dart` | State machine and orchestration |
-| `application/onboarding_operation_snapshot_controller.dart` | Typed operation transitions, progress observations, terminal failure, and reconciliation |
-| `application/onboarding_operation_snapshot_provider.dart` | Process-session identity and durable snapshot providers |
-| `application/onboarding_operation_reconciliation_provider.dart` | Reconciles interrupted operation history with Environment Readiness evidence |
-| `application/onboarding_durable_completion_verifier_provider.dart` | Proves post-mutation import and graph readiness before completion |
-| `application/onboarding_environment_report_provider.dart` | Environment evaluation |
-| `application/database_existence_checker.dart` | Filesystem DB presence check |
-| `application/fda_checker.dart` | Full Disk Access probe |
-| `domain/onboarding_status.dart` | Presentation status enum (11 states) |
-| `domain/onboarding_environment_report.dart` | Typed environment snapshot |
-| `domain/onboarding_operation_snapshot.dart` | Operation identity, typed stages/status, progress, and failure evidence |
-| `domain/import_spec.dart` | Retired import-control route tagging for diagnostics/compatibility |
-| `domain/spec_classes/onboarding_view_spec.dart` | Onboarding panel spec for dev/debug surfaces |
-| `infrastructure/overlay_onboarding_failure_storage.dart` | Failure persistence |
-| `infrastructure/persistence/overlay_onboarding_operation_snapshot_store.dart` | Snapshot persistence in existing overlay settings |
-| `application/required_sources_readiness_scheduler_provider.dart` | Production composition root for real Onboarding agents, Schedule installation, and Scheduler initialization |
-| `presentation/onboarding_presence_host.dart` | Production shell around the generic Presence runner and explicit FDA specialist |
-| `presentation/onboarding_overlay.dart` | Full-window operational overlay and shared FDA presentation |
-| `presentation/onboarding_dev_panel.dart` | Debug/simulation overrides |
-| `navigation/presentation/widgets/onboarding_center_panel_sync_observer.dart` | Syncs onboarding gate states into `ViewSpec.environmentReadiness` |
+| File | Responsibility |
+|---|---|
+| `application/onboarding_journey_coordinator_provider.dart` | sole Journey transition authority and operation orchestration |
+| `domain/onboarding_journey_state.dart` | sealed Episodes, coherent evidence, transition policy, diagnostic model |
+| `application/onboarding_gate_provider.dart` | read-only compatibility status and forwarding action seam |
+| `application/onboarding_environment_report_provider.dart` | coherent prerequisite facts |
+| `domain/onboarding_operation_snapshot.dart` | durable operation identity, stage, progress, and failure truth |
+| `application/onboarding_durable_completion_verifier_provider.dart` | canonical post-operation proof |
+| `presentation/onboarding_overlay.dart` | operational and terminal presentation |
+| `features/environment_readiness/` | prerequisite Episode presentation |

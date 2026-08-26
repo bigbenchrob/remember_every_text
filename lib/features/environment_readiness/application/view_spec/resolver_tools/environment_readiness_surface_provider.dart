@@ -2,28 +2,43 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
+import '../../../../../essentials/onboarding/domain/onboarding_journey_state.dart';
 import '../../../../../essentials/onboarding/feature_level_providers.dart'
-    show
-        onboardingEnvironmentReportProvider,
-        requiredSourcesReadinessAcceptedProvider;
+    show onboardingJourneyCoordinatorProvider;
 import '../../../domain/entities/environment_readiness_surface_view_model.dart';
 
 part 'environment_readiness_surface_provider.g.dart';
 
 @riverpod
 EnvironmentReadinessSurfaceViewModel environmentReadinessSurface(Ref ref) {
-  final reportAsync = ref.watch(onboardingEnvironmentReportProvider);
-  final requiredSourcesAccepted =
-      ref.watch(requiredSourcesReadinessAcceptedProvider).valueOrNull ?? false;
-
-  return reportAsync.when(
-    loading: _checkingSurface,
-    error: (error, _) => _failedSurface(error),
-    data: (report) => _surfaceForReport(
-      report,
-      requiredSourcesAccepted: requiredSourcesAccepted,
+  final journey = ref.watch(onboardingJourneyCoordinatorProvider);
+  return switch (journey) {
+    OnboardingCheckingPrerequisites() => _checkingSurface(),
+    OnboardingNeedsMessagesAccess(:final evidence) => _surfaceForReport(
+      evidence!.report,
     ),
-  );
+    OnboardingNeedsLocalHistoryConfirmation(:final evidence) =>
+      _sparseMessagesSurface(
+        evidence!.report,
+        _evidenceFor(evidence.report),
+        allowAcceptance: true,
+      ),
+    OnboardingNeedsContactsAccess(:final evidence) => _sourceBlockedSurface(
+      evidence!.report,
+      _evidenceFor(evidence.report),
+    ),
+    OnboardingReadyToImport(:final evidence) => _readySurface(
+      evidence!.report,
+      _evidenceFor(evidence.report),
+    ),
+    OnboardingOperationFailed(:final summary, :final evidence) =>
+      evidence == null
+          ? _failedSurface(summary)
+          : _retrySurface(evidence.report, _evidenceFor(evidence.report)),
+    OnboardingNormalApplication(:final evidence) when evidence != null =>
+      _completedInstallationSurface(_evidenceFor(evidence.report)),
+    _ => _checkingSurface(),
+  };
 }
 
 EnvironmentReadinessSurfaceViewModel _checkingSurface() {
@@ -61,9 +76,8 @@ EnvironmentReadinessSurfaceViewModel _failedSurface(Object error) {
 }
 
 EnvironmentReadinessSurfaceViewModel _surfaceForReport(
-  OnboardingEnvironmentReport report, {
-  required bool requiredSourcesAccepted,
-}) {
+  OnboardingEnvironmentReport report,
+) {
   final evidence = _evidenceFor(report);
   if (_isMessagesInspectionFailure(report)) {
     return EnvironmentReadinessSurfaceViewModel(
@@ -104,10 +118,10 @@ EnvironmentReadinessSurfaceViewModel _surfaceForReport(
       report,
       evidence,
     ),
-    OnboardingEnvironmentState.sourceSparseOrUnsynced =>
-      requiredSourcesAccepted
-          ? _readySurface(report, evidence)
-          : _sparseMessagesSurface(report, evidence),
+    OnboardingEnvironmentState.sourceSparseOrUnsynced => _sparseMessagesSurface(
+      report,
+      evidence,
+    ),
     OnboardingEnvironmentState.importFailed ||
     OnboardingEnvironmentState.graphProjectionFailed => _retrySurface(
       report,
@@ -155,7 +169,7 @@ EnvironmentReadinessSurfaceViewModel _sourceBlockedSurface(
       kind: EnvironmentReadinessEpisodeKind.blocked,
       title: 'MessageLens needs local Contacts data',
       body:
-          'The current import pipeline uses local Contacts data to prepare names and relationship context. Open Contacts and allow its local data to finish loading, then check again.',
+          'The current import pipeline uses local Contacts data to prepare names and relationship context. MessageLens could not read that local data. Check that Contacts data is available on this Mac, then check again.',
       tone: EnvironmentReadinessTone.warning,
       actions: const <EnvironmentReadinessAction>[
         EnvironmentReadinessAction(
@@ -185,8 +199,9 @@ EnvironmentReadinessSurfaceViewModel _sourceBlockedSurface(
 
 EnvironmentReadinessSurfaceViewModel _sparseMessagesSurface(
   OnboardingEnvironmentReport report,
-  List<EnvironmentReadinessEvidence> evidence,
-) {
+  List<EnvironmentReadinessEvidence> evidence, {
+  bool allowAcceptance = false,
+}) {
   return EnvironmentReadinessSurfaceViewModel(
     kind: EnvironmentReadinessEpisodeKind.blocked,
     title: 'Your local Messages history looks incomplete',
@@ -194,8 +209,13 @@ EnvironmentReadinessSurfaceViewModel _sparseMessagesSurface(
         'MessageLens imports only the history stored on this Mac. If messages you expect are missing here, make sure Messages in iCloud is enabled and has finished syncing on your devices before continuing.',
     sanityEvidence: _messageCountEvidence(report),
     tone: EnvironmentReadinessTone.warning,
-    actions: const <EnvironmentReadinessAction>[
-      EnvironmentReadinessAction(
+    actions: <EnvironmentReadinessAction>[
+      if (allowAcceptance)
+        const EnvironmentReadinessAction(
+          kind: EnvironmentReadinessActionKind.acceptLocalHistory,
+          label: 'Use This Local History',
+        ),
+      const EnvironmentReadinessAction(
         kind: EnvironmentReadinessActionKind.recheck,
         label: 'Re-check',
       ),

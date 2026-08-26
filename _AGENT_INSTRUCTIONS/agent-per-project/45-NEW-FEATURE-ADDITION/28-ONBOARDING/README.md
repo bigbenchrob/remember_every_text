@@ -27,12 +27,13 @@ Journey before further Onboarding implementation begins.
 8. [Production-shaped anomaly validation](responses/08-PRODUCTION-SHAPED-ONBOARDING-ANOMALY-VALIDATION.md)
 9. [Installation state and preservation-safe Start Fresh](responses/09-INSTALLATION-STATE-CLASSIFICATION-AND-PRESERVATION-SAFE-START-FRESH-IMPLEMENTATION.md)
 10. [Environment Readiness guided Episode and application handoff](responses/11-ENVIRONMENT-READINESS-AS-GUIDED-PRESENCE-EPISODE-AND-ONBOARDING-HANDOFF-IMPLEMENTATION.md)
+11. [Single-authority typed Onboarding Journey Coordinator](responses/12-SINGLE-AUTHORITY-TYPED-ONBOARDING-JOURNEY-COORDINATOR-IMPLEMENTATION.md)
 
 ## Current Status
 
-**GUIDED READINESS AND TERMINAL HANDOFF IMPLEMENTED.** Environment Readiness
-now projects typed truth into one checking, blocker, ready, or failed Episode.
-Successful evidence recedes under Details. First-run Onboarding temporarily
-owns canonical sidebar visibility through terminal completion; verified OK
-releases normal application ownership and opens the native sidebar without
-persisting or overriding later user choices.
+**SINGLE JOURNEY AUTHORITY IMPLEMENTED.** `OnboardingJourneyCoordinator` now
+selects the sole active typed Episode from coherent prerequisite evidence,
+durable operation truth, and explicit human intent. Environment Readiness and
+Presence no longer advance production Onboarding independently. First-run
+ownership continues through durable verification and terminal OK, which then
+releases the normal application sidebar.

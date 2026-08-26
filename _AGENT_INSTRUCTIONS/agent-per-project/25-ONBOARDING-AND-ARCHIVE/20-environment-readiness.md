@@ -2,205 +2,123 @@
 
 ## Purpose
 
-Before presenting the user with setup/retry options, the onboarding system
-evaluates the macOS environment to determine what is accessible, what is
-missing, and what action the user should take. This prevents ambiguous error
-states and provides evidence-backed advice.
+Environment Readiness gathers and presents truthful prerequisite evidence for
+Onboarding. It does not select the active Episode, navigate, complete a
+prerequisite, or authorize import.
 
-Current readiness presentation is split across essentials and a feature:
-`lib/essentials/onboarding/` owns the report and gate state,
-`lib/essentials/navigation/` projects gate states into the panel stack, and
-`lib/features/environment_readiness/` owns the readiness panel content for
-`EnvironmentReadinessSpec`.
+`OnboardingJourneyCoordinator` is the sole Journey authority. The Environment
+Readiness feature consumes the coordinator's current coherent evidence and
+renders the corresponding center-panel Episode.
 
-## Provider
+## Ownership
 
-```dart
-// lib/essentials/onboarding/application/onboarding_environment_report_provider.dart
-@Riverpod(keepAlive: true)
-Future<OnboardingEnvironmentReport> onboardingEnvironmentReport(Ref ref) async { ... }
+```text
+Onboarding environment probes
+    -> OnboardingEnvironmentReport
+
+OnboardingJourneyCoordinator
+    -> typed OnboardingJourneyState
+
+EnvironmentReadinessSurface provider
+    -> presentation model for that state
+
+EnvironmentReadinessPanelView
+    -> rendering and typed user intent
 ```
 
-## Evaluation Steps
+The panel never watches independent prerequisite facts alongside Journey state.
+Its Details disclosure uses the same evidence revision that selected the
+Episode, preventing mixed-time FDA, Messages, Contacts, and app-store evidence.
 
-The provider runs these checks in sequence:
+## Evidence Evaluation
 
-### 1. Full Disk Access (FDA)
+The canonical report evaluates:
 
-**Check:** `FdaChecker.canReadMessagesDatabase()` — attempts `File.openSync()`
-on `~/Library/Messages/chat.db`.
+1. archive mutation/maintenance state;
+2. protected Messages database readability;
+3. local Messages source presence and bounded history plausibility;
+4. local Contacts database readability required by the current pipeline;
+5. source-scoped import and Conversation Graph readiness;
+6. prior typed operation failures requiring recovery.
 
-**Outcomes:**
-- Readable → FDA granted
-- Permission denied → `permissionBlocked`
-- File not found → rare (Messages not installed or never used)
+During admitted maintenance, the report states maintenance truth and does not
+open the import or graph stores as an unrelated observer.
 
-**User action:** "Open System Settings" button that opens the FDA pane via
-macOS URL scheme (`x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles`).
+## Report States
 
-**Build note:** FDA grants are tied to the app's bundle identifier
-(`com.bigbenchsoftware.MessageLens`) and code signing identity. Changing
-either revokes the grant. See
-[`60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md`](../60-BUILD-CONSIDERATIONS/02-macos-fda-grant-continuity.md).
+| State | Meaning |
+|---|---|
+| `maintenanceInProgress` | an admitted mutation owns protected derived stores |
+| `permissionBlocked` | protected Messages access is not proved |
+| `sourceUnavailable` | a required local source cannot be read |
+| `sourceSparseOrUnsynced` | local Messages history appears unexpectedly small |
+| `readyToImport` | prerequisite evidence is sufficient and derived stores need construction |
+| `importFailed` | a prior source import failed |
+| `graphProjectionFailed` | a prior graph build failed |
+| `ready` | canonical durable application data is populated |
 
-### 2. Messages Database Probe
+Import progress is operation truth, not a report state.
 
-**Check:** Open `~/Library/Messages/chat.db` read-only and query key tables.
+## Guided Episode Projection
 
-**Evidence gathered:**
-- File exists and is readable
-- File size is non-trivial
-- Row counts from `message`, `chat`, `handle`, and join tables
-- Newest message date (if cheaply available)
+The feature projects one calm surface at a time:
 
-**Outcomes:**
-- Absent → `sourceUnavailable`
-- Present but very few messages (< 10) → `sourceSparseOrUnsynced`
-- Present with meaningful data → source healthy
+- checking;
+- one blocker;
+- ready to import;
+- operation failure/retry;
+- completed installation details when deliberately opened.
 
-**Sync plausibility:** The app cannot directly query Apple's iCloud sync
-state. A near-empty `chat.db` on a Mac with an active iCloud account suggests
-that Messages in iCloud has not synced locally, or the Mac is not enrolled in
-Messages sync. This is communicated as an inference, never a certainty.
+Successful checks recede under **Details**. The primary action remains visible
+without turning the page into a diagnostic dashboard.
 
-### 3. AddressBook Probe
+Typed actions express intent only:
 
-**Check:** Resolve AddressBook database path via the approved provider-driven
-path logic (see [`10-DATABASES/06-addressbook-path-resolution.md`](../10-DATABASES/06-addressbook-path-resolution.md)).
+- open FDA Settings;
+- re-check;
+- accept the currently observed local history;
+- begin import;
+- send a diagnostic report.
 
-**Evidence gathered:**
-- Path resolution succeeds
-- Database is readable
-- Contact row count available
+The action boundary forwards those intents to Onboarding. The coordinator
+decides whether they are valid for the current Episode.
 
-**Outcomes:**
-- Path resolution fails or DB unreadable → `sourceUnavailable` with
-  `addressBookUnavailable`
-- Path resolves, DB readable → contacts healthy
+## FDA Semantics
 
-### 4. App Database Probe
+The Full Disk Access Episode is completed only by a fresh report proving the
+protected source readable. Opening System Settings, focus return, modal
+dismissal, or relaunch may trigger a re-check but never marks FDA complete.
 
-**Check:** Probe `macos_import_ss.db` and `working_ss.db` / conversation graph
-readiness for file existence, readability, graph completeness, and message row
-counts. `DatabaseExistenceChecker` remains the fallback filesystem check used
-by `OnboardingGate` while the async report is loading or unavailable.
+## Contacts Semantics
 
-**Evidence gathered:**
-- Source-scoped import ledger present/absent/empty
-- Conversation graph present/absent/empty/without required topology
+The current pipeline requires readable local Contacts data for names and
+relationship context. Environment Readiness reports that requirement directly.
+It does not claim that opening Contacts, checking another device, or waiting is
+proof. Only fresh local evidence changes the Episode.
 
-**Outcomes:**
-- Both populated → `ready` (app can skip onboarding)
-- Either missing/empty → `readyToImport`
+## Local History Semantics
 
-### 5. Failure History
+MessageLens observes only history stored on this Mac. A sparse-history Episode
+may suggest checking Messages in iCloud, but it cannot assert synchronization
+state. **Use This Local History** is an explicit human acceptance of the current
+observation and is valid only while that Episode owns the Journey.
 
-**Check:** Read persisted import/graph-projection failure summaries from overlay DB
-`OverlaySettings` table.
+## Navigation Boundary
 
-**Evidence gathered:**
-- Last import result (success/failure, timestamp, row counts)
-- Last graph projection/build failure (timestamp)
-- Whether the failure is "fresh" (recent enough to be the current blocker)
+`OnboardingCenterPanelSyncObserver` projects the coordinator's compatibility
+status into `ViewSpec.environmentReadiness`. It does not derive prerequisite
+truth. Active first-run Journey content outranks unrelated pipeline-incident
+presentation. When the terminal Episode is acknowledged, normal application
+ownership resumes and the readiness panel clears through existing navigation
+policy.
 
-**Outcomes:**
-- Last import failed → `importFailed`
-- Last graph projection/build failed → `graphProjectionFailed`
-- No failure history → standard flow
+## Invariants
 
-## Report Model
-
-```dart
-// lib/essentials/onboarding/domain/onboarding_environment_report.dart
-class OnboardingEnvironmentReport {
-  const OnboardingEnvironmentReport({
-    required this.state,
-    required this.blockerKind,
-    required this.syncPlausibility,
-    required this.messagesDatabase,
-    required this.addressBookDatabase,
-    required this.importDatabase,
-    required this.conversationGraph,
-    required this.hasFullDiskAccess,
-    this.sourceAttachmentCount,
-    this.lastImportFailure,
-    this.lastGraphProjectionFailure,
-    this.shouldResetAppDatabasesBeforeImport = false,
-    this.resetAppDatabasesReason,
-  });
-}
-```
-
-## State Classification
-
-| State | Meaning | User sees |
-|-------|---------|-----------|
-| `permissionBlocked` | FDA not granted | FDA instructions + "Open System Settings" |
-| `sourceUnavailable` | `chat.db` not found | Explanation + guidance |
-| `sourceSparseOrUnsynced` | Source has < 10 messages | Warning about likely missing sync + proceed option |
-| `readyToImport` | Sources healthy, DBs empty | "Import" button |
-| `importFailed` | Last import failed | Error details + "Retry" |
-| `graphProjectionFailed` | Last graph projection/build failed | Error details + "Retry" |
-| `ready` | App databases populated | No overlay (normal app) |
-
-Import and graph-build progress are `OnboardingStatus` workflow states, not
-`OnboardingEnvironmentState` values.
-
-## Current Readiness Surface
-
-`OnboardingCenterPanelSyncObserver` watches `OnboardingGate`:
-
-* `awaitingFda` and `awaitingUserAction` show
-  `ViewSpec.environmentReadiness(EnvironmentReadinessSpec.readinessPanel())`
-  in the center panel.
-* Existing import panel content is not overwritten.
-* When readiness is no longer needed, the observer clears the readiness center
-  panel.
-
-This makes readiness a first-class panel surface. It is not an overlay-only
-flow.
-
-The panel is a guided Episode projection, not a diagnostics dashboard. Typed
-report truth is mapped to `checking`, `blocked`, `ready`, or `failed`. One
-blocker owns the primary presentation; successful checks and machine evidence
-recede under a bounded Details disclosure. Ready-to-import presents one
-dominant `Import My Messages` action above the fold. A completed installation
-may report that MessageLens is ready, but it does not offer another first-run
-import.
-
-Contacts remains required by the current pipeline because Contacts import and
-projection are unconditional. The presentation must not describe it as
-optional until operational architecture makes it optional. Import-storage and
-graph readiness are internal gates, not separate human tasks.
-
-MessageLens can inspect only local Messages evidence. Guidance may recommend
-Messages in iCloud when expected history is absent, but must not claim to have
-inspected an iPhone or proved synchronization completeness.
-
-## Design Principles
-
-### Conservative Diagnosis
-
-If a condition cannot be known directly (e.g., iCloud sync state), the system
-says it is "likely" or "inferred." No false certainty.
-
-### Evidence-Backed Advice
-
-Every recommendation is tied to a concrete signal:
-- File unreadable → permission advice
-- Row counts near zero → sync advice
-- Source-scoped import ledger empty after attempt → pipeline advice
-
-### No Architectural Leakage
-
-The user sees a clear readiness assessment, not raw exceptions or internal
-pipeline details.
-
-## Historical Context
-
-Older planning material under
-`45-NEW-FEATURE-ADDITION/enhanced-onboarding-readiness-panel/` describes the
-readiness panel as proposed work. That proposal has been partially implemented:
-the current app has `ViewSpec.environmentReadiness`, an environment readiness
-feature, and an essentials-owned panel sync observer. Treat overlay-only
-wording in older docs as legacy unless current code confirms it.
+1. Environment Readiness never assigns an Episode.
+2. Widgets never infer import readiness.
+3. One surface consumes one coherent evidence revision.
+4. Re-check requests evidence; it does not advance.
+5. Provider completion order cannot choose blocker priority.
+6. Operation snapshot is operation truth, not navigation authority.
+7. Maintenance reporting does not open protected derived stores.
+8. Presentation copy states only what local evidence can prove.

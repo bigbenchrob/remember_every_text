@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../essentials/onboarding/feature_level_providers.dart'
-    show onboardingGateProvider, onboardingReadinessActionsProvider;
+    show
+        onboardingGateProvider,
+        onboardingJourneyCoordinatorProvider,
+        onboardingReadinessActionsProvider;
 
 part 'environment_readiness_actions_provider.g.dart';
 
@@ -22,6 +25,12 @@ class EnvironmentReadinessActions extends _$EnvironmentReadinessActions {
 
   Future<void> startImportAndGraphBuild() async {
     await ref.read(onboardingGateProvider.notifier).startImportAndGraphBuild();
+  }
+
+  void acceptLocalMessageHistory() {
+    ref
+        .read(onboardingJourneyCoordinatorProvider.notifier)
+        .acceptLocalMessageHistory();
   }
 
   void clearSimulationsAndRefresh() {

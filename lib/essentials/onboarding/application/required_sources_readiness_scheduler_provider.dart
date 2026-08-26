@@ -15,7 +15,11 @@ import 'required_sources_readiness_schedule.dart';
 
 part 'required_sources_readiness_scheduler_provider.g.dart';
 
-/// Onboarding-owned repository composition for required-source readiness.
+/// Retired Presence laboratory composition for required-source readiness.
+///
+/// Production Onboarding no longer consumes this provider. The single active
+/// prerequisite authority is `OnboardingJourneyCoordinator`; this composition
+/// remains only for historical fixtures and developer experiments.
 @Riverpod(keepAlive: true)
 Future<PresenceScheduleRepository> requiredSourcesReadinessRepository(
   Ref ref,
@@ -48,7 +52,7 @@ Future<PresenceScheduleRepository> requiredSourcesReadinessRepository(
   return repository;
 }
 
-/// Durable acceptance established by completion of the required-sources run.
+/// Retired laboratory acceptance established by Schedule completion.
 @Riverpod(keepAlive: true)
 Stream<bool> requiredSourcesReadinessAccepted(Ref ref) async* {
   final repository = await ref.watch(
@@ -59,7 +63,7 @@ Stream<bool> requiredSourcesReadinessAccepted(Ref ref) async* {
   );
 }
 
-/// Production composition root for the required-sources Presence Schedule.
+/// Retired laboratory composition root for the required-sources Schedule.
 @Riverpod(keepAlive: true)
 Future<PresenceScheduler> requiredSourcesReadinessScheduler(Ref ref) async {
   final repository = await ref.watch(

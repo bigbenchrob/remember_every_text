@@ -32,8 +32,7 @@ class OnboardingCenterPanelSyncController
     final isShowingIncident = _isShowingIncident(centerSpec);
     final shouldShowIncident =
         incidentReport != null &&
-        onboardingStatus != OnboardingStatus.awaitingFda &&
-        !_usesBlockingOverlay(onboardingStatus);
+        onboardingStatus == OnboardingStatus.notNeeded;
 
     final panelsNotifier = ref.read(
       panelsViewStateProvider(SidebarMode.messages).notifier,
@@ -155,18 +154,4 @@ String _describeCenterSpec(ViewSpec? spec) {
     ),
     onboarding: (_) => 'onboarding',
   );
-}
-
-bool _usesBlockingOverlay(OnboardingStatus status) {
-  return switch (status) {
-    OnboardingStatus.recoveringFailedAttempt ||
-    OnboardingStatus.preparationFailed ||
-    OnboardingStatus.importing ||
-    OnboardingStatus.buildingGraph ||
-    OnboardingStatus.complete ||
-    OnboardingStatus.reimporting ||
-    OnboardingStatus.reimportBuildingGraph ||
-    OnboardingStatus.reimportComplete => true,
-    _ => false,
-  };
 }

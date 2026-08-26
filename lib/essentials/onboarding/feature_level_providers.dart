@@ -10,6 +10,8 @@ export 'application/onboarding_database_probe_reader_provider.dart';
 export 'application/onboarding_environment_report_provider.dart';
 export 'application/onboarding_failure_storage_provider.dart';
 export 'application/onboarding_gate_provider.dart';
+export 'application/onboarding_journey_coordinator_provider.dart'
+    show onboardingJourneyCoordinatorProvider;
 export 'application/onboarding_operation_reconciliation_provider.dart'
     show onboardingOperationReconciliationProvider;
 export 'application/onboarding_operation_snapshot_provider.dart'
@@ -19,7 +21,5 @@ export 'application/real_contacts_source_readiness_test_agent_provider.dart';
 export 'application/real_fda_settings_opening_authority_provider.dart';
 export 'application/real_messages_source_history_sufficiency_test_agent_provider.dart';
 export 'application/real_messages_source_readiness_test_agent_provider.dart';
-export 'application/required_sources_readiness_scheduler_provider.dart'
-    show requiredSourcesReadinessAcceptedProvider;
 export 'application/start_fresh_service_provider.dart'
     show startFreshServiceProvider;

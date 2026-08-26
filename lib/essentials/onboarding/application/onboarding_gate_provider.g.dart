@@ -6,23 +6,13 @@ part of 'onboarding_gate_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$onboardingGateHash() => r'f425d4526294ab67c55f4584042442864a24586f';
+String _$onboardingGateHash() => r'fad49b707a9b61d4007f0f0d82890dd845fe8085';
 
-/// Controls the onboarding overlay lifecycle.
+/// Read-only compatibility projection for established presentation consumers.
 ///
-/// Gate 1 — Full Disk Access:
-/// On [build], checks whether the app can read `~/Library/Messages/chat.db`.
-/// If not, exposes [OnboardingStatus.awaitingFda] so the FDA instruction
-/// screen is shown.  Nothing else can proceed until FDA is confirmed.
-///
-/// Gate 2 — Data import:
-/// Once FDA is confirmed, checks whether the source-scoped import ledger and
-/// app-facing conversation graph exist with data. If not, exposes
-/// [OnboardingStatus.awaitingUserAction] so the import overlay appears.
-///
-/// [startImportAndGraphBuild] builds the source-scoped conversation graph
-/// directly. Retired database files are cleanup/diagnostic inventory only
-/// and are not the app-facing setup path.
+/// Journey transitions belong exclusively to [OnboardingJourneyCoordinator].
+/// The forwarding methods preserve existing caller and test seams while every
+/// intent is decided by that coordinator.
 ///
 /// Copied from [OnboardingGate].
 @ProviderFor(OnboardingGate)

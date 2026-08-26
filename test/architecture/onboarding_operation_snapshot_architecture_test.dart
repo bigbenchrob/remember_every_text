@@ -17,8 +17,9 @@ void main() {
   const reconciliationPath =
       'lib/essentials/onboarding/application/'
       'onboarding_operation_reconciliation_provider.dart';
-  const gatePath =
-      'lib/essentials/onboarding/application/onboarding_gate_provider.dart';
+  const coordinatorPath =
+      'lib/essentials/onboarding/application/'
+      'onboarding_journey_coordinator_provider.dart';
 
   test('one canonical durable snapshot authority uses overlay settings', () {
     final store = File(storePath).readAsStringSync();
@@ -89,12 +90,12 @@ void main() {
 
   test('snapshot records work but cannot grant mutation authority', () {
     final controller = File(controllerPath).readAsStringSync();
-    final gate = File(gatePath).readAsStringSync();
+    final coordinator = File(coordinatorPath).readAsStringSync();
 
     expect(controller, isNot(contains('archiveMutationCoordinatorProvider')));
     expect(controller, isNot(contains('ArchiveMutationOperation')));
-    expect(gate, contains('archiveMutationCoordinatorProvider'));
-    expect(gate, contains('ArchiveMutationOperation.onboardingImport'));
+    expect(coordinator, contains('archiveMutationCoordinatorProvider'));
+    expect(coordinator, contains('ArchiveMutationOperation.onboardingImport'));
   });
 
   test('reconciliation consumes readiness evidence rather than probing', () {

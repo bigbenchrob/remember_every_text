@@ -15,7 +15,7 @@ wording as legacy/transitional.
 | Doc | Purpose |
 |-----|---------|
 | [`00-overview.md`](00-overview.md) | Evolution narrative — how the onboarding system grew from a simple gate to a comprehensive bootstrap and archive pipeline |
-| [`10-onboarding-gate.md`](10-onboarding-gate.md) | The `OnboardingGate` state machine, overlay rendering, phase transitions, and status enum |
+| [`10-onboarding-gate.md`](10-onboarding-gate.md) | The single-authority `OnboardingJourneyCoordinator`, typed Episodes, evidence, transition rules, and compatibility Gate |
 | [`20-environment-readiness.md`](20-environment-readiness.md) | Environment evaluation: FDA checks, source database probes, sync plausibility, readiness classification |
 | [`30-import-migration-coordination.md`](30-import-migration-coordination.md) | How onboarding coordinates graph build/rebuild lifecycle without owning source-scoped import/projection internals |
 | [`40-attachment-archive.md`](40-attachment-archive.md) | Living attachments archive: overlay schema, content-addressable storage, resolution pipeline, import-time archiving |
@@ -26,11 +26,9 @@ wording as legacy/transitional.
 
 ## Key Ownership Boundaries
 
-- **`lib/essentials/onboarding/`** — bootstrap gate, environment evaluation,
-  overlay presentation, onboarding-owned Presence Schedule meaning, stable
-  Test Agent identities, concrete specialist adapters, local Messages-history
-  sufficiency policy, and the explicit onboarding Test Agent binding
-  contribution
+- **`lib/essentials/onboarding/`** — single Journey coordination authority,
+  environment evaluation, operation truth, overlay presentation, and
+  preservation-safe bootstrap orchestration
 - **`lib/essentials/presence/`** — generic Schedule, Trip, Step, routing,
   checkpoint, run, trace, and persistence machinery; a shared `presence.db`
   does not make Presence the semantic owner of onboarding, and Presence
@@ -60,6 +58,10 @@ wording as legacy/transitional.
     reset, reimport, recovery, migration cleanup, rebuild, or test operation may
     mutate them as a side effect. See
     [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
+11. `OnboardingJourneyCoordinator` is the only authority that selects or
+    advances an Onboarding Episode. Presence, Environment Readiness, widgets,
+    dialogs, focus callbacks, and operation snapshots publish facts or intent
+    only.
 
 ## Related Documentation
 

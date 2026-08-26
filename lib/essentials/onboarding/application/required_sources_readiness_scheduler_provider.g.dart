@@ -9,7 +9,11 @@ part of 'required_sources_readiness_scheduler_provider.dart';
 String _$requiredSourcesReadinessRepositoryHash() =>
     r'394f754e63b61696e506aa70295e582c0c7810af';
 
-/// Onboarding-owned repository composition for required-source readiness.
+/// Retired Presence laboratory composition for required-source readiness.
+///
+/// Production Onboarding no longer consumes this provider. The single active
+/// prerequisite authority is `OnboardingJourneyCoordinator`; this composition
+/// remains only for historical fixtures and developer experiments.
 ///
 /// Copied from [requiredSourcesReadinessRepository].
 @ProviderFor(requiredSourcesReadinessRepository)
@@ -31,7 +35,7 @@ typedef RequiredSourcesReadinessRepositoryRef =
 String _$requiredSourcesReadinessAcceptedHash() =>
     r'15e12f8a890a9f91607aab2b47773288ef191cd2';
 
-/// Durable acceptance established by completion of the required-sources run.
+/// Retired laboratory acceptance established by Schedule completion.
 ///
 /// Copied from [requiredSourcesReadinessAccepted].
 @ProviderFor(requiredSourcesReadinessAccepted)
@@ -51,7 +55,7 @@ typedef RequiredSourcesReadinessAcceptedRef = StreamProviderRef<bool>;
 String _$requiredSourcesReadinessSchedulerHash() =>
     r'94f29d8ab6487f70d2657b6fc2735d3e608a22ad';
 
-/// Production composition root for the required-sources Presence Schedule.
+/// Retired laboratory composition root for the required-sources Schedule.
 ///
 /// Copied from [requiredSourcesReadinessScheduler].
 @ProviderFor(requiredSourcesReadinessScheduler)

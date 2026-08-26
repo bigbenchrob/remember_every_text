@@ -5,7 +5,6 @@ import 'package:macos_ui/macos_ui.dart';
 
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
-import 'package:remember_this_text/essentials/onboarding/application/required_sources_readiness_scheduler_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
 import 'package:remember_this_text/features/environment_readiness/presentation/view/environment_readiness_panel_view.dart';
 
@@ -21,9 +20,6 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: <Override>[
-          requiredSourcesReadinessAcceptedProvider.overrideWith(
-            (ref) => Stream<bool>.value(false),
-          ),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) async => _readyReport(),
           ),

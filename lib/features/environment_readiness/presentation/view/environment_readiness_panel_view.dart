@@ -10,7 +10,7 @@ import '../../../../essentials/logging/feature_level_providers.dart'
     show diagnosticReportExporterProvider;
 import '../../../../essentials/onboarding/domain/onboarding_environment_report.dart';
 import '../../../../essentials/onboarding/feature_level_providers.dart'
-    show onboardingDevOverridesProvider, onboardingEnvironmentReportProvider;
+    show onboardingDevOverridesProvider, onboardingJourneyCoordinatorProvider;
 import '../../application/environment_readiness_actions_provider.dart';
 import '../../application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import '../../domain/entities/environment_readiness_surface_view_model.dart';
@@ -32,7 +32,10 @@ class _EnvironmentReadinessPanelViewState
     ref.watch(themeColorsProvider);
     final colors = ref.read(themeColorsProvider.notifier);
     final typography = ref.watch(themeTypographyProvider);
-    final report = ref.watch(onboardingEnvironmentReportProvider).valueOrNull;
+    final report = ref
+        .watch(onboardingJourneyCoordinatorProvider)
+        .evidence
+        ?.report;
     final surface = ref.watch(environmentReadinessSurfaceProvider);
 
     return ColoredBox(
@@ -263,6 +266,11 @@ class _ReadinessActionButton extends ConsumerWidget {
         ref
             .read(environmentReadinessActionsProvider.notifier)
             .refreshEnvironment();
+      },
+      EnvironmentReadinessActionKind.acceptLocalHistory => () {
+        ref
+            .read(environmentReadinessActionsProvider.notifier)
+            .acceptLocalMessageHistory();
       },
       EnvironmentReadinessActionKind.startImport => () {
         ref

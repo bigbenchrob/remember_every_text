@@ -5,6 +5,7 @@ enum EnvironmentReadinessTone { primary, warning, success, failure }
 enum EnvironmentReadinessActionKind {
   openSettings,
   recheck,
+  acceptLocalHistory,
   startImport,
   sendReport,
 }

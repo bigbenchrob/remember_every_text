@@ -165,7 +165,7 @@ const Set<String> _archiveAccessAuthorityConsumerFiles = {
   'lib/essentials/onboarding/application/message_lens_installation_state_provider.dart',
   'lib/essentials/onboarding/application/onboarding_durable_completion_verifier_provider.dart',
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
-  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart',
   'lib/essentials/onboarding/application/start_fresh_service_provider.dart',
   'lib/features/attachments/application/video_thumbnail_cache_provider.dart',
   'lib/features/settings/application/message_lens_historical_archive_preflight_provider.dart',
@@ -277,7 +277,7 @@ const Set<String> _unawaitedAllowedFiles = {
   'lib/features/conversations/presentation/widgets/conversation_favourite_button.dart',
   'lib/essentials/logging/application/app_logger.dart',
   'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
-  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart',
   'lib/essentials/sidebar/application/sidebar_flow_state_provider.dart',
   'lib/features/attachments/application/attachment_archive_service_provider.dart',
   'lib/features/attachments/application/attachment_resolver_provider.dart',
@@ -293,7 +293,7 @@ const Set<String> _unawaitedAllowedFiles = {
 const Set<String> _providerInvalidationAllowedFiles = {
   'lib/essentials/conversation_graph/application/status/conversation_graph_status_sheet_actions_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
-  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart',
   'lib/essentials/onboarding/application/start_fresh_service_provider.dart',
   'lib/features/attachments/application/archive_settings_provider.dart',
   'lib/features/attachments/application/attachment_archive_service_provider.dart',
@@ -448,7 +448,7 @@ const Set<String> _deferredUiCallbackAllowedFiles = {
   'lib/essentials/onboarding/application/full_disk_access_provider.dart',
   'lib/essentials/onboarding/application/onboarding_database_probe_reader_provider.dart',
   'lib/essentials/onboarding/application/onboarding_failure_storage_provider.dart',
-  'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
+  'lib/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart',
   'lib/essentials/onboarding/presentation/advanced_start_fresh_overlay.dart',
   'lib/essentials/presence/presentation/presence_runner.dart',
   'lib/features/messages/presentation/widgets/message_evidence/message_evidence_timeline_view.dart',
@@ -1210,19 +1210,24 @@ void main() {
     );
 
     test(
-      'production Onboarding host delegates generic Steps to Presence',
+      'production composition has one prerequisite Journey authority',
       () async {
-        final source = await File(
-          'lib/essentials/onboarding/presentation/onboarding_presence_host.dart',
+        final shell = await File(
+          'lib/essentials/navigation/presentation/view/macos_app_shell.dart',
+        ).readAsString();
+        final coordinator = await File(
+          'lib/essentials/onboarding/application/'
+          'onboarding_journey_coordinator_provider.dart',
+        ).readAsString();
+        final gate = await File(
+          'lib/essentials/onboarding/application/onboarding_gate_provider.dart',
         ).readAsString();
 
-        expect(source, contains('PresenceRunner'));
-        expect(source, contains('OnboardingFdaContent'));
-        expect(source, isNot(contains('ChoiceValue')));
-        expect(source, isNot(contains('TripDefinitionId')));
-        expect(source, isNot(contains("'recheck'")));
-        expect(source, isNot(contains("'import_anyway'")));
-        expect(source, isNot(contains('presence_iteration_simple')));
+        expect(shell, isNot(contains('OnboardingPresenceHost')));
+        expect(shell, isNot(contains('requiredSourcesReadinessScheduler')));
+        expect(coordinator, contains('state = next;'));
+        expect(gate, contains('compatibility projection'));
+        expect(gate, isNot(contains('state =')));
       },
     );
 
@@ -1239,12 +1244,8 @@ void main() {
     });
 
     test(
-      'accepted readiness handoff reads only durable Schedule completion',
+      'readiness presentation consumes one coherent Journey snapshot',
       () async {
-        final providerSource = await File(
-          'lib/essentials/onboarding/application/'
-          'required_sources_readiness_scheduler_provider.dart',
-        ).readAsString();
         final onboardingProviderSeam = await File(
           'lib/essentials/onboarding/feature_level_providers.dart',
         ).readAsString();
@@ -1252,40 +1253,26 @@ void main() {
           'lib/features/environment_readiness/application/view_spec/'
           'resolver_tools/environment_readiness_surface_provider.dart',
         ).readAsString();
-        final repositorySource = await File(
-          'lib/essentials/presence/infrastructure/repositories/'
-          'drift_presence_schedule_repository.dart',
-        ).readAsString();
-        final completionQuery = repositorySource.substring(
-          repositorySource.indexOf('Stream<bool> watchLatestRunCompletion'),
-          repositorySource.indexOf('Future<void> insertDefinition'),
-        );
-
-        expect(providerSource, contains('watchLatestRunCompletion'));
-        expect(providerSource, isNot(contains('loadExecutionTrace')));
-        expect(providerSource, isNot(contains('ChoiceValue')));
-        expect(providerSource, isNot(contains("'import_anyway'")));
         expect(
           onboardingProviderSeam,
-          contains('show requiredSourcesReadinessAcceptedProvider;'),
+          contains('show onboardingJourneyCoordinatorProvider;'),
         );
         expect(
           onboardingProviderSeam,
-          isNot(contains('requiredSourcesReadinessRepositoryProvider')),
+          isNot(contains('requiredSourcesReadinessAcceptedProvider')),
         );
+        expect(surfaceSource, contains('onboardingJourneyCoordinatorProvider'));
+        expect(surfaceSource, contains('onboarding_journey_state.dart'));
         expect(
-          onboardingProviderSeam,
-          isNot(contains('requiredSourcesReadinessSchedulerProvider')),
+          surfaceSource,
+          isNot(contains('onboardingEnvironmentReportProvider')),
         );
         expect(
           surfaceSource,
-          contains('requiredSourcesReadinessAcceptedProvider'),
+          isNot(contains('requiredSourcesReadinessAcceptedProvider')),
         );
         expect(surfaceSource, isNot(contains('ChoiceValue')));
         expect(surfaceSource, isNot(contains("'import_anyway'")));
-        expect(completionQuery, contains('currentTripOccurrenceId == null'));
-        expect(completionQuery, isNot(contains('executionTrace')));
-        expect(completionQuery, isNot(contains('choice')));
       },
     );
 
@@ -6927,7 +6914,8 @@ void main() {
         'environment_readiness_panel_view.dart',
       ).readAsString();
 
-      expect(resolver, contains('onboardingEnvironmentReportProvider'));
+      expect(resolver, contains('onboardingJourneyCoordinatorProvider'));
+      expect(resolver, isNot(contains('onboardingEnvironmentReportProvider')));
       expect(resolver, contains('EnvironmentReadinessEpisodeKind'));
       expect(resolver, isNot(contains('checked your iPhone')));
       expect(view, contains("const Text('Details')"));

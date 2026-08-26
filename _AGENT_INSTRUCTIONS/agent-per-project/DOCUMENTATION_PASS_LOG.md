@@ -5689,3 +5689,20 @@ production preservation authority mechanically enforceable.
   mode control.
 - Clarified in the Track contract that temporary window/sidebar visibility is
   not Track geometry and does not alter page matrices.
+
+## 2026-08-26 - Single-authority typed Onboarding Journey
+
+- Replaced the canonical dual Gate/Presence prerequisite narrative with one
+  `OnboardingJourneyCoordinator` transition authority and a sealed typed
+  Episode model.
+- Documented coherent evidence revisions, dependency-ordered blocker
+  selection, explicit commanded transitions, backward evidence transitions,
+  and typed human-action gating.
+- Recorded FDA, Contacts, local-history, startup, Start Fresh, durable
+  operation, terminal acknowledgement, lifecycle, and stale-occurrence
+  ownership.
+- Marked the production prerequisite Presence host and Schedule authority as
+  retired from application composition while preserving laboratory fixtures
+  and the read-only Gate compatibility seam.
+- Updated the canonical Onboarding and Environment Readiness guides and the
+  Feature 28 index.

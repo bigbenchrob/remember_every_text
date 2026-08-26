@@ -5,8 +5,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
-import 'package:remember_this_text/essentials/onboarding/application/required_sources_readiness_scheduler_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
+import 'package:remember_this_text/essentials/onboarding/feature_level_providers.dart'
+    show onboardingJourneyCoordinatorProvider;
 import 'package:remember_this_text/features/environment_readiness/application/view_spec/resolver_tools/environment_readiness_surface_provider.dart';
 import 'package:remember_this_text/features/environment_readiness/domain/entities/environment_readiness_surface_view_model.dart';
 
@@ -23,7 +24,6 @@ void main() {
     test('projects provider loading as a calm checking episode', () {
       container = ProviderContainer(
         overrides: <Override>[
-          _requiredSourcesAccepted(false),
           onboardingEnvironmentReportProvider.overrideWith(
             (ref) => Completer<OnboardingEnvironmentReport>().future,
           ),
@@ -119,10 +119,13 @@ void main() {
             state: OnboardingEnvironmentState.sourceSparseOrUnsynced,
             blockerKind: OnboardingBlockerKind.sourceDataSparseOrUnsynced,
           ),
-          requiredSourcesAccepted: true,
         );
 
-        final surface = await _surface(container);
+        await _surface(container);
+        container
+            .read(onboardingJourneyCoordinatorProvider.notifier)
+            .acceptLocalMessageHistory();
+        final surface = container.read(environmentReadinessSurfaceProvider);
 
         expect(surface.kind, EnvironmentReadinessEpisodeKind.ready);
         expect(
@@ -211,7 +214,6 @@ void main() {
             state: OnboardingEnvironmentState.importFailed,
             blockerKind: OnboardingBlockerKind.importFailed,
           ),
-          requiredSourcesAccepted: true,
         );
 
         final surface = await _surface(container);
@@ -224,13 +226,9 @@ void main() {
   });
 }
 
-ProviderContainer _containerFor(
-  OnboardingEnvironmentReport report, {
-  bool requiredSourcesAccepted = false,
-}) {
+ProviderContainer _containerFor(OnboardingEnvironmentReport report) {
   return ProviderContainer(
     overrides: <Override>[
-      _requiredSourcesAccepted(requiredSourcesAccepted),
       onboardingEnvironmentReportProvider.overrideWith((ref) async => report),
     ],
   );
@@ -240,14 +238,7 @@ Future<EnvironmentReadinessSurfaceViewModel> _surface(
   ProviderContainer container,
 ) async {
   await container.read(onboardingEnvironmentReportProvider.future);
-  await container.read(requiredSourcesReadinessAcceptedProvider.future);
   return container.read(environmentReadinessSurfaceProvider);
-}
-
-Override _requiredSourcesAccepted(bool accepted) {
-  return requiredSourcesReadinessAcceptedProvider.overrideWith(
-    (ref) => Stream<bool>.value(accepted),
-  );
 }
 
 OnboardingEnvironmentReport _report({

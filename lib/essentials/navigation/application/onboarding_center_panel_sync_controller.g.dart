@@ -7,7 +7,7 @@ part of 'onboarding_center_panel_sync_controller.dart';
 // **************************************************************************
 
 String _$onboardingCenterPanelSyncControllerHash() =>
-    r'995295522498686c9f2599bff6f8311cd81340d8';
+    r'9540ebed801f62c499a53c866695adee4b6e99d3';
 
 /// See also [OnboardingCenterPanelSyncController].
 @ProviderFor(OnboardingCenterPanelSyncController)
