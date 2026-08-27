@@ -221,3 +221,7 @@ final class SettingsTransientActionCancelled extends SidebarEphemeralIntent {
 final class ResetMessageDataRequested extends SidebarEphemeralIntent {
   const ResetMessageDataRequested();
 }
+
+final class CompleteInstallationEraseRequested extends SidebarEphemeralIntent {
+  const CompleteInstallationEraseRequested();
+}

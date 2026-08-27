@@ -22,11 +22,19 @@ class ResetMessageDataSettingsResolver
           'imported-message and conversation-index data. It preserves your '
           'preferences, MessageLens customizations, setup history, and '
           'archived attachments, verifies a clean state, then restarts '
-          'Onboarding.',
+          'Onboarding. Erase MessageLens setup and start over is a separate '
+          'destructive action that removes all MessageLens-owned local data. '
+          'Neither action changes Apple Messages, Contacts, archive source '
+          'folders, or recovery donors.',
       actions: const [
         SidebarActionDescriptor(
           label: 'Reset message data…',
           intent: ResetMessageDataRequested(),
+          tone: SidebarActionTone.destructive,
+        ),
+        SidebarActionDescriptor(
+          label: 'Erase MessageLens setup and start over…',
+          intent: CompleteInstallationEraseRequested(),
           tone: SidebarActionTone.destructive,
         ),
       ],

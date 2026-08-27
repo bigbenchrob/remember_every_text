@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Legacy and early-tester installations can now use the explicitly destructive
+  **Erase MessageLens Setup and Start Over** action. It closes MessageLens
+  persistence, erases only the admitted canonical app archive (including
+  customizations, Presence history, diagnostics, and archived attachment
+  copies), proves a virgin installation with a new archive identity, and
+  relaunches into Onboarding without touching Apple Messages, Contacts,
+  Historical Archive sources, or recovery donors. Ordinary Start Fresh remains
+  preservation-safe and unchanged.
+
 - The first-run Journey path now represents six human-meaningful Episodes:
   Messages, History, Contacts, Ready, Import, and Start. Durable verification
   remains a mandatory typed coordinator gate; while it runs, Import stays

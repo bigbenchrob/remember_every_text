@@ -7,6 +7,7 @@ import '../domain/archive_identity_validator.dart';
 import '../domain/archive_instance_id.dart';
 import '../domain/archive_marker.dart';
 import '../domain/native_archive_claim.dart';
+import '../domain/resolved_archive_identity.dart';
 import 'archive_marker_store.dart';
 
 /// Admits one native process claim to one marked archive.
@@ -27,8 +28,27 @@ final class ArchiveAdmissionService {
   Future<ArchiveAccessAuthority> admit(NativeArchiveClaim claim) async {
     validator.validateClaim(claim);
 
-    final marker =
-        await markerStore.read() ?? await _createInitialMarker(claim);
+    final existingMarker = await markerStore.read();
+    if (existingMarker == null &&
+        claim.environment == ArchiveEnvironment.production &&
+        !await markerStore.canCreateInitialMarker()) {
+      // Older tester installations can predate the archive marker. They are
+      // admitted only far enough to authorize complete local erasure; no
+      // database, migration, logger, or ordinary feature may use this ticket.
+      return ArchiveAccessAuthority(
+        identity: ResolvedArchiveIdentity(
+          environment: claim.environment,
+          buildIdentity: claim.buildIdentity,
+          archiveInstanceId: ArchiveInstanceId(_uuid.v4()),
+          canonicalRootPath: claim.canonicalRootPath,
+          bundleIdentifier: claim.bundleIdentifier,
+          productName: claim.productName,
+        ),
+        mode: ArchiveAccessMode.completeEraseOnly,
+      );
+    }
+
+    final marker = existingMarker ?? await _createInitialMarker(claim);
 
     final identity = validator.validate(claim: claim, marker: marker);
     return ArchiveAccessAuthority(identity: identity);

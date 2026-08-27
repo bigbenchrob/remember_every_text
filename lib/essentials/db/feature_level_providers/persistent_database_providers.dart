@@ -1,12 +1,16 @@
 import 'dart:io';
 
 import 'package:drift/native.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../archive_environment/domain.dart'
     show ArchiveMutationResourceAction;
 import '../../archive_environment/feature_level_providers.dart'
-    show archiveAccessAuthorityProvider, archiveMutationCoordinatorProvider;
+    show
+        archiveAccessAuthorityProvider,
+        archiveMutationCoordinatorProvider,
+        archiveOwnedResourceRegistryProvider;
 import '../../logging/feature_level_providers.dart' show appLoggerProvider;
 import '../../presence/infrastructure/data_sources/local/presence_database.dart';
 import '../../source_scoped_import/infrastructure/import_database_provider.dart';
@@ -25,12 +29,27 @@ Future<void> _ensureDatabaseDirectoryExists(String rootPath) async {
   }
 }
 
+void _requirePersistentStoreAdmission(Ref ref) {
+  final admission = ref
+      .read(archiveMutationCoordinatorProvider.notifier)
+      .resourceAdmissionForCurrentCaller(
+        ArchiveMutationResourceAction.openPersistentArchiveStore,
+      );
+  if (!admission.isAllowed) {
+    throw StateError(
+      'Persistent archive stores are unavailable during database maintenance.',
+    );
+  }
+}
+
 /// Provides access to the source-scoped import ledger database.
 @Riverpod(keepAlive: true)
 Future<ImportDatabase> sourceScopedImportDatabase(
   SourceScopedImportDatabaseRef ref,
 ) async {
+  _requirePersistentStoreAdmission(ref);
   final authority = ref.watch(archiveAccessAuthorityProvider);
+  authority.requirePersistentArchiveAccess();
   await _ensureDatabaseDirectoryExists(authority.rootPath);
 
   final database = await ImportDatabase.open(
@@ -38,7 +57,15 @@ Future<ImportDatabase> sourceScopedImportDatabase(
     databaseName: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
   );
 
+  final resources = ref.read(archiveOwnedResourceRegistryProvider);
+  resources.register(
+    identity: database,
+    label: 'source-scoped import database',
+    close: database.close,
+  );
+
   ref.onDispose(() async {
+    resources.unregister(database);
     await database.close();
   });
 
@@ -65,6 +92,7 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
   }
 
   final authority = ref.watch(archiveAccessAuthorityProvider);
+  authority.requirePersistentArchiveAccess();
   await _ensureDatabaseDirectoryExists(authority.rootPath);
   final dbPath = appDatabasePath(
     AppDatabaseFile.conversationGraph,
@@ -84,8 +112,15 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
     conversationGraphConnectionLifecycleProvider,
   );
   connectionLifecycle.register(database);
+  final resources = ref.read(archiveOwnedResourceRegistryProvider);
+  resources.register(
+    identity: database,
+    label: 'conversation graph database',
+    close: connectionLifecycle.closeIfActive,
+  );
 
   ref.onDispose(() async {
+    resources.unregister(database);
     logger.debug(
       'Disposing ConversationGraphDatabase for $dbPath',
       source: 'ConversationGraphDbProvider',
@@ -99,7 +134,9 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
 /// Provides access to the overlay database for user preferences and customizations.
 @Riverpod(keepAlive: true)
 Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
+  _requirePersistentStoreAdmission(ref);
   final authority = ref.watch(archiveAccessAuthorityProvider);
+  authority.requirePersistentArchiveAccess();
   await _ensureDatabaseDirectoryExists(authority.rootPath);
   final dbPath = appDatabasePath(
     AppDatabaseFile.overlay,
@@ -114,7 +151,15 @@ Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
     await database.customStatement('PRAGMA foreign_keys = ON');
   });
 
+  final resources = ref.read(archiveOwnedResourceRegistryProvider);
+  resources.register(
+    identity: database,
+    label: 'overlay database',
+    close: database.close,
+  );
+
   ref.onDispose(() async {
+    resources.unregister(database);
     await database.close();
   });
 
@@ -124,7 +169,9 @@ Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
 /// Provides the durable Schedule/Trip experiment database.
 @Riverpod(keepAlive: true)
 Future<PresenceDatabase> presenceDatabase(PresenceDatabaseRef ref) async {
+  _requirePersistentStoreAdmission(ref);
   final authority = ref.watch(archiveAccessAuthorityProvider);
+  authority.requirePersistentArchiveAccess();
   await _ensureDatabaseDirectoryExists(authority.rootPath);
   final dbPath = appDatabasePath(
     AppDatabaseFile.presence,
@@ -139,7 +186,15 @@ Future<PresenceDatabase> presenceDatabase(PresenceDatabaseRef ref) async {
     await database.customStatement('PRAGMA foreign_keys = ON');
   });
 
+  final resources = ref.read(archiveOwnedResourceRegistryProvider);
+  resources.register(
+    identity: database,
+    label: 'Presence database',
+    close: database.close,
+  );
+
   ref.onDispose(() async {
+    resources.unregister(database);
     await database.close();
   });
 

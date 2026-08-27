@@ -29,6 +29,7 @@ import '../../../onboarding/domain/onboarding_status.dart';
 import '../../../onboarding/feature_level_providers.dart'
     show onboardingGateProvider, onboardingOperationReconciliationProvider;
 import '../../../onboarding/presentation/advanced_start_fresh_overlay.dart';
+import '../../../onboarding/presentation/complete_installation_erase_overlay.dart';
 import '../../../onboarding/presentation/onboarding_overlay.dart';
 import '../../../sidebar/application/sidebar_flow_state_provider.dart';
 import '../../application/app_shell_actions_provider.dart';
@@ -512,6 +513,7 @@ class _MacosAppShellState extends ConsumerState<MacosAppShell> {
         window,
         if (showOnboardingOverlay) const OnboardingOverlay(),
         const AdvancedStartFreshOverlayHost(),
+        const CompleteInstallationEraseOverlayHost(),
       ],
     );
   }

@@ -5,6 +5,7 @@ enum ArchiveMutationOperation {
   onboardingImport,
   automaticRecovery,
   startFresh,
+  completeInstallationErase,
   messageDataReset,
   historicalArchiveDryRun,
   historicalArchiveImport,
@@ -17,7 +18,10 @@ enum ArchiveMutationOperation {
 
 /// Protected resource actions whose admission depends on the active mutation
 /// owner and the requesting async branch's current operation scope.
-enum ArchiveMutationResourceAction { openConversationGraphConnection }
+enum ArchiveMutationResourceAction {
+  openConversationGraphConnection,
+  openPersistentArchiveStore,
+}
 
 enum ArchiveMutationResourceAdmission {
   unrestricted,
@@ -35,6 +39,7 @@ extension ArchiveMutationOperationPolicy on ArchiveMutationOperation {
     return switch (this) {
       ArchiveMutationOperation.messageDataReset ||
       ArchiveMutationOperation.startFresh ||
+      ArchiveMutationOperation.completeInstallationErase ||
       ArchiveMutationOperation.historicalArchiveImport ||
       ArchiveMutationOperation.historicalArchiveRemoval ||
       ArchiveMutationOperation.destructiveMaintenance => true,
@@ -58,6 +63,7 @@ extension ArchiveMutationOperationPolicy on ArchiveMutationOperation {
       ArchiveMutationResourceAction.openConversationGraphConnection =>
         this == ArchiveMutationOperation.historicalArchiveImport ||
             this == ArchiveMutationOperation.historicalArchiveRemoval,
+      ArchiveMutationResourceAction.openPersistentArchiveStore => false,
     };
   }
 }

@@ -9,6 +9,28 @@ links:
 tests: []
 ---
 
+# Complete Legacy-Tester Installation Erasure
+
+Date: 2026-08-27
+
+Scope: Codified the separately authorized whole-installation erase operation,
+its strict distinction from preservation-safe Start Fresh, and its canonical
+archive/environment boundaries.
+
+## Changes
+
+| File | Change | Reason |
+| --- | --- | --- |
+| `45-NEW-FEATURE-ADDITION/28-ONBOARDING/responses/16-COMPLETE-LEGACY-TESTER-CLEAN-INSTALL-ERASE-ALL-MESSAGELENS-OWNED-DATA-IMPLEMENTATION.md` | Added the implementation, ownership inventory, authority, interruption, verification, and tester-rollout record. | Provides one durable Feature 28 reference for the destructive operation. |
+| `25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md` | Added the sole separately authorized whole-installation exception while preserving ordinary reset rules. | Prevents complete erasure from being mistaken for a weakening of Start Fresh. |
+| `25-ONBOARDING-AND-ARCHIVE/10-onboarding-gate.md` | Documented the distinct operation and its handoff to the six-node Journey. | Keeps Onboarding ownership and preservation semantics explicit. |
+| `50-ENVIRONMENT-SAFETY/00-overview.md` | Added erase-only admission, canonical-root safety, durable recovery, new identity, and virgin proof. | Makes the environment authority chain complete for legacy roots. |
+| `10-DATABASES/00-all-databases-accessed.md` | Added the no-database erase-only authority and complete-erasure archive exception. | Prevents obsolete schemas from being opened or migrated before deletion. |
+| `45-NEW-FEATURE-ADDITION/28-ONBOARDING/README.md` | Indexed the response and updated Feature 28 status. | Keeps the work package navigable. |
+| `CHANGELOG.md` and `pubspec.yaml` | Recorded the release-facing operation and advanced the version. | Synchronizes tester-facing behavior and release metadata. |
+
+---
+
 # Generalized Delayed Attachment Retry
 
 Date: 2026-07-28

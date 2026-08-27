@@ -32,6 +32,7 @@ Journey before further Onboarding implementation begins.
 13. [Start Fresh startup-admission correction](responses/14-START-FRESH-STARTUP-ADMISSION-CORRECTION.md)
 14. [Journey node semantics and verification gate](responses/14-ONBOARDING-JOURNEY-NODE-SEMANTICS-AND-VERIFICATION-GATE-IMPLEMENTATION.md)
 15. [Final release readiness and conformance](responses/15-FEATURE-28-FINAL-ONBOARDING-RELEASE-READINESS-AND-CONFORMANCE.md)
+16. [Complete legacy-tester installation erasure](responses/16-COMPLETE-LEGACY-TESTER-CLEAN-INSTALL-ERASE-ALL-MESSAGELENS-OWNED-DATA-IMPLEMENTATION.md)
 
 ## Current Status
 
@@ -48,6 +49,13 @@ The final conformance pass classifies Feature 28 as **ready with deferred
 non-blockers**. Start remains mechanically unavailable until the mandatory
 internal durable-verification gate succeeds; verification failure remains on
 Import and never exposes Start.
+
+A separate, explicitly destructive **Erase MessageLens Setup and Start Over**
+operation is now available from advanced Settings and legacy-installation
+recovery. It erases only the admitted canonical MessageLens archive, proves a
+virgin installation through the canonical classifier, creates a new archive
+identity, and relaunches into the six-node Journey. It does not alter ordinary,
+preservation-safe Start Fresh semantics.
 
 Startup classification is a one-shot process admission decision. Once the
 application has been admitted, later installation-state refreshes cannot

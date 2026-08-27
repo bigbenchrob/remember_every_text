@@ -2,7 +2,7 @@
 tier: project
 scope: environment-safety
 owner: agent-per-project
-last_reviewed: 2026-07-27
+last_reviewed: 2026-08-27
 source_of_truth: doc
 links:
   - ../90-DATA-INGESTION-REVIEW/WORKSTREAMS/01-PRODUCTION-DATA-PROTECTION/README.md
@@ -94,6 +94,20 @@ base files. Archive identity, overlays, Presence history, logs, preferences,
 and `attachment_archive/` remain in the same admitted root. The operation does
 not create an active-root pointer or infer deletion authority from directory
 ownership.
+
+**Erase MessageLens Setup and Start Over** uses the distinct
+`completeInstallationErase` operation. Legacy nonempty production roots that
+lack a modern marker may receive an erase-only authority: it permits no
+persistent database construction and no mutation except complete erasure. This
+allows obsolete state to be discarded without opening or migrating it.
+
+Complete erasure accepts only the canonical root admitted by native and Dart
+environment claims. It rejects protected roots, symlinked roots or descendants,
+nested Apple `chat.db`, and nested archive markers. A durable transaction token
+precedes deletion. Startup resumes an interrupted transaction until a fresh
+marker with a new archive instance identity has been installed and the
+canonical installation classifier proves `virgin`. External Apple databases,
+Historical Archive sources, and recovery donors remain outside the target.
 
 High-risk production operations require a verified checkpoint receipt tied to
 the same archive identity. Checkpoints are offline, complete inventories with

@@ -7,7 +7,7 @@ part of 'persistent_database_providers.dart';
 // **************************************************************************
 
 String _$sourceScopedImportDatabaseHash() =>
-    r'c8b8aecfb1180d926ffc901f7582e605df49502e';
+    r'283f900169a8cd49e0355b70c760c556a6beedbb';
 
 /// Provides access to the source-scoped import ledger database.
 ///
@@ -28,7 +28,7 @@ final sourceScopedImportDatabaseProvider =
 // ignore: unused_element
 typedef SourceScopedImportDatabaseRef = FutureProviderRef<ImportDatabase>;
 String _$driftConversationGraphDatabaseHash() =>
-    r'a9f4140892bb0e85f52277d90e5a9fa45ac75682';
+    r'7f748a2d773c10617a010549e2753ccb7f53b1ab';
 
 /// Provides access to the source-scoped conversation graph projection database.
 ///
@@ -49,7 +49,7 @@ final driftConversationGraphDatabaseProvider =
 // ignore: unused_element
 typedef DriftConversationGraphDatabaseRef =
     FutureProviderRef<ConversationGraphDatabase>;
-String _$overlayDatabaseHash() => r'c508b771f81fc04d6bdec98e003912f80e078b6c';
+String _$overlayDatabaseHash() => r'001618a3257f792562bd23523aafa1426bfa6cf8';
 
 /// Provides access to the overlay database for user preferences and customizations.
 ///
@@ -68,7 +68,7 @@ final overlayDatabaseProvider = FutureProvider<OverlayDatabase>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef OverlayDatabaseRef = FutureProviderRef<OverlayDatabase>;
-String _$presenceDatabaseHash() => r'235e6a89c9ccc79a1605f7621fe3f41f712a360f';
+String _$presenceDatabaseHash() => r'8d9fee7be77c96160f4f4f9115788d4abf84d387';
 
 /// Provides the durable Schedule/Trip experiment database.
 ///

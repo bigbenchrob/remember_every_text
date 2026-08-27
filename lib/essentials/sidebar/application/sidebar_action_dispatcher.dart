@@ -21,7 +21,9 @@ import '../../logging/feature_level_providers.dart'
     show diagnosticLogDirectoryPathProvider, diagnosticReportExporterProvider;
 import '../../navigation/domain/sidebar_mode.dart';
 import '../../onboarding/feature_level_providers.dart'
-    show advancedStartFreshActionProvider;
+    show
+        advancedStartFreshActionProvider,
+        completeInstallationEraseActionProvider;
 import '../application/cassette_rack_state_provider.dart';
 import '../application/ephemeral_cassette_projection_provider.dart';
 import '../application/sidebar_flow_state_provider.dart';
@@ -262,6 +264,10 @@ class SidebarActionDispatcher extends _$SidebarActionDispatcher {
       case ResetMessageDataRequested():
         final startFreshAction = ref.read(advancedStartFreshActionProvider);
         await startFreshAction.request();
+      case CompleteInstallationEraseRequested():
+        await ref
+            .read(completeInstallationEraseActionProvider.notifier)
+            .request();
     }
   }
 

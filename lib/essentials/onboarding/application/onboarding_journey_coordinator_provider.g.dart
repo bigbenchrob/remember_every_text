@@ -7,7 +7,7 @@ part of 'onboarding_journey_coordinator_provider.dart';
 // **************************************************************************
 
 String _$onboardingJourneyCoordinatorHash() =>
-    r'079d41abb8ee090426a5fc5a6158c992cd054b2c';
+    r'f17b005c1bd84015230ac8cec5e7d1134d137fc5';
 
 /// Sole authority for the active typed Onboarding Journey Episode.
 ///

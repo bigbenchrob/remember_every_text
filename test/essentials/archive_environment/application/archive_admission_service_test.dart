@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/archive_environment/application/archive_admission_service.dart';
+import 'package:remember_this_text/essentials/archive_environment/domain/archive_access_authority.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_admission_exception.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_build_identity.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_environment.dart';
@@ -90,6 +91,32 @@ void main() {
       ),
     );
   });
+
+  test(
+    'production admits a non-empty unmarked legacy root for erase only',
+    () async {
+      final root = Directory('${temporaryDirectory.path}/production');
+      await root.create();
+      await File('${root.path}/legacy-working.db').writeAsString('legacy');
+
+      final authority = await _serviceFor(
+        root,
+      ).admit(_productionClaim(root.path));
+
+      expect(authority.mode, ArchiveAccessMode.completeEraseOnly);
+      expect(authority.permitsPersistentArchiveAccess, isFalse);
+      expect(
+        authority.requirePersistentArchiveAccess,
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        File(
+          '${root.path}/${FileSystemArchiveMarkerStore.markerFileName}',
+        ).existsSync(),
+        isFalse,
+      );
+    },
+  );
 
   test('development refuses a production marker', () async {
     final root = Directory('${temporaryDirectory.path}/development');

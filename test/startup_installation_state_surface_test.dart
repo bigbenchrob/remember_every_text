@@ -3,13 +3,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
+import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
+    show admittedArchiveAccessAuthorityProvider;
 import 'package:remember_this_text/essentials/onboarding/domain/message_lens_installation_state.dart';
 import 'package:remember_this_text/essentials/onboarding/feature_level_providers.dart'
     show messageLensInstallationStateProvider;
 import 'package:remember_this_text/essentials/services/startup_flags_service.dart';
 import 'package:remember_this_text/main.dart' show StartupApp;
 
+import 'test_support/test_archive_fixture.dart';
+
 void main() {
+  late TestArchiveFixture archiveFixture;
+
+  setUpAll(() async {
+    archiveFixture = await TestArchiveFixture.create(
+      prefix: 'startup_installation_surface_',
+    );
+  });
+
+  tearDownAll(() async {
+    await archiveFixture.dispose();
+  });
+
   testWidgets(
     'healthy startup admission cannot be reclaimed by later remediation',
     (tester) async {
@@ -19,6 +35,9 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWith(
+            (ref) => archiveFixture.authority,
+          ),
           messageLensInstallationStateProvider.overrideWith((ref) async {
             return state;
           }),
@@ -55,6 +74,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWith(
+            (ref) => archiveFixture.authority,
+          ),
           messageLensInstallationStateProvider.overrideWith((ref) async {
             return const MessageLensInstallationState(
               kind: MessageLensInstallationStateKind.remediationRequired,
@@ -80,6 +102,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWith(
+            (ref) => archiveFixture.authority,
+          ),
           messageLensInstallationStateProvider.overrideWith((ref) async {
             return const MessageLensInstallationState(
               kind: MessageLensInstallationStateKind.abandoned,
@@ -112,6 +137,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWith(
+            (ref) => archiveFixture.authority,
+          ),
           messageLensInstallationStateProvider.overrideWith((ref) async {
             return const MessageLensInstallationState(
               kind: MessageLensInstallationStateKind.completed,

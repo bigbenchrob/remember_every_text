@@ -2,7 +2,7 @@
 tier: project
 scope: attachment-preservation
 owner: agent-per-project
-last_reviewed: 2026-08-14
+last_reviewed: 2026-08-27
 source_of_truth: code-and-invariant
 links:
   - ./30-import-migration-coordination.md
@@ -34,6 +34,13 @@ this Mac. It is not a cache, temporary output, or disposable build artifact.
 Any operation that intentionally changes or removes archived attachment
 payloads must be explicit, preservation-aware, separately authorized, and
 outside ordinary rebuild/reset semantics.
+
+The sole whole-installation exception is **Erase MessageLens Setup and Start
+Over**. It uses the distinct `completeInstallationErase` mutation capability,
+names `attachment_archive/` in its destructive disclosure, and erases only the
+admitted canonical MessageLens archive after explicit authorization. It is not
+an onboarding, reset, reimport, recovery, migration, cleanup, or rebuild side
+effect, and it does not change ordinary Start Fresh semantics.
 
 ## Three Data Categories
 
@@ -163,6 +170,7 @@ The allow-list excludes:
 | Automatic recovery | Safe because it delegates to the explicit reset allow-list | `_runAdmittedAutomaticRecovery()` calls the same reset service |
 | **Reset Message Data** | Explicitly safe advanced entry into Start Fresh | A completed installation is reclassified, explicitly authorized, and delegated to canonical Start Fresh under `startFresh` mutation authority; only enumerated derived database files are removed |
 | **Start Fresh** | Explicitly safe within current semantics | Typed installation classification and explicit authorization lead to the same allow-list reset under `startFresh` mutation authority; payloads and overlay/Presence stores remain |
+| **Erase MessageLens Setup and Start Over** | Separate, explicitly destructive whole-installation operation | `completeInstallationErase` authority may delete the admitted root's `attachment_archive/` only after clear human authorization; external Apple/source/donor paths remain mechanically outside its target |
 | Development reset action | Safe within its temporary/development authority | Delegates to the same reset service |
 | Retired-database cleanup | Safe because targets are named base files in the reset allow-list | No directory or pattern deletion |
 | Import-ledger row replacement | Not relevant to archive payload files | Database-table writes occur inside the source-scoped import store |
@@ -170,7 +178,8 @@ The allow-list excludes:
 | Test fixture cleanup | Not a production archive path | Relevant tests use system-temporary roots or provider overrides |
 
 No current ordinary production reset, reimport, recovery, or migration-cleanup
-path can reach archived attachment payloads.
+path can reach archived attachment payloads. The separately authorized complete
+installation erase is intentionally not an ordinary reset path.
 
 ## Explicit Archive Clearing Is A Separate Concern
 
@@ -217,7 +226,9 @@ Any change involving reset, reimport, recovery, fresh start, migration cleanup,
 archive adoption, or test data cleanup must answer both questions:
 
 1. Which exact rebuildable stores may this operation delete?
-2. What mechanically prevents it from reaching `attachment_archive/`?
+2. What mechanically prevents it from reaching `attachment_archive/`, or, for
+   the separately authorized complete installation erase, what exact capability
+   and disclosure permit that deletion?
 
 If the answer relies on “delete everything except the archive,” the design is
 rejected.

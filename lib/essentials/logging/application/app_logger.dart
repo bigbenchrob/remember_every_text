@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../archive_environment/feature_level_providers.dart'
-    show admittedArchiveAccessAuthorityProvider;
+    show
+        admittedArchiveAccessAuthorityProvider,
+        archiveOwnedResourceRegistryProvider;
 import '../domain/log_entry.dart';
 import '../infrastructure/log_file_writer.dart';
 import '../infrastructure/macos_unified_log_bridge.dart';
@@ -31,13 +33,22 @@ class AppLogger extends _$AppLogger {
   @override
   List<LogEntry> build() {
     final authority = ref.watch(admittedArchiveAccessAuthorityProvider);
-    if (authority != null) {
+    if (authority != null && authority.permitsPersistentArchiveAccess) {
       final writer = LogFileWriter(
         logDirectory: Directory(authority.resolvePath('application_logs')),
       );
       _writer = writer;
       unawaited(writer.init());
-      ref.onDispose(writer.close);
+      final resources = ref.read(archiveOwnedResourceRegistryProvider);
+      resources.register(
+        identity: writer,
+        label: 'application log writer',
+        close: writer.close,
+      );
+      ref.onDispose(() async {
+        resources.unregister(writer);
+        await writer.close();
+      });
     }
     return [];
   }
