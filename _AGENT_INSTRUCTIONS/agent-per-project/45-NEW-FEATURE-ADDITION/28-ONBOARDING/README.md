@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding
 owner: agent-per-project
-last_reviewed: 2026-08-26
+last_reviewed: 2026-08-27
 source_of_truth: feature-work-package-index
 ---
 
@@ -31,6 +31,7 @@ Journey before further Onboarding implementation begins.
 12. [Live Onboarding Journey path](responses/13-LIVE-ONBOARDING-JOURNEY-PATH-IMPLEMENTATION.md)
 13. [Start Fresh startup-admission correction](responses/14-START-FRESH-STARTUP-ADMISSION-CORRECTION.md)
 14. [Journey node semantics and verification gate](responses/14-ONBOARDING-JOURNEY-NODE-SEMANTICS-AND-VERIFICATION-GATE-IMPLEMENTATION.md)
+15. [Final release readiness and conformance](responses/15-FEATURE-28-FINAL-ONBOARDING-RELEASE-READINESS-AND-CONFORMANCE.md)
 
 ## Current Status
 
@@ -42,6 +43,11 @@ authorization, operation, and terminal Episodes without mirroring the internal
 durable-verification gate or inferring progress from widgets and counters.
 First-run ownership continues through terminal OK, which removes the path and
 releases the normal application sidebar.
+
+The final conformance pass classifies Feature 28 as **ready with deferred
+non-blockers**. Start remains mechanically unavailable until the mandatory
+internal durable-verification gate succeeds; verification failure remains on
+Import and never exposes Start.
 
 Startup classification is a one-shot process admission decision. Once the
 application has been admitted, later installation-state refreshes cannot

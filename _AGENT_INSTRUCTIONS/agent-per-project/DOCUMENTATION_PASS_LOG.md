@@ -5742,3 +5742,20 @@ production preservation authority mechanically enforceable.
   projection, and the invariant that Start cannot exist before durable proof.
 - Clarified in canonical Presence coordination that not every internal state or
   completion predicate is a human Episode requiring presentation.
+
+## 2026-08-27 - Feature 28 final Onboarding conformance
+
+- Corrected the final release-readiness prompt to use the canonical six-node
+  Messages, History, Contacts, Ready, Import, and Start human Journey.
+- Recorded the final authority, prerequisite, mutation, operation, liveness,
+  verification, startup, Start Fresh, preservation, data-fidelity,
+  accessibility, and handoff audit.
+- Proved that durable verification remains a mandatory internal Coordinator
+  gate: Import stays current until proof succeeds, and verification failure
+  never exposes Start.
+- Classified Feature 28 as ready with bounded non-blockers for watchdog policy,
+  unmounted compatibility/laboratory cleanup, and broader anomaly
+  presentation.
+- Preserved the distinction between the human Journey topology and the richer
+  internal Coordinator state machine; no application behavior or database
+  schema changed in this pass.
