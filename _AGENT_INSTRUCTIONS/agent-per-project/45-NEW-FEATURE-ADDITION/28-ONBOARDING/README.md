@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding
 owner: agent-per-project
-last_reviewed: 2026-08-27
+last_reviewed: 2026-08-29
 source_of_truth: feature-work-package-index
 ---
 
@@ -33,6 +33,9 @@ Journey before further Onboarding implementation begins.
 14. [Journey node semantics and verification gate](responses/14-ONBOARDING-JOURNEY-NODE-SEMANTICS-AND-VERIFICATION-GATE-IMPLEMENTATION.md)
 15. [Final release readiness and conformance](responses/15-FEATURE-28-FINAL-ONBOARDING-RELEASE-READINESS-AND-CONFORMANCE.md)
 16. [Complete legacy-tester installation erasure](responses/16-COMPLETE-LEGACY-TESTER-CLEAN-INSTALL-ERASE-ALL-MESSAGELENS-OWNED-DATA-IMPLEMENTATION.md)
+17. [Complete Erase containment and known-good Onboarding audit](responses/17-COMPLETE-ERASE-CONTAINMENT-AND-KNOWN-GOOD-ONBOARDING-AUDIT.md)
+18. [Complete Erase validation responsiveness correction](responses/17-COMPLETE-ERASE-VALIDATION-RESPONSIVENESS-CORRECTION.md)
+19. [Last distributed tester-build legacy signature audit](responses/18-LAST-DISTRIBUTED-TESTER-BUILD-LEGACY-INSTALL-SIGNATURE-AUDIT.md)
 
 ## Current Status
 
