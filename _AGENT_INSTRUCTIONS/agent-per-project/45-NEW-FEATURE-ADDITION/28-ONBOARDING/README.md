@@ -38,6 +38,7 @@ Journey before further Onboarding implementation begins.
 19. [Last distributed tester-build legacy signature audit](responses/18-LAST-DISTRIBUTED-TESTER-BUILD-LEGACY-INSTALL-SIGNATURE-AUDIT.md)
 20. [Legacy tester inspector and startup classification](responses/19-LEGACY-TESTER-INSTALL-INSPECTOR-AND-STARTUP-CLASSIFICATION-IMPLEMENTATION.md)
 21. [Legacy tester deletion authorization and Onboarding handoff](responses/21-LEGACY-TESTER-DATA-DELETION-AUTHORIZATION-AND-ONBOARDING-HANDOFF-IMPLEMENTATION.md)
+22. [Tester release distribution verification 0.2.99+117](responses/22-TESTER-RELEASE-DISTRIBUTION-VERIFICATION-0.2.99+117.md)
 
 ## Current Status
 
@@ -69,3 +70,8 @@ application has been admitted, later installation-state refreshes cannot
 reclaim its presentation. Valid empty derived stores are classified as virgin
 from their durable contents rather than treated as consequential merely because
 their files exist.
+
+The signed and notarized `0.2.99+117` tester artifact and its local tester-site
+update are verified and ready for the separate human-controlled publication
+step. No artifact was installed, published, or sent to testers during release
+verification.

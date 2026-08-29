@@ -97,7 +97,7 @@ extract_app_version() {
   local version_line
   version_line="$(awk '/^version: / {print $2; exit}' "$PUBSPEC_FILE")"
   [[ -n "$version_line" ]] || fail "Could not read app version from $PUBSPEC_FILE"
-  echo "${version_line%%+*}"
+  echo "$version_line"
 }
 
 write_latest_build_metadata() {

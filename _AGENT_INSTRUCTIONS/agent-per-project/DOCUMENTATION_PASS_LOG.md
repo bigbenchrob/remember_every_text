@@ -5818,3 +5818,13 @@ production preservation authority mechanically enforceable.
 - Updated the Feature 28 index and status to remove the generalized Complete
   Erase Settings rollout and identify the low-level root replacement as dormant
   internal infrastructure.
+
+# 2026-08-29 - Tester Distribution Artifact 0.2.99+117
+
+- Added the Feature 28 release verification record for the signed, notarized,
+  stapled, and Gatekeeper-accepted `0.2.99+117` production tester DMG.
+- Recorded exact production identity, hash, notarization submission, portal
+  files, tester instructions, automated evidence, and the unproven external
+  publication boundary.
+- Updated the Feature 28 index to distinguish verified local release readiness
+  from the separate human-controlled website publication step.

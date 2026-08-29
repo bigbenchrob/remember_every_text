@@ -114,6 +114,13 @@ void main() {
     );
   });
 
+  test('tester metadata retains the exact version and build number', () async {
+    final script = await File('tool/build_and_notarize.sh').readAsString();
+
+    expect(script, contains(r'echo "$version_line"'));
+    expect(script, isNot(contains(r'${version_line%%+*}')));
+  });
+
   test(
     'artifact verifier keeps recursive verification production-only',
     () async {
