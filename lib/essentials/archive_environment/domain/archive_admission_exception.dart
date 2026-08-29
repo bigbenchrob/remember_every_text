@@ -10,6 +10,7 @@ enum ArchiveAdmissionFailure {
   testApplicationSupportRoot,
   missingMarker,
   nonEmptyUnmarkedArchive,
+  legacyTesterInspectionFailed,
   malformedMarker,
   markerCreationFailed,
   markerFormatMismatch,

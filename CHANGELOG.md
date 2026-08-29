@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Unmarked production archives no longer receive destructive-only authority
+  merely because they contain files. MessageLens now recognizes the exact
+  pre-source-scoped tester database generation through read-only SQLite schema
+  fingerprints, fails closed for every other shape, and presents only a
+  non-destructive legacy-detected startup state pending explicit authorization.
+
 - Completed-installation startup and live message catch-up remain responsive
   on production-shaped external archives. Installation integrity inspection
   stays fail-closed and off the Flutter UI isolate; live graph mutation now

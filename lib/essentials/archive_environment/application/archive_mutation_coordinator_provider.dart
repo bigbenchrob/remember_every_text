@@ -148,9 +148,20 @@ class ArchiveMutationCoordinator extends _$ArchiveMutationCoordinator {
     required Future<T> Function(ArchiveMutationCapability capability) action,
   }) async {
     final authority = ref.read(archiveAccessAuthorityProvider);
-    if (authority.mode == ArchiveAccessMode.completeEraseOnly &&
-        operation != ArchiveMutationOperation.completeInstallationErase) {
-      throw StateError('An erase-only archive cannot admit ${operation.name}.');
+    switch (authority.mode) {
+      case ArchiveAccessMode.full:
+        break;
+      case ArchiveAccessMode.completeEraseOnly:
+        if (operation != ArchiveMutationOperation.completeInstallationErase) {
+          throw StateError(
+            'An erase-only archive cannot admit ${operation.name}.',
+          );
+        }
+        break;
+      case ArchiveAccessMode.legacyTesterInstallDetected:
+        throw StateError(
+          'A detected legacy tester installation cannot admit archive mutation.',
+        );
     }
     final inheritedContext =
         Zone.current[_archiveMutationOwnerZoneKey]

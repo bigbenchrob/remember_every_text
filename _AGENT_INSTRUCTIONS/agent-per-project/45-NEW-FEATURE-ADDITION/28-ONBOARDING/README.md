@@ -36,6 +36,7 @@ Journey before further Onboarding implementation begins.
 17. [Complete Erase containment and known-good Onboarding audit](responses/17-COMPLETE-ERASE-CONTAINMENT-AND-KNOWN-GOOD-ONBOARDING-AUDIT.md)
 18. [Complete Erase validation responsiveness correction](responses/17-COMPLETE-ERASE-VALIDATION-RESPONSIVENESS-CORRECTION.md)
 19. [Last distributed tester-build legacy signature audit](responses/18-LAST-DISTRIBUTED-TESTER-BUILD-LEGACY-INSTALL-SIGNATURE-AUDIT.md)
+20. [Legacy tester inspector and startup classification](responses/19-LEGACY-TESTER-INSTALL-INSPECTOR-AND-STARTUP-CLASSIFICATION-IMPLEMENTATION.md)
 
 ## Current Status
 
@@ -54,11 +55,12 @@ internal durable-verification gate succeeds; verification failure remains on
 Import and never exposes Start.
 
 A separate, explicitly destructive **Erase MessageLens Setup and Start Over**
-operation is now available from advanced Settings and legacy-installation
-recovery. It erases only the admitted canonical MessageLens archive, proves a
-virgin installation through the canonical classifier, creates a new archive
-identity, and relaunches into the six-node Journey. It does not alter ordinary,
-preservation-safe Start Fresh semantics.
+implementation remains available from its separately admitted advanced
+Settings path. Arbitrary unmarked roots no longer receive erase-only authority.
+The exact pre-source-scoped tester generation is now recognized read-only and
+projects only a restricted startup explanation; explicit authorization and
+tester deletion remain a later reviewed slice. Ordinary preservation-safe
+Start Fresh remains unchanged.
 
 Startup classification is a one-shot process admission decision. Once the
 application has been admitted, later installation-state refreshes cannot

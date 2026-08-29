@@ -2,7 +2,7 @@ import 'package:path/path.dart' as path;
 
 import 'resolved_archive_identity.dart';
 
-enum ArchiveAccessMode { full, completeEraseOnly }
+enum ArchiveAccessMode { full, completeEraseOnly, legacyTesterInstallDetected }
 
 /// Capability granting path access inside one validated archive root.
 final class ArchiveAccessAuthority {
@@ -21,7 +21,7 @@ final class ArchiveAccessAuthority {
   void requirePersistentArchiveAccess() {
     if (!permitsPersistentArchiveAccess) {
       throw StateError(
-        'This archive is admitted only for complete installation erase.',
+        'This restricted startup authority cannot open persistent stores.',
       );
     }
   }

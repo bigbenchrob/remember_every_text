@@ -6,15 +6,19 @@ import '../domain/archive_environment.dart';
 import '../domain/archive_identity_validator.dart';
 import '../domain/archive_instance_id.dart';
 import '../domain/archive_marker.dart';
+import '../domain/legacy_tester_install_inspection.dart';
 import '../domain/native_archive_claim.dart';
 import '../domain/resolved_archive_identity.dart';
 import 'archive_marker_store.dart';
+import 'legacy_tester_install_inspector.dart';
 
 /// Admits one native process claim to one marked archive.
 final class ArchiveAdmissionService {
   ArchiveAdmissionService({
     required this.validator,
     required this.markerStore,
+    this.legacyTesterInstallInspector =
+        const RejectingLegacyTesterInstallInspector(),
     Uuid uuid = const Uuid(),
     DateTime Function()? currentTime,
   }) : _uuid = uuid,
@@ -22,6 +26,7 @@ final class ArchiveAdmissionService {
 
   final ArchiveIdentityValidator validator;
   final ArchiveMarkerStore markerStore;
+  final LegacyTesterInstallInspector legacyTesterInstallInspector;
   final Uuid _uuid;
   final DateTime Function() _currentTime;
 
@@ -32,20 +37,34 @@ final class ArchiveAdmissionService {
     if (existingMarker == null &&
         claim.environment == ArchiveEnvironment.production &&
         !await markerStore.canCreateInitialMarker()) {
-      // Older tester installations can predate the archive marker. They are
-      // admitted only far enough to authorize complete local erasure; no
-      // database, migration, logger, or ordinary feature may use this ticket.
-      return ArchiveAccessAuthority(
-        identity: ResolvedArchiveIdentity(
-          environment: claim.environment,
-          buildIdentity: claim.buildIdentity,
-          archiveInstanceId: ArchiveInstanceId(_uuid.v4()),
-          canonicalRootPath: claim.canonicalRootPath,
-          bundleIdentifier: claim.bundleIdentifier,
-          productName: claim.productName,
-        ),
-        mode: ArchiveAccessMode.completeEraseOnly,
-      );
+      final inspection = await legacyTesterInstallInspector.inspect(claim);
+      switch (inspection.kind) {
+        case LegacyTesterInstallInspectionKind.legacyTesterInstall:
+          // This non-persistent identity permits only a static startup
+          // projection. It grants neither current-store nor erase authority.
+          return ArchiveAccessAuthority(
+            identity: ResolvedArchiveIdentity(
+              environment: claim.environment,
+              buildIdentity: claim.buildIdentity,
+              archiveInstanceId: ArchiveInstanceId(_uuid.v4()),
+              canonicalRootPath: claim.canonicalRootPath,
+              bundleIdentifier: claim.bundleIdentifier,
+              productName: claim.productName,
+            ),
+            mode: ArchiveAccessMode.legacyTesterInstallDetected,
+          );
+        case LegacyTesterInstallInspectionKind.notLegacy:
+          throw ArchiveAdmissionException(
+            ArchiveAdmissionFailure.nonEmptyUnmarkedArchive,
+            'Production found an unmarked archive that is not the supported '
+            'legacy tester generation: ${inspection.reason}',
+          );
+        case LegacyTesterInstallInspectionKind.inspectionFailed:
+          throw ArchiveAdmissionException(
+            ArchiveAdmissionFailure.legacyTesterInspectionFailed,
+            inspection.reason,
+          );
+      }
     }
 
     final marker = existingMarker ?? await _createInitialMarker(claim);

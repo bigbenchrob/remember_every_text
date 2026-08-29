@@ -5796,3 +5796,15 @@ production preservation authority mechanically enforceable.
   rack is observed without its page's resolved matrix during a transient frame.
 - Confirmed that no schema, preservation allow-list, source data, or completed
   installation state changed during diagnosis.
+
+## 2026-08-29 - Legacy tester install recognition
+
+- Recorded the exact pre-source-scoped `macos_import.db` v4, `working.db` v3,
+  and `user_overlays.db` v3 positive fingerprint and current-artifact absence
+  requirements.
+- Documented the standalone read-only/query-only SQLite inspection boundary
+  and its typed proven, not-legacy, and inspection-failed outcomes.
+- Replaced the former broad unmarked-root erase inference with positive legacy
+  proof and a non-destructive restricted startup projection.
+- Clarified that ordinary Development cannot reproduce the production-only
+  native identity gate without unjustified new fixture infrastructure.

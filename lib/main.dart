@@ -37,7 +37,8 @@ import 'essentials/archive_environment/infrastructure.dart'
         FileSystemCompleteInstallationEraseStore,
         FileSystemArchiveMarkerStore,
         MethodChannelArchiveAdmissionFailurePresenter,
-        MethodChannelNativeArchiveClaimReader;
+        MethodChannelNativeArchiveClaimReader,
+        ReadOnlySqliteLegacyTesterInstallInspector;
 import 'essentials/conversation_graph/feature_level_providers.dart'
     show chatDbChangeMonitorProvider;
 import 'essentials/logging/application/diagnostic_report_actions.dart';
@@ -54,6 +55,7 @@ import 'essentials/onboarding/feature_level_providers.dart'
         startFreshServiceProvider;
 import 'essentials/onboarding/infrastructure/persistence/sqlite_message_lens_installation_evidence_reader.dart';
 import 'essentials/onboarding/presentation/complete_installation_erase_authorization_dialog.dart';
+import 'essentials/onboarding/presentation/legacy_tester_install_detected_view.dart';
 import 'essentials/onboarding/presentation/start_fresh_authorization_dialog.dart';
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart'
@@ -195,6 +197,8 @@ Future<ArchiveAccessAuthority> _admitArchive() async {
     markerStore: FileSystemArchiveMarkerStore(
       rootPath: claim.canonicalRootPath,
     ),
+    legacyTesterInstallInspector:
+        const ReadOnlySqliteLegacyTesterInstallInspector(),
   );
   return admissionService.admit(claim);
 }
@@ -391,6 +395,13 @@ class _StartupAppState extends ConsumerState<StartupApp> {
   @override
   Widget build(BuildContext context) {
     final authority = ref.watch(archiveAccessAuthorityProvider);
+    if (authority.mode == ArchiveAccessMode.legacyTesterInstallDetected) {
+      final themeMode = ref.watch(switchableDarkModeProvider);
+      return _startupMacosApp(
+        themeMode: themeMode,
+        child: const LegacyTesterInstallDetectedView(),
+      );
+    }
     if (authority.mode == ArchiveAccessMode.completeEraseOnly) {
       return const _EraseOnlyStartup();
     }

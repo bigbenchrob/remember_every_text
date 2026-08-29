@@ -295,6 +295,45 @@ void main() {
     },
   );
 
+  test('legacy tester recognition admits no archive mutation', () async {
+    final fixture = await TestArchiveFixture.create(
+      prefix: 'legacy_tester_recognition_coordinator_test_',
+    );
+    addTearDown(fixture.dispose);
+    final legacyAuthority = ArchiveAccessAuthority(
+      identity: fixture.authority.identity,
+      mode: ArchiveAccessMode.legacyTesterInstallDetected,
+    );
+    final container = ProviderContainer(
+      overrides: [
+        admittedArchiveAccessAuthorityProvider.overrideWithValue(
+          legacyAuthority,
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final coordinator = container.read(
+      archiveMutationCoordinatorProvider.notifier,
+    );
+
+    await expectLater(
+      coordinator.run<void>(
+        operation: ArchiveMutationOperation.completeInstallationErase,
+        ownerLabel: 'legacy-tester-delete',
+        action: () async {},
+      ),
+      throwsA(isA<StateError>()),
+    );
+    await expectLater(
+      coordinator.run<void>(
+        operation: ArchiveMutationOperation.startFresh,
+        ownerLabel: 'start-fresh',
+        action: () async {},
+      ),
+      throwsA(isA<StateError>()),
+    );
+  });
+
   test(
     'resource admission uses the requesting caller operation scope',
     () async {
