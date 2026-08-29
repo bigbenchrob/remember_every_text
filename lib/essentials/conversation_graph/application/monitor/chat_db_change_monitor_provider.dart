@@ -48,6 +48,16 @@ bool shouldAllowAutomaticIncrementalWork({required bool appDataReady}) {
 }
 
 @visibleForTesting
+Future<T> runGraphMutationBeforeAttachmentPreservation<T>({
+  required Future<T> Function() runGraphMutation,
+  required Future<void> Function(T graphResult) preserveAttachments,
+}) async {
+  final graphResult = await runGraphMutation();
+  await preserveAttachments(graphResult);
+  return graphResult;
+}
+
+@visibleForTesting
 String buildConversationGraphBuildSummaryLog({
   required ConversationGraphBuildReport report,
 }) {
@@ -270,73 +280,92 @@ class ChatDbChangeMonitor extends _$ChatDbChangeMonitor {
     required DateTime updateStartedAt,
     required int newMessageCount,
   }) async {
-    await ref
-        .read(archiveMutationCoordinatorProvider.notifier)
-        .run<void>(
-          operation: ArchiveMutationOperation.liveGraphUpdate,
-          ownerLabel: _chatDbMonitorExecutionOwner,
-          action: () async {
-            ref
-                .read(appLoggerProvider.notifier)
-                .info(
-                  'Building app-facing conversation graph before attachment archive',
-                  source: 'ChatDbMonitor',
-                );
-            ref
-                .read(appLoggerProvider.notifier)
-                .info(
-                  'Triggering conversation graph build',
-                  source: 'ChatDbMonitor',
+    await runGraphMutationBeforeAttachmentPreservation(
+      runGraphMutation: () {
+        return ref
+            .read(archiveMutationCoordinatorProvider.notifier)
+            .run<ConversationGraphBuildReport>(
+              operation: ArchiveMutationOperation.liveGraphUpdate,
+              ownerLabel: _chatDbMonitorExecutionOwner,
+              action: () async {
+                ref
+                    .read(appLoggerProvider.notifier)
+                    .info(
+                      'Building app-facing conversation graph before attachment archive',
+                      source: 'ChatDbMonitor',
+                    );
+                ref
+                    .read(appLoggerProvider.notifier)
+                    .info(
+                      'Triggering conversation graph build',
+                      source: 'ChatDbMonitor',
+                    );
+
+                final graphBuildReport = await ref
+                    .read(conversationGraphBuildControllerProvider.notifier)
+                    .runOnce(owner: _chatDbMonitorExecutionOwner);
+                ref
+                    .read(appLoggerProvider.notifier)
+                    .info(
+                      buildConversationGraphBuildSummaryLog(
+                        report: graphBuildReport,
+                      ),
+                      source: 'ChatDbMonitor',
+                    );
+                state = state.copyWith(
+                  lastMaxRowId: currentMaxRowId,
+                  lastChangeDetected: now,
+                  clearError: true,
                 );
 
-            final graphBuildReport = await ref
-                .read(conversationGraphBuildControllerProvider.notifier)
-                .runOnce(owner: _chatDbMonitorExecutionOwner);
-            ref
-                .read(appLoggerProvider.notifier)
-                .info(
-                  buildConversationGraphBuildSummaryLog(
-                    report: graphBuildReport,
-                  ),
-                  source: 'ChatDbMonitor',
+                _logLiveGraphUpdateComplete(
+                  pendingTrigger: pendingTrigger,
+                  updateStartedAt: updateStartedAt,
+                  newMessageCount: newMessageCount,
+                  graphBuildReport: graphBuildReport,
                 );
-            final archiveService = ref.read(
-              attachmentArchiveServiceProvider.notifier,
+                return graphBuildReport;
+              },
             );
-            final archiveResult = await archiveService
-                .archiveGraphMessageSourceRange(
-                  sourceId: liveChatDbSourceId,
-                  startedAfterSourceRowId: graphBuildReport
-                      .messageImportResult
-                      .startedAfterSourceRowId,
-                  lastImportedSourceRowId: graphBuildReport
-                      .messageImportResult
-                      .lastImportedSourceRowId,
-                );
-            ref
-                .read(appLoggerProvider.notifier)
-                .info(
-                  'Graph attachment archive completed: '
-                  '${archiveResult.newlyArchived} archived, '
-                  '${archiveResult.skipped} skipped, '
-                  '${archiveResult.failed} failed.',
-                  source: 'ChatDbMonitor',
-                );
-
-            state = state.copyWith(
-              lastMaxRowId: currentMaxRowId,
-              lastChangeDetected: now,
-              clearError: true,
-            );
-
-            _logLiveGraphUpdateComplete(
-              pendingTrigger: pendingTrigger,
-              updateStartedAt: updateStartedAt,
-              newMessageCount: newMessageCount,
-              graphBuildReport: graphBuildReport,
-            );
-          },
-        );
+      },
+      // Graph mutation authority has ended before this callback begins. The
+      // attachment archive acquires its own mutation scope and therefore does
+      // not prolong the graph update while it hashes and copies payloads.
+      preserveAttachments: (graphBuildReport) async {
+        try {
+          final archiveResult = await ref
+              .read(attachmentArchiveServiceProvider.notifier)
+              .archiveGraphMessageSourceRange(
+                sourceId: liveChatDbSourceId,
+                startedAfterSourceRowId: graphBuildReport
+                    .messageImportResult
+                    .startedAfterSourceRowId,
+                lastImportedSourceRowId: graphBuildReport
+                    .messageImportResult
+                    .lastImportedSourceRowId,
+              );
+          ref
+              .read(appLoggerProvider.notifier)
+              .info(
+                'Graph attachment archive completed: '
+                '${archiveResult.newlyArchived} archived, '
+                '${archiveResult.skipped} skipped, '
+                '${archiveResult.failed} failed.',
+                source: 'ChatDbMonitor',
+              );
+        } on ArchiveMutationDeniedException {
+          ref
+              .read(appLoggerProvider.notifier)
+              .debug(
+                'Deferred attachment preservation because another archive '
+                'mutation acquired authority after the graph update. The '
+                'rolling attachment sweep remains responsible for '
+                'convergence.',
+                source: 'ChatDbMonitor',
+              );
+        }
+      },
+    );
   }
 
   /// Check for new messages immediately on startup.

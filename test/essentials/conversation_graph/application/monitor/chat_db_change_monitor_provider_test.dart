@@ -6,6 +6,51 @@ import 'package:remember_this_text/essentials/source_scoped_import/application/m
 import 'package:remember_this_text/essentials/source_scoped_import/application/messages/message_rich_text_enricher.dart';
 
 void main() {
+  group('runGraphMutationBeforeAttachmentPreservation', () {
+    test('releases graph work before attachment preservation begins', () async {
+      var graphMutationActive = false;
+      final events = <String>[];
+
+      final result = await runGraphMutationBeforeAttachmentPreservation<int>(
+        runGraphMutation: () async {
+          graphMutationActive = true;
+          events.add('graph-start');
+          await Future<void>.delayed(Duration.zero);
+          events.add('graph-end');
+          graphMutationActive = false;
+          return 42;
+        },
+        preserveAttachments: (graphResult) async {
+          expect(graphMutationActive, isFalse);
+          expect(graphResult, 42);
+          events.add('attachments');
+        },
+      );
+
+      expect(result, 42);
+      expect(events, <String>['graph-start', 'graph-end', 'attachments']);
+    });
+
+    test(
+      'does not begin attachment preservation when graph work fails',
+      () async {
+        var attachmentPreservationStarted = false;
+
+        await expectLater(
+          runGraphMutationBeforeAttachmentPreservation<void>(
+            runGraphMutation: () => Future<void>.error(StateError('failed')),
+            preserveAttachments: (_) async {
+              attachmentPreservationStarted = true;
+            },
+          ),
+          throwsStateError,
+        );
+
+        expect(attachmentPreservationStarted, isFalse);
+      },
+    );
+  });
+
   group('resolveStartupProbeDecision', () {
     test(
       'max rowid equal but imported count lower schedules incremental work',

@@ -45,6 +45,23 @@ void main() {
       );
       await _insertGraphAttachment(
         graphDatabase,
+        messageSourceRowId: 102,
+        attachmentSourceRowId: 202,
+        messageGuid: 'null-mime-message-guid',
+        filename:
+            '~/Library/Messages/Attachments/payload.pluginPayloadAttachment',
+        mimeType: null,
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
+        messageSourceRowId: 103,
+        attachmentSourceRowId: 203,
+        messageGuid: 'blank-mime-message-guid',
+        filename: '~/Library/Messages/Attachments/opaque-payload',
+        mimeType: ' ',
+      );
+      await _insertGraphAttachment(
+        graphDatabase,
         messageSourceRowId: 110,
         attachmentSourceRowId: 210,
         messageGuid: 'message-guid-110',

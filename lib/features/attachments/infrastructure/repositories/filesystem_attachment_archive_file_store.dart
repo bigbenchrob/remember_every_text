@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as path;
@@ -60,6 +61,12 @@ class FilesystemAttachmentArchiveFileStore
     if (!_isRegularFile(sourcePath)) {
       return null;
     }
+    final extension = path.extension(sourcePath).toLowerCase();
+    try {
+      _safeExtension(extension);
+    } on ArgumentError {
+      return null;
+    }
 
     final computedHash = await _computeSha256(sourceFile);
     if (computedHash == null) {
@@ -70,7 +77,6 @@ class FilesystemAttachmentArchiveFileStore
     if (contentHash != computedHash) {
       return null;
     }
-    final extension = path.extension(sourcePath).toLowerCase();
     final install = await installVerifiedArchiveEntry(
       archiveDirectoryPath: archiveDirectoryPath,
       sourceBytes: sourceFile.openRead(),
@@ -258,7 +264,11 @@ class FilesystemAttachmentArchiveFileStore
 
   static Future<String?> _computeSha256(File file) async {
     try {
-      return (await sha256.bind(file.openRead()).first).toString();
+      final filePath = file.path;
+      return await Isolate.run(
+        () async =>
+            (await sha256.bind(File(filePath).openRead()).first).toString(),
+      );
     } on Exception {
       return null;
     }

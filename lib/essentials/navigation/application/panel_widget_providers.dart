@@ -724,7 +724,15 @@ class _LeftSidebarSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final seamLayout = contentSeamLayout;
+        final resolvedTrackMatrix = ResolvedTrackLayoutMatrixScope.maybeOf(
+          context,
+        );
+        // A rack update and page-composition update may be observed in
+        // different frames. Shared Track participation is truthful only while
+        // this mounted surface can consume the page's resolved matrix.
+        final seamLayout = resolvedTrackMatrix == null
+            ? null
+            : contentSeamLayout;
         final controls = <Widget>[];
         final mainContentEntries =
             <({ResolvedSidebarCassette resolvedCassette, Widget widget})>[];
@@ -759,12 +767,10 @@ class _LeftSidebarSurface extends StatelessWidget {
           leadingContentWidgets: seamLayout == null
               ? const <Widget>[]
               : controls.skip(1).toList(growable: false),
-          sharedTrackIds: seamLayout == null
+          sharedTrackIds: seamLayout == null || resolvedTrackMatrix == null
               ? const <TrackId>[]
               : _sharedTrackIdsForSidebar(
-                  matrixTrackIds: ResolvedTrackLayoutMatrixScope.of(
-                    context,
-                  ).trackIds,
+                  matrixTrackIds: resolvedTrackMatrix.trackIds,
                   lastSharedTrackId: seamLayout.lastSharedTrackId,
                 ),
         );

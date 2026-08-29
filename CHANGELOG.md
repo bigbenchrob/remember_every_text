@@ -10,6 +10,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Completed-installation startup and live message catch-up remain responsive
+  on production-shaped external archives. Installation integrity inspection
+  stays fail-closed and off the Flutter UI isolate; live graph mutation now
+  releases its authority before attachment preservation begins, conventional
+  attachment hashing runs off the presentation isolate, and opaque payloads
+  are excluded before expensive file work. A transient sidebar/page-composition
+  mismatch now falls back to truthful native cassette flow instead of asserting
+  while a resolved Track matrix is not mounted.
+
 - Legacy and early-tester installations can now use the explicitly destructive
   **Erase MessageLens Setup and Start Over** action. It closes MessageLens
   persistence, erases only the admitted canonical app archive (including

@@ -5781,3 +5781,18 @@ production preservation authority mechanically enforceable.
 - Preserved the distinction between the human Journey topology and the richer
   internal Coordinator state machine; no application behavior or database
   schema changed in this pass.
+
+## 2026-08-28 - Completed-installation validation responsiveness
+
+- Recorded production-shaped external-drive evidence separating strict startup
+  classification from live graph and attachment catch-up work.
+- Documented the rejected concurrent classifier experiment: fail-closed SQLite
+  integrity scans remain sequential because parallel scans contend on one
+  physical hard drive.
+- Recorded the corrected graph-to-attachment mutation boundary, conventional
+  attachment candidate policy, off-presentation-isolate hashing, and early
+  unsafe-extension rejection.
+- Documented the native-flow fallback used only when a Track-enabled sidebar
+  rack is observed without its page's resolved matrix during a transient frame.
+- Confirmed that no schema, preservation allow-list, source data, or completed
+  installation state changed during diagnosis.

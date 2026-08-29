@@ -229,6 +229,99 @@ void main() {
     );
 
     testWidgets(
+      'track-enabled rack uses native flow while resolved matrix is absent',
+      (tester) async {
+        const topMenuSpec = CassetteSpec.sidebarUtility(
+          SidebarUtilityCassetteSpec.topChatMenu(
+            selectedChoice: TopChatMenuChoice.searchAllMessages,
+          ),
+        );
+        const infoSpec = CassetteSpec.contactsInfo(
+          ContactsInfoCassetteSpec.infoCard(
+            key: ContactsInfoKey.pickerContentSources,
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            conversationGraphPopulatedProvider.overrideWith(
+              _AlwaysPopulatedGraph.new,
+            ),
+            ...cassetteRackTestHarnessOverrides(),
+            sidebarCassetteResolutionStateProvider(
+              SidebarMode.messages,
+            ).overrideWith((ref) {
+              return ref.watch(_testSidebarResolutionStateProvider);
+            }),
+          ],
+        );
+        final rackSubscription = container.listen(
+          cassetteRackStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        final resolutionSubscription = container.listen(
+          sidebarCassetteResolutionStateProvider(SidebarMode.messages),
+          (_, __) {},
+          fireImmediately: true,
+        );
+        container
+            .read(cassetteRackStateProvider(SidebarMode.messages).notifier)
+            .setRackForTesting([topMenuSpec, infoSpec]);
+        container
+            .read(_testSidebarResolutionStateProvider.notifier)
+            .state = const SidebarCassetteResolutionState(
+          resolvedCassettes: <ResolvedSidebarCassette>[
+            ResolvedSidebarCassette(
+              spec: topMenuSpec,
+              cassetteIndex: 0,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'native-top-menu',
+                role: SidebarCassetteRole.appControl,
+              ),
+            ),
+            ResolvedSidebarCassette(
+              spec: infoSpec,
+              cassetteIndex: 1,
+              payload: StaticFeatureInfoSidebarCassettePayload(
+                bodyText: 'native-content',
+              ),
+            ),
+          ],
+          expectedVisibleCount: 2,
+          isLoading: false,
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const Directionality(
+              textDirection: TextDirection.ltr,
+              child: SizedBox(
+                width: 320,
+                height: 600,
+                child: LeftPanelHost(mode: SidebarMode.messages),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('native-top-menu'), findsOneWidget);
+        expect(find.text('native-content'), findsOneWidget);
+        expect(find.byType(TrackCellView), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        resolutionSubscription.close();
+        rackSubscription.close();
+        await tester.idle();
+        container.dispose();
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
       'unfamiliar sources resumes cassette flow after A1 with coordinator spacing',
       (tester) async {
         const topMenuSpec = CassetteSpec.sidebarUtility(

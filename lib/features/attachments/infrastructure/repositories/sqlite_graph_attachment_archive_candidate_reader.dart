@@ -43,6 +43,10 @@ class SqliteGraphAttachmentArchiveCandidateReader
         AND ${SourceScopedRowSql.sourceId('a.ss_id')} = ?
         AND a.filename IS NOT NULL
         AND LENGTH(TRIM(a.filename)) > 0
+        -- Live source-range preservation follows the same conventional-file
+        -- policy as delayed retry. Opaque payloads remain visible in the graph
+        -- but do not enter attachment preservation without an explicit policy.
+        AND NULLIF(TRIM(a.mime_type), '') IS NOT NULL
       ORDER BY m.ss_id, a.ss_id
       ''',
       <Object?>[sourceId, startedAfterSourceRowId, lastSourceRowId, sourceId],
