@@ -295,39 +295,66 @@ void main() {
     },
   );
 
-  test('legacy tester recognition admits no archive mutation', () async {
-    final fixture = await TestArchiveFixture.create(
-      prefix: 'legacy_tester_recognition_coordinator_test_',
-    );
-    addTearDown(fixture.dispose);
-    final legacyAuthority = ArchiveAccessAuthority(
-      identity: fixture.authority.identity,
-      mode: ArchiveAccessMode.legacyTesterInstallDetected,
-    );
-    final container = ProviderContainer(
-      overrides: [
-        admittedArchiveAccessAuthorityProvider.overrideWithValue(
-          legacyAuthority,
+  test(
+    'legacy tester recognition admits only exact compatibility deletion',
+    () async {
+      final fixture = await TestArchiveFixture.create(
+        prefix: 'legacy_tester_recognition_coordinator_test_',
+      );
+      addTearDown(fixture.dispose);
+      final legacyAuthority = ArchiveAccessAuthority(
+        identity: fixture.authority.identity,
+        mode: ArchiveAccessMode.legacyTesterInstallDetected,
+      );
+      final container = ProviderContainer(
+        overrides: [
+          admittedArchiveAccessAuthorityProvider.overrideWithValue(
+            legacyAuthority,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final coordinator = container.read(
+        archiveMutationCoordinatorProvider.notifier,
+      );
+
+      await expectLater(
+        coordinator.run<void>(
+          operation: ArchiveMutationOperation.completeInstallationErase,
+          ownerLabel: 'legacy-tester-delete',
+          action: () async {},
         ),
-      ],
-    );
-    addTearDown(container.dispose);
-    final coordinator = container.read(
-      archiveMutationCoordinatorProvider.notifier,
-    );
+        throwsA(isA<StateError>()),
+      );
+      await expectLater(
+        coordinator.run<void>(
+          operation: ArchiveMutationOperation.startFresh,
+          ownerLabel: 'start-fresh',
+          action: () async {},
+        ),
+        throwsA(isA<StateError>()),
+      );
+      await coordinator.runWithCapability<void>(
+        operation: ArchiveMutationOperation.legacyTesterInstallDeletion,
+        ownerLabel: 'legacy-tester-delete',
+        action: (capability) async {
+          capability.requireOperation(
+            ArchiveMutationOperation.legacyTesterInstallDeletion,
+          );
+          expect(coordinator.state.blocksDatabaseReopen, isTrue);
+        },
+      );
+    },
+  );
+
+  test('full admission cannot request legacy-only deletion', () async {
+    final harness = await _CoordinatorHarness.create();
+    addTearDown(harness.dispose);
 
     await expectLater(
-      coordinator.run<void>(
-        operation: ArchiveMutationOperation.completeInstallationErase,
-        ownerLabel: 'legacy-tester-delete',
-        action: () async {},
-      ),
-      throwsA(isA<StateError>()),
-    );
-    await expectLater(
-      coordinator.run<void>(
-        operation: ArchiveMutationOperation.startFresh,
-        ownerLabel: 'start-fresh',
+      harness.coordinator.run<void>(
+        operation: ArchiveMutationOperation.legacyTesterInstallDeletion,
+        ownerLabel: 'incorrect-legacy-delete',
         action: () async {},
       ),
       throwsA(isA<StateError>()),

@@ -260,7 +260,7 @@ void main() {
     );
 
     test(
-      'resolves reset settings to one payload with distinct reset actions',
+      'resolves reset settings without generalized complete erase',
       () async {
         container
             .read(cassetteRackStateProvider(SidebarMode.settings).notifier)
@@ -277,12 +277,8 @@ void main() {
         expect(payload.renderKind, SidebarCassetteRenderKind.featureInfo);
         expect(payload.role, SidebarCassetteRole.action);
         expect(payload.bodyText, contains('Start Fresh'));
-        expect(payload.actions, hasLength(2));
-        expect(payload.actions.first.label, 'Reset message data…');
-        expect(
-          payload.actions.last.label,
-          'Erase MessageLens setup and start over…',
-        );
+        expect(payload.actions, hasLength(1));
+        expect(payload.actions.single.label, 'Reset message data…');
         expect(payload.title, 'Reset Message Data');
       },
     );

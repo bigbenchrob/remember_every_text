@@ -37,6 +37,7 @@ Journey before further Onboarding implementation begins.
 18. [Complete Erase validation responsiveness correction](responses/17-COMPLETE-ERASE-VALIDATION-RESPONSIVENESS-CORRECTION.md)
 19. [Last distributed tester-build legacy signature audit](responses/18-LAST-DISTRIBUTED-TESTER-BUILD-LEGACY-INSTALL-SIGNATURE-AUDIT.md)
 20. [Legacy tester inspector and startup classification](responses/19-LEGACY-TESTER-INSTALL-INSPECTOR-AND-STARTUP-CLASSIFICATION-IMPLEMENTATION.md)
+21. [Legacy tester deletion authorization and Onboarding handoff](responses/21-LEGACY-TESTER-DATA-DELETION-AUTHORIZATION-AND-ONBOARDING-HANDOFF-IMPLEMENTATION.md)
 
 ## Current Status
 
@@ -54,13 +55,14 @@ non-blockers**. Start remains mechanically unavailable until the mandatory
 internal durable-verification gate succeeds; verification failure remains on
 Import and never exposes Start.
 
-A separate, explicitly destructive **Erase MessageLens Setup and Start Over**
-implementation remains available from its separately admitted advanced
-Settings path. Arbitrary unmarked roots no longer receive erase-only authority.
-The exact pre-source-scoped tester generation is now recognized read-only and
-projects only a restricted startup explanation; explicit authorization and
-tester deletion remain a later reviewed slice. Ordinary preservation-safe
-Start Fresh remains unchanged.
+The generalized **Erase MessageLens Setup and Start Over** action is no longer
+offered in Settings. Its low-level crash-convergent root-replacement machinery
+remains internal. The exact pre-source-scoped tester generation is recognized
+read-only and receives one dedicated compatibility gate. Only explicit human
+authorization can admit deletion of that exact canonical legacy root; success
+installs and verifies a virgin identity, then automatically relaunches into the
+ordinary six-node Onboarding Journey. Ordinary preservation-safe Start Fresh
+remains unchanged.
 
 Startup classification is a one-shot process admission decision. Once the
 application has been admitted, later installation-state refreshes cannot

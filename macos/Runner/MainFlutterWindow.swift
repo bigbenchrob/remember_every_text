@@ -503,7 +503,7 @@ class MainFlutterWindow: NSWindow {
         }
         return
       }
-      if call.method == "relaunchAfterCompleteInstallationErase" {
+      if call.method == "relaunchAfterArchiveReplacement" {
         let helper = Process()
         helper.executableURL = URL(fileURLWithPath: "/bin/sh")
         let developmentRoot = ProcessInfo.processInfo.environment[
@@ -541,7 +541,7 @@ class MainFlutterWindow: NSWindow {
           result(
             FlutterError(
               code: "relaunch_failed",
-              message: "MessageLens could not relaunch after complete erase.",
+              message: "MessageLens could not relaunch after replacing its archive.",
               details: error.localizedDescription
             )
           )

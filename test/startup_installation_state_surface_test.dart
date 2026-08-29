@@ -126,11 +126,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('MessageLens found an older tester setup'),
+        find.text('This is data from an older MessageLens test version'),
         findsOneWidget,
       );
       expect(find.text('Admitted application'), findsNothing);
-      expect(find.textContaining('Erase MessageLens'), findsNothing);
+      expect(find.text('Delete Old Data and Continue'), findsOneWidget);
       expect(installationProviderRead, isFalse);
     },
   );

@@ -30,19 +30,17 @@ void main() {
         expect(payload.bodyText, contains('archived attachments'));
         expect(
           payload.bodyText,
-          contains('removes all MessageLens-owned local data'),
+          isNot(contains('removes all MessageLens-owned local data')),
         );
         expect(payload.bodyText, contains('Apple Messages'));
-        expect(payload.actions, hasLength(2));
-        expect(payload.actions.first.label, 'Reset message data…');
-        expect(payload.actions.first.intent, isA<ResetMessageDataRequested>());
+        expect(payload.actions, hasLength(1));
+        expect(payload.actions.single.label, 'Reset message data…');
+        expect(payload.actions.single.intent, isA<ResetMessageDataRequested>());
         expect(
-          payload.actions.last.label,
-          'Erase MessageLens setup and start over…',
-        );
-        expect(
-          payload.actions.last.intent,
-          isA<CompleteInstallationEraseRequested>(),
+          payload.actions.where(
+            (action) => action.intent is CompleteInstallationEraseRequested,
+          ),
+          isEmpty,
         );
       },
     );

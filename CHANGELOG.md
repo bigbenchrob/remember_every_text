@@ -10,11 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- Unmarked production archives no longer receive destructive-only authority
-  merely because they contain files. MessageLens now recognizes the exact
-  pre-source-scoped tester database generation through read-only SQLite schema
-  fingerprints, fails closed for every other shape, and presents only a
-  non-destructive legacy-detected startup state pending explicit authorization.
+- MessageLens now gives the three recognized April-era testers one bounded
+  compatibility choice at launch. Only the exact read-only 4/3/3 legacy
+  database fingerprint can expose **Delete Old Data and Continue**; explicit
+  authorization removes that obsolete MessageLens-owned root, verifies a new
+  virgin archive identity, and automatically relaunches into normal Onboarding.
+  Apple Messages, Contacts, and external source folders are unreachable by the
+  deletion target. The generalized complete-installation erase action is no
+  longer offered in Settings.
 
 - Completed-installation startup and live message catch-up remain responsive
   on production-shaped external archives. Installation integrity inspection
@@ -25,14 +28,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   mismatch now falls back to truthful native cassette flow instead of asserting
   while a resolved Track matrix is not mounted.
 
-- Legacy and early-tester installations can now use the explicitly destructive
-  **Erase MessageLens Setup and Start Over** action. It closes MessageLens
-  persistence, erases only the admitted canonical app archive (including
-  customizations, Presence history, diagnostics, and archived attachment
-  copies), proves a virgin installation with a new archive identity, and
-  relaunches into Onboarding without touching Apple Messages, Contacts,
-  Historical Archive sources, or recovery donors. Ordinary Start Fresh remains
-  preservation-safe and unchanged.
+- The low-level complete archive-replacement implementation remains available
+  for startup convergence and the narrowly admitted legacy compatibility path,
+  but it is no longer a general user-facing Settings operation. Ordinary Start
+  Fresh remains preservation-safe and unchanged.
 
 - The first-run Journey path now represents six human-meaningful Episodes:
   Messages, History, Contacts, Ready, Import, and Start. Durable verification

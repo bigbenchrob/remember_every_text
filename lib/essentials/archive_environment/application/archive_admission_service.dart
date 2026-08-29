@@ -40,8 +40,9 @@ final class ArchiveAdmissionService {
       final inspection = await legacyTesterInstallInspector.inspect(claim);
       switch (inspection.kind) {
         case LegacyTesterInstallInspectionKind.legacyTesterInstall:
-          // This non-persistent identity permits only a static startup
-          // projection. It grants neither current-store nor erase authority.
+          // This non-persistent identity permits only the compatibility gate
+          // and its explicitly authorized legacy-root deletion. It never
+          // grants current-store access or ordinary archive mutation.
           return ArchiveAccessAuthority(
             identity: ResolvedArchiveIdentity(
               environment: claim.environment,

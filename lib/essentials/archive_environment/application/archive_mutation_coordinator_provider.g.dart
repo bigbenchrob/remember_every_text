@@ -25,7 +25,7 @@ final archiveDatabaseReopenBlockedProvider = AutoDisposeProvider<bool>.internal(
 // ignore: unused_element
 typedef ArchiveDatabaseReopenBlockedRef = AutoDisposeProviderRef<bool>;
 String _$archiveMutationCoordinatorHash() =>
-    r'4516c9a11b58a9e5ecc24c0f151dc4214458e030';
+    r'c5322ddf39e8d0eda0d2f3d5ded589216a0999d2';
 
 /// Single process-local admission authority for every archive mutation.
 ///

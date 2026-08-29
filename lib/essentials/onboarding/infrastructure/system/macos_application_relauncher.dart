@@ -10,7 +10,7 @@ final class MacosApplicationRelauncher implements ApplicationRelauncher {
   );
 
   @override
-  Future<void> relaunchAfterCompleteInstallationErase() async {
-    await _channel.invokeMethod<void>('relaunchAfterCompleteInstallationErase');
+  Future<void> relaunchAfterArchiveReplacement() async {
+    await _channel.invokeMethod<void>('relaunchAfterArchiveReplacement');
   }
 }

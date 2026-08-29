@@ -399,7 +399,7 @@ class _StartupAppState extends ConsumerState<StartupApp> {
       final themeMode = ref.watch(switchableDarkModeProvider);
       return _startupMacosApp(
         themeMode: themeMode,
-        child: const LegacyTesterInstallDetectedView(),
+        child: LegacyTesterInstallDetectedView(onQuit: () => exit(0)),
       );
     }
     if (authority.mode == ArchiveAccessMode.completeEraseOnly) {
@@ -649,9 +649,6 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
       case _StartupDialogAction.startFresh:
         await _confirmAndStartFresh();
         return;
-      case _StartupDialogAction.completeErase:
-        await _confirmAndCompleteErase();
-        return;
       case _StartupDialogAction.exportLogs:
         logger.info('Export Logs clicked', source: 'StartupDialog');
         return;
@@ -728,43 +725,6 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
     }
   }
 
-  Future<void> _confirmAndCompleteErase() async {
-    final colors = ref.read(themeColorsProvider.notifier);
-    final confirmed = await showCompleteInstallationEraseAuthorizationDialog(
-      context,
-      barrierColor: colors.surfaces.canvas,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (!confirmed) {
-      _dialogShown = false;
-      await _showStartupDialog();
-      return;
-    }
-
-    setState(() {
-      _isStartingFresh = true;
-    });
-    await sched.SchedulerBinding.instance.endOfFrame;
-    try {
-      await ref
-          .read(completeInstallationEraseServiceProvider)
-          .eraseAndRelaunch();
-    } catch (error, stackTrace) {
-      debugPrint('Startup complete erase failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isStartingFresh = false;
-      });
-      _dialogShown = false;
-      await _showStartupDialog();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ref.watch(themeColorsProvider);
@@ -791,13 +751,7 @@ class _StartupDialogHostState extends ConsumerState<_StartupDialogHost> {
   }
 }
 
-enum _StartupDialogAction {
-  continueStartup,
-  exportLogs,
-  startFresh,
-  completeErase,
-  quit,
-}
+enum _StartupDialogAction { continueStartup, exportLogs, startFresh, quit }
 
 class _StartupResetConfirmationDialog extends ConsumerStatefulWidget {
   const _StartupResetConfirmationDialog({required this.installationState});
@@ -980,22 +934,6 @@ class _StartupResetConfirmationDialogState
                   ),
                   child: const Text('Start Fresh'),
                 ),
-              if (widget.installationState.kind ==
-                      MessageLensInstallationStateKind.abandoned ||
-                  widget.installationState.kind ==
-                      MessageLensInstallationStateKind.remediationRequired) ...[
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _isExporting
-                      ? null
-                      : () {
-                          Navigator.of(
-                            context,
-                          ).pop(_StartupDialogAction.completeErase);
-                        },
-                  child: const Text('Erase MessageLens Setup and Start Over…'),
-                ),
-              ],
               if (!widget.installationState.mayContinue) ...[
                 const SizedBox(height: 12),
                 OutlinedButton(

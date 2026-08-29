@@ -125,7 +125,7 @@ final class _RecordingRelauncher implements ApplicationRelauncher {
   final List<String> events;
 
   @override
-  Future<void> relaunchAfterCompleteInstallationErase() async {
+  Future<void> relaunchAfterArchiveReplacement() async {
     events.add('relaunched');
   }
 }

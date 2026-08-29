@@ -1,7 +1,7 @@
 tier: project
 scope: documentation-pass
 owner: agent-per-project
-last_reviewed: 2026-07-28
+last_reviewed: 2026-08-29
 source_of_truth: doc
 links:
   - ./README.md
@@ -5808,3 +5808,13 @@ production preservation authority mechanically enforceable.
   proof and a non-destructive restricted startup projection.
 - Clarified that ordinary Development cannot reproduce the production-only
   native identity gate without unjustified new fixture infrastructure.
+## 2026-08-29 - Feature 28 Legacy Tester Compatibility Deletion
+
+- Recorded the exact April-era legacy tester cohort and the two-part deletion
+  authority: positive read-only fingerprint plus explicit human authorization.
+- Documented the owned-root deletion boundary, external-source exclusion,
+  durable crash convergence, canonical virgin verification, and automatic
+  handoff to the six-node Onboarding Journey.
+- Updated the Feature 28 index and status to remove the generalized Complete
+  Erase Settings rollout and identify the low-level root replacement as dormant
+  internal infrastructure.

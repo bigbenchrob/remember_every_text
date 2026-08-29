@@ -150,6 +150,12 @@ class ArchiveMutationCoordinator extends _$ArchiveMutationCoordinator {
     final authority = ref.read(archiveAccessAuthorityProvider);
     switch (authority.mode) {
       case ArchiveAccessMode.full:
+        if (operation == ArchiveMutationOperation.legacyTesterInstallDeletion) {
+          throw StateError(
+            'Legacy tester installation deletion requires its exact '
+            'restricted startup authority.',
+          );
+        }
         break;
       case ArchiveAccessMode.completeEraseOnly:
         if (operation != ArchiveMutationOperation.completeInstallationErase) {
@@ -159,9 +165,13 @@ class ArchiveMutationCoordinator extends _$ArchiveMutationCoordinator {
         }
         break;
       case ArchiveAccessMode.legacyTesterInstallDetected:
-        throw StateError(
-          'A detected legacy tester installation cannot admit archive mutation.',
-        );
+        if (operation != ArchiveMutationOperation.legacyTesterInstallDeletion) {
+          throw StateError(
+            'A detected legacy tester installation can admit only its exact '
+            'compatibility deletion.',
+          );
+        }
+        break;
     }
     final inheritedContext =
         Zone.current[_archiveMutationOwnerZoneKey]

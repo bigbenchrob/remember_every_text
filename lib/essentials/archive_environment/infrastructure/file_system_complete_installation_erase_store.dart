@@ -145,7 +145,8 @@ final class FileSystemCompleteInstallationEraseStore
       rootPath: authority.rootPath,
     ).read();
     if (marker == null) {
-      if (authority.mode != ArchiveAccessMode.completeEraseOnly) {
+      if (authority.mode != ArchiveAccessMode.completeEraseOnly &&
+          authority.mode != ArchiveAccessMode.legacyTesterInstallDetected) {
         throw StateError(
           'A fully admitted archive must retain its identity until erase '
           'authorization is durable.',

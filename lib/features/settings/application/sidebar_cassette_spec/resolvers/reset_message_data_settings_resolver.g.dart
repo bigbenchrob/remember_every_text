@@ -7,7 +7,7 @@ part of 'reset_message_data_settings_resolver.dart';
 // **************************************************************************
 
 String _$resetMessageDataSettingsResolverHash() =>
-    r'f45794d193605bd04c93d0fedc8b52b92dcc65a0';
+    r'451cab32c66e50cd20173250b4bd936c68477871';
 
 /// See also [ResetMessageDataSettingsResolver].
 @ProviderFor(ResetMessageDataSettingsResolver)

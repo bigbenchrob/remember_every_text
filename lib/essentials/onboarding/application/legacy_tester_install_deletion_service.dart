@@ -10,19 +10,17 @@ import '../../archive_environment/feature_level_providers.dart'
     show ArchiveMutationCapability;
 import 'application_relauncher.dart';
 
-abstract interface class CompleteInstallationEraseService {
-  Future<void> eraseAndRelaunch();
+abstract interface class LegacyTesterInstallDeletionService {
+  Future<void> deleteAndRelaunch();
 }
 
-final class CompleteInstallationEraseServiceImpl
-    implements CompleteInstallationEraseService {
-  CompleteInstallationEraseServiceImpl({
+final class LegacyTesterInstallDeletionServiceImpl
+    implements LegacyTesterInstallDeletionService {
+  LegacyTesterInstallDeletionServiceImpl({
     required this.authority,
     required this.runWithMutationAuthority,
     required this.resources,
     required this.store,
-    required this.stopBackgroundWork,
-    required this.invalidatePersistentProviders,
     required this.verifyVirginInstallation,
     required this.relauncher,
     Uuid uuid = const Uuid(),
@@ -37,31 +35,51 @@ final class CompleteInstallationEraseServiceImpl
   runWithMutationAuthority;
   final ArchiveOwnedResourceRegistry resources;
   final CompleteInstallationEraseStore store;
-  final void Function() stopBackgroundWork;
-  final void Function() invalidatePersistentProviders;
   final Future<void> Function() verifyVirginInstallation;
   final ApplicationRelauncher relauncher;
   final Uuid _uuid;
   final DateTime Function() _currentTime;
 
   @override
-  Future<void> eraseAndRelaunch() {
+  Future<void> deleteAndRelaunch() {
+    if (authority.mode != ArchiveAccessMode.legacyTesterInstallDetected) {
+      throw StateError(
+        'Legacy tester deletion requires exact legacy startup admission.',
+      );
+    }
+
     return runWithMutationAuthority((capability) async {
       capability.requireOperation(
-        ArchiveMutationOperation.completeInstallationErase,
+        ArchiveMutationOperation.legacyTesterInstallDeletion,
       );
-      final transaction = CompleteInstallationEraseTransaction(
-        formatVersion:
-            CompleteInstallationEraseTransaction.currentFormatVersion,
-        environment: authority.identity.environment,
-        newArchiveInstanceId: ArchiveInstanceId(_uuid.v4()),
-        createdAtUtc: _currentTime().toUtc(),
-      );
+      if (resources.openResourceCount != 0) {
+        throw StateError(
+          'Legacy tester deletion refuses to run after a persistent archive '
+          'resource has opened.',
+        );
+      }
 
-      stopBackgroundWork();
-      await resources.closeAll();
-      invalidatePersistentProviders();
-      await store.begin(authority: authority, transaction: transaction);
+      final pending = await store.readPending(
+        canonicalRootPath: authority.rootPath,
+      );
+      final transaction =
+          pending ??
+          CompleteInstallationEraseTransaction(
+            formatVersion:
+                CompleteInstallationEraseTransaction.currentFormatVersion,
+            environment: authority.identity.environment,
+            newArchiveInstanceId: ArchiveInstanceId(_uuid.v4()),
+            createdAtUtc: _currentTime().toUtc(),
+          );
+      if (transaction.environment != authority.identity.environment) {
+        throw StateError(
+          'Pending archive replacement belongs to a different environment.',
+        );
+      }
+
+      if (pending == null) {
+        await store.begin(authority: authority, transaction: transaction);
+      }
       await store.eraseOwnedState(authority: authority);
       await store.installVirginIdentity(
         authority: authority,
