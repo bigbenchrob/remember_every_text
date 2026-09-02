@@ -12,7 +12,14 @@ import 'package:remember_this_text/domain_driven_development/value_objects.dart'
 import 'package:remember_this_text/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart'
     show ArchiveMutationCapability;
 import 'package:remember_this_text/essentials/archive_environment/domain.dart'
-    show ArchiveMutationDeniedException, ArchiveMutationOperation;
+    show
+        ArchiveAccessAuthority,
+        ArchiveBuildIdentity,
+        ArchiveEnvironment,
+        ArchiveInstanceId,
+        ArchiveMutationDeniedException,
+        ArchiveMutationOperation,
+        ResolvedArchiveIdentity;
 import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
     show
         ArchiveMutationCoordinator,
@@ -331,17 +338,14 @@ void main() {
     });
 
     testWidgets(
-      'first-run preparation completes with preserved handle anomaly evidence',
+      'coherent virgin first run skips reset and preserves anomaly evidence',
       (tester) async {
-        final resetCompleter = Completer<void>();
-        final resetService = _FakeMessageDataResetService()
-          ..resetCompleter = resetCompleter;
+        final resetService = _FakeMessageDataResetService();
         final graphBuildCompleter = Completer<void>();
         final overlayDb = OverlayDatabase(NativeDatabase.memory());
         var graphBuildCallCount = 0;
 
         addTearDown(() async {
-          resetService.resetCompleter = null;
           await overlayDb.close();
         });
 
@@ -368,32 +372,21 @@ void main() {
             .read(onboardingGateProvider.notifier)
             .startImportAndGraphBuild();
         await tester.pump();
+        await tester.pump();
 
         expect(
           container.read(onboardingGateProvider),
-          OnboardingStatus.importing,
+          OnboardingStatus.buildingGraph,
         );
-        expect(resetService.resetDerivedDataCallCount, 1);
-        expect(graphBuildCallCount, 0);
-        expect(find.text('Preparing setup…'), findsOneWidget);
+        expect(resetService.resetDerivedDataCallCount, 0);
+        expect(graphBuildCallCount, 1);
         expect(find.byType(LinearProgressIndicator), findsOneWidget);
 
         await container
             .read(onboardingGateProvider.notifier)
             .startImportAndGraphBuild();
-        expect(resetService.resetDerivedDataCallCount, 1);
-        expect(graphBuildCallCount, 0);
-
-        resetCompleter.complete();
-        await tester.pump();
-        await tester.pump();
-
+        expect(resetService.resetDerivedDataCallCount, 0);
         expect(graphBuildCallCount, 1);
-        expect(
-          container.read(onboardingGateProvider),
-          OnboardingStatus.buildingGraph,
-        );
-        expect(find.text('Building browsing data…'), findsOneWidget);
 
         graphBuildCompleter.complete();
         await tester.pump();
@@ -430,6 +423,52 @@ void main() {
           OnboardingStatus.notNeeded,
         );
         expect(container.read(activeSidebarModeProvider), SidebarMode.messages);
+      },
+    );
+
+    testWidgets(
+      'virgin production first import does not require checkpointed reset',
+      (tester) async {
+        final resetService = _FakeMessageDataResetService();
+        final overlayDb = OverlayDatabase(NativeDatabase.memory());
+        var graphBuildCallCount = 0;
+        addTearDown(overlayDb.close);
+
+        container = ProviderContainer(
+          overrides: _firstRunOverrides(
+            archiveFixture: archiveFixture,
+            archiveAuthority: _productionAuthorityFor(archiveFixture),
+            overlayDb: overlayDb,
+            resetService: resetService,
+            onGraphBuild: () {
+              graphBuildCallCount += 1;
+            },
+            sourceScopedImportRowCount: 0,
+            conversationGraphRowCount: 0,
+          ),
+        );
+
+        await _pumpGateOverlay(tester, container);
+        expect(
+          await _readGateStatus(container),
+          OnboardingStatus.awaitingUserAction,
+        );
+
+        final import = container
+            .read(onboardingGateProvider.notifier)
+            .startImportAndGraphBuild();
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+        await import;
+        await tester.pump();
+
+        expect(resetService.resetDerivedDataCallCount, 0);
+        expect(graphBuildCallCount, 1);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingStatus.complete,
+        );
       },
     );
 
@@ -596,6 +635,8 @@ void main() {
             archiveFixture: archiveFixture,
             overlayDb: overlayDb,
             resetService: resetService,
+            shouldResetAppDatabasesBeforeImport: true,
+            resetAppDatabasesReason: 'Synthetic incomplete setup state',
             onGraphBuild: () {
               graphBuildCallCount += 1;
             },
@@ -666,8 +707,7 @@ void main() {
     testWidgets(
       'refresh clears process-local preparation failure and reprojects environment',
       (tester) async {
-        final resetService = _FakeMessageDataResetService()
-          ..resetError = StateError('synthetic reset failure');
+        final resetService = _FakeMessageDataResetService();
         final overlayDb = OverlayDatabase(NativeDatabase.memory());
 
         addTearDown(() async {
@@ -679,6 +719,7 @@ void main() {
             archiveFixture: archiveFixture,
             overlayDb: overlayDb,
             resetService: resetService,
+            mutationCoordinator: _AdmissionErrorArchiveMutationCoordinator.new,
             onGraphBuild: () {},
           ),
         );
@@ -710,8 +751,7 @@ void main() {
     testWidgets(
       'process-local preparation failure is not reconstructed by a new Gate',
       (tester) async {
-        final resetService = _FakeMessageDataResetService()
-          ..resetError = StateError('synthetic reset failure');
+        final resetService = _FakeMessageDataResetService();
         final overlayDb = OverlayDatabase(NativeDatabase.memory());
 
         addTearDown(() async {
@@ -723,6 +763,7 @@ void main() {
             archiveFixture: archiveFixture,
             overlayDb: overlayDb,
             resetService: resetService,
+            mutationCoordinator: _AdmissionErrorArchiveMutationCoordinator.new,
             onGraphBuild: () {},
           ),
         );
@@ -1440,6 +1481,8 @@ OnboardingEnvironmentReport _report({
   bool hasFullDiskAccess = true,
   bool shouldResetAppDatabasesBeforeImport = false,
   String? resetAppDatabasesReason,
+  int sourceScopedImportRowCount = 100,
+  int conversationGraphRowCount = 100,
 }) {
   return OnboardingEnvironmentReport(
     state: state,
@@ -1466,13 +1509,13 @@ OnboardingEnvironmentReport _report({
       path: appDatabaseFileName(AppDatabaseFile.sourceScopedImport),
       exists: true,
       readable: true,
-      rowCount: 100,
+      rowCount: sourceScopedImportRowCount,
     ),
     conversationGraph: OnboardingDatabaseProbe(
       path: appDatabaseFileName(AppDatabaseFile.conversationGraph),
       exists: true,
       readable: true,
-      rowCount: 100,
+      rowCount: conversationGraphRowCount,
     ),
     attachmentArchiveDirectory: const OnboardingDatabaseProbe(
       path: 'attachment_archive',
@@ -1543,6 +1586,7 @@ final class _FakeMessageDataResetService implements MessageDataResetService {
 
 List<Override> _firstRunOverrides({
   required TestArchiveFixture archiveFixture,
+  ArchiveAccessAuthority? archiveAuthority,
   required OverlayDatabase overlayDb,
   required _FakeMessageDataResetService resetService,
   required void Function() onGraphBuild,
@@ -1550,15 +1594,29 @@ List<Override> _firstRunOverrides({
   Object? graphBuildError,
   bool hasFullDiskAccess = true,
   int preservedUnnormalizedHandleCount = 0,
+  bool shouldResetAppDatabasesBeforeImport = false,
+  String? resetAppDatabasesReason,
+  int sourceScopedImportRowCount = 100,
+  int conversationGraphRowCount = 100,
+  ArchiveMutationCoordinator Function()? mutationCoordinator,
   OnboardingDurableCompletionVerifier? durableCompletionVerifier,
 }) {
   return [
-    archiveAccessAuthorityProvider.overrideWithValue(archiveFixture.authority),
+    archiveAccessAuthorityProvider.overrideWithValue(
+      archiveAuthority ?? archiveFixture.authority,
+    ),
+    if (mutationCoordinator != null)
+      archiveMutationCoordinatorProvider.overrideWith(mutationCoordinator),
     overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
     onboardingEnvironmentReportProvider.overrideWith(
       (ref) async => _report(
         state: OnboardingEnvironmentState.readyToImport,
         blockerKind: OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
+        shouldResetAppDatabasesBeforeImport:
+            shouldResetAppDatabasesBeforeImport,
+        resetAppDatabasesReason: resetAppDatabasesReason,
+        sourceScopedImportRowCount: sourceScopedImportRowCount,
+        conversationGraphRowCount: conversationGraphRowCount,
       ),
     ),
     onboardingFullDiskAccessProvider.overrideWith((ref) => hasFullDiskAccess),
@@ -1575,6 +1633,23 @@ List<Override> _firstRunOverrides({
       durableCompletionVerifier ?? const _FakeDurableCompletionVerifier(),
     ),
   ];
+}
+
+ArchiveAccessAuthority _productionAuthorityFor(
+  TestArchiveFixture archiveFixture,
+) {
+  return ArchiveAccessAuthority(
+    identity: ResolvedArchiveIdentity(
+      environment: ArchiveEnvironment.production,
+      buildIdentity: ArchiveBuildIdentity.productionRelease,
+      archiveInstanceId: ArchiveInstanceId(
+        'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      ),
+      canonicalRootPath: archiveFixture.root.path,
+      bundleIdentifier: 'com.bigbenchsoftware.MessageLens',
+      productName: 'MessageLens',
+    ),
+  );
 }
 
 final class _FakeDurableCompletionVerifier

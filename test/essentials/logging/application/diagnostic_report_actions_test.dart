@@ -77,11 +77,21 @@ void main() {
       lastGraphProjectionFailureRecordedAt: DateTime.utc(2026, 4, 14, 12, 0, 0),
     );
 
-    final headerLines = buildOnboardingFailureReportHeaderLines(report);
+    final headerLines = buildOnboardingFailureReportHeaderLines(
+      report,
+      operationFailureSummary:
+          'Verified archive checkpoint required for messageDataReset',
+    );
 
     expect(headerLines, contains('Context: onboarding_failure'));
     expect(headerLines, contains('State: graphProjectionFailed'));
     expect(headerLines, contains('Blocker: graphProjectionFailed'));
+    expect(
+      headerLines,
+      contains(
+        'Operation failure: Verified archive checkpoint required for messageDataReset',
+      ),
+    );
     expect(headerLines, contains('Import failure: import failed'));
     expect(
       headerLines,
@@ -101,6 +111,76 @@ void main() {
       headerLines,
       contains(
         'Conversation graph: path=${appDatabaseFileName(AppDatabaseFile.conversationGraph)}; exists=true; readable=true; rows=0',
+      ),
+    );
+  });
+
+  test('onboarding failure export includes the operation failure', () async {
+    final exporter = _FakeDiagnosticReportExporter();
+    const report = OnboardingEnvironmentReport(
+      state: OnboardingEnvironmentState.readyToImport,
+      blockerKind: OnboardingBlockerKind.sourceScopedImportDatabaseEmpty,
+      syncPlausibility: OnboardingSyncPlausibility.unknown,
+      messagesDatabase: OnboardingDatabaseProbe(
+        path: 'messages.db',
+        exists: true,
+        readable: true,
+        rowCount: 5200,
+      ),
+      addressBookDatabase: OnboardingDatabaseProbe(
+        path: 'addressbook.db',
+        exists: true,
+        readable: true,
+      ),
+      overlayDatabase: OnboardingDatabaseProbe(
+        path: 'overlay.db',
+        exists: true,
+        readable: true,
+      ),
+      sourceScopedImportDatabase: OnboardingDatabaseProbe(
+        path: 'macos_import_ss.db',
+        exists: true,
+        readable: true,
+        rowCount: 0,
+      ),
+      conversationGraph: OnboardingDatabaseProbe(
+        path: 'working_ss.db',
+        exists: true,
+        readable: true,
+        rowCount: 0,
+      ),
+      attachmentArchiveDirectory: OnboardingDatabaseProbe(
+        path: 'attachment_archive',
+        exists: true,
+        readable: true,
+      ),
+      hasFullDiskAccess: true,
+    );
+
+    await exportOnboardingFailureDiagnosticReport(
+      exporter,
+      report: report,
+      operationFailureSummary:
+          'Verified archive checkpoint required for messageDataReset',
+    );
+
+    final request = exporter.requests.single;
+    expect(
+      request.attachedEmailBodyLines,
+      contains(
+        'Operation failure: Verified archive checkpoint required for messageDataReset',
+      ),
+    );
+    expect(
+      request.manualAttachmentEmailBodyLines,
+      contains(
+        'Operation failure: Verified archive checkpoint required for messageDataReset',
+      ),
+    );
+    expect(
+      request.headerLines,
+      contains(
+        'Operation failure: Verified archive checkpoint required for messageDataReset',
       ),
     );
   });

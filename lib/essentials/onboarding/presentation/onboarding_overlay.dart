@@ -18,6 +18,7 @@ import '../application/onboarding_journey_coordinator_provider.dart';
 import '../application/onboarding_operation_snapshot_provider.dart';
 import '../application/onboarding_overlay_actions_provider.dart';
 import '../domain/onboarding_environment_report.dart';
+import '../domain/onboarding_journey_state.dart';
 import '../domain/onboarding_operation_snapshot.dart';
 import '../domain/onboarding_status.dart';
 import 'onboarding_journey_path.dart';
@@ -84,6 +85,10 @@ class OnboardingOverlay extends ConsumerWidget {
                       report: report,
                       colors: colors,
                       typography: typography,
+                      operationFailureSummary:
+                          journey is OnboardingOperationFailed
+                          ? journey.summary
+                          : null,
                       presentationOverride: _preparationFailurePresentation,
                       showEnvironmentSummary: false,
                     ),
@@ -343,6 +348,7 @@ class _WelcomeContent extends ConsumerWidget {
     required this.typography,
     this.presentationOverride,
     this.showEnvironmentSummary = true,
+    this.operationFailureSummary,
   });
 
   final OnboardingEnvironmentReport? report;
@@ -350,6 +356,7 @@ class _WelcomeContent extends ConsumerWidget {
   final ThemeTypography typography;
   final _AwaitingUserActionPresentation? presentationOverride;
   final bool showEnvironmentSummary;
+  final String? operationFailureSummary;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -432,6 +439,7 @@ class _WelcomeContent extends ConsumerWidget {
                         await exportOnboardingFailureDiagnosticReport(
                           diagnosticReportExporter,
                           report: report!,
+                          operationFailureSummary: operationFailureSummary,
                         );
                     if (!context.mounted) {
                       return;

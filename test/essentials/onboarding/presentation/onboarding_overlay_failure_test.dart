@@ -9,7 +9,9 @@ import 'package:remember_this_text/essentials/logging/feature_level_providers.da
     show diagnosticReportExporterProvider;
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_environment_report_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/application/onboarding_gate_provider.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_environment_report.dart';
+import 'package:remember_this_text/essentials/onboarding/domain/onboarding_journey_state.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_status.dart';
 import 'package:remember_this_text/essentials/onboarding/presentation/onboarding_overlay.dart';
 
@@ -29,10 +31,17 @@ void main() {
       final gate = _FailureSurfaceGate(
         status: OnboardingStatus.preparationFailed,
       );
+      final exporter = _RecordingDiagnosticReportExporter();
 
       await _pumpFailureOverlay(
         tester,
         gate: gate,
+        exporter: exporter,
+        journey: const OnboardingOperationFailed(
+          occurrence: 1,
+          summary: 'Verified archive checkpoint required for messageDataReset',
+          compatibilityStatus: OnboardingStatus.preparationFailed,
+        ),
         report: _failureReport(
           state: OnboardingEnvironmentState.readyToImport,
           blockerKind: OnboardingBlockerKind.none,
@@ -48,6 +57,18 @@ void main() {
       expect(find.textContaining('graph projection'), findsNothing);
       expect(find.textContaining('import ledger'), findsNothing);
       expect(find.textContaining('previous launch'), findsNothing);
+
+      await tester.tap(find.text('Send Report To Developer'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(exporter.requests, hasLength(1));
+      expect(
+        exporter.requests.single.headerLines,
+        contains(
+          'Operation failure: Verified archive checkpoint required for messageDataReset',
+        ),
+      );
 
       await tester.tap(find.text('Try Again'));
       await tester.pump();
@@ -307,6 +328,7 @@ Future<void> _pumpFailureOverlay(
   required _FailureSurfaceGate gate,
   required OnboardingEnvironmentReport report,
   _RecordingDiagnosticReportExporter? exporter,
+  OnboardingJourneyState? journey,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(1200, 1600);
@@ -318,6 +340,10 @@ Future<void> _pumpFailureOverlay(
     ProviderScope(
       overrides: <Override>[
         onboardingGateProvider.overrideWith(() => gate),
+        if (journey != null)
+          onboardingJourneyCoordinatorProvider.overrideWith(
+            () => _FixedJourneyCoordinator(journey),
+          ),
         onboardingEnvironmentReportProvider.overrideWith((ref) async => report),
         diagnosticReportExporterProvider.overrideWith(
           (ref) async => resolvedExporter,
@@ -329,6 +355,15 @@ Future<void> _pumpFailureOverlay(
     ),
   );
   await tester.pump();
+}
+
+final class _FixedJourneyCoordinator extends OnboardingJourneyCoordinator {
+  _FixedJourneyCoordinator(this.journey);
+
+  final OnboardingJourneyState journey;
+
+  @override
+  OnboardingJourneyState build() => journey;
 }
 
 OnboardingEnvironmentReport _failureReport({

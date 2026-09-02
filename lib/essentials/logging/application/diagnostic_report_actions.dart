@@ -31,7 +31,9 @@ Future<DiagnosticReportPresentationResult>
 exportOnboardingFailureDiagnosticReport(
   DiagnosticReportExporter exporter, {
   required OnboardingEnvironmentReport report,
+  String? operationFailureSummary,
 }) {
+  final operationFailureLine = _operationFailureLine(operationFailureSummary);
   return exporter.exportAndPresent(
     DiagnosticReportExportRequest(
       recipientEmail: developerDiagnosticRecipientEmail,
@@ -42,6 +44,7 @@ exportOnboardingFailureDiagnosticReport(
         'This report was prepared from the onboarding failure screen.',
         'Observed state: ${report.state.name}',
         'Blocker kind: ${report.blockerKind.name}',
+        if (operationFailureLine != null) operationFailureLine,
         '',
         'Describe what happened just before setup failed:',
       ],
@@ -52,10 +55,14 @@ exportOnboardingFailureDiagnosticReport(
         'This report was prepared from the onboarding failure screen.',
         'Observed state: ${report.state.name}',
         'Blocker kind: ${report.blockerKind.name}',
+        if (operationFailureLine != null) operationFailureLine,
         '',
         'Describe what happened just before setup failed:',
       ],
-      headerLines: buildOnboardingFailureReportHeaderLines(report),
+      headerLines: buildOnboardingFailureReportHeaderLines(
+        report,
+        operationFailureSummary: operationFailureSummary,
+      ),
     ),
   );
 }
@@ -94,12 +101,14 @@ exportPipelineIncidentDiagnosticReport(
 }
 
 List<String> buildOnboardingFailureReportHeaderLines(
-  OnboardingEnvironmentReport report,
-) {
+  OnboardingEnvironmentReport report, {
+  String? operationFailureSummary,
+}) {
   final lines = <String>[
     'Context: onboarding_failure',
     'State: ${report.state.name}',
     'Blocker: ${report.blockerKind.name}',
+    if (_operationFailureLine(operationFailureSummary) case final line?) line,
     'Full Disk Access: ${report.hasFullDiskAccess ? 'available' : 'missing'}',
     _describeProbe(label: 'Messages database', probe: report.messagesDatabase),
     _describeProbe(
@@ -134,6 +143,14 @@ List<String> buildOnboardingFailureReportHeaderLines(
 
   lines.add('');
   return lines;
+}
+
+String? _operationFailureLine(String? summary) {
+  final normalized = summary?.trim();
+  if (normalized == null || normalized.isEmpty) {
+    return null;
+  }
+  return 'Operation failure: $normalized';
 }
 
 List<String> buildPipelineIncidentReportHeaderLines(

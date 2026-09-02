@@ -10,6 +10,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- A coherent new production installation now begins first import without
+  invoking the destructive, checkpoint-protected message-data reset. Reset is
+  still mandatory when canonical environment evidence explicitly identifies
+  inconsistent derived state. Onboarding support bundles now also include the
+  actual process-local operation failure instead of reporting only the
+  reconciled empty-database state.
+
 - A genuinely new production installation now establishes its archive identity
   atomically before Onboarding begins. This bootstrap is permitted only for an
   absent or empty canonical production archive root (with the native instance

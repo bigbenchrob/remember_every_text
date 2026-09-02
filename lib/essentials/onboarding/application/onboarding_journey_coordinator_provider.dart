@@ -866,10 +866,9 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
     ref
         .read(appLoggerProvider.notifier)
         .info(
-          'Preparing for fresh onboarding start by deleting derived databases',
+          'Fresh onboarding environment is already coherent; no derived-data reset is required',
           source: 'OnboardingJourneyCoordinator',
         );
-    await ref.read(messageDataResetServiceProvider).resetDerivedData();
   }
 
   Future<void> _runConversationGraphBuild({
