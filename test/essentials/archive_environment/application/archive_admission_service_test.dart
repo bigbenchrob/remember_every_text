@@ -79,20 +79,54 @@ void main() {
     );
   });
 
-  test('production refuses an unmarked root', () async {
+  test('production creates and admits a marker in an absent root', () async {
     final root = Directory('${temporaryDirectory.path}/production');
-
-    await expectLater(
-      _serviceFor(root).admit(_productionClaim(root.path)),
-      throwsA(
-        isA<ArchiveAdmissionException>().having(
-          (error) => error.failure,
-          'failure',
-          ArchiveAdmissionFailure.missingMarker,
-        ),
-      ),
+    final inspector = _RecordingLegacyTesterInstallInspector(
+      const LegacyTesterInstallInspection.notLegacy('not legacy'),
     );
+
+    final authority = await _serviceFor(
+      root,
+      inspector: inspector,
+    ).admit(_productionClaim(root.path));
+    final marker = await FileSystemArchiveMarkerStore(
+      rootPath: root.path,
+    ).read();
+
+    expect(authority.mode, ArchiveAccessMode.full);
+    expect(authority.identity.environment, ArchiveEnvironment.production);
+    expect(marker, isNotNull);
+    expect(marker?.environment, ArchiveEnvironment.production);
+    expect(marker?.archiveInstanceId, authority.identity.archiveInstanceId);
+    expect(inspector.calls, 0);
   });
+
+  test(
+    'production creates its initial marker beside the native process lock',
+    () async {
+      final root = Directory('${temporaryDirectory.path}/production');
+      await root.create();
+      await File(
+        '${root.path}/MessageLens.instance.lock',
+      ).writeAsString('locked by native bootstrap');
+
+      final authority = await _serviceFor(
+        root,
+      ).admit(_productionClaim(root.path));
+
+      expect(authority.mode, ArchiveAccessMode.full);
+      expect(
+        File(
+          '${root.path}/${FileSystemArchiveMarkerStore.markerFileName}',
+        ).existsSync(),
+        isTrue,
+      );
+      expect(
+        await File('${root.path}/MessageLens.instance.lock').readAsString(),
+        'locked by native bootstrap',
+      );
+    },
+  );
 
   test(
     'production admits only positively proven legacy tester root for recognition',
@@ -221,6 +255,7 @@ ArchiveAdmissionService _serviceFor(
   Directory root, {
   LegacyTesterInstallInspection inspection =
       const LegacyTesterInstallInspection.notLegacy('not legacy'),
+  LegacyTesterInstallInspector? inspector,
 }) {
   final policy = ExactCanonicalArchiveRootPolicy(
     canonicalRoots: {
@@ -232,7 +267,8 @@ ArchiveAdmissionService _serviceFor(
   return ArchiveAdmissionService(
     validator: ArchiveIdentityValidator(rootPolicy: policy),
     markerStore: FileSystemArchiveMarkerStore(rootPath: root.path),
-    legacyTesterInstallInspector: _FakeLegacyTesterInstallInspector(inspection),
+    legacyTesterInstallInspector:
+        inspector ?? _FakeLegacyTesterInstallInspector(inspection),
     currentTime: () => DateTime.utc(2026, 7, 27, 12),
   );
 }

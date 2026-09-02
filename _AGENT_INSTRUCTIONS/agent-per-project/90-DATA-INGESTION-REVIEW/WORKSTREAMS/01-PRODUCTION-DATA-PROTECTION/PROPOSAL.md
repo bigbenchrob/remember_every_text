@@ -252,7 +252,11 @@ The marker protects against path mistakes:
 - development refuses a production marker;
 - production refuses a development marker;
 - an existing marker cannot be silently rewritten to another environment;
-- a missing or malformed marker follows an explicit adoption/recovery path.
+- an absent or empty canonical root may receive its first environment marker
+  atomically during first-install admission;
+- a missing marker on a non-empty root follows an explicit
+  adoption/recognition/recovery path;
+- a malformed marker fails closed.
 
 ### Existing production archive adoption
 

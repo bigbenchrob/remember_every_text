@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- A genuinely new production installation now establishes its archive identity
+  atomically before Onboarding begins. This bootstrap is permitted only for an
+  absent or empty canonical production archive root (with the native instance
+  lock allowed); non-empty unmarked archives still require exact legacy
+  recognition or fail closed.
+
 - MessageLens now gives the three recognized April-era testers one bounded
   compatibility choice at launch. Only the exact read-only 4/3/3 legacy
   database fingerprint can expose **Delete Old Data and Continue**; explicit

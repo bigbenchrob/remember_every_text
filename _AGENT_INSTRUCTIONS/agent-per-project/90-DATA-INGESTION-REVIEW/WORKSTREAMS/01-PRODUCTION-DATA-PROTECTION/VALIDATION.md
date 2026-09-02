@@ -121,7 +121,9 @@ No unapproved persistent-root or mutation-authority bypass exists.
 | Test identity + Application Support root | Rejected |
 | Test identity + explicit temporary root/marker | Accepted |
 | Production bundle + invalid/ad hoc signing | Rejected |
-| Production identity + missing marker outside adoption mode | Rejected |
+| Empty canonical production root | Production marker created atomically |
+| Non-empty unmarked production root matching exact legacy fingerprint | Restricted legacy recognition authority |
+| Other non-empty unmarked production root outside adoption mode | Rejected |
 | Empty canonical development root | Development marker created atomically |
 | Non-empty unmarked development root | Review/recovery required |
 | Malformed/unknown marker version | Rejected |

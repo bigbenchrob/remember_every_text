@@ -204,8 +204,8 @@ Complete admission before any persistent Dart service initializes.
 - validate the claim against Dart archive rules;
 - resolve and canonicalize the root;
 - read and validate the archive marker;
-- permit automatic marker creation only for an empty canonical development root
-  or an explicit test root;
+- permit automatic marker creation only for an empty canonical production or
+  development root, or an explicit test root;
 - stop startup on any mismatch;
 - create one immutable archive access authority;
 - inject that authority into the root provider container;
@@ -216,7 +216,8 @@ Complete admission before any persistent Dart service initializes.
 
 - marker create/read/mismatch/malformed tests in temporary directories;
 - development rejects production marker;
-- production refuses unmarked root outside adoption mode;
+- production bootstraps an absent or empty canonical root and rejects every
+  other unmarked root outside exact legacy recognition or adoption mode;
 - test refuses platform Application Support;
 - provider container cannot be created without admitted authority;
 - admission failure starts no monitor or persistent logger.

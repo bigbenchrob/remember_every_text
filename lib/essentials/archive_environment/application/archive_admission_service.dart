@@ -75,13 +75,6 @@ final class ArchiveAdmissionService {
   }
 
   Future<ArchiveMarker> _createInitialMarker(NativeArchiveClaim claim) async {
-    if (claim.environment == ArchiveEnvironment.production) {
-      throw const ArchiveAdmissionException(
-        ArchiveAdmissionFailure.missingMarker,
-        'Production refuses an unmarked archive outside explicit adoption.',
-      );
-    }
-
     if (!await markerStore.canCreateInitialMarker()) {
       throw const ArchiveAdmissionException(
         ArchiveAdmissionFailure.nonEmptyUnmarkedArchive,
