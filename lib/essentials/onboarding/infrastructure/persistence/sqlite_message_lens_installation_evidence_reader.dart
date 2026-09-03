@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -7,6 +8,7 @@ import '../../../db/app_database_files.dart';
 import '../../../db/application/read_only_sql_guard.dart';
 import '../../../source_scoped_import/domain/known_sources.dart';
 import '../../application/message_lens_installation_evidence_reader.dart';
+import '../../application/onboarding_operation_snapshot_store.dart';
 import '../../domain/message_lens_installation_state.dart';
 import '../../domain/onboarding_operation_snapshot.dart';
 
@@ -22,20 +24,24 @@ final class SqliteMessageLensInstallationEvidenceReader
   @override
   Future<MessageLensInstallationEvidence> read({
     required String archiveRootPath,
-    required OnboardingOperationSnapshot operationSnapshot,
   }) {
     return Isolate.run(
-      () => _readSynchronously(
-        archiveRootPath: archiveRootPath,
-        operationSnapshot: operationSnapshot,
-      ),
+      () => _readSynchronously(archiveRootPath: archiveRootPath),
     );
   }
 
   MessageLensInstallationEvidence _readSynchronously({
     required String archiveRootPath,
-    required OnboardingOperationSnapshot operationSnapshot,
   }) {
+    final overlayPath = appDatabasePath(
+      AppDatabaseFile.overlay,
+      databaseDirectory: archiveRootPath,
+    );
+    final overlay = _readDatabase(
+      overlayPath,
+      maximumSupportedVersion: _currentOverlaySchemaVersion,
+      requiredTables: const <String>['overlay_settings'],
+    );
     final sourceScopedImport = _readDatabase(
       appDatabasePath(
         AppDatabaseFile.sourceScopedImport,
@@ -58,14 +64,7 @@ final class SqliteMessageLensInstallationEvidenceReader
     return MessageLensInstallationEvidence(
       sourceScopedImport: sourceScopedImport,
       conversationGraph: conversationGraph,
-      overlay: _readDatabase(
-        appDatabasePath(
-          AppDatabaseFile.overlay,
-          databaseDirectory: archiveRootPath,
-        ),
-        maximumSupportedVersion: _currentOverlaySchemaVersion,
-        requiredTables: const <String>['overlay_settings'],
-      ),
+      overlay: overlay,
       presence: _readDatabase(
         appDatabasePath(
           AppDatabaseFile.presence,
@@ -83,8 +82,48 @@ final class SqliteMessageLensInstallationEvidenceReader
               appDatabasePath(databaseFile, databaseDirectory: archiveRootPath),
             ).existsSync(),
           ),
-      operationSnapshot: operationSnapshot,
+      operationSnapshot: _readOperationSnapshot(
+        databasePath: overlayPath,
+        overlayEvidence: overlay,
+      ),
     );
+  }
+
+  OnboardingOperationSnapshot _readOperationSnapshot({
+    required String databasePath,
+    required InstallationDatabaseEvidence overlayEvidence,
+  }) {
+    if (!overlayEvidence.isUsable) {
+      return const OnboardingOperationSnapshot.idle();
+    }
+
+    final database = sqlite3.open(databasePath, mode: OpenMode.readOnly);
+    try {
+      database.execute('PRAGMA query_only = ON;');
+      database.execute('PRAGMA busy_timeout = 3000;');
+      const sql = 'SELECT value FROM overlay_settings WHERE key = ? LIMIT 1';
+      assertReadOnlySql(
+        sql,
+        boundary: 'Installation-state operation snapshot inspection',
+      );
+      final rows = database.select(sql, <Object?>[
+        onboardingOperationSnapshotSettingKey,
+      ]);
+      if (rows.isEmpty) {
+        return const OnboardingOperationSnapshot.idle();
+      }
+      final raw = rows.single['value'];
+      if (raw is! String || raw.isEmpty) {
+        return const OnboardingOperationSnapshot.idle();
+      }
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, Object?>) {
+        throw const FormatException('Invalid onboarding operation snapshot.');
+      }
+      return OnboardingOperationSnapshot.fromJson(decoded);
+    } finally {
+      database.dispose();
+    }
   }
 
   InstallationDatabaseEvidence _readDatabase(

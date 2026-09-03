@@ -10,7 +10,8 @@ import 'package:remember_this_text/essentials/onboarding/domain/message_lens_ins
 import 'package:remember_this_text/essentials/onboarding/feature_level_providers.dart'
     show messageLensInstallationStateProvider;
 import 'package:remember_this_text/essentials/services/startup_flags_service.dart';
-import 'package:remember_this_text/main.dart' show StartupApp;
+import 'package:remember_this_text/main.dart'
+    show StartupApp, shouldRestorePersistedWindowStateAfterClassification;
 
 import 'test_support/test_archive_fixture.dart';
 
@@ -25,6 +26,20 @@ void main() {
 
   tearDownAll(() async {
     await archiveFixture.dispose();
+  });
+
+  test('only completed classification restores persisted window state', () {
+    for (final kind in MessageLensInstallationStateKind.values) {
+      final shouldRestore =
+          shouldRestorePersistedWindowStateAfterClassification(
+            MessageLensInstallationState(kind: kind, reason: 'test'),
+          );
+      expect(
+        shouldRestore,
+        kind == MessageLensInstallationStateKind.completed,
+        reason: 'Unexpected window restoration policy for ${kind.name}',
+      );
+    }
   });
 
   testWidgets(

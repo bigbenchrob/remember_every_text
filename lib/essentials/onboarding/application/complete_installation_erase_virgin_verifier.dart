@@ -1,5 +1,4 @@
 import '../domain/message_lens_installation_state.dart';
-import '../domain/onboarding_operation_snapshot.dart';
 import 'message_lens_installation_evidence_reader.dart';
 import 'message_lens_installation_state_classifier.dart';
 
@@ -32,10 +31,7 @@ final class CompleteInstallationEraseVirginVerifier {
     required String archiveRootPath,
   }) async {
     final verifiedState = classifier.classify(
-      await evidenceReader.read(
-        archiveRootPath: archiveRootPath,
-        operationSnapshot: const OnboardingOperationSnapshot.idle(),
-      ),
+      await evidenceReader.read(archiveRootPath: archiveRootPath),
     );
     if (verifiedState.kind != MessageLensInstallationStateKind.virgin) {
       throw CompleteInstallationEraseVirginVerificationException(

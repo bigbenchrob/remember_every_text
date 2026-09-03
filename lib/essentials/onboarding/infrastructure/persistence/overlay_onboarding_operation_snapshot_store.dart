@@ -10,7 +10,7 @@ final class OverlayOnboardingOperationSnapshotStore
     required Future<OverlayDatabase> overlayDatabase,
   }) : _overlayDatabase = overlayDatabase;
 
-  static const String settingKey = 'onboarding_operation_snapshot_v1';
+  static const String settingKey = onboardingOperationSnapshotSettingKey;
 
   final Future<OverlayDatabase> _overlayDatabase;
 

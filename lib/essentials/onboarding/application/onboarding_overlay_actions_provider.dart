@@ -22,8 +22,14 @@ class OnboardingOverlayActions extends _$OnboardingOverlayActions {
         .recheckReadiness(clearSimulationOverride: false);
   }
 
-  Future<void> startImportAndGraphBuild() async {
-    await ref.read(onboardingGateProvider.notifier).startImportAndGraphBuild();
+  Future<void> startVirginImportAndGraphBuild() async {
+    await ref
+        .read(onboardingGateProvider.notifier)
+        .startVirginImportAndGraphBuild();
+  }
+
+  Future<void> retryFailedOperation() async {
+    await ref.read(onboardingGateProvider.notifier).retryFailedOperation();
   }
 
   void dismiss() {

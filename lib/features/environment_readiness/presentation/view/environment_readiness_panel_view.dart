@@ -272,7 +272,7 @@ class _ReadinessActionButton extends ConsumerWidget {
       EnvironmentReadinessActionKind.startImport => () {
         ref
             .read(environmentReadinessActionsProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
       },
       EnvironmentReadinessActionKind.sendReport =>
         report == null

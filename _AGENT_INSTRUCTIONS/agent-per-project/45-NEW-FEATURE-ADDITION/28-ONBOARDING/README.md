@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding
 owner: agent-per-project
-last_reviewed: 2026-08-29
+last_reviewed: 2026-09-02
 source_of_truth: feature-work-package-index
 ---
 
@@ -39,6 +39,12 @@ Journey before further Onboarding implementation begins.
 20. [Legacy tester inspector and startup classification](responses/19-LEGACY-TESTER-INSTALL-INSPECTOR-AND-STARTUP-CLASSIFICATION-IMPLEMENTATION.md)
 21. [Legacy tester deletion authorization and Onboarding handoff](responses/21-LEGACY-TESTER-DATA-DELETION-AUTHORIZATION-AND-ONBOARDING-HANDOFF-IMPLEMENTATION.md)
 22. [Tester release distribution verification 0.2.99+117](responses/22-TESTER-RELEASE-DISTRIBUTION-VERIFICATION-0.2.99+117.md)
+23. [Current persistence schema baseline and development cruft audit](responses/23-CURRENT-PERSISTENCE-SCHEMA-BASELINE-AND-DEVELOPMENT-CRUFT-AUDIT.md)
+24. [First-install production archive marker bootstrap correction](responses/24-FIRST-INSTALL-PRODUCTION-ARCHIVE-MARKER-BOOTSTRAP-CORRECTION.md)
+25. [First production import checkpoint conflict correction](responses/26-FIRST-PRODUCTION-IMPORT-CHECKPOINT-CONFLICT-CORRECTION.md)
+26. [Tester-reported Onboarding problems, diagnoses, and fixes](responses/27-TESTER-REPORTED-ONBOARDING-PROBLEMS-DIAGNOSES-AND-FIXES.md)
+27. [Virgin installation archive-regime simplification audit](responses/28-VIRGIN-INSTALL-ARCHIVE-REGIME-SIMPLIFICATION-AUDIT.md)
+28. [Virgin first import and read-only startup classification simplification](responses/29-VIRGIN-FIRST-IMPORT-AND-READ-ONLY-STARTUP-CLASSIFICATION-SIMPLIFICATION-IMPLEMENTATION.md)
 
 ## Current Status
 
@@ -71,7 +77,11 @@ reclaim its presentation. Valid empty derived stores are classified as virgin
 from their durable contents rather than treated as consequential merely because
 their files exist.
 
-The signed and notarized `0.2.99+117` tester artifact and its local tester-site
-update are verified and ready for the separate human-controlled publication
-step. No artifact was installed, published, or sent to testers during release
-verification.
+The first external virgin-install reports exposed two shared existing-archive
+assumptions. `0.2.100+118` corrected first-marker creation for a
+bootstrap-empty production root, and `0.2.101+119` stopped coherent first
+import from invoking checkpoint-gated reset. Response 28 records the remaining
+structural simplification. Response 29 implements its first two slices: startup
+now classifies from minimal read-only evidence before writable provider
+construction, and the positively classified Virgin import path is mechanically
+incapable of reaching reset or checkpoint authority.

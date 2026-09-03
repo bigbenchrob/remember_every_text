@@ -373,15 +373,14 @@ final class _VirginEvidenceReader
   @override
   Future<MessageLensInstallationEvidence> read({
     required String archiveRootPath,
-    required OnboardingOperationSnapshot operationSnapshot,
   }) async {
-    return MessageLensInstallationEvidence(
-      sourceScopedImport: const InstallationDatabaseEvidence.absent(),
-      conversationGraph: const InstallationDatabaseEvidence.absent(),
-      overlay: const InstallationDatabaseEvidence.absent(),
-      presence: const InstallationDatabaseEvidence.absent(),
+    return const MessageLensInstallationEvidence(
+      sourceScopedImport: InstallationDatabaseEvidence.absent(),
+      conversationGraph: InstallationDatabaseEvidence.absent(),
+      overlay: InstallationDatabaseEvidence.absent(),
+      presence: InstallationDatabaseEvidence.absent(),
       hasRetiredDerivedArtifacts: false,
-      operationSnapshot: operationSnapshot,
+      operationSnapshot: OnboardingOperationSnapshot.idle(),
     );
   }
 }

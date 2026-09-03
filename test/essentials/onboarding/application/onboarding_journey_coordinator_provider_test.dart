@@ -126,7 +126,7 @@ void main() {
 
       await container
           .read(onboardingJourneyCoordinatorProvider.notifier)
-          .startImportAndGraphBuild();
+          .startVirginImportAndGraphBuild();
 
       expect(
         container.read(onboardingJourneyCoordinatorProvider),
@@ -180,7 +180,7 @@ void main() {
 
         final import = container
             .read(onboardingJourneyCoordinatorProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
 
         expect(
           container.read(onboardingJourneyCoordinatorProvider),

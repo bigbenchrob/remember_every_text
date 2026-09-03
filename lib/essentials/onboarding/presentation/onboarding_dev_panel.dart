@@ -553,7 +553,7 @@ class _DevWelcomeContent extends ConsumerWidget {
           onPressed: () async {
             await ref
                 .read(onboardingOverlayActionsProvider.notifier)
-                .startImportAndGraphBuild();
+                .startVirginImportAndGraphBuild();
           },
           style: FilledButton.styleFrom(
             backgroundColor: colors.buttons.primaryBackground,

@@ -91,6 +91,7 @@ class OnboardingOverlay extends ConsumerWidget {
                           : null,
                       presentationOverride: _preparationFailurePresentation,
                       showEnvironmentSummary: false,
+                      retriesFailedOperation: true,
                     ),
                     OnboardingStatus.awaitingFda => OnboardingFdaContent(
                       report: report,
@@ -111,6 +112,8 @@ class OnboardingOverlay extends ConsumerWidget {
                       report: report,
                       colors: colors,
                       typography: typography,
+                      retriesFailedOperation:
+                          journey is OnboardingOperationFailed,
                     ),
                     OnboardingStatus.importing ||
                     OnboardingStatus.buildingGraph ||
@@ -349,6 +352,7 @@ class _WelcomeContent extends ConsumerWidget {
     this.presentationOverride,
     this.showEnvironmentSummary = true,
     this.operationFailureSummary,
+    this.retriesFailedOperation = false,
   });
 
   final OnboardingEnvironmentReport? report;
@@ -357,6 +361,7 @@ class _WelcomeContent extends ConsumerWidget {
   final _AwaitingUserActionPresentation? presentationOverride;
   final bool showEnvironmentSummary;
   final String? operationFailureSummary;
+  final bool retriesFailedOperation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -412,9 +417,14 @@ class _WelcomeContent extends ConsumerWidget {
             children: [
               FilledButton(
                 onPressed: () async {
-                  await ref
-                      .read(onboardingOverlayActionsProvider.notifier)
-                      .startImportAndGraphBuild();
+                  final actions = ref.read(
+                    onboardingOverlayActionsProvider.notifier,
+                  );
+                  if (retriesFailedOperation) {
+                    await actions.retryFailedOperation();
+                  } else {
+                    await actions.startVirginImportAndGraphBuild();
+                  }
                 },
                 style: FilledButton.styleFrom(
                   backgroundColor: colors.buttons.primaryBackground,
@@ -484,7 +494,7 @@ class _WelcomeContent extends ConsumerWidget {
               onPressed: () async {
                 await ref
                     .read(onboardingOverlayActionsProvider.notifier)
-                    .startImportAndGraphBuild();
+                    .startVirginImportAndGraphBuild();
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: colors.content.textPrimary,

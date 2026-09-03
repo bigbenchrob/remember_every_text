@@ -15,7 +15,7 @@ class PipelineIncidentActions extends _$PipelineIncidentActions {
   FutureOr<void> build() {}
 
   Future<void> retryImportAndGraphBuild() async {
-    await ref.read(onboardingGateProvider.notifier).startImportAndGraphBuild();
+    await ref.read(onboardingGateProvider.notifier).retryFailedOperation();
   }
 
   void dismissActiveReport() {

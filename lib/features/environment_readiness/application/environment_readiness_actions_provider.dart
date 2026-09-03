@@ -23,8 +23,10 @@ class EnvironmentReadinessActions extends _$EnvironmentReadinessActions {
     ref.read(onboardingGateProvider.notifier).refreshEnvironment();
   }
 
-  Future<void> startImportAndGraphBuild() async {
-    await ref.read(onboardingGateProvider.notifier).startImportAndGraphBuild();
+  Future<void> startVirginImportAndGraphBuild() async {
+    await ref
+        .read(onboardingGateProvider.notifier)
+        .startVirginImportAndGraphBuild();
   }
 
   void acceptLocalMessageHistory() {

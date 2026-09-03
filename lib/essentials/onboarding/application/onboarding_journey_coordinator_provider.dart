@@ -26,6 +26,7 @@ import 'onboarding_environment_report_provider.dart';
 import 'onboarding_failure_storage_provider.dart';
 import 'onboarding_operation_snapshot_controller.dart';
 import 'onboarding_operation_snapshot_provider.dart';
+import 'virgin_onboarding_import_executor.dart';
 
 part 'onboarding_journey_coordinator_provider.g.dart';
 
@@ -195,6 +196,17 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
       );
     }
     if (status == OnboardingStatus.awaitingUserAction && evidence != null) {
+      if (evidence.report.shouldResetAppDatabasesBeforeImport) {
+        return OnboardingOperationFailed(
+          occurrence: occurrence,
+          summary:
+              evidence.report.resetAppDatabasesReason ??
+              'Existing derived data requires recovery before a fresh import.',
+          compatibilityStatus: OnboardingStatus.awaitingUserAction,
+          evidence: evidence,
+          transitionReason: reason,
+        );
+      }
       if (evidence.report.state == OnboardingEnvironmentState.importFailed ||
           evidence.report.state ==
               OnboardingEnvironmentState.graphProjectionFailed) {
@@ -334,12 +346,9 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
     return OnboardingStatus.awaitingUserAction;
   }
 
-  /// Kick off the source-scoped conversation graph build.
-  ///
-  /// Wrapped in try/catch so the user is never stranded.
-  Future<void> startImportAndGraphBuild() async {
-    if (state is! OnboardingReadyToImport &&
-        state is! OnboardingOperationFailed) {
+  /// Starts fresh derived-store construction for a proven Virgin installation.
+  Future<void> startVirginImportAndGraphBuild() async {
+    if (state is! OnboardingReadyToImport) {
       return;
     }
 
@@ -368,7 +377,7 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
           .run<OnboardingOperationId?>(
             operation: ArchiveMutationOperation.onboardingImport,
             ownerLabel: 'onboarding-first-run',
-            action: _startImportAndGraphBuild,
+            action: _runAdmittedVirginImport,
           );
     } catch (error, stackTrace) {
       _enterPreparationFailure(
@@ -387,7 +396,7 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
     );
   }
 
-  Future<OnboardingOperationId?> _startImportAndGraphBuild() async {
+  Future<OnboardingOperationId?> _runAdmittedVirginImport() async {
     ref
         .read(appLoggerProvider.notifier)
         .info(
@@ -416,64 +425,45 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
     final operationController = await ref.read(
       onboardingOperationControllerProvider.future,
     );
-    final operationId = await operationController.begin(
-      kind: OnboardingOperationKind.initialImport,
-      initialStage: OnboardingOperationStage.environmentPreparation,
-    );
-
-    try {
-      await operationController.runStage<void>(
-        operationId: operationId,
-        stage: OnboardingOperationStage.environmentPreparation,
-        failureCategory:
-            OnboardingOperationFailureCategory.environmentPreparation,
-        action: (progress) async {
-          await progress.observe(
-            substage: OnboardingOperationSubstage.preparingEnvironment,
-          );
-          await _prepareForFreshStartIfNeeded();
-        },
-      );
-    } catch (error, stackTrace) {
-      _enterPreparationFailure(
-        error: error,
-        stackTrace: stackTrace,
-        logMessage: 'Fresh onboarding preparation failed',
-      );
-      return null;
-    }
-
-    // ── Graph build phase ──
     _setWorkflowOverride(OnboardingStatus.buildingGraph);
     await _waitForEndOfFrame();
     try {
-      await operationController.runStage<void>(
-        operationId: operationId,
-        stage: OnboardingOperationStage.messageDataBuild,
-        failureCategory: OnboardingOperationFailureCategory.messageDataBuild,
-        action: (progress) => _runConversationGraphBuild(
-          owner: 'onboarding-first-run',
-          progress: progress,
-        ),
-      );
+      final operationId =
+          await VirginOnboardingImportExecutor(
+            operationController: operationController,
+          ).run(
+            buildMessageData: (progress) => _runConversationGraphBuild(
+              owner: 'onboarding-first-run',
+              progress: progress,
+            ),
+          );
+      ref
+          .read(appLoggerProvider.notifier)
+          .info(
+            'Fresh onboarding conversation graph build completed successfully',
+            source: 'OnboardingJourneyCoordinator',
+          );
+      return operationId;
     } catch (error) {
       await _recordConversationGraphBuildFailure(error);
       _finishFirstRunWithFailure();
       return null;
     }
+  }
 
-    ref
-        .read(appLoggerProvider.notifier)
-        .info(
-          'Fresh onboarding conversation graph build completed successfully',
-          source: 'OnboardingJourneyCoordinator',
-        );
-
-    await operationController.enterStage(
-      operationId: operationId,
-      stage: OnboardingOperationStage.durableReadinessVerification,
-    );
-    return operationId;
+  /// Requests a fresh evaluation of a failed/partial installation.
+  ///
+  /// This intent cannot enter the Virgin import executor. Durable evidence must
+  /// first drive the existing recovery path and reclassify the installation as
+  /// ready for fresh construction.
+  Future<void> retryFailedOperation() async {
+    if (state is! OnboardingOperationFailed) {
+      return;
+    }
+    _automaticRecoverySuppressed = false;
+    _clearWorkflowOverride();
+    ref.invalidate(onboardingEnvironmentReportProvider);
+    await ref.read(onboardingEnvironmentReportProvider.future);
   }
 
   /// Wait until the current frame has finished painting.
@@ -520,7 +510,7 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
 
   /// Trigger a full reimport from settings.
   ///
-  /// Unlike [startImportAndGraphBuild], this can be called when the app is
+  /// Unlike [startVirginImportAndGraphBuild], this can be called when the app is
   /// already running with populated databases.  It shows the same
   /// progress overlay but uses the reimport-specific status values so the UI
   /// can distinguish first-run from settings-triggered graph rebuild.
@@ -766,6 +756,7 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
           verifiedAtUtc: DateTime.now().toUtc(),
         ),
       );
+      await operationController.resetToIdle();
     } catch (error, stackTrace) {
       _automaticRecoveryInFlight = false;
       _automaticRecoverySuppressed = true;
@@ -846,29 +837,6 @@ class OnboardingJourneyCoordinator extends _$OnboardingJourneyCoordinator {
       installationClassification: installationClassification,
       lastTransitionReason: current.transitionReason,
     );
-  }
-
-  Future<void> _prepareForFreshStartIfNeeded() async {
-    final report = ref.read(onboardingEnvironmentReportProvider).valueOrNull;
-    if (report?.shouldResetAppDatabasesBeforeImport ?? false) {
-      ref
-          .read(appLoggerProvider.notifier)
-          .warn(
-            'Preparing for fresh onboarding start by resetting app databases',
-            source: 'OnboardingJourneyCoordinator',
-            context: {'reason': report?.resetAppDatabasesReason},
-          );
-      await ref.read(messageDataResetServiceProvider).resetDerivedData();
-      ref.invalidate(onboardingEnvironmentReportProvider);
-      return;
-    }
-
-    ref
-        .read(appLoggerProvider.notifier)
-        .info(
-          'Fresh onboarding environment is already coherent; no derived-data reset is required',
-          source: 'OnboardingJourneyCoordinator',
-        );
   }
 
   Future<void> _runConversationGraphBuild({

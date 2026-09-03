@@ -43,10 +43,16 @@ class OnboardingGate extends _$OnboardingGate {
         .refreshEnvironment();
   }
 
-  Future<void> startImportAndGraphBuild() async {
+  Future<void> startVirginImportAndGraphBuild() async {
     await ref
         .read(onboardingJourneyCoordinatorProvider.notifier)
-        .startImportAndGraphBuild();
+        .startVirginImportAndGraphBuild();
+  }
+
+  Future<void> retryFailedOperation() async {
+    await ref
+        .read(onboardingJourneyCoordinatorProvider.notifier)
+        .retryFailedOperation();
   }
 
   Future<void> startReimport() async {

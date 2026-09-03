@@ -303,55 +303,70 @@ void main() async {
     ],
   );
 
-  // An erase-only launch must not let window callbacks open ordinary
-  // persistent stores before the user authorizes the complete erase.
+  MessageLensInstallationState? initialInstallationState;
   if (archiveAuthority.permitsPersistentArchiveAccess) {
-    delegate.attachContainer(container);
-  }
-
-  // Initialize the app logger early so all subsequent operations are captured.
-  final logger = container.read(appLoggerProvider.notifier);
-  logger.info('App launch', source: 'App');
-  logger.info(
-    'Resolved startup flags',
-    source: 'StartupFlags',
-    context: {
-      'optionLaunchResetRequested': startupFlags.optionLaunchResetRequested
-          .toString(),
-    },
-  );
-
-  // Capture Flutter framework errors (layout, rendering, gestures).
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    unawaited(deferFlutterFrameworkErrorLog(details, logError: logger.error));
-  };
-
-  // Capture platform-level errors (plugin crashes, isolate errors).
-  PlatformDispatcher.instance.onError = (error, stack) {
-    logger.error(
-      error.toString(),
-      source: 'PlatformDispatcher',
-      context: {'stack': stack.toString().split('\n').take(10).join('\n')},
-    );
-    return true; // Prevent app termination.
-  };
-
-  if (archiveAuthority.permitsPersistentArchiveAccess) {
-    // Restore window state only after full archive admission. An unmarked
-    // obsolete root is never opened or migrated before complete erase.
     try {
-      await container.read(windowStateServiceProvider).restoreWindowState();
-    } catch (error) {
-      logger.warn(
-        'Failed to restore window state: $error',
-        source: 'WindowState',
+      initialInstallationState = await container.read(
+        messageLensInstallationStateProvider.future,
       );
+    } catch (error, stackTrace) {
+      // Classification is intentionally pre-persistence. Admission/classifier
+      // failures remain available through stderr and the startup error surface.
+      debugPrint('Installation classification failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 
-  if (archiveAuthority.permitsPersistentArchiveAccess) {
-    // Reassert minimum window size after the first frame when the NSWindow exists.
+  if (initialInstallationState != null) {
+    delegate.attachContainer(container);
+    final logger = container.read(appLoggerProvider.notifier);
+    logger.info('App launch', source: 'App');
+    logger.info(
+      'Resolved startup flags',
+      source: 'StartupFlags',
+      context: {
+        'optionLaunchResetRequested': startupFlags.optionLaunchResetRequested
+            .toString(),
+        'installationKind': initialInstallationState.kind.name,
+        'installationReason': initialInstallationState.reason,
+      },
+    );
+
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      unawaited(deferFlutterFrameworkErrorLog(details, logError: logger.error));
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      logger.error(
+        error.toString(),
+        source: 'PlatformDispatcher',
+        context: {'stack': stack.toString().split('\n').take(10).join('\n')},
+      );
+      return true;
+    };
+  } else {
+    FlutterError.onError = FlutterError.presentError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('Uncaught platform error before persistent startup: $error');
+      debugPrintStack(stackTrace: stack);
+      return true;
+    };
+  }
+
+  if (initialInstallationState != null &&
+      shouldRestorePersistedWindowStateAfterClassification(
+        initialInstallationState,
+      )) {
+    try {
+      await container.read(windowStateServiceProvider).restoreWindowState();
+    } catch (error) {
+      container
+          .read(appLoggerProvider.notifier)
+          .warn(
+            'Failed to restore window state: $error',
+            source: 'WindowState',
+          );
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       container.read(windowStateServiceProvider).enforceMinSize();
     });
@@ -362,6 +377,12 @@ void main() async {
       child: StartupApp(startupFlags: startupFlags),
     ),
   );
+}
+
+bool shouldRestorePersistedWindowStateAfterClassification(
+  MessageLensInstallationState installationState,
+) {
+  return installationState.kind == MessageLensInstallationStateKind.completed;
 }
 
 class StartupApp extends ConsumerStatefulWidget {

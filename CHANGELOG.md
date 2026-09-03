@@ -10,6 +10,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- New-install startup now classifies installation state using read-only SQLite
+  evidence before persistent logging or window-state restoration. A proven
+  Virgin first import has its own fresh-construction boundary and cannot reach
+  derived-data reset or checkpoint authority; inconsistent existing state must
+  complete remediation and reclassify as Virgin before Ready can be shown.
+
 - A coherent new production installation now begins first import without
   invoking the destructive, checkpoint-protected message-data reset. Reset is
   still mandatory when canonical environment evidence explicitly identifies

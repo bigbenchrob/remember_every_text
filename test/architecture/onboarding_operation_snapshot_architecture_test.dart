@@ -14,6 +14,12 @@ void main() {
   const storePath =
       'lib/essentials/onboarding/infrastructure/persistence/'
       'overlay_onboarding_operation_snapshot_store.dart';
+  const storeContractPath =
+      'lib/essentials/onboarding/application/'
+      'onboarding_operation_snapshot_store.dart';
+  const readOnlyEvidencePath =
+      'lib/essentials/onboarding/infrastructure/persistence/'
+      'sqlite_message_lens_installation_evidence_reader.dart';
   const reconciliationPath =
       'lib/essentials/onboarding/application/'
       'onboarding_operation_reconciliation_provider.dart';
@@ -23,13 +29,28 @@ void main() {
 
   test('one canonical durable snapshot authority uses overlay settings', () {
     final store = File(storePath).readAsStringSync();
+    final storeContract = File(storeContractPath).readAsStringSync();
+    final readOnlyEvidence = File(readOnlyEvidencePath).readAsStringSync();
     final providers = File(providerPath).readAsStringSync();
 
-    expect(store, contains("settingKey = 'onboarding_operation_snapshot_v1'"));
+    expect(
+      storeContract,
+      contains(
+        <String>[
+          'onboardingOperationSnapshotSettingKey =',
+          "    'onboarding_operation_snapshot_v1'",
+        ].join('\n'),
+      ),
+    );
+    expect(
+      store,
+      contains('settingKey = onboardingOperationSnapshotSettingKey'),
+    );
+    expect(readOnlyEvidence, contains('onboardingOperationSnapshotSettingKey'));
     expect(store, contains('writeOverlaySetting'));
     expect(providers, contains('OverlayOnboardingOperationSnapshotStore'));
     expect(_dartSourcesContaining('onboarding_operation_snapshot_v1'), {
-      storePath,
+      storeContractPath,
     });
   });
 

@@ -73,7 +73,7 @@ void main() {
       await tester.tap(find.text('Try Again'));
       await tester.pump();
 
-      expect(gate.startImportCallCount, 1);
+      expect(gate.retryFailedOperationCallCount, 1);
     },
   );
 
@@ -85,6 +85,11 @@ void main() {
       await _pumpFailureOverlay(
         tester,
         gate: gate,
+        journey: const OnboardingOperationFailed(
+          occurrence: 1,
+          summary: _technicalImportError,
+          compatibilityStatus: OnboardingStatus.awaitingUserAction,
+        ),
         report: _failureReport(
           state: OnboardingEnvironmentState.importFailed,
           blockerKind: OnboardingBlockerKind.importFailed,
@@ -114,7 +119,7 @@ void main() {
       await tester.tap(find.text('Try Import Again'));
       await tester.pump();
 
-      expect(gate.startImportCallCount, 1);
+      expect(gate.retryFailedOperationCallCount, 1);
     },
   );
 
@@ -127,6 +132,11 @@ void main() {
     await _pumpFailureOverlay(
       tester,
       gate: gate,
+      journey: const OnboardingOperationFailed(
+        occurrence: 1,
+        summary: _technicalGraphError,
+        compatibilityStatus: OnboardingStatus.awaitingUserAction,
+      ),
       exporter: exporter,
       report: _failureReport(
         state: OnboardingEnvironmentState.graphProjectionFailed,
@@ -155,7 +165,7 @@ void main() {
 
     await tester.tap(find.text('Retry Import and Graph Build'));
     await tester.pump();
-    expect(gate.startImportCallCount, 1);
+    expect(gate.retryFailedOperationCallCount, 1);
 
     await tester.tap(find.text('Send Report To Developer'));
     await tester.pump();
@@ -430,6 +440,7 @@ final class _FailureSurfaceGate extends OnboardingGate {
 
   final OnboardingStatus status;
   int startImportCallCount = 0;
+  int retryFailedOperationCallCount = 0;
 
   @override
   OnboardingStatus build() {
@@ -437,8 +448,13 @@ final class _FailureSurfaceGate extends OnboardingGate {
   }
 
   @override
-  Future<void> startImportAndGraphBuild() async {
+  Future<void> startVirginImportAndGraphBuild() async {
     startImportCallCount += 1;
+  }
+
+  @override
+  Future<void> retryFailedOperation() async {
+    retryFailedOperationCallCount += 1;
   }
 }
 

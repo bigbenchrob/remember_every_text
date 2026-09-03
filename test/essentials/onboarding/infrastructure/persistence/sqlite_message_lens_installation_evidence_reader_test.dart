@@ -1,13 +1,80 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/db/app_database_files.dart';
+import 'package:remember_this_text/essentials/onboarding/application/onboarding_operation_snapshot_store.dart';
 import 'package:remember_this_text/essentials/onboarding/domain/onboarding_operation_snapshot.dart';
 import 'package:remember_this_text/essentials/onboarding/infrastructure/persistence/sqlite_message_lens_installation_evidence_reader.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 void main() {
+  test('pristine inspection creates no archive files', () async {
+    final root = Directory.systemTemp.createTempSync(
+      'messagelens-installation-evidence-pristine-',
+    );
+    addTearDown(() {
+      root.deleteSync(recursive: true);
+    });
+
+    final before = root.listSync().map((entry) => entry.path).toSet();
+    final evidence = await const SqliteMessageLensInstallationEvidenceReader()
+        .read(archiveRootPath: root.path);
+    final after = root.listSync().map((entry) => entry.path).toSet();
+
+    expect(evidence.sourceScopedImport.exists, isFalse);
+    expect(evidence.conversationGraph.exists, isFalse);
+    expect(evidence.overlay.exists, isFalse);
+    expect(evidence.presence.exists, isFalse);
+    expect(evidence.operationSnapshot.status, OnboardingOperationStatus.idle);
+    expect(after, before);
+  });
+
+  test(
+    'reads a durable operation snapshot without changing its store',
+    () async {
+      final root = Directory.systemTemp.createTempSync(
+        'messagelens-installation-evidence-snapshot-',
+      );
+      addTearDown(() {
+        root.deleteSync(recursive: true);
+      });
+      final overlayPath = appDatabasePath(
+        AppDatabaseFile.overlay,
+        databaseDirectory: root.path,
+      );
+      final snapshot = OnboardingOperationSnapshot.running(
+        operationId: OnboardingOperationId(
+          '123e4567-e89b-42d3-a456-426614174010',
+        ),
+        processSessionId: OnboardingProcessSessionId(
+          '123e4567-e89b-42d3-a456-426614174011',
+        ),
+        kind: OnboardingOperationKind.initialImport,
+        stage: OnboardingOperationStage.messageDataBuild,
+        observedAtUtc: DateTime.utc(2026, 9, 2),
+      );
+      _createOverlayDatabase(overlayPath, operationSnapshot: snapshot);
+      final file = File(overlayPath);
+      final bytesBefore = file.readAsBytesSync();
+      final modifiedBefore = file.lastModifiedSync();
+
+      final evidence = await const SqliteMessageLensInstallationEvidenceReader()
+          .read(archiveRootPath: root.path);
+
+      expect(
+        evidence.operationSnapshot.status,
+        OnboardingOperationStatus.running,
+      );
+      expect(evidence.operationSnapshot.operationId, snapshot.operationId);
+      expect(file.readAsBytesSync(), bytesBefore);
+      expect(file.lastModifiedSync(), modifiedBefore);
+      expect(File('$overlayPath-wal').existsSync(), isFalse);
+      expect(File('$overlayPath-shm').existsSync(), isFalse);
+    },
+  );
+
   test('reads completion evidence without mutating canonical stores', () async {
     final root = Directory.systemTemp.createTempSync(
       'messagelens-installation-evidence-',
@@ -36,10 +103,7 @@ void main() {
     );
 
     const reader = SqliteMessageLensInstallationEvidenceReader();
-    final evidence = await reader.read(
-      archiveRootPath: root.path,
-      operationSnapshot: const OnboardingOperationSnapshot.idle(),
-    );
+    final evidence = await reader.read(archiveRootPath: root.path);
 
     expect(evidence.sourceScopedImport.isUsable, isTrue);
     expect(evidence.sourceScopedImport.messageCount, 2);
@@ -66,10 +130,7 @@ void main() {
       ).writeAsStringSync('not sqlite');
 
       final evidence = await const SqliteMessageLensInstallationEvidenceReader()
-          .read(
-            archiveRootPath: root.path,
-            operationSnapshot: const OnboardingOperationSnapshot.idle(),
-          );
+          .read(archiveRootPath: root.path);
 
       expect(evidence.overlay.exists, isTrue);
       expect(evidence.overlay.isUsable, isFalse);
@@ -116,10 +177,7 @@ void main() {
       });
 
       final evidenceFuture = const SqliteMessageLensInstallationEvidenceReader()
-          .read(
-            archiveRootPath: root.path,
-            operationSnapshot: const OnboardingOperationSnapshot.idle(),
-          );
+          .read(archiveRootPath: root.path);
 
       await lockReleased.future.timeout(const Duration(seconds: 1));
       final evidence = await evidenceFuture;
@@ -164,13 +222,25 @@ void _createGraphDatabase(String path) {
   }
 }
 
-void _createOverlayDatabase(String path) {
+void _createOverlayDatabase(
+  String path, {
+  OnboardingOperationSnapshot? operationSnapshot,
+}) {
   final database = sqlite3.open(path);
   try {
     database.execute('PRAGMA user_version = 8;');
     database.execute(
       'CREATE TABLE overlay_settings (key TEXT PRIMARY KEY, value TEXT);',
     );
+    if (operationSnapshot != null) {
+      database.execute(
+        'INSERT INTO overlay_settings (key, value) VALUES (?, ?)',
+        <Object?>[
+          onboardingOperationSnapshotSettingKey,
+          jsonEncode(operationSnapshot.toJson()),
+        ],
+      );
+    }
   } finally {
     database.dispose();
   }

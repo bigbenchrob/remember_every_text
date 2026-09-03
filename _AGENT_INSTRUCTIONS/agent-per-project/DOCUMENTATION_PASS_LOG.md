@@ -5828,3 +5828,31 @@ production preservation authority mechanically enforceable.
   publication boundary.
 - Updated the Feature 28 index to distinguish verified local release readiness
   from the separate human-controlled website publication step.
+
+## 2026-09-02 - Virgin installation archive-regime audit
+
+- Traced native admission, first marker creation, Dart startup classification,
+  provider construction, the six-node Onboarding Journey, and first import.
+- Recorded the common cause of the first external tester failures: existing-
+  installation preservation remained callable before meaningful existing state
+  had been positively established.
+- Distinguished first identity creation from archive adoption and first import
+  mutation serialization from reset/checkpoint authority.
+- Identified preclassification overlay/window-state construction and the
+  remaining conditional reset call edge inside fresh first import.
+- Defined exact Virgin, Current, legacy tester, and Remediation paths, proposed
+  dependency tripwires, and separated near-term corrections from dead Complete
+  Erase and retired Presence cleanup.
+
+## 2026-09-02 - Virgin first import and read-only startup classification
+
+- Recorded the dedicated Virgin fresh-import boundary and removal of every
+  reset/checkpoint call edge from positively classified Ready to Import.
+- Documented the separate failed-installation remediation intent and the rule
+  that remediation must reclassify Virgin before Ready can exist.
+- Recorded read-only/query-only operation-snapshot inspection and startup
+  ordering before persistent logging and completed-only window restoration.
+- Preserved first-marker authority, Current startup, exact legacy deletion,
+  remediation distinctions, mutation serialization, and attachment safety.
+- Explicitly deferred Audit 28 Complete Erase cruft and retired Presence/schema
+  cleanup slices.

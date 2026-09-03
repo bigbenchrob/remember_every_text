@@ -370,7 +370,7 @@ void main() {
 
         final firstStart = container
             .read(onboardingGateProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
         await tester.pump();
         await tester.pump();
 
@@ -384,7 +384,7 @@ void main() {
 
         await container
             .read(onboardingGateProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
         expect(resetService.resetDerivedDataCallCount, 0);
         expect(graphBuildCallCount, 1);
 
@@ -456,7 +456,7 @@ void main() {
 
         final import = container
             .read(onboardingGateProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
         await tester.pump();
         await tester.pump();
         await tester.pump();
@@ -497,7 +497,7 @@ void main() {
 
         final import = container
             .read(onboardingGateProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
         await tester.pump();
         await tester.pump();
         await tester.pump();
@@ -551,7 +551,7 @@ void main() {
 
       final import = container
           .read(onboardingGateProvider.notifier)
-          .startImportAndGraphBuild();
+          .startVirginImportAndGraphBuild();
       await tester.pump();
       await tester.pump();
       await tester.pump();
@@ -606,7 +606,7 @@ void main() {
 
       await container
           .read(onboardingGateProvider.notifier)
-          .startImportAndGraphBuild();
+          .startVirginImportAndGraphBuild();
       await tester.pump();
 
       expect(
@@ -618,13 +618,19 @@ void main() {
     });
 
     testWidgets(
-      'first-run reset failure presents stable process-local retry and support',
+      'remediation retry must finish before a separate Virgin import command',
       (tester) async {
         final resetError = StateError('synthetic reset failure');
         final resetService = _FakeMessageDataResetService()
           ..resetError = resetError;
         final overlayDb = OverlayDatabase(NativeDatabase.memory());
         var graphBuildCallCount = 0;
+        var requiresReset = true;
+        resetService.onResetStarted = () {
+          if (resetService.resetDerivedDataCallCount >= 2) {
+            requiresReset = false;
+          }
+        };
 
         addTearDown(() async {
           await overlayDb.close();
@@ -635,8 +641,15 @@ void main() {
             archiveFixture: archiveFixture,
             overlayDb: overlayDb,
             resetService: resetService,
-            shouldResetAppDatabasesBeforeImport: true,
-            resetAppDatabasesReason: 'Synthetic incomplete setup state',
+            environmentReport: () => _report(
+              state: OnboardingEnvironmentState.readyToImport,
+              blockerKind:
+                  OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
+              shouldResetAppDatabasesBeforeImport: requiresReset,
+              resetAppDatabasesReason: requiresReset
+                  ? 'Synthetic incomplete setup state'
+                  : null,
+            ),
             onGraphBuild: () {
               graphBuildCallCount += 1;
             },
@@ -651,7 +664,7 @@ void main() {
 
         final startFuture = container
             .read(onboardingGateProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
         await tester.pump();
         await startFuture;
         await tester.pump();
@@ -696,10 +709,14 @@ void main() {
         await tester.pump();
 
         expect(resetService.resetDerivedDataCallCount, 2);
-        expect(graphBuildCallCount, 1);
+        expect(graphBuildCallCount, 0);
         expect(
           container.read(onboardingGateProvider),
-          OnboardingStatus.complete,
+          OnboardingStatus.awaitingUserAction,
+        );
+        expect(
+          container.read(onboardingJourneyCoordinatorProvider),
+          isA<OnboardingReadyToImport>(),
         );
       },
     );
@@ -731,7 +748,7 @@ void main() {
         );
         final startFuture = container
             .read(onboardingGateProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
         await tester.pump();
         await startFuture;
         expect(
@@ -774,7 +791,7 @@ void main() {
         );
         final startFuture = container
             .read(onboardingGateProvider.notifier)
-            .startImportAndGraphBuild();
+            .startVirginImportAndGraphBuild();
         await tester.pump();
         await startFuture;
         expect(
@@ -1392,7 +1409,7 @@ void main() {
       );
       final startFuture = container
           .read(onboardingGateProvider.notifier)
-          .startImportAndGraphBuild();
+          .startVirginImportAndGraphBuild();
       await tester.pump();
       await tester.pump();
       await startFuture;
@@ -1596,6 +1613,7 @@ List<Override> _firstRunOverrides({
   int preservedUnnormalizedHandleCount = 0,
   bool shouldResetAppDatabasesBeforeImport = false,
   String? resetAppDatabasesReason,
+  OnboardingEnvironmentReport Function()? environmentReport,
   int sourceScopedImportRowCount = 100,
   int conversationGraphRowCount = 100,
   ArchiveMutationCoordinator Function()? mutationCoordinator,
@@ -1609,15 +1627,18 @@ List<Override> _firstRunOverrides({
       archiveMutationCoordinatorProvider.overrideWith(mutationCoordinator),
     overlayDatabaseProvider.overrideWith((ref) async => overlayDb),
     onboardingEnvironmentReportProvider.overrideWith(
-      (ref) async => _report(
-        state: OnboardingEnvironmentState.readyToImport,
-        blockerKind: OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
-        shouldResetAppDatabasesBeforeImport:
-            shouldResetAppDatabasesBeforeImport,
-        resetAppDatabasesReason: resetAppDatabasesReason,
-        sourceScopedImportRowCount: sourceScopedImportRowCount,
-        conversationGraphRowCount: conversationGraphRowCount,
-      ),
+      (ref) async =>
+          environmentReport?.call() ??
+          _report(
+            state: OnboardingEnvironmentState.readyToImport,
+            blockerKind:
+                OnboardingBlockerKind.sourceScopedImportDatabaseMissing,
+            shouldResetAppDatabasesBeforeImport:
+                shouldResetAppDatabasesBeforeImport,
+            resetAppDatabasesReason: resetAppDatabasesReason,
+            sourceScopedImportRowCount: sourceScopedImportRowCount,
+            conversationGraphRowCount: conversationGraphRowCount,
+          ),
     ),
     onboardingFullDiskAccessProvider.overrideWith((ref) => hasFullDiskAccess),
     conversationGraphBuildServiceProvider.overrideWith(
