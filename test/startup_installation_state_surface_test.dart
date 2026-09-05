@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:remember_this_text/config/theme/colors/theme_colors.dart';
-import 'package:remember_this_text/essentials/archive_environment/domain/archive_access_authority.dart';
 import 'package:remember_this_text/essentials/archive_environment/feature_level_providers.dart'
     show admittedArchiveAccessAuthorityProvider;
 import 'package:remember_this_text/essentials/onboarding/domain/message_lens_installation_state.dart';
@@ -111,44 +110,6 @@ void main() {
     expect(find.text('This MessageLens setup needs attention'), findsOne);
     expect(find.text('Admitted application'), findsNothing);
   });
-
-  testWidgets(
-    'legacy tester recognition renders without opening installation stores',
-    (tester) async {
-      var installationProviderRead = false;
-      final legacyAuthority = ArchiveAccessAuthority(
-        identity: archiveFixture.authority.identity,
-        mode: ArchiveAccessMode.legacyTesterInstallDetected,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            admittedArchiveAccessAuthorityProvider.overrideWith(
-              (ref) => legacyAuthority,
-            ),
-            messageLensInstallationStateProvider.overrideWith((ref) async {
-              installationProviderRead = true;
-              throw StateError('Current installation stores must stay closed.');
-            }),
-          ],
-          child: const StartupApp(
-            startupFlags: StartupFlags.disabled(),
-            admittedChild: MaterialApp(home: Text('Admitted application')),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('This is data from an older MessageLens test version'),
-        findsOneWidget,
-      );
-      expect(find.text('Admitted application'), findsNothing);
-      expect(find.text('Delete Old Data and Continue'), findsOneWidget);
-      expect(installationProviderRead, isFalse);
-    },
-  );
 
   testWidgets('abandoned installation naturally offers Start Fresh', (
     tester,

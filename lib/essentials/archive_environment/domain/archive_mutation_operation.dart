@@ -5,7 +5,6 @@ enum ArchiveMutationOperation {
   onboardingImport,
   automaticRecovery,
   startFresh,
-  legacyTesterInstallDeletion,
   completeInstallationErase,
   messageDataReset,
   historicalArchiveDryRun,
@@ -40,7 +39,6 @@ extension ArchiveMutationOperationPolicy on ArchiveMutationOperation {
     return switch (this) {
       ArchiveMutationOperation.messageDataReset ||
       ArchiveMutationOperation.startFresh ||
-      ArchiveMutationOperation.legacyTesterInstallDeletion ||
       ArchiveMutationOperation.completeInstallationErase ||
       ArchiveMutationOperation.historicalArchiveImport ||
       ArchiveMutationOperation.historicalArchiveRemoval ||

@@ -5,6 +5,5 @@ export 'application/archive_checkpoint_service.dart';
 export 'application/archive_marker_store.dart';
 export 'application/archive_owned_resource_registry_provider.dart';
 export 'application/complete_installation_erase_store.dart';
-export 'application/legacy_tester_install_inspector.dart';
 export 'application/native_archive_claim_reader.dart';
 export 'application/verified_archive_checkpoint_provider.dart';

@@ -10,6 +10,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Removed the temporary April 2026 tester-installation fingerprint and its
+  special startup/deletion route. MessageLens now treats every meaningful
+  non-empty unmarked production root as a generic fail-closed remediation case;
+  current owned roots continue through archive identity, per-store schema
+  migration, and integrity verification. The generalized internal Complete
+  Erase/root-replacement machinery and preservation-safe Start Fresh remain
+  unchanged.
+
 - New-install startup now classifies installation state using read-only SQLite
   evidence before persistent logging or window-state restoration. A proven
   Virgin first import has its own fresh-construction boundary and cannot reach
@@ -26,17 +34,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A genuinely new production installation now establishes its archive identity
   atomically before Onboarding begins. This bootstrap is permitted only for an
   absent or empty canonical production archive root (with the native instance
-  lock allowed); non-empty unmarked archives still require exact legacy
-  recognition or fail closed.
-
-- MessageLens now gives the three recognized April-era testers one bounded
-  compatibility choice at launch. Only the exact read-only 4/3/3 legacy
-  database fingerprint can expose **Delete Old Data and Continue**; explicit
-  authorization removes that obsolete MessageLens-owned root, verifies a new
-  virgin archive identity, and automatically relaunches into normal Onboarding.
-  Apple Messages, Contacts, and external source folders are unreachable by the
-  deletion target. The generalized complete-installation erase action is no
-  longer offered in Settings.
+  lock allowed); every meaningful non-empty unmarked archive fails closed into
+  generic remediation.
 
 - Completed-installation startup and live message catch-up remain responsive
   on production-shaped external archives. Installation integrity inspection
@@ -48,9 +47,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   while a resolved Track matrix is not mounted.
 
 - The low-level complete archive-replacement implementation remains available
-  for startup convergence and the narrowly admitted legacy compatibility path,
-  but it is no longer a general user-facing Settings operation. Ordinary Start
-  Fresh remains preservation-safe and unchanged.
+  for separately authorized generalized recovery, but it is no longer a
+  general user-facing Settings operation and has no historical-generation
+  admission path. Ordinary Start Fresh remains preservation-safe and unchanged.
 
 - The first-run Journey path now represents six human-meaningful Episodes:
   Messages, History, Contacts, Ready, Import, and Start. Durable verification

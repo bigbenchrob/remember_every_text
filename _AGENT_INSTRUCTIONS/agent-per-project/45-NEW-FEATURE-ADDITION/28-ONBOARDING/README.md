@@ -46,6 +46,10 @@ Journey before further Onboarding implementation begins.
 27. [Virgin installation archive-regime simplification audit](responses/28-VIRGIN-INSTALL-ARCHIVE-REGIME-SIMPLIFICATION-AUDIT.md)
 28. [Virgin first import and read-only startup classification simplification](responses/29-VIRGIN-FIRST-IMPORT-AND-READ-ONLY-STARTUP-CLASSIFICATION-SIMPLIFICATION-IMPLEMENTATION.md)
 
+## Current Implementation
+
+- [April tester fingerprint and legacy-admission removal](32-APRIL-TESTER-FINGERPRINT-AND-LEGACY-ADMISSION-REMOVAL-IMPLEMENTATION.md)
+
 ## Current Status
 
 **LIVE SINGLE-AUTHORITY JOURNEY IMPLEMENTED.**
@@ -64,12 +68,14 @@ Import and never exposes Start.
 
 The generalized **Erase MessageLens Setup and Start Over** action is no longer
 offered in Settings. Its low-level crash-convergent root-replacement machinery
-remains internal. The exact pre-source-scoped tester generation is recognized
-read-only and receives one dedicated compatibility gate. Only explicit human
-authorization can admit deletion of that exact canonical legacy root; success
-installs and verifies a virgin identity, then automatically relaunches into the
-ordinary six-node Onboarding Journey. Ordinary preservation-safe Start Fresh
-remains unchanged.
+remains internal for a separately authorized, generalized recovery operation.
+The temporary April 2026 tester-generation fingerprint, special startup
+classification, and dedicated deletion offer have been removed. Every
+meaningful non-empty unmarked production root now enters the ordinary generic
+fail-closed remediation path. Current owned roots are identified by the
+archive marker and UUID, while compatibility is determined independently by
+each store's schema version, supported migration path, and integrity checks.
+Ordinary preservation-safe Start Fresh remains unchanged.
 
 Startup classification is a one-shot process admission decision. Once the
 application has been admitted, later installation-state refreshes cannot

@@ -223,8 +223,8 @@ identity, preferences, diagnostics, and `attachment_archive/` remain outside
 that boundary. See
 [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
 
-**Erase MessageLens Setup and Start Over** is a separate whole-installation
-operation for legacy installs and explicit advanced use. Its exact
+The generalized whole-installation erase/root-replacement machinery is a
+separate explicit advanced recovery operation. Its exact
 `completeInstallationErase` capability, destructive authorization, canonical
 root proof, resource shutdown, durable transaction, and virgin verification
 must all succeed. It may erase preservation data because that is its stated

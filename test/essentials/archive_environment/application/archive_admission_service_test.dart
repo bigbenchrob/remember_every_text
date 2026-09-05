@@ -2,14 +2,12 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/archive_environment/application/archive_admission_service.dart';
-import 'package:remember_this_text/essentials/archive_environment/application/legacy_tester_install_inspector.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_access_authority.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_admission_exception.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_build_identity.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_environment.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_identity_validator.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_marker.dart';
-import 'package:remember_this_text/essentials/archive_environment/domain/legacy_tester_install_inspection.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/native_archive_claim.dart';
 import 'package:remember_this_text/essentials/archive_environment/infrastructure/exact_canonical_archive_root_policy.dart';
 import 'package:remember_this_text/essentials/archive_environment/infrastructure/file_system_archive_marker_store.dart';
@@ -81,13 +79,9 @@ void main() {
 
   test('production creates and admits a marker in an absent root', () async {
     final root = Directory('${temporaryDirectory.path}/production');
-    final inspector = _RecordingLegacyTesterInstallInspector(
-      const LegacyTesterInstallInspection.notLegacy('not legacy'),
-    );
 
     final authority = await _serviceFor(
       root,
-      inspector: inspector,
     ).admit(_productionClaim(root.path));
     final marker = await FileSystemArchiveMarkerStore(
       rootPath: root.path,
@@ -98,7 +92,6 @@ void main() {
     expect(marker, isNotNull);
     expect(marker?.environment, ArchiveEnvironment.production);
     expect(marker?.archiveInstanceId, authority.identity.archiveInstanceId);
-    expect(inspector.calls, 0);
   });
 
   test(
@@ -128,34 +121,7 @@ void main() {
     },
   );
 
-  test(
-    'production admits only positively proven legacy tester root for recognition',
-    () async {
-      final root = Directory('${temporaryDirectory.path}/production');
-      await root.create();
-      await File('${root.path}/legacy-working.db').writeAsString('legacy');
-
-      final authority = await _serviceFor(
-        root,
-        inspection: const LegacyTesterInstallInspection.legacyTesterInstall(),
-      ).admit(_productionClaim(root.path));
-
-      expect(authority.mode, ArchiveAccessMode.legacyTesterInstallDetected);
-      expect(authority.permitsPersistentArchiveAccess, isFalse);
-      expect(
-        authority.requirePersistentArchiveAccess,
-        throwsA(isA<StateError>()),
-      );
-      expect(
-        File(
-          '${root.path}/${FileSystemArchiveMarkerStore.markerFileName}',
-        ).existsSync(),
-        isFalse,
-      );
-    },
-  );
-
-  test('production rejects arbitrary non-empty unmarked root', () async {
+  test('production rejects every non-empty unmarked root', () async {
     final root = Directory('${temporaryDirectory.path}/production');
     await root.create();
     await File('${root.path}/unrecognized.db').writeAsString('data');
@@ -172,35 +138,10 @@ void main() {
     );
   });
 
-  test('production fails closed when legacy inspection fails', () async {
-    final root = Directory('${temporaryDirectory.path}/production');
-    await root.create();
-    await File('${root.path}/unreadable.db').writeAsString('data');
-
-    await expectLater(
-      _serviceFor(
-        root,
-        inspection: const LegacyTesterInstallInspection.failed(
-          'synthetic inspection failure',
-        ),
-      ).admit(_productionClaim(root.path)),
-      throwsA(
-        isA<ArchiveAdmissionException>().having(
-          (error) => error.failure,
-          'failure',
-          ArchiveAdmissionFailure.legacyTesterInspectionFailed,
-        ),
-      ),
-    );
-  });
-
   test(
-    'non-canonical production claim is rejected before inspection',
+    'non-canonical production claim is rejected before root admission',
     () async {
       final root = Directory('${temporaryDirectory.path}/production');
-      final inspector = _RecordingLegacyTesterInstallInspector(
-        const LegacyTesterInstallInspection.legacyTesterInstall(),
-      );
       final policy = ExactCanonicalArchiveRootPolicy(
         canonicalRoots: {ArchiveEnvironment.production: root.path},
         platformApplicationSupportRoot:
@@ -209,7 +150,6 @@ void main() {
       final service = ArchiveAdmissionService(
         validator: ArchiveIdentityValidator(rootPolicy: policy),
         markerStore: FileSystemArchiveMarkerStore(rootPath: root.path),
-        legacyTesterInstallInspector: inspector,
       );
 
       await expectLater(
@@ -222,7 +162,6 @@ void main() {
           ),
         ),
       );
-      expect(inspector.calls, 0);
     },
   );
 
@@ -251,12 +190,7 @@ void main() {
   });
 }
 
-ArchiveAdmissionService _serviceFor(
-  Directory root, {
-  LegacyTesterInstallInspection inspection =
-      const LegacyTesterInstallInspection.notLegacy('not legacy'),
-  LegacyTesterInstallInspector? inspector,
-}) {
+ArchiveAdmissionService _serviceFor(Directory root) {
   final policy = ExactCanonicalArchiveRootPolicy(
     canonicalRoots: {
       ArchiveEnvironment.development: root.path,
@@ -267,40 +201,8 @@ ArchiveAdmissionService _serviceFor(
   return ArchiveAdmissionService(
     validator: ArchiveIdentityValidator(rootPolicy: policy),
     markerStore: FileSystemArchiveMarkerStore(rootPath: root.path),
-    legacyTesterInstallInspector:
-        inspector ?? _FakeLegacyTesterInstallInspector(inspection),
     currentTime: () => DateTime.utc(2026, 7, 27, 12),
   );
-}
-
-final class _FakeLegacyTesterInstallInspector
-    implements LegacyTesterInstallInspector {
-  const _FakeLegacyTesterInstallInspector(this.result);
-
-  final LegacyTesterInstallInspection result;
-
-  @override
-  Future<LegacyTesterInstallInspection> inspect(
-    NativeArchiveClaim claim,
-  ) async {
-    return result;
-  }
-}
-
-final class _RecordingLegacyTesterInstallInspector
-    implements LegacyTesterInstallInspector {
-  _RecordingLegacyTesterInstallInspector(this.result);
-
-  final LegacyTesterInstallInspection result;
-  int calls = 0;
-
-  @override
-  Future<LegacyTesterInstallInspection> inspect(
-    NativeArchiveClaim claim,
-  ) async {
-    calls += 1;
-    return result;
-  }
 }
 
 NativeArchiveClaim _developmentClaim(String rootPath) {

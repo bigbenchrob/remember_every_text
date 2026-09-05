@@ -150,25 +150,11 @@ class ArchiveMutationCoordinator extends _$ArchiveMutationCoordinator {
     final authority = ref.read(archiveAccessAuthorityProvider);
     switch (authority.mode) {
       case ArchiveAccessMode.full:
-        if (operation == ArchiveMutationOperation.legacyTesterInstallDeletion) {
-          throw StateError(
-            'Legacy tester installation deletion requires its exact '
-            'restricted startup authority.',
-          );
-        }
         break;
       case ArchiveAccessMode.completeEraseOnly:
         if (operation != ArchiveMutationOperation.completeInstallationErase) {
           throw StateError(
             'An erase-only archive cannot admit ${operation.name}.',
-          );
-        }
-        break;
-      case ArchiveAccessMode.legacyTesterInstallDetected:
-        if (operation != ArchiveMutationOperation.legacyTesterInstallDeletion) {
-          throw StateError(
-            'A detected legacy tester installation can admit only its exact '
-            'compatibility deletion.',
           );
         }
         break;

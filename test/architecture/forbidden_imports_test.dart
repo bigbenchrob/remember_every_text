@@ -84,7 +84,6 @@ const Set<String> _retiredDatabaseFilenameLiteralAllowedFiles = {
 };
 
 const Set<String> _retiredDatabaseEnumAllowedFiles = {
-  'lib/essentials/archive_environment/infrastructure/read_only_sqlite_legacy_tester_install_inspector.dart',
   'lib/essentials/db/app_database_files.dart',
   'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
@@ -136,7 +135,6 @@ const Set<String> _databaseHealthIdentityLiteralAllowedFiles = {
 };
 
 const Set<String> _appDatabaseFileHelperAllowedFiles = {
-  'lib/essentials/archive_environment/infrastructure/read_only_sqlite_legacy_tester_install_inspector.dart',
   'lib/essentials/db/app_database_files.dart',
   'lib/essentials/db/feature_level_providers/app_database_labels.dart',
   'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
@@ -166,8 +164,6 @@ const Set<String> _archiveAccessAuthorityConsumerFiles = {
   'lib/essentials/logging/application/pipeline_incident_storage_provider.dart',
   'lib/essentials/onboarding/application/complete_installation_erase_service_provider.dart',
   'lib/essentials/onboarding/application/derived_message_data_file_store_provider.dart',
-  'lib/essentials/onboarding/application/legacy_tester_install_deletion_action_provider.dart',
-  'lib/essentials/onboarding/application/legacy_tester_install_deletion_service_provider.dart',
   'lib/essentials/onboarding/application/message_lens_installation_state_provider.dart',
   'lib/essentials/onboarding/application/onboarding_durable_completion_verifier_provider.dart',
   'lib/essentials/onboarding/application/onboarding_environment_report_provider.dart',
@@ -250,31 +246,8 @@ const Set<String> _sourceScopedSqlBitExtractionAllowedFiles = {
   'lib/essentials/source_scoped_import/domain/source_scoped_row_sql.dart',
 };
 
-// This bounded compatibility classifier uses the product-approved name of the
-// one retired tester generation it can prove. Keep every active-code use
-// explicit so "legacy" cannot become a general architectural category.
-const Set<String> _legacyTerminologyAllowedFiles = <String>{
-  'lib/essentials/archive_environment/application.dart',
-  'lib/essentials/archive_environment/application/archive_admission_service.dart',
-  'lib/essentials/archive_environment/application/archive_mutation_coordinator_provider.dart',
-  'lib/essentials/archive_environment/application/legacy_tester_install_inspector.dart',
-  'lib/essentials/archive_environment/domain.dart',
-  'lib/essentials/archive_environment/domain/archive_access_authority.dart',
-  'lib/essentials/archive_environment/domain/archive_admission_exception.dart',
-  'lib/essentials/archive_environment/domain/archive_mutation_operation.dart',
-  'lib/essentials/archive_environment/domain/legacy_tester_install_inspection.dart',
-  'lib/essentials/archive_environment/infrastructure.dart',
-  'lib/essentials/archive_environment/infrastructure/file_system_complete_installation_erase_store.dart',
-  'lib/essentials/archive_environment/infrastructure/read_only_sqlite_legacy_tester_install_inspector.dart',
-  'lib/essentials/onboarding/application/legacy_tester_install_deletion_action.dart',
-  'lib/essentials/onboarding/application/legacy_tester_install_deletion_action_provider.dart',
-  'lib/essentials/onboarding/application/legacy_tester_install_deletion_presentation_provider.dart',
-  'lib/essentials/onboarding/application/legacy_tester_install_deletion_service.dart',
-  'lib/essentials/onboarding/application/legacy_tester_install_deletion_service_provider.dart',
-  'lib/essentials/onboarding/domain/legacy_tester_install_deletion_presentation.dart',
-  'lib/essentials/onboarding/presentation/legacy_tester_install_detected_view.dart',
-  'lib/main.dart',
-};
+// Active library code has no approved legacy-named compatibility concepts.
+const Set<String> _legacyTerminologyAllowedFiles = {};
 
 const Set<String> _activeCompatibilityBridgeAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
@@ -346,7 +319,6 @@ const Set<String> _providerInvalidationAllowedFiles = {
 const Set<String> _directSqliteImportAllowedFiles = {
   'lib/essentials/archive_environment/infrastructure/file_system_archive_checkpoint_service.dart',
   'lib/essentials/archive_environment/infrastructure/file_system_production_archive_adoption_inventory_service.dart',
-  'lib/essentials/archive_environment/infrastructure/read_only_sqlite_legacy_tester_install_inspector.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/conversation_graph_status_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/sqlite_chat_db_source_probe_reader.dart',
