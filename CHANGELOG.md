@@ -10,12 +10,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Removed the obsolete Complete Erase whole-root replacement runtime. Every
+  supported mutation now targets named resources, while Start Fresh preserves
+  archive identity, durable user state, and archived attachments. A temporary
+  fail-closed compatibility reader can remove only the unchanged obsolete
+  transaction journal in two mechanically proven stale states; it cannot
+  resume erasure, replace identity, or relaunch MessageLens.
+
 - Removed the temporary April 2026 tester-installation fingerprint and its
   special startup/deletion route. MessageLens now treats every meaningful
   non-empty unmarked production root as a generic fail-closed remediation case;
   current owned roots continue through archive identity, per-store schema
-  migration, and integrity verification. The generalized internal Complete
-  Erase/root-replacement machinery and preservation-safe Start Fresh remain
+  migration, and integrity verification. Preservation-safe Start Fresh remains
   unchanged.
 
 - New-install startup now classifies installation state using read-only SQLite
@@ -45,11 +51,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   are excluded before expensive file work. A transient sidebar/page-composition
   mismatch now falls back to truthful native cassette flow instead of asserting
   while a resolved Track matrix is not mounted.
-
-- The low-level complete archive-replacement implementation remains available
-  for separately authorized generalized recovery, but it is no longer a
-  general user-facing Settings operation and has no historical-generation
-  admission path. Ordinary Start Fresh remains preservation-safe and unchanged.
 
 - The first-run Journey path now represents six human-meaningful Episodes:
   Messages, History, Contacts, Ready, Import, and Start. Durable verification

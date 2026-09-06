@@ -98,7 +98,6 @@ const Set<String> _retiredCleanupHealthInspectionAllowedFiles = {
 
 const Set<String> _sourceScopedImportDatabaseProviderAllowedFiles = {
   'lib/essentials/db/feature_level_providers/database_health_audit_service_provider.dart',
-  'lib/essentials/onboarding/application/complete_installation_erase_service_provider.dart',
   'lib/essentials/source_scoped_import/application/source_scoped_import_ledger_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
 };
@@ -162,7 +161,6 @@ const Set<String> _archiveAccessAuthorityConsumerFiles = {
   'lib/essentials/logging/application/app_logger.dart',
   'lib/essentials/logging/application/diagnostic_report_provider.dart',
   'lib/essentials/logging/application/pipeline_incident_storage_provider.dart',
-  'lib/essentials/onboarding/application/complete_installation_erase_service_provider.dart',
   'lib/essentials/onboarding/application/derived_message_data_file_store_provider.dart',
   'lib/essentials/onboarding/application/message_lens_installation_state_provider.dart',
   'lib/essentials/onboarding/application/onboarding_durable_completion_verifier_provider.dart',
@@ -246,8 +244,11 @@ const Set<String> _sourceScopedSqlBitExtractionAllowedFiles = {
   'lib/essentials/source_scoped_import/domain/source_scoped_row_sql.dart',
 };
 
-// Active library code has no approved legacy-named compatibility concepts.
-const Set<String> _legacyTerminologyAllowedFiles = {};
+// This sole compatibility bridge is temporary and has an explicit sunset.
+const Set<String> _legacyTerminologyAllowedFiles = {
+  'lib/essentials/onboarding/infrastructure/compatibility/legacy_complete_installation_erase_journal_compatibility.dart',
+  'lib/main.dart',
+};
 
 const Set<String> _activeCompatibilityBridgeAllowedFiles = {
   'lib/features/attachments/infrastructure/repositories/overlay_archive_compatibility_lookup.dart',
@@ -295,7 +296,6 @@ const Set<String> _unawaitedAllowedFiles = {
 
 const Set<String> _providerInvalidationAllowedFiles = {
   'lib/essentials/conversation_graph/application/status/conversation_graph_status_sheet_actions_provider.dart',
-  'lib/essentials/onboarding/application/complete_installation_erase_service_provider.dart',
   'lib/essentials/onboarding/application/message_data_reset_service.dart',
   'lib/essentials/onboarding/application/onboarding_journey_coordinator_provider.dart',
   'lib/essentials/onboarding/application/start_fresh_service_provider.dart',
@@ -390,7 +390,6 @@ const Set<String> _macosWindowUtilsAllowedFiles = {
 const Set<String> _platformChannelAllowedFiles = {
   'lib/essentials/archive_environment/infrastructure/method_channel_native_archive_claim_reader.dart',
   'lib/essentials/logging/infrastructure/macos_unified_log_bridge.dart',
-  'lib/essentials/onboarding/infrastructure/system/macos_application_relauncher.dart',
   'lib/essentials/services/native_link_preview_service.dart',
   'lib/essentials/services/startup_flags_service.dart',
 };
@@ -413,7 +412,6 @@ const Set<String> _pathProviderImportAllowedFiles = {
 
 const Set<String> _platformEnvironmentAllowedFiles = {
   'lib/essentials/archive_environment/infrastructure/development_archive_root_override_resolver.dart',
-  'lib/essentials/archive_environment/infrastructure/file_system_complete_installation_erase_store.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/chat_summary_repository.dart',
   'lib/essentials/conversation_graph/infrastructure/repositories/graph_health_repository.dart',
   'lib/essentials/db/infrastructure/repositories/local_database_health_runtime_environment.dart',

@@ -33,7 +33,7 @@ class AppLogger extends _$AppLogger {
   @override
   List<LogEntry> build() {
     final authority = ref.watch(admittedArchiveAccessAuthorityProvider);
-    if (authority != null && authority.permitsPersistentArchiveAccess) {
+    if (authority != null) {
       final writer = LogFileWriter(
         logDirectory: Directory(authority.resolvePath('application_logs')),
       );

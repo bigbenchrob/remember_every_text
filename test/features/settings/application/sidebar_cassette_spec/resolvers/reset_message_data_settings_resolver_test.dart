@@ -36,12 +36,6 @@ void main() {
         expect(payload.actions, hasLength(1));
         expect(payload.actions.single.label, 'Reset message data…');
         expect(payload.actions.single.intent, isA<ResetMessageDataRequested>());
-        expect(
-          payload.actions.where(
-            (action) => action.intent is CompleteInstallationEraseRequested,
-          ),
-          isEmpty,
-        );
       },
     );
   });

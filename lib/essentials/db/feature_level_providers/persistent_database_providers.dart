@@ -49,7 +49,6 @@ Future<ImportDatabase> sourceScopedImportDatabase(
 ) async {
   _requirePersistentStoreAdmission(ref);
   final authority = ref.watch(archiveAccessAuthorityProvider);
-  authority.requirePersistentArchiveAccess();
   await _ensureDatabaseDirectoryExists(authority.rootPath);
 
   final database = await ImportDatabase.open(
@@ -92,7 +91,6 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
   }
 
   final authority = ref.watch(archiveAccessAuthorityProvider);
-  authority.requirePersistentArchiveAccess();
   await _ensureDatabaseDirectoryExists(authority.rootPath);
   final dbPath = appDatabasePath(
     AppDatabaseFile.conversationGraph,
@@ -136,7 +134,6 @@ Future<ConversationGraphDatabase> driftConversationGraphDatabase(
 Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
   _requirePersistentStoreAdmission(ref);
   final authority = ref.watch(archiveAccessAuthorityProvider);
-  authority.requirePersistentArchiveAccess();
   await _ensureDatabaseDirectoryExists(authority.rootPath);
   final dbPath = appDatabasePath(
     AppDatabaseFile.overlay,
@@ -171,7 +168,6 @@ Future<OverlayDatabase> overlayDatabase(OverlayDatabaseRef ref) async {
 Future<PresenceDatabase> presenceDatabase(PresenceDatabaseRef ref) async {
   _requirePersistentStoreAdmission(ref);
   final authority = ref.watch(archiveAccessAuthorityProvider);
-  authority.requirePersistentArchiveAccess();
   await _ensureDatabaseDirectoryExists(authority.rootPath);
   final dbPath = appDatabasePath(
     AppDatabaseFile.presence,

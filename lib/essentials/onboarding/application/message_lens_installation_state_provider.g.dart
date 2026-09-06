@@ -7,7 +7,7 @@ part of 'message_lens_installation_state_provider.dart';
 // **************************************************************************
 
 String _$messageLensInstallationStateHash() =>
-    r'81343af1cbcc917df21ad8c21c999ec71024fea8';
+    r'7851b008e982c333eb233080f5250e0ebe14a43a';
 
 /// See also [messageLensInstallationState].
 @ProviderFor(messageLensInstallationState)

@@ -2,7 +2,7 @@
 tier: project
 scope: onboarding
 owner: agent-per-project
-last_reviewed: 2026-09-02
+last_reviewed: 2026-09-06
 source_of_truth: feature-work-package-index
 ---
 
@@ -49,6 +49,8 @@ Journey before further Onboarding implementation begins.
 ## Current Implementation
 
 - [April tester fingerprint and legacy-admission removal](32-APRIL-TESTER-FINGERPRINT-AND-LEGACY-ADMISSION-REMOVAL-IMPLEMENTATION.md)
+- [Whole-root replacement removal audit](33-WHOLE-ROOT-REPLACEMENT-AND-COMPLETE-ERASE-REMOVAL-AUDIT.md)
+- [Whole-root replacement and Complete Erase removal](34-WHOLE-ROOT-REPLACEMENT-AND-COMPLETE-ERASE-REMOVAL-IMPLEMENTATION.md)
 
 ## Current Status
 
@@ -66,16 +68,22 @@ non-blockers**. Start remains mechanically unavailable until the mandatory
 internal durable-verification gate succeeds; verification failure remains on
 Import and never exposes Start.
 
-The generalized **Erase MessageLens Setup and Start Over** action is no longer
-offered in Settings. Its low-level crash-convergent root-replacement machinery
-remains internal for a separately authorized, generalized recovery operation.
-The temporary April 2026 tester-generation fingerprint, special startup
-classification, and dedicated deletion offer have been removed. Every
-meaningful non-empty unmarked production root now enters the ordinary generic
-fail-closed remediation path. Current owned roots are identified by the
-archive marker and UUID, while compatibility is determined independently by
-each store's schema version, supported migration path, and integrity checks.
-Ordinary preservation-safe Start Fresh remains unchanged.
+The generalized **Erase MessageLens Setup and Start Over** action and its
+whole-root replacement machinery have been removed. Every supported mutation
+now targets a named, bounded resource. The temporary April 2026
+tester-generation fingerprint, special startup classification, and dedicated
+deletion offer are also gone. Every meaningful non-empty unmarked production
+root enters the ordinary generic fail-closed remediation path. Current owned
+roots are identified by the archive marker and UUID, while compatibility is
+determined independently by each store's schema version, supported migration
+path, and integrity checks. Ordinary preservation-safe Start Fresh remains
+unchanged.
+
+Startup temporarily recognizes the obsolete
+`.messagelens-complete-installation-erase.json` journal from previously
+distributed tester builds. It may delete only that exact unchanged file in two
+mechanically proven stale states. It cannot resume deletion, replace archive
+identity, or relaunch the application; every ambiguous state fails closed.
 
 Startup classification is a one-shot process admission decision. Once the
 application has been admitted, later installation-state refreshes cannot

@@ -503,51 +503,6 @@ class MainFlutterWindow: NSWindow {
         }
         return
       }
-      if call.method == "relaunchAfterArchiveReplacement" {
-        let helper = Process()
-        helper.executableURL = URL(fileURLWithPath: "/bin/sh")
-        let developmentRoot = ProcessInfo.processInfo.environment[
-          "MESSAGELENS_DEVELOPMENT_ARCHIVE_ROOT"
-        ] ?? ""
-        let executableName = Bundle.main.object(
-          forInfoDictionaryKey: "CFBundleExecutable"
-        ) as? String ?? ""
-        if developmentRoot.isEmpty {
-          helper.arguments = [
-            "-c",
-            "while kill -0 \"$1\" 2>/dev/null; do sleep 0.1; done; exec /usr/bin/open -n \"$2\"",
-            "messagelens-relaunch",
-            String(ProcessInfo.processInfo.processIdentifier),
-            Bundle.main.bundleURL.path,
-          ]
-        } else {
-          helper.arguments = [
-            "-c",
-            "while kill -0 \"$1\" 2>/dev/null; do sleep 0.1; done; exec /usr/bin/env MESSAGELENS_DEVELOPMENT_ARCHIVE_ROOT=\"$3\" \"$2/Contents/MacOS/$4\"",
-            "messagelens-relaunch",
-            String(ProcessInfo.processInfo.processIdentifier),
-            Bundle.main.bundleURL.path,
-            developmentRoot,
-            executableName,
-          ]
-        }
-        do {
-          try helper.run()
-          result(nil)
-          DispatchQueue.main.async {
-            NSApplication.shared.terminate(nil)
-          }
-        } catch {
-          result(
-            FlutterError(
-              code: "relaunch_failed",
-              message: "MessageLens could not relaunch after replacing its archive.",
-              details: error.localizedDescription
-            )
-          )
-        }
-        return
-      }
       guard call.method == "getNativeArchiveClaim" else {
         result(FlutterMethodNotImplemented)
         return

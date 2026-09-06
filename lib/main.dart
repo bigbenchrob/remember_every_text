@@ -19,22 +19,13 @@ import 'config/theme/theme_typography.dart';
 import 'essentials/app_mode/feature_level_providers.dart'
     show platformBrightnessProvider, switchableDarkModeProvider;
 import 'essentials/archive_environment/application.dart'
-    show
-        ArchiveAdmissionService,
-        admittedArchiveAccessAuthorityProvider,
-        archiveAccessAuthorityProvider;
+    show ArchiveAdmissionService, admittedArchiveAccessAuthorityProvider;
 import 'essentials/archive_environment/domain.dart'
-    show
-        ArchiveAccessAuthority,
-        ArchiveAccessMode,
-        ArchiveBuildIdentity,
-        ArchiveIdentityValidator,
-        ResolvedArchiveIdentity;
+    show ArchiveAccessAuthority, ArchiveBuildIdentity, ArchiveIdentityValidator;
 import 'essentials/archive_environment/infrastructure.dart'
     show
         DevelopmentArchiveRootOverrideResolver,
         ExactCanonicalArchiveRootPolicy,
-        FileSystemCompleteInstallationEraseStore,
         FileSystemArchiveMarkerStore,
         MethodChannelArchiveAdmissionFailurePresenter,
         MethodChannelNativeArchiveClaimReader;
@@ -45,15 +36,11 @@ import 'essentials/logging/application/flutter_framework_error_reporter.dart';
 import 'essentials/logging/feature_level_providers.dart'
     show appLoggerProvider, diagnosticReportExporterProvider;
 import 'essentials/navigation/application/router.dart';
-import 'essentials/onboarding/application/complete_installation_erase_virgin_verifier.dart';
 import 'essentials/onboarding/domain/message_lens_installation_state.dart';
 import 'essentials/onboarding/feature_level_providers.dart'
-    show
-        completeInstallationEraseServiceProvider,
-        messageLensInstallationStateProvider,
-        startFreshServiceProvider;
+    show messageLensInstallationStateProvider, startFreshServiceProvider;
+import 'essentials/onboarding/infrastructure/compatibility/legacy_complete_installation_erase_journal_compatibility.dart';
 import 'essentials/onboarding/infrastructure/persistence/sqlite_message_lens_installation_evidence_reader.dart';
-import 'essentials/onboarding/presentation/complete_installation_erase_authorization_dialog.dart';
 import 'essentials/onboarding/presentation/start_fresh_authorization_dialog.dart';
 import 'essentials/services/startup_flags_service.dart';
 import 'essentials/window_state/feature_level_providers.dart'
@@ -160,43 +147,31 @@ Future<ArchiveAccessAuthority> _admitArchive() async {
   );
   final validator = ArchiveIdentityValidator(rootPolicy: rootPolicy);
   validator.validateClaim(claim);
-  const eraseStore = FileSystemCompleteInstallationEraseStore();
-  final pendingErase = await eraseStore.readPending(
-    canonicalRootPath: claim.canonicalRootPath,
+  final markerStore = FileSystemArchiveMarkerStore(
+    rootPath: claim.canonicalRootPath,
   );
-  if (pendingErase != null) {
-    if (pendingErase.environment != claim.environment) {
-      throw StateError(
-        'Pending complete erase belongs to a different archive environment.',
-      );
-    }
-    final recoveryAuthority = ArchiveAccessAuthority(
-      identity: ResolvedArchiveIdentity(
-        environment: claim.environment,
-        buildIdentity: claim.buildIdentity,
-        archiveInstanceId: pendingErase.newArchiveInstanceId,
-        canonicalRootPath: claim.canonicalRootPath,
-        bundleIdentifier: claim.bundleIdentifier,
-        productName: claim.productName,
-      ),
-    );
-    await eraseStore.eraseOwnedState(authority: recoveryAuthority);
-    await eraseStore.installVirginIdentity(
-      authority: recoveryAuthority,
-      transaction: pendingErase,
-    );
-    await const CompleteInstallationEraseVirginVerifier(
-      evidenceReader: SqliteMessageLensInstallationEvidenceReader(),
-    ).verify(archiveRootPath: recoveryAuthority.rootPath);
-    await eraseStore.complete(authority: recoveryAuthority);
-  }
   final admissionService = ArchiveAdmissionService(
     validator: validator,
-    markerStore: FileSystemArchiveMarkerStore(
-      rootPath: claim.canonicalRootPath,
-    ),
+    markerStore: markerStore,
   );
-  return admissionService.admit(claim);
+  final compatibilityResult =
+      await const LegacyCompleteInstallationEraseJournalCompatibility(
+        evidenceReader: SqliteMessageLensInstallationEvidenceReader(),
+      ).admit(
+        canonicalRootPath: claim.canonicalRootPath,
+        expectedEnvironment: claim.environment,
+        markerStore: markerStore,
+        ordinaryAdmission: () => admissionService.admit(claim),
+      );
+  if (compatibilityResult.disposition !=
+      LegacyCompleteInstallationEraseJournalDisposition.noJournal) {
+    debugPrint(
+      'Legacy Complete Erase journal disposition: '
+      '${compatibilityResult.disposition.name}; '
+      '${compatibilityResult.diagnostics}',
+    );
+  }
+  return compatibilityResult.authority;
 }
 
 Future<void> _reportArchiveAdmissionFailure(Object error) async {
@@ -300,17 +275,15 @@ void main() async {
   );
 
   MessageLensInstallationState? initialInstallationState;
-  if (archiveAuthority.permitsPersistentArchiveAccess) {
-    try {
-      initialInstallationState = await container.read(
-        messageLensInstallationStateProvider.future,
-      );
-    } catch (error, stackTrace) {
-      // Classification is intentionally pre-persistence. Admission/classifier
-      // failures remain available through stderr and the startup error surface.
-      debugPrint('Installation classification failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
+  try {
+    initialInstallationState = await container.read(
+      messageLensInstallationStateProvider.future,
+    );
+  } catch (error, stackTrace) {
+    // Classification is intentionally pre-persistence. Admission/classifier
+    // failures remain available through stderr and the startup error surface.
+    debugPrint('Installation classification failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 
   if (initialInstallationState != null) {
@@ -411,10 +384,6 @@ class _StartupAppState extends ConsumerState<StartupApp> {
 
   @override
   Widget build(BuildContext context) {
-    final authority = ref.watch(archiveAccessAuthorityProvider);
-    if (authority.mode == ArchiveAccessMode.completeEraseOnly) {
-      return const _EraseOnlyStartup();
-    }
     if (_startupChoiceResolved) {
       return widget.admittedChild;
     }
@@ -475,130 +444,6 @@ class _StartupAppState extends ConsumerState<StartupApp> {
       themeMode: themeMode,
       debugShowCheckedModeBanner: false,
       home: child,
-    );
-  }
-}
-
-class _EraseOnlyStartup extends ConsumerStatefulWidget {
-  const _EraseOnlyStartup();
-
-  @override
-  ConsumerState<_EraseOnlyStartup> createState() => _EraseOnlyStartupState();
-}
-
-class _EraseOnlyStartupState extends ConsumerState<_EraseOnlyStartup> {
-  bool _erasing = false;
-  String? _failure;
-
-  Future<void> _requestErase() async {
-    final colors = ref.read(themeColorsProvider.notifier);
-    final confirmed = await showCompleteInstallationEraseAuthorizationDialog(
-      context,
-      barrierColor: colors.surfaces.canvas,
-    );
-    if (!mounted || !confirmed) {
-      return;
-    }
-    setState(() {
-      _erasing = true;
-      _failure = null;
-    });
-    await sched.SchedulerBinding.instance.endOfFrame;
-    try {
-      await ref
-          .read(completeInstallationEraseServiceProvider)
-          .eraseAndRelaunch();
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _erasing = false;
-        _failure = error.toString();
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final themeMode = ref.watch(switchableDarkModeProvider);
-    ref.watch(themeColorsProvider);
-    final colors = ref.read(themeColorsProvider.notifier);
-    final typography = ref.watch(themeTypographyProvider);
-    return MacosApp(
-      title: 'MessageLens',
-      theme: MacosThemeData.light().copyWith(),
-      darkTheme: MacosThemeData.dark().copyWith(),
-      themeMode: themeMode,
-      debugShowCheckedModeBanner: false,
-      home: ColoredBox(
-        color: colors.surfaces.canvas,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
-            child: Padding(
-              padding: const EdgeInsets.all(48),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_erasing)
-                    const ProgressCircle()
-                  else
-                    Icon(
-                      Icons.history_toggle_off,
-                      size: 44,
-                      color: colors.content.textSecondary,
-                    ),
-                  const SizedBox(height: 24),
-                  Text(
-                    _erasing
-                        ? 'Erasing the old MessageLens setup'
-                        : 'This older MessageLens setup needs a clean start',
-                    style: typography.title1.copyWith(
-                      color: colors.content.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _erasing
-                        ? 'Your Apple Messages, Contacts, and source folders '
-                              'remain unchanged. MessageLens will relaunch into '
-                              'Onboarding.'
-                        : 'MessageLens will not open or migrate this obsolete '
-                              'installation. You can erase the MessageLens-owned '
-                              'setup and begin the current Onboarding journey.',
-                    style: typography.body.copyWith(
-                      color: colors.content.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (!_erasing) ...[
-                    const SizedBox(height: 28),
-                    FilledButton(
-                      onPressed: _requestErase,
-                      child: const Text(
-                        'Erase MessageLens Setup and Start Over…',
-                      ),
-                    ),
-                  ],
-                  if (_failure != null) ...[
-                    const SizedBox(height: 20),
-                    Text(
-                      'MessageLens stopped without touching external source '
-                      'data. $_failure',
-                      style: typography.body.copyWith(
-                        color: colors.status.error,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

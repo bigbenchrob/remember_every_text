@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../domain/archive_access_authority.dart';
 import '../domain/archive_checkpoint_required_exception.dart';
 import '../domain/archive_environment.dart';
 import '../domain/archive_instance_id.dart';
@@ -147,18 +146,6 @@ class ArchiveMutationCoordinator extends _$ArchiveMutationCoordinator {
     required String ownerLabel,
     required Future<T> Function(ArchiveMutationCapability capability) action,
   }) async {
-    final authority = ref.read(archiveAccessAuthorityProvider);
-    switch (authority.mode) {
-      case ArchiveAccessMode.full:
-        break;
-      case ArchiveAccessMode.completeEraseOnly:
-        if (operation != ArchiveMutationOperation.completeInstallationErase) {
-          throw StateError(
-            'An erase-only archive cannot admit ${operation.name}.',
-          );
-        }
-        break;
-    }
     final inheritedContext =
         Zone.current[_archiveMutationOwnerZoneKey]
             as _ArchiveMutationAsyncContext?;

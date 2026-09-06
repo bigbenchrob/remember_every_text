@@ -223,13 +223,12 @@ identity, preferences, diagnostics, and `attachment_archive/` remain outside
 that boundary. See
 [`ATTACHMENT-PRESERVATION-INVARIANT.md`](ATTACHMENT-PRESERVATION-INVARIANT.md).
 
-The generalized whole-installation erase/root-replacement machinery is a
-separate explicit advanced recovery operation. Its exact
-`completeInstallationErase` capability, destructive authorization, canonical
-root proof, resource shutdown, durable transaction, and virgin verification
-must all succeed. It may erase preservation data because that is its stated
-purpose; it must never be substituted for Start Fresh or selected
-automatically for a healthy installation.
+No supported Onboarding or recovery operation can replace the complete archive
+root. Start Fresh and automatic recovery remain enumerated derived-store
+mutations. The obsolete Complete Erase transaction is recognized only by a
+temporary fail-closed startup compatibility seam, which may remove that one
+unchanged journal file in proven-safe stale states and cannot resume erasure or
+replace archive identity.
 
 ## Diagnostics
 

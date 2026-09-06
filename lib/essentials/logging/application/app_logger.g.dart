@@ -6,7 +6,7 @@ part of 'app_logger.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$appLoggerHash() => r'0476203773328556338ded56d088ff7441c03fab';
+String _$appLoggerHash() => r'4aabc2e8d61599677a2d989bdadb463cbb01e272';
 
 /// Unified application logger.
 ///

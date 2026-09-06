@@ -13,7 +13,6 @@ export 'domain/archive_mutation_capability_denied_exception.dart';
 export 'domain/archive_mutation_denied_exception.dart';
 export 'domain/archive_mutation_operation.dart';
 export 'domain/canonical_archive_root_policy.dart';
-export 'domain/complete_installation_erase_transaction.dart';
 export 'domain/native_archive_claim.dart';
 export 'domain/production_archive_adoption_inventory.dart';
 export 'domain/resolved_archive_identity.dart';

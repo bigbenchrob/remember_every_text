@@ -2,7 +2,7 @@
 tier: project
 scope: databases
 owner: agent-per-project
-last_reviewed: 2026-08-14
+last_reviewed: 2026-09-06
 source_of_truth: doc
 links:
        - ./access_authority_documentation/010-DATABASE-ACCESS-IN-PLAIN-ENGLISH.md
@@ -46,11 +46,12 @@ start with
   after native claim and archive-marker validation. Debug/Profile use the
   development root, production uses the stable production root, and tests must
   inject a temporary root. There is no Application Support fallback.
-- **Erase-only admission opens no database.** A legacy nonempty production
-  archive without a modern marker may be admitted solely for the explicit
-  `completeInstallationErase` operation. That authority cannot construct an
-  import, graph, overlay, Presence, or logging store and cannot authorize any
-  other mutation. Obsolete schemas are deleted without migration.
+- **There is no erase-only archive authority.** A meaningful unmarked or
+  incompatible archive fails closed into ordinary remediation. Runtime cannot
+  admit an archive solely to delete or replace its complete root. Previously
+  distributed tester journals are handled only by the bounded compatibility
+  seam documented in Feature 28; that seam can remove the unchanged obsolete
+  journal in proven-safe stale states and cannot open a destructive authority.
 - **Path access uses the paths seam.** Code that needs `PathsHelper` should
   import `pathsHelperProvider` from
   `lib/essentials/paths/feature_level_providers.dart`, not the root
@@ -84,9 +85,9 @@ start with
   Reset/reimport/recovery may delete only enumerated derived database files.
   See
   [`ATTACHMENT-PRESERVATION-INVARIANT.md`](../25-ONBOARDING-AND-ARCHIVE/ATTACHMENT-PRESERVATION-INVARIANT.md).
-  The only whole-installation exception is the separately disclosed and
-  authorized complete erase, which targets the canonical MessageLens archive
-  root rather than a database provider or user-selected path.
+  There is no whole-installation runtime exception. Every supported reset or
+  recovery path preserves the archive root, marker identity, and attachment
+  preservation data while mutating only an explicit resource inventory.
 - **Shut everything down before manual access.** Quit the Flutter app and tooling prior to backups or ad-hoc SQL to avoid WAL/locking surprises.
 - **Historical ROWID use requires lineage admission.** Before a Historical
   Archives operation may rely on original Apple Messages ROWIDs, it must pass

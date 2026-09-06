@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remember_this_text/essentials/archive_environment/application/archive_admission_service.dart';
-import 'package:remember_this_text/essentials/archive_environment/domain/archive_access_authority.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_admission_exception.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_build_identity.dart';
 import 'package:remember_this_text/essentials/archive_environment/domain/archive_environment.dart';
@@ -87,7 +86,6 @@ void main() {
       rootPath: root.path,
     ).read();
 
-    expect(authority.mode, ArchiveAccessMode.full);
     expect(authority.identity.environment, ArchiveEnvironment.production);
     expect(marker, isNotNull);
     expect(marker?.environment, ArchiveEnvironment.production);
@@ -103,11 +101,8 @@ void main() {
         '${root.path}/MessageLens.instance.lock',
       ).writeAsString('locked by native bootstrap');
 
-      final authority = await _serviceFor(
-        root,
-      ).admit(_productionClaim(root.path));
+      await _serviceFor(root).admit(_productionClaim(root.path));
 
-      expect(authority.mode, ArchiveAccessMode.full);
       expect(
         File(
           '${root.path}/${FileSystemArchiveMarkerStore.markerFileName}',

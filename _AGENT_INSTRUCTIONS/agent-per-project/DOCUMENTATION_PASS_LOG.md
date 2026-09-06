@@ -5856,3 +5856,16 @@ production preservation authority mechanically enforceable.
   remediation distinctions, mutation serialization, and attachment safety.
 - Explicitly deferred Audit 28 Complete Erase cruft and retired Presence/schema
   cleanup slices.
+
+## 2026-09-06 - Whole-root replacement removal
+
+- Removed Complete Erase as a supported runtime capability and documented the
+  permanent named-resource mutation model.
+- Reaffirmed Start Fresh as an enumerated reset that preserves archive identity,
+  overlay and Presence state, preferences, diagnostics, and archived attachment
+  payloads.
+- Documented the temporary fail-closed compatibility reader for the obsolete
+  Complete Erase journal, including its exact one-file cleanup authority and
+  the `0.4.0` plus 2027-09-01 sunset floor.
+- Updated current database, Onboarding, and attachment-preservation guidance;
+  retained earlier Complete Erase records solely as historical evidence.
